@@ -23,8 +23,14 @@ projects — scoped to you; you never see anyone else's.
   — auto-wired on install; no manual `claude mcp add`.
 - **`mosot` skill** — teaches Claude the MOSOT verb surface (`set_grid`, `ambiguities`,
   `rfi_candidates`, `search`, `propose`, …) and the propose-only / human-promotes doctrine.
+- **`drawing-index` skill** — build the master Drawing Index CSV for a discipline-split issue (Conformed Set, Permit Set, etc.) from a folder of one PDF per discipline.
+- **`drawing-index-bulletin` skill** — build a per-issue Drawing Index CSV for a Bulletin, ASI, or Addendum that ships as a single combined PDF; cross-checks against the Narrative of Changes.
+- **`drawing-index-merge` skill** — merge per-issue Drawing Index CSVs into a Franken Set CSV showing where the latest version of every sheet lives.
+- **`drawing-index-publish` skill** — publish a Master Drawing Index Excel workbook (.xlsx) with one tab per issue plus a Franken Set tab and page-level hyperlinks.
+- **`drawing-set-assemble` skill** — assemble fresh discipline-split PDFs (and an optional combined PDF) from a Franken Set CSV, preserving annotations and synthesizing bookmarks.
+- **`drawing-indexer` subagent** — pipeline operator that runs the full drawing-index chain (index → bulletin → merge → publish → assemble) as a delegated background task.
 
-The precon harness (scope-run + trade agents) ports onto this MCP next.
+The drawing-index pipeline is now included; more precon harness skills are coming.
 
 ## Updating
 
@@ -37,5 +43,13 @@ Push changes here, then in Claude Code: `/plugin update plumlayer@plumlayer`.
 plugins/plumlayer/
   .claude-plugin/plugin.json        # plugin manifest
   .mcp.json                         # the hosted MCP connector (remote, OAuth)
-  skills/mosot/SKILL.md             # the starter MOSOT skill
+  agents/
+    drawing-indexer.md              # drawing-index pipeline subagent
+  skills/
+    mosot/SKILL.md                  # the starter MOSOT skill
+    drawing-index/SKILL.md + references/
+    drawing-index-bulletin/SKILL.md + references/
+    drawing-index-merge/SKILL.md + references/
+    drawing-index-publish/SKILL.md + references/
+    drawing-set-assemble/SKILL.md + references/
 ```

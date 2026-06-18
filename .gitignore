@@ -1,0 +1,7 @@
+# Python bytecode (skills ship .py source; compiled artifacts are local-only)
+__pycache__/
+*.pyc
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
