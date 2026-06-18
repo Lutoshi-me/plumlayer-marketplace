@@ -1,0 +1,6 @@
+{
+  "plumlayer": {
+    "type": "http",
+    "url": "https://api-production-0a7b.up.railway.app/mcp"
+  }
+}
