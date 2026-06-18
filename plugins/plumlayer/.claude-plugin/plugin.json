@@ -1,6 +1,6 @@
 {
   "name": "plumlayer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Connect Claude to your Plumlayer MOSOT (cloud) and the precon harness. Read + propose claims on your construction projects through the hosted MCP; log in with your Plumlayer account.",
   "author": {
     "name": "Plumlayer"
