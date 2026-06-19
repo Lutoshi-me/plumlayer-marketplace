@@ -212,13 +212,17 @@ scope a **projection over the project's MOSOT** rather than a terminal file.
      --claims ./output/scope/<job>/scope_claims.jsonl \
      --out ./output/scope/<job>/deposit.json
    ```
-3. **Deposit.** Read `deposit.json` and call the **`propose`** MCP tool once per entry, passing
-   `projectId=<the project>` plus the entry's `subject`/`predicate`/`value`/`sourceInstrument` (and
-   `evidence`/`ambiguityClass` when present). **Batch the calls in parallel** (many per message). Every
-   claim lands as `proposed` — it never governs until a human promotes it on plumlayer.com.
-   - **Volume is real:** ~6–8 claims per scope item. Run on a **cluster subset** (not a whole 400-sheet
-     set at once) to keep deposit sane; `prepare_deposit.py` prints the exact count first so you can
-     confirm before firing. (A future `propose_batch` verb will collapse this to one round-trip.)
+3. **Deposit.** Read `deposit.json`. **Prefer the `propose_batch` MCP tool** — pass `projectId=<the
+   project>` plus a `claims` array (up to **500 entries per call**) assembled from the deposit entries
+   (`subject`/`predicate`/`value`/`sourceInstrument`, plus `evidence`/`versionScope`/`supersedesId`/
+   `ambiguityClass` when present). It is **atomic**: one invalid entry rejects the whole batch and names
+   the offending index — fix and resend, nothing half-lands. For >500 claims, send multiple
+   `propose_batch` calls. **Fallback:** if `propose_batch` isn't available (older server), call the
+   **`propose`** tool once per entry, batched in parallel (many per message). Every claim lands as
+   `proposed` either way — it never governs until a human promotes it on plumlayer.com.
+   - **Volume is real:** ~6–8 claims per scope item. `propose_batch` collapses a cluster's deposit to a
+     handful of calls; still run on a **cluster subset** (not a whole 400-sheet set at once), and
+     `prepare_deposit.py` prints the exact count first so you can confirm before firing.
 4. **Report the deposit.** State the project, how many claims were proposed, how many items were flagged
    ambiguous (the RFI pile), and that they're now visible on plumlayer.com for review/promotion — and
    in this session via `search` / `set_grid` / `ambiguities`.
@@ -240,7 +244,8 @@ The read stages (`scope-decomposer`, `trade-specialist`) are where quality is ma
 N dispatches = (#scope-bearing sheets) + (#lenses). They inherit the session model by default (best
 quality); drop to a cheaper tier per-dispatch when validating mechanics rather than accuracy. The
 deterministic stages (ground/merge/fanout/ingest/reconcile/coverage/project/prepare-deposit) are free;
-the deposit cost is the `propose` calls (one per claim).
+the deposit cost is the `propose_batch` calls (up to 500 claims each; one `propose` per claim only on
+the older-server fallback).
 
 ## What is NOT codified yet (named honestly — the iteration surfaces)
 
@@ -251,4 +256,3 @@ the deposit cost is the `propose` calls (one per claim).
   are fixed in the config).
 - **Reviewer layer + completeness critic** — adversarial per-trade review + cross-trade reconciliation
   after drafting.
-- **`propose_batch`** — until it exists, deposit is one `propose` call per claim.

@@ -137,8 +137,11 @@ Confirm back to the user: "Created project **<name>** (`<projectId>`)." One proj
 
 ## Step 3 — Customize: seed proposed claims
 
-Map the confirmed facts to **`proposed` claims** and append each with the **`propose`** MCP tool,
-passing `projectId=<the new project>`. **Batch the calls in parallel** (many per message).
+Map the confirmed facts to **`proposed` claims** and deposit them. **Prefer the `propose_batch` MCP
+tool** — one call with `projectId=<the new project>` and a `claims` array of all the seed entries (it's
+atomic: one bad entry rejects the batch and names the index). **Fallback:** if `propose_batch` isn't
+available (older server), call the **`propose`** tool once per claim, batched in parallel (many per
+message).
 
 **Claim shape** (matches the Claim atom — `subject — predicate — value` + evidence):
 - `sourceInstrument` = `project-setup-interview` (interview) or the **uploaded file name** (ingest).
