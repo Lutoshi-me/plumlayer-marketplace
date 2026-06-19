@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Plumlayer — an agentic construction operating model. The MOSOT plugin + precon harness for Claude Code.",
-    "version": "0.4.0"
+    "version": "0.4.1"
   },
   "plugins": [
     {
       "name": "plumlayer",
       "description": "Connect Claude to your Plumlayer MOSOT (cloud) and the precon harness. Create + onboard projects, read + propose claims on your construction projects through the hosted MCP; log in with your Plumlayer account.",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "author": {
         "name": "Plumlayer"
       },

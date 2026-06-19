@@ -31,6 +31,30 @@ governing truth. This skill **creates the project and customizes it** by turning
 
 ---
 
+## Where this sits in the workflow (read this before you start asking questions)
+
+`project-create` stands up the **shell + a minimal starting frame** — it is **not** the project's
+data-entry form. It runs **early, before the drawings are read**, and its whole job is to get a named
+MOSOT into existence carrying the few facts only *you* can supply.
+
+**The arc:**
+`setup` (operator profile, once) → **`project-create` (this skill — shell + minimal frame)** →
+**ingest & read the set** (the agent reads the cover sheet, drawing index, title blocks, and specs —
+via the sheet-registration / `scope-run` path — and asserts grounded sheet / party / type / size
+claims) → `scope-run` (per-trade takeoff) → **review & promote on plumlayer.com**.
+
+**The load-bearing consequence — don't interrogate for what the set is about to tell you.** Almost
+everything about a project is **read off the drawings, in the very next step, at a far higher
+instrument tier** than anything the user can recite here. An operator answering from memory produces
+the **lowest tier there is** — `proposed` + operator-asserted ("someone told me"); a cover-sheet /
+title-block read produces a grounded, `authoritative`-eligible claim that **supersedes it minutes
+later.** So asking the user to guess the project type, the engineers, the trades, or the square footage
+isn't just slow — it seeds bottom-tier claims the next step overwrites, cluttering the ledger. **Ask
+only for what no drawing will ever carry; for the rest, say "I'll read that off the set next" and move
+on.**
+
+---
+
 ## Step 0 — Preflight
 
 1. **Confirm the account.** Call `whoami`. State which account the project will be created under.
@@ -42,31 +66,46 @@ governing truth. This skill **creates the project and customizes it** by turning
 
 ---
 
-## Step 1 — Gather project facts (two intake modes — use either or both)
+## Step 1 — Gather project facts (ask narrow; read what you're handed)
 
-The goal is a confirmed set of project facts. **Never invent one.** Mark every fact `confirmed`,
-`uncertain`, or `conflicting` as you go — that classification drives `ambiguityClass` at seed time.
+The goal is **a named shell plus only the facts the drawings won't supply** — not a complete project
+record. **Never invent a fact.** Mark each one `confirmed`, `uncertain`, or `conflicting` as you go —
+that classification drives `ambiguityClass` at seed time.
 
-### Mode A — Interview
-Ask conversationally, in small groups, pre-filled from operator defaults. Only `name` is strictly
-required; everything else is "skip if unknown."
+### Ask now vs. defer to the read (the triage that keeps this short)
 
-- **Identity:** project name *(required)*; one-line description; project type; delivery method;
-  location; gross area / floors.
-- **Parties** (these seed the party-trust frame — who is authoritative about what): owner, architect
-  of record, structural engineer (EOR), MEP engineer, GC/CM, and any already-known key subs. Get a
-  name for each you can.
-- **Drawing sets known:** which issues exist and their status (e.g. `conformed`, `permit`,
-  `bulletin 02`, `DD`, `addendum 1`) and dates, if known. (Files aren't uploaded here — this just
-  records what exists.)
-- **Trades in scope:** the trade packages this project will be bid/bought as (drives the scope-run
-  lens set).
-- **Key dates:** bid due date, award target, etc.
-- **Known scope notes / exclusions / allowances** the user already has in mind.
+**Ask now — operator-only facts no drawing carries.** Even these: *offer, don't interrogate* — accept
+"skip" freely.
+- **Project name** *(required)* — the user's working name for the pursuit.
+- **Delivery method** (DBB / CM-at-risk / design-build / GMP) — a contract fact often absent from the
+  drawings. Take it if known; skip if not (the ITB / contract confirms it later). Don't argue it
+  against the operator default — just record what they say.
+- **How they're bidding / buying it** — the trade *packages* they intend to carry, *if* they already
+  have a commercial plan in mind. A business decision, not a drawing fact — but it firms up fast once
+  they see the set, so don't force it.
+- **Known exclusions / allowances / strategy notes** they already hold in mind.
+- **Bid due date / key dates** — only if one actually matters to them now; otherwise skip.
 
-### Mode B — Ingest uploaded info
-If the user points you at files they already have, **read them locally** to pre-fill the interview,
-then confirm. Good sources:
+**Defer to the read — do NOT interrogate.** The next step reads each of these off the set at a higher
+tier. Note in one line that you'll read it, then move on:
+- Project **type** (cover sheet + index).
+- **Parties** beyond any the user volunteers — owner, architect, structural EOR, MEP / civil engineers
+  (title blocks + cover stamps). If an engineer is stamped nowhere, that's an **ingestion finding / RFI**,
+  not an interview question.
+- **Size** — gross area, floor / unit counts (the drawings, often a code-summary sheet).
+- **Location** (cover sheet).
+- The **drawing-set inventory** — which issues exist and their dates (the drawing index *is* this;
+  `drawing-index` + sheet registration produce it).
+
+### Mode A — Interview (the ask-now set only)
+Ask conversationally, in **one short group**, pre-filled from operator defaults
+(`~/.plumlayer/operator.json`). **Only `name` is required; everything else is "skip if you don't have
+it handy."** Do **not** reconcile the operator's saved defaults (e.g. interior-only scope lenses)
+against this project here — trade / lens fit is a `scope-run` input, decided when the set is read.
+
+### Mode B — Ingest what they already have (preferred when docs exist)
+If the user points you at files, **read them locally** and pre-fill — reading a document they handed
+you is not interrogation, it's the high-value path. Good sources:
 - An **ITB / invitation-to-bid** or project summary → name, type, parties, key dates.
 - A **drawing index** (`.csv`/`.xlsx` from the `drawing-index` skill) → the set inventory + disciplines.
 - A **spec TOC** → divisions/trades in scope.
@@ -77,8 +116,9 @@ then confirm. Good sources:
 ls -la <path/to/their/files>
 ```
 
-Extract candidate facts, **present them for confirmation** (don't trust an extraction silently), and
-fill gaps by asking. Anything ambiguous in the source → mark `uncertain`/`conflicting`.
+Extract candidate facts, **present them for confirmation** (don't trust an extraction silently), seed
+what's confirmed, and **defer the gaps to the read rather than interrogating** for them. Anything
+ambiguous in the source → mark `uncertain` / `conflicting`.
 
 ---
 
@@ -109,6 +149,10 @@ passing `projectId=<the new project>`. **Batch the calls in parallel** (many per
   surfaces it in the `ambiguities` queue / RFI pile for human resolution). Omit for `confirmed`.
 
 **What to seed** (skip any the user didn't give — never fabricate):
+
+> At create time this table is **often mostly empty — a sparse shell is the correct early state**, not a
+> failure. Seed only what the user volunteered or a handed-over document supports; the set read fills the
+> rest, at a higher tier. Never ask a question just to populate a row.
 
 | Fact | subject | predicate | value |
 |---|---|---|---|
