@@ -1,0 +1,4 @@
+# Harness — Python dependencies.
+# All checks use the standard library only; no third-party packages are required.
+# pyyaml is NOT used — frontmatter is parsed by hand (the simple --- block format
+# used by SKILL.md and agent .md files is handled without a YAML parser).

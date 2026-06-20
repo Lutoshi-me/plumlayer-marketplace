@@ -1,0 +1,4 @@
+# Layer 2 raw JSONL output and any other ephemeral test artifacts
+.test-results/
+__pycache__/
+*.pyc
