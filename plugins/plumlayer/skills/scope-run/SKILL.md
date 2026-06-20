@@ -205,27 +205,45 @@ coverage (sheets skipped, a lens failed, retries), say so.
 scope a **projection over the project's MOSOT** rather than a terminal file.
 1. **Pick the project.** Call `list_projects` and confirm with the user which MOSOT to deposit into (a
    project = one MOSOT). Get its `projectId`. If the cluster config carries a `projectId`, confirm it.
-2. **Transform the claims** to deposit-ready args (drops null-value rows; flags contested/unowned with
-   `ambiguityClass`; sets `sourceInstrument` from each citation):
+2. **Transform the claims.** This writes the full `deposit.json` (for inspection) **and** a
+   `deposit_batches/` directory of small, pretty-printed batch files (≤50 claims each) plus a
+   `deposit_manifest.json` listing every batch file and its exact claim count. **The batch files are what
+   you deposit; the manifest is your fidelity check.** (Drops null-value rows; flags contested/unowned
+   with `ambiguityClass`; sets `sourceInstrument` from each citation.)
    ```bash
    python "$PLUGIN/tools/prepare_deposit.py" \
      --claims ./output/scope/<job>/scope_claims.jsonl \
      --out ./output/scope/<job>/deposit.json
+   # → also writes ./output/scope/<job>/deposit_batches/{deposit_batch_NNN.json, deposit_manifest.json}
    ```
-3. **Deposit.** Read `deposit.json`. **Prefer the `propose_batch` MCP tool** — pass `projectId=<the
-   project>` plus a `claims` array (up to **500 entries per call**) assembled from the deposit entries
-   (`subject`/`predicate`/`value`/`sourceInstrument`, plus `evidence`/`versionScope`/`supersedesId`/
-   `ambiguityClass` when present). It is **atomic**: one invalid entry rejects the whole batch and names
-   the offending index — fix and resend, nothing half-lands. For >500 claims, send multiple
-   `propose_batch` calls. **Fallback:** if `propose_batch` isn't available (older server), call the
-   **`propose`** tool once per entry, batched in parallel (many per message). Every claim lands as
-   `proposed` either way — it never governs until a human promotes it on plumlayer.com.
-   - **Volume is real:** ~6–8 claims per scope item. `propose_batch` collapses a cluster's deposit to a
-     handful of calls; still run on a **cluster subset** (not a whole 400-sheet set at once), and
-     `prepare_deposit.py` prints the exact count first so you can confirm before firing.
-4. **Report the deposit.** State the project, how many claims were proposed, how many items were flagged
-   ambiguous (the RFI pile), and that they're now visible on plumlayer.com for review/promotion — and
-   in this session via `search` / `set_grid` / `ambiguities`.
+   It prints the total claim count + composition. **Confirm the magnitude with the user before firing**
+   (a cluster runs ~6–8 claims per scope item; run on a **cluster subset**, not a whole 400-sheet set).
+3. **Deposit — faithful transport, never authorship.** You are moving deterministic, already-grounded
+   claims from disk into the MOSOT. **You are a transport, not an author.** Read `deposit_manifest.json`
+   (small) for the batch list + expected counts, then for **each batch file** in order:
+   - **Read the ENTIRE batch file.** It is small and pretty-printed precisely so it reads in full.
+   - Call **`propose_batch`** with `projectId=<the project>` and `claims=` the file's array **emitted
+     verbatim** — every entry exactly as written (`subject`/`predicate`/`value`/`sourceInstrument`, plus
+     `evidence`/`ambiguityClass`/`versionScope` when present). Each file is ≤50 entries, well within the
+     500-per-call limit. `propose_batch` is **atomic** — a bad entry rejects the whole batch and names
+     the index.
+   - **Verify** the returned inserted `count` equals this batch's `count` in the manifest.
+   - **HARD GATE — stop, never invent.** If you cannot read the whole file, or the returned count ≠ the
+     manifest count, **STOP IMMEDIATELY** and report which batch and the discrepancy. **Never**
+     reconstruct, summarize, infer, complete, or regenerate an entry from memory or from the drawings — a
+     claim you did not read verbatim from the batch file is a **fabrication** and a doctrine violation
+     (*never invent a fact*). A truncated read is a hard error, not a cue to fill in the rest.
+   - Track which batches are count-verified so a stop is **resumable from the next unsent batch**.
+     Process batches one at a time or in small parallel waves. **Optional:** delegate one batch per
+     subagent to keep context lean — each subagent honors this same gate on its one small file.
+   - **Fallback** (older server without `propose_batch`): deposit the same batch files with per-entry
+     `propose` calls — still read verbatim, still count-verified against the manifest, same hard gate.
+   - If `deposit_manifest.json` reports `totalClaims: 0`, there is nothing to deposit — say so and stop.
+   Every claim lands `proposed` — it never governs until a human promotes it on plumlayer.com.
+4. **Report the deposit.** State the project; **total claims deposited (sum of count-verified batches)
+   vs. the manifest `totalClaims`** — they must match; if not, name the batch that stopped and why. Then
+   how many items were flagged ambiguous (the RFI pile), and that they're visible on plumlayer.com for
+   review/promotion + in this session via `search` / `set_grid` / `ambiguities`.
 
 ## Gates (non-negotiable)
 
@@ -235,6 +253,9 @@ scope a **projection over the project's MOSOT** rather than a terminal file.
   gap log + as `ambiguityClass` on deposit — never silently assigned.
 - Completeness is **audited, not assumed** (stage 4); nothing read or routed falls through silently.
 - Everything deposited is `proposed`. The harness never promotes — a human does, on the review surface.
+- **Deposit is verbatim transport, count-verified.** Claims are deposited exactly as
+  `prepare_deposit.py` wrote them, each batch checked against `deposit_manifest.json`. A read truncation
+  or count mismatch **stops** the deposit — never reconstruct or invent a claim to "finish" a batch.
 - Data hygiene: the drawing PDF + `output/` stay in the user's cwd and out of git; **no client
   specifics in any tracked/committed file**; no confidential PDF path in a committed cluster config.
 
@@ -244,8 +265,9 @@ The read stages (`scope-decomposer`, `trade-specialist`) are where quality is ma
 N dispatches = (#scope-bearing sheets) + (#lenses). They inherit the session model by default (best
 quality); drop to a cheaper tier per-dispatch when validating mechanics rather than accuracy. The
 deterministic stages (ground/merge/fanout/ingest/reconcile/coverage/project/prepare-deposit) are free;
-the deposit cost is the `propose_batch` calls (up to 500 claims each; one `propose` per claim only on
-the older-server fallback).
+the deposit cost is the `propose_batch` calls — one per ≤50-claim batch file (the verb accepts up to
+500, but small batches keep each read faithful and count-verifiable); one `propose` per claim only on
+the older-server fallback.
 
 ## What is NOT codified yet (named honestly — the iteration surfaces)
 
