@@ -3,8 +3,9 @@ build_reading_packet.py — render sheets and assemble the reading packet for an
 
 Doctrine role (agents read and judge; deterministic tooling grounds; nothing governs unverified):
   * Deterministic GROUNDING tool — renders pixmaps (fitz, same dpi pattern as
-    render_sheet.py), gathers text anchors per sheet, and writes a manifest. It
-    captures pixels and locates anchors; it does NOT infer meaning.
+    render_sheet.py), gathers text anchors per sheet, optionally clusters congruent
+    vector motifs per sheet, and writes a manifest. It captures pixels, locates
+    anchors, and counts congruent geometry; it does NOT infer meaning.
   * Missing text anchors → WARN honestly and proceed; the agent reads pixels,
     cites estimated regions. Silent truncation is not permitted.
   * If --only (or v0Subset in the cluster config) is given, only that subset is
@@ -44,6 +45,26 @@ Text anchors (self-produced into the packet):
   external directory instead of self-producing them. When both apply (self-produced
   and override), the override takes precedence.
 
+Symbol motifs (self-produced into the packet, optional --motifs):
+  During the per-sheet pass this script clusters page.get_drawings() paths into
+  congruent-geometry motifs — candidate repeated symbols with deterministic counts.
+  Each motif carries: motifId (opaque hash), count, symbolLikely (hasCurve OR
+  hasInnerText), instance bboxNorm[]s (rotation-aware 0..1 frame, matching tiles),
+  innerTextSamples, and an exemplar. The motif is OPAQUE: this tool counts congruent
+  geometry; it never names symbols or makes meaning determinations. The agent judges
+  which motif corresponds to a scope-relevant symbol and cites the grounded count;
+  a human promotes. Nothing governs unverified.
+
+  Coordinate frames: fingerprinting runs on RAW unrotated coords (rotation-invariant
+  by construction); all EMITTED bboxes (instance + exemplar) are transformed through
+  page.rotation_matrix and normalized by page.rect dims — the same 0..1 frame as
+  tiles and anchors. Scanned sheets (no text layer) produce no motif file.
+
+  Port of prototypes/comprehension/cluster_motifs.py (source-of-truth dev reference,
+  ported 2026-06-20). No monorepo import — the plugin must stay self-contained.
+
+  --motif-dir overrides the default output directory for per-sheet motif JSON files.
+
 Usage:
   python build_reading_packet.py \\
     --pdf <arch.pdf> \\
@@ -53,14 +74,20 @@ Usage:
     [--only A-400,A-401,...] \\
     [--anchor-dir <override dir with pre-produced per-sheet .jsonl files>] \\
     [--tiles] [--tile-dpi 200] [--overlap 0.06] \\
-    [--grid 3x3 | --target-tile-px 2800]
+    [--grid 3x3 | --target-tile-px 2800] \\
+    [--motifs] [--motif-dir <override dir>] \\
+    [--dimbin 2] [--segbin 2] [--min-count 3] \\
+    [--min-diag 8.0] [--max-diag 120.0] [--min-items 2]
 """
 
 import argparse
+import hashlib
 import json
 import math
 import shutil
 import sys
+import time
+from collections import defaultdict
 from pathlib import Path
 
 import fitz  # PyMuPDF
@@ -267,6 +294,312 @@ def _extract_text_anchors(page: fitz.Page, anchor_path: Path) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Symbol-motif extraction
+# Port of prototypes/comprehension/cluster_motifs.py (dev-reference, 2026-06-20).
+# No monorepo import — the plugin must stay self-contained.
+#
+# Fingerprint on RAW unrotated coords (rotation-invariant by construction).
+# Emitted bboxes (instance + exemplar) are normalized to the rotation-aware
+# 0..1 frame matching tiles and anchors via page.rotation_matrix.
+#
+# Doctrine: this tool COUNTS congruent geometry. It never names or classifies
+# symbols. The agent judges which motif corresponds to a scope-relevant symbol
+# (by reading innerTextSamples + exemplar on the tile) and cites the grounded
+# count + motifId. Nothing governs unverified.
+# ---------------------------------------------------------------------------
+
+# Op-code substrings indicating a curved path segment (cubic bezier / quadratic).
+# fp[0] is a concatenated op string (e.g. "llcc"). Substring search is safe here
+# because neither "c" nor "qu" appears as a substring of any non-curve op.
+_CURVE_OP_SUBSTRINGS: tuple[str, ...] = ("c", "qu")
+
+
+def _motif_item_coords(item: tuple) -> list[list[float]]:
+    """Extract coordinate pairs from a PyMuPDF drawing item tuple (raw unrotated).
+
+    Item shapes:
+      ("m", Point)                       -- moveto
+      ("l", Point)                       -- lineto
+      ("c", Point, Point, Point, Point)  -- curveto (4 Point args)
+      ("qu", Quad)                       -- quad bezier (ONE Quad, corners .ul/.ur/.lr/.ll)
+      ("re", Rect, int)                  -- rectangle + fill flag
+      ("h",)                             -- closepath (no coords)
+    Returns list of [x, y] pairs, rounded to 1 decimal.
+    """
+    op = item[0]
+    if op in ("m", "l"):
+        p = item[1]
+        return [[round(p.x, 1), round(p.y, 1)]]
+    if op == "c":
+        return [[round(p.x, 1), round(p.y, 1)] for p in item[1:]]
+    if op == "qu":
+        q = item[1]
+        return [[round(p.x, 1), round(p.y, 1)] for p in (q.ul, q.ur, q.lr, q.ll)]
+    if op == "re":
+        r = item[1]
+        return [[round(r.x0, 1), round(r.y0, 1)],
+                [round(r.x1, 1), round(r.y0, 1)],
+                [round(r.x1, 1), round(r.y1, 1)],
+                [round(r.x0, 1), round(r.y1, 1)]]
+    return []  # "h" and unknowns
+
+
+def _motif_fingerprint(g: dict, dimbin: int, segbin: int) -> tuple:
+    """Build a translation- and rotation-invariant scalar fingerprint for a geometry path.
+
+    Components: op_sequence, n_items, n_vertices, min_dim_bin, max_dim_bin, chord_bin.
+    Runs on RAW unrotated coords — rotation-invariant because all components are
+    scalar (lengths, counts), not absolute positions.
+    """
+    r = g["rect"]
+    w = r[2] - r[0]
+    h = r[3] - r[1]
+    wb = round(w / dimbin)
+    hb = round(h / dimbin)
+    lo, hi = min(wb, hb), max(wb, hb)
+
+    items = g["items"]
+    ops = "".join(it["op"] for it in items)
+    n_items = len(items)
+
+    pts: list[tuple[float, float]] = []
+    for it in items:
+        for coord in it["coords"]:
+            pts.append((coord[0], coord[1]))
+    n_verts = len(pts)
+
+    chord = 0.0
+    for i in range(1, n_verts):
+        chord += math.dist(pts[i - 1], pts[i])
+    chord_bin = round(chord / segbin)
+
+    return (ops, n_items, n_verts, lo, hi, chord_bin)
+
+
+def _motif_id(fp: tuple) -> str:
+    """Stable opaque hash of a fingerprint tuple — NOT a semantic name."""
+    raw = json.dumps(fp, separators=(",", ":"))
+    return "motif-" + hashlib.sha1(raw.encode()).hexdigest()[:12]
+
+
+def _motif_mean_diag(paths: list[dict]) -> float:
+    diags = []
+    for g in paths:
+        r = g["rect"]
+        diags.append(math.hypot(r[2] - r[0], r[3] - r[1]))
+    return sum(diags) / len(diags) if diags else 0.0
+
+
+def _motif_inner_text(g: dict, words: list) -> str:
+    """Join text tokens whose centroid falls inside the path's RAW unrotated bbox.
+
+    Both get_drawings() rects and get_text("words") w[0:4] are in raw (unrotated)
+    user-space — the join is correct without any frame transform.
+    Returns a space-separated string of matched token texts, or "".
+    """
+    x0, y0, x1, y1 = g["rect"]
+    parts = []
+    for w in words:
+        cx = (w[0] + w[2]) / 2
+        cy = (w[1] + w[3]) / 2
+        if x0 <= cx <= x1 and y0 <= cy <= y1:
+            parts.append(w[4])
+    return " ".join(parts)
+
+
+def _motif_norm_bbox(raw_rect: list[float], rm: fitz.Matrix, W: float, H: float) -> list[float]:
+    """Normalize a raw [x0,y0,x1,y1] bbox into the rotation-aware 0..1 tile frame.
+
+    Applies page.rotation_matrix then divides by page.rect dims — the same
+    transform _extract_text_anchors uses, so motif bboxNorm and anchor bboxNorm
+    are in the same coordinate frame as tiles. For rot=0, matrix is identity.
+    """
+    x0, y0, x1, y1 = raw_rect
+    p00 = fitz.Point(x0, y0) * rm
+    p11 = fitz.Point(x1, y1) * rm
+    tx0 = min(p00.x, p11.x)
+    ty0 = min(p00.y, p11.y)
+    tx1 = max(p00.x, p11.x)
+    ty1 = max(p00.y, p11.y)
+    return [round(tx0 / W, 4), round(ty0 / H, 4), round(tx1 / W, 4), round(ty1 / H, 4)]
+
+
+def _extract_motifs(
+    page: fitz.Page,
+    words: list,
+    motif_path: Path,
+    *,
+    text_layer_present: bool,
+    dimbin: int = 2,
+    segbin: int = 2,
+    min_count: int = 3,
+    min_diag: float = 8.0,
+    max_diag: float = 120.0,
+    min_items: int = 2,
+) -> dict:
+    """Cluster page.get_drawings() into congruent-geometry motifs; write per-sheet JSON.
+
+    Args:
+        page:               fitz.Page (already open, same page used for rendering+anchors).
+        words:              page.get_text("words") result — reused from the anchor pass,
+                            NEVER extracted twice. Used for inner-text join (raw coords).
+        motif_path:         output path for the per-sheet motif JSON file.
+        text_layer_present: if False, page is scanned/flattened — no file is written
+                            (geometry would be vectorized borders, not drawing content).
+        dimbin/segbin:      fingerprint quantization steps in pts (default 2).
+        min_count:          minimum repeat count to qualify as a motif (default 3).
+        min_diag/max_diag:  mean bbox diagonal band in pts (default 8.0–120.0).
+        min_items:          minimum path item count — complexity floor (default 2).
+
+    Returns a manifest-summary dict:
+        {"motifCount": int, "symbolLikelyCount": int, "written": bool, "unreliable": bool}
+    File is only written when text_layer_present is True. Caller warns on written=False.
+    """
+    # Scanned guard: geometry on a no-text-layer page is vectorized title-block noise,
+    # not actual drawing content. Do not write a file — that would be dishonest.
+    if not text_layer_present:
+        return {"motifCount": 0, "symbolLikelyCount": 0, "written": False, "unreliable": True}
+
+    rm = page.rotation_matrix
+    W = page.rect.width
+    H = page.rect.height
+
+    # Build geometry-dict list live from page.get_drawings().
+    # Shape mirrors what cluster_motifs.py reads from grounding JSON:
+    #   {"i": idx, "rect": [x0,y0,x1,y1], "items": [{"op", "coords"}…]}
+    # Raw (unrotated) rect + coords — fingerprint is rotation-invariant by construction,
+    # so raw coords produce the same motifId as the dev reference on rot=0 sheets.
+    geo: list[dict] = []
+    for idx, d in enumerate(page.get_drawings()):
+        r = d["rect"]
+        raw_rect = [round(r.x0, 1), round(r.y0, 1), round(r.x1, 1), round(r.y1, 1)]
+        items_raw = d.get("items", [])
+        geo_items = [
+            {"op": it[0], "coords": _motif_item_coords(it)}
+            for it in items_raw
+        ]
+        geo.append({"i": idx, "rect": raw_rect, "items": geo_items})
+
+    # Bucket all paths by fingerprint.
+    buckets: dict[tuple, list[dict]] = defaultdict(list)
+    for g in geo:
+        buckets[_motif_fingerprint(g, dimbin, segbin)].append(g)
+
+    # Apply discrete-motif filter.
+    motifs = []
+    for fp, paths in buckets.items():
+        n_items_fp = fp[1]
+        count = len(paths)
+        if n_items_fp < min_items:
+            continue
+        if count < min_count:
+            continue
+        md = _motif_mean_diag(paths)
+        if not (min_diag <= md <= max_diag):
+            continue
+
+        exemplar = paths[0]
+        mid = _motif_id(fp)
+
+        instances = []
+        inner_texts: list[str] = []
+        any_inner = False
+        for g in paths:
+            inner = _motif_inner_text(g, words)
+            if inner:
+                any_inner = True
+                inner_texts.append(inner)
+            # Normalize bbox to the rotation-aware tile frame for output.
+            instances.append({
+                "geoIdx": g["i"],   # per-page path index; NOT a cross-file citation key
+                "bboxNorm": _motif_norm_bbox(g["rect"], rm, W, H),
+                "innerText": inner,  # "" when no tokens inside — never None
+            })
+
+        # Structural ranking flags — deterministic path-structure and text-join facts.
+        # hasCurve: op-sequence contains a curve op — read from the fingerprint (fp[0]).
+        # hasInnerText: at least one instance encloses a text token — join result.
+        # symbolLikely: hasCurve OR hasInnerText — structural ranking heuristic ONLY.
+        #   NOT a determination that this IS a symbol. The agent judges meaning.
+        has_curve = any(sub in fp[0] for sub in _CURVE_OP_SUBSTRINGS)
+        has_inner_text = any_inner
+        symbol_likely = has_curve or has_inner_text
+
+        # Deduplicated sample of inner texts (up to 12), sorted for stability.
+        inner_text_samples = sorted({t for t in inner_texts if t})[:12]
+
+        motifs.append({
+            "motifId": mid,
+            "fingerprint": list(fp),   # (ops, n_items, n_verts, lo, hi, chord_bin)
+            "count": count,
+            "meanDiagPt": round(md, 1),
+            "hasCurve": has_curve,
+            "hasInnerText": has_inner_text,
+            "symbolLikely": symbol_likely,
+            "innerTextSamples": inner_text_samples,
+            "exemplar": {
+                "geoIdx": exemplar["i"],   # NOT a citation key — debugging aid only
+                "bboxNorm": _motif_norm_bbox(exemplar["rect"], rm, W, H),
+            },
+            "instances": instances,
+            "extractionMethod": (
+                f"congruent-geometry clustering (path-level scalar fingerprint: "
+                f"op-seq + item-count + vertex-count + dim-bins + chord-bin; "
+                f"dimbin={dimbin} segbin={segbin})"
+            ),
+        })
+
+    # Sort: symbolLikely=true first, then count descending.
+    # Bare linework (symbolLikely=false) is demoted, never dropped.
+    motifs.sort(key=lambda m: (not m["symbolLikely"], -m["count"]))
+
+    total_paths = len(geo)
+    paths_in_motifs = sum(m["count"] for m in motifs)
+    symbol_likely_count = sum(1 for m in motifs if m["symbolLikely"])
+
+    record = {
+        "textLayerPresent": text_layer_present,
+        "unreliable": False,
+        "params": {
+            "dimbin": dimbin,
+            "segbin": segbin,
+            "minCount": min_count,
+            "minDiagPt": min_diag,
+            "maxDiagPt": max_diag,
+            "minItems": min_items,
+            "note": (
+                "Filter params bound coverage: this tool surfaces REPEATED DISCRETE MOTIFS "
+                "only. Paths excluded by complexity/size/repetition floors are not covered. "
+                "A zero-motif result does not mean the sheet has no symbols."
+            ),
+        },
+        "coverage": {
+            "totalPaths": total_paths,
+            "pathsInMotifs": paths_in_motifs,
+            "singletonOrSubThresholdPaths": total_paths - paths_in_motifs,
+            "pctInMotifs": round(100 * paths_in_motifs / total_paths, 2) if total_paths else 0.0,
+            "coverageNote": (
+                "pctInMotifs counts paths captured by the discrete-motif filter. "
+                "Remaining paths are one-off linework/hatching/leaders — "
+                "not covered by this tool. This is expected behaviour, not an error."
+            ),
+        },
+        "motifCount": len(motifs),
+        "symbolLikelyMotifs": symbol_likely_count,
+        "motifs": motifs,
+    }
+
+    motif_path.parent.mkdir(parents=True, exist_ok=True)
+    motif_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
+    return {
+        "motifCount": len(motifs),
+        "symbolLikelyCount": symbol_likely_count,
+        "written": True,
+        "unreliable": False,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -320,6 +653,44 @@ def main() -> None:
         "--target-tile-px", type=int, default=DEFAULT_TARGET_TILE_PX,
         help=f"Adaptive-grid target tile pixel size (default {DEFAULT_TARGET_TILE_PX})",
     )
+    # --- motifs ---
+    parser.add_argument(
+        "--motifs",
+        action="store_true",
+        help="Cluster congruent vector motifs per sheet (grounded symbol counts).",
+    )
+    parser.add_argument(
+        "--motif-dir",
+        default=None,
+        help=(
+            "Override: directory to write per-sheet motif JSON files. "
+            "Default: <out-dir>/motifs/"
+        ),
+    )
+    parser.add_argument(
+        "--dimbin", type=int, default=2,
+        help="Motif fingerprint dimension bin size in pts (default 2).",
+    )
+    parser.add_argument(
+        "--segbin", type=int, default=2,
+        help="Motif fingerprint chord-length bin size in pts (default 2).",
+    )
+    parser.add_argument(
+        "--min-count", type=int, default=3,
+        help="Motif minimum repeat count (default 3).",
+    )
+    parser.add_argument(
+        "--min-diag", type=float, default=8.0,
+        help="Motif minimum mean bbox diagonal in pts (default 8.0).",
+    )
+    parser.add_argument(
+        "--max-diag", type=float, default=120.0,
+        help="Motif maximum mean bbox diagonal in pts (default 120.0).",
+    )
+    parser.add_argument(
+        "--min-items", type=int, default=2,
+        help="Motif minimum path item count — complexity floor (default 2).",
+    )
     args = parser.parse_args()
 
     pdf_path = Path(args.pdf)
@@ -340,6 +711,20 @@ def main() -> None:
     tiles_root = out_dir / "tiles"
     if args.tiles:
         tiles_root.mkdir(parents=True, exist_ok=True)
+
+    motifs_root = Path(args.motif_dir) if args.motif_dir else out_dir / "motifs"
+    if args.motifs:
+        motifs_root.mkdir(parents=True, exist_ok=True)
+
+    # Motif filter params (constant for this run; reported per-sheet in each file).
+    motif_params = dict(
+        dimbin=args.dimbin,
+        segbin=args.segbin,
+        min_count=args.min_count,
+        min_diag=args.min_diag,
+        max_diag=args.max_diag,
+        min_items=args.min_items,
+    )
 
     selected_data = _load_selected(selected_path)
     cluster_name = selected_data.get("clusterName", "unknown")
@@ -388,6 +773,13 @@ def main() -> None:
         pix.save(str(img_path))
         rendered_count += 1
 
+        # Extract words once; reused for both anchors and motif inner-text join.
+        # get_text("words") returns raw unrotated coords — the anchor function
+        # applies rotation_matrix before normalizing; the motif function uses raw
+        # coords for the centroid-in-bbox join (same frame as get_drawings()).
+        words = page.get_text("words")
+        text_layer_present = bool(words)
+
         # text anchors — self-produce from the PDF text layer, or use override
         anchor_count = 0
         anchor_file: Path | None = None
@@ -405,6 +797,10 @@ def main() -> None:
                     anchor_count = 0
         elif sheet_id:
             # default: self-produce into <out-dir>/anchors/
+            # _extract_text_anchors calls page.get_text("words") internally; since we
+            # already have `words` here, we pass the page for the rotation-matrix
+            # transform (the function must stay its original standalone signature for
+            # the --anchor-dir override path — no change there).
             candidate = self_anchor_dir / f"{sheet_id}.jsonl"
             anchor_count = _extract_text_anchors(page, candidate)
             if anchor_count > 0:
@@ -455,6 +851,40 @@ def main() -> None:
             )
             print(f"     {sheet_no} ({sheet_id}): {nrows}x{ncols} = {len(tiles)} tiles")
 
+        # --- motifs ---
+        if args.motifs and sheet_id:
+            motif_path = motifs_root / f"{sheet_id}.json"
+            _t0 = time.monotonic()
+            motif_summary = _extract_motifs(
+                page,
+                words,        # reused — get_text("words") NOT called again
+                motif_path,
+                text_layer_present=text_layer_present,
+                **motif_params,
+            )
+            _elapsed = time.monotonic() - _t0
+
+            has_motifs = motif_summary["written"] and motif_summary["motifCount"] > 0
+            manifest_entry["hasMotifs"] = has_motifs
+            manifest_entry["motifCount"] = motif_summary["motifCount"]
+            manifest_entry["symbolLikelyCount"] = motif_summary["symbolLikelyCount"]
+            if has_motifs:
+                manifest_entry["motifPath"] = str(motif_path)
+
+            if not motif_summary["written"]:
+                print(
+                    f"[warn] no motif file for {sheet_no} ({sheet_id}) - "
+                    f"scanned/no-text-layer sheet; motif geometry unreliable",
+                    file=sys.stderr,
+                )
+            else:
+                slow_note = "  [SLOW]" if _elapsed > 10 else ""
+                print(
+                    f"     {sheet_no} ({sheet_id}): motifs {motif_summary['motifCount']} "
+                    f"(symbolLikely: {motif_summary['symbolLikelyCount']}) "
+                    f"[{_elapsed:.2f}s]{slow_note}"
+                )
+
         manifest_sheets.append(manifest_entry)
 
     doc.close()
@@ -465,6 +895,7 @@ def main() -> None:
         "clusterName": cluster_name,
         "pdfSource": pdf_source,
         "tiled": bool(args.tiles),
+        "motifs": bool(args.motifs),
         "sheets": manifest_sheets,
     }
     manifest_path = out_dir / "packet_manifest.json"
@@ -489,6 +920,12 @@ def main() -> None:
             json.dump(tiles_manifest, fh, indent=2)
         print(f"[ok] tiled {tiled_count} sheets ({args.tile_dpi} dpi, overlap {args.overlap})")
         print(f"     tiles manifest -> {tiles_manifest_path}")
+
+    if args.motifs:
+        print(f"[ok] motif params: dimbin={args.dimbin} segbin={args.segbin} "
+              f"K={args.min_count} diag=[{args.min_diag},{args.max_diag}] "
+              f"min_items={args.min_items}")
+        print(f"     motifs dir -> {motifs_root}")
 
 
 if __name__ == "__main__":

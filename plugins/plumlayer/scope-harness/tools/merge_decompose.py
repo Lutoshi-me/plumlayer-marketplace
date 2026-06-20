@@ -83,6 +83,11 @@ def main() -> None:
             applies = it.get("appliesTo")
             if isinstance(applies, list) and applies:
                 merged_item["appliesTo"] = [str(a) for a in applies]
+            # v0.5: carry optional motif-grounded count fields through (omit when absent)
+            if it.get("groundedCount") is not None:
+                merged_item["groundedCount"] = it["groundedCount"]
+            if it.get("motifRef") is not None:
+                merged_item["motifRef"] = it["motifRef"]
             items.append(merged_item)
         per_sheet.append((sid, len(sheet_items)))
 

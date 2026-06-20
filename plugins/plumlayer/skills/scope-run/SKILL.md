@@ -129,15 +129,22 @@ python "$PLUGIN/tools/select_cluster.py" --pdf "$PDF" --set-id <SETID> \
   --out ./output/scope/<job>/selected_sheets.json
 # 1c. Render + tile ONLY the cluster's sheets. Tiling is REQUIRED for schedule sheets
 #     (a full 42" sheet through one image read downsamples to illegible mush).
+#     --motifs adds deterministic congruent-symbol counts alongside tiles and anchors.
 python "$PLUGIN/tools/build_reading_packet.py" --pdf "$PDF" \
   --selected ./output/scope/<job>/selected_sheets.json \
-  --out-dir ./output/scope/<job>/packet/ --tiles --tile-dpi 200 --target-tile-px 2800
+  --out-dir ./output/scope/<job>/packet/ --tiles --tile-dpi 200 --target-tile-px 2800 \
+  --motifs
 ```
 *Gate:* citations key on **pageNum + sheetId-from-page**; extracted sheetNo/title are best-effort
 labels. Produces `packet/packet_manifest.json` + `tiles_manifest.json` + `packet/tiles/<sheetId>/` +
 **`packet/anchors/<sheetId>.jsonl`** — deterministic per-sheet text tokens (`{i,text,bboxNorm}`, in the
 tile coordinate frame): the decomposer's ground truth for the *words* on the sheet. A genuinely no-text
 (scanned) sheet warns honestly (`hasTextAnchors:false`) rather than emitting empty anchors.
+Also produces **`packet/motifs/<sheetId>.json`** — deterministic congruent-geometry motifs with grounded
+counts (`{motifId, count, symbolLikely, innerTextSamples, instances[bboxNorm], exemplar.bboxNorm}`, in the
+same 0–1 tile frame): the decomposer's grounded count reference for repeated symbols. A scanned or
+zero-motif sheet sets `hasMotifs:false` and WARNs honestly — no motif file is written. The manifest
+records `hasMotifs`/`motifPath`/`motifCount`/`symbolLikelyCount` per sheet.
 
 **2 · Decompose** *(agent read → deterministic merge)* — trade-agnostic scope, one reader per sheet.
 - For **each scope-bearing sheet** in `packet_manifest.json`, dispatch a **`scope-decomposer`**
@@ -145,7 +152,10 @@ tile coordinate frame): the decomposer's ground truth for the *words* on the she
   **`grainLevel`** from the config (e.g. `bid`), the tiles dir `packet/tiles/<sheetId>/`, the
   **text-anchor file `packet/anchors/<sheetId>.jsonl`** (deterministic text — it reads the *words* from
   the anchors and the *layout/meaning* from the tiles, instead of re-deriving text from pixels), the
-  write path `decompose/raw_<sheetId>.json`, and to consult `$PLUGIN/reference/drawing-set-literacy.md`
+  **motif file `packet/motifs/<sheetId>.json`** when `hasMotifs` is true (deterministic grounded counts
+  for repeated symbols — the decomposer cites the motif `count`+`motifId` for repeated-symbol quantities
+  instead of eyeballing from pixels; words from anchors, layout+meaning from tiles, COUNTS from motifs),
+  the write path `decompose/raw_<sheetId>.json`, and to consult `$PLUGIN/reference/drawing-set-literacy.md`
   §3 for the sheet-type → scope-payload frame (a schedule reads column-wise and dense; a details sheet
   yields only governing conditions). **Issue all per-sheet dispatches in ONE message → parallel.**
 ```bash
