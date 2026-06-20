@@ -28,6 +28,22 @@ Tiling (tiling is first-class):
   roughly the same legible density regardless of sheet size. Pass --grid RxC to
   force a fixed grid instead.
 
+Text anchors (self-produced into the packet):
+  During the per-sheet render pass this script extracts page.get_text("words") and
+  writes a per-sheet JSONL into <out-dir>/anchors/<sheet_id>.jsonl. One JSON object
+  per line: {"i": <int>, "text": "<token>", "bboxNorm": [x0,y0,x1,y1]}.
+
+  bboxNorm is in 0..1 in the SAME rotation-aware sheet-fraction frame the tiles use
+  (page.rect coordinates). get_text("words") returns raw unrotated PDF user-space
+  coords; each word bbox is mapped through page.rotation_matrix before normalizing,
+  so tokens on a rot=90/270 sheet land at the bboxNorm matching their visual position
+  on the rendered tiles. Scanned/flattened sheets with zero words produce no anchor
+  file and are WARN'd honestly; hasTextAnchors stays false for those.
+
+  --anchor-dir overrides the default and reads pre-produced JSONL files from an
+  external directory instead of self-producing them. When both apply (self-produced
+  and override), the override takes precedence.
+
 Usage:
   python build_reading_packet.py \\
     --pdf <arch.pdf> \\
@@ -35,7 +51,7 @@ Usage:
     --out-dir output/scope/packet/ \\
     [--dpi 150] \\
     [--only A-400,A-401,...] \\
-    [--anchor-dir <dir containing per-sheet .jsonl files>] \\
+    [--anchor-dir <override dir with pre-produced per-sheet .jsonl files>] \\
     [--tiles] [--tile-dpi 200] [--overlap 0.06] \\
     [--grid 3x3 | --target-tile-px 2800]
 """
@@ -196,6 +212,61 @@ def _render_tiles(
 
 
 # ---------------------------------------------------------------------------
+# Text-anchor extraction
+# ---------------------------------------------------------------------------
+
+def _extract_text_anchors(page: fitz.Page, anchor_path: Path) -> int:
+    """Extract text tokens from *page* and write a JSONL anchor file.
+
+    Each line: {"i": <int>, "text": "<token>", "bboxNorm": [x0,y0,x1,y1]}
+
+    bboxNorm is in 0..1 in the rotation-aware displayed frame (page.rect), so
+    tokens on rotated sheets match the tile coordinate system.  The mapping
+    applies page.rotation_matrix to each raw word bbox corner then normalises
+    by page.rect dimensions — for rot=0 the matrix is the identity and raw
+    coords == displayed coords.
+
+    Returns the number of tokens written, or 0 if the page has no text layer
+    (scanned/flattened). The caller is responsible for warning on 0 tokens and
+    for NOT creating the anchor file in that case.
+    """
+    words = page.get_text("words")
+    if not words:
+        return 0
+
+    rm = page.rotation_matrix
+    W = page.rect.width
+    H = page.rect.height
+
+    anchor_path.parent.mkdir(parents=True, exist_ok=True)
+    with anchor_path.open("w", encoding="utf-8") as fh:
+        for i, w in enumerate(words):
+            x0r, y0r, x1r, y1r = w[0], w[1], w[2], w[3]
+            text = w[4]
+
+            # Transform each corner through the rotation matrix so that tokens
+            # on rot=90/270 sheets map to the same frame the tiles are rendered
+            # in.  Take min/max to produce an axis-aligned bbox (the rotation
+            # can swap x0/x1 and y0/y1 relative to each other).
+            p00 = fitz.Point(x0r, y0r) * rm
+            p11 = fitz.Point(x1r, y1r) * rm
+            tx0 = min(p00.x, p11.x)
+            ty0 = min(p00.y, p11.y)
+            tx1 = max(p00.x, p11.x)
+            ty1 = max(p00.y, p11.y)
+
+            bboxNorm = [
+                round(tx0 / W, 4),
+                round(ty0 / H, 4),
+                round(tx1 / W, 4),
+                round(ty1 / H, 4),
+            ]
+            fh.write(json.dumps({"i": i, "text": text, "bboxNorm": bboxNorm}) + "\n")
+
+    return len(words)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -221,7 +292,11 @@ def main() -> None:
     parser.add_argument(
         "--anchor-dir",
         default=None,
-        help="Directory containing per-sheet text-anchor .jsonl files",
+        help=(
+            "Override: directory containing pre-produced per-sheet text-anchor "
+            ".jsonl files. If omitted, anchors are self-produced into "
+            "<out-dir>/anchors/ during the render pass."
+        ),
     )
     # --- tiling ---
     parser.add_argument(
@@ -278,13 +353,10 @@ def main() -> None:
 
     subset = _resolve_subset(selected_sheets, only_sheet_nos)
 
-    # anchor dir — default to the ingestion output directory within the plugin
-    if args.anchor_dir:
-        anchor_dir = Path(args.anchor_dir)
-    else:
-        anchor_dir = (
-            Path(__file__).parent.parent / "ingestion" / "output"
-        )
+    # anchor dir — --anchor-dir overrides with pre-produced external files;
+    # default is self-produce into <out-dir>/anchors/ during the render pass.
+    override_anchor_dir: Path | None = Path(args.anchor_dir) if args.anchor_dir else None
+    self_anchor_dir = out_dir / "anchors"
 
     # open PDF
     doc = fitz.open(str(pdf_path))
@@ -316,13 +388,33 @@ def main() -> None:
         pix.save(str(img_path))
         rendered_count += 1
 
-        # text anchors
-        anchor_file = _find_anchor_file(anchor_dir, sheet_id) if sheet_id else None
-        has_anchors = anchor_file is not None
+        # text anchors — self-produce from the PDF text layer, or use override
+        anchor_count = 0
+        anchor_file: Path | None = None
+
+        if sheet_id and override_anchor_dir is not None:
+            # --anchor-dir supplied: read pre-produced file (original behaviour)
+            anchor_file = _find_anchor_file(override_anchor_dir, sheet_id)
+            if anchor_file is not None:
+                # count lines in the override file so manifest is accurate
+                try:
+                    with anchor_file.open("r", encoding="utf-8") as _fh:
+                        anchor_count = sum(1 for ln in _fh if ln.strip())
+                except OSError:
+                    anchor_file = None
+                    anchor_count = 0
+        elif sheet_id:
+            # default: self-produce into <out-dir>/anchors/
+            candidate = self_anchor_dir / f"{sheet_id}.jsonl"
+            anchor_count = _extract_text_anchors(page, candidate)
+            if anchor_count > 0:
+                anchor_file = candidate
+
+        has_anchors = anchor_file is not None and anchor_count > 0
         if not has_anchors:
             print(
                 f"[warn] no text anchors for {sheet_no} ({sheet_id}) - "
-                f"agent reads pixels, cites estimated region",
+                f"scanned/flattened sheet; agent reads pixels, cites estimated region",
                 file=sys.stderr,
             )
 
@@ -333,6 +425,7 @@ def main() -> None:
             "title": title,
             "imagePath": str(img_path),
             "hasTextAnchors": has_anchors,
+            "textAnchorCount": anchor_count if has_anchors else 0,
             "tiled": False,
         }
         if has_anchors:

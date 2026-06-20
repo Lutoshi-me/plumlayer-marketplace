@@ -134,12 +134,17 @@ python "$PLUGIN/tools/build_reading_packet.py" --pdf "$PDF" \
   --out-dir ./output/scope/<job>/packet/ --tiles --tile-dpi 200 --target-tile-px 2800
 ```
 *Gate:* citations key on **pageNum + sheetId-from-page**; extracted sheetNo/title are best-effort
-labels. Produces `packet/packet_manifest.json` + `tiles_manifest.json` + `packet/tiles/<sheetId>/`.
+labels. Produces `packet/packet_manifest.json` + `tiles_manifest.json` + `packet/tiles/<sheetId>/` +
+**`packet/anchors/<sheetId>.jsonl`** — deterministic per-sheet text tokens (`{i,text,bboxNorm}`, in the
+tile coordinate frame): the decomposer's ground truth for the *words* on the sheet. A genuinely no-text
+(scanned) sheet warns honestly (`hasTextAnchors:false`) rather than emitting empty anchors.
 
 **2 · Decompose** *(agent read → deterministic merge)* — trade-agnostic scope, one reader per sheet.
 - For **each scope-bearing sheet** in `packet_manifest.json`, dispatch a **`scope-decomposer`**
   (`subagent_type: scope-decomposer`). Tell it: the sheet's `sheetId/sheetNo/title/pageNum`, the
   **`grainLevel`** from the config (e.g. `bid`), the tiles dir `packet/tiles/<sheetId>/`, the
+  **text-anchor file `packet/anchors/<sheetId>.jsonl`** (deterministic text — it reads the *words* from
+  the anchors and the *layout/meaning* from the tiles, instead of re-deriving text from pixels), the
   write path `decompose/raw_<sheetId>.json`, and to consult `$PLUGIN/reference/drawing-set-literacy.md`
   §3 for the sheet-type → scope-payload frame (a schedule reads column-wise and dense; a details sheet
   yields only governing conditions). **Issue all per-sheet dispatches in ONE message → parallel.**
