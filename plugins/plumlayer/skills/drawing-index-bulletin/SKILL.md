@@ -82,7 +82,7 @@ If a new prefix appears (e.g. an architect introduces a `K-` for kitchen), the s
 
 ### 2. Page-by-page title-block scan
 
-`pdftotext -layout` ⇒ split on form-feed ⇒ for each page, find the sheet number in the bottom-right title-block region (rightmost matching token in the bottom 30% of non-empty lines). Same heuristic as `drawing-index`; same `SHEET_RE` regex.
+`pdftotext -layout` ⇒ split on form-feed ⇒ for each page, find the sheet number in the bottom-right title-block region (rightmost matching token in the bottom 30% of non-empty lines). Same heuristic as `drawing-index`, but a stricter `SHEET_RE`: the bulletin regex requires a hyphen separator (e.g. `A-100`, `LS-001`) and does NOT match hyphen-less formats like `A05`, `LS001`, or `M201` that `drawing-index` handles via a no-dash branch. If the project uses hyphen-less sheet numbers the completeness guard will abort and report the grammar mismatch — use the PLU-182 foundation pass instead.
 
 ### 3. Sheet title extraction
 

@@ -539,6 +539,47 @@ def main():
     with pdfplumber.open(os.path.join(folder, list_pdf)) as pdf:
         listed_rows, total_claimed = parse_drawing_list(pdf.pages[list_page_idx])
 
+    # --- FM-8 completeness guard ---
+    # If the architect's drawing list footer declares a total sheet count and our
+    # parse recovered significantly fewer rows, the index is incomplete — likely
+    # because the sheet-number grammar in this project's drawing list was not
+    # matched by SHEET_RE (e.g. pure-numeric or non-standard prefixes).  Presenting
+    # a partial result as a clean index would be a silent false-clean (FM-8).
+    # Guard is applied only when total_claimed is present; without it we have no
+    # denominator and cannot assert incompleteness.
+    _COMPLETENESS_THRESHOLD = 0.75
+    if total_claimed is not None and total_claimed > 0:
+        _match_rate = len(listed_rows) / total_claimed
+        if _match_rate < _COMPLETENESS_THRESHOLD:
+            print("", file=sys.stderr)
+            print("=" * 70, file=sys.stderr)
+            print("ERROR: INCOMPLETE INDEX — DO NOT TRUST THIS OUTPUT", file=sys.stderr)
+            print("=" * 70, file=sys.stderr)
+            print(
+                f"  Parsed only {len(listed_rows)} of {total_claimed} listed sheets "
+                f"({_match_rate * 100:.1f}%) from the master drawing list — index is "
+                "INCOMPLETE and must not be trusted.",
+                file=sys.stderr,
+            )
+            print(
+                "  Likely cause: sheet-number grammar in the G-001 drawing list was\n"
+                "  not matched by this skill's SHEET_RE (e.g. pure-numeric, non-\n"
+                "  standard prefix, or heavily formatted table rows not parsed).",
+                file=sys.stderr,
+            )
+            print(
+                "  Path forward: use the PLU-182 foundation pass, which reads any\n"
+                "  sheet-numbering format via a broader grammar.",
+                file=sys.stderr,
+            )
+            print("=" * 70, file=sys.stderr)
+            sys.exit(
+                f"Aborting: only {len(listed_rows)}/{total_claimed} "
+                f"({_match_rate * 100:.1f}%) sheets parsed from master list — "
+                "index would be incomplete."
+            )
+    # --- end FM-8 guard ---
+
     # Group listed rows by discipline, preserving the architect's order
     listed_by_disc: "OrderedDict[str, list[tuple[str, str, str]]]" = OrderedDict()
     for r in listed_rows:

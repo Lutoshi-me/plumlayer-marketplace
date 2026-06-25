@@ -368,6 +368,46 @@ def main():
         out_rows.append([disc, sn, "", drawings_pdf, str(i + 1)])
         pdf_sheets.add(sn)
 
+    # --- FM-8 completeness guard ---
+    # If fewer than 75% of pages yielded a recognisable sheet number, the index is
+    # systematically incomplete — likely because the sheet-numbering grammar used by
+    # this project is not matched by this skill's SHEET_RE (e.g. hyphen-less numbers
+    # like A05, FP000, LS001 are not read by the bulletin regex).  Presenting a
+    # partial result as a clean index would be a silent false-clean (FM-8).
+    _total_pages = len(pages_text)
+    _matched_pages = len(out_rows)
+    _match_rate = _matched_pages / _total_pages if _total_pages > 0 else 0.0
+    _COMPLETENESS_THRESHOLD = 0.75
+
+    if _match_rate < _COMPLETENESS_THRESHOLD:
+        print("", file=sys.stderr)
+        print("=" * 70, file=sys.stderr)
+        print("ERROR: INCOMPLETE INDEX — DO NOT TRUST THIS OUTPUT", file=sys.stderr)
+        print("=" * 70, file=sys.stderr)
+        print(
+            f"  Read only {_matched_pages} of {_total_pages} pages "
+            f"({_match_rate * 100:.1f}%) — index is INCOMPLETE and must not be trusted.",
+            file=sys.stderr,
+        )
+        print(
+            "  Likely cause: sheet-numbering grammar not matched by this skill's "
+            "SHEET_RE.\n"
+            "  Examples: hyphen-less numbers such as A05, FP000, LS001, M201 are NOT\n"
+            "  read by the bulletin regex (which requires a hyphen, e.g. A-100).",
+            file=sys.stderr,
+        )
+        print(
+            "  Path forward: use the PLU-182 foundation pass, which reads any\n"
+            "  sheet-numbering format via a broader grammar.",
+            file=sys.stderr,
+        )
+        print("=" * 70, file=sys.stderr)
+        sys.exit(
+            f"Aborting: only {_matched_pages}/{_total_pages} pages ({_match_rate * 100:.1f}%) "
+            f"matched — index would be incomplete."
+        )
+    # --- end FM-8 guard ---
+
     # Narrative cross-check
     narrative_sheets, deletions, specs = parse_narrative(
         os.path.join(folder, narrative_pdf) if narrative_pdf else ""
