@@ -21,6 +21,11 @@ required, value required non-null, evidence/ambiguityClass optional):
   * A scope item whose tradeContest is "contested" or "unowned" is flagged with
     ambiguityClass on every one of its rows, so it surfaces in the `ambiguities` review
     ledger — these are the RFI pile, the highest-value human-review surface.
+  * A row that already carries its OWN ambiguityClass (e.g. a "discipline-uncertain"
+    discipline claim from derive_set_claims.py) keeps it — the marker is passed through to
+    the propose arg so it counts toward openAmbiguities. The tradeContest-derived class
+    takes precedence when a row somehow has both (they do not collide in practice: scope
+    rows have no row-level class, ingestion rows have no tradeContest).
 
 Batch output (--batch-dir / --batch-size):
   * Writes the deposit list split into pretty-printed JSON array files of <=batch_size
@@ -118,6 +123,15 @@ def prepare(
         if evidence:
             arg["evidence"] = evidence
 
+        # Pass through a row's own ambiguityClass (e.g. "discipline-uncertain" from
+        # derive_set_claims.py) so the marker reaches the MOSOT and counts toward
+        # openAmbiguities. Without this it would be silently dropped here.
+        row_amb = r.get("ambiguityClass")
+        if isinstance(row_amb, str) and row_amb:
+            arg["ambiguityClass"] = row_amb
+
+        # tradeContest-derived ambiguity (scope harness): contested/unowned items surface
+        # in the ambiguities ledger. Takes precedence when both are present.
         c = contest.get(r["subject"])
         if c in ("contested", "unowned"):
             arg["ambiguityClass"] = c
@@ -222,7 +236,8 @@ def main() -> None:
     preds = Counter(d["predicate"] for d in deposit)
     print(f"[ok] {len(deposit)} claims across {len(subjects)} scope items -> {args.out}")
     print(f"[ok] dropped {dropped} null-value rows (not depositable)", file=sys.stderr)
-    print(f"[ok] {len(flagged)} items flagged ambiguous (contested/unowned)", file=sys.stderr)
+    print(f"[ok] {len(flagged)} items flagged ambiguous (ambiguityClass set: "
+          f"contested/unowned or discipline-uncertain)", file=sys.stderr)
     print(f"[info] predicate counts: {dict(preds)}", file=sys.stderr)
 
     batch_dir = Path(args.batch_dir) if args.batch_dir else out_path.parent / "deposit_batches"

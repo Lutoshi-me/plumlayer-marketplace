@@ -23,7 +23,7 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
-from prepare_deposit import write_batches, BatchManifest  # noqa: E402
+from prepare_deposit import write_batches, BatchManifest, prepare  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -191,3 +191,41 @@ def test_manifest_is_indented(tmp_path: Path) -> None:
     write_batches(deposit, batch_dir, 50)
     raw = (batch_dir / "deposit_manifest.json").read_text(encoding="utf-8")
     assert "\n" in raw, "manifest is not pretty-printed"
+
+
+# ---------------------------------------------------------------------------
+# prepare() — ambiguityClass handling (row-level passthrough + tradeContest)
+# ---------------------------------------------------------------------------
+
+def test_prepare_passes_through_row_ambiguity_class() -> None:
+    """A row's OWN ambiguityClass (e.g. 'discipline-uncertain' from derive_set_claims.py)
+    must reach the propose arg — without this the marker is silently dropped and never
+    counts toward openAmbiguities."""
+    rows = [{
+        "subject": "sheet:PV-101", "predicate": "discipline", "value": "Plumbing(?)",
+        "ambiguityClass": "discipline-uncertain",
+    }]
+    deposit, dropped = prepare(rows)
+    assert dropped == 0
+    assert len(deposit) == 1
+    assert deposit[0]["ambiguityClass"] == "discipline-uncertain"
+
+
+def test_prepare_confident_row_carries_no_ambiguity_class() -> None:
+    """A row without an ambiguityClass and no tradeContest must NOT gain one."""
+    rows = [{"subject": "sheet:A-101", "predicate": "discipline", "value": "Architectural"}]
+    deposit, _ = prepare(rows)
+    assert "ambiguityClass" not in deposit[0]
+
+
+def test_prepare_tradecontest_takes_precedence() -> None:
+    """When a scope item carries a tradeContest, that class governs its rows (unchanged
+    scope-harness behavior); it is not masked by the row-level passthrough."""
+    rows = [
+        {"subject": "item-1", "predicate": "tradeContest", "value": "contested"},
+        {"subject": "item-1", "predicate": "description", "value": "patch the slab",
+         "ambiguityClass": "discipline-uncertain"},  # should be overridden by tradeContest
+    ]
+    deposit, _ = prepare(rows)
+    desc = next(d for d in deposit if d["predicate"] == "description")
+    assert desc["ambiguityClass"] == "contested"
