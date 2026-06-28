@@ -1,0 +1,838 @@
+"""
+test_schedule_ground.py -- pytest coverage for schedule_ground.py.
+
+Tests the pure ground-phase functions against synthetic fixtures.
+No confidential data — all codes, values, and column names are fabricated.
+
+Covers:
+  - canon_code: valid marks, invalid inputs, triple-hyphen extension (E-36-D1)
+  - _cluster_rows: y-band grouping, tolerance, greedy merge
+  - _assign_column: span-to-column assignment by x-interval, slop, outside-all
+  - _stitch: multi-span cell join (text order, bbox union)
+  - _norm_predicate: camelCase normalisation
+  - _ground_tabular: full table grounding on a synthetic fixture
+  - _ground_tabular continuation-row merge: empty-key rows merge into parent
+  - _ground_tabular instance-table flag: ambiguityClass:"instance" on all claims
+  - _ground_matrix: code-column matrix on synthetic fixture
+  - _ground_entry: end-to-end with JSONL span file + manifest entry
+  - zero-invented assertion: all claim values traced to input span text
+
+Stdlib + pytest only. No PDF, no network, no cloud.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+import tempfile
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "ingestion"))
+
+from schedule_ground import (  # noqa: E402
+    canon_code,
+    _cluster_rows,
+    _assign_column,
+    _stitch,
+    _norm_predicate,
+    _ground_tabular,
+    _ground_matrix,
+    _ground_entry,
+)
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _span(text: str, x0: float, y0: float, x1: float, y1: float) -> dict:
+    """Build a synthetic span dict in the same shape the ground phase expects."""
+    return {"text": text, "bbox": [x0, y0, x1, y1]}
+
+
+META_PREDS = {"locatedAt", "definedOnSheet", "partOfIssue"}
+
+
+def _attr_claims(claims: list[dict]) -> list[dict]:
+    """Return only attribute (non-meta) claims."""
+    return [c for c in claims if c["predicate"] not in META_PREDS]
+
+
+# ---------------------------------------------------------------------------
+# canon_code
+# ---------------------------------------------------------------------------
+
+class TestCanonCode:
+    # --- valid marks ---
+    def test_simple_alpha_digit(self):
+        assert canon_code("A1") == "A1"
+
+    def test_hyphen_digit(self):
+        assert canon_code("F-1") == "F-1"
+
+    def test_four_letter_prefix(self):
+        assert canon_code("DOAS-1") == "DOAS-1"
+
+    def test_trailing_alpha(self):
+        assert canon_code("P-1A") == "P-1A"
+
+    def test_all_alpha_short(self):
+        assert canon_code("HM") == "HM"
+        assert canon_code("U") == "U"
+
+    def test_double_hyphen_numeric(self):
+        assert canon_code("WD-1-4") == "WD-1-4"
+
+    # --- triple-hyphen extension (refinement 1) ---
+    def test_triple_hyphen_alpha_digit(self):
+        """E-36-D1 style: alpha-digit after the second hyphen."""
+        assert canon_code("E-36-D1") == "E-36-D1"
+        assert canon_code("E-36-D8") == "E-36-D8"
+        assert canon_code("A-12-B3") == "A-12-B3"
+
+    # --- letter-only-suffix codes (FD-A, RD-B, OFD-A) ---
+    def test_letter_hyphen_letter(self):
+        """FD-A, RD-B, OFD-A style: alpha prefix + hyphen + 1-3 alpha."""
+        assert canon_code("FD-A") == "FD-A"
+        assert canon_code("RD-B") == "RD-B"
+        assert canon_code("AD-A") == "AD-A"
+        assert canon_code("OFD-A") == "OFD-A"
+        assert canon_code("TD-A") == "TD-A"
+
+    # --- unit-prefix codes (U-CW-1, U-AP-10, U-FX-1A) ---
+    def test_unit_prefix_codes(self):
+        """U-CW-1, U-AP-10, U-FX-1A style: alpha + alpha-segment + digit."""
+        assert canon_code("U-CW-1") == "U-CW-1"
+        assert canon_code("U-AP-10") == "U-AP-10"
+        assert canon_code("U-FX-1A") == "U-FX-1A"
+        assert canon_code("U-FL-3") == "U-FL-3"
+
+    # --- unit-prefix with trailing alt suffix (U-SH-1-ALT) ---
+    def test_unit_prefix_alt_suffix(self):
+        """U-SH-1-ALT style: alpha + alpha-segment + digit + alpha-suffix."""
+        assert canon_code("U-SH-1-ALT") == "U-SH-1-ALT"
+
+    # --- denylist (note-words that match the regex but are not marks) ---
+    def test_denylist_note_words_rejected(self):
+        """Common note abbreviations must not become schedule subjects."""
+        for word in ("NTS", "TYP", "YES", "NO", "TBD", "EQ", "AFF", "NIC", "VIF",
+                     "GC", "PC", "EC", "MC", "SEE", "BY", "OR", "OF"):
+            with pytest.raises(ValueError, match="denylist"):
+                canon_code(word)
+
+    def test_short_marks_not_on_denylist_accepted(self):
+        """Legit short marks that resemble note-words must still pass."""
+        # HM, STD, U are real marks not on the denylist
+        assert canon_code("HM") == "HM"
+        assert canon_code("U") == "U"
+        assert canon_code("STD") == "STD"
+
+    # --- invalid marks ---
+    def test_empty(self):
+        with pytest.raises(ValueError):
+            canon_code("")
+
+    def test_pure_numeric(self):
+        with pytest.raises(ValueError):
+            canon_code("162")
+
+    def test_too_long(self):
+        with pytest.raises(ValueError):
+            canon_code("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+    def test_has_space(self):
+        with pytest.raises(ValueError):
+            canon_code("B05 EMR")
+
+    def test_three_hyphens(self):
+        with pytest.raises(ValueError):
+            canon_code("A-1-2-3")
+
+    def test_uppercase_normalise(self):
+        assert canon_code("p-2") == "P-2"
+
+    def test_multi_char_trailing(self):
+        # Only one trailing alpha allowed
+        with pytest.raises(ValueError):
+            canon_code("P-1AB")
+
+
+# ---------------------------------------------------------------------------
+# _cluster_rows
+# ---------------------------------------------------------------------------
+
+class TestClusterRows:
+    def test_empty(self):
+        assert _cluster_rows([]) == []
+
+    def test_single(self):
+        s = _span("X", 0, 10, 5, 20)   # cy = 15
+        rows = _cluster_rows([s])
+        assert len(rows) == 1
+        assert rows[0] == [s]
+
+    def test_two_close_rows_merge(self):
+        """cy differ by 5pt (within ROW_Y_TOL=6)."""
+        a = _span("A", 0, 10, 5, 20)   # cy=15
+        b = _span("B", 0, 12, 5, 22)   # cy=17
+        rows = _cluster_rows([a, b])
+        assert len(rows) == 1
+        assert set(s["text"] for s in rows[0]) == {"A", "B"}
+
+    def test_two_separate_rows(self):
+        """cy differ by 20pt (outside ROW_Y_TOL=6)."""
+        a = _span("A", 0, 10, 5, 20)   # cy=15
+        b = _span("B", 0, 40, 5, 50)   # cy=45
+        rows = _cluster_rows([a, b])
+        assert len(rows) == 2
+
+    def test_three_row_table(self):
+        rows_in = [
+            _span("R1", 0, 10, 5, 20),  # cy=15
+            _span("R2", 0, 30, 5, 40),  # cy=35
+            _span("R3", 0, 50, 5, 60),  # cy=55
+        ]
+        rows = _cluster_rows(rows_in)
+        assert len(rows) == 3
+
+    def test_row_order_by_y(self):
+        """Result rows are ordered top-to-bottom."""
+        a = _span("A", 0, 50, 5, 60)  # cy=55 -- lower on page
+        b = _span("B", 0, 10, 5, 20)  # cy=15 -- higher on page
+        rows = _cluster_rows([a, b])
+        # First row should be the one with cy=15
+        assert rows[0][0]["text"] == "B"
+        assert rows[1][0]["text"] == "A"
+
+
+# ---------------------------------------------------------------------------
+# _assign_column
+# ---------------------------------------------------------------------------
+
+class TestAssignColumn:
+    @pytest.fixture
+    def key_col(self):
+        return {"name": "code", "xLeft": 0.0, "xRight": 100.0}
+
+    @pytest.fixture
+    def cols(self):
+        return [
+            {"name": "descr", "xLeft": 100.0, "xRight": 300.0},
+            {"name": "size",  "xLeft": 300.0, "xRight": 400.0},
+        ]
+
+    def test_assigns_to_key(self, key_col, cols):
+        s = _span("X", 40, 0, 60, 10)  # cx=50 -> key
+        assert _assign_column(s, key_col, cols) == "code"
+
+    def test_assigns_to_first_attr(self, key_col, cols):
+        s = _span("X", 150, 0, 250, 10)  # cx=200 -> descr
+        assert _assign_column(s, key_col, cols) == "descr"
+
+    def test_assigns_to_second_attr(self, key_col, cols):
+        s = _span("X", 320, 0, 380, 10)  # cx=350 -> size
+        assert _assign_column(s, key_col, cols) == "size"
+
+    def test_outside_returns_none(self, key_col, cols):
+        s = _span("X", 410, 0, 450, 10)  # cx=430 -> outside all
+        assert _assign_column(s, key_col, cols) is None
+
+    def test_slop_catches_slightly_outside(self, key_col, cols):
+        """Span cx=401 is 1pt past xRight=400 but within X_SLOP_PT=4."""
+        s = _span("X", 398, 0, 404, 10)  # cx=401
+        # Should assign to "size" (xRight=400, slop=4 -> passes)
+        assert _assign_column(s, key_col, cols) == "size"
+
+
+# ---------------------------------------------------------------------------
+# _stitch
+# ---------------------------------------------------------------------------
+
+class TestStitch:
+    def test_empty(self):
+        text, bbox = _stitch([])
+        assert text == ""
+        assert bbox == []
+
+    def test_single_span(self):
+        s = _span("PELICAN", 100, 10, 200, 20)
+        text, bbox = _stitch([s])
+        assert text == "PELICAN"
+        assert bbox == [100.0, 10.0, 200.0, 20.0]
+
+    def test_two_spans_left_to_right(self):
+        a = _span("SEE", 100, 10, 130, 20)   # cy=15
+        b = _span("FLOOR", 140, 10, 190, 20)  # cy=15, further right
+        text, bbox = _stitch([b, a])  # order shouldn't matter, sorts by cy then cx
+        assert text == "SEE FLOOR"
+        assert bbox[0] == 100.0   # leftmost x0
+        assert bbox[2] == 190.0   # rightmost x1
+
+    def test_two_spans_top_to_bottom(self):
+        """Multi-line cell: sorted by cy then cx."""
+        a = _span("SEE FLOOR", 100, 10, 190, 20)   # cy=15
+        b = _span("PLANS", 140, 25, 180, 35)        # cy=30
+        text, bbox = _stitch([b, a])
+        assert text == "SEE FLOOR PLANS"
+
+    def test_bbox_is_union(self):
+        a = _span("A", 10, 5, 50, 15)
+        b = _span("B", 60, 20, 100, 30)
+        _, bbox = _stitch([a, b])
+        assert bbox == [10.0, 5.0, 100.0, 30.0]
+
+
+# ---------------------------------------------------------------------------
+# _norm_predicate
+# ---------------------------------------------------------------------------
+
+class TestNormPredicate:
+    def test_fire_rating(self):
+        assert _norm_predicate("FIRE RATING") == "fireRating"
+
+    def test_trap_waste_slash(self):
+        assert _norm_predicate("TRAP / WASTE") == "trapWaste"
+
+    def test_single_word(self):
+        assert _norm_predicate("MANUFACTURER") == "manufacturer"
+
+    def test_with_parens(self):
+        assert _norm_predicate("SUPPLY (CW)") == "supplyCw"
+
+    def test_empty(self):
+        assert _norm_predicate("") == "unknown"
+
+    def test_preserves_digit(self):
+        # Numbers in predicate names should stay
+        assert _norm_predicate("ZONE 1") == "zone1"
+
+
+# ---------------------------------------------------------------------------
+# _ground_tabular -- basic extraction
+# ---------------------------------------------------------------------------
+
+def _make_tabular_col_map(
+    kind: str = "lightingType",
+    table_type: str = "definition",
+    region_bbox: list = None,
+) -> dict:
+    """Return a minimal col_map for a 3-column synthetic fixture table."""
+    return {
+        "tableTitle": "SYNTHETIC LIGHTING SCHEDULE",
+        "kind": kind,
+        "tableType": table_type,
+        "layout": "tabular",
+        "regionBbox": region_bbox or [0.0, 0.0, 500.0, 200.0],
+        "headerRowCount": 1,
+        "keyColumn": {"name": "type", "xLeft": 0.0, "xRight": 100.0},
+        "columns": [
+            {"name": "manufacturer", "xLeft": 100.0, "xRight": 250.0},
+            {"name": "watts",        "xLeft": 250.0, "xRight": 350.0},
+        ],
+    }
+
+
+def _make_tabular_spans() -> list[dict]:
+    """
+    Synthetic 3-row schedule:
+      Header row at y=10: "TYPE", "MANUFACTURER", "WATTS"
+      Data row 1 at y=30: "LC-1", "ACME CO", "40W"
+      Data row 2 at y=50: "LC-2", "BRIGHTCO", "60W"
+      Data row 3 at y=70: "LC-3", "DIMCO", "25W"
+    """
+    return [
+        # header row
+        _span("TYPE",         10,  5, 80, 15),
+        _span("MANUFACTURER", 110,  5, 240, 15),
+        _span("WATTS",        260,  5, 340, 15),
+        # data row 1
+        _span("LC-1",  10, 25, 70, 35),
+        _span("ACME CO", 110, 25, 220, 35),
+        _span("40W",   260, 25, 320, 35),
+        # data row 2
+        _span("LC-2",  10, 45, 70, 55),
+        _span("BRIGHTCO", 110, 45, 230, 55),
+        _span("60W",   260, 45, 320, 55),
+        # data row 3
+        _span("LC-3",  10, 65, 70, 75),
+        _span("DIMCO", 110, 65, 200, 75),
+        _span("25W",   260, 65, 320, 75),
+    ]
+
+
+class TestGroundTabularBasic:
+    @pytest.fixture
+    def col_map(self):
+        return _make_tabular_col_map()
+
+    @pytest.fixture
+    def spans(self):
+        return _make_tabular_spans()
+
+    def test_extracts_three_codes(self, col_map, spans):
+        claims, residue = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        codes = {c["subject"] for c in _attr_claims(claims)}
+        assert codes == {"lightingType:LC-1", "lightingType:LC-2", "lightingType:LC-3"}
+
+    def test_no_residue(self, col_map, spans):
+        _, residue = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        assert residue == []
+
+    def test_attribute_claim_shape(self, col_map, spans):
+        claims, _ = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        # Find the manufacturer claim for LC-1
+        c = next(x for x in claims
+                 if x["subject"] == "lightingType:LC-1" and x["predicate"] == "manufacturer")
+        assert c["value"] == "ACME CO"
+        assert c["trustClass"] == "proposed"
+        assert c["evidence"][0]["method"] == "schedule-parse"
+        assert "bboxPts" in c["evidence"][0]["locator"]
+        assert c.get("ambiguityClass") is None
+
+    def test_located_at_claim(self, col_map, spans):
+        claims, _ = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        loc = next(x for x in claims
+                   if x["subject"] == "lightingType:LC-1" and x["predicate"] == "locatedAt")
+        assert loc["value"]["sheetId"] == "sheet:A-01"
+        assert "bbox" in loc["value"]
+
+    def test_defined_on_sheet_claim(self, col_map, spans):
+        claims, _ = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        dos = next(x for x in claims
+                   if x["subject"] == "lightingType:LC-2" and x["predicate"] == "definedOnSheet")
+        assert dos["value"] == "sheet:A-01"
+
+    def test_all_values_in_input_spans(self, col_map, spans):
+        """Zero-invented: every claim value must appear in the input span texts."""
+        input_texts = {s["text"] for s in spans}
+        claims, _ = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        for c in _attr_claims(claims):
+            v = c["value"]
+            if isinstance(v, str):
+                # The value may be a stitch of multiple spans; each part in input_texts
+                for part in v.split():
+                    assert any(part in t for t in input_texts), (
+                        f"Claim value {v!r} not traceable to any input span"
+                    )
+
+    def test_deterministic(self, col_map, spans):
+        """Same input -> identical output."""
+        claims1, _ = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        claims2, _ = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        assert json.dumps(claims1) == json.dumps(claims2)
+
+
+# ---------------------------------------------------------------------------
+# _ground_tabular -- continuation-row merge (refinement 3)
+# ---------------------------------------------------------------------------
+
+class TestContinuationRowMerge:
+    """Continuation rows (empty key cell) must merge into the previous code row."""
+
+    def _col_map(self) -> dict:
+        return {
+            "tableTitle": "FIXTURE SCHEDULE",
+            "kind": "plumbingFixtureType",
+            "tableType": "definition",
+            "layout": "tabular",
+            "regionBbox": [0.0, 0.0, 500.0, 300.0],
+            "headerRowCount": 1,
+            "keyColumn": {"name": "designation", "xLeft": 0.0, "xRight": 100.0},
+            "columns": [
+                {"name": "description",  "xLeft": 100.0, "xRight": 250.0},
+                {"name": "areaLocation", "xLeft": 250.0, "xRight": 350.0},
+            ],
+        }
+
+    def test_continuation_merges_area_location(self):
+        """
+        P-1 row spans two y-bands:
+          y=30: "P-1"   "WATER CLOSET"   "SEE FLOOR"
+          y=50: (blank) (blank)           "PLANS"
+        """
+        spans = [
+            # header
+            _span("DESIGNATION", 10, 5, 80, 15),
+            _span("DESCRIPTION", 110, 5, 230, 15),
+            _span("AREA LOCATION", 260, 5, 340, 15),
+            # data row 1 (key row)
+            _span("P-1",          10, 25, 60, 35),
+            _span("WATER CLOSET", 110, 25, 210, 35),
+            _span("SEE FLOOR",    260, 25, 340, 35),
+            # data row 1 continuation (empty designation)
+            _span("PLANS",        260, 45, 310, 55),  # same col as "SEE FLOOR"
+            # data row 2
+            _span("P-2",          10, 70, 60, 80),
+            _span("LAVATORY",     110, 70, 190, 80),
+            _span("SEE FLOOR",    260, 70, 340, 80),
+        ]
+        claims, residue = _ground_tabular(self._col_map(), spans, "SET/337", "sheet:P-002", "IFC")
+
+        # A pure continuation row (no attribute spans in the continuation except the
+        # areaLocation text "PLANS") should NOT produce "leading-continuation-no-parent"
+        # since code_rows is non-empty at that point.  It should merge silently.
+        leading = [r for r in residue if r.get("reason") == "leading-continuation-no-parent"]
+        assert leading == [], f"Unexpected leading-continuation residue: {leading}"
+
+        # P-1's areaLocation should be "SEE FLOOR PLANS" (merged across two y-bands)
+        p1_area = next(
+            c for c in claims
+            if c["subject"] == "plumbingFixtureType:P-1" and c["predicate"] == "areaLocation"
+        )
+        assert p1_area["value"] == "SEE FLOOR PLANS"
+        # P-2 must also be captured
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert "plumbingFixtureType:P-2" in subjects
+
+    def test_multiple_continuation_rows(self):
+        """Comments column spans 3 continuation y-bands."""
+        spans = [
+            # header
+            _span("TYPE",    10, 5, 80, 15),
+            _span("COMMENT", 110, 5, 400, 15),
+            # key row
+            _span("LC-1", 10, 25, 70, 35),
+            _span("1. SEE DRAWINGS.", 110, 25, 380, 35),
+            # continuation 1
+            _span("2. PROVIDE DIMMER.", 110, 45, 380, 55),
+            # continuation 2
+            _span("3. VERIFY WITH EE.", 110, 65, 380, 75),
+        ]
+        col_map = {
+            "tableTitle": "LIGHTING SCHEDULE",
+            "kind": "lightingType",
+            "tableType": "definition",
+            "layout": "tabular",
+            "regionBbox": [0.0, 0.0, 500.0, 200.0],
+            "headerRowCount": 1,
+            "keyColumn": {"name": "type",    "xLeft": 0.0,   "xRight": 100.0},
+            "columns":   [{"name": "comment", "xLeft": 100.0, "xRight": 450.0}],
+        }
+        claims, residue = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+
+        # Mid-table continuation rows (with a parent code row present) merge silently —
+        # no residue emitted regardless of whether they carry attribute spans.
+        assert residue == [], f"Unexpected residue from mid-table continuations: {residue}"
+        c = next(x for x in claims
+                 if x["subject"] == "lightingType:LC-1" and x["predicate"] == "comment")
+        # All three numbered comments joined
+        assert "1. SEE DRAWINGS." in c["value"]
+        assert "2. PROVIDE DIMMER." in c["value"]
+        assert "3. VERIFY WITH EE." in c["value"]
+
+    def test_leading_continuation_no_attr_spans_goes_to_residue(self):
+        """A leading continuation with NO attribute spans emits leading-continuation-no-parent."""
+        spans = [
+            # header
+            _span("TYPE", 10, 5, 80, 15),
+            _span("DESC", 110, 5, 230, 15),
+            # blank row: no key, no attr spans (falls entirely outside both columns)
+            _span("NOTE", 360, 25, 390, 35),  # outside desc column (xRight=350)
+            # first real code row
+            _span("LC-1", 10, 45, 70, 55),
+            _span("ACME", 110, 45, 200, 55),
+        ]
+        col_map = {
+            "tableTitle": "LIGHTING",
+            "kind": "lightingType",
+            "tableType": "definition",
+            "layout": "tabular",
+            "regionBbox": [0.0, 0.0, 400.0, 100.0],
+            "headerRowCount": 1,
+            "keyColumn": {"name": "type", "xLeft": 0.0,   "xRight": 100.0},
+            "columns":   [{"name": "desc", "xLeft": 100.0, "xRight": 350.0}],
+        }
+        claims, residue = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        reasons = [r["reason"] for r in residue]
+        assert "leading-continuation-no-parent" in reasons
+
+    def test_leading_continuation_with_attr_spans_emits_diagnostic_reason(self):
+        """A leading continuation WITH attribute spans emits key-cell-empty-has-attribute-spans.
+
+        This distinguishes a misaligned-key-column situation (the real key fell into
+        an attribute column) from a true blank-leading-header row.
+        """
+        spans = [
+            # header
+            _span("TYPE", 10, 5, 80, 15),
+            _span("DESC", 110, 5, 230, 15),
+            # leading row: empty key column, has content in desc column
+            _span("ORPHAN TEXT", 110, 25, 200, 35),
+            # first real code row
+            _span("LC-1", 10, 45, 70, 55),
+            _span("ACME", 110, 45, 200, 55),
+        ]
+        col_map = {
+            "tableTitle": "LIGHTING",
+            "kind": "lightingType",
+            "tableType": "definition",
+            "layout": "tabular",
+            "regionBbox": [0.0, 0.0, 400.0, 100.0],
+            "headerRowCount": 1,
+            "keyColumn": {"name": "type", "xLeft": 0.0,   "xRight": 100.0},
+            "columns":   [{"name": "desc", "xLeft": 100.0, "xRight": 350.0}],
+        }
+        claims, residue = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        reasons = [r["reason"] for r in residue]
+        # Should use the diagnostic reason, NOT the generic continuation reason
+        assert "key-cell-empty-has-attribute-spans" in reasons, (
+            f"Expected key-cell-empty-has-attribute-spans in {reasons}"
+        )
+        assert "leading-continuation-no-parent" not in reasons
+        # LC-1 must still be captured (orphan row does not block it)
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert "lightingType:LC-1" in subjects
+
+
+# ---------------------------------------------------------------------------
+# _ground_tabular -- instance-table flag (refinement 2)
+# ---------------------------------------------------------------------------
+
+class TestInstanceTableFlag:
+    """tableType:'instance' adds ambiguityClass:'instance' to all claims."""
+
+    def test_instance_claims_flagged(self):
+        col_map = _make_tabular_col_map(
+            kind="door",
+            table_type="instance",
+        )
+        spans = _make_tabular_spans()
+        # Swap marks to door-like codes (the fixture uses LC-x which pass canon_code)
+        claims, _ = _ground_tabular(col_map, spans, "SET/12", "sheet:A-09", "IFC")
+        attr_claims = _attr_claims(claims)
+        assert len(attr_claims) > 0
+        for c in claims:
+            assert c.get("ambiguityClass") == "instance", (
+                f"Expected ambiguityClass:'instance' on {c['predicate']} but got {c.get('ambiguityClass')!r}"
+            )
+
+    def test_definition_claims_not_flagged(self):
+        col_map = _make_tabular_col_map(kind="lightingType", table_type="definition")
+        spans = _make_tabular_spans()
+        claims, _ = _ground_tabular(col_map, spans, "SET/0", "sheet:A-01", "IFC")
+        for c in claims:
+            assert c.get("ambiguityClass") is None, (
+                f"Definition table claim should not have ambiguityClass, got {c.get('ambiguityClass')!r}"
+            )
+
+    def test_instance_kind_namespace(self):
+        """kind:'door' (not 'doorType') used for instance tables."""
+        col_map = _make_tabular_col_map(kind="door", table_type="instance")
+        spans = _make_tabular_spans()
+        claims, _ = _ground_tabular(col_map, spans, "SET/12", "sheet:A-09", "IFC")
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        # All subjects should use 'door:' prefix
+        assert all(s.startswith("door:") for s in subjects)
+
+
+# ---------------------------------------------------------------------------
+# _ground_tabular -- triple-hyphen codes (refinement 1)
+# ---------------------------------------------------------------------------
+
+class TestTripleHyphenCodes:
+    """E-36-D1 style codes must be extracted, not gated to residue."""
+
+    def test_triple_hyphen_extracts(self):
+        col_map = {
+            "tableTitle": "UNIT DOOR TYPES",
+            "kind": "doorType",
+            "tableType": "definition",
+            "layout": "tabular",
+            "regionBbox": [0.0, 0.0, 400.0, 200.0],
+            "headerRowCount": 1,
+            "keyColumn": {"name": "type", "xLeft": 0.0, "xRight": 80.0},
+            "columns": [{"name": "description", "xLeft": 80.0, "xRight": 350.0}],
+        }
+        spans = [
+            _span("DOOR TYPE",      5, 5, 75, 15),
+            _span("DESCRIPTION",   85, 5, 340, 15),
+            _span("E-36-D1",        5, 25, 70, 35),
+            _span("UNIT TERRACE 1", 85, 25, 300, 35),
+            _span("E-36-D2",        5, 45, 70, 55),
+            _span("UNIT TERRACE 2", 85, 45, 300, 55),
+        ]
+        claims, residue = _ground_tabular(col_map, spans, "SET/0", "sheet:A-09", "IFC")
+        codes = {c["subject"] for c in _attr_claims(claims)}
+        assert "doorType:E-36-D1" in codes
+        assert "doorType:E-36-D2" in codes
+        # No canon_code-fail residue
+        fails = [r for r in residue if "canon_code-fail" in r.get("reason", "")]
+        assert fails == []
+
+
+# ---------------------------------------------------------------------------
+# _ground_matrix
+# ---------------------------------------------------------------------------
+
+class TestGroundMatrix:
+    """Matrix layout: codes across top row, attribute labels down the left."""
+
+    def _col_map(self) -> dict:
+        return {
+            "tableTitle": "HARDWARE MATRIX",
+            "kind": "hardwareSetType",
+            "tableType": "definition",
+            "layout": "matrix",
+            "regionBbox": [0.0, 0.0, 400.0, 200.0],
+            "headerRowCount": 1,
+            "keyColumn": {"name": "attribute", "xLeft": 0.0, "xRight": 100.0},
+            "columns": [
+                {"name": "H1", "xLeft": 100.0, "xRight": 200.0},
+                {"name": "H2", "xLeft": 200.0, "xRight": 300.0},
+            ],
+        }
+
+    def _spans(self) -> list[dict]:
+        """
+        Header:  | attribute | H1  | H2  |
+        Row 1:   | CLOSER    | YES | YES |
+        Row 2:   | LOCKSET   | NO  | YES |
+        """
+        return [
+            # header row (y=5-15)
+            _span("attribute", 10,  5, 90, 15),
+            _span("H1",       110,  5, 190, 15),
+            _span("H2",       210,  5, 290, 15),
+            # data row 1 (y=25-35)
+            _span("CLOSER",   10, 25, 90, 35),
+            _span("YES",      110, 25, 190, 35),
+            _span("YES",      210, 25, 290, 35),
+            # data row 2 (y=45-55)
+            _span("LOCKSET",  10, 45, 90, 55),
+            _span("NO",       110, 45, 190, 55),
+            _span("YES",      210, 45, 290, 55),
+        ]
+
+    def test_extracts_two_code_subjects(self):
+        claims, residue = _ground_matrix(self._col_map(), self._spans(), "SET/0", "sheet:A-09", "IFC")
+        codes = {c["subject"] for c in _attr_claims(claims)}
+        assert codes == {"hardwareSetType:H1", "hardwareSetType:H2"}
+
+    def test_attribute_values(self):
+        claims, _ = _ground_matrix(self._col_map(), self._spans(), "SET/0", "sheet:A-09", "IFC")
+        h1_closer = next(c for c in claims
+                         if c["subject"] == "hardwareSetType:H1" and c["predicate"] == "closer")
+        assert h1_closer["value"] == "YES"
+        h1_lockset = next(c for c in claims
+                          if c["subject"] == "hardwareSetType:H1" and c["predicate"] == "lockset")
+        assert h1_lockset["value"] == "NO"
+
+    def test_no_residue(self):
+        _, residue = _ground_matrix(self._col_map(), self._spans(), "SET/0", "sheet:A-09", "IFC")
+        assert residue == []
+
+    def test_matrix_outside_column_spans_emitted_to_residue(self):
+        """Spans outside all matrix column intervals must appear in residue (not silently dropped)."""
+        spans = self._spans() + [
+            # Span at x=350-390, outside all columns (label: 0-100, H1: 100-200, H2: 200-300)
+            _span("EXTRA", 355, 25, 385, 35),
+        ]
+        _, residue = _ground_matrix(self._col_map(), spans, "SET/0", "sheet:A-09", "IFC")
+        outside = [r for r in residue if r["reason"] == "matrix-spans-outside-columns"]
+        assert outside, "Expected matrix-spans-outside-columns residue but got none"
+        all_outside_texts = [s["text"] for r in outside for s in r["spans"]]
+        assert "EXTRA" in all_outside_texts
+
+    def test_matrix_empty_label_row_with_code_content_emitted_to_residue(self):
+        """An empty-label matrix row that carries code-column content must appear in residue."""
+        spans = self._spans() + [
+            # Row at y=65-75: empty label column, has data in H1 column
+            _span("EXTRA-VAL", 115, 65, 185, 75),
+        ]
+        _, residue = _ground_matrix(self._col_map(), spans, "SET/0", "sheet:A-09", "IFC")
+        empty_label = [r for r in residue if r["reason"] == "matrix-empty-label-row"]
+        assert empty_label, "Expected matrix-empty-label-row residue but got none"
+        all_texts = [s["text"] for r in empty_label for s in r["spans"]]
+        assert "EXTRA-VAL" in all_texts
+
+
+# ---------------------------------------------------------------------------
+# _ground_entry -- end-to-end with temp JSONL files
+# ---------------------------------------------------------------------------
+
+class TestGroundEntry:
+    """Full entry grounding: writes JSONL span file + manifest entry, calls _ground_entry."""
+
+    def _write_spans(self, tmp_dir: Path, spans: list[dict], name: str) -> Path:
+        p = tmp_dir / "prepare" / name
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("w", encoding="utf-8") as fh:
+            for s in spans:
+                fh.write(json.dumps(s) + "\n")
+        return p
+
+    def test_basic_entry(self, tmp_path):
+        spans = _make_tabular_spans()
+        spans_path = self._write_spans(tmp_path, spans, "SYN_p0_spans.jsonl")
+
+        entry = {
+            "sheetId": "sheet:SYN-01",
+            "pageIdx": 0,
+            "sourceInstrument": "SYN/0",
+            "spansPath": "prepare/SYN_p0_spans.jsonl",
+            "column_maps": [_make_tabular_col_map()],
+        }
+        claims, residue, stats = _ground_entry(entry, tmp_path)
+
+        assert stats["codes"] == 3
+        assert stats["claims"] > 0
+        assert stats["tables"] == 1
+
+    def test_deferred_no_page_ref(self, tmp_path):
+        entry = {
+            "sheetId": "sheet:TW-1",
+            "pageIdx": -1,
+            "sourceInstrument": "p0131_TW-1",
+            "spansPath": None,
+            "column_maps": [],
+        }
+        claims, residue, stats = _ground_entry(entry, tmp_path)
+        assert claims == []
+        assert any("deferred" in r.get("reason", "") for r in residue)
+
+    def test_no_column_maps(self, tmp_path):
+        spans = _make_tabular_spans()
+        self._write_spans(tmp_path, spans, "SYN_p1_spans.jsonl")
+        entry = {
+            "sheetId": "sheet:SYN-02",
+            "pageIdx": 1,
+            "sourceInstrument": "SYN/1",
+            "spansPath": "prepare/SYN_p1_spans.jsonl",
+            "column_maps": [],
+        }
+        claims, residue, stats = _ground_entry(entry, tmp_path)
+        assert claims == []
+        assert any("no-column-maps" in r.get("reason", "") for r in residue)
+
+    def test_missing_spans_file(self, tmp_path):
+        entry = {
+            "sheetId": "sheet:SYN-03",
+            "pageIdx": 5,
+            "sourceInstrument": "SYN/5",
+            "spansPath": "prepare/nonexistent_spans.jsonl",
+            "column_maps": [_make_tabular_col_map()],
+        }
+        claims, residue, stats = _ground_entry(entry, tmp_path)
+        assert claims == []
+        assert any("spans-file-not-found" in r.get("reason", "") for r in residue)
+
+
+# ---------------------------------------------------------------------------
+# Golden determinism test
+# ---------------------------------------------------------------------------
+
+class TestGoldenDeterminism:
+    """Same synthetic input must produce identical JSON output on repeated runs."""
+
+    def test_tabular_golden(self):
+        col_map = _make_tabular_col_map()
+        spans = _make_tabular_spans()
+        results = [
+            json.dumps(
+                _ground_tabular(col_map, spans, "SET/0", "sheet:TEST", "IFC")[0],
+                sort_keys=True,
+            )
+            for _ in range(3)
+        ]
+        assert len(set(results)) == 1, "Non-deterministic output across runs"
