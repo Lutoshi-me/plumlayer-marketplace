@@ -1,9 +1,11 @@
 # Plumlayer marketplace
 
-Private Claude Code marketplace for the **Plumlayer** plugin — connects Claude to your
-Plumlayer MOSOT (cloud) and the precon harness.
+Private plugin marketplace for the **Plumlayer** plugin. The plugin started as a Claude Code
+marketplace plugin and now has side-by-side Codex packaging infrastructure.
 
-## Install
+It connects an agent to your Plumlayer MOSOT (cloud) and the precon harness.
+
+## Setup: Claude Code
 
 ```
 /plugin marketplace add Lutoshi-me/plumlayer-marketplace
@@ -16,6 +18,41 @@ projects — scoped to you; you never see anyone else's.
 
 > If you previously added the MCP manually (`claude mcp add plumlayer …`), remove it first
 > with `claude mcp remove plumlayer` so the plugin's connector is the one in use.
+
+## Setup: Codex
+
+Codex uses the repo-local marketplace file at `.agents/plugins/marketplace.json` and the
+Codex plugin manifest at `plugins/plumlayer/.codex-plugin/plugin.json`.
+
+From a local checkout of this repo:
+
+```powershell
+codex plugin marketplace add .
+codex plugin add plumlayer@plumlayer
+```
+
+If you are registering the marketplace from another working directory, pass the absolute path to
+this repo instead:
+
+```powershell
+codex plugin marketplace add C:\path\to\plumlayer-marketplace
+codex plugin add plumlayer@plumlayer
+```
+
+Verify the install:
+
+```powershell
+codex plugin list
+codex mcp get plumlayer
+```
+
+Start a fresh Codex thread after install or update so Codex picks up newly installed skills and
+MCP tool wiring. Running threads may keep the tool/skill set they started with.
+
+Current Codex packaging note: `.codex-plugin/plugin.json` intentionally does not declare
+`mcpServers`. The shared plugin-root `.mcp.json` remains in the Claude-compatible shape, and current
+Codex installs/discovers it from the plugin root. Do not rewrite `.mcp.json` into a Codex-only shape
+unless Claude compatibility is handled separately.
 
 ## What's in the plugin
 
@@ -37,15 +74,40 @@ The drawing-index pipeline and the scope harness are now included; more precon h
 
 ## Updating
 
-Push changes here, then in Claude Code: `/plugin update plumlayer@plumlayer`.
+### Claude Code
+
+Push changes here, then in Claude Code:
+
+```
+/plugin update plumlayer@plumlayer
+```
+
+### Codex
+
+During local Codex iteration, validate the Codex manifest and reinstall from the local marketplace:
+
+```powershell
+python "$env:USERPROFILE\.codex\skills\.system\plugin-creator\scripts\validate_plugin.py" plugins\plumlayer
+codex plugin add plumlayer@plumlayer
+```
+
+If Codex does not pick up a same-version local edit, add a Codex cachebuster to
+`plugins/plumlayer/.codex-plugin/plugin.json`, reinstall, and start a fresh thread:
+
+```powershell
+python "$env:USERPROFILE\.codex\skills\.system\plugin-creator\scripts\update_plugin_cachebuster.py" plugins\plumlayer
+codex plugin add plumlayer@plumlayer
+```
 
 ## Structure
 
 ```
-.claude-plugin/marketplace.json     # marketplace manifest (lists the plugin)
+.claude-plugin/marketplace.json     # Claude marketplace manifest (lists the plugin)
+.agents/plugins/marketplace.json    # Codex marketplace manifest (lists the plugin)
 plugins/plumlayer/
-  .claude-plugin/plugin.json        # plugin manifest
-  .mcp.json                         # the hosted MCP connector (remote, OAuth)
+  .claude-plugin/plugin.json        # Claude plugin manifest
+  .codex-plugin/plugin.json         # Codex plugin manifest
+  .mcp.json                         # the hosted MCP connector shared by both surfaces
   agents/
     drawing-indexer.md              # drawing-index pipeline subagent
     scope-decomposer.md             # per-sheet trade-agnostic scope read

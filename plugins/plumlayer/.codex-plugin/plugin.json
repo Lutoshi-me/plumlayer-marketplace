@@ -1,0 +1,34 @@
+{
+  "name": "plumlayer",
+  "version": "0.10.1",
+  "description": "Connect agents to your Plumlayer MOSOT (cloud) and the precon harness. Create and onboard projects, read and propose claims on construction projects through the hosted MCP; log in with your Plumlayer account.",
+  "author": {
+    "name": "Plumlayer"
+  },
+  "homepage": "https://plumlayer.com",
+  "repository": "https://github.com/Lutoshi-me/plumlayer-marketplace",
+  "keywords": [
+    "construction",
+    "mosot",
+    "mcp",
+    "precon"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Plumlayer",
+    "shortDescription": "Work with Plumlayer MOSOT projects from Codex.",
+    "longDescription": "Read, search, and propose grounded construction claims through the hosted Plumlayer MOSOT MCP, with the same plugin skills used by the Plumlayer precon harness.",
+    "developerName": "Plumlayer",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "brandColor": "#7A4E5D",
+    "defaultPrompt": [
+      "Show me my Plumlayer projects",
+      "Search this project's MOSOT claims",
+      "Propose grounded claims for review"
+    ]
+  }
+}

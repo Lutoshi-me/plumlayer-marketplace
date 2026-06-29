@@ -1,0 +1,20 @@
+{
+  "name": "plumlayer",
+  "interface": {
+    "displayName": "Plumlayer"
+  },
+  "plugins": [
+    {
+      "name": "plumlayer",
+      "source": {
+        "source": "local",
+        "path": "./plugins/plumlayer"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
