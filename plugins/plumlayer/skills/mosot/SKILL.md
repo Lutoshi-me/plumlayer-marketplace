@@ -28,6 +28,8 @@ Trust tiers: `approved > authoritative > derived`; **`proposed` never governs.**
 - `whoami` — confirm which account you're acting as.
 - `list_projects` — the user's projects (each is a MOSOT). Confirm the right one before acting.
 - `get_project` — one project's details.
+- `create_project` — create a new project (= a new MOSOT). Supply `name` (required) and optional
+  `description`; returns the new `projectId`. Use before any propose or ingest on a new bid/pursuit.
 
 **Read**
 - `set_grid` — the sheet inventory (the drawing set as a grid: discipline, sheet number,
@@ -38,10 +40,26 @@ Trust tiers: `approved > authoritative > derived`; **`proposed` never governs.**
   subject / predicate / trustClass / text; paginated. Use this to see what's actually been
   asserted — including your own proposals.
 
+**Drawing grounding** (cloud PDF — these work against files already uploaded to the project)
+- `list_files` — list the drawing files registered to a project.
+- `render_page` — render a single page of a registered PDF to an image so you can read it.
+- `get_page_text` — extract the text layer from a registered PDF page (deterministic; use
+  alongside `render_page` — text for tokens, render for layout/meaning).
+
+**Upload** (register a new delivery)
+- `request_file_upload` — get a signed upload URL for a drawing PDF you want to register.
+- `register_file` — after uploading, register the file to the project so it becomes available
+  to `list_files` / `render_page` / `get_page_text` and the `drawing-ingest` pipeline.
+
 **Write**
 - `propose` — append one `proposed` claim (`subject`, `predicate`, `value`,
   `sourceInstrument`, optional `evidence`/`ambiguityClass`). Stamped as you; never governs
   until a human promotes it.
+- `propose_batch` — append an array of `proposed` claims in one atomic call (`projectId` +
+  `claims` array). Atomic: a bad entry rejects the whole batch and names the index. Prefer
+  this over repeated `propose` calls for bulk deposits (e.g. ingest or scope deposit). Each
+  call accepts up to 500 claims; stay at ≤50 per batch so each read is faithful and
+  count-verifiable.
 
 ## Typical flows
 - **"What's in my project / MOSOT?"** → `list_projects` → pick one → `set_grid` for the

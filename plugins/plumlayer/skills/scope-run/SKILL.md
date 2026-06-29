@@ -34,7 +34,7 @@ code.**
 assembled and the project exists** — it does not stand up either:
 
 `setup` (operator profile, once) → `project-create` (the MOSOT shell) → **assemble & index the set**
-(`drawing-index` — merge issues, publish a master index, produce a single current PDF) → **`scope-run`
+(`drawing-ingest` — register the set, deposit sheet claims, produce the cloud index) → **`scope-run`
 (this skill — turn the set into cited per-trade scope claims)** → **review & promote on plumlayer.com**.
 
 **What this skill is — and the boundary (so it isn't "here's whatever, go figure it out").** `scope-run`
@@ -43,7 +43,7 @@ and turn it into **cited, per-trade scope claims** in the project's MOSOT, via t
 below. The open-ended judgment is **bounded** — it is per-sheet reads at a chosen grain, governed by
 `reference/read-grain.md` (*what is one scope item*) and `reference/drawing-set-literacy.md` (*what am I
 looking at and where's the scope*). It is **not** a do-everything skill. It does **not**:
-- **assemble or merge** the set across issues/disciplines — that's `drawing-index`, done first;
+- **assemble or merge** the set across issues/disciplines — that's `drawing-ingest`, done first;
 - **comprehend every symbol** on every sheet — that's the demand-pulled comprehension layer, its own arc;
 - **create the project** (`project-create`) or **promote** anything (a human does, on plumlayer.com).
 
@@ -54,8 +54,8 @@ yourself about to scope an entire large set in one run, scope a cluster instead.
 **What must be ready before you start (the readiness gate — check these first):**
 1. **One assembled drawing set as a PDF, supplied by path** — the current/governing issue (or a defined
    cluster of it). If you only have loose per-discipline PDFs or several un-merged issues, that's a
-   `drawing-index` / set-assembly job **first**, not a scope-run.
-2. **A sense of the set's shape** — ideally a **drawing index** (run `drawing-index` if you don't have
+   `drawing-ingest` / set-assembly job **first**, not a scope-run.
+2. **A sense of the set's shape** — ideally a **drawing index** (run `drawing-ingest` if you don't have
    one). The Ground stage builds a sheet inventory regardless, but knowing the disciplines + issue state
    up front is what lets you select a sane cluster. See `reference/drawing-set-literacy.md` for *how* to
    read and sequence a set (the map → definitions → placements order).

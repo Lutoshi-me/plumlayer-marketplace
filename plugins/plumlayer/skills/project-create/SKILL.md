@@ -95,7 +95,7 @@ tier. Note in one line that you'll read it, then move on:
 - **Size** — gross area, floor / unit counts (the drawings, often a code-summary sheet).
 - **Location** (cover sheet).
 - The **drawing-set inventory** — which issues exist and their dates (the drawing index *is* this;
-  `drawing-index` + sheet registration produce it).
+  `drawing-ingest` + sheet registration produce it).
 
 ### Mode A — Interview (the ask-now set only)
 Ask conversationally, in **one short group**, pre-filled from operator defaults
@@ -107,7 +107,7 @@ against this project here — trade / lens fit is a `scope-run` input, decided w
 If the user points you at files, **read them locally** and pre-fill — reading a document they handed
 you is not interrogation, it's the high-value path. Good sources:
 - An **ITB / invitation-to-bid** or project summary → name, type, parties, key dates.
-- A **drawing index** (`.csv`/`.xlsx` from the `drawing-index` skill) → the set inventory + disciplines.
+- A **drawing index** (`.csv`/`.xlsx` from the `drawing-ingest` skill) → the set inventory + disciplines.
 - A **spec TOC** → divisions/trades in scope.
 
 ```bash
@@ -205,7 +205,7 @@ Tell the user, in plain terms:
   flagged ambiguous** (the pile a human should resolve).
 - **Everything is `proposed`** — visible now via `search` / `set_grid` / `ambiguities` in this session,
   and on **plumlayer.com** for review and promotion. Nothing governs until a human promotes it.
-- **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-index` locally), then
+- **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-ingest` locally), then
   `scope-run` to take off scope, then review/promote on plumlayer.com.
 
 ---
