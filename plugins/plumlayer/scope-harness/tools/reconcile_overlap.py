@@ -2,6 +2,8 @@
 reconcile_overlap.py - the v0.1 heart: MEASURE routing from the overlap of
 independent per-trade reads.
 
+PLU-323 guard: superseded route-first tool retained for PLU-274 history/migration only.
+
 Doctrine role (agents read and judge; deterministic tooling grounds; nothing governs unverified):
   * Deterministic RECONCILE tool. It does NOT read drawings or assign trades by
     judgment. It intersects the decompose read's scope items with each trade

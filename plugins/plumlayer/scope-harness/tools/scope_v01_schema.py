@@ -1,6 +1,8 @@
 """
 scope_v01_schema.py — contracts for per-trade fan-out routing.
 
+PLU-323 guard: superseded route-first contracts retained for PLU-274 history/migration only.
+
 (Filename is historical — the module now carries scope-decompose-**v0.3** and
 trade-claim-**v0.2**; the two versions advance independently. See the constants
 below.)

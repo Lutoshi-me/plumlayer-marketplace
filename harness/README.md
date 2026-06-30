@@ -36,15 +36,14 @@ Fully deterministic. No model calls. Runs in < 5 seconds.
 |---|-------|----------------|
 | 1 | `claude plugin validate --strict` | CLI validator passes with warnings-as-errors |
 | 2 | Version-triple lockstep | `plugin.json`, `marketplace.json[metadata.version]`, and `marketplace.json[plugins[0].version]` are identical |
-| 3 | Skills frontmatter | Every skill dir has `SKILL.md` with non-empty `name` + `description`; no duplicates; all 9 expected skills present |
-| 4 | Agents frontmatter | All 3 expected agent `.md` files exist with non-empty `name` + `description` |
+| 3 | Skills frontmatter | Every skill dir has `SKILL.md` with non-empty `name` + `description`; no duplicates; all 7 expected skills present |
+| 4 | Agents frontmatter | Both expected agent `.md` files exist with non-empty `name` + `description` |
 | 5 | MCP URL exact-match | `.mcp.json` `plumlayer` server url == `https://api-production-0a7b.up.railway.app/mcp` |
 | 6 | No absolute paths | No `C:\`, `/Users/`, `/home/`, `/root/` literals baked into `.mcp.json`, `plugin.json`, or `marketplace.json` |
 
 **SKILL_DESC_WARN_CHARS** constant (default 600): descriptions exceeding this
-threshold emit a WARN but do not fail the check. The `drawing-index` skill
-description is intentionally long (~600 chars) — adjust the constant if the
-threshold needs tuning.
+threshold emit a WARN but do not fail the check. The export skills have long
+descriptions by design — adjust the constant if the threshold needs tuning.
 
 ---
 
@@ -69,7 +68,7 @@ is attempted and contains:
 - `plugins`: list of `{name, path, source}` — one entry per loaded plugin.
   A plugin that fails to load is **absent** from this list (no explicit error
   field). The check infers "no load error" from presence.
-- `skills`: list of prefixed skill names (`plumlayer:drawing-index`, etc.).
+- `skills`: list of prefixed skill names (`plumlayer:drawing-ingest`, etc.).
 - `agents`: globally-configured agent types only — **does NOT include
   plugin-bundled agents** (see limitation below).
 - `mcp_servers`: MCP servers loaded into this session.
@@ -82,7 +81,7 @@ is attempted and contains:
 | headless-claude-invocation | `claude` CLI runs and emits an init event within 120s |
 | plugin-plumlayer-loaded | Plugin `plumlayer` present in `plugins[]` by name |
 | no-plugin-load-errors | Plumlayer plugin loaded (absence = load error); auth failure is a separate, expected event |
-| skills-all-9-present | All 9 `plumlayer:*` skills present in `skills[]` |
+| skills-all-7-present | All 7 `plumlayer:*` skills present in `skills[]` |
 | mcp-under-bare (observational) | Documents MCP server presence/absence — see limitation |
 | plugin-agents (limitation noted) | Documents agent assertion gap — see limitation |
 
@@ -96,8 +95,8 @@ load end-to-end, use a non-bare interactive session with an authenticated user.
 
 ### Limitation: plugin-bundled agents not in init event
 
-Plugin `agents/` definitions (`drawing-indexer`, `scope-decomposer`,
-`trade-specialist`) do **not** surface in the init event's `agents[]` field.
+Plugin `agents/` definitions (`scope-decomposer`, `trade-specialist`) do **not** surface in the init
+event's `agents[]` field.
 That field lists only globally-configured agent types. Plugin agents load
 correctly at runtime but cannot be asserted from the headless JSONL stream.
 Layer 1's `check_agents()` validates file presence + frontmatter statically —

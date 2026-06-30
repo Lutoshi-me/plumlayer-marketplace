@@ -1,6 +1,8 @@
 """
 ingest_fanout.py — ground per-lens raw trade claims into the validated contract.
 
+PLU-323 guard: superseded route-first tool retained for PLU-274 history/migration only.
+
 Doctrine role (agents read and judge; deterministic tooling grounds; nothing governs unverified):
   * Deterministic GLUE tool. Each `trade-specialist` subagent writes a RAW claim
     file (`trade_claims/raw_<lens>.json`) that claims decompose items by `itemId`

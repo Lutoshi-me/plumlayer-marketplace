@@ -51,7 +51,8 @@ rendered on demand, never the foundation. So this skill:
   surviving export skills render artifacts *from* the cloud claims when a sub or the field wants a
   physical package: `drawing-set-assemble` (discipline PDFs / franken set) and `drawing-index-publish`
   (the Master Index workbook);
-- does **not** scope, take off, or comprehend the sheets (that is `scope-run`, downstream);
+- does **not** scope, take off, or comprehend the sheets. The old `scope-run` path is guarded by
+  PLU-323; PLU-274 owns the downstream scope-item-first replacement;
 - does **not** create the project (`project-create`) or **promote** anything (a human does, on
   plumlayer.com).
 

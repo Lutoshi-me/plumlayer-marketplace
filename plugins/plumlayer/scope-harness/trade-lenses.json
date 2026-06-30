@@ -1,5 +1,5 @@
 {
-  "_doc": "Trade-lens definitions for the scope-harness fan-out — the v0 completeness oracle. Each lens is an independent reader in stage 3.2. The load-bearing field is `excludes`: explicit boundaries that stop a lens over-claiming (e.g. firestopping claiming whole rated partitions). The fan-out generator reads this file; humans review it; the learning loop appends boundaries learned from gap-log adjudication. NOT confidential — generic trade scope, no client data.",
+  "_doc": "PLU-323 guard: superseded route-first trade-lens definitions retained for PLU-274 history/migration only. The retired fan-out generator reads this file; normal /scope-run execution must not use it as the production path. NOT confidential: generic trade scope, no client data.",
   "schemaVersion": "trade-lenses-v0.1",
   "lenses": [
     {

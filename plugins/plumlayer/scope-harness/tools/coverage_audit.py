@@ -2,6 +2,8 @@
 coverage_audit.py - the COMPLETENESS ledger: cross-check the fan-out against the
 COMPLETE set and surface what nobody touched.
 
+PLU-323 guard: superseded route-first tool retained for PLU-274 history/migration only.
+
 Doctrine role (agents read and judge; deterministic tooling grounds; nothing governs unverified):
   Fanning every trade lens across the whole set is not just parallelism - it lets
   us audit COVERAGE. Routing (reconcile_overlap.py) answers "who owns each item";

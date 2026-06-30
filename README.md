@@ -3,7 +3,7 @@
 Private plugin marketplace for the **Plumlayer** plugin. The plugin started as a Claude Code
 marketplace plugin and now has side-by-side Codex packaging infrastructure.
 
-It connects an agent to your Plumlayer MOSOT (cloud) and the precon harness.
+It connects an agent to your Plumlayer MOSOT (cloud) and the precon workflow skills.
 
 ## Setup: Claude Code
 
@@ -60,17 +60,22 @@ unless Claude compatibility is handled separately.
   — auto-wired on install; no manual `claude mcp add`.
 - **`mosot` skill** — teaches Claude the MOSOT verb surface (`set_grid`, `ambiguities`,
   `rfi_candidates`, `search`, `propose`, …) and the propose-only / human-promotes doctrine.
-- **`drawing-index` skill** — build the master Drawing Index CSV for a discipline-split issue (Conformed Set, Permit Set, etc.) from a folder of one PDF per discipline.
-- **`drawing-index-bulletin` skill** — build a per-issue Drawing Index CSV for a Bulletin, ASI, or Addendum that ships as a single combined PDF; cross-checks against the Narrative of Changes.
-- **`drawing-index-merge` skill** — merge per-issue Drawing Index CSVs into a Franken Set CSV showing where the latest version of every sheet lives.
-- **`drawing-index-publish` skill** — publish a Master Drawing Index Excel workbook (.xlsx) with one tab per issue plus a Franken Set tab and page-level hyperlinks.
-- **`drawing-set-assemble` skill** — assemble fresh discipline-split PDFs (and an optional combined PDF) from a Franken Set CSV, preserving annotations and synthesizing bookmarks.
-- **`drawing-indexer` subagent** — pipeline operator that runs the full drawing-index chain (index → bulletin → merge → publish → assemble) as a delegated background task.
-- **`scope-run` skill** — the codified scope harness: point it at a drawing PDF and it runs ground → decompose → fan-out → reconcile → coverage-audit → project, then **deposits the cited per-trade scope into your MOSOT as proposed claims** via the `propose` verb (a human promotes them on plumlayer.com). Drives the two scope subagents + bundled deterministic tools (`scope-harness/`).
-- **`scope-decomposer` subagent** — reads ONE sheet (as legible tiles) and emits trade-agnostic, cited scope items; assigns no trades.
-- **`trade-specialist` subagent** — reads the decompose through ONE trade lens and claims its items; a generic executor whose trade knowledge is all DATA (`scope-harness/trade-lenses.json`), routing measured later from claim overlap.
+- **`drawing-ingest` skill** — register any drawing delivery into the cloud MOSOT as grounded,
+  proposed sheet claims.
+- **`drawing-index-publish` skill** — legacy export projection that publishes a Master Drawing Index
+  workbook from cloud claims.
+- **`drawing-set-assemble` skill** — legacy export projection that assembles discipline PDFs from cloud
+  claims.
+- **`scope-run` skill** — guarded by PLU-323. It now refuses the retired route-first path and points
+  agents to the PLU-274 scope-item-first rebuild: one grounded whole-job scope list first, then
+  derived trade packages. It does not dispatch the old fan-out/reconcile harness by default.
+- **`scope-decomposer` subagent** — legacy route-first asset retained for PLU-274 history/migration
+  only; guarded against normal production scope dispatch.
+- **`trade-specialist` subagent** — legacy route-first asset retained for PLU-274 history/migration
+  only; guarded against normal production scope dispatch.
 
-The drawing-index pipeline and the scope harness are now included; more precon harness skills are coming.
+Drawing ingest, MOSOT, and export skills are active. The old route-first scope harness remains bundled
+as historical material while PLU-274 rebuilds the current production scope engine.
 
 ## Updating
 
@@ -109,20 +114,17 @@ plugins/plumlayer/
   .codex-plugin/plugin.json         # Codex plugin manifest
   .mcp.json                         # the hosted MCP connector shared by both surfaces
   agents/
-    drawing-indexer.md              # drawing-index pipeline subagent
-    scope-decomposer.md             # per-sheet trade-agnostic scope read
-    trade-specialist.md             # per-lens scope claim
+    scope-decomposer.md             # legacy route-first scope read guard
+    trade-specialist.md             # legacy route-first fan-out guard
   skills/
     mosot/SKILL.md                  # the starter MOSOT skill
-    drawing-index/SKILL.md + references/
-    drawing-index-bulletin/SKILL.md + references/
-    drawing-index-merge/SKILL.md + references/
+    drawing-ingest/SKILL.md
     drawing-index-publish/SKILL.md + references/
     drawing-set-assemble/SKILL.md + references/
-    scope-run/SKILL.md              # the scope harness orchestrator (deposits to MOSOT)
-  scope-harness/                    # bundled read-only assets for scope-run ($CLAUDE_PLUGIN_ROOT)
-    tools/*.py                      # deterministic grounding + glue + prepare_deposit.py
+    scope-run/SKILL.md              # PLU-323 guard; refuses retired route-first scope-run
+  scope-harness/                    # superseded route-first assets retained for history/migration
+    tools/*.py                      # legacy deterministic grounding + glue + prepare_deposit.py
     ingestion/sheet_inventory.py    # vendored set-inventory tool
-    trade-lenses.json               # the trade-knowledge data (7 interior lenses, v0.1)
+    trade-lenses.json               # legacy trade-lens data (7 interior lenses, v0.1)
     reference/  prompts/  clusters/cluster_TEMPLATE.json  requirements.txt
 ```

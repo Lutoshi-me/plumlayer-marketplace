@@ -1,6 +1,8 @@
 """
 merge_decompose.py — merge per-sheet decompose reads into one decompose_read.json.
 
+PLU-323 guard: superseded route-first tool retained for PLU-274 history/migration only.
+
 Doctrine role (agents read and judge; deterministic tooling grounds; nothing governs unverified):
   * Deterministic GLUE tool. The decompose stage dispatches ONE `scope-decomposer`
     subagent per scope-bearing sheet; each writes a RAW per-sheet read

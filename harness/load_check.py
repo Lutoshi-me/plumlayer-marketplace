@@ -11,7 +11,7 @@ Empirical findings from real init-event inspection (2026-06-20, v2.1.183):
       Plugin load errors are indicated by ABSENCE from this list (the runtime
       silently drops a failed plugin rather than emitting an error field).
       No separate "plugin_errors" field exists in the observed event stream.
-    - skills: list of prefixed skill names (e.g. "plumlayer:drawing-index").
+    - skills: list of prefixed skill names (e.g. "plumlayer:drawing-ingest").
     - agents: list of globally-configured agent TYPE names — does NOT include
       per-plugin agent definitions from agents/*.md. Plugin agents are loaded
       by the runtime but are NOT surfaced in the init event's agents field.
@@ -28,8 +28,8 @@ Empirical findings from real init-event inspection (2026-06-20, v2.1.183):
 
 Assertions built against the actual observed event shape:
   - Plugin "plumlayer" present in plugins[] by name.
-  - All 9 expected skills present in skills[] with "plumlayer:" prefix.
-  - Plugin-bundled agents (drawing-indexer, scope-decomposer, trade-specialist)
+  - All 7 expected skills present in skills[] with "plumlayer:" prefix.
+  - Plugin-bundled agents (scope-decomposer, trade-specialist)
     are NOT assertable from the init event — they do not surface there.
     This is documented as a limitation, not a fake pass.
   - MCP under --bare: bundled hosted MCP not observed in mcp_servers[].
@@ -50,10 +50,8 @@ from _cli import invoke_headless, find_init_event
 EXPECTED_PLUGIN_NAME = "plumlayer"
 
 EXPECTED_SKILL_NAMES = {
-    "plumlayer:drawing-index",
-    "plumlayer:drawing-index-bulletin",
-    "plumlayer:drawing-index-merge",
     "plumlayer:drawing-index-publish",
+    "plumlayer:drawing-ingest",
     "plumlayer:drawing-set-assemble",
     "plumlayer:mosot",
     "plumlayer:project-create",
@@ -102,7 +100,7 @@ def check_plugin_present(init_event: dict) -> Result:
 
 
 def check_skills_present(init_event: dict) -> Result:
-    name = "skills-all-9-present"
+    name = "skills-all-7-present"
     skills_in_event = set(init_event.get("skills", []))
     plumlayer_skills = {s for s in skills_in_event if s.startswith("plumlayer:")}
     missing = EXPECTED_SKILL_NAMES - plumlayer_skills
@@ -169,15 +167,15 @@ def check_mcp_under_bare(init_event: dict) -> Result:
 
 def check_plugin_agents_limitation() -> Result:
     """
-    Documents that plugin-bundled agents (drawing-indexer, scope-decomposer,
-    trade-specialist) do NOT surface in the init event's agents[] field.
+    Documents that plugin-bundled agents (scope-decomposer, trade-specialist)
+    do NOT surface in the init event's agents[] field.
     This is a known runtime behavior, not a test gap we can close at Layer 2.
     """
     name = "plugin-agents (limitation noted)"
     return Result(
         name, True,  # not a failure — structural limitation
         warning=(
-            "Plugin agents/ dir (drawing-indexer, scope-decomposer, trade-specialist) "
+            "Plugin agents/ dir (scope-decomposer, trade-specialist) "
             "are NOT listed in the init event agents[] field. That field only contains "
             "globally-configured agent types. Plugin agents load correctly at runtime "
             "but cannot be asserted from the --bare --plugin-dir JSONL stream. "

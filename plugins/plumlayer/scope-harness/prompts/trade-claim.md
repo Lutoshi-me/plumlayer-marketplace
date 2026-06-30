@@ -1,5 +1,8 @@
 # Trade-claim prompt — per-trade fan-out over decomposed scope (v0.2)
 
+> **PLU-323 guard:** this prompt belongs to the superseded route-first harness. It is retained for
+> PLU-274 history/migration only and must not be used from a normal production `/scope-run`.
+
 > **Executable form:** realized as the **`trade-specialist`** subagent (`agents/trade-specialist.md`),
 > dispatched by the `scope-run` skill. This file is the durable design source + rationale; the agent is
 > the runnable method. The agent is a *generic executor* — its trade knowledge is the lens DATA from

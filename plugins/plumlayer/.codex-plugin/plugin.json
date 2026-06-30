@@ -1,7 +1,7 @@
 {
   "name": "plumlayer",
-  "version": "0.10.1",
-  "description": "Connect agents to your Plumlayer MOSOT (cloud) and the precon harness. Create and onboard projects, read and propose claims on construction projects through the hosted MCP; log in with your Plumlayer account.",
+  "version": "0.10.2",
+  "description": "Connect agents to your Plumlayer MOSOT (cloud) and guarded precon workflow skills. Create and onboard projects, read and propose claims through the hosted MCP; route-first scope-run is blocked while PLU-274 rebuilds it.",
   "author": {
     "name": "Plumlayer"
   },
@@ -17,7 +17,7 @@
   "interface": {
     "displayName": "Plumlayer",
     "shortDescription": "Work with Plumlayer MOSOT projects from Codex.",
-    "longDescription": "Read, search, and propose grounded construction claims through the hosted Plumlayer MOSOT MCP, with the same plugin skills used by the Plumlayer precon harness.",
+    "longDescription": "Read, search, and propose grounded construction claims through the hosted Plumlayer MOSOT MCP, with guarded Plumlayer precon workflow skills. Route-first scope-run is blocked while PLU-274 rebuilds the scope engine.",
     "developerName": "Plumlayer",
     "category": "Developer Tools",
     "capabilities": [

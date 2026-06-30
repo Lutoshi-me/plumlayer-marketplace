@@ -1,6 +1,8 @@
 """
 select_cluster.py — select sheets from the Arch PDF that match a trade cluster.
 
+PLU-323 guard: superseded route-first tool retained for PLU-274 history/migration only.
+
 Doctrine role (agents read and judge; deterministic tooling grounds; nothing governs unverified):
   * Deterministic grounding tool — resolves sheetId→(pageNum, sheetNo, title)
     from the sheet inventory, then matches title keywords.

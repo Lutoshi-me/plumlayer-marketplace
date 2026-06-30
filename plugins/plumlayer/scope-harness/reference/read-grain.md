@@ -1,5 +1,9 @@
 # Read-grain doctrine — "what is one scope item?"
 
+> **PLU-323 guard:** this reference was written for the superseded route-first harness. It remains useful
+> as historical evidence for PLU-274, but normal `/scope-run` execution is blocked while the
+> scope-item-first engine is rebuilt.
+
 **Status:** v0.1 — **VALIDATED + LIVE** (2026-06-14). Confirmed against a real GC bid-eval
 and green-lit; now executable in `scope-decomposer.md` Rule 1 +
 `appliesTo` (schema v0.3) and **acceptance-tested** (see end). The first artifact of the `reference/`

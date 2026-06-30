@@ -1,5 +1,8 @@
 # Scope-checklist output format — the target shape
 
+> **PLU-323 guard:** this format belongs to the superseded route-first harness. It is retained as
+> historical output evidence and migration reference, not as the current production scope path.
+
 **Status:** v0.1 — **RECOMMENDED TARGET, format only** (2026-06-14: "an ideal *format* — we will
 expand on details and other aspects"). Learned from a real GC procurement **bid-eval workbook** (one tab
 per CSI trade). This captures the **structure**, not any one project's data. Pairs with

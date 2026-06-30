@@ -1,5 +1,8 @@
 # Decompose prompt — trade-agnostic per-sheet scope read (v0.3)
 
+> **PLU-323 guard:** this prompt belongs to the superseded route-first harness. It is retained for
+> PLU-274 history/migration only and must not be used from a normal production `/scope-run`.
+
 > **Executable form:** realized as the **`scope-decomposer`** subagent (`agents/scope-decomposer.md`),
 > dispatched by the `scope-run` skill. This file is the durable design source + rationale; the agent is
 > the runnable method. Keep them in sync (edit both on a method change).

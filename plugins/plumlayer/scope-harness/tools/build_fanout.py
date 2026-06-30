@@ -1,6 +1,8 @@
 """
 build_fanout.py — prepare per-trade-lens fan-out inputs (DATA, not code).
 
+PLU-323 guard: superseded route-first tool retained for PLU-274 history/migration only.
+
 Doctrine role (agents read and judge; deterministic tooling grounds; nothing governs unverified):
   * Deterministic GLUE tool. The fan-out is not a hand-baked per-run script. This
     tool reads the merged decompose read + the committed trade lenses + the packet

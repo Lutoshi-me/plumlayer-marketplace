@@ -1,6 +1,8 @@
 """
 scope_claim_schema.py — pure schema, mint, validate, and writer for scope-item claims.
 
+PLU-323 guard: superseded route-first support module retained for PLU-274 history/migration only.
+
 Doctrine role (agents read and judge; deterministic tooling grounds; nothing governs unverified):
   * Deterministic GROUNDING layer — this module mints subjects and emits claim rows;
     it never infers scope meaning or trade assignments. Those come from the agent-read.

@@ -7,8 +7,8 @@ description: >
   "new project", "set up / start a new MOSOT", "onboard this project", "start a new bid / pursuit",
   "/project-create", or when the user hands over project documents to spin up a project. Creates the
   project via the create_project MCP verb, seeds parties / delivery / type / trades / sets via the
-  propose verb (everything proposed — a human promotes on plumlayer.com), and can emit a scope-run
-  cluster config so the user can scope the set next.
+  propose verb (everything proposed — a human promotes on plumlayer.com), then points the user to
+  drawing-ingest. Scope execution is guarded by PLU-323 until PLU-274 ships the scope-item-first engine.
 ---
 
 # Project Create — stand up a new MOSOT and customize it
@@ -26,8 +26,7 @@ governing truth. This skill **creates the project and customizes it** by turning
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud MOSOT
 > (project isolation + private bucket + RLS) — that's fine. They must **never** land in tracked or
-> committed plugin/repo files. Any local config you write (a cluster config) stays in the user's cwd
-> and out of git.
+> committed plugin/repo files.
 
 ---
 
@@ -39,9 +38,8 @@ MOSOT into existence carrying the few facts only *you* can supply.
 
 **The arc:**
 `setup` (operator profile, once) → **`project-create` (this skill — shell + minimal frame)** →
-**ingest & read the set** (the agent reads the cover sheet, drawing index, title blocks, and specs —
-via the sheet-registration / `scope-run` path — and asserts grounded sheet / party / type / size
-claims) → `scope-run` (per-trade takeoff) → **review & promote on plumlayer.com**.
+**`drawing-ingest`** (the agent reads and registers the drawing delivery as grounded sheet claims) →
+**PLU-274 scope-item-first engine** (when shipped) → **review & promote on plumlayer.com**.
 
 **The load-bearing consequence — don't interrogate for what the set is about to tell you.** Almost
 everything about a project is **read off the drawings, in the very next step, at a far higher
@@ -101,7 +99,8 @@ tier. Note in one line that you'll read it, then move on:
 Ask conversationally, in **one short group**, pre-filled from operator defaults
 (`~/.plumlayer/operator.json`). **Only `name` is required; everything else is "skip if you don't have
 it handy."** Do **not** reconcile the operator's saved defaults (e.g. interior-only scope lenses)
-against this project here — trade / lens fit is a `scope-run` input, decided when the set is read.
+against this project here. Scope execution is guarded until PLU-274, and the future scope-item-first
+engine will own any package/trade-fit inputs.
 
 ### Mode B — Ingest what they already have (preferred when docs exist)
 If the user points you at files, **read them locally** and pre-fill — reading a document they handed
@@ -180,20 +179,14 @@ sourced. **Every claim carries a `sourceInstrument` and evidence — no exceptio
 
 ---
 
-## Step 4 — (Optional) wire up a scope-run config
+## Step 4 — Name the guarded scope handoff
 
-Offer to pre-fill a **`scope-run` cluster config** so the user can scope this set next without
-re-entering anything. If they want it, copy the bundled template and fill it from the interview:
+Do not create a `scope-run` cluster config as the normal next step. PLU-323 guards that retired
+route-first path while PLU-274 rebuilds the production scope engine.
 
-```bash
-PLUGIN="$CLAUDE_PLUGIN_ROOT/scope-harness"
-mkdir -p ./clusters
-cp "$PLUGIN/clusters/cluster_TEMPLATE.json" ./clusters/cluster_<job>.json
-# fill: job, setId (NEVER a real project name — a generic tag), trades/lenses (from scope), grainLevel
-```
-
-This config lives in the user's **cwd**, is **gitignored**, and **carries no confidential PDF path**.
-Tell the user they can now run `/scope-run` pointed at their drawing PDF.
+Tell the user the safe next step is `drawing-ingest` to register and ground the drawing delivery. If
+they ask for scope execution, state that `/scope-run` currently fails loud and that PLU-274 owns the
+scope-item-first replacement.
 
 ---
 
@@ -205,8 +198,8 @@ Tell the user, in plain terms:
   flagged ambiguous** (the pile a human should resolve).
 - **Everything is `proposed`** — visible now via `search` / `set_grid` / `ambiguities` in this session,
   and on **plumlayer.com** for review and promotion. Nothing governs until a human promotes it.
-- **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-ingest` locally), then
-  `scope-run` to take off scope, then review/promote on plumlayer.com.
+- **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-ingest` locally), then use
+  the PLU-274 scope-item-first engine once it ships; `/scope-run` is guarded meanwhile.
 
 ---
 
@@ -220,5 +213,4 @@ Tell the user, in plain terms:
   claims are operator-asserted (lowest instrument); they don't govern.
 - **One project = one MOSOT.** Always seed within the correct `projectId` returned by `create_project`.
 - **Data hygiene.** Project specifics may live in the cloud MOSOT and in the user's cwd config; they
-  must **never** be written to a tracked/committed plugin or repo file. No confidential PDF path in a
-  committed cluster config.
+  must **never** be written to a tracked/committed plugin or repo file.

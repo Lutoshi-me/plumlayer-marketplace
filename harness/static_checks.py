@@ -28,10 +28,8 @@ EXPECTED_PLUGIN_NAME = "plumlayer"
 EXPECTED_MCP_URL = "https://api-production-0a7b.up.railway.app/mcp"
 
 EXPECTED_SKILLS = {
-    "drawing-index",
-    "drawing-index-bulletin",
-    "drawing-index-merge",
     "drawing-index-publish",
+    "drawing-ingest",
     "drawing-set-assemble",
     "mosot",
     "project-create",
@@ -40,7 +38,6 @@ EXPECTED_SKILLS = {
 }
 
 EXPECTED_AGENTS = {
-    "drawing-indexer",
     "scope-decomposer",
     "trade-specialist",
 }

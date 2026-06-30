@@ -1,6 +1,8 @@
 """
 project_scope.py — project scope-item claims into trade checklists and the gap log.
 
+PLU-323 guard: superseded route-first tool retained for PLU-274 history/migration only.
+
 Doctrine role (agents read and judge; deterministic tooling grounds; nothing governs unverified):
   * Deterministic PROJECTION tool — reads proposed scope-item claims, groups by
     subject, resolves predicate map, routes to output files.

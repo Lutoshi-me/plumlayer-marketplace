@@ -1,5 +1,5 @@
 {
-  "_README": "PROJECT-AGNOSTIC TEMPLATE. Copy to cluster_<job>.json and fill in the <…> fields. This is the ONLY per-job file in the package. The drawing PDF is supplied at runtime (--pdf / INGEST_PDF) and is NEVER stored here.",
+  "_README": "PLU-323 guard: superseded route-first cluster template retained for PLU-274 history/migration only. Do not use this as the normal production /scope-run path. PROJECT-AGNOSTIC TEMPLATE. Copy to cluster_<job>.json only for a labeled legacy replay or migration experiment. The drawing PDF is supplied at runtime (--pdf / INGEST_PDF) and is NEVER stored here.",
 
   "job": "<job-slug>",
   "setId": "<SETID, e.g. PROJECT-PHASE — namespaces sheetIds + subjects; never a real project name in tracked files>",
@@ -10,13 +10,13 @@
   "_grainLevel": "bid = hard-bid / precon (coarser, trade-package level) | ca = awarded / construction admin (finer, toward per-location). Tunes instance grouping in the decompose read. See $CLAUDE_PLUGIN_ROOT/scope-harness/reference/read-grain.md.",
 
   "lenses": "all",
-  "_lenses": "\"all\" = every lens in $CLAUDE_PLUGIN_ROOT/scope-harness/trade-lenses.json | or a list of lens keys to restrict the fan-out.",
+  "_lenses": "\"all\" = every legacy lens in $CLAUDE_PLUGIN_ROOT/scope-harness/trade-lenses.json | or a list of lens keys to restrict the superseded fan-out.",
 
   "packet": { "tiles": true, "tileDpi": 200, "targetTilePx": 2800 },
   "_packet": "tiling is REQUIRED for schedule-bearing sheets; targetTilePx≈2800 keeps every tile legible regardless of sheet size.",
 
   "trades": ["<lens-key>", "<lens-key>"],
-  "_trades": "the trade lenses to fan out — keys MUST exist in trade-lenses.json. Today the corpus is 7 interior lenses; add lenses (data, not code) to cover more scope.",
+  "_trades": "legacy route-first trade lenses to fan out — keys MUST exist in trade-lenses.json. Superseded by PLU-274 for production scope.",
 
   "titleKeywords": ["<KEYWORD>", "<KEYWORD>"],
   "_titleKeywords": "case-insensitive title substrings to select sheets; [] = whole set. WARNING: generic words like SCHEDULE/FINISH over-select across disciplines (they grab electrical/plumbing/structural schedules) — constrain the actual read with v0Subset.",

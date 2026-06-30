@@ -2,11 +2,11 @@
 name: setup
 description: >
   One-time Plumlayer operator setup — capture your company/operator profile and defaults once, so the
-  other skills (project-create, scope-run, the doc generators) are personalized without hardcoding any
-  confidential config into the plugin. Trigger on first install, "set up Plumlayer", "configure my
-  company", "onboard me", "/setup", or whenever project-create finds no operator profile. Writes a
-  local ~/.plumlayer/operator.json that is NEVER committed — the interview itself is the confidentiality
-  scrub: your specifics live in your environment, the shared plugin stays generic.
+  other skills (project-create, guarded scope handoff, the doc generators) are personalized without
+  hardcoding any confidential config into the plugin. Trigger on first install, "set up Plumlayer",
+  "configure my company", "onboard me", "/setup", or whenever project-create finds no operator profile.
+  Writes a local ~/.plumlayer/operator.json that is NEVER committed — the interview itself is the
+  confidentiality scrub: your specifics live in your environment, the shared plugin stays generic.
 ---
 
 # Plumlayer Setup — your operator profile (run once)
@@ -53,10 +53,10 @@ project-specific — that's `project-create`'s job. Keep it short.
 **Defaults** (sensible starting points project-create can override per job)
 - Default delivery method (`DBB` / `design-build` / `CM-at-risk` / …).
 - Default project type (e.g. `interior fit-out`, `ground-up`, `renovation`).
-- Default scope-run trade lenses — the `trade-lenses.json` keys you usually fan out (today's bundled
-  corpus is interior-focused; list the keys you use most).
-- Default `grainLevel` for scope runs: `bid` (hard-bid / precon, coarser) or `ca` (awarded /
-  construction-admin, finer).
+- Scope preferences for the future PLU-274 engine — the trades/packages you usually care about.
+  Do not fan out legacy `trade-lenses.json` as a production path.
+- Default scope grain preference, if useful later: `bid` (hard-bid / precon, coarser) or `ca`
+  (awarded / construction-admin, finer). The guarded `/scope-run` path may ignore this until PLU-274.
 
 **Branding** (optional, forward-looking — for the document-generator skills when they ship)
 - Logo path / letterhead reference. Optional; leave null if you're not using doc generators yet.
@@ -93,7 +93,7 @@ Schema (`~/.plumlayer/operator.json`):
   },
   "_meta": {
     "version": 1,
-    "note": "Local Plumlayer operator profile. NEVER commit. Written by the `setup` skill; read by project-create + scope-run for personalized defaults."
+    "note": "Local Plumlayer operator profile. NEVER commit. Written by the `setup` skill; read by project-create and future scope workflows for personalized defaults. The legacy route-first /scope-run path is guarded by PLU-323."
   }
 }
 ```

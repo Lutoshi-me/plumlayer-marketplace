@@ -1,5 +1,9 @@
 # Drawing-set literacy — what a set is, how to read it, in what order
 
+> **PLU-323 guard:** this reference was written for the superseded route-first harness. It remains useful
+> as historical set-reading doctrine, but normal `/scope-run` execution is blocked while PLU-274 rebuilds
+> scope-item-first.
+
 **Status:** v0.1 — the second cross-trade doctrine in `reference/` (sibling to `read-grain.md`). Where
 `read-grain.md` answers *"what is one scope item?"*, this answers the question **before** it: *"what am I
 looking at, and where do I find the scope?"* It governs every read — the conductor at Ground/cluster

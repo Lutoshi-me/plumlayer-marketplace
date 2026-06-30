@@ -1,6 +1,8 @@
 """
 prepare_deposit.py — map scope_claims.jsonl → MOSOT `propose`-ready argument objects.
 
+PLU-323 guard: superseded route-first tool retained for PLU-274 history/migration only.
+
 The scope harness already emits claims in the MOSOT Claim shape (subject — predicate —
 value + evidence, trustClass "proposed"). This tool flattens that JSONL into a list of
 argument objects ready to hand to the `propose` MCP verb, ONE object per `propose` call:
