@@ -35,6 +35,9 @@ Batch output (--batch-dir / --batch-size):
   * Writes deposit_manifest.json with exact per-batch counts, so the deposit agent can
     verify the inserted count against the manifest and stop instead of inventing.
   * Stale batches from a prior, larger run are cleared before writing.
+  * Resume mode (`--resume-from-count N`) writes only entries N..end and records the
+    original deposit index span for every batch. Use it only after a read-only cloud
+    count proves the first N entries landed.
 
 Importable + CLI. Stdlib only.
 """
@@ -55,12 +58,25 @@ from typing import Any
 
 class BatchEntry:
     """One entry in the manifest's batches list."""
-    def __init__(self, file: str, count: int) -> None:
+    def __init__(
+        self,
+        file: str,
+        count: int,
+        original_start_index: int | None = None,
+        original_end_index_inclusive: int | None = None,
+    ) -> None:
         self.file = file
         self.count = count
+        self.original_start_index = original_start_index
+        self.original_end_index_inclusive = original_end_index_inclusive
 
     def to_dict(self) -> dict:
-        return {"file": self.file, "count": self.count}
+        out = {"file": self.file, "count": self.count}
+        if self.original_start_index is not None:
+            out["originalStartIndex"] = self.original_start_index
+        if self.original_end_index_inclusive is not None:
+            out["originalEndIndexInclusive"] = self.original_end_index_inclusive
+        return out
 
 
 class BatchManifest:
@@ -71,19 +87,28 @@ class BatchManifest:
         batch_size: int,
         batch_count: int,
         batches: list[BatchEntry],
+        original_total_claims: int | None = None,
+        already_inserted_claims: int | None = None,
     ) -> None:
         self.total_claims = total_claims
         self.batch_size = batch_size
         self.batch_count = batch_count
         self.batches = batches
+        self.original_total_claims = original_total_claims
+        self.already_inserted_claims = already_inserted_claims
 
     def to_dict(self) -> dict:
-        return {
+        out = {
             "totalClaims": self.total_claims,
             "batchSize": self.batch_size,
             "batchCount": self.batch_count,
             "batches": [b.to_dict() for b in self.batches],
         }
+        if self.original_total_claims is not None:
+            out["originalTotalClaims"] = self.original_total_claims
+        if self.already_inserted_claims is not None:
+            out["alreadyInsertedClaims"] = self.already_inserted_claims
+        return out
 
 
 def _contest_by_subject(rows: list[dict]) -> dict[str, str]:
@@ -150,14 +175,18 @@ def write_batches(
     deposit: list[dict],
     batch_dir: Path,
     batch_size: int = 50,
+    *,
+    batch_prefix: str = "deposit_batch",
+    original_start_index: int = 0,
+    original_total_claims: int | None = None,
 ) -> BatchManifest:
     """Write deposit list as numbered batch files + a manifest into batch_dir.
 
     Contract:
-      - Clears any existing deposit_batch_*.json and deposit_manifest.json in batch_dir
+      - Clears any existing <batch_prefix>_*.json and deposit_manifest.json in batch_dir
         before writing (prevents stale batches from a prior, larger run lingering).
       - Creates batch_dir if it does not exist.
-      - Writes deposit_batch_NNN.json files (zero-padded 3 digits), each a JSON array
+      - Writes <batch_prefix>_NNN.json files (zero-padded 3 digits), each a JSON array
         of <=batch_size entries, indent=2 (pretty-printed — single-line is what truncates
         in agent reads and causes fabrication of the missing tail).
       - Writes deposit_manifest.json with exact per-batch counts.
@@ -169,7 +198,7 @@ def write_batches(
     batch_dir.mkdir(parents=True, exist_ok=True)
 
     # Clear stale batches from any prior run.
-    for stale in batch_dir.glob("deposit_batch_*.json"):
+    for stale in batch_dir.glob(f"{batch_prefix}_*.json"):
         stale.unlink()
     stale_manifest = batch_dir / "deposit_manifest.json"
     if stale_manifest.exists():
@@ -181,11 +210,18 @@ def write_batches(
 
     while written < len(deposit) or (written == 0 and len(deposit) == 0):
         chunk = deposit[written: written + batch_size]
-        fname = f"deposit_batch_{idx:03d}.json"
+        fname = f"{batch_prefix}_{idx:03d}.json"
         fpath = batch_dir / fname
         with fpath.open("w", encoding="utf-8") as fh:
             json.dump(chunk, fh, indent=2)
-        entries.append(BatchEntry(file=fname, count=len(chunk)))
+        start = original_start_index + written
+        end = start + len(chunk) - 1 if chunk else start - 1
+        entries.append(BatchEntry(
+            file=fname,
+            count=len(chunk),
+            original_start_index=start,
+            original_end_index_inclusive=end,
+        ))
         written += len(chunk)
         idx += 1
         if written >= len(deposit):
@@ -196,6 +232,8 @@ def write_batches(
         batch_size=batch_size,
         batch_count=len(entries),
         batches=entries,
+        original_total_claims=original_total_claims,
+        already_inserted_claims=original_start_index if original_start_index else None,
     )
     manifest_path = batch_dir / "deposit_manifest.json"
     with manifest_path.open("w", encoding="utf-8") as fh:
@@ -217,6 +255,12 @@ def main() -> None:
                          "alongside --out)")
     ap.add_argument("--batch-size", type=int, default=50,
                     help="max claims per batch file (default: 50)")
+    ap.add_argument("--resume-from-count", type=int, default=0,
+                    help="write only claims from this zero-based count onward; use only "
+                         "after a read-only cloud count proves the first N landed")
+    ap.add_argument("--batch-prefix", default="deposit_batch",
+                    help="prefix for batch files (default: deposit_batch; use resume_batch "
+                         "for resume batches)")
     args = ap.parse_args()
 
     rows: list[dict] = []
@@ -228,10 +272,21 @@ def main() -> None:
 
     deposit, dropped = prepare(rows, args.source, args.version_scope)
 
+    if args.batch_size < 1:
+        raise SystemExit("--batch-size must be >= 1")
+    if args.resume_from_count < 0:
+        raise SystemExit("--resume-from-count must be >= 0")
+    if args.resume_from_count > len(deposit):
+        raise SystemExit(
+            f"--resume-from-count {args.resume_from_count} exceeds deposit length {len(deposit)}"
+        )
+
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", encoding="utf-8") as fh:
         json.dump(deposit, fh, indent=2)
+
+    batch_deposit = deposit[args.resume_from_count:]
 
     subjects = {d["subject"] for d in deposit}
     flagged = {d["subject"] for d in deposit if d.get("ambiguityClass")}
@@ -243,10 +298,21 @@ def main() -> None:
     print(f"[info] predicate counts: {dict(preds)}", file=sys.stderr)
 
     batch_dir = Path(args.batch_dir) if args.batch_dir else out_path.parent / "deposit_batches"
-    manifest = write_batches(deposit, batch_dir, args.batch_size)
+    manifest = write_batches(
+        batch_deposit,
+        batch_dir,
+        args.batch_size,
+        batch_prefix=args.batch_prefix,
+        original_start_index=args.resume_from_count,
+        original_total_claims=len(deposit) if args.resume_from_count else None,
+    )
+    resume_note = (
+        f" from original index {args.resume_from_count}"
+        if args.resume_from_count else ""
+    )
     print(
         f"[ok] wrote {manifest.batch_count} batch files (<={args.batch_size} claims each)"
-        f" + deposit_manifest.json -> {batch_dir}"
+        f"{resume_note} + deposit_manifest.json -> {batch_dir}"
     )
 
 

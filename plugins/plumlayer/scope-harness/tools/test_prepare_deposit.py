@@ -170,6 +170,60 @@ def test_stale_batches_cleared(tmp_path: Path) -> None:
     _assert_invariants(small, batch_dir, 50, manifest_small)
 
 
+def test_resume_batches_record_original_indices(tmp_path: Path) -> None:
+    """Resume-mode batches carry original deposit index spans for count-checked restarts."""
+    deposit = _make_deposit(23)
+    remaining = deposit[7:]
+    batch_dir = tmp_path / "resume"
+
+    manifest = write_batches(
+        remaining,
+        batch_dir,
+        5,
+        batch_prefix="resume_batch",
+        original_start_index=7,
+        original_total_claims=len(deposit),
+    )
+
+    assert manifest.total_claims == 16
+    assert manifest.original_total_claims == 23
+    assert manifest.already_inserted_claims == 7
+    assert [b.count for b in manifest.batches] == [5, 5, 5, 1]
+    assert [b.file for b in manifest.batches] == [
+        "resume_batch_000.json",
+        "resume_batch_001.json",
+        "resume_batch_002.json",
+        "resume_batch_003.json",
+    ]
+    assert [
+        (b.original_start_index, b.original_end_index_inclusive)
+        for b in manifest.batches
+    ] == [(7, 11), (12, 16), (17, 21), (22, 22)]
+
+    on_disk = json.loads((batch_dir / "deposit_manifest.json").read_text(encoding="utf-8"))
+    assert on_disk["originalTotalClaims"] == 23
+    assert on_disk["alreadyInsertedClaims"] == 7
+    assert on_disk["batches"][0]["originalStartIndex"] == 7
+    assert on_disk["batches"][-1]["originalEndIndexInclusive"] == 22
+
+    reconstructed: list[dict] = []
+    for entry in manifest.batches:
+        reconstructed.extend(json.loads((batch_dir / entry.file).read_text(encoding="utf-8")))
+    assert reconstructed == remaining
+
+
+def test_custom_batch_prefix_stale_files_cleared(tmp_path: Path) -> None:
+    """Stale cleanup follows the active prefix, so resume reruns do not leave old tails."""
+    batch_dir = tmp_path / "resume"
+    write_batches(_make_deposit(12), batch_dir, 5, batch_prefix="resume_batch")
+    assert len(list(batch_dir.glob("resume_batch_*.json"))) == 3
+
+    write_batches(_make_deposit(3), batch_dir, 5, batch_prefix="resume_batch")
+    assert [p.name for p in sorted(batch_dir.glob("resume_batch_*.json"))] == [
+        "resume_batch_000.json",
+    ]
+
+
 # ---------------------------------------------------------------------------
 # Pretty-print (indent=2) test — load-bearing for agent reads
 # ---------------------------------------------------------------------------

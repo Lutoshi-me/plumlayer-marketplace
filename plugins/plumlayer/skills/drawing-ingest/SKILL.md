@@ -75,7 +75,9 @@ bootstrap.
      "$PLUGIN/tools/prepare_deposit.py"        # sanity-check it resolved
   ```
 - **Your working directory:** the **delivery** (supplied by path — confidential, never copied into the
-  repo or plugin) and all **output** (`./output/ingest/<job>/`). The plugin is never written to.
+  repo or plugin) and all generated **output**. Default to a private run folder outside git:
+  `~/dev/plumlayer-private/codex-runs/<job>/`. Do not write `./output/ingest/...` under a repo root
+  unless you have first proved that exact path is ignored.
 - The grounding tools need **Python 3 + PyMuPDF (`fitz`)**. No other dependency. **Do not add one** —
   vision reads are agent-native (you), OCR for scanned pages is deferred (PLU-186, see § Deferred).
 
@@ -85,10 +87,14 @@ bootstrap.
 2. **The delivery is confidential, supplied by path.** On a Windows host pass a **Windows-style path**
    (`C:/Users/...`), NOT an MSYS path (`/c/Users/...`), or PyMuPDF can't open it. Quote it (paths have
    spaces).
-3. **Set the job + output dir** — `JOB=<job>`; everything lands in `./output/ingest/<job>/`. Keep it
-   out of any tracked tree.
+3. **Set the job + output dir** — `JOB=<job>`; everything lands in
+   `~/dev/plumlayer-private/codex-runs/<job>/` by default. Keep it out of any tracked tree.
 4. **Know the issue label** — the version scope (e.g. `2025-12-22 CD / IFC`). Ask the user, or read it
    off the cover sheet during the read. It is load-bearing for supersession (Stage 4).
+5. **Cloud worker preflight.** The MCP `register_pages`, `render_page`, and `ground_sheets` tools need
+   `INGEST_WORKER_URL + INGEST_WORKER_SECRET` configured on the API. If one returns a "not configured"
+   error, stop after reporting the created project/upload state. Do not slide into a full local
+   fallback deposit unless the user explicitly asks; that fallback is slower and higher-friction.
 
 ---
 
@@ -127,7 +133,7 @@ PDFs — it happens), say so and pick the authoritative source, don't read both.
 
 ## Stages (fixed, gated — run in order)
 
-Output lands in `./output/ingest/<job>/`. Run the bulk + derive + deposit stages **per drawing PDF**;
+Output lands in the private run folder (`~/dev/plumlayer-private/codex-runs/<job>/`). Run the bulk + derive + deposit stages **per drawing PDF**;
 for a by-discipline folder or sequence splits, give each PDF its own `SET_TAG` and merge the claim files
 before deposit (or deposit each — same project).
 
@@ -143,11 +149,11 @@ Editing it trips the grounding-pipeline-change re-validation gate.
 # Drives via its env contract (verified var names): INGEST_PDF / INGEST_SET_TAG / INGEST_REVISION /
 # INGEST_OUT_DIR. No default PDF exists — it errors without INGEST_PDF (a silent default is a footgun).
 INGEST_PDF="$PDF" INGEST_SET_TAG=<SETID> INGEST_REVISION="<issue label>" \
-  INGEST_OUT_DIR=./output/ingest/<job> \
+  INGEST_OUT_DIR="$RUN_DIR" \
   python "$PLUGIN/ingestion/sheet_inventory.py"
 ```
 
-*Produces* `./output/ingest/<job>/sheet_inventory_claims.jsonl` — one `appearsOnPage` + one `hasTitle`
+*Produces* `$RUN_DIR/sheet_inventory_claims.jsonl` — one `appearsOnPage` + one `hasTitle`
 claim per grounded sheet, each in the MOSOT Claim shape (`subject: "sheet:<NO>"`, `evidence` with a
 page-points bbox, `trustClass` + `confidence`). It also prints a per-page table and a summary: pages
 scanned, sheet# extracted, **high-conf (>=0.88)**, **flagged for review**, by-discipline, duplicate
@@ -174,7 +180,7 @@ python - <<'PY'
 import fitz
 doc = fitz.open(r"<PDF>")                       # Windows-style path
 pg = doc[<PAGE>]
-out = r"./output/ingest/<job>"
+out = r"<RUN_DIR>"
 pg.get_pixmap(dpi=200).save(out + r"/residue_p<PAGE>.png")          # full sheet
 r = pg.rect                                                          # rotation-aware rect
 clip = fitz.Rect(r.x0 + 0.62*r.width, r.y0 + 0.55*r.height, r.x1, r.y1)
@@ -183,7 +189,7 @@ PY
 ```
 
 Read the PNG (use the Read tool), judge the sheet number + title + discipline, and **append a
-Claim-shaped row** to `./output/ingest/<job>/residue_claims.jsonl` in the **same schema the reader
+Claim-shaped row** to `$RUN_DIR/residue_claims.jsonl` in the **same schema the reader
 emits** — `method: "agent-vision-crop"`, `trustClass: "proposed"`, and `evidence` citing the
 title-block bbox in page points you read it from. Subject keying: `sheet:<canon sheetno>` (uppercase,
 prefix-dash-number; e.g. `sheet:A-101`). A residue claim row:
@@ -212,9 +218,9 @@ how many you corrected, and how many you flagged image-only.
 Concatenate the bulk claims and your residue reads into one inventory:
 
 ```bash
-cat ./output/ingest/<job>/sheet_inventory_claims.jsonl \
-    ./output/ingest/<job>/residue_claims.jsonl \
-    > ./output/ingest/<job>/inventory.jsonl   # omit residue_claims.jsonl if there was none
+cat "$RUN_DIR/sheet_inventory_claims.jsonl" \
+    "$RUN_DIR/residue_claims.jsonl" \
+    > "$RUN_DIR/inventory.jsonl"   # omit residue_claims.jsonl if there was none
 ```
 
 ### 4 · Derive the canonical form *(deterministic — discipline + issue scope)*
@@ -226,9 +232,9 @@ deposit layer**, never by editing the frozen reader:
 
 ```bash
 python "$PLUGIN/ingestion/derive_set_claims.py" \
-  --claims ./output/ingest/<job>/inventory.jsonl \
+  --claims "$RUN_DIR/inventory.jsonl" \
   --issue-label "<issue label>" \
-  --out ./output/ingest/<job>/set_claims.jsonl
+  --out "$RUN_DIR/set_claims.jsonl"
 # --issue-source defaults to "user-supplied"; pass a cover-sheet citation source if you READ the label.
 ```
 
@@ -256,9 +262,9 @@ This is what makes ingestion a **projection over the project's MOSOT** rather th
    per-batch counts.
    ```bash
    python "$PLUGIN/tools/prepare_deposit.py" \
-     --claims ./output/ingest/<job>/set_claims.jsonl \
-     --out ./output/ingest/<job>/deposit.json
-   # → also writes ./output/ingest/<job>/deposit_batches/{deposit_batch_NNN.json, deposit_manifest.json}
+     --claims "$RUN_DIR/set_claims.jsonl" \
+     --out "$RUN_DIR/deposit.json"
+   # → also writes "$RUN_DIR/deposit_batches/{deposit_batch_NNN.json, deposit_manifest.json}"
    ```
    It prints the total claim count + predicate composition. **Confirm the magnitude with the user**
    before firing (a full set runs ~4 claims per sheet: appearsOnPage + hasTitle + discipline +
@@ -276,6 +282,18 @@ This is what makes ingestion a **projection over the project's MOSOT** rather th
      a claim you did not read verbatim from the batch file is a **fabrication** and a doctrine
      violation. A truncated read is a hard error, not a cue to fill in the rest.
    - Track count-verified batches so a stop is **resumable from the next unsent batch**.
+   - **Resume helper:** if a previous run stopped after a read-only cloud `search` count proves the
+     first `N` manifest entries landed, regenerate only the remainder instead of hand-splicing:
+     ```bash
+     python "$PLUGIN/tools/prepare_deposit.py" \
+       --claims "$RUN_DIR/set_claims.jsonl" \
+       --out "$RUN_DIR/deposit.json" \
+       --resume-from-count <N> \
+       --batch-prefix resume_batch \
+       --batch-dir "$RUN_DIR/resume_from_<N>"
+     ```
+     The resume manifest records `originalStartIndex` / `originalEndIndexInclusive` for every batch.
+     Keep the generated batch size small; do not "optimize" to 100/250-claim model-transcribed calls.
    - **Fallback** (older server without `propose_batch`): deposit the same batch files with per-entry
      `propose` calls — still read verbatim, still count-verified against the manifest, same hard gate.
    Every claim lands `proposed` (or `derived`) — it never governs until a human promotes it on
@@ -300,8 +318,8 @@ This is what makes ingestion a **projection over the project's MOSOT** rather th
   deposit — never reconstruct or invent a claim to "finish" a batch.
 - **Honest coverage.** If a stage bounded its coverage (pages skipped, a PDF sampled not fully read,
   scanned pages unread), **say so** — silent truncation reads as "covered everything."
-- Data hygiene: the delivery + `output/` stay in the user's cwd and out of git; **no client specifics
-  in any tracked / committed file**.
+- Data hygiene: the delivery + generated run artifacts stay in `plumlayer-private` or another
+  explicitly untracked path; **no client specifics in any tracked / committed file**.
 
 ## Cost knob (cheapest tier first)
 
