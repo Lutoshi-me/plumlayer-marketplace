@@ -1398,3 +1398,78 @@ class TestNumericKeyFlag:
         assert subjects == set()
         pn = [r for r in residue if "pure-numeric" in r.get("reason", "")]
         assert len(pn) == 2, f"Expected both numeric rows flagged, got {pn}"
+
+
+# ---------------------------------------------------------------------------
+# Wrapped-key zero-key-spans (PLU-309 A4) -- confirmed silent-drop fix
+# ---------------------------------------------------------------------------
+
+def _no_key_spans_col_map(wrapped: bool) -> dict:
+    """Tabular map whose key column x-range [0, 60] never captures any span below."""
+    key: dict = {"name": "item", "xLeft": 0.0, "xRight": 60.0}
+    if wrapped:
+        key["wrapped"] = True
+    return {
+        "tableTitle": "NO KEY SPANS FIXTURE",
+        "kind": "equipmentType",
+        "tableType": "definition",
+        "layout": "tabular",
+        "regionBbox": [0.0, 0.0, 300.0, 80.0],
+        "headerRowCount": 1,
+        "keyColumn": key,
+        "columns": [
+            {"name": "mfr", "xLeft": 60.0,  "xRight": 140.0},
+            {"name": "cap", "xLeft": 140.0, "xRight": 220.0},
+        ],
+    }
+
+
+def _no_key_spans_spans() -> list[dict]:
+    """Two data rows whose spans all land in mfr/cap; nothing has an x-center inside
+    the key column's [0, 60] range (+/- X_SLOP_PT=4), mirroring a mis-set keyColumn
+    xLeft/xRight that captures zero spans in the data region."""
+    return [
+        _span("ITEM", 10,  5, 50, 15),
+        _span("MFR",  70,  5, 130, 15),
+        _span("CAP", 150,  5, 210, 15),
+        # data row 1 -- no key-column span
+        _span("ACME", 70, 25, 130, 35),
+        _span("40",  150, 25, 210, 35),
+        # data row 2 -- no key-column span
+        _span("AEGIS", 70, 45, 130, 55),
+        _span("60",   150, 45, 210, 55),
+    ]
+
+
+class TestWrappedNoKeySpans:
+    """A wrapped-hint table whose key column captures zero spans must flag every data
+    span as residue -- the pre-fix behavior silently returned [] from
+    _wrapped_key_buckets and dropped the whole table (zero claims, zero residue)."""
+
+    def test_wrapped_hint_zero_key_spans_flags_all_residue(self):
+        claims, residue = _ground_tabular(
+            _no_key_spans_col_map(wrapped=True), _no_key_spans_spans(),
+            "SET/0", "sheet:M-04", "IFC",
+        )
+        assert claims == [], "No claims should be emitted with zero key spans"
+        reasons = [r["reason"] for r in residue]
+        assert reasons == ["wrapped-table-no-key-spans"], (
+            f"Expected exactly one wrapped-table-no-key-spans entry, got {reasons}"
+        )
+        residue_texts = {s["text"] for s in residue[0]["spans"]}
+        # All four DATA spans (not the header) must be present -- nothing dropped.
+        assert residue_texts == {"ACME", "40", "AEGIS", "60"}
+
+    def test_no_hint_same_fixture_uses_existing_key_cell_empty_path(self):
+        """Without the wrapped hint, the same fixture runs the ordinary row-cluster
+        path: each row has an empty key cell with attribute spans present, which
+        already hits the pre-existing key-cell-empty-has-attribute-spans residue --
+        proving the new reason is scoped to the wrapped path, not a general change."""
+        claims, residue = _ground_tabular(
+            _no_key_spans_col_map(wrapped=False), _no_key_spans_spans(),
+            "SET/0", "sheet:M-04", "IFC",
+        )
+        assert claims == []
+        reasons = {r["reason"] for r in residue}
+        assert "wrapped-table-no-key-spans" not in reasons
+        assert "key-cell-empty-has-attribute-spans" in reasons

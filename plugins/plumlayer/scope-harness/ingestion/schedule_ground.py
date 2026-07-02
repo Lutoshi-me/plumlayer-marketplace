@@ -47,6 +47,9 @@ The agent-column-map contract (written into manifest 'column_maps' entries):
 For matrix layout, "keyColumn" is the attribute-label column (leftmost), and
 "columns" are code-keyed columns (one per code). The ground phase treats each
 code column as a separate subject whose attributes are the row labels.
+keyColumn.numericKey applies to the tabular path only -- matrix layout has no
+numeric-key concept; its numeric code-columns gate their canon_code check via
+tableType:"instance" (same as any other matrix code column), not numericKey.
 
 Grounding logic (deterministic, no inference):
   1. Isolate table spans: spans whose bbox y-center falls within regionBbox y-range,
@@ -463,6 +466,12 @@ def _wrapped_key_buckets(
          top-to-bottom, so the existing assign/stitch/continuation-merge/emit loop runs
          unchanged. This path and _split_collided_rows are mutually exclusive per table;
          the hint selects.
+
+    Returns [] if no span in data_spans falls inside the key column's x-range (an empty
+    stack list, never a residue entry -- this function has no residue_rows to write to).
+    The caller (_ground_tabular) treats an empty return as "no key spans" and flags every
+    span in data_spans residue rather than letting the empty row_clusters make the per-row
+    loop a silent no-op.
     """
     key_spans = [
         s for s in data_spans
@@ -570,6 +579,19 @@ def _ground_tabular(
         # Wrapped-key table: assemble one bucket per code by stacking the key column's
         # lines (agent-declared structure). Mutually exclusive with _split_collided_rows.
         row_clusters = _wrapped_key_buckets(data_spans, key_col, columns)
+        if not row_clusters:
+            # No key-column span captured any data span (e.g. a mis-set xLeft/xRight on
+            # a narrow stacked-key column). Without a key span there is no row structure
+            # to reconstruct geometrically, so every data span is flagged residue rather
+            # than silently discarded (the empty row_clusters would otherwise make the
+            # per-row loop below a no-op).
+            residue_rows.append({
+                "reason": "wrapped-table-no-key-spans",
+                "tableTitle": col_map.get("tableTitle", ""),
+                "regionBbox": region_bbox,
+                "spans": [{"text": s["text"], "bbox": s["bbox"]} for s in data_spans],
+            })
+            return claims, residue_rows
     else:
         # Cluster into row y-bands, then split any band that centroid drift stitched from
         # two tightly-packed code rows (>=2 distinct key cells) back into one sub-row per

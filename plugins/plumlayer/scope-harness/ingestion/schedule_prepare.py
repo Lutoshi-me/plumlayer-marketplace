@@ -40,7 +40,9 @@ column_map shape (filled by the agent, one per table on the sheet):
     #   read as one code ("HP" over "A" => "HP-A"); selects the key-first stacking path,
     #   the tool joins the stack top-to-bottom with '-'. "numericKey": true  -- accept a
     #   bare integer key on a DEFINITION table (same gate tableType:"instance" opens, no
-    #   instance tag); never loosens the global canon_code gate.
+    #   instance tag); never loosens the global canon_code gate. Both hints apply to the
+    #   tabular path only -- in matrix layout "keyColumn" is the attribute-label column,
+    #   and numeric matrix code-columns gate via tableType:"instance" instead.
     "columns": [
       {"name": "description", "xLeft": 210.0, "xRight": 355.0},
       {"name": "areaLocation", "xLeft": 355.0, "xRight": 450.0},
