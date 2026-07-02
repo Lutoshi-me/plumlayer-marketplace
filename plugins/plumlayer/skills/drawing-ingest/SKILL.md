@@ -22,10 +22,13 @@ grounded set of **proposed sheet claims** in the project's MOSOT. This is **Stag
 that touches a delivery, before anything is split by discipline, routed, or deep-read.
 
 Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing governs
-unverified.** Every claim you deposit is `proposed` — a human promotes it later on plumlayer.com. You
-are the reader; the MCP grounding verbs (`ground_sheets`, `render_page`, `get_page_text`) are the
+unverified.** Every claim in this pipeline lands `proposed` — whether the server-side grounding job
+deposited it or you did — a human promotes it later on plumlayer.com. You are the reader; the MCP
+grounding verbs (`ground_sheets`, `ground_sheets_status`, `render_page`, `get_page_text`) are the
 anti-hallucination anchor, not the inference engine. There is no local pipeline and no server-side
-autonomous reader — everything runs cloud-side over MCP, driven by you, the connected agent.
+autonomous *reader* — the server runs the deterministic bulk pass and deposits its own output, but you
+still drive every job, judge every residue page, and author every claim that isn't the deterministic
+pass's own grounded output.
 
 Design lineage: `agent-driven-ingestion.md` (who runs the read and where — the 2026-06-28 cloud-first
 decision this skill implements) and `drawing-set-intake-design.md` (what a good read produces, the
@@ -71,12 +74,21 @@ A delivery arrives in one of four packaging classes — recognize the class befo
 
 Filenames and folder shape *orient* you; they never *decide*. A drawing sheet has sparse text and a
 sheet-number token in the bottom-right title block (`A-101`, `S-201`); a spec/geotech/narrative page has
-dense body text and no corner title block. When the packaging is genuinely ambiguous (a mixed bag, or a
-dual-source quirk where a combined PDF **and** a full set of per-sheet PDFs both exist), use the
-**Read tool** directly on a few local candidate pages of each file to judge title-block grammar vs
-spec-prose and pick the authoritative source. This local sampling is **file-selection judgment only** —
-it decides which local files you upload next; it never grounds a claim, and no claim's evidence ever
-cites a local read (every claim's evidence comes from the cloud grounding tools in steps 5–6).
+dense body text and no corner title block.
+
+**Dual-source repackaging:** when a delivery contains both a combined PDF and a full set of per-sheet
+PDFs, check page totals first. If the per-sheet PDFs' combined page count equals the combined PDF's page
+count, that's duplicate repackaging of the same set, not two sources — **prefer the single combined file
+and don't ground both**; grounding both wastes a full pass and risks depositing the same sheets twice
+under different `fileId`s. Only treat it as genuinely ambiguous when the totals disagree or there's no
+clean 1:1 correspondence.
+
+For any other genuinely ambiguous packaging (a mixed bag, or a dual-source case the page-total check
+didn't resolve), use the **Read tool** directly on a few local candidate pages of each file to judge
+title-block grammar vs spec-prose and pick the authoritative source. This local sampling is
+**file-selection judgment only** — it decides which local files you upload next; it never grounds a
+claim, and no claim's evidence ever cites a local read (every claim's evidence comes from the cloud
+grounding tools in steps 5–6).
 
 Emit a short packaging report before uploading: the class, which file(s) are the drawings and why,
 page counts, which files you are excluding (specs, geotech, emails) and why, and the picked source if
@@ -92,6 +104,10 @@ reuse it rather than registering a duplicate. Otherwise call `create_drawing_del
 - `label` — the human issue label from step 1.
 - `issuedOn` (`YYYY-MM-DD`) and `sequence` — read these off the documents themselves (a cover sheet, a
   bulletin header). **Never substitute upload time** — chronology drives supersession resolution.
+  **When issue-date signals disagree** (the filename says one date, a cover sheet or transmittal says
+  another), the **drawing set's own revision table is authoritative** for `issuedOn` — it's the
+  architect's own record of the issue, ahead of a filename someone typed or a transmittal cover letter.
+  Note the disagreement in the packaging report rather than silently picking one.
 
 Every file you upload in step 4 attaches to this one `deliveryId`.
 
@@ -114,26 +130,40 @@ For each drawing PDF you identified in step 2:
 Repeat for every file in the delivery; each one registers to the **same** `deliveryId`. No local run
 folder, no manifest file — the project files list (`list_files`) is the record.
 
-## 5 · Ground
+## 5 · Ground (async — start, then poll)
 
 Call `register_pages(projectId)` **once** for the project — it registers viewable page rows for every
 uploaded PDF (not claims, just renderable pages) and only needs to run once per project, not per file.
 
-Then call `ground_sheets(projectId, fileId, deliveryId)` **once per file** — the deterministic
-server-side pass that grounds the title-block sheet number + title on most pages of that PDF. Report
-the real counts from the result: `pagesScanned`, `sheetsGrounded`, `highConfCount`, `flaggedCount`,
-`extractionWarningCount`, `calibrated`, `capHit`. Never assume "N pages scanned = N sheets grounded" —
-state both numbers. `confidence` on individual claims is triage/review-priority metadata only, never a
-trust tier; every claim here is already `proposed`.
+Then, **once per file**, call `ground_sheets(projectId, fileId, deliveryId)` to start the deterministic
+server-side pass over that PDF. It returns immediately — it does not scan inline — with
+`{jobId, status: "queued"|"succeeded", deliveryId, alreadyActive?}`. `alreadyActive: true` means a job
+for this file+delivery is already in flight or done; poll the returned `jobId` rather than starting a
+second one. Run `ground_sheets` once per file, never twice for the same file+delivery.
 
-For a multi-file delivery, ground every file separately (each call returns its own `residue` and
-`depositClaims`); there is no merge step and no `SET_TAG` — everything pools at deposit time (step 7)
-because it all shares one `deliveryId` in one project.
+Poll `ground_sheets_status(projectId, jobId)` every ~3-5s until `state` settles:
+
+- `queued` / `running` — still working; poll again in a few seconds.
+- `stale` — no progress for 15 minutes; re-call `ground_sheets` on the same file/delivery to self-heal
+  (it restarts the job).
+- `failed` — read `error`, stop, and report it; don't retry blindly.
+- `succeeded` — the grounded sheet claims (`appearsOnPage`, `hasTitle`, `locatedAt`, `discipline`,
+  `partOfIssue`) are **already deposited server-side as `proposed` claims.** This result never carries
+  those claims and you never `propose_batch` them yourself — that would double-write every sheet. Report
+  the run-level counts from `report`: `pagesScanned`, `sheetsGrounded`, `highConfCount`, `flaggedCount`,
+  `extractionWarningCount`, `calibrated`, `capHit`. Never assume "N pages scanned = N sheets grounded" —
+  state both numbers. `confidence` on individual claims (visible later via `search`/`set_grid`) is
+  triage/review-priority metadata only, never a trust tier.
+
+For a multi-file delivery, start and poll a separate job per file; there is no merge step and no
+`SET_TAG` — each file's grounded claims land under the shared `deliveryId` as soon as its own job
+succeeds, with no pooling step required.
 
 ## 6 · Residue read
 
-`ground_sheets` returns `residue`: the tail where the deterministic pass is least sure (low confidence,
-no sheet number found, or a degraded text layer). Read and judge every residue row yourself:
+A `succeeded` `ground_sheets_status` result carries `residue`: the tail where the deterministic pass is
+least sure (low confidence, no sheet number found, or a degraded text layer). Read and judge every
+residue row yourself:
 
 - Use `residue[].pageNum` or `pageInPdf` (both 1-based) with `render_page` and `get_page_text` — never
   the legacy 0-based `residue[].page` field. `render_page` returns the PNG inline (pass a normalized
@@ -147,9 +177,9 @@ no sheet number found, or a degraded text layer). Read and judge every residue r
   `page:<fileId>:<pageInPdf>` — never `subject: null`, and never add an OCR dependency (deferred,
   PLU-186). Report the flagged page list; an honest "could not ground these N pages" beats a guess.
 
-For every residue subject you *do* resolve, author the **full bundle** of claims, mirroring the shape
-`depositClaims` produces for the pages the deterministic pass already grounded (matching predicate and
-value shapes keeps every sheet's claim set uniform regardless of which stage grounded it):
+For every residue subject you *do* resolve, author the **full bundle** of claims, mirroring the shape the
+server deposits for the pages the deterministic pass already grounded (matching predicate and value
+shapes keeps every sheet's claim set uniform regardless of which stage grounded it):
 
 ```json
 {"subject": "sheet:S-501", "predicate": "appearsOnPage", "value": 412,
@@ -172,56 +202,64 @@ classify; that gap is tracked as PLU-334, not this skill's problem to solve.
 **Gate:** every residue row ends up judged (a full claim bundle) or flagged (image-only or genuinely
 unreadable) — never silently dropped. State how many you read, corrected, and flagged.
 
-## 7 · Deposit + verify
+## 7 · Deposit residue, then verify
 
-Before your first deposit call for this delivery, check whether it already holds deposited sheet
-claims — e.g. `search(projectId, predicate: "partOfIssue", text: <deliveryId or label>)`, or check
-whether `set_grid` rows already resolve to this `deliveryId`. If claims already exist for this
-delivery, **stop and confirm with the user** before depositing again — never silently re-ingest the
-same package twice.
+**The grounded portion needs no deposit call from you.** `ground_sheets` already wrote it server-side
+once its job succeeded (step 5), and re-running `ground_sheets` on the same file+delivery is safe by
+construction: the concurrency guard returns the existing job, and the deposit itself is idempotent
+(`alreadyDeposited: true` on a poll means a prior run already wrote this delivery's sheet claims — no
+duplicate was written). You still make exactly one write of your own, plus one verification pass:
 
-Once clear, deposit via `propose_batch(projectId, claims)`:
+1. **Deposit the residue bundle.** Before depositing, check whether you've already residue-deposited this
+   delivery in a prior run of this skill — e.g. `search(projectId, predicate: "partOfIssue", text:
+   <deliveryId or label>)` — and confirm with the user before sending it again; the server's
+   grounded-claim idempotency does not cover claims you authored and sent yourself. Once clear, pool the
+   full claim bundles you authored in step 6 (grounded pages contribute nothing here — do not re-send
+   them) into one array per project and call `propose_batch(projectId, claims)`. It accepts 1–500 entries
+   and is atomic (one bad entry rejects the whole batch, naming the index); transport every entry
+   **verbatim**, never re-typed from memory. **Verify**: the returned `count` must equal the number of
+   entries you sent. If it doesn't, stop and report the discrepancy rather than retrying with a guessed
+   correction.
 
-- **Deposit `depositClaims` only — never also the raw `claims` array.** `depositClaims` (present on the
-  `ground_sheets` result whenever a delivery is known) already contains normalized copies of every raw
-  claim plus `locatedAt` / `discipline` / `partOfIssue`; depositing both would double-write every sheet.
-- Pool this file's `depositClaims` with the residue bundles you authored in step 6 into one array per
-  project (across every file in a multi-file delivery — no separate merge artifact).
-- `propose_batch` accepts 1–500 entries per call and is atomic (one bad entry rejects the whole batch,
-  naming the index). Chunk the pooled array into consecutive slices of ≤500 and call it once per slice,
-  transporting each slice **verbatim** — an exact array slice of what `ground_sheets` returned or what
-  you authored, never re-typed from memory.
-- **Verify every call**: the returned `count` must equal the number of entries you sent in that call. If
-  it does not, stop and report the discrepancy rather than retrying with a guessed correction.
+2. **Verify the grounded portion against the report — never a full-grid read.** Compare the succeeded
+   job's `deposit` summary (`{deposited, alreadyDeposited, byPredicate}`) against its `report`
+   (`sheetsGrounded` and the rest) for rough correspondence, then spot-check with a handful of targeted
+   `search(projectId, predicate: "appearsOnPage", text: "<a sheet number you saw>")` calls. **Do not call
+   `set_grid` to verify a delivery of real size** — on a set with hundreds of sheet rows it returns on the
+   order of 600 KB of JSON, large enough that you get a file redirect back instead of the payload inline,
+   a poor substitute for a targeted check that also wastes the round trip. Reserve `set_grid` for a small
+   project or a later session that genuinely needs the whole grid, not this verify step.
 
-After the last batch, call `set_grid(projectId)` to confirm the sheets now resolve under this delivery,
-and name any that don't (unresolved residue, still-flagged image-only pages). Point remaining
-ambiguities at `ambiguities(projectId)` — the review queue, not something this skill resolves itself.
-Report: project, delivery, total claims deposited (sum of count-verified batches), residue read vs.
-flagged, and that the claims are visible for review/promotion on plumlayer.com.
+Point any unresolved residue or flagged image-only pages at `ambiguities(projectId)` — the review queue,
+not something this skill resolves itself. Report: project, delivery, the job's `report` counts, its
+`deposit` summary, your residue bundle's count-verified deposit, and that everything is visible for
+review/promotion on plumlayer.com.
 
 ## Gates (non-negotiable)
 
-- Every deposited claim's evidence is grounded **cloud-side** — a `ground_sheets` output or a
-  `render_page`/`get_page_text` read you just made. A local read (step 2) may inform the packaging
-  report; it never grounds a claim.
+- Every claim's evidence is grounded **cloud-side** — a succeeded `ground_sheets` job (deposited by the
+  server) or a `render_page`/`get_page_text` read you just made. A local read (step 2) may inform the
+  packaging report; it never grounds a claim.
 - Discipline is derived from the sheet's own number prefix, never a filename or folder.
 - Residue is judged-or-flagged, never silently dropped; image-only pages are named, not guessed.
-- Everything deposited is `proposed`. This skill never promotes.
-- Deposit is verbatim, count-verified transport — a count mismatch stops the run, never triggers a
-  reconstructed or invented entry.
-- Before any deposit, check for an already-ingested delivery and confirm with the user rather than
-  double-depositing.
+- Everything landed is `proposed`. This skill never promotes.
+- Your own deposit (the residue bundle) is verbatim, count-verified transport — a count mismatch stops
+  the run, never triggers a reconstructed or invented entry.
+- Before depositing your residue bundle, check for a prior residue deposit on this delivery and confirm
+  with the user rather than double-depositing; the grounded portion is server-idempotent by construction
+  (re-running `ground_sheets` on the same file+delivery is always safe).
 - Honest coverage at every stage — pages skipped, files excluded, or residue left unread are named, not
   buried in a total.
 
 ## Cost (cheapest tier first)
 
 `ground_sheets` (the deterministic bulk pass) is free server-side compute — it grounds the large
-majority of sheets in seconds. Your token cost is fenced to the residue tail: the pages the pass
-couldn't ground, read once each. The local packaging-recognition sampling (step 2) is small, bounded to
-a few pages per ambiguous candidate file, and named in the packaging report — not a hidden cost. No
-GPU or model hosting on this path.
+majority of sheets in seconds to low minutes depending on set size (that's why it runs as a job you poll,
+not an inline call). Your token cost is fenced to the residue tail: the pages the pass couldn't ground,
+read once each, plus the small, fixed cost of polling `ground_sheets_status` every few seconds while a
+job runs. The local packaging-recognition sampling (step 2) is small, bounded to a few pages per
+ambiguous candidate file, and named in the packaging report — not a hidden cost. No GPU or model hosting
+on this path.
 
 ## Deferred (named, not skipped silently)
 
