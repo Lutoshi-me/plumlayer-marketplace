@@ -42,9 +42,28 @@ Trust tiers: `approved > authoritative > derived`; **`proposed` never governs.**
 
 **Drawing grounding** (cloud PDF — these work against files already uploaded to the project)
 - `list_files` — list the drawing files registered to a project.
+- `register_pages` — once per project, register renderable page rows for every uploaded PDF (not
+  claims, just viewable pages) so uploaded files are readable even before grounding runs.
+- `ground_sheets` — start the async deterministic bulk sheet-grounding pass over one uploaded PDF.
+  Returns `{jobId, status}` immediately; poll `ground_sheets_status` rather than waiting inline.
+  Grounded sheet claims deposit server-side as `proposed` on success — never `propose_batch` them
+  yourself.
+- `ground_sheets_status` — poll a `ground_sheets` job. Returns run counts (`report`), the
+  server-side deposit summary (`deposit`), and the residue tail (`residue`) for you to read and
+  judge; it never carries the grounded claims themselves.
 - `render_page` — render a single page of a registered PDF to an image so you can read it.
 - `get_page_text` — extract the text layer from a registered PDF page (deterministic; use
   alongside `render_page` — text for tokens, render for layout/meaning).
+
+**Delivery** (group uploaded files into a source package)
+- `list_drawing_deliveries` — list a project's registered drawing deliveries (baseline sets and
+  revision packages like bulletins/addenda).
+- `create_drawing_delivery` — register one delivery (e.g. "2025-12-15 Conformed Set" as
+  `deliveryKind: "baseline"`, or "2026-02-09 Bulletin 01" as `"revision"`). Project metadata, not a
+  governing claim. Attach files with `register_file.deliveryId`, then ground with
+  `ground_sheets.deliveryId`.
+- `update_drawing_delivery` — correct a delivery's label, kind, or issue date after the fact; never
+  renames or mutates the uploaded files themselves.
 
 **Upload** (register a new delivery)
 - `request_file_upload` — get a signed upload URL for a drawing PDF you want to register.
