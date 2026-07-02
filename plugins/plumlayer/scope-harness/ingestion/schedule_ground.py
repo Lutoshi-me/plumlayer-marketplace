@@ -17,7 +17,8 @@ The agent-column-map contract (written into manifest 'column_maps' entries):
                                    --   ambiguityClass:"instance" to all claims.
     "layout": "tabular" | "matrix",
     "regionBbox": [x0,y0,x1,y1],  -- PDF-point bbox of the table region (data + headers)
-    "headerRowCount": int,         -- number of header rows (1 or 2)
+    "headerRowCount": int,         -- number of header rows (>=1; typically 1-2, but
+                                   --   deep 3-4 tier HVAC/plumbing headers are supported)
     "keyColumn": {                 -- the code/key column
       "name": str,                 -- predicate name (camelCase, e.g. "designation")
       "xLeft": float,
@@ -39,7 +40,10 @@ code column as a separate subject whose attributes are the row labels.
 Grounding logic (deterministic, no inference):
   1. Isolate table spans: spans whose bbox y-center falls within regionBbox y-range,
      and after stripping the header rows (top N rows worth of y-height).
-  2. Cluster isolated spans by y-center into row y-bands (ROW_Y_TOL = 6pt).
+  2. Cluster isolated spans by y-center into row y-bands (ROW_Y_TOL = 6pt), then split
+     any band that greedy-centroid drift stitched from two tightly-packed code rows
+     (>=2 distinct key-column y-centers, ROW_SPLIT_Y_TOL) into one sub-row per code. A
+     continuation row (empty key cell) has no key span and is never split.
   3. Assign each span to its column by checking which column's [xLeft, xRight]
      interval contains the span's x-center. Spans whose x-center falls outside
      all column intervals are flagged residue (never silently assigned or dropped).
@@ -107,6 +111,13 @@ ROW_Y_TOL = 6.0
 # "outside all columns" (a small slop for spans that slightly overflow the header bbox).
 X_SLOP_PT = 4.0
 
+# Two key-column spans whose y-centers are more than ROW_SPLIT_Y_TOL apart belong to
+# distinct code rows. A row-band holding that pattern is a collision -- greedy-centroid
+# clustering (ROW_Y_TOL) chained two tightly-packed code rows through the data row
+# between them -- and is split, one sub-row per key y-center. Kept >= ROW_Y_TOL so it
+# never re-splits spans the clustering legitimately merged into one row.
+ROW_SPLIT_Y_TOL = 6.0
+
 
 # ---------------------------------------------------------------------------
 # canon_code -- the identity gate (identical to schedule_inventory.py)
@@ -138,15 +149,23 @@ _CODE_DENYLIST: frozenset[str] = frozenset({
 })
 
 
-def canon_code(raw: str) -> str:
-    """Validate and normalise a schedule code. Raises ValueError if invalid."""
+def canon_code(raw: str, *, allow_numeric: bool = False) -> str:
+    """Validate and normalise a schedule code. Raises ValueError if invalid.
+
+    allow_numeric: accept a bare-integer key (e.g. a door-opening number 162, 180).
+    Enabled ONLY for instance tables (tableType:"instance"), whose key column is an
+    opening/room number, not a type mark. Definition tables keep rejecting bare
+    integers (there a bare integer is a stray row number, never a schedule mark).
+    """
     cleaned = raw.strip().upper()
     if not cleaned:
         raise ValueError(f"empty code: {raw!r}")
-    if re.fullmatch(r"\d+", cleaned):
-        raise ValueError(f"pure-numeric (row number): {raw!r}")
     if len(cleaned) > 16:
         raise ValueError(f"too long to be a schedule mark: {raw!r}")
+    if re.fullmatch(r"\d+", cleaned):
+        if allow_numeric:
+            return cleaned
+        raise ValueError(f"pure-numeric (row number): {raw!r}")
     if not _CODE_RE.match(cleaned):
         raise ValueError(f"not a valid schedule mark: {raw!r}")
     if cleaned in _CODE_DENYLIST:
@@ -318,6 +337,61 @@ def _estimate_header_bottom(
 
 
 # ---------------------------------------------------------------------------
+# Collision split -- separate two code rows a drifting centroid stitched together
+# ---------------------------------------------------------------------------
+
+def _split_collided_rows(
+    row_spans: list[dict],
+    key_col: dict,
+    columns: list[dict],
+) -> list[list[dict]]:
+    """Split a row-band that centroid drift stitched from two+ code rows.
+
+    A tabular data band should hold exactly one key cell. _cluster_rows uses a greedy
+    running centroid, so two tightly-packed code rows (distinct key spans a few points
+    more than ROW_Y_TOL apart, e.g. HWHP-1 / HWHP-2 ~11pt apart) can chain into one
+    band through the data row between them, stitching the key cell into a two-code
+    string that then fails canon_code.
+
+    Detection is purely GEOMETRIC: two or more key-column spans whose y-centers are
+    more than ROW_SPLIT_Y_TOL apart. The band is partitioned into one sub-row per
+    distinct key y-center, every span (key and attribute alike) assigned to the
+    nearest key y-center. Never keys on text meaning; a recovered code comes from a
+    real key-column span with its own bbox.
+
+    A band with fewer than two distinct key cells is returned unchanged, so a
+    continuation row (empty key cell) is never split and still flows into the
+    continuation-merge path. Sub-rows are returned top-to-bottom.
+    """
+    key_spans = [
+        s for s in row_spans
+        if _assign_column(s, key_col, columns) == key_col["name"]
+    ]
+    if len(key_spans) < 2:
+        return [row_spans]
+
+    # Group the key spans into distinct rows by y-center gap.
+    key_spans.sort(key=_cy)
+    groups: list[list[dict]] = [[key_spans[0]]]
+    for ks in key_spans[1:]:
+        if _cy(ks) - _cy(groups[-1][-1]) <= ROW_SPLIT_Y_TOL:
+            groups[-1].append(ks)
+        else:
+            groups.append([ks])
+
+    if len(groups) < 2:
+        return [row_spans]
+
+    anchors = [sum(_cy(s) for s in g) / len(g) for g in groups]
+    sub_rows: list[list[dict]] = [[] for _ in anchors]
+    for sp in row_spans:
+        cyv = _cy(sp)
+        nearest = min(range(len(anchors)), key=lambda i: abs(cyv - anchors[i]))
+        sub_rows[nearest].append(sp)
+    return sub_rows
+
+
+# ---------------------------------------------------------------------------
 # Ground one table (tabular layout)
 # ---------------------------------------------------------------------------
 
@@ -366,8 +440,15 @@ def _ground_tabular(
         })
         return claims, residue_rows
 
-    # Cluster into row y-bands
+    # Cluster into row y-bands, then split any band that centroid drift stitched from
+    # two tightly-packed code rows (>=2 distinct key cells) back into one sub-row per
+    # code. A continuation row (empty key cell) has no key span and is never split.
     row_clusters = _cluster_rows(data_spans)
+    row_clusters = [
+        sub
+        for band in row_clusters
+        for sub in _split_collided_rows(band, key_col, columns)
+    ]
 
     # Two-pass: first collect all span clusters into code rows (with continuation merge),
     # then emit claims per fully-accumulated code row.
@@ -429,7 +510,7 @@ def _ground_tabular(
 
         # New code row
         try:
-            code = canon_code(key_text)
+            code = canon_code(key_text, allow_numeric=is_instance)
         except ValueError as exc:
             residue_rows.append({
                 "reason": f"canon_code-fail: {exc}",
@@ -592,7 +673,7 @@ def _ground_matrix(
     valid_code_cols: list[dict] = []
     for col in code_cols:
         try:
-            canon_code(col["name"])
+            canon_code(col["name"], allow_numeric=is_instance)
             valid_code_cols.append(col)
         except ValueError as exc:
             residue_rows.append({
@@ -663,7 +744,7 @@ def _ground_matrix(
 
     # Emit claims per code column
     for code_col in valid_code_cols:
-        code = canon_code(code_col["name"])  # already validated above
+        code = canon_code(code_col["name"], allow_numeric=is_instance)  # already validated above
         subject = f"{kind}:{code}"
         attrs = code_attrs[code_col["name"]]
 

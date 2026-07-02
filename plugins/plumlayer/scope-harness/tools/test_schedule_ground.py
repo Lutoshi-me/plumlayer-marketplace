@@ -37,6 +37,7 @@ from schedule_ground import (  # noqa: E402
     _assign_column,
     _stitch,
     _norm_predicate,
+    _split_collided_rows,
     _ground_tabular,
     _ground_matrix,
     _ground_entry,
@@ -836,3 +837,289 @@ class TestGoldenDeterminism:
             for _ in range(3)
         ]
         assert len(set(results)) == 1, "Non-deterministic output across runs"
+
+
+# ---------------------------------------------------------------------------
+# canon_code allow_numeric (fix 2) -- numeric instance keys
+# ---------------------------------------------------------------------------
+
+class TestCanonCodeAllowNumeric:
+    """Pure-numeric keys pass ONLY under allow_numeric (instance tables)."""
+
+    def test_numeric_rejected_by_default(self):
+        with pytest.raises(ValueError, match="pure-numeric"):
+            canon_code("162")
+        with pytest.raises(ValueError, match="pure-numeric"):
+            canon_code("162", allow_numeric=False)
+
+    def test_numeric_accepted_when_allowed(self):
+        assert canon_code("162", allow_numeric=True) == "162"
+        assert canon_code("180", allow_numeric=True) == "180"
+        assert canon_code("101", allow_numeric=True) == "101"
+
+    def test_allow_numeric_does_not_relax_other_gates(self):
+        # allow_numeric only opens the pure-numeric branch; everything else still holds.
+        with pytest.raises(ValueError, match="empty"):
+            canon_code("", allow_numeric=True)
+        with pytest.raises(ValueError, match="too long"):
+            canon_code("12345678901234567", allow_numeric=True)  # 17 digits
+        with pytest.raises(ValueError, match="denylist"):
+            canon_code("TYP", allow_numeric=True)
+
+    def test_alpha_marks_still_pass_under_allow_numeric(self):
+        assert canon_code("D4", allow_numeric=True) == "D4"
+        assert canon_code("P-1A", allow_numeric=True) == "P-1A"
+
+
+# ---------------------------------------------------------------------------
+# _split_collided_rows (fix 1) -- centroid-drift collision split
+# ---------------------------------------------------------------------------
+
+def _collision_col_map(kind: str = "equipmentType", table_type: str = "definition") -> dict:
+    """3-attribute-column tabular map used by the collision fixtures."""
+    return {
+        "tableTitle": "COLLISION FIXTURE",
+        "kind": kind,
+        "tableType": table_type,
+        "layout": "tabular",
+        "regionBbox": [0.0, 0.0, 300.0, 80.0],
+        "headerRowCount": 1,
+        "keyColumn": {"name": "item", "xLeft": 0.0, "xRight": 60.0},
+        "columns": [
+            {"name": "mfr", "xLeft": 60.0,  "xRight": 140.0},
+            {"name": "d1",  "xLeft": 140.0, "xRight": 180.0},
+            {"name": "d2",  "xLeft": 180.0, "xRight": 220.0},
+            {"name": "d3",  "xLeft": 220.0, "xRight": 260.0},
+        ],
+    }
+
+
+def _collision_spans() -> list[dict]:
+    """
+    Two tightly-packed code rows whose key cells are ~8pt apart, mirroring the real
+    P-003 HWHP-1 / HWHP-2 collision: a run of shared data spans between the two keys
+    drifts the greedy centroid so _cluster_rows stitches all three y-bands into one.
+      Header  cy=10 : ITEM  MFR  D1  D2  D3
+      HP-1    cy=30 : HP-1  WATTS
+      data    cy=35.4:            v1  v2  v3   (physically between the two keys)
+      HP-2    cy=38 : HP-2  AEGIS
+    """
+    return [
+        _span("ITEM",        10,  5, 50, 15),
+        _span("MFR",         70,  5, 130, 15),
+        _span("D1",         145,  5, 175, 15),
+        _span("D2",         185,  5, 215, 15),
+        _span("D3",         225,  5, 255, 15),
+        # code row 1 (key cy=30)
+        _span("HP-1",        10, 25, 50, 35),
+        _span("WATTS",       70, 25, 130, 35),
+        # shared data band (cy=35.4) -- drifts the centroid
+        _span("v1",         145, 30.4, 175, 40.4),
+        _span("v2",         185, 30.4, 215, 40.4),
+        _span("v3",         225, 30.4, 255, 40.4),
+        # code row 2 (key cy=38)
+        _span("HP-2",        10, 33, 50, 43),
+        _span("AEGIS",       70, 33, 130, 43),
+    ]
+
+
+class TestCollisionRowSplit:
+    """A band stitched from two code rows must split into distinct subjects."""
+
+    def test_cluster_actually_collides(self):
+        """Guard: the fixture really does stitch both keys into ONE cluster."""
+        # (Everything below the header — the phenomenon the split undoes.)
+        data = [s for s in _collision_spans() if (s["bbox"][1] + s["bbox"][3]) / 2 > 17]
+        clusters = _cluster_rows(data)
+        assert len(clusters) == 1, (
+            f"fixture no longer collides ({len(clusters)} clusters) — split test is moot"
+        )
+        # Both key cells landed in the one cluster.
+        key_texts = {s["text"] for s in clusters[0] if s["text"].startswith("HP-")}
+        assert key_texts == {"HP-1", "HP-2"}
+
+    def test_split_yields_two_subrows(self):
+        cmap = _collision_col_map()
+        data = [s for s in _collision_spans() if (s["bbox"][1] + s["bbox"][3]) / 2 > 17]
+        band = _cluster_rows(data)[0]
+        subs = _split_collided_rows(band, cmap["keyColumn"], cmap["columns"])
+        assert len(subs) == 2
+        # Top-to-bottom order; each sub-row carries exactly one key cell.
+        assert [s["text"] for s in subs[0] if s["text"].startswith("HP-")] == ["HP-1"]
+        assert [s["text"] for s in subs[1] if s["text"].startswith("HP-")] == ["HP-2"]
+
+    def test_single_key_band_unchanged(self):
+        """A well-formed single-code band is returned untouched (identity)."""
+        cmap = _collision_col_map()
+        band = [
+            _span("HP-9", 10, 25, 50, 35),
+            _span("SOLO", 70, 25, 130, 35),
+        ]
+        subs = _split_collided_rows(band, cmap["keyColumn"], cmap["columns"])
+        assert subs == [band]
+
+    def test_empty_key_band_never_split(self):
+        """A continuation band (no key span) is returned untouched, not split."""
+        cmap = _collision_col_map()
+        band = [
+            _span("PLANS", 70, 45, 130, 55),  # mfr column only, empty key
+        ]
+        subs = _split_collided_rows(band, cmap["keyColumn"], cmap["columns"])
+        assert subs == [band]
+
+    def test_ground_tabular_recovers_both_codes(self):
+        cmap = _collision_col_map()
+        claims, residue = _ground_tabular(
+            cmap, _collision_spans(), "SET/338", "sheet:P-003", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert "equipmentType:HP-1" in subjects
+        assert "equipmentType:HP-2" in subjects
+        # The pre-fix failure was a single "HP-1 HP-2" canon_code-fail; it must be gone.
+        fails = [r for r in residue if "canon_code-fail" in r.get("reason", "")]
+        assert fails == [], f"Unexpected canon_code-fail residue: {fails}"
+
+    def test_split_preserves_continuation_merge(self):
+        """
+        A continuation row BELOW a collision band must still merge UP into the
+        nearest code row (proving the split and the continuation-merge coexist).
+        The collision band splits into HP-1 / HP-2; a trailing 'CONTD' in the mfr
+        column (empty key, cy=50) merges into HP-2.
+        """
+        spans = _collision_spans() + [
+            _span("CONTD", 70, 45, 130, 55),  # mfr column, empty key -> continuation
+        ]
+        cmap = _collision_col_map()
+        claims, residue = _ground_tabular(cmap, spans, "SET/338", "sheet:P-003", "IFC")
+
+        # No leading/continuation residue: the CONTD row merges silently.
+        cont_res = [
+            r for r in residue
+            if r.get("reason") in (
+                "leading-continuation-no-parent",
+                "key-cell-empty-has-attribute-spans",
+            )
+        ]
+        assert cont_res == [], f"Continuation mis-handled after split: {cont_res}"
+
+        hp2_mfr = next(
+            c for c in claims
+            if c["subject"] == "equipmentType:HP-2" and c["predicate"] == "mfr"
+        )
+        assert "AEGIS" in hp2_mfr["value"] and "CONTD" in hp2_mfr["value"], (
+            f"continuation did not merge into HP-2.mfr: {hp2_mfr['value']!r}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Numeric instance keys end-to-end (fix 2)
+# ---------------------------------------------------------------------------
+
+def _numeric_key_spans() -> list[dict]:
+    """Two pure-numeric key rows (door-opening numbers), like A-09's door table."""
+    return [
+        _span("OPENING", 10,  5, 50, 15),
+        _span("ROOM",    70,  5, 180, 15),
+        _span("162",     10, 25, 50, 35),
+        _span("LOBBY",   70, 25, 160, 35),
+        _span("180",     10, 45, 50, 55),
+        _span("OFFICE",  70, 45, 160, 55),
+    ]
+
+
+def _numeric_key_col_map(kind: str, table_type: str) -> dict:
+    return {
+        "tableTitle": "DOOR AND FRAME SCHEDULE",
+        "kind": kind,
+        "tableType": table_type,
+        "layout": "tabular",
+        "regionBbox": [0.0, 0.0, 200.0, 70.0],
+        "headerRowCount": 1,
+        "keyColumn": {"name": "opening", "xLeft": 0.0, "xRight": 60.0},
+        "columns": [{"name": "room", "xLeft": 60.0, "xRight": 200.0}],
+    }
+
+
+class TestNumericInstanceKeys:
+    def test_instance_table_recovers_numeric_codes(self):
+        cmap = _numeric_key_col_map(kind="door", table_type="instance")
+        claims, residue = _ground_tabular(
+            cmap, _numeric_key_spans(), "SET/12", "sheet:A-09", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert subjects == {"door:162", "door:180"}
+        # Numeric keys must NOT show up as pure-numeric residue anymore.
+        pn = [r for r in residue if "pure-numeric" in r.get("reason", "")]
+        assert pn == [], f"Unexpected pure-numeric residue on instance table: {pn}"
+        # Instance claims carry the ambiguityClass flag.
+        assert all(c.get("ambiguityClass") == "instance" for c in claims)
+
+    def test_definition_table_still_rejects_numeric_keys(self):
+        cmap = _numeric_key_col_map(kind="doorType", table_type="definition")
+        claims, residue = _ground_tabular(
+            cmap, _numeric_key_spans(), "SET/12", "sheet:A-09", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert subjects == set(), "Definition table must not mint numeric subjects"
+        pn = [r for r in residue if "pure-numeric" in r.get("reason", "")]
+        assert len(pn) == 2, f"Expected both numeric rows flagged, got {pn}"
+
+
+# ---------------------------------------------------------------------------
+# Header depth (fix 3) -- arbitrary header depth, uncapped
+# ---------------------------------------------------------------------------
+
+class TestHeaderDepth:
+    """headerRowCount is uncapped: a 4-tier header strips cleanly to the data rows."""
+
+    def _spans(self) -> list[dict]:
+        return [
+            # 4 stacked header rows (cy = 10, 20, 30, 40)
+            _span("MECHANICAL",  70, 5, 130, 15),
+            _span("EQUIPMENT",   70, 15, 130, 25),
+            _span("SCHEDULE",    70, 25, 130, 35),
+            _span("TYPE",        10, 35, 50, 45),
+            _span("DESCRIPTION", 70, 35, 190, 45),
+            # data rows (cy = 60, 75)
+            _span("E-1",  10, 55, 50, 65),
+            _span("PUMP", 70, 55, 160, 65),
+            _span("E-2",  10, 70, 50, 80),
+            _span("FAN",  70, 70, 160, 80),
+        ]
+
+    def _col_map(self, header_rows: int) -> dict:
+        return {
+            "tableTitle": "MECHANICAL EQUIPMENT SCHEDULE",
+            "kind": "equipmentType",
+            "tableType": "definition",
+            "layout": "tabular",
+            "regionBbox": [0.0, 0.0, 220.0, 90.0],
+            "headerRowCount": header_rows,
+            "keyColumn": {"name": "type", "xLeft": 0.0, "xRight": 60.0},
+            "columns": [{"name": "description", "xLeft": 60.0, "xRight": 220.0}],
+        }
+
+    def test_four_tier_header_stripped(self):
+        claims, residue = _ground_tabular(
+            self._col_map(header_rows=4), self._spans(), "SET/0", "sheet:H-01", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert subjects == {"equipmentType:E-1", "equipmentType:E-2"}
+        # No header token leaked in as a subject.
+        assert not any("TYPE" in s or "SCHEDULE" in s for s in subjects)
+        # E-1's description grounded from the data row, not a header row.
+        desc = next(
+            c for c in claims
+            if c["subject"] == "equipmentType:E-1" and c["predicate"] == "description"
+        )
+        assert desc["value"] == "PUMP"
+
+    def test_deeper_header_count_consumes_more_rows(self):
+        """headerRowCount is honoured for any N: bumping it to 5 eats the first data row."""
+        claims, _ = _ground_tabular(
+            self._col_map(header_rows=5), self._spans(), "SET/0", "sheet:H-01", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        # 5 header clusters strips through E-1's band; only E-2 survives -- proving the
+        # count is applied mechanically with no cap at 2.
+        assert subjects == {"equipmentType:E-2"}
