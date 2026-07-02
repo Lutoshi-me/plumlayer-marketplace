@@ -169,6 +169,16 @@ _CODE_RE = re.compile(
     # the first to drop if it ever admits a false positive. Validated zero-false-positive
     # against the real residue set at authoring (PLU-309 A2), but the shape is weak.
     r"^\d{2}[A-Za-z]{2}$"
+    r"|"
+    # 4-segment wrapped-key family: alpha prefix, a leading numeric segment, then a mid
+    # tier that MUST carry a letter (alpha-then-digit or digit-then-alpha) before the final
+    # numeric segment. FCU-1-1A-1 comes from a wrapped key cell ('FCU' stacked over
+    # '1-1A-1') on E-705's fan-coil schedule. The mandatory mid-letter is deliberately
+    # narrower than the 3-segment branch above's optional-both-sides shape: without it this
+    # branch also swallowed the generic "A-1-2-3" 4-segment shape the triple-hyphen guard
+    # (TestCanonCode.test_three_hyphens) exists to reject. Validated zero-false-positive
+    # against the real residue set at authoring (PLU-309 A3).
+    r"^[A-Za-z]{1,4}-\d{1,2}-(?:[A-Za-z]\d{1,3}[A-Za-z]?|\d{1,3}[A-Za-z])-\d{1,4}$"  # FCU-1-1A-1
 )
 
 # Words that match _CODE_RE (short all-alpha branch) but are never schedule marks.

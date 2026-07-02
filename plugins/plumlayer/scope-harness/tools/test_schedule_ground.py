@@ -1339,6 +1339,12 @@ class TestCanonCodeFix2Branches:
         assert canon_code("27AV") == "27AV"
         assert canon_code("28FA") == "28FA"
 
+    def test_fcu_four_segment_wrapped_key_family(self):
+        """PLU-309 A3: FCU-1-1A-1 style, from a wrapped key cell on E-705."""
+        for c in ("FCU-1-1A-1", "FCU-1-1A-4", "FCU-1-1B-1", "FCU-1-1B-10",
+                  "FCU-1-1B-11", "FCU-1-1C-1", "FCU-1-1C-11"):
+            assert canon_code(c) == c
+
     def test_fix2_negatives_still_rejected(self):
         """Real residue noise that must stay residue, plus prose and bare numerics."""
         for bad in (
@@ -1349,6 +1355,8 @@ class TestCanonCodeFix2Branches:
             "GLYCOL RECEIVING TANK.",                # equipment prose
             "GLYCOL",                                # long all-alpha word
             "MIRROR",                                # long all-alpha word
+            "12,14",                                 # comma-combined
+            "R-1-*",                                 # trailing asterisk (E-705 right panel)
         ):
             with pytest.raises(ValueError):
                 canon_code(bad)
