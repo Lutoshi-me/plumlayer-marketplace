@@ -22,7 +22,18 @@ The agent-column-map contract (written into manifest 'column_maps' entries):
     "keyColumn": {                 -- the code/key column
       "name": str,                 -- predicate name (camelCase, e.g. "designation")
       "xLeft": float,
-      "xRight": float
+      "xRight": float,
+      "wrapped": bool,             -- OPTIONAL (default false). true = the key cell is
+                                   --   split across N stacked lines that read as one
+                                   --   code (e.g. "HP" over "A" => "HP-A"). Selects the
+                                   --   key-first stacking path; the deterministic tool
+                                   --   joins the stack's lines top-to-bottom with '-'.
+                                   --   Absent = today's row-cluster behavior, unchanged.
+      "numericKey": bool           -- OPTIONAL (default false). true = accept a bare
+                                   --   integer key on a DEFINITION table (opens the same
+                                   --   gate tableType:"instance" opens, without the
+                                   --   instance ambiguity tag). Never loosens the global
+                                   --   canon_code gate; scoped to this table only.
     },
     "columns": [                   -- attribute columns in left-to-right order
       {"name": str, "xLeft": float, "xRight": float},
@@ -118,6 +129,16 @@ X_SLOP_PT = 4.0
 # never re-splits spans the clustering legitimately merged into one row.
 ROW_SPLIT_Y_TOL = 6.0
 
+# Wrapped-key stacking tolerance (PDF points), used ONLY on the agent-declared
+# keyColumn.wrapped path. A wrapped key's lines sit a few points apart (E-704's stack is
+# ~9pt); distinct code rows are a full row pitch apart (~36pt). This tolerance groups the
+# wrapped stack and separates the rows. The discriminator is the agent's declared
+# structure, never text geometry alone: E-704's 9.0pt within-key gap and P-003's 10.56pt
+# between-distinct-keys gap are not separable by any y-threshold, so only the hint can
+# tell "these lines are one code" from "these are two codes". Assumes row pitch exceeds
+# this tolerance beyond the wrap gap (true of the real HVAC schedules).
+WRAPPED_KEY_STACK_Y_TOL = 15.0
+
 
 # ---------------------------------------------------------------------------
 # canon_code -- the identity gate (identical to schedule_inventory.py)
@@ -137,6 +158,17 @@ _CODE_RE = re.compile(
     r"^[A-Za-z]{1,4}-[A-Za-z]{1,3}-\d{1,4}[A-Za-z]?$"  # U-CW-1, U-AP-10, U-FX-1A
     r"|"
     r"^[A-Za-z]{1,4}-[A-Za-z]{1,3}-\d{1,4}-[A-Za-z]{1,4}$"  # U-SH-1-ALT
+    r"|"
+    r"^[A-Za-z]{2,4}\d[A-Za-z]{2}$"                  # LRP4PH, EP2PH, OSP4PH (fused alpha-digit-PH)
+    r"|"
+    r"^[A-Za-z]{1,4}-[A-Za-z]{1,4}\d{1,3}$"         # EF-T1, EF-DOAS1, PEV-A1 (alpha-hyphen-alphaDigit)
+    r"|"
+    r"^[A-Za-z]{1,4}-[A-Za-z]?\d{1,3}[A-Za-z]?-\d{1,4}$"  # BC-R2-1, FCU-1A-1 (mid alpha+digit)
+    r"|"
+    # CSI-style two-digit prefix + two letters: 27AV, 28FA. Lowest-confidence branch --
+    # the first to drop if it ever admits a false positive. Validated zero-false-positive
+    # against the real residue set at authoring (PLU-309 A2), but the shape is weak.
+    r"^\d{2}[A-Za-z]{2}$"
 )
 
 # Words that match _CODE_RE (short all-alpha branch) but are never schedule marks.
@@ -392,6 +424,84 @@ def _split_collided_rows(
 
 
 # ---------------------------------------------------------------------------
+# Wrapped-key bucketing -- key-first assembly for keyColumn.wrapped tables
+# ---------------------------------------------------------------------------
+
+def _wrapped_key_buckets(
+    data_spans: list[dict],
+    key_col: dict,
+    columns: list[dict],
+) -> list[list[dict]]:
+    """Assemble one bucket per code for a wrapped-key table (keyColumn.wrapped=true).
+
+    In a wrapped-key table the key cell is split across N stacked lines that the reader
+    reads top-to-bottom as one code (e.g. 'HP' over 'A' => 'HP-A'; 'AC' over '0-1' =>
+    'AC-0-1'; 'VRF' over 'R' over '1A' => 'VRF-R-1A'). The row-cluster path cannot handle
+    this: greedy y-clustering either splits the wrapped lines into separate rows or a
+    _stitch would space-join them into a two-token string that fails canon_code.
+
+    Key-first assembly, GEOMETRIC (never keyed on text meaning):
+      1. Group key-column spans into per-code stacks by y-center pitch
+         (WRAPPED_KEY_STACK_Y_TOL groups the wrapped lines, separates the row pitch).
+      2. Within each stack, split into lines (ROW_Y_TOL) and join the line texts
+         top-to-bottom with '-' into the code; union the stack bboxes. The joined code
+         is carried on a single synthetic key span (union bbox), so it grounds to the
+         real key-line locations, and the '-' is a structural join the agent declared,
+         not an invented token.
+      3. Bucket every non-key span to the nearest stack by y-center.
+      4. Return one bucket per stack (synthetic key span + that stack's data spans),
+         top-to-bottom, so the existing assign/stitch/continuation-merge/emit loop runs
+         unchanged. This path and _split_collided_rows are mutually exclusive per table;
+         the hint selects.
+    """
+    key_spans = [
+        s for s in data_spans
+        if _assign_column(s, key_col, columns) == key_col["name"]
+    ]
+    non_key = [
+        s for s in data_spans
+        if _assign_column(s, key_col, columns) != key_col["name"]
+    ]
+    if not key_spans:
+        return []
+
+    # (1) Group key spans into per-code stacks by y-center pitch.
+    key_spans.sort(key=_cy)
+    stacks: list[list[dict]] = [[key_spans[0]]]
+    for ks in key_spans[1:]:
+        if _cy(ks) - _cy(stacks[-1][-1]) <= WRAPPED_KEY_STACK_Y_TOL:
+            stacks[-1].append(ks)
+        else:
+            stacks.append([ks])
+
+    # (2) Join each stack's lines top-to-bottom with '-' into a synthetic key span.
+    anchors: list[float] = []
+    synthetic_keys: list[dict] = []
+    for stack in stacks:
+        lines = _cluster_rows(stack)                       # top-to-bottom lines
+        line_texts = [_stitch(line)[0] for line in lines]
+        code_text = "-".join(t for t in line_texts if t)
+        union = [
+            round(min(s["bbox"][0] for s in stack), 2),
+            round(min(s["bbox"][1] for s in stack), 2),
+            round(max(s["bbox"][2] for s in stack), 2),
+            round(max(s["bbox"][3] for s in stack), 2),
+        ]
+        synthetic_keys.append({"text": code_text, "bbox": union})
+        anchors.append(sum(_cy(s) for s in stack) / len(stack))
+
+    # (3) Bucket every non-key span to the nearest stack anchor by y-center.
+    buckets: list[list[dict]] = [[sk] for sk in synthetic_keys]
+    for sp in non_key:
+        cyv = _cy(sp)
+        nearest = min(range(len(anchors)), key=lambda i: abs(cyv - anchors[i]))
+        buckets[nearest].append(sp)
+
+    # (4) Buckets are already in top-to-bottom stack order.
+    return buckets
+
+
+# ---------------------------------------------------------------------------
 # Ground one table (tabular layout)
 # ---------------------------------------------------------------------------
 
@@ -420,6 +530,12 @@ def _ground_tabular(
     # tableType "instance" tags all claims ambiguityClass:"instance"
     is_instance: bool = col_map.get("tableType", "definition") == "instance"
     amb_class: str | None = "instance" if is_instance else None
+    # Agent-declared structural hints on the key column (both optional; absent = today's
+    # behavior). 'wrapped' selects the key-first stacking path; 'numericKey' opens the
+    # bare-numeric gate on a definition table (never loosens the global gate, and does
+    # NOT imply instance semantics -- a numeric-keyed definition stays a definition).
+    wrapped_key: bool = bool(key_col.get("wrapped", False))
+    numeric_key: bool = bool(key_col.get("numericKey", False))
 
     # Isolate spans inside this table's region bbox
     region_spans = [
@@ -440,15 +556,20 @@ def _ground_tabular(
         })
         return claims, residue_rows
 
-    # Cluster into row y-bands, then split any band that centroid drift stitched from
-    # two tightly-packed code rows (>=2 distinct key cells) back into one sub-row per
-    # code. A continuation row (empty key cell) has no key span and is never split.
-    row_clusters = _cluster_rows(data_spans)
-    row_clusters = [
-        sub
-        for band in row_clusters
-        for sub in _split_collided_rows(band, key_col, columns)
-    ]
+    if wrapped_key:
+        # Wrapped-key table: assemble one bucket per code by stacking the key column's
+        # lines (agent-declared structure). Mutually exclusive with _split_collided_rows.
+        row_clusters = _wrapped_key_buckets(data_spans, key_col, columns)
+    else:
+        # Cluster into row y-bands, then split any band that centroid drift stitched from
+        # two tightly-packed code rows (>=2 distinct key cells) back into one sub-row per
+        # code. A continuation row (empty key cell) has no key span and is never split.
+        row_clusters = _cluster_rows(data_spans)
+        row_clusters = [
+            sub
+            for band in row_clusters
+            for sub in _split_collided_rows(band, key_col, columns)
+        ]
 
     # Two-pass: first collect all span clusters into code rows (with continuation merge),
     # then emit claims per fully-accumulated code row.
@@ -510,7 +631,7 @@ def _ground_tabular(
 
         # New code row
         try:
-            code = canon_code(key_text, allow_numeric=is_instance)
+            code = canon_code(key_text, allow_numeric=is_instance or numeric_key)
         except ValueError as exc:
             residue_rows.append({
                 "reason": f"canon_code-fail: {exc}",

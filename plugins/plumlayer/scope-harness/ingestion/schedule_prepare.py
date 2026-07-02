@@ -35,6 +35,12 @@ column_map shape (filled by the agent, one per table on the sheet):
     "regionBbox": [x0, y0, x1, y1],   -- in PDF points
     "headerRowCount": 1,
     "keyColumn": {"name": "designation", "xLeft": 145.0, "xRight": 210.0},
+    # keyColumn takes two OPTIONAL structural hints (both default false; absent = today's
+    # behavior). "wrapped": true  -- the key cell is split across N stacked lines that
+    #   read as one code ("HP" over "A" => "HP-A"); selects the key-first stacking path,
+    #   the tool joins the stack top-to-bottom with '-'. "numericKey": true  -- accept a
+    #   bare integer key on a DEFINITION table (same gate tableType:"instance" opens, no
+    #   instance tag); never loosens the global canon_code gate.
     "columns": [
       {"name": "description", "xLeft": 210.0, "xRight": 355.0},
       {"name": "areaLocation", "xLeft": 355.0, "xRight": 450.0},

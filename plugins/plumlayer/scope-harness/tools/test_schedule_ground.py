@@ -38,6 +38,7 @@ from schedule_ground import (  # noqa: E402
     _stitch,
     _norm_predicate,
     _split_collided_rows,
+    _wrapped_key_buckets,
     _ground_tabular,
     _ground_matrix,
     _ground_entry,
@@ -1123,3 +1124,269 @@ class TestHeaderDepth:
         # 5 header clusters strips through E-1's band; only E-2 survives -- proving the
         # count is applied mechanically with no cap at 2.
         assert subjects == {"equipmentType:E-2"}
+
+
+# ---------------------------------------------------------------------------
+# Wrapped-key path (PLU-309 A2, Fix 1) -- keyColumn.wrapped stacking
+# ---------------------------------------------------------------------------
+
+def _wrapped_col_map(kind: str = "equipmentType", wrapped: bool = True) -> dict:
+    """Tabular map for the wrapped-key fixtures. wrapped=False omits the hint."""
+    key: dict = {"name": "item", "xLeft": 0.0, "xRight": 60.0}
+    if wrapped:
+        key["wrapped"] = True
+    return {
+        "tableTitle": "WRAPPED FIXTURE",
+        "kind": kind,
+        "tableType": "definition",
+        "layout": "tabular",
+        "regionBbox": [0.0, 0.0, 300.0, 120.0],
+        "headerRowCount": 1,
+        "keyColumn": key,
+        "columns": [
+            {"name": "mfr", "xLeft": 60.0,  "xRight": 140.0},
+            {"name": "cap", "xLeft": 140.0, "xRight": 220.0},
+        ],
+    }
+
+
+def _wrapped_spans() -> list[dict]:
+    """
+    Two codes, each key wrapped across two stacked lines (~11pt apart), row pitch ~36pt:
+      Header cy=10  : ITEM  MFR  CAP
+      HP-A   cy 29.5: 'HP' over 'A'    data ACME / 40
+      HP-B   cy 65.5: 'HP' over 'B'    data AEGIS / 60
+    """
+    return [
+        _span("ITEM", 10,  5,  50, 15),
+        _span("MFR",  70,  5, 130, 15),
+        _span("CAP", 150,  5, 210, 15),
+        # code row 1 (key wrapped: HP over A)
+        _span("HP",   10, 25,  50, 34),   # cy 29.5
+        _span("A",    10, 36,  50, 45),   # cy 40.5
+        _span("ACME", 70, 31, 130, 41),   # cy 36 (mfr)
+        _span("40",  150, 31, 210, 41),   # cy 36 (cap)
+        # code row 2 (key wrapped: HP over B)
+        _span("HP",   10, 61,  50, 70),   # cy 65.5
+        _span("B",    10, 72,  50, 81),   # cy 76.5
+        _span("AEGIS",70, 67, 130, 77),   # cy 72 (mfr)
+        _span("60",  150, 67, 210, 77),   # cy 72 (cap)
+    ]
+
+
+class TestWrappedKey:
+    """keyColumn.wrapped joins a stacked key cell into one code; absent, old behavior."""
+
+    def test_wrapped_hint_joins_stack(self):
+        claims, residue = _ground_tabular(
+            _wrapped_col_map(wrapped=True), _wrapped_spans(), "SET/0", "sheet:M-01", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert subjects == {"equipmentType:HP-A", "equipmentType:HP-B"}
+        # The straddling data cells landed on the right code.
+        hp_a_mfr = next(
+            c for c in claims
+            if c["subject"] == "equipmentType:HP-A" and c["predicate"] == "mfr"
+        )
+        assert hp_a_mfr["value"] == "ACME"
+        fails = [r for r in residue if "canon_code-fail" in r.get("reason", "")]
+        assert fails == [], f"Unexpected canon_code-fail: {fails}"
+
+    def test_no_hint_is_unchanged_behavior(self):
+        """Same fixture WITHOUT the hint must NOT join -- the row-cluster path runs."""
+        claims, _ = _ground_tabular(
+            _wrapped_col_map(wrapped=False), _wrapped_spans(), "SET/0", "sheet:M-01", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        # No joined subject appears; the wrapped lines are read as separate keys.
+        assert "equipmentType:HP-A" not in subjects
+        assert "equipmentType:HP-B" not in subjects
+
+    def test_wrapped_synthetic_key_grounds_to_real_bbox(self):
+        """The joined code carries a bbox = union of the real key-line spans."""
+        buckets = _wrapped_key_buckets(
+            _wrapped_spans()[3:],  # data spans only (skip the 3 header spans)
+            _wrapped_col_map()["keyColumn"],
+            _wrapped_col_map()["columns"],
+        )
+        assert len(buckets) == 2
+        # First bucket's synthetic key: text HP-A, bbox spanning y 25..45 of the two lines.
+        synth = buckets[0][0]
+        assert synth["text"] == "HP-A"
+        assert synth["bbox"] == [10.0, 25.0, 50.0, 45.0]
+
+    def test_mixed_wrapped_and_single_line_rows(self):
+        """A table mixing a wrapped key row and a single-line key row grounds both."""
+        spans = [
+            _span("ITEM", 10,  5,  50, 15),
+            _span("MFR",  70,  5, 130, 15),
+            _span("CAP", 150,  5, 210, 15),
+            # wrapped row: HP over A
+            _span("HP",   10, 25,  50, 34),
+            _span("A",    10, 36,  50, 45),
+            _span("ACME", 70, 31, 130, 41),
+            _span("40",  150, 31, 210, 41),
+            # single-line row: P-5 (one key line)
+            _span("P-5",  10, 61,  50, 70),   # cy 65.5
+            _span("DIMCO",70, 61, 130, 71),   # cy 66
+            _span("25",  150, 61, 210, 71),   # cy 66
+        ]
+        claims, residue = _ground_tabular(
+            _wrapped_col_map(wrapped=True), spans, "SET/0", "sheet:M-02", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert subjects == {"equipmentType:HP-A", "equipmentType:P-5"}
+        assert [r for r in residue if "canon_code-fail" in r.get("reason", "")] == []
+
+    def test_three_line_stack(self):
+        """N>2 lines join in order: VRF / R / 1A -> VRF-R-1A."""
+        spans = [
+            _span("ITEM", 10,  5,  50, 15),
+            _span("MFR",  70,  5, 130, 15),
+            # 3-line wrapped key
+            _span("VRF",  10, 25,  50, 34),   # cy 29.5
+            _span("R",    10, 36,  50, 45),   # cy 40.5
+            _span("1A",   10, 47,  50, 56),   # cy 51.5
+            _span("XYZ",  70, 36, 130, 46),   # cy 41 (mfr, straddles the stack)
+        ]
+        col_map = {
+            "tableTitle": "THREE LINE STACK",
+            "kind": "equipmentType",
+            "tableType": "definition",
+            "layout": "tabular",
+            "regionBbox": [0.0, 0.0, 300.0, 80.0],
+            "headerRowCount": 1,
+            "keyColumn": {"name": "item", "xLeft": 0.0, "xRight": 60.0, "wrapped": True},
+            "columns": [{"name": "mfr", "xLeft": 60.0, "xRight": 140.0}],
+        }
+        claims, residue = _ground_tabular(col_map, spans, "SET/0", "sheet:M-03", "IFC")
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert subjects == {"equipmentType:VRF-R-1A"}
+        mfr = next(
+            c for c in claims
+            if c["subject"] == "equipmentType:VRF-R-1A" and c["predicate"] == "mfr"
+        )
+        assert mfr["value"] == "XYZ"
+
+
+class TestWrappedSplitCoexistence:
+    """Distinct keys ~10.56pt apart (P-003 gap) must still split WITHOUT the wrapped
+    hint -- proving the hint, not a y-threshold, discriminates wrap from collision."""
+
+    def _distinct_key_spans(self) -> list[dict]:
+        # Two distinct codes whose key y-centers are 10.56pt apart, each with its own
+        # data cell on the same line as its key.
+        return [
+            _span("ITEM", 10,  5.0,  50, 15.0),
+            _span("MFR",  70,  5.0, 130, 15.0),
+            _span("DK-1", 10, 25.00, 50, 35.00),   # cy 30.00
+            _span("M1",   70, 25.00, 130, 35.00),  # cy 30.00
+            _span("DK-2", 10, 35.56, 50, 45.56),   # cy 40.56
+            _span("M2",   70, 35.56, 130, 45.56),  # cy 40.56
+        ]
+
+    def _col_map(self) -> dict:
+        return {
+            "tableTitle": "DISTINCT KEYS",
+            "kind": "equipmentType",
+            "tableType": "definition",
+            "layout": "tabular",
+            "regionBbox": [0.0, 0.0, 200.0, 60.0],
+            "headerRowCount": 1,
+            "keyColumn": {"name": "item", "xLeft": 0.0, "xRight": 60.0},
+            "columns": [{"name": "mfr", "xLeft": 60.0, "xRight": 140.0}],
+        }
+
+    def test_split_handles_p003_gap_directly(self):
+        """_split_collided_rows separates a 10.56pt distinct-key band into two sub-rows."""
+        band = self._distinct_key_spans()[2:]  # drop the header spans
+        cmap = self._col_map()
+        subs = _split_collided_rows(band, cmap["keyColumn"], cmap["columns"])
+        assert len(subs) == 2
+        assert [s["text"] for s in subs[0] if s["text"].startswith("DK-")] == ["DK-1"]
+        assert [s["text"] for s in subs[1] if s["text"].startswith("DK-")] == ["DK-2"]
+
+    def test_no_hint_yields_two_distinct_subjects(self):
+        claims, _ = _ground_tabular(
+            self._col_map(), self._distinct_key_spans(), "SET/0", "sheet:P-003", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert subjects == {"equipmentType:DK-1", "equipmentType:DK-2"}
+
+
+# ---------------------------------------------------------------------------
+# canon_code Fix-2 regex branches (PLU-309 A2) -- residue-recovery families
+# ---------------------------------------------------------------------------
+
+class TestCanonCodeFix2Branches:
+    """New _CODE_RE branches, validated zero-false-positive against the real residue."""
+
+    def test_fused_lrp_ep_osp_family(self):
+        for c in ("LRP4PH", "LRP2PH", "EP2PH", "EP4PH", "OSP2PH", "OSP4PH"):
+            assert canon_code(c) == c
+
+    def test_ef_pev_alpha_alpha_digit_family(self):
+        for c in ("EF-T1", "EF-F1", "EF-L1", "EF-DOAS1", "EF-DOAS2", "EF-DOAS3",
+                  "PEV-A1", "PEV-A2", "PEV-A3"):
+            assert canon_code(c) == c
+
+    def test_bc_fcu_mid_alpha_digit_family(self):
+        for c in ("BC-R2-1", "BC-R4-1", "BC-R4-2", "BC-R6-1",
+                  "FCU-1A-1", "FCU-1A-4", "FCU-1B-10", "FCU-1B-11", "FCU-1C-1", "FCU-1C-9"):
+            assert canon_code(c) == c
+
+    def test_csi_two_digit_two_letter_family(self):
+        assert canon_code("27AV") == "27AV"
+        assert canon_code("28FA") == "28FA"
+
+    def test_fix2_negatives_still_rejected(self):
+        """Real residue noise that must stay residue, plus prose and bare numerics."""
+        for bad in (
+            "3. 20% P.G. PRE-MIXED SOLUTION ONLY.",  # prose
+            "LEVEL 1 - COMM",                        # spaced label
+            "B05 EMR",                               # room-tag + space
+            "DOOR TYPE",                             # header words
+            "GLYCOL RECEIVING TANK.",                # equipment prose
+            "GLYCOL",                                # long all-alpha word
+            "MIRROR",                                # long all-alpha word
+        ):
+            with pytest.raises(ValueError):
+                canon_code(bad)
+
+    def test_bare_numeric_definition_still_fails(self):
+        with pytest.raises(ValueError, match="pure-numeric"):
+            canon_code("100")
+        with pytest.raises(ValueError, match="pure-numeric"):
+            canon_code("28")   # 2-digit alone must NOT hit the CSI branch
+
+
+# ---------------------------------------------------------------------------
+# numericKey flag (PLU-309 A2, Fix 2) -- bare-numeric DEFINITION keys per table
+# ---------------------------------------------------------------------------
+
+class TestNumericKeyFlag:
+    """keyColumn.numericKey opens the bare-numeric gate on a definition table without
+    the instance ambiguity tag; absent, definition tables still reject numeric keys."""
+
+    def test_definition_numeric_key_flag_recovers(self):
+        cmap = _numeric_key_col_map(kind="panelSchedule", table_type="definition")
+        cmap["keyColumn"]["numericKey"] = True
+        claims, residue = _ground_tabular(
+            cmap, _numeric_key_spans(), "SET/9", "sheet:E-01", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert subjects == {"panelSchedule:162", "panelSchedule:180"}
+        pn = [r for r in residue if "pure-numeric" in r.get("reason", "")]
+        assert pn == [], f"Unexpected pure-numeric residue: {pn}"
+        # numericKey is NOT instance: definition claims carry no ambiguityClass.
+        assert all(c.get("ambiguityClass") is None for c in claims)
+
+    def test_definition_without_flag_still_rejects_numeric(self):
+        cmap = _numeric_key_col_map(kind="panelSchedule", table_type="definition")
+        claims, residue = _ground_tabular(
+            cmap, _numeric_key_spans(), "SET/9", "sheet:E-01", "IFC"
+        )
+        subjects = {c["subject"] for c in _attr_claims(claims)}
+        assert subjects == set()
+        pn = [r for r in residue if "pure-numeric" in r.get("reason", "")]
+        assert len(pn) == 2, f"Expected both numeric rows flagged, got {pn}"
