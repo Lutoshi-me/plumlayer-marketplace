@@ -30,9 +30,8 @@ post-process, NOT an agent judgment and NOT a model. Everything emitted is `prop
 
 Output: a MERGED `set_claims.jsonl` = the reader's claims (verbatim) + the derived
 claims. The agent then appends its residue reads (same Claim schema,
-method "agent-vision-crop", cited bbox) to this file and hands it to `prepare_deposit.py`
-unchanged -- that transport tool needs NO change to carry these rows (they are well-formed
-claims like any other).
+method "agent-vision-crop", cited bbox) to this file and hands it to the current
+MOSOT deposit path unchanged -- the rows are well-formed claims like any other.
 
 The DISCIPLINE map + discipline_of are SINGLE-SOURCED from sheet_inventory.py via import
 (see the import block below), so the derived discipline matches the reader's printed

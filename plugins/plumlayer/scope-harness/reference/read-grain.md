@@ -4,17 +4,17 @@
 > as historical evidence for PLU-274, but normal `/scope-run` execution is blocked while the
 > scope-item-first engine is rebuilt.
 
-**Status:** v0.1 — **VALIDATED + LIVE** (2026-06-14). Confirmed against a real GC bid-eval
-and green-lit; now executable in `scope-decomposer.md` Rule 1 +
-`appliesTo` (schema v0.3) and **acceptance-tested** (see end). The first artifact of the `reference/`
-corpus; cross-trade (governs every read, not one trade's knowledge).
+**Status:** v0.1 — **VALIDATED IN ROUTE-FIRST TESTING** (2026-06-14). Confirmed against a real GC
+bid-eval and green-lit; later encoded in the removed decompose subagent Rule 1 + `appliesTo` (schema
+v0.3) and **acceptance-tested** (see end). The first artifact of the `reference/` corpus; cross-trade
+(governs every read, not one trade's knowledge).
 
 **Why this exists.** The decompose read is non-deterministic in *grain*. On a real test run the same
 prompt produced **302 items one run and 124 another**, driven almost entirely by a finish schedule
 exploding to **226 items** one run vs ~29 another. The cause: the read had a surface-split
-rule (`scope-decomposer.md` Rule 1) but **no rule for whether to group instances that share a kind of
+rule in the decompose prompt but **no rule for whether to group instances that share a kind of
 work**. Where the rule runs out, the agent free-styles, and free-styling is where consistency dies. This
-doctrine closes that gap. It pairs with the completeness axis (`coverage_audit.py`): grain and
+doctrine closes that gap. It paired with the route-first completeness audit stage: grain and
 completeness are different axes, but bad grain *pollutes* completeness (those 226 items put 53 of 60
 unowned items on one sheet).
 
@@ -135,13 +135,13 @@ each carrying its room list. Same scope, stable count, unowned pile no longer in
 
 ## What this changed downstream
 
-- **`scope-decomposer.md` + `$CLAUDE_PLUGIN_ROOT/scope-harness/prompts/decompose.md` Rule 1** rewritten
+- **The decompose prompt Rule 1** was rewritten
   from "one surface = one item" to this doctrine (split-by-surface **and** group-by-instance, schedule
   read column-wise, grain-level-aware).
 - **Schema** gained optional `appliesTo` (list of room/opening/location labels) on a decompose item, so
-  grouped instances are captured as data, not lost (`scope-decompose-v0.2` → `v0.3`); `merge_decompose.py`
-  carries it through.
-- **Cluster config** carries `grainLevel` (`bid` for hard-bid/precon).
+  grouped instances are captured as data, not lost (`scope-decompose-v0.2` → `v0.3`); the removed
+  route-first merge stage carried it through.
+- **The removed route-first cluster config** carried `grainLevel` (`bid` for hard-bid/precon).
 
 ### Acceptance test (PASS)
 

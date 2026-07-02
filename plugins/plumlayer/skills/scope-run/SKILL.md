@@ -33,35 +33,37 @@ dispatching the old harness.
    ```text
    I cannot run the installed scope-run harness as the current production scope path. The installed
    route-first pipeline was retired by PLU-274. Current doctrine is scope-item-first: produce one
-   grounded whole-job scope list, then derive trade packages. I can help inspect the historical
-   route-first assets, run drawing-ingest/grounding, read existing MOSOT claims, or work on PLU-274,
-   but I will not dispatch the old fan-out/reconcile process by default.
+   grounded whole-job scope list, then derive trade packages. The removed route-first machinery was
+   deleted in PLU-349; git history before that removal commit is the archive for inspection. I can
+   run drawing-ingest/grounding, read existing MOSOT claims, or work on PLU-274, but I will not
+   dispatch the old fan-out/reconcile process by default.
    ```
 
 3. Offer only safe next actions:
    - run or help with `drawing-ingest` so the set is identified and grounded;
    - inspect existing MOSOT data with the `mosot` skill;
    - work on PLU-274's scope-item-first design or implementation;
-   - inspect the legacy route-first assets as historical evidence, clearly labeled superseded.
+   - inspect the removed route-first machinery through git history before PLU-349, clearly labeled
+     superseded.
 
 ## Hard Stops
 
-- Do not run `build_fanout.py`, `ingest_fanout.py`, `reconcile_overlap.py`, `coverage_audit.py`,
-  `project_scope.py`, or `prepare_deposit.py` as a normal scope-run path.
-- Do not dispatch `scope-decomposer` or `trade-specialist` from a normal scope request.
+- Do not restore or run the removed route-first toolchain as a normal scope-run path.
+- Do not dispatch removed route-first scope subagents from a normal scope request.
 - Do not deposit route-first scope output into MOSOT unless Luke explicitly asks for a historical
   replay or migration experiment and the output is labeled `superseded route-first experiment`.
 - Do not present the legacy route-first harness as production, current, recommended, or doctrine-aligned.
 
 ## Historical Assets
 
-The bundled `scope-harness/` tools, prompts, lenses, and the `scope-decomposer` / `trade-specialist`
-agents remain in the plugin as historical route-first artifacts. They may be useful for comparison,
-tests, migration, or PLU-274 design archaeology. They are not the current execution path.
+The route-first tools, lenses, cluster configs, and scope subagents were removed in PLU-349. The
+remaining `scope-harness/` content is limited to active ingestion helpers, reference material, and
+design-lineage prompts. Use git history before the PLU-349 removal commit to inspect the removed
+machinery for comparison, tests, migration, or PLU-274 design archaeology.
 
 If asked to inspect them, use these labels:
 
-- Evidence: the asset exists and belongs to the superseded route-first harness.
+- Evidence: the asset was removed in PLU-349 and belonged to the superseded route-first harness.
 - Decision: PLU-274 owns the production replacement.
 - Open Question: any behavior that should survive into scope-item-first must be re-justified in PLU-274
   rather than copied forward by inertia.

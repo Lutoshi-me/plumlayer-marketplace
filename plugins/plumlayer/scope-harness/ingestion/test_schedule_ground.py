@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "ingestion"))
+sys.path.insert(0, str(Path(__file__).parent))
 
 from schedule_ground import (  # noqa: E402
     canon_code,

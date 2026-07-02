@@ -3,18 +3,18 @@
 > **PLU-323 guard:** this prompt belongs to the superseded route-first harness. It is retained for
 > PLU-274 history/migration only and must not be used from a normal production `/scope-run`.
 
-> **Executable form:** realized as the **`scope-decomposer`** subagent (`agents/scope-decomposer.md`),
-> dispatched by the `scope-run` skill. This file is the durable design source + rationale; the agent is
-> the runnable method. Keep them in sync (edit both on a method change).
+> **Historical executable form:** previously realized as a removed route-first subagent and driver.
+> PLU-349 deleted that runnable machinery. This file remains as durable design lineage + rationale.
 
 The reusable instruction for a **decompose agent**: it reads ONE scope-bearing sheet (as legible
 tiles) and emits trade-agnostic scope items. Stage 3.1 of the harness. One agent per
 sheet; the driver merges their outputs, mints `itemId`s, and runs the fan-out. Durable here so the read
 is reproducible and reviewable — not re-invented per run.
 
-Contract emitted: `scope-decompose-v0.3` items (`$CLAUDE_PLUGIN_ROOT/scope-harness/tools/scope_v01_schema.py`). The agent supplies
-`title`, `scopeText`, `confidence`, `bboxNorm`, `snippet`, and optional `appliesTo` per item; the driver
-adds `itemId` + `pageNum`.
+Historical contract emitted: `scope-decompose-v0.3` items. The removed schema lived with the
+route-first tools; inspect git history before PLU-349 to see it. The agent supplied `title`,
+`scopeText`, `confidence`, `bboxNorm`, `snippet`, and optional `appliesTo` per item; the driver added
+`itemId` + `pageNum`.
 
 ---
 

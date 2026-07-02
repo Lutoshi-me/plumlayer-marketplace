@@ -3,21 +3,21 @@
 > **PLU-323 guard:** this prompt belongs to the superseded route-first harness. It is retained for
 > PLU-274 history/migration only and must not be used from a normal production `/scope-run`.
 
-> **Executable form:** realized as the **`trade-specialist`** subagent (`agents/trade-specialist.md`),
-> dispatched by the `scope-run` skill. This file is the durable design source + rationale; the agent is
-> the runnable method. The agent is a *generic executor* — its trade knowledge is the lens DATA from
-> `$CLAUDE_PLUGIN_ROOT/scope-harness/trade-lenses.json` (the iteration surface), never baked into the
-> agent. Keep design + agent in sync on a method change.
+> **Historical executable form:** previously realized as a removed route-first per-trade subagent.
+> PLU-349 deleted that runnable machinery. This file remains as durable design lineage + rationale.
+> The agent was a *generic executor* — its trade knowledge came from removed route-first lens data,
+> never baked into the agent.
 
-The reusable instruction for a **trade-specialist agent**: it reads the trade-agnostic decompose output
+The reusable instruction for a per-trade route-first agent: it reads the trade-agnostic decompose output
 through ONE trade lens and declares which items are *its* scope, plus scope the decompose missed. Stage
 3.2 of the harness. One agent per trade lens, in parallel; the deterministic
-`reconcile_overlap.py` then MEASURES routing (clear / contested / unowned) from the overlap of these
+overlap reconciliation step then MEASURES routing (clear / contested / unowned) from the overlap of these
 independent claims. Durable here so the read is reproducible — not re-invented per run.
 
-Contract emitted: `trade-claim-v0.2` (`$CLAUDE_PLUGIN_ROOT/scope-harness/tools/scope_v01_schema.py`). The agent supplies `claims`
-(by `itemId`) and `netNewItems` (`title`, `scopeText`, `confidence`, `pageNum`, `bboxNorm`, `snippet`);
-the driver joins each claim's citation from the decompose item and maps net-new `pageNum` → `sheetId`.
+Historical contract emitted: `trade-claim-v0.2`. The removed schema lived with the route-first tools;
+inspect git history before PLU-349 to see it. The agent supplied `claims` (by `itemId`) and
+`netNewItems` (`title`, `scopeText`, `confidence`, `pageNum`, `bboxNorm`, `snippet`); the driver joined
+each claim's citation from the decompose item and mapped net-new `pageNum` → `sheetId`.
 
 > **Two read modes.** (a) **Text pass** — the agent reasons over the decomposed item *list* (title +
 > scopeText + sheetNo). Cheap; validates routing. (b) **Pixel pass** — the agent also reads its
@@ -40,10 +40,9 @@ a conflict to avoid. Conversely, do not claim scope that is clearly not yours.
 
 ## Your trade's scope (lens definition)
 
-The canonical lens definitions live in `$CLAUDE_PLUGIN_ROOT/scope-harness/trade-lenses.json` — each lens
-has `scope` (what you claim), **`excludes`** (explicit boundaries: work that belongs to a named other
-trade — claiming it is an *error*), `furnishInstallSplits`, and `netNewProbes`. The driver injects your
-lens's fields here:
+The canonical lens definitions lived in the removed route-first lens data — each lens had `scope` (what
+you claim), **`excludes`** (explicit boundaries: work that belongs to a named other trade — claiming it
+is an *error*), `furnishInstallSplits`, and `netNewProbes`. The driver injected your lens's fields here:
 
 - **SCOPE** — `{TRADE_SCOPE}`
 - **EXCLUDES** — `{TRADE_EXCLUDES}` — never claim these.
@@ -52,8 +51,8 @@ lens's fields here:
 
 The `excludes` are the fix for lens over-claiming (e.g. firestopping must claim the firestop *joint/
 sealant* at rated assemblies, **not** the partition *assembly*, and **nothing** at a non-rated partition).
-`trade-lenses.json` is also where the **learning loop** writes boundaries learned from human gap-log
-adjudication — sharpening the oracle over time.
+The removed lens data also served as the **learning loop** target for boundaries learned from human
+gap-log adjudication — sharpening the oracle over time.
 
 ## Inputs
 

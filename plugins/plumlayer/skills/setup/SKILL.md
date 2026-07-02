@@ -54,7 +54,7 @@ project-specific — that's `project-create`'s job. Keep it short.
 - Default delivery method (`DBB` / `design-build` / `CM-at-risk` / …).
 - Default project type (e.g. `interior fit-out`, `ground-up`, `renovation`).
 - Scope preferences for the future PLU-274 engine — the trades/packages you usually care about.
-  Do not fan out legacy `trade-lenses.json` as a production path.
+  Do not revive the removed route-first lens data as a production fan-out path.
 - Default scope grain preference, if useful later: `bid` (hard-bid / precon, coarser) or `ca`
   (awarded / construction-admin, finer). The guarded `/scope-run` path may ignore this until PLU-274.
 
