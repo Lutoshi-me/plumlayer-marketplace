@@ -45,6 +45,20 @@ Named limitations the report states honestly rather than hides (per the PLU-351 
   - Matching is case-sensitive -- schedule/spec codes are conventionally presented in one fixed case,
     and case-insensitive matching risks colliding with ordinary prose.
 
+Second accounting mode for spec sections -- package-bundle membership (PLU-351 follow-up, settled as
+layer-appropriate: scope-package-architecture.md SS4.4 + package-identity-design.md SS3): when
+`--package-claims` is supplied, a specSection subject is instead accounted when some
+`bidPackageDefinition` claim's value (subject `bidPackage:<projectId>:<tradesId>`, value
+`{projectId, trade, codes?, name}` -- package-identity-design.md SS4) enrolls its code, either
+directly in the `codes` bundle array or as the package's primary `trade` code (spaced, e.g.
+"04 00 00" -- whitespace-stripped before comparing to the unspaced specSection code). Packages are the
+real TOC-coverage guarantee for this layer (SS4.1's spec-TOC-anchored derivation), so package
+enrollment governs the spec-section layer over scope-item prose once packages exist. This is an exact
+structural lookup, not a token search, so the kind-agnostic / short-code ambiguous-token bucket (built
+for text-search false positives) does not apply to spec sections in this mode. Schedule-definition
+marks are unaffected either way -- they always use the scope-text token rule above. The report states
+which rule applied to each layer for the run that produced it.
+
 Transport: same as compile_context_packet.py -- this script does NOT call the MOSOT MCP server. It
 reads pre-fetched claim dumps (JSONL or a raw `search`-response JSON) from caller-supplied paths and
 writes only to a caller-supplied `--out` path. Supersession / trust-tier resolution is out of scope
@@ -75,6 +89,7 @@ from compile_context_packet import (  # noqa: E402
 
 TEXT_PREDICATES = ("name", "description", "notesInternal", "notesExternal")
 SHORT_CODE_MAX_LEN = 2
+SPEC_SECTION_KIND = "specSection"
 
 
 # ---------------------------------------------------------------------------
@@ -137,8 +152,75 @@ def code_referenced_by(code: str, corpus: "OrderedDict[str, dict]") -> list[tupl
 
 
 # ---------------------------------------------------------------------------
+# Package-bundle membership (the second spec-section accounting mode)
+# ---------------------------------------------------------------------------
+
+def package_enrolls_code(package: dict, code: str) -> bool:
+    """True if a bidPackageDefinition claim's value enrolls `code` -- either
+    directly in its `codes` bundle array (package-identity-design.md SS3/SS4:
+    "codes ... all CSI sections the package covers, primary included; absent =
+    single-section package" -- so this check alone already covers the
+    single-section case), or as the package's primary `trade` code (stored
+    spaced, e.g. "04 00 00"; whitespace is stripped before comparing to the
+    unspaced specSection code)."""
+    codes = package.get("codes") or []
+    if code in codes:
+        return True
+    trade = package.get("trade")
+    if trade and re.sub(r"\s+", "", str(trade)) == code:
+        return True
+    return False
+
+
+def build_package_definitions(package_claims: list[dict]) -> list[dict]:
+    """One dict per bidPackage:<projectId>:<tradesId> subject -- the
+    first-seen `bidPackageDefinition` claim VALUE (same first-seen tie-break
+    convention as the rest of this script family; supersession / trust-tier
+    resolution stays out of scope here)."""
+    by_subject = index_by_subject(package_claims)
+    packages: list[dict] = []
+    for claims in by_subject.values():
+        value = first_value(claims, "bidPackageDefinition")
+        if isinstance(value, dict):
+            packages.append(value)
+    return packages
+
+
+def code_enrolled_in_packages(code: str, packages: list[dict]) -> list[tuple[str, "str | None"]]:
+    """Every package (trade id, name) enrolling `code`, in package order --
+    the same (id, name) tuple shape `code_referenced_by` returns, so the
+    accounted-table renderer needs no special case per mode."""
+    hits: list[tuple[str, "str | None"]] = []
+    for package in packages:
+        if package_enrolls_code(package, code):
+            trade = package.get("trade") or "(package trade id not set)"
+            hits.append((trade, package.get("name")))
+    return hits
+
+
+# ---------------------------------------------------------------------------
 # Accounted / unaccounted / ambiguous partition
 # ---------------------------------------------------------------------------
+
+def _build_code_kinds(definitions: "OrderedDict[str, dict]") -> dict[str, set[str]]:
+    code_kinds: dict[str, set[str]] = {}
+    for rec in definitions.values():
+        code_kinds.setdefault(rec["code"], set()).add(rec["kind"])
+    return code_kinds
+
+
+def _ambiguity_reason(code: str, kind: str, code_kinds: dict[str, set[str]]) -> "str | None":
+    """The ambiguous-bucket reason for a token-matched code, or None if it's
+    clean. Factored out of classify_completeness so classify_completeness_layered
+    can apply the same rule to the subjects still using the token mode."""
+    reasons = []
+    other_kinds = code_kinds[code] - {kind}
+    if other_kinds:
+        reasons.append("code %r also defined as kind(s): %s" % (code, ", ".join(sorted(other_kinds))))
+    if len(code) <= SHORT_CODE_MAX_LEN:
+        reasons.append("short code (<=%d chars), collision-prone" % SHORT_CODE_MAX_LEN)
+    return "; ".join(reasons) if reasons else None
+
 
 def classify_completeness(
     definitions: "OrderedDict[str, dict]",
@@ -146,7 +228,7 @@ def classify_completeness(
 ) -> "OrderedDict[str, OrderedDict[str, dict]]":
     """Partition every defined subject into exactly one of accounted /
     unaccounted / ambiguous (mutually exclusive -- the three buckets sum to
-    len(definitions)).
+    len(definitions)) using the scope-text token rule for every kind.
 
     A subject's code is diverted to `ambiguous` -- never counted cleanly
     accounted or residue -- when its code string collides across kinds (the
@@ -155,25 +237,63 @@ def classify_completeness(
     the code is found as a word-boundary token in the scope-item corpus, else
     `unaccounted` -- the SS6 residue.
     """
-    code_kinds: dict[str, set[str]] = {}
-    for rec in definitions.values():
-        code_kinds.setdefault(rec["code"], set()).add(rec["kind"])
-
+    code_kinds = _build_code_kinds(definitions)
     accounted: "OrderedDict[str, dict]" = OrderedDict()
     unaccounted: "OrderedDict[str, dict]" = OrderedDict()
     ambiguous: "OrderedDict[str, dict]" = OrderedDict()
 
     for subject, rec in definitions.items():
         code = rec["code"]
-        reasons = []
-        other_kinds = code_kinds[code] - {rec["kind"]}
-        if other_kinds:
-            reasons.append("code %r also defined as kind(s): %s" % (code, ", ".join(sorted(other_kinds))))
-        if len(code) <= SHORT_CODE_MAX_LEN:
-            reasons.append("short code (<=%d chars), collision-prone" % SHORT_CODE_MAX_LEN)
+        reason = _ambiguity_reason(code, rec["kind"], code_kinds)
+        if reason:
+            ambiguous[subject] = dict(rec, reason=reason)
+            continue
 
-        if reasons:
-            ambiguous[subject] = dict(rec, reason="; ".join(reasons))
+        hits = code_referenced_by(code, corpus)
+        if hits:
+            accounted[subject] = dict(rec, matchedBy=hits)
+        else:
+            unaccounted[subject] = rec
+
+    return OrderedDict([("accounted", accounted), ("unaccounted", unaccounted), ("ambiguous", ambiguous)])
+
+
+def classify_completeness_layered(
+    definitions: "OrderedDict[str, dict]",
+    corpus: "OrderedDict[str, dict]",
+    packages: "list[dict] | None" = None,
+) -> "OrderedDict[str, OrderedDict[str, dict]]":
+    """Same three-bucket partition as classify_completeness, but when
+    `packages` is supplied (non-empty), specSection-kind subjects are
+    accounted by PACKAGE-BUNDLE MEMBERSHIP instead of the scope-text token
+    rule -- see the module docstring's "second accounting mode" note. Falls
+    back to classify_completeness unchanged (both layers via the token rule)
+    when `packages` is None or empty. Schedule-definition-kind subjects
+    always use the token rule, with its ambiguous-bucket treatment, in either
+    mode.
+    """
+    if not packages:
+        return classify_completeness(definitions, corpus)
+
+    code_kinds = _build_code_kinds(definitions)
+    accounted: "OrderedDict[str, dict]" = OrderedDict()
+    unaccounted: "OrderedDict[str, dict]" = OrderedDict()
+    ambiguous: "OrderedDict[str, dict]" = OrderedDict()
+
+    for subject, rec in definitions.items():
+        code = rec["code"]
+
+        if rec["kind"] == SPEC_SECTION_KIND:
+            matched = code_enrolled_in_packages(code, packages)
+            if matched:
+                accounted[subject] = dict(rec, matchedBy=matched)
+            else:
+                unaccounted[subject] = rec
+            continue
+
+        reason = _ambiguity_reason(code, rec["kind"], code_kinds)
+        if reason:
+            ambiguous[subject] = dict(rec, reason=reason)
             continue
 
         hits = code_referenced_by(code, corpus)
@@ -265,17 +385,38 @@ def render_ambiguous(ambiguous: "OrderedDict[str, dict]") -> list[str]:
     return lines
 
 
+def render_rule_per_layer(package_mode_active: bool, package_count: int) -> list[str]:
+    lines = ["Rule applied per layer this run:", ""]
+    if package_mode_active:
+        lines.append(
+            "- Spec-section layer: package-bundle membership (%d package definitions supplied via "
+            "--package-claims). A section is accounted when enrolled in some bidPackageDefinition's "
+            "`codes` bundle array or matches its primary `trade` code. Packages are the real "
+            "TOC-coverage guarantee for this layer (package-identity-design.md SS3), so package "
+            "enrollment governs over scope-item prose. Exact structural lookup, not a text search -- "
+            "the kind-agnostic / short-code ambiguity caveats above do not apply to spec sections in "
+            "this mode." % package_count
+        )
+    else:
+        lines.append("- Spec-section layer: scope-text token rule (no --package-claims supplied).")
+    lines.append("- Schedule-definition layer: scope-text token rule, unchanged either way.")
+    lines.append("")
+    return lines
+
+
 def compile_report(
     schedule_claims: list[dict],
     spec_claims: list[dict],
     scope_claims: list[dict],
+    package_claims: list[dict],
     project_name: str,
     project_id: str,
     compiled_date: str,
 ) -> str:
     definitions = classify_definition_subjects(list(schedule_claims) + list(spec_claims))
     corpus = build_scope_corpus(scope_claims)
-    buckets = classify_completeness(definitions, corpus)
+    packages = build_package_definitions(package_claims)
+    buckets = classify_completeness_layered(definitions, corpus, packages)
 
     header = [
         "# %s -- Completeness Oracle Report" % project_name,
@@ -302,6 +443,7 @@ def compile_report(
 
     parts: list[str] = []
     parts.extend(header)
+    parts.extend(render_rule_per_layer(bool(packages), len(packages)))
     parts.extend(render_totals(definitions, buckets, len(corpus), bool(schedule_claims), bool(spec_claims)))
     parts.extend(render_accounted(buckets["accounted"]))
     parts.extend(render_unaccounted(buckets["unaccounted"]))
@@ -324,6 +466,10 @@ def main() -> None:
                      help="specSection-layer claims dump(s) (repeatable)")
     ap.add_argument("--scope-claims", action="append", default=[],
                      help="canonical scope-item claims dump(s) (repeatable)")
+    ap.add_argument("--package-claims", action="append", default=[],
+                     help="bidPackageDefinition claims dump(s) -- when supplied, spec sections are "
+                          "accounted by package-bundle membership instead of the scope-text token "
+                          "rule (repeatable)")
     ap.add_argument("--compiled-date", default=None, help="override for tests; defaults to today (UTC)")
     ap.add_argument("--out", required=True, help="output markdown path")
     args = ap.parse_args()
@@ -331,6 +477,7 @@ def main() -> None:
     schedule_claims = merge_claim_files([Path(p) for p in args.schedule_claims])
     spec_claims = merge_claim_files([Path(p) for p in args.spec_claims])
     scope_claims = merge_claim_files([Path(p) for p in args.scope_claims])
+    package_claims = merge_claim_files([Path(p) for p in args.package_claims])
 
     if args.compiled_date:
         compiled_date = args.compiled_date
@@ -339,7 +486,7 @@ def main() -> None:
         compiled_date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
 
     report = compile_report(
-        schedule_claims, spec_claims, scope_claims,
+        schedule_claims, spec_claims, scope_claims, package_claims,
         args.project_name, args.project_id, compiled_date,
     )
 
@@ -349,10 +496,11 @@ def main() -> None:
 
     definitions = classify_definition_subjects(list(schedule_claims) + list(spec_claims))
     corpus = build_scope_corpus(scope_claims)
-    buckets = classify_completeness(definitions, corpus)
+    packages = build_package_definitions(package_claims)
+    buckets = classify_completeness_layered(definitions, corpus, packages)
 
-    print("[ok] %d defined subjects (%d schedule claims, %d spec claims), %d scope items -> %s"
-          % (len(definitions), len(schedule_claims), len(spec_claims), len(corpus), args.out))
+    print("[ok] %d defined subjects (%d schedule claims, %d spec claims), %d scope items, %d packages -> %s"
+          % (len(definitions), len(schedule_claims), len(spec_claims), len(corpus), len(packages), args.out))
     print("[ok] accounted=%d unaccounted=%d ambiguous=%d"
           % (len(buckets["accounted"]), len(buckets["unaccounted"]), len(buckets["ambiguous"])),
           file=sys.stderr)
@@ -362,6 +510,12 @@ def main() -> None:
         print("[warn] no --spec-claims supplied -- report treats the layer as not present", file=sys.stderr)
     if not scope_claims:
         print("[warn] no --scope-claims supplied -- every defined subject reports unaccounted", file=sys.stderr)
+    if packages:
+        print("[ok] spec-section accounting: package-bundle membership (%d packages)" % len(packages),
+              file=sys.stderr)
+    else:
+        print("[warn] no --package-claims supplied -- spec sections use the scope-text token rule",
+              file=sys.stderr)
 
 
 if __name__ == "__main__":
