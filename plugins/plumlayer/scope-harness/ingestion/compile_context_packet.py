@@ -283,6 +283,18 @@ def _format_where_defined(claims: list[dict]) -> str:
     return "(not grounded)"
 
 
+def _normalize_division(value: Any) -> str:
+    """Canonicalize an inDivision value to a zero-padded two-digit string.
+
+    The ledger stores this predicate inconsistently -- some deposits carry it
+    as an int (26), others as a zero-padded string ("09") -- and a project's
+    real division spread commonly spans both single- and double-digit
+    divisions, so sorting the raw mix crashes with int/str incomparability.
+    str(value).zfill(2) canonicalizes either shape to the same "DD" form.
+    """
+    return str(value).zfill(2)
+
+
 def classify_definition_subjects(claims: list[dict]) -> "OrderedDict[str, dict]":
     """Return one record per DEFINED subject: {code, kind, name, where, flagged}.
 
@@ -304,7 +316,8 @@ def classify_definition_subjects(claims: list[dict]) -> "OrderedDict[str, dict]"
 
         if kind == "specSection":
             name = first_value(subj_claims, "hasTitle")
-            division = first_value(subj_claims, "inDivision")
+            raw_division = first_value(subj_claims, "inDivision")
+            division = _normalize_division(raw_division) if raw_division is not None else None
         else:
             name = first_value(subj_claims, "description")
             division = None

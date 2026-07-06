@@ -335,6 +335,23 @@ class TestClassifyDefinitionSubjects:
         records = classify_definition_subjects(claims)
         assert records == {}
 
+    def test_inDivision_normalizes_int_and_str_to_zero_padded_two_digit(self):
+        claims = [
+            _claim("specSection:012345", "hasTitle", "Summary of Work"),
+            _claim("specSection:012345", "inDivision", "00"),  # str, already zero-padded
+            _claim("specSection:099000", "hasTitle", "Paints and Coatings"),
+            _claim("specSection:099000", "inDivision", "9"),  # str, unpadded
+            _claim("specSection:102800", "hasTitle", "Toilet Accessories"),
+            _claim("specSection:102800", "inDivision", 10),  # int
+            _claim("specSection:260000", "hasTitle", "Electrical"),
+            _claim("specSection:260000", "inDivision", 26),  # int
+        ]
+        records = classify_definition_subjects(claims)
+        assert records["specSection:012345"]["division"] == "00"
+        assert records["specSection:099000"]["division"] == "09"
+        assert records["specSection:102800"]["division"] == "10"
+        assert records["specSection:260000"]["division"] == "26"
+
 
 class TestRenderDefinitionsIndex:
     def test_absent_layers_are_honest(self):
@@ -364,6 +381,25 @@ class TestRenderDefinitionsIndex:
         records = classify_definition_subjects(claims)
         text = "\n".join(render_definitions_index(records, spec_present=True, schedule_present=False))
         assert "2 sections across divisions 01, 07" in text
+
+    def test_mixed_int_and_str_divisions_sort_and_render_without_crash(self):
+        # Regression for the real-ledger bug: inDivision deposited as a zero-padded
+        # str for single-digit divisions and as a plain int for double-digit ones.
+        # Sorting the raw mix crashes with TypeError: '<' not supported between
+        # instances of 'int' and 'str' -- normalization must land before the sort.
+        claims = [
+            _claim("specSection:260000", "hasTitle", "Electrical"),
+            _claim("specSection:260000", "inDivision", 26),  # int
+            _claim("specSection:012345", "hasTitle", "Summary of Work"),
+            _claim("specSection:012345", "inDivision", "00"),  # str
+            _claim("specSection:099000", "hasTitle", "Paints and Coatings"),
+            _claim("specSection:099000", "inDivision", "09"),  # str
+            _claim("specSection:102800", "hasTitle", "Toilet Accessories"),
+            _claim("specSection:102800", "inDivision", 10),  # int
+        ]
+        records = classify_definition_subjects(claims)
+        text = "\n".join(render_definitions_index(records, spec_present=True, schedule_present=False))
+        assert "4 sections across divisions 00, 09, 10, 26" in text
 
 
 # ---------------------------------------------------------------------------
