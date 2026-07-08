@@ -1369,6 +1369,57 @@ class TestCanonCodeFix2Branches:
 
 
 # ---------------------------------------------------------------------------
+# canon_code long-prefix shade-mark family (PLU-376 fourth instance / PLU-431 tail)
+# ---------------------------------------------------------------------------
+
+class TestCanonCodeShadeFamily:
+    """Long-prefix (up to 6 letters) shade-mark branches, 150 Main A-10.02 shade schedule.
+    All 9 real marks validated against schedule_ground_residue.json from the 2026-07-08
+    tail run before this widening; must all pass now. Junk that was already correctly
+    rejected must stay rejected -- no widening of any other branch."""
+
+    def test_single_segment_shade_marks(self):
+        for c in ("SHADE-1MA", "SHADE-2MA", "SHADE-1MI", "SHADE-2MI", "SHADE-3MI",
+                  "SHADE-4MI", "SHADE-5MI", "SHADE-1DMI"):
+            assert canon_code(c) == c
+
+    def test_two_segment_shade_mark(self):
+        assert canon_code("SHADE-1D-MA") == "SHADE-1D-MA"
+
+    def test_all_nine_real_shade_marks(self):
+        """The exact 9 codes PLU-431's tail run recorded as canon_code-fail residue."""
+        marks = (
+            "SHADE-1MA", "SHADE-2MA", "SHADE-1D-MA", "SHADE-1MI", "SHADE-2MI",
+            "SHADE-3MI", "SHADE-4MI", "SHADE-5MI", "SHADE-1DMI",
+        )
+        assert len(marks) == 9
+        for c in marks:
+            assert canon_code(c) == c
+
+    def test_shade_family_negatives_still_rejected(self):
+        """Junk that must NOT be admitted by the widened alpha-prefix cap: the (ALT)
+        class, section-header/prose phrases, and plain long alpha words -- none of
+        these gets a semantics ruling from this change (PLU-376 stays open for them)."""
+        for bad in (
+            "2 - CASEWORK / MILLWORK",   # spaced label with digit prefix, not a mark
+            "CAB-1 (ALT)",               # (ALT) suffix baked into the same span -- PLU-376
+            "FOR FLT-1)",                # prose fragment, not a mark
+            "NOTES",                     # plain 5-letter word, no hyphen/digit
+            "MAIN STREET",               # multi-word phrase
+            "GARAGE", "CLOSET", "MIRROR",  # plain >=5-letter words, no digit
+        ):
+            with pytest.raises(ValueError):
+                canon_code(bad)
+
+    def test_shade_family_does_not_admit_alt_suffix_variant(self):
+        """A hypothetical 'SHADE-1MA (ALT)' single span (suffix fused into the same
+        text run, same shape as the appliance (ALT) rows) must still fail -- the new
+        branches require the string to END in 1-3 letters, not '(ALT)'."""
+        with pytest.raises(ValueError):
+            canon_code("SHADE-1MA (ALT)")
+
+
+# ---------------------------------------------------------------------------
 # numericKey flag (PLU-309 A2, Fix 2) -- bare-numeric DEFINITION keys per table
 # ---------------------------------------------------------------------------
 

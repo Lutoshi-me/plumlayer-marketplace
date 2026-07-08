@@ -182,6 +182,22 @@ _CODE_RE = re.compile(
     # (TestCanonCode.test_three_hyphens) exists to reject. Validated zero-false-positive
     # against the real residue set at authoring (PLU-309 A3).
     r"^[A-Za-z]{1,4}-\d{1,2}-(?:[A-Za-z]\d{1,3}[A-Za-z]?|\d{1,3}[A-Za-z])-\d{1,4}$"  # FCU-1-1A-1
+    r"|"
+    # Long-prefix shade-mark family (PLU-376 fourth instance / PLU-431 tail, 2026-07-08):
+    # alpha prefix of 5-6 letters (every other branch caps the prefix at 4; the floor of 5
+    # here is deliberate -- it is what keeps this branch from re-admitting short-prefix
+    # multi-trailing-letter shapes the base branch's "only one trailing alpha" rule already
+    # rejects, e.g. P-1AB / TestCanonCode.test_multi_char_trailing) + hyphen + 1-2 digits +
+    # up to 3 trailing letters. Recovers SHADE-1MA, SHADE-2MA, SHADE-1MI, SHADE-2MI,
+    # SHADE-3MI, SHADE-4MI, SHADE-5MI, SHADE-1DMI (150 Main A-10.02 shade schedule). Scoped
+    # narrowly to this exact shape, not a general widening of the alpha-prefix cap.
+    r"^[A-Za-z]{5,6}-\d{1,2}[A-Za-z]{1,3}$"          # SHADE-1MA, SHADE-1DMI
+    r"|"
+    # Two-segment counterpart of the above: SHADE-1D-MA (prefix + digit-letter segment +
+    # trailing letter segment, both hyphen-separated). Same PLU-376/PLU-431 shade family
+    # and same 5-6 letter prefix floor, not a general 2-hyphen widening -- the middle
+    # segment is still digit-led.
+    r"^[A-Za-z]{5,6}-\d{1,2}[A-Za-z]{1,3}-[A-Za-z]{1,3}$"  # SHADE-1D-MA
 )
 
 # Words that match _CODE_RE (short all-alpha branch) but are never schedule marks.
