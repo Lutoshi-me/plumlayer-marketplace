@@ -7,7 +7,9 @@ description: >
   or any pile of drawing PDFs and wants it read, registered, indexed, or inventoried. Trigger on
   "we got a new set for <project>", "ingest this set", "register the drawings", "drawing index",
   "drawing list", "sheet schedule", "sheet inventory", "list every sheet", "what's in this drawing
-  set", "index this bulletin", "franken set / current set", "/drawing-ingest". Drives project
+  set", "index this bulletin", "franken set / current set", "/drawing-ingest" — and equally when
+  the set is ALREADY uploaded to the project with nothing local: "read the uploaded set", "ground
+  the files already in <project>", "re-ground the set". Drives project
   selection, delivery registration, cloud upload, bulk deterministic grounding, agent residue read,
   and claim deposit over the hosted Plumlayer MCP verb surface. The agent reads and judges;
   deterministic tooling grounds; nothing governs unverified. Supersedes the retired drawing-index /
@@ -61,9 +63,54 @@ skill does not create projects. Confirm you also know the **issue label** for th
 generic "2025-12-22 CD Set" or "Bulletin 01") — ask the user, or plan to read it off the cover sheet
 during recognition. It is load-bearing for supersession later.
 
+## 1b · Cloud-resident entry (files already in the project, nothing local)
+
+Not every run starts from a local delivery. When the user points you at a project whose set is
+already in cloud storage — uploaded in a prior session, or they ask you to "read the uploaded set"
+or "(re)ground" it — there is nothing to recognize locally and nothing to upload. Detect it before
+asking for paths: if the user hands you no local files, call `list_files(projectId)`; if the
+drawings are there, run this branch. When it's genuinely ambiguous (some files uploaded, the user
+also holding local files), ask — never assume which delivery the user means.
+
+The branch substitutes the local-only stages and reuses everything else unchanged:
+
+- **Enumerate instead of recognize (replaces step 2).** `list_files(projectId)` is your source
+  list — each row carries `fileId`, `filename`, `sizeBytes`, and its `deliveryId` (or null). Apply
+  step 2's judgment to that list: which files are drawings and which aren't. When a filename doesn't
+  decide, sample a page or two with `render_page` / `get_page_text` — on this branch even the
+  file-selection sampling is cloud-side, since there are no local bytes. Emit the same packaging
+  report: which files you will ground, which you're excluding and why.
+- **Delivery attribution instead of registration (replaces steps 3–4).** Read each drawing file's
+  `deliveryId` from `list_files`, cross-referenced against `list_drawing_deliveries(projectId)`:
+  - **Attributed** — the file already carries its delivery. Reuse it; never register a duplicate
+    delivery for the same issue.
+  - **Unattributed** (`deliveryId: null`) — surface the gap to the user; never invent attribution.
+    Establish which issue the files belong to (ask, or read it off a cover sheet via
+    `render_page`), register the delivery per step 3 if it doesn't exist yet, and pass its id as
+    `ground_sheets.deliveryId` in step 5 — that is the supported attach mechanism for an
+    already-registered file (a `register_file` retry returns the existing row; it does not
+    re-attribute). Chronology still comes from the documents: `issuedOn` off a cover sheet or
+    revision table, never upload time.
+  - **Mixed attribution** across files is legitimate (files from different deliveries live in one
+    project) — ground each file against its own delivery; what you must not do is guess a delivery
+    for the unattributed ones or pass a `deliveryId` that disagrees with a file's registered one
+    (the server refuses the mismatch).
+
+From here the pipeline is identical: step 5 (`register_pages` once, then `ground_sheets` per file —
+pass `deliveryId` explicitly for any file whose registration doesn't carry it), step 6 (residue
+read), step 7 (residue deposit + verify). Every gate applies unchanged.
+
+**Re-ground semantics (the honest limits).** Re-running `ground_sheets` on a file+delivery is
+always safe: a `stale` or `failed` job restarts; a `succeeded` one returns the existing job and the
+deposit stays idempotent. That also means this branch cannot force a fresh read of a file+delivery
+that already succeeded — a corrected re-read after a bad run needs the force-re-ground path
+(PLU-338, not built). Say so plainly rather than re-running and implying new output.
+
 ## 2 · Recognize the delivery
 
-A delivery arrives in one of four packaging classes — recognize the class before uploading anything:
+Steps 2–4 are the local-delivery path; a set already in cloud storage enters at 1b above and skips
+them. A delivery arrives in one of four packaging classes — recognize the class before uploading
+anything:
 
 | Class | What it looks like | How you read it |
 |---|---|---|
