@@ -1,14 +1,14 @@
 ---
 name: project-create
 description: >
-  Create and customize a new Plumlayer project (= a MOSOT) by interviewing the user or ingesting
+  Create and customize a new Plumlayer project (= a MOSOT) by interviewing the user or reading in
   project info they already have (an ITB, a drawing index, a spec TOC, a project summary), then
   seeding the new MOSOT with cited, proposed project-level claims. Trigger on "create a project",
   "new project", "set up / start a new MOSOT", "onboard this project", "start a new bid / pursuit",
   "/project-create", or when the user hands over project documents to spin up a project. Creates the
   project via the create_project MCP verb, seeds parties / delivery / type / trades / sets via the
   propose verb (everything proposed — a human promotes on plumlayer.com), then points the user to
-  drawing-ingest. Scope execution is guarded by PLU-323 until PLU-274 ships the scope-item-first engine.
+  drawing-upload. Scope execution is guarded by PLU-323 until PLU-274 ships the scope-item-first engine.
 ---
 
 # Project Create — stand up a new MOSOT and customize it
@@ -21,7 +21,7 @@ governing truth. This skill **creates the project and customizes it** by turning
 > governs unverified.** Everything you seed here is **`proposed`** and is **operator-asserted** — the
 > lowest instrument tier (someone *told you*, you didn't read it off a stamped drawing). It is a
 > starting frame for the project, **not** governing truth. A human reviews and promotes on
-> plumlayer.com; when real drawings/specs are ingested later, higher-instrument claims supersede or
+> plumlayer.com; when real drawings/specs are uploaded and read later, higher-instrument claims supersede or
 > corroborate these. **Cite every claim, never invent a fact, and flag what's uncertain.**
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud MOSOT
@@ -38,7 +38,7 @@ MOSOT into existence carrying the few facts only *you* can supply.
 
 **The arc:**
 `setup` (operator profile, once) → **`project-create` (this skill — shell + minimal frame)** →
-**`drawing-ingest`** (the agent reads and registers the drawing delivery as grounded sheet claims) →
+**`drawing-upload`** (the agent reads and registers the drawing delivery as recognized sheet claims) →
 **PLU-274 scope-item-first engine** (when shipped) → **review & promote on plumlayer.com**.
 
 **The load-bearing consequence — don't interrogate for what the set is about to tell you.** Almost
@@ -88,12 +88,12 @@ that classification drives `ambiguityClass` at seed time.
 tier. Note in one line that you'll read it, then move on:
 - Project **type** (cover sheet + index).
 - **Parties** beyond any the user volunteers — owner, architect, structural EOR, MEP / civil engineers
-  (title blocks + cover stamps). If an engineer is stamped nowhere, that's an **ingestion finding / RFI**,
+  (title blocks + cover stamps). If an engineer is stamped nowhere, that's an **upload-time finding / RFI**,
   not an interview question.
 - **Size** — gross area, floor / unit counts (the drawings, often a code-summary sheet).
 - **Location** (cover sheet).
 - The **drawing-set inventory** — which issues exist and their dates (the drawing index *is* this;
-  `drawing-ingest` + sheet registration produce it).
+  `drawing-upload` + sheet registration produce it).
 
 ### Mode A — Interview (the ask-now set only)
 Ask conversationally, in **one short group**, pre-filled from operator defaults
@@ -102,16 +102,16 @@ it handy."** Do **not** reconcile the operator's saved defaults (e.g. interior-o
 against this project here. Scope execution is guarded until PLU-274, and the future scope-item-first
 engine will own any package/trade-fit inputs.
 
-### Mode B — Ingest what they already have (preferred when docs exist)
+### Mode B — Read what they already have (preferred when docs exist)
 If the user points you at files, **read them locally** and pre-fill — reading a document they handed
 you is not interrogation, it's the high-value path. Good sources:
 - An **ITB / invitation-to-bid** or project summary → name, type, parties, key dates.
-- A **drawing index** (`.csv`/`.xlsx` from the `drawing-ingest` skill) → the set inventory + disciplines.
+- A **drawing index** (`.csv`/`.xlsx` from the `drawing-upload` skill) → the set inventory + disciplines.
 - A **spec TOC** → divisions/trades in scope.
 
 ```bash
 # read the files the user names (local only — do NOT upload them to the cloud here;
-# cloud upload + ingest is a separate path on plumlayer.com)
+# cloud upload + recognition is a separate path on plumlayer.com)
 ls -la <path/to/their/files>
 ```
 
@@ -143,7 +143,7 @@ available (older server), call the **`propose`** tool once per claim, batched in
 message).
 
 **Claim shape** (matches the Claim atom — `subject — predicate — value` + evidence):
-- `sourceInstrument` = `project-setup-interview` (interview) or the **uploaded file name** (ingest).
+- `sourceInstrument` = `project-setup-interview` (interview) or the **uploaded file name** (read-in).
   This correctly marks the claim as low-instrument / operator-asserted.
 - `evidence` = `{ source: "<operator-interview | filename>", method: "human", snippet: "<what was
   said / the source line>" }`.
@@ -184,7 +184,7 @@ sourced. **Every claim carries a `sourceInstrument` and evidence — no exceptio
 Do not create a `scope-run` cluster config as the normal next step. PLU-323 guards that retired
 route-first path while PLU-274 rebuilds the production scope engine.
 
-Tell the user the safe next step is `drawing-ingest` to register and ground the drawing delivery. If
+Tell the user the safe next step is `drawing-upload` to register and recognize the drawing delivery. If
 they ask for scope execution, state that `/scope-run` currently fails loud and that PLU-274 owns the
 scope-item-first replacement.
 
@@ -198,7 +198,7 @@ Tell the user, in plain terms:
   flagged ambiguous** (the pile a human should resolve).
 - **Everything is `proposed`** — visible now via `search` / `set_grid` / `ambiguities` in this session,
   and on **plumlayer.com** for review and promotion. Nothing governs until a human promotes it.
-- **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-ingest` locally), then use
+- **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then use
   the PLU-274 scope-item-first engine once it ships; `/scope-run` is guarded meanwhile.
 
 ---

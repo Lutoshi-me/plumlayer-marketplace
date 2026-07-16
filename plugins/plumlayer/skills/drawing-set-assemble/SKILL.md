@@ -7,7 +7,7 @@ description: "LEGACY (local pipeline only; cloud rebuild tracked in PLU-247). As
 
 > **LEGACY — local-pipeline export only.** This skill assembles physical discipline PDFs from a
 > local Franken Set CSV produced by the retired `drawing-index-merge` pipeline. For projects whose
-> drawing set was ingested via `drawing-ingest` (cloud path), the canonical form is claims in the
+> drawing set was uploaded via `drawing-upload` (cloud path), the canonical form is claims in the
 > MOSOT; a server-side cloud rebuild of this export is tracked in **PLU-247** and not yet available.
 > Run this skill only if you have a local Franken Set CSV from the old pipeline.
 

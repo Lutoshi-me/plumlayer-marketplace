@@ -1,7 +1,7 @@
 ---
 name: learn-project
 description: >
-  Stage 1 of the scope engine — a cheap orientation pass over an already-ingested drawing set. Reads
+  Stage 1 of the scope engine — a cheap orientation pass over an already-uploaded drawing set. Reads
   the project's seed claims, sheet inventory, and spec-section index (if present), takes a handful of
   bounded renders (cover sheet, drawing index, up to four key plans), then deposits proposed, cited
   project-level claims (structural/envelope systems, MEP delivery shape, scope areas, phasing, set-shape
@@ -9,21 +9,21 @@ description: >
   downstream reader orients once instead of from scratch. Trigger on "learn the project", "orient on
   this set", "orientation pass", "run the orientation pass", "what's this project about", "give me the
   project context", "/learn-project". Everything emitted is proposed — a human reviews and promotes on
-  plumlayer.com. Does not ingest drawings (that's `drawing-ingest`) or run the scope/derive stages
+  plumlayer.com. Does not upload drawings (that's `drawing-upload`) or run the scope/derive stages
   (guarded by PLU-323 until PLU-274 ships).
 ---
 
 # Learn Project — the cheap orientation pass (stage 1)
 
 The first stage of the scope engine (`scope-package-architecture.md` §4). Before anything is read
-deep, one cheap pass over what's already grounded builds the project's **context**: what it is, its
+deep, one cheap pass over what's already recognized builds the project's **context**: what it is, its
 structural and envelope systems, its scope areas, the shape of the set, and what's missing. Every
 downstream reader (stage 3's content-keyed specialists) gets this context instead of orienting from
 scratch, which is where tokens leak and reads get unreliable.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing governs
-unverified.** This is an *orientation* pass, not comprehension — it reads what ingestion already
-grounded, takes a handful of bounded renders, and stops. Everything it emits lands **`proposed`**; a
+unverified.** This is an *orientation* pass, not comprehension — it reads what upload already
+recognized, takes a handful of bounded renders, and stops. Everything it emits lands **`proposed`**; a
 human reviews and promotes it on plumlayer.com. Examples in this file are generic — never put a real
 project name, client data, or a real extracted value here.
 
@@ -32,10 +32,10 @@ Governing spec: `scope-package-architecture.md` §4.3 (the emit-shape decision t
 
 ## What this is, and the boundary
 
-`learn-project` does exactly one thing: read an already-ingested set, deposit **net-new** project-level
-orientation claims, and compile a packet from them. So it does **not**: ingest a drawing delivery
-(precondition, owned by `drawing-ingest`); extract spec sections itself (it reads the spec-section index
-if `drawing-ingest`'s later spec-ingestion work has already deposited one — it never extracts specs);
+`learn-project` does exactly one thing: read an already-uploaded set, deposit **net-new** project-level
+orientation claims, and compile a packet from them. So it does **not**: upload a drawing delivery
+(precondition, owned by `drawing-upload`); extract spec sections itself (it reads the spec-section index
+if `drawing-upload`'s later spec-reading work has already deposited one — it never extracts specs);
 run definitions-first extract, content-keyed decompose, the one scope list, package derivation, or
 tag+project (stages 2–6, guarded by PLU-323 until PLU-274 ships); or promote anything (a human does, on
 plumlayer.com).
@@ -48,16 +48,16 @@ repo, never the MOSOT.
 
 1. **Project exists.** Call `list_projects` and confirm with the user which MOSOT this orientation pass
    is for — get its `projectId`. If there is no project yet, hand off to `project-create` first, the
-   same way `drawing-ingest` step 1 does.
-2. **The baseline set is grounded.** Orientation reads the base set shape — it does not need revisions
+   same way `drawing-upload` step 1 does.
+2. **The baseline set is recognized.** Orientation reads the base set shape — it does not need revisions
    or bulletins to have landed, and spec-TOC presence is optional/best-effort, **not** a precondition.
-   What it does need is a delivery that has actually been through `ground_sheets`. There is normally no
+   What it does need is a delivery that has actually been through `recognize_sheets`. There is normally no
    retained `jobId` to poll at orientation time (that job ran, and finished, in an earlier session), so
-   confirm groundedness by its observable effect rather than by re-polling a job you don't hold: call
-   `list_drawing_deliveries(projectId)` — if none exist, stop plainly and hand off to `drawing-ingest`.
+   confirm recognition by its observable effect rather than by re-polling a job you don't hold: call
+   `list_drawing_deliveries(projectId)` — if none exist, stop plainly and hand off to `drawing-upload`.
    If a delivery exists, spot-check with a small `search(projectId, predicate: "appearsOnPage", limit:
-   1)` — zero rows means grounding hasn't actually deposited anything yet; stop and hand off to
-   `drawing-ingest` rather than orienting on an empty set.
+   1)` — zero rows means recognition hasn't actually deposited anything yet; stop and hand off to
+   `drawing-upload` rather than orienting on an empty set.
 
 ## 1 · Read the claims (identity, seeds, sheet inventory)
 
@@ -78,14 +78,14 @@ repo, never the MOSOT.
 
 ## 2 · Read the spec-section index, if present
 
-Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects. When spec ingestion
+Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects. When spec reading
 has run for a project, these claims are real and cited — `hasTitle`, `locatedAt`, `inDivision`, and
 `partOfIssue` on each section (verified on at least one live project). What's missing today is only the
 packaged extraction skill for it, so **many projects won't have these claims yet** — that is a gap in
 what's been run, not the expected steady state.
 
 - **If present:** read the division spread and section count into the packet's set-shape section.
-- **If absent:** write "spec ingestion hasn't run for this project" in the packet's set-shape section
+- **If absent:** write "spec reading hasn't run for this project" in the packet's set-shape section
   and continue. Never write "expected empty today," never treat absence as the norm, and never let this
   block the rest of the pass.
 
@@ -132,7 +132,8 @@ call:
 
 **`sourceInstrument` is per-claim, not one batch label** (the PLU-350 correction). For a claim grounded
 in a specific page or render, cite the specific source file/instrument name — the same convention
-`drawing-ingest` and `project-create`'s ingest mode use. Reserve the label `learn-project-orientation`
+`drawing-upload` and `project-create`'s Mode B (reading in existing docs) use. Reserve the label
+`learn-project-orientation`
 only for derived or absence observations with no single source page: `missingScopeFamily` and any
 set-level `setShapeObservation`. Every claim's `evidence` cites the exact page/render or claims-query
 that produced it — never a fabricated locator.
@@ -177,7 +178,7 @@ Tell the user, in plain terms (mirrors `project-create` step 5):
 
 - **Cite everything.** No citation → don't emit the claim.
 - **Net-new facts only.** Never re-mint a seed claim `project-create` already deposited, or a sheet /
-  spec-section claim `drawing-ingest` already deposited.
+  spec-section claim `drawing-upload` already deposited.
 - **Judgment claims are cited and flagged.** `mepDeliveryShape` is always flagged; the rest are flagged
   whenever the value was inferred rather than read off a label.
 - **This skill never promotes.** Everything lands `proposed`.
@@ -188,7 +189,7 @@ Tell the user, in plain terms (mirrors `project-create` step 5):
 
 ## Cost (cheapest tier first)
 
-The bulk of this pass is `search` over claims `project-create` and `drawing-ingest` already deposited —
+The bulk of this pass is `search` over claims `project-create` and `drawing-upload` already deposited —
 already-paid-for reads, effectively free. Token cost is fenced to the ≤6 renders and their paired
 `get_page_text` calls, plus the small, fixed cost of compiling the packet from a small claim set. No GPU
 or model hosting on this path.

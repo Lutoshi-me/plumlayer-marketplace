@@ -7,7 +7,7 @@ description: "LEGACY (local pipeline only; cloud rebuild tracked in PLU-247). Pu
 
 > **LEGACY — local-pipeline export only.** This skill publishes an Excel workbook from per-issue
 > CSVs produced by the retired `drawing-index` / `drawing-index-bulletin` / `drawing-index-merge`
-> pipeline. For projects whose drawing set was ingested via `drawing-ingest` (cloud path), the
+> pipeline. For projects whose drawing set was uploaded via `drawing-upload` (cloud path), the
 > canonical index is the MOSOT's claim set (query via `set_grid` or `search`); a server-side cloud
 > export of this workbook is tracked in **PLU-247** and not yet available. Run this skill only if
 > you have per-issue CSVs from the old local pipeline.

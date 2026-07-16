@@ -29,7 +29,7 @@ Trust tiers: `approved > authoritative > derived`; **`proposed` never governs.**
 - `list_projects` — the user's projects (each is a MOSOT). Confirm the right one before acting.
 - `get_project` — one project's details.
 - `create_project` — create a new project (= a new MOSOT). Supply `name` (required) and optional
-  `description`; returns the new `projectId`. Use before any propose or ingest on a new bid/pursuit.
+  `description`; returns the new `projectId`. Use before any propose or upload on a new bid/pursuit.
 
 **Read**
 - `set_grid` — the sheet inventory (the drawing set as a grid: discipline, sheet number,
@@ -40,17 +40,17 @@ Trust tiers: `approved > authoritative > derived`; **`proposed` never governs.**
   subject / predicate / trustClass / text; paginated. Use this to see what's actually been
   asserted — including your own proposals.
 
-**Drawing grounding** (cloud PDF — these work against files already uploaded to the project)
+**Drawing recognition** (cloud PDF — these work against files already uploaded to the project)
 - `list_files` — list the drawing files registered to a project.
 - `register_pages` — once per project, register renderable page rows for every uploaded PDF (not
-  claims, just viewable pages) so uploaded files are readable even before grounding runs.
-- `ground_sheets` — start the async deterministic bulk sheet-grounding pass over one uploaded PDF.
-  Returns `{jobId, status}` immediately; poll `ground_sheets_status` rather than waiting inline.
-  Grounded sheet claims deposit server-side as `proposed` on success — never `propose_batch` them
-  yourself.
-- `ground_sheets_status` — poll a `ground_sheets` job. Returns run counts (`report`), the
+  claims, just viewable pages) so uploaded files are readable even before recognition runs.
+- `recognize_sheets` — start the async deterministic bulk sheet-number recognition pass over one
+  uploaded PDF. Returns `{jobId, status}` immediately; poll `recognize_sheets_status` rather than
+  waiting inline. Recognized sheet claims deposit server-side as `proposed` on success — never
+  `propose_batch` them yourself.
+- `recognize_sheets_status` — poll a `recognize_sheets` job. Returns run counts (`report`), the
   server-side deposit summary (`deposit`), and the residue tail (`residue`) for you to read and
-  judge; it never carries the grounded claims themselves.
+  judge; it never carries the recognized claims themselves.
 - `render_page` — render a single page of a registered PDF to an image so you can read it.
 - `get_page_text` — extract the text layer from a registered PDF page (deterministic; use
   alongside `render_page` — text for tokens, render for layout/meaning).
@@ -60,15 +60,15 @@ Trust tiers: `approved > authoritative > derived`; **`proposed` never governs.**
   revision packages like bulletins/addenda).
 - `create_drawing_delivery` — register one delivery (e.g. "2025-12-15 Conformed Set" as
   `deliveryKind: "baseline"`, or "2026-02-09 Bulletin 01" as `"revision"`). Project metadata, not a
-  governing claim. Attach files with `register_file.deliveryId`, then ground with
-  `ground_sheets.deliveryId`.
+  governing claim. Attach files with `register_file.deliveryId`, then recognize with
+  `recognize_sheets.deliveryId`.
 - `update_drawing_delivery` — correct a delivery's label, kind, or issue date after the fact; never
   renames or mutates the uploaded files themselves.
 
 **Upload** (register a new delivery)
 - `request_file_upload` — get a signed upload URL for a drawing PDF you want to register.
 - `register_file` — after uploading, register the file to the project so it becomes available
-  to `list_files` / `render_page` / `get_page_text` and the `drawing-ingest` pipeline.
+  to `list_files` / `render_page` / `get_page_text` and the `drawing-upload` pipeline.
 
 **Write**
 - `propose` — append one `proposed` claim (`subject`, `predicate`, `value`,
@@ -76,7 +76,7 @@ Trust tiers: `approved > authoritative > derived`; **`proposed` never governs.**
   until a human promotes it.
 - `propose_batch` — append an array of `proposed` claims in one atomic call (`projectId` +
   `claims` array). Atomic: a bad entry rejects the whole batch and names the index. Prefer
-  this over repeated `propose` calls for bulk deposits (e.g. ingest or scope deposit). Each
+  this over repeated `propose` calls for bulk deposits (e.g. upload or scope deposit). Each
   call accepts up to 500 claims; stay at ≤50 per batch so each read is faithful and
   count-verifiable.
 

@@ -60,8 +60,8 @@ unless Claude compatibility is handled separately.
   — auto-wired on install; no manual `claude mcp add`.
 - **`mosot` skill** — teaches Claude the MOSOT verb surface (`set_grid`, `ambiguities`,
   `rfi_candidates`, `search`, `propose`, …) and the propose-only / human-promotes doctrine.
-- **`drawing-ingest` skill** — register any drawing delivery into the cloud MOSOT as grounded,
-  proposed sheet claims.
+- **`drawing-upload` skill** — register any drawing delivery into the cloud MOSOT as recognized,
+  proposed sheet claims (including sheet-type classification).
 - **`drawing-index-publish` skill** — legacy export projection that publishes a Master Drawing Index
   workbook from cloud claims.
 - **`drawing-set-assemble` skill** — legacy export projection that assembles discipline PDFs from cloud
@@ -74,7 +74,7 @@ unless Claude compatibility is handled separately.
 - **`trade-specialist` subagent** — legacy route-first asset retained for PLU-274 history/migration
   only; guarded against normal production scope dispatch.
 
-Drawing ingest, MOSOT, and export skills are active. The old route-first scope harness remains bundled
+Drawing upload, MOSOT, and export skills are active. The old route-first scope harness remains bundled
 as historical material while PLU-274 rebuilds the current production scope engine.
 
 ## Updating
@@ -118,7 +118,7 @@ plugins/plumlayer/
     trade-specialist.md             # legacy route-first fan-out guard
   skills/
     mosot/SKILL.md                  # the starter MOSOT skill
-    drawing-ingest/SKILL.md
+    drawing-upload/SKILL.md
     drawing-index-publish/SKILL.md + references/
     drawing-set-assemble/SKILL.md + references/
     scope-run/SKILL.md              # PLU-323 guard; refuses retired route-first scope-run
