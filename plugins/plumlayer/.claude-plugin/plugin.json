@@ -1,6 +1,6 @@
 {
   "name": "plumlayer",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "Connect Claude to your Plumlayer MOSOT (cloud) and guarded precon workflow skills. Create + onboard projects, read + propose claims through the hosted MCP; route-first scope-run is blocked while PLU-274 rebuilds it.",
   "author": {
     "name": "Plumlayer"
