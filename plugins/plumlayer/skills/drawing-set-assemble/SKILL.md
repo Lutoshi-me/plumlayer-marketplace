@@ -1,145 +1,82 @@
 ---
 name: drawing-set-assemble
-description: "LEGACY (local pipeline only; cloud rebuild tracked in PLU-247). Assemble a fresh discipline-split drawing set (one PDF per discipline, mirroring the Conformed Set folder shape) from a Franken Set CSV, pulling the latest version of every sheet from its source PDF. ALWAYS use this skill when the user asks to assemble, build, generate, or produce the Franken Set PDFs, the merged drawing set, the current PDFs, the latest PDF set, the merged Drawings by Discipline folder, or a single combined latest-set PDF. Trigger on 'assemble franken set', 'build franken pdfs', 'merge drawings into pdfs', 'create current set', 'rebuild drawings by discipline', 'split franken set by discipline', 'combine into one pdf', 'merged drawing pdf', or '/assemble-set'. Inputs are a Franken Set CSV (from the drawing-index-merge skill) and the source PDFs it references. Outputs are (1) a Drawings by Discipline folder with one PDF per discipline containing only the latest sheets in sheet-# order, AND (2) optionally a single combined PDF. Both outputs preserve per-page annotations, links, and URL embeds from the source PDFs, and add fresh bookmarks (one per sheet, labeled with sheet # + title) at the document level. Use this skill IN COMBINATION with the base `pdf` skill for any post-assembly QC. Do NOT use this skill to BUILD the Franken Set CSV — that is the drawing-index-merge skill. Do NOT use this skill to produce the Master Drawing Index Excel workbook — that is the drawing-index-publish skill."
+description: >
+  Assemble the project's CURRENT drawing set into fresh PDFs, straight off the cloud MOSOT set grid —
+  one PDF per discipline, plus an optional combined PDF. Use whenever the user asks to assemble,
+  build, generate, or produce the current set, the merged drawing set, the discipline-split PDFs, or a
+  single combined latest-set PDF. Trigger on "assemble the set", "current set", "merged PDFs",
+  "discipline split", "build the current drawing set", "give me the latest PDFs", "combine into one
+  pdf", or "/assemble-set". Drives project selection and the `assemble_current_set` /
+  `assemble_current_set_status` hosted MCP verbs — an async job you start then poll. The verb is a
+  read-only PROJECTION off the current set grid: it writes no claims and changes no selection policy,
+  it only registers the assembled PDFs as project files. Outputs are downloaded from the project on
+  plumlayer.com; there is no download verb. Do NOT use this skill to publish the Master Drawing Index
+  Excel workbook — that is `drawing-index-publish`. Requires a project whose drawings were already
+  registered via `drawing-upload`.
 ---
 
-# Drawing Set Assemble — Franken Set PDF Builder
+# Drawing Set Assemble — current-set PDF export
 
-> **LEGACY — local-pipeline export only.** This skill assembles physical discipline PDFs from a
-> local Franken Set CSV produced by the retired `drawing-index-merge` pipeline. For projects whose
-> drawing set was uploaded via `drawing-upload` (cloud path), the canonical form is claims in the
-> MOSOT; a server-side cloud rebuild of this export is tracked in **PLU-247** and not yet available.
-> Run this skill only if you have a local Franken Set CSV from the old pipeline.
+Take the project's current governing sheet set and turn it into fresh, ready-to-use PDFs — one per
+discipline, and, by default, a single combined PDF of the whole set. This is an on-demand projection
+off the MOSOT set grid, not a new source of truth: it writes no claims, and it never changes which
+sheet is current for a subject.
 
-Read this entire file before producing any assembled output.
+## What this is, and the boundary
 
----
+The canonical form is the claims in the project's MOSOT (deposited by `drawing-upload`). This skill
+renders one view of that truth as physical PDFs, for people who need to print, share, or browse a set
+outside plumlayer.com. It does not read drawings, decide which sheet is current, or write any claims
+— `assemble_current_set` is a pure export off the current set grid.
 
-## Overview
+## 1 · Pick the project
 
-This skill takes a **Franken Set CSV** (which says "for every sheet, the latest version lives at source_pdf, page N") and physically assembles two deliverables:
+Call `list_projects` and confirm with the user which project (MOSOT) to assemble. Get its
+`projectId`. If the project has no drawings uploaded yet, hand off to `drawing-upload` first.
 
-1. **`Drawings by Discipline/`** — a folder mirroring the Conformed Set's `Drawings by Discipline` structure. One PDF per discipline (Arch, Structural, Plumbing, …), each containing only the latest sheets in sheet-# order. Drop-in replacement for working from a single discipline.
-2. **`Most Current Set.pdf`** *(optional)* — a single combined PDF with every latest sheet, sorted by discipline then sheet number. Useful for printing the whole set or for the field.
+## 2 · Start the assembly job
 
-Both outputs:
+Call `assemble_current_set(projectId, combined?)`. `combined` defaults to true (also produce a single
+"Current Set - Combined.pdf"); pass `combined: false` to skip it and only get the per-discipline PDFs
+— the per-discipline PDFs are always produced regardless.
 
-- **Preserve per-page annotations** — links, URL embeds, callouts, sticky notes — using pypdf's native page copy. Anything the architect placed on the page (inter-sheet hyperlinks, key plan callouts) carries through.
-- **Add fresh bookmarks** — one entry per sheet, labeled `<sheet#>  <Page Title>` (e.g. `A-101  ENLARGED CONSTRUCTION PLAN - BASEMENT LEVEL`). This produces a navigation experience that is typically better than the source PDFs, which often have no bookmarks.
+It returns immediately: `{ jobId, status: "queued" | "running", alreadyActive? }`. A full set can
+exceed the request window, so this never blocks inline. `alreadyActive: true` means a job for this
+project is already queued or running — poll the returned `jobId` rather than starting a second one.
+Each fresh run mints new output files; prior exports are left in place, so re-running doesn't
+overwrite or lose anything.
 
----
+## 3 · Poll until done
 
-## Workflow
+Call `assemble_current_set_status(projectId, jobId)` every 3-5 seconds until `state` settles:
 
-**Trigger:** User asks to assemble / build / produce the Franken Set PDFs, or wants a current-state drawing set as a folder or single PDF.
+- `queued` / `running` — still working, poll again shortly.
+- `stale` — the executor died mid-run; re-call `assemble_current_set` on the same project to restart.
+- `failed` — read `error`, stop, and report it rather than retrying blindly.
+- `succeeded` — the PDFs are assembled and registered as project files.
 
-**Action:**
+## 4 · Report the result
 
-1. Locate the Franken Set CSV. If absent, run the `drawing-index-merge` skill first.
-2. Locate the source PDFs. The Franken Set CSV's `Source PDF File` column holds basenames only — the script must resolve them to absolute paths. Default search roots: the Conformed Set's `Drawings by Discipline/` folder plus each Bulletin's folder. The script walks these roots to build a basename→fullpath map.
-3. Run `references/build_franken_pdfs.py <franken_set_csv>` with optional flags:
-   - `--no-combined` — skip the single combined PDF, produce only the discipline folder.
-   - `--no-by-discipline` — skip the discipline folder, produce only the combined PDF.
-   - `--out <folder>` — override the output folder (default: same folder as the Franken Set CSV).
-   - `--search-root <path>` — add a search root for source PDFs (repeatable).
-4. After the run, report:
-   - Number of output PDFs written and total page count.
-   - Any sheets that couldn't be assembled (source PDF missing, page out of range).
-   - Where annotations were preserved vs. where they were synthetic.
+On `succeeded`, tell the user:
 
-### Dependencies
-
-- **Python 3** with `pypdf` (`pip install pypdf` if missing).
-- No `pdftotext` or `pdfplumber` needed — this is a pure pypdf job.
-
-### Inputs
-
-- **Required:** a Franken Set CSV with columns `Discipline, Sheet Number, Page Title, Source Issue, Source PDF File, Source Page in PDF`.
-- **Source PDFs:** the script needs to find each `Source PDF File` referenced in the CSV. By default it scans up from the CSV's location, but pass `--search-root` to extend.
-
-### Outputs
-
-Written to `<franken_csv_parent>/` by default:
-
-1. **`Drawings by Discipline/Franken Set -- <Discipline>.pdf`** — one PDF per discipline.
-2. **`Most Current Set.pdf`** — single combined PDF (omit with `--no-combined`).
-
-If a target file is locked in Excel/Acrobat, version it `v2`, `v3`… (same convention as the other skills).
-
----
-
-## How assembly works
-
-```python
-# Pseudocode
-franken = read_csv(franken_set_csv)
-source_pdfs = {}  # basename -> PdfReader, opened once per source
-
-# Group by discipline for the by-discipline output
-by_discipline = group_by(franken, "Discipline")
-
-# Order within each discipline: sheet # ascending (numeric-aware)
-for disc, rows in by_discipline.items():
-    writer = PdfWriter()
-    for row in sorted(rows, key=sheet_sort_key):
-        src = open_or_cache(row["Source PDF File"])
-        page_idx = int(row["Source Page in PDF"]) - 1  # 1-indexed in CSV
-        new_idx = len(writer.pages)
-        writer.add_page(src.pages[page_idx])  # preserves annotations
-        writer.add_outline_item(
-            title=f"{row['Sheet Number']}  {row['Page Title']}",
-            page_number=new_idx,
-        )
-    write_to_disk(writer, output_path)
-```
-
-### Sheet ordering
-
-Sheet numbers must sort numerically, not lexically. Reuse `sheet_sort_key` from the `drawing-index-merge` skill: split on `-`, sort numeric portion as int, decimals sort between integers, suffix letters last. Decimals: `A-100`, `A-100.1`, `A-100.2`, `A-101`. Suffix letters: `A-101`, `A-101A`, `A-101B`, `A-102`.
-
-### Discipline ordering (for combined PDF)
-
-Follows the standard G-series discipline order (as on a typical G-001 drawing list): GENERAL, LIFE SAFETY, CIVIL, ARCHITECTURAL DEMO, ARCHITECTURAL, STRUCTURAL, FIRE PROTECTION, PLUMBING, HVAC, ELECTRICAL, FIRE ALARM, SECURITY, TELECOMMUNICATIONS, ELEVATOR. New disciplines sort last alphabetically.
-
-### Annotation preservation
-
-`pypdf.PdfWriter.add_page(reader.pages[N])` copies the page object including its `/Annots` array. Per-page links (Internal Links cross-referencing other sheets) survive **within the same source PDF**, but a link from a Conformed-source page pointing to "page 47 of Arch.pdf" will end up pointing into the *original* Arch.pdf, not the new Franken Set discipline PDF. That's typically acceptable — Acrobat will open the original target if available — but worth noting.
-
-True per-page annotations (sticky notes, text highlights, URL embeds in the page itself) carry through correctly.
-
-### Bookmark synthesis
-
-After all pages are added, the writer's outline is built fresh:
-
-```python
-for disc, rows in by_discipline.items():
-    parent = writer.add_outline_item(disc, page_number=first_page_of_discipline)
-    for row in sorted(rows, key=sheet_sort_key):
-        writer.add_outline_item(
-            title=f"{row['Sheet Number']}  {row['Page Title']}",
-            page_number=row.new_page_index,
-            parent=parent,
-        )
-```
-
-For the discipline-split outputs, the outer parent loop is unnecessary — each output already represents one discipline. For the combined output, the discipline-level parent gives a two-tier outline.
-
----
-
-## What to do after the run
-
-1. Tell the user the path of the new `Drawings by Discipline/` folder (and the combined PDF if produced).
-2. Report any sheets that couldn't be assembled — typically because the source PDF wasn't found in the search roots. Log them with their CSV row so the user can investigate.
-3. Suggest opening one of the new PDFs in Acrobat to verify the bookmark panel and confirm page-level annotations (e.g. inter-sheet hyperlinks) still work.
-4. Remind the user that any existing combined set PDFs live in the same folder — they may want to rename or archive them once they trust the new output.
-
----
+- **The outputs** — one entry per file: filename (`Current Set - <Discipline>.pdf`, or
+  `Current Set - Combined.pdf` if requested), size, page count, discipline.
+- **The counts** from `report`: `sheetsInProjection` (every subject considered), `included`, and
+  `excluded` (counts add up: in = included + excluded).
+- **The residue** — always relay this, never suppress it: review-status sheets that were still
+  included in the assembled PDFs (flagged, not omitted), and sheets excluded because they had no
+  locatable source page. Both are the tail a human should look at before treating the set as final.
+- **Where to get the files** — the assembled PDFs live on the project on plumlayer.com; there is
+  deliberately no download link served here, so point the user there rather than looking for a path
+  or URL in the tool result.
 
 ## Failure modes
 
-- **Source PDF not found.** Most common cause: the Franken Set CSV references a PDF by basename, but it's not on the user's search roots. The script logs the missing basename(s) and continues with the assemblable rows. Re-run with `--search-root <path>` pointing at the missing file's parent.
-- **Page index out of range.** Indicates the source PDF was edited since the Franken Set was built (someone replaced the file). The CSV row's `Source Page in PDF` no longer aligns. Tell the user to re-run `drawing-index-merge` to refresh the Franken Set first.
-- **Encrypted source PDF.** pypdf can read most architect-encrypted PDFs (they typically only restrict editing/printing, not viewing). If a source is fully encrypted, the script raises and tells the user.
-- **Very large output.** The combined PDF can exceed 300 MB on large projects. Writing is incremental, but the final file is big. Consider running with `--no-combined` if you only need the discipline folder.
-- **Output file locked in Acrobat.** The skill versions the filename (`v2`, `v3`…). Close the open file and re-run for a clean overwrite.
-- **Sheet appears in CSV but title is blank.** Bookmark label falls back to just the sheet # (no second column). User can fill titles later via the future `drawing-revisions` skill, then re-assemble.
+- **`failed` job** — read the `error` field and report it plainly; don't retry blindly or guess a fix.
+- **`alreadyActive: true`** — someone (or an earlier call in this same session) already started a
+  job; poll the existing `jobId`, don't start a duplicate.
+- **`stale`** — the executor died mid-run with no progress; re-calling `assemble_current_set`
+  restarts cleanly.
+- **High excluded count** — if `excluded` is large relative to `sheetsInProjection`, say so plainly
+  rather than only reporting the PDFs — it usually means a chunk of the set has no locatable page yet
+  and needs a `drawing-upload` residue pass.
