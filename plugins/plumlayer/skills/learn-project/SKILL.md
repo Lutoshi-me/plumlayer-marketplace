@@ -3,13 +3,13 @@ name: learn-project
 description: >
   Stage 1 of the scope engine — a cheap orientation pass over an already-uploaded drawing set. Reads
   the project's seed claims, sheet inventory, and spec-section index (if present), takes a handful of
-  bounded renders (cover sheet, drawing index, up to four key plans), then deposits proposed, cited
+  bounded renders (cover sheet, drawing index, up to four key plans), then deposits cited
   project-level claims (structural/envelope systems, MEP delivery shape, scope areas, phasing, set-shape
   observations, missing scope families, hazards) and compiles a run-context packet from them so every
   downstream reader orients once instead of from scratch. Trigger on "learn the project", "orient on
   this set", "orientation pass", "run the orientation pass", "what's this project about", "give me the
-  project context", "/learn-project". Everything emitted is proposed — a human reviews and promotes on
-  plumlayer.com. Does not upload drawings (that's `drawing-upload`) or run the scope/derive stages
+  project context", "/learn-project". Everything emitted is the agent's own reading, cited, and flagged
+  where it was inferred. Does not upload drawings (that's `drawing-upload`) or run the scope/derive stages
   (guarded by PLU-323 until PLU-274 ships).
 ---
 
@@ -21,10 +21,11 @@ structural and envelope systems, its scope areas, the shape of the set, and what
 downstream reader (stage 3's content-keyed specialists) gets this context instead of orienting from
 scratch, which is where tokens leak and reads get unreliable.
 
-Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing governs
-unverified.** This is an *orientation* pass, not comprehension — it reads what upload already
-recognized, takes a handful of bounded renders, and stops. Everything it emits lands **`proposed`**; a
-human reviews and promotes it on plumlayer.com. Examples in this file are generic — never put a real
+Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
+untraced.** This is an *orientation* pass, not comprehension — it reads what upload already
+recognized, takes a handful of bounded renders, and stops. Everything it emits is **your own reading**,
+cited, and it becomes the project's working context the moment it lands, so what you flagged as
+inferred is what a person should judge. Examples in this file are generic — never put a real
 project name, client data, or a real extracted value here.
 
 Governing spec: `scope-package-architecture.md` §4.3 (the emit-shape decision this skill implements) and
@@ -37,8 +38,7 @@ orientation claims, and compile a packet from them. So it does **not**: upload a
 (precondition, owned by `drawing-upload`); extract spec sections itself (it reads the spec-section index
 if `drawing-upload`'s later spec-reading work has already deposited one — it never extracts specs);
 run definitions-first extract, content-keyed decompose, the one scope list, package derivation, or
-tag+project (stages 2–6, guarded by PLU-323 until PLU-274 ships); or promote anything (a human does, on
-plumlayer.com).
+tag+project (stages 2–6, guarded by PLU-323 until PLU-274 ships).
 
 The run-context packet this skill compiles is a **projection**, never stored as truth — the same
 pattern as a trade package. It lives in the run's working context only (the private tree), never the
@@ -144,7 +144,7 @@ entries sent; a mismatch stops the run and gets reported, never a guessed correc
 ## 5 · Compile the run-context packet
 
 A projection compiled fresh from the claims read in step 1 and deposited in step 4 — **never itself
-proposed, never stored as truth.** Sections, in order:
+deposited as a claim, never stored as truth.** Sections, in order:
 
 1. **Identity** — name, type, delivery method, location, size, key dates (from the seed claims).
 2. **Systems** — structural and envelope systems, MEP delivery shape per division.
@@ -172,7 +172,8 @@ Tell the user, in plain terms (mirrors `project-create` step 5):
 - **Claim counts** — how many deposited, and how many were ambiguity-flagged.
 - **Where the packet landed** — the full path.
 - **The placeholder note** — the definitions-as-context section is a stub pending PLU-351.
-- **Everything is `proposed`** — pending review and promotion on plumlayer.com.
+- **What a person should look at** — the ambiguity-flagged claims, visible on plumlayer.com with the
+  page each one was read from.
 
 ## Gates (non-negotiable)
 
@@ -181,7 +182,8 @@ Tell the user, in plain terms (mirrors `project-create` step 5):
   spec-section claim `drawing-upload` already deposited.
 - **Judgment claims are cited and flagged.** `mepDeliveryShape` is always flagged; the rest are flagged
   whenever the value was inferred rather than read off a label.
-- **This skill never promotes.** Everything lands `proposed`.
+- **Say it is your reading.** These claims become the project's working context immediately, so an
+  inferred value that reads as a documented one is the failure to avoid.
 - **Orientation, not comprehension.** Respect the ≤6 render budget — if the set is too large for it to
   cover meaningfully, say so in the report rather than silently exceeding it.
 - **The packet is a projection only.** Never deposited as a claim, never written to the repo, always

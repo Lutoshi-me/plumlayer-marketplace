@@ -1,8 +1,8 @@
 ---
 name: drawing-upload
 description: >
-  Upload a construction drawing delivery in ANY packaging and turn it into cited, proposed sheet
-  claims in the project's Plumlayer MOSOT — no manual conforming, no local CSV intermediate. Use
+  Upload a construction drawing delivery in ANY packaging and turn it into cited sheet claims in the
+  project's Plumlayer MOSOT — no manual conforming, no local CSV intermediate. Use
   whenever the user hands over a new drawing set, bulletin, addendum, ASI, permit/CD/conformed set,
   or any pile of drawing PDFs and wants it read, registered, indexed, or inventoried. Trigger on
   "we got a new set for <project>", "upload this set", "register the drawings", "drawing index",
@@ -14,7 +14,7 @@ description: >
   residue read, sheet-type classification, and claim deposit over the hosted Plumlayer MCP verb
   surface. The primary verbs are `recognize_sheets` / `recognize_sheets_status`; older servers may
   still expose these as deprecated `ground_sheets` / `ground_sheets_status` aliases. The agent reads
-  and judges; deterministic tooling grounds; nothing governs unverified. Supersedes the retired
+  and judges; deterministic tooling grounds; nothing enters untraced. Supersedes the retired
   drawing-index / drawing-index-bulletin / drawing-index-merge skills (the export skills
   drawing-set-assemble / drawing-index-publish survive as on-demand projections off the cloud
   claims).
@@ -23,12 +23,13 @@ description: >
 # Drawing Upload — the foundation pass, agent-driven, cloud-first
 
 Take whatever the architect actually sent, in whatever shape, and turn it into the one canonical,
-recognized set of **proposed sheet claims** in the project's MOSOT. This is **Stage 0**: the first
+recognized set of **cited sheet claims** in the project's MOSOT. This is **Stage 0**: the first
 thing that touches a delivery, before anything is split by discipline, routed, or deep-read.
 
-Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing governs
-unverified.** Every claim in this pipeline lands `proposed` — whether the server-side recognition job
-deposited it or you did — a human promotes it later on plumlayer.com. You are the reader; the MCP
+Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing enters
+untraced.** Every claim in this pipeline takes effect as soon as it lands, carrying who wrote it and
+what they read from: the recognition pass records what it confirmed off the page, and what you judge
+yourself records as your own reading, cited to the page you read it on. You are the reader; the MCP
 recognition verbs (`recognize_sheets`, `recognize_sheets_status`, `render_page`, `get_page_text`) are
 the anti-hallucination anchor, not the inference engine. There is no local pipeline and no
 server-side autonomous *reader* — the server runs the deterministic bulk pass and deposits its own
@@ -53,14 +54,14 @@ about what was actually happening. Say instead:
 ## What this is, and the boundary
 
 `drawing-upload` does exactly one thing: take a drawing delivery and register every sheet in it as
-cited, proposed claims in the project's MOSOT. The canonical form is claims + provenance over the
+cited claims in the project's MOSOT. The canonical form is claims + provenance over the
 untouched original delivery — discipline organization, by-discipline PDFs, page labels, and a
 drawing-index CSV are all **projections** of that form, rendered on demand by other skills, never the
 foundation. So this skill does **not**: physically split files by discipline (discipline is derived
 per sheet, never from a filename); produce a CSV (the deliverable is claims in the MOSOT — export
 skills `drawing-set-assemble` / `drawing-index-publish` render artifacts from the cloud claims on
 request); scope, take off, or comprehend the sheets (guarded by PLU-323 / owned by PLU-274); or create
-the project (`project-create`) or promote anything (a human does, on plumlayer.com).
+the project (`project-create`).
 
 **Retired:** `drawing-index`, `drawing-index-bulletin`, `drawing-index-merge` — they organized before
 reading (hand-split into discipline PDFs, then parsed a master list), which commits a discipline guess
@@ -210,7 +211,7 @@ Poll `recognize_sheets_status(projectId, jobId)` every ~3-5s until `state` settl
   self-heal (it restarts the job).
 - `failed` — read `error`, stop, and report it; don't retry blindly.
 - `succeeded` — the recognized sheet claims (`appearsOnPage`, `hasTitle`, `locatedAt`, `discipline`,
-  `partOfIssue`) are **already deposited server-side as `proposed` claims.** This result never carries
+  `partOfIssue`) are **already deposited server-side.** This result never carries
   those claims and you never `propose_batch` them yourself — that would double-write every sheet. Report
   the run-level counts from `report`: `pagesScanned`, `sheetsGrounded`, `highConfCount`, `flaggedCount`,
   `extractionWarningCount`, `calibrated`, `capHit`. Never assume "N pages scanned = N sheets recognized" —
@@ -267,8 +268,8 @@ unreadable) — never silently dropped. State how many you read, corrected, and 
 ## 6b · Type the sheets (PLU-567)
 
 After residue is judged, classify every recognized sheet — the deterministic pass's own output and
-your residue corrections alike — into the project's 13-value `sheetType` vocabulary, and deposit
-proposed claims. This is agent judgment only: the deterministic recognizer never binds a type, and
+your residue corrections alike — into the project's 13-value `sheetType` vocabulary, and deposit a
+claim per sheet. This is agent judgment only: the deterministic recognizer never binds a type, and
 an unclear sheet stays untyped rather than getting a guess.
 
 **The vocabulary (exactly these 13 values, no others):**
@@ -353,7 +354,8 @@ verification pass:
 Point any unresolved residue, flagged image-only pages, or untyped sheets at `ambiguities(projectId)`
 or the plain untyped count — the review queue, not something this skill resolves itself. Report:
 project, delivery, the job's `report` counts, its `deposit` summary, your residue-and-type bundle's
-count-verified deposit, and that everything is visible for review/promotion on plumlayer.com.
+count-verified deposit, and that the set is now readable on plumlayer.com with each sheet's source
+page behind it.
 
 ## Gates (non-negotiable)
 
@@ -364,7 +366,8 @@ count-verified deposit, and that everything is visible for review/promotion on p
 - Residue is judged-or-flagged, never silently dropped; image-only pages are named, not guessed.
 - `sheetType` is agent judgment only — never a deterministic guess, never a value outside the
   13-value vocabulary, never assigned to a sheet you're not confident about.
-- Everything landed is `proposed`. This skill never promotes.
+- The residue and type claims are your own reading, cited to the page you read; never present them as
+  the deterministic pass's confirmed output.
 - Your own deposit (the residue + type bundle) is verbatim, count-verified transport — a count
   mismatch stops the run, never triggers a reconstructed or invented entry.
 - Before depositing your residue/type bundle, check for a prior deposit on this delivery and confirm

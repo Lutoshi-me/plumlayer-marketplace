@@ -1,7 +1,7 @@
 ---
 name: bid-intake
 description: >
-  Read a trade's sub-proposal PDFs and turn them into cited, proposed bid claims on the matching bid
+  Read a trade's sub-proposal PDFs and turn them into cited bid claims on the matching bid
   package in the project's Plumlayer MOSOT — bidder profiles, per-row responses (inclusion / routing /
   amount), coverage, and summary totals, each grounded to a page of the proposal it came from. Use when
   the user hands over one or more subcontractor proposals / quotes for a trade package and wants them
@@ -10,22 +10,23 @@ description: >
   bids back for <package>", "load the drywall proposals", "/bid-intake". Drives proposal upload +
   registration, the two-pass blind-then-peer read, supersession for revised proposals, and a
   count-verified claim deposit over the hosted Plumlayer MCP verb surface. The agent reads and judges;
-  deterministic tooling grounds; nothing governs unverified — every claim lands proposed, a human
-  promotes on plumlayer.com. This skill does NOT create the project (project-create), define the bid
-  package or invite bidders (the plumlayer.com solicitation flow), read drawings (drawing-upload), or
-  promote anything.
+  deterministic tooling grounds; nothing enters untraced. Every claim cites the proposal page it came
+  from and records as the agent's reading. This skill does NOT create the project (project-create),
+  define the bid package or invite bidders (the plumlayer.com solicitation flow), read drawings
+  (drawing-upload), or sign anything on the operator's behalf.
 ---
 
-# Bid Intake — read sub proposals into proposed bid claims, cloud-first
+# Bid Intake — read sub proposals into cited bid claims, cloud-first
 
 Take a trade's subcontractor proposals — the PDFs a sub actually sent back against a bid package — and
-turn each one into the bundle of **proposed bid claims** the leveling surface reads: who bid, what
+turn each one into the bundle of **cited bid claims** the leveling surface reads: who bid, what
 they included or excluded per scope row, the dollars they attached, their coverage, and their totals.
-Each claim cites the page of the proposal it was read from. A human levels and promotes later on
-plumlayer.com.
+Each claim cites the page of the proposal it was read from. A person levels the package and signs the
+bid on plumlayer.com.
 
-Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing governs
-unverified.** Every claim this skill writes lands `proposed`. You are the reader; the MCP tools
+Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing enters
+untraced.** Every claim this skill writes records as your reading of one bidder's document, cited to
+the page it came from. You are the reader; the MCP tools
 (`render_page`, `get_page_text` for reading; `get_bid_package` for the rows and peer context;
 `propose_batch` for the deposit) are the anti-hallucination anchor and the grounding
 gate, not the inference engine. There is no server-side proposal reader — you drive every read, judge
@@ -63,7 +64,7 @@ Never narrate "grounding", "the ledger", "residue", or "the pivot" to the user.
 ## What this is, and the boundary
 
 `bid-intake` does one thing: read the proposals for **one bid package** (one trade, one project) and
-deposit each bidder's proposed bid claims against that package's existing scope rows. It does **not**:
+deposit each bidder's bid claims against that package's existing scope rows. It does **not**:
 
 - create the project (`project-create`) or read drawings (`drawing-upload`);
 - define the bid package, or invite / manage bidders — that is the plumlayer.com solicitation flow;
@@ -72,7 +73,8 @@ deposit each bidder's proposed bid claims against that package's existing scope 
   finding in the report, never a minted `scopeItem:` subject (see the hard read rules);
 - level or rank the bids (`get_bid_package` computes the leveling projection; this skill only reads it
   for context and deposits the raw response claims the leveling reads from);
-- promote anything — a human does, on plumlayer.com.
+- sign or submit anything — leveling the package and committing the bid stay with the operator, on
+  plumlayer.com.
 
 The pipeline: **preflight → upload/register → fetch rows + context → two-pass read (blind, then peer) →
 assemble + confidence audit → declare supersession mode → deposit → report.** Each stage has gates; they
@@ -243,15 +245,15 @@ These are gates. Write them into every read:
   never populate `amount`.
 - **No receipt, no deposit.** A value you cannot cite to a `fileId` and page is not deposited. If you
   believe a fact but cannot point at where you read it, it does not become a claim.
-- **Nothing deposits above `proposed`.** Every claim this skill writes is proposed. This skill never
-  promotes and never mints a governing tier.
+- **Nothing you write is a person's word.** Every claim records as your reading of the document; this
+  door cannot record one as human-authored, and a human correction outranks yours on the same row.
 
 ## 5 · Assemble and audit confidence
 
 Assemble the full claim bundle per bidder (profile, coverage, summary, and one response per answered
 row). Before depositing, run a **confidence audit**: collect every read whose `evidence.confidence` is
-**below 0.7** and list it in the report for human attention. A low-confidence read still deposits (it
-is proposed, and the human reviews it), but it is called out, not buried in a count. State the per-bidder
+**below 0.7** and list it in the report for human attention. A low-confidence read still deposits,
+carrying its confidence and its receipt, but it is called out, not buried in a count. State the per-bidder
 counts by predicate, and the silent-row count per bidder, so the deposit manifest is honest.
 
 ## 6 · Declare the supersession mode (before deposit)
@@ -381,8 +383,8 @@ The run report **is** the manifest. State, plainly:
 - **Pass attribution:** which flags pass one produced versus pass two.
 - **Deposit verification:** each batch's sent-vs-returned count, confirmed equal.
 
-Then point the user at the **package view on plumlayer.com** to review, level, and promote — nothing
-here governs until they do.
+Then point the user at the **package view on plumlayer.com** to review and level. The numbers are
+readable there now, each with the proposal page behind it; the bid itself is theirs to sign.
 
 ## Gates (non-negotiable)
 
@@ -399,7 +401,8 @@ here governs until they do.
 - Claim JSON matches the `@plumlayer/contract` bid shapes exactly (recipes, predicates, enums,
   `.strict()` values).
 - Deposit is verbatim, count-verified transport in ≤50-claim batches; a count mismatch stops the run.
-- Everything landed is `proposed`. This skill never promotes.
+- Nothing this skill writes carries a person's authority or a signature; leveling the package and
+  submitting the bid stay with the operator.
 - `get_bid_package` is the row + context source; a failure stops the run and is reported — never a
   raw-`search` reconstruction of the package, and never a hand-derived membership filter over
   `list_scope_items` as a substitute.

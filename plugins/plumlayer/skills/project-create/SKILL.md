@@ -3,26 +3,26 @@ name: project-create
 description: >
   Create and customize a new Plumlayer project (= a MOSOT) by interviewing the user or reading in
   project info they already have (an ITB, a drawing index, a spec TOC, a project summary), then
-  seeding the new MOSOT with cited, proposed project-level claims. Trigger on "create a project",
+  seeding the new MOSOT with cited project-level claims. Trigger on "create a project",
   "new project", "set up / start a new MOSOT", "onboard this project", "start a new bid / pursuit",
   "/project-create", or when the user hands over project documents to spin up a project. Creates the
   project via the create_project MCP verb, seeds parties / delivery / type / trades / sets via the
-  propose verb (everything proposed — a human promotes on plumlayer.com), then points the user to
-  drawing-upload. Scope execution is guarded by PLU-323 until PLU-274 ships the scope-item-first engine.
+  propose verb (each one cited and recorded as agent-stated, superseded later by what the drawings
+  themselves say), then points the user to drawing-upload. Scope execution is guarded by PLU-323 until PLU-274 ships the scope-item-first engine.
 ---
 
 # Project Create — stand up a new MOSOT and customize it
 
 A Plumlayer **project is one MOSOT** — the cloud, claim-based model of that project's current
 governing truth. This skill **creates the project and customizes it** by turning what the user knows
-(or can hand you in a file) into **cited, `proposed` claims** seeded into the new MOSOT.
+(or can hand you in a file) into **cited claims** seeded into the new MOSOT.
 
-> **Doctrine (binds every step):** you read and judge; deterministic tooling grounds; **nothing
-> governs unverified.** Everything you seed here is **`proposed`** and is **operator-asserted** — the
-> lowest instrument tier (someone *told you*, you didn't read it off a stamped drawing). It is a
-> starting frame for the project, **not** governing truth. A human reviews and promotes on
-> plumlayer.com; when real drawings/specs are uploaded and read later, higher-instrument claims supersede or
-> corroborate these. **Cite every claim, never invent a fact, and flag what's uncertain.**
+> **Doctrine (binds every step):** you read and judge; deterministic tooling grounds; nothing leaves
+> unsigned and nothing enters untraced. What you seed here takes effect right away as the project's
+> starting frame, recorded as agent-stated with your citation, and it is operator-asserted at the
+> source: someone *told you*, you didn't read it off a stamped drawing. That makes it the weakest
+> thing in the ledger, so when real drawings and specs are read later, better-grounded claims
+> supersede or corroborate it. **Cite every claim, never invent a fact, and flag what's uncertain.**
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud MOSOT
 > (project isolation + private bucket + RLS) — that's fine. They must **never** land in tracked or
@@ -39,13 +39,13 @@ MOSOT into existence carrying the few facts only *you* can supply.
 **The arc:**
 `setup` (operator profile, once) → **`project-create` (this skill — shell + minimal frame)** →
 **`drawing-upload`** (the agent reads and registers the drawing delivery as recognized sheet claims) →
-**PLU-274 scope-item-first engine** (when shipped) → **review & promote on plumlayer.com**.
+**PLU-274 scope-item-first engine** (when shipped) → **review what's uncertain on plumlayer.com**.
 
 **The load-bearing consequence — don't interrogate for what the set is about to tell you.** Almost
 everything about a project is **read off the drawings, in the very next step, at a far higher
 instrument tier** than anything the user can recite here. An operator answering from memory produces
-the **lowest tier there is** — `proposed` + operator-asserted ("someone told me"); a cover-sheet /
-title-block read produces a grounded, `authoritative`-eligible claim that **supersedes it minutes
+the **weakest claim there is** — your restatement of what someone told you; a cover-sheet /
+title-block read produces a value confirmed off the drawing itself, which **outranks it minutes
 later.** So asking the user to guess the project type, the engineers, the trades, or the square footage
 isn't just slow — it seeds bottom-tier claims the next step overwrites, cluttering the ledger. **Ask
 only for what no drawing will ever carry; for the rest, say "I'll read that off the set next" and move
@@ -134,9 +134,9 @@ Confirm back to the user: "Created project **<name>** (`<projectId>`)." One proj
 
 ---
 
-## Step 3 — Customize: seed proposed claims
+## Step 3 — Customize: seed the starting claims
 
-Map the confirmed facts to **`proposed` claims** and deposit them. **Prefer the `propose_batch` MCP
+Map the confirmed facts to claims and deposit them. **Prefer the `propose_batch` MCP
 tool** — one call with `projectId=<the new project>` and a `claims` array of all the seed entries (it's
 atomic: one bad entry rejects the batch and names the index). **Fallback:** if `propose_batch` isn't
 available (older server), call the **`propose`** tool once per claim, batched in parallel (many per
@@ -196,8 +196,9 @@ Tell the user, in plain terms:
 - **Created:** project name + `projectId`.
 - **Seeded:** how many claims, broken down (facts / parties / trades / sets), and **how many were
   flagged ambiguous** (the pile a human should resolve).
-- **Everything is `proposed`** — visible now via `search` / `set_grid` / `ambiguities` in this session,
-  and on **plumlayer.com** for review and promotion. Nothing governs until a human promotes it.
+- **Where it landed** — visible now via `search` / `set_grid` / `ambiguities` in this session, and on
+  **plumlayer.com**, where every seeded value carries your name, the time, and what you read it from.
+  Anything you flagged is what a person should look at.
 - **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then use
   the PLU-274 scope-item-first engine once it ships; `/scope-run` is guarded meanwhile.
 
@@ -209,8 +210,9 @@ Tell the user, in plain terms:
   seed it.
 - **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. Uncertain or
   conflicting facts are seeded **with `ambiguityClass`**, not silently resolved or dropped.
-- **Everything is `proposed`.** This skill never promotes — a human does, on the review surface. Seed
-  claims are operator-asserted (lowest instrument); they don't govern.
+- **Seeds are the weakest claims in the ledger.** They take effect as the starting frame, recorded as
+  agent-stated from what the operator told you, and a drawing read supersedes them. Never present one
+  as a fact read off the documents.
 - **One project = one MOSOT.** Always seed within the correct `projectId` returned by `create_project`.
 - **Data hygiene.** Project specifics may live in the cloud MOSOT and in the user's cwd config; they
   must **never** be written to a tracked/committed plugin or repo file.

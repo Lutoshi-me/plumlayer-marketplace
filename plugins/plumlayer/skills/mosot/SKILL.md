@@ -1,6 +1,6 @@
 ---
 name: mosot
-description: Work with a Plumlayer MOSOT — the cloud source of truth for a construction project's claims. Use when the user wants to read, search, review, or propose claims on their Plumlayer projects (sheet/set grid, ambiguities, RFI candidates, scope/door takeoffs), or asks "what's in my MOSOT / project". Explains the verb surface and the propose-only, human-promotes doctrine.
+description: Work with a Plumlayer MOSOT — the cloud source of truth for a construction project's claims. Use when the user wants to read, search, review, or propose claims on their Plumlayer projects (sheet/set grid, ambiguities, RFI candidates, scope/door takeoffs), or asks "what's in my MOSOT / project". Explains the verb surface and the trust model: what an agent writes governs provisionally as agent-stated, carrying its author, timestamp, and evidence.
 ---
 
 # Working a Plumlayer MOSOT
@@ -15,13 +15,25 @@ signed-in user's own projects).
 - `sheet:A-101 — title — "First Floor Plan"`
 - `door:103 — count — 6`
 
-## Trust + the non-negotiable rule
-Trust tiers: `approved > authoritative > derived`; **`proposed` never governs.**
-- **You (the agent) read and judge, and write ONLY `proposed` claims.** You never promote.
-- **A human reviews and promotes** on plumlayer.com. `propose` is the only write door —
-  there is no promote verb here, by design.
-- **Ground every claim you propose with evidence** (the source it came from). Nothing
-  governs unverified — an ungrounded claim is a guess; say so.
+## Trust: the trail is the mechanism
+A claim you write takes effect immediately as provisional working truth, recorded as
+agent-stated with your citation. There is no promotion step to wait for. What makes it
+trustworthy is the trail: author, timestamp, and the evidence it came from, so cite every
+claim (an ungrounded claim is a guess; say so instead of writing it).
+- The server stamps the register from your identity, never from what you declare. An
+  agent's judgment records as `agent-stated`, a reproducible machine transcription as
+  `machine-read`, a value the deterministic layer confirmed as `tool-verified`, a person's
+  own gesture as `human-stated`. This door can never record a claim as human-authored or
+  tool-verified.
+- A person's word outranks yours on the same slot. You supersede your own prior reads
+  freely, but a write against something a human said lands as a visible contest, and their
+  value keeps governing.
+- Flag what you are unsure of. Self-flagged uncertainty is what reaches a person for
+  judgment, and human sign-off still gates what leaves the building: an ITB or package
+  send, an RFI, anything published outside, a bid. Nothing leaves unsigned; nothing enters
+  untraced.
+- The stored trust class on what you write still reads `proposed`. That is a compatibility
+  field, not a gate, and does not mean the claim is waiting on anyone.
 
 ## The verbs
 **Identity / discovery**
@@ -71,26 +83,34 @@ Trust tiers: `approved > authoritative > derived`; **`proposed` never governs.**
   to `list_files` / `render_page` / `get_page_text` and the `drawing-upload` pipeline.
 
 **Write**
-- `propose` — append one `proposed` claim (`subject`, `predicate`, `value`,
-  `sourceInstrument`, optional `evidence`/`ambiguityClass`). Stamped as you; never governs
-  until a human promotes it.
-- `propose_batch` — append an array of `proposed` claims in one atomic call (`projectId` +
-  `claims` array). Atomic: a bad entry rejects the whole batch and names the index. Prefer
-  this over repeated `propose` calls for bulk deposits (e.g. upload or scope deposit). Each
-  call accepts up to 500 claims; stay at ≤50 per batch so each read is faithful and
+- `propose` — append one claim (`subject`, `predicate`, `value`, `sourceInstrument`,
+  optional `evidence`/`ambiguityClass`). Stamped as you, and it takes effect immediately as
+  provisional working truth recorded as agent-stated.
+- `propose_batch` — append an array of claims in one atomic call (`projectId` + `claims`
+  array). Atomic: a bad entry rejects the whole batch and names the index. Prefer this over
+  repeated `propose` calls for bulk deposits (e.g. upload or scope deposit). Each call
+  accepts up to 500 claims; stay at ≤50 per batch so each read is faithful and
   count-verifiable.
+
+Both write doors refuse the takeoff-domain predicates (`hasTakeoffCount`, `hasTakeoffRollup`,
+`hasScale`, `hasTakeoffLength`, `hasTakeoffArea`, `hasTakeoffCountMark`, `hasTakeoffCondition`,
+`instanceVerdict`, `hasHumanInstance`). Those belong to the takeoff door on plumlayer.com, the
+only one that enforces their value shapes, subject identity, and unit immutability. Do not try
+to write a measurement, a count, or a sheet scale through `propose`.
 
 ## Typical flows
 - **"What's in my project / MOSOT?"** → `list_projects` → pick one → `set_grid` for the
   drawing set, `ambiguities` for open issues, `rfi_candidates` for drafted RFIs; `search`
   to inspect specific subjects/claims.
-- **"Take off / scope something"** → read the relevant sheets/claims, judge, then `propose`
+- **"Scope something"** → read the relevant sheets/claims, judge, then `propose`
   grounded claims (`sourceInstrument` = where it came from, plus `evidence`). Tell the user
-  they're *proposed* and that review/promotion happens on plumlayer.com.
+  what you wrote and that it reads as your judgment with your citations behind it. Drawn
+  measurements and sheet scale are not this door's to write (see Write, above).
 - **"Find conflicts / RFIs"** → `ambiguities` + `rfi_candidates`; where you spot a real
   conflict, `propose` an ambiguity-flagged claim (`ambiguityClass`), cited.
 
 ## Discipline
-- Never present a `proposed` claim as settled truth — it's a candidate for human review.
+- Be honest about your own claims: they govern provisionally as your reading, not as a
+  person's word, and a human correction outranks them.
 - Always cite. Separate what's grounded from what's inferred.
 - One project = one MOSOT; always act within the correct `projectId`.

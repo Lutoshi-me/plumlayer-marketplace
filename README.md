@@ -59,9 +59,10 @@ unless Claude compatibility is handled separately.
 - **MCP connector** to the hosted Plumlayer MOSOT (`api-production-0a7b.up.railway.app/mcp`)
   — auto-wired on install; no manual `claude mcp add`.
 - **`mosot` skill** — teaches Claude the MOSOT verb surface (`set_grid`, `ambiguities`,
-  `rfi_candidates`, `search`, `propose`, …) and the propose-only / human-promotes doctrine.
+  `rfi_candidates`, `search`, `propose`, …) and the trust model: what an agent writes takes effect
+  as its own cited reading, and a person's word outranks it.
 - **`drawing-upload` skill** — register any drawing delivery into the cloud MOSOT as recognized,
-  proposed sheet claims (including sheet-type classification).
+  cited sheet claims (including sheet-type classification).
 - **`drawing-index-publish` skill** — legacy export projection that publishes a Master Drawing Index
   workbook from cloud claims.
 - **`drawing-set-assemble` skill** — legacy export projection that assembles discipline PDFs from cloud
