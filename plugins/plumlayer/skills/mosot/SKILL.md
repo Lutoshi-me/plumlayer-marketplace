@@ -98,6 +98,46 @@ Both write doors refuse the takeoff-domain predicates (`hasTakeoffCount`, `hasTa
 only one that enforces their value shapes, subject identity, and unit immutability. Do not try
 to write a measurement, a count, or a sheet scale through `propose`.
 
+### How to shape a citation
+
+Your citation becomes a clickable chip on the scope surface, parsed deterministically from
+`evidence`. An entry the parser cannot read renders **nothing**, silently and with no error:
+an unreadable reference is treated as no citation rather than as a fake one. So a claim can
+land perfectly well and still show no source, purely from a malformed `evidence` entry. Shape
+it like this:
+
+```json
+"evidence": [
+  {
+    "source": "A-746 — millwork elevation at leasing desk",
+    "locator": {
+      "pageInPdf": 165,
+      "frame": "page-points-rendered",
+      "bboxPts": [1180, 640, 1890, 1120]
+    }
+  }
+]
+```
+
+- `evidence` may be one entry or an array of them; both are read. What fails is an **empty**
+  `{}`, which carries no source and so cites nothing.
+- `source` **must lead with the document reference** — a sheet number (`A-746`, `S-201.1`) or
+  a spec section (`09 21 16`). That leading reference is what becomes the chip. An internal id
+  like `bidPackage:proj-…`, or a prose sentence, is not a document reference and renders
+  nothing by design.
+- After the reference, add ` — ` and what you read there. A bare reference on its own is
+  accepted and renders, so never pad it with a filler phrase just to satisfy the format; write
+  the suffix when you have something real to say about what you saw, since it becomes the
+  chip's tooltip.
+- `locator.bboxPts` with `frame: "page-points-rendered"` is what makes the chip land on the
+  **region** you actually read instead of the top of the sheet. Supply them whenever you know
+  where on the page you looked. Omit them and the chip still works, just sheet-level.
+- A `citedRegion` claim needs its **own** evidence entry. Putting the sheet and box only in
+  the claim's `value` records the region but cites nothing, so no chip appears for it.
+
+Cite the sheet you genuinely read. A citation is a document reference, never a warrant that
+the tokens there mean what you concluded. That judgment is yours, recorded as yours.
+
 ## Typical flows
 - **"What's in my project / MOSOT?"** → `list_projects` → pick one → `set_grid` for the
   drawing set, `ambiguities` for open issues, `rfi_candidates` for drafted RFIs; `search`
@@ -112,5 +152,6 @@ to write a measurement, a count, or a sheet scale through `propose`.
 ## Discipline
 - Be honest about your own claims: they govern provisionally as your reading, not as a
   person's word, and a human correction outranks them.
-- Always cite. Separate what's grounded from what's inferred.
+- Always cite, and shape the citation so it actually renders (see "How to shape a citation").
+  Separate what's grounded from what's inferred.
 - One project = one MOSOT; always act within the correct `projectId`.
