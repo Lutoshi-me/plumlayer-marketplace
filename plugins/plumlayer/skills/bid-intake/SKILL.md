@@ -164,7 +164,25 @@ one, and it hides the real blocker (no rows to answer) behind what looks like a 
   double-check package membership — that restatement of the server's own filter is exactly the kind of
   client-side drift the read verbs exist to prevent.
 
-Match each proposal's bidder against `get_bid_package`'s `bidders[]` by name:
+**Resolve the contracting party from the whole document — never from the first letterhead.** A
+proposal's opening page is often not the bidder's: manufacturer quote sheets and vendor-system
+printouts arrive branded with the manufacturer or the quoting software, while the actual contracting
+party appears only in a forwarded cover email, a signature block, or a remit-to line deeper in the
+bundle. Read the whole submission (cover email included) before deciding who is bidding. Two shapes
+this takes in the real corpus:
+
+- **Letterhead mismatch** — the front page carries a vendor or manufacturer name; the cover email or
+  signature names the sub who actually carries the contract. The contracting party is the bidder; the
+  vendor branding is just where their pricing came from.
+- **One submission, several embedded quotes** — a single bidder's package can bundle two or more
+  embedded vendor-system quotes covering complementary halves of the scope. That is **one bidder and
+  one claim bundle**, with each value cited to the page of the embedded quote it was read from —
+  never two bidders.
+
+If the document leaves the contracting party genuinely ambiguous, stop and ask the user — never
+guess a bidder into existence.
+
+Then match each proposal's resolved bidder against `get_bid_package`'s `bidders[]` by name:
 
 - **Already a bidder on this package** → reuse that bidder's `partySubject`. This is an existing
   bidder, so supersession may apply (stage 6).
@@ -241,6 +259,17 @@ These are gates. Write them into every read:
   finding** in the report (a description plus the `fileId`/page it is on) — never a new `scopeItem:`
   subject this skill mints. Minting scope from a bid would let a bidder's document silently define the
   scope checklist.
+- **Aggregation is narrow, stated once, and flagged per claim.** A proposal often prices one scope
+  row across several of its own lines — a variant pair (a tempered option beside the standard unit),
+  a split line-item pair, a companion component priced on its own line. Folding those lines into one
+  row response is allowed **only** when all three hold: same bidder, same scope row (same mark), and
+  the lines are complementary components of that one row's scope — never alternatives to choose
+  between. Apply one consistent aggregation rule for the whole run, state it in the report, and flag
+  every aggregated response (its note names the lines folded in; the receipt cites where they sit).
+  Lines that belong to different rows stay split, and a line that maps to no row is a scope-gap
+  finding — aggregation never absorbs it into a nearby row. When you cannot tell whether lines are
+  complementary or alternative, do not fold — keep the clearest single line as the response, put the
+  rest in the note, and flag the row `unclear`.
 - **An ambiguous token never becomes a hard number.** `OSV` / `TV` / `?` set the `ambiguity` axis; they
   never populate `amount`.
 - **No receipt, no deposit.** A value you cannot cite to a `fileId` and page is not deposited. If you
@@ -369,6 +398,12 @@ It is atomic — one bad entry rejects the whole batch and names the index. Tran
 of entries you sent in that batch. If it does not, **stop and report** the discrepancy — never retry
 with a reconstructed or guessed correction.
 
+**Recount before you confirm.** Any count you are about to restate as checked — rows answered, rows
+silent, claims per predicate, entries in a batch — gets an explicit fresh recount against its source
+at the moment you restate it. Echoing a number you computed earlier (or that the user read back to
+you) and calling it "confirmed" is not verification; the word "confirmed" is earned by the recount
+that precedes it, every time.
+
 ## 8 · Report and hand off
 
 The run report **is** the manifest. State, plainly:
@@ -392,6 +427,13 @@ readable there now, each with the proposal page behind it; the bid itself is the
   deposit.
 - Silence is never a claim; an unaddressed row is counted silent, never deposited as a value.
 - Proposal content matching no scope row is a named scope-gap finding, never a minted `scopeItem:`.
+- The contracting party is resolved from the whole document (cover emails, signature blocks,
+  letterhead mismatches), never from the first letterhead; a bundle of embedded vendor quotes under
+  one party is one bidder; genuinely ambiguous identity stops and asks.
+- Line aggregation only ever folds same-bidder, same-row, complementary-component lines, under one
+  stated rule, flagged per aggregated response — never across rows, and never to absorb a scope-gap.
+- Any count restated as "confirmed" gets an explicit fresh recount against its source first; an
+  echoed number is never verification.
 - An ambiguous token (`OSV` / `TV` / `?`) never resolves to a hard `amount`.
 - Pass two never revises a pass-one amount or inclusion toward the peers — it only flags.
 - Supersession mode is read from the document's own framing; ambiguous framing stops and asks. The
