@@ -50,6 +50,7 @@ about what was actually happening. Say instead:
 - "recognizing sheet numbers" (step 5, while a job is running)
 - "N sheets recognized" (step 5, on job success)
 - "M pages need review" (step 6/6b residue and untyped sheets — never "residue pass")
+- "checking the drawing index against what we recognized" (step 8, while the reconciliation calls run)
 
 ## What this is, and the boundary
 
@@ -357,6 +358,42 @@ project, delivery, the job's `report` counts, its `deposit` summary, your residu
 count-verified deposit, and that the set is now readable on plumlayer.com with each sheet's source
 page behind it.
 
+## 8 · Reconcile the index against the set
+
+Doctrine: `scope-package-architecture.md` §4.7, the pre-read reconciliation gate. Before anything
+downstream reads this set for scope, run one deterministic check: does the delivery's own drawing
+index agree with what actually got recognized, and with the spec sections read from the project
+manual. Catching a set-level mismatch here keeps it from poisoning every read that follows.
+
+1. **Read the index as stated.** Call `reconcile_index(projectId)` to parse the delivery's drawing
+   index page(s) and record each listed sheet as a cited `declaredInIndex` claim. It reads from
+   sheets the set grid classified `cover-index` in step 6b; if none were classified, pass `pages`
+   yourself, pointing at the index page(s) you know about. Report `declaredCount`, and whether
+   `backstop.requested` came back true — that means the parse could not stand as the declared
+   register (no text layer, too few sheets found, a column structure that did not resolve), and you
+   should read the rendered index page yourself with `render_page` before trusting the count.
+2. **Run the diff, report-only.** Call `reconcile_set(projectId)` (it defaults to the newest
+   delivery) without `deposit`. It compares three sides — what the index declares, what sheets are
+   actually in the set, and what the spec sections say — and returns a full report; it writes
+   nothing on this call.
+3. **Walk the operator through the report** before recording anything:
+   - What matched — the overlap between the index and the set.
+   - What the index lists that isn't in the set — while the delivery still holds pages nobody has
+     recognized, this sits in your own review queue (the sheet may be on one of them); once every
+     page is recognized, it becomes a question for the design team.
+   - What's in the set the index doesn't list — checked first against the index page's own raw
+     text (a table-reading miss on our side lands in your review queue; a genuine absence becomes a
+     question for the design team).
+   - What couldn't be read — `report.residue.parseRejectedSample` and
+     `report.residue.unparsedPages` name the tokens and pages this run could not account for; state
+     those counts out loud rather than folding them into "no problems found."
+   - Whether the spec comparison ran at all — when no project manual has been read yet, the spec
+     leg is reported as not having run. Say exactly that; never present it as a finding of zero.
+4. **Offer to record the residue.** Once the operator has seen the report, offer
+   `reconcile_set(projectId, deposit: true)` to record the sheet findings and the grouped questions
+   for the design team (grouped by discipline series, not one per sheet). Only run it on the
+   operator's go-ahead — this is where the residue becomes part of the review queue.
+
 ## Gates (non-negotiable)
 
 - Every claim's evidence is grounded **cloud-side** — a succeeded `recognize_sheets` job (deposited by
@@ -375,6 +412,9 @@ page behind it.
   construction (re-running `recognize_sheets` on the same file+delivery is always safe).
 - Honest coverage at every stage — pages skipped, files excluded, residue left unread, or sheets left
   untyped are named, not buried in a total.
+- The reconciliation gate (step 8) is honest about its own bounds — no classified index page, a
+  backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
+  problems found." `reconcile_set` residue is recorded only on the operator's go-ahead.
 
 ## Cost (cheapest tier first)
 

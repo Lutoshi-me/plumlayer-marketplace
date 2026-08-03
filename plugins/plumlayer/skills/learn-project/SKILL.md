@@ -89,6 +89,30 @@ what's been run, not the expected steady state.
   and continue. Never write "expected empty today," never treat absence as the norm, and never let this
   block the rest of the pass.
 
+## 2b · Read the reconciliation report, if the gate has run
+
+The pre-read reconciliation gate (`drawing-upload` step 8, `scope-package-architecture.md` §4.7)
+checks the delivery's drawing index against the sheets actually present and the spec sections, before
+anything reads the set for scope. Its findings are orientation-grade facts — a sheet the index lists
+that never arrived, or a sheet in the set the index never mentioned, changes what "the set" means
+before you read a single plan.
+
+Call `reconcile_set(projectId)` **report-only** (never pass `deposit`) — this step reads the gate's
+findings, it never records residue itself, and depositing is not this skill's decision to make.
+
+- **If the gate has already run for this delivery:** read the report's counts — what matched, what
+  the index lists that isn't in the set, what's in the set the index doesn't list, and whether the
+  spec comparison ran. Fold anything real into the packet: an unmatched index entry as a
+  `missingScopeFamily` or `setShapeObservation` candidate (per step 4's rules — flag if inferred),
+  and an unrecognized-in-index sheet as a `setShapeObservation`.
+- **If it hasn't run yet** (no drawing index was ever parsed for this delivery — `reconcile_index`
+  has not been called, or `reconcile_set` reports nothing to compare), write "the reconciliation gate
+  hasn't run for this set" in the packet's set-shape section and continue. Never write "no
+  discrepancies found" for a check that never ran.
+- **When the spec leg specifically didn't run** (no project manual read yet), the report says so
+  itself — carry that distinction into the packet rather than collapsing it into the same "hasn't
+  run" note as the whole gate.
+
 ## 3 · Bounded renders (budget: ≤6 total)
 
 Use the file/page references already surfaced by step 1's sheet inventory to pick `fileId` /
@@ -150,8 +174,9 @@ deposited as a claim, never stored as truth.** Sections, in order:
 2. **Systems** — structural and envelope systems, MEP delivery shape per division.
 3. **Scope areas** — the `scopeArea` and `phasingNote` claims.
 4. **Set shape** — disciplines present, issue labels seen, `setShapeObservation` claims,
-   `missingScopeFamily` claims, and the spec-TOC status (division spread + count, or the "hasn't run
-   yet" note from step 2).
+   `missingScopeFamily` claims, the spec-TOC status (division spread + count, or the "hasn't run
+   yet" note from step 2), and the reconciliation-gate status (its report counts, or "hasn't run yet"
+   from step 2b).
 5. **Hazards** — the `hazardFlag` claims.
 6. `[PLACEHOLDER — definitions-as-context envelope, PLU-351]` — a clearly marked final section; this
    skill does not design that envelope, it only reserves the slot.
@@ -169,6 +194,8 @@ Tell the user, in plain terms (mirrors `project-create` step 5):
   scope (disciplines covered, set_grid vs. sampled search), and the spec-TOC status.
 - **What was learned**, per checklist category — systems, MEP delivery shape, scope areas, set shape,
   hazards.
+- **What the reconciliation gate found**, or that it hasn't run yet for this set — never silent on
+  which.
 - **What was recorded** — how many entries, and how many were flagged for a person's judgment.
 - **Where the packet landed** — the full path.
 - **The placeholder note** — the definitions-as-context section is a stub pending PLU-351.
@@ -197,6 +224,9 @@ and citations; anything a person changes wins.
   inferred value that reads as a documented one is the failure to avoid.
 - **Orientation, not comprehension.** Respect the ≤6 render budget — if the set is too large for it to
   cover meaningfully, say so in the report rather than silently exceeding it.
+- **The reconciliation gate is read, never run or deposited, by this skill.** Step 2b reads
+  `reconcile_set` report-only; a gate that hasn't run for this set is named as not having run, never
+  paraphrased into "no discrepancies."
 - **The packet is a projection only.** Never deposited as a claim, never written to the repo, always
   regenerated in full on the next run rather than patched.
 
