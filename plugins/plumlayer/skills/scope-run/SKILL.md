@@ -35,7 +35,7 @@ dispatching the old harness.
    route-first pipeline was retired by PLU-274. Current doctrine is scope-item-first: produce one
    grounded whole-job scope list, then derive trade packages. The removed route-first machinery was
    deleted in PLU-349; git history before that removal commit is the archive for inspection. I can
-   run drawing-upload/recognition, read existing MOSOT claims, or work on PLU-274, but I will not
+   run drawing-upload/recognition, read what is already in the project record, or work on PLU-274, but I will not
    dispatch the old fan-out/reconcile process by default.
    ```
 

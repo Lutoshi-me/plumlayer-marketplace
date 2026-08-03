@@ -35,6 +35,23 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
 - The stored trust class on what you write still reads `proposed`. That is a compatibility
   field, not a gate, and does not mean the claim is waiting on anyone.
 
+## Words (operator-facing language)
+
+Everything above is machinery vocabulary for working the verbs — it is never the language the user
+reads. Speak estimator words in everything you say to them: **project record, entry, sheet, set,
+scale, scope item, bid response, flagged item, trail**. Say "recorded 14 entries to the project,
+each citing the sheet I read it from", "2 flagged for your judgment". Prefer "project" over
+"MOSOT" unless the user uses the word. Plain prose, no em dashes, no bolded emphasis words.
+
+Never say to the user: *claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, ledger, grounding, residue*. Those are machinery. If a concept has to surface, translate it: a
+superseded value is "replaced my earlier read"; a contest refusal is "a person set that one, so I
+left it alone and noted it"; the trust class is simply who recorded it and when.
+
+Never tell the user something is "pending review" or "awaiting approval". What you write is the
+project's working record now, carrying your name, the time, and your citations; anything a person
+changes wins.
+
 ## The verbs
 **Identity / discovery**
 - `whoami` — confirm which account you're acting as.

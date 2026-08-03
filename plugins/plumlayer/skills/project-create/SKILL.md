@@ -194,13 +194,26 @@ scope-item-first replacement.
 
 Tell the user, in plain terms:
 - **Created:** project name + `projectId`.
-- **Seeded:** how many claims, broken down (facts / parties / trades / sets), and **how many were
-  flagged ambiguous** (the pile a human should resolve).
+- **Seeded:** how many entries, broken down (facts / parties / trades / sets), and **how many were
+  flagged ambiguous** (the pile a person should resolve).
 - **Where it landed** — visible now via `search` / `set_grid` / `ambiguities` in this session, and on
   **plumlayer.com**, where every seeded value carries your name, the time, and what you read it from.
   Anything you flagged is what a person should look at.
 - **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then use
   the PLU-274 scope-item-first engine once it ships; `/scope-run` is guarded meanwhile.
+
+---
+
+## Words (operator-facing language)
+
+Speak estimator words in everything the user reads: **project facts, entries, parties, trades,
+sets, flagged items**. Say "seeded 12 project facts, 2 flagged for your judgment". Plain prose, no
+em dashes, no bolded emphasis words.
+
+Never say to the user: *claim, deposit, predicate, subject, proposed, governing, trust class,
+ledger*. Those are machinery. Never say something is "pending review" or "awaiting approval" —
+what you seeded is the project's starting frame now, carrying your name and what you were told;
+anything a person changes (or a drawing read later replaces) wins.
 
 ---
 

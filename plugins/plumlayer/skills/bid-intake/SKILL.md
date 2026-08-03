@@ -55,11 +55,13 @@ say to the user (no em dashes, no bolded emphasis words). Say:
 - "uploading proposals" (upload stage)
 - "reading <bidder>'s proposal" (per-proposal read)
 - "N rows answered, M rows silent" (after a proposal read — never imply a silent row is a zero)
-- "K proposals read, J claims to deposit" (before deposit)
+- "K proposals read, J entries to record" (before deposit)
 - "declared this a revised proposal (supersedes the prior bid)" or "declared a clarification"
   (before deposit, when supersession applies — see stage 6)
 
-Never narrate "grounding", "the ledger", "residue", or "the pivot" to the user.
+Never narrate "claims", "deposit", "proposed", "grounding", "the ledger", "residue", or "the pivot"
+to the user — those are machinery. What you record is the package's working data as soon as it
+lands, carrying your name and the page it came from; never call it "pending review".
 
 ## What this is, and the boundary
 

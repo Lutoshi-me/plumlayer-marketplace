@@ -165,15 +165,26 @@ not a document to patch.
 ## 6 · Report
 
 Tell the user, in plain terms (mirrors `project-create` step 5):
-- **What was read** — identity, which seed predicates had claims, the sheet-inventory scope (disciplines
-  covered, set_grid vs. sampled search), and the spec-TOC status.
+- **What was read** — identity, which of the seeded project facts were present, the sheet-inventory
+  scope (disciplines covered, set_grid vs. sampled search), and the spec-TOC status.
 - **What was learned**, per checklist category — systems, MEP delivery shape, scope areas, set shape,
   hazards.
-- **Claim counts** — how many deposited, and how many were ambiguity-flagged.
+- **What was recorded** — how many entries, and how many were flagged for a person's judgment.
 - **Where the packet landed** — the full path.
 - **The placeholder note** — the definitions-as-context section is a stub pending PLU-351.
-- **What a person should look at** — the ambiguity-flagged claims, visible on plumlayer.com with the
+- **What a person should look at** — the flagged entries, visible on plumlayer.com with the
   page each one was read from.
+
+## Words (operator-facing language)
+
+Speak estimator words in everything the user reads: **project facts, entries, systems, scope areas,
+sheets, flagged items, trail**. Say "recorded 14 project facts, 3 flagged for your judgment". Plain
+prose, no em dashes, no bolded emphasis words.
+
+Never say to the user: *claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, ledger, projection*. Those are machinery. Never say something is "pending review" or
+"awaiting approval" — what you recorded is the project's working context now, carrying your name
+and citations; anything a person changes wins.
 
 ## Gates (non-negotiable)
 
