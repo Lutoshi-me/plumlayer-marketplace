@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Plumlayer — an agentic construction operating model. The MOSOT plugin + precon harness for Claude Code.",
-    "version": "0.17.1"
+    "version": "0.18.0"
   },
   "plugins": [
     {
       "name": "plumlayer",
       "description": "Connect Claude to your Plumlayer MOSOT (cloud) and guarded precon workflow skills. Create + onboard projects, read + write claims through the hosted MCP; what you write counts as your word, carrying its authorship trail. Route-first scope-run is blocked while PLU-274 rebuilds it.",
-      "version": "0.17.1",
+      "version": "0.18.0",
       "author": {
         "name": "Plumlayer"
       },
