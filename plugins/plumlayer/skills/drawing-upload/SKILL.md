@@ -397,8 +397,9 @@ disk the whole time.
    PDF bookmark tree, with no confirming footer, does NOT add to that count; it surfaces instead through
    the completeness findings, never as a silent gap in the number you report.
 5. **Read-back verify.** Call `search(projectId, predicate: "inDivision")` and confirm the deposited row
-   count matches the job's `sectionsFound` (plus any residue/completeness rows the report named). A
-   mismatch stops the run and gets reported, never a guessed correction.
+   count matches the job's `sectionsFound` exactly — completeness/residue findings ride their own
+   predicate (`hasCompletenessStatus`) and never appear in this read. A mismatch stops the run and gets
+   reported, never a guessed correction.
 
 **If `extract_spec_toc` / `extract_spec_toc_status` don't appear in your tool list**, the session
 started before these verbs were deployed — the same situation the frontmatter's `ground_sheets` →
