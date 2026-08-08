@@ -41,6 +41,17 @@ INGEST_SPEC_DIR for a folder and the script unions across all PDFs found.
 Confidential: writes only to INGEST_OUT_DIR (default ./output/, gitignored).
 PyMuPDF + stdlib. ASCII-safe output.
 
+PLU-968: vendored verbatim from the marketplace reference
+(plugins/plumlayer/scope-harness/ingestion/spec_inventory.py) with exactly two
+additive changes, both marked PLU-968 inline below: (1) the dead
+emit_unknown_page_claim call is wired up so a no-footer page actually emits a
+durable residue claim instead of silently vanishing; (2) a
+spec_inventory_summary.json sidecar is written next to the claims jsonl, the
+same structured-run-summary contract sheet_inventory.py already carries, so
+the server-side extract_spec_toc worker function reads structured data
+instead of scraping stdout. Everything else -- parse regexes, the trust
+ladder, the completeness diff, title extraction -- is ported verbatim.
+
 Run (combined manual):
   INGEST_PDF=".../Project Manual.pdf" \\
   INGEST_SET_TAG="31-milk-conformed" \\
@@ -608,14 +619,30 @@ def main():
     all_bm_sections: dict = {}       # csi -> title (first seen wins)
     total_pages = 0
 
+    # PLU-968 follow-up: an unreadable source file must never be invisible in a
+    # successful result. files_requested/files_opened/files_failed are the honest
+    # per-file accounting the caller (extract_spec_toc) reads back -- a zero-open
+    # run (every source file unreadable) is the caller's signal to fail loudly
+    # instead of depositing a fabricated zero-section success.
+    files_requested = len(pdf_paths)
+    files_opened = 0
+    files_failed: list = []   # [{"file": pdf_label, "error": str}]
+
     for pdf_path in pdf_paths:
         pdf_label = pdf_path.name
         try:
             doc = fitz.open(str(pdf_path))
         except Exception as e:
-            print(f"  [WARN] could not open {pdf_label}: {e}")
+            err_text = str(e)
+            print(f"  [WARN] could not open {pdf_label}: {err_text}")
+            # Also to stderr: a skipped file must show in Railway logs even on an
+            # otherwise-clean run (stdout alone is easy to miss when the run
+            # "succeeds").
+            sys.stderr.write(f"[spec_inventory] WARN: could not open {pdf_label}: {err_text}\n")
+            files_failed.append({"file": pdf_label, "error": err_text})
             continue
 
+        files_opened += 1
         total_pages += doc.page_count
 
         # Footer scan (primary)
@@ -768,18 +795,20 @@ def main():
     # no text and are expected dividers/tabs, so we count but don't emit claims.
     # no_footer pages had text but no recognisable section code -- these are
     # TOC pages, cover pages, or potential OCR residue.
-    # Heuristic: skip pages we already know are TOC pages (high SECTION-ref density)
-    # since those are correctly handled; only flag truly unresolved pages.
     residue_claims = 0
     for pdf_label, pg in all_no_footer:
-        # Re-open to check would be expensive; instead we rely on the TOC pages
-        # having been identified. A production OCR path would re-read these.
-        # For now: count them, emit a residue claim for pages that are NOT
-        # already covered by the TOC-page set (which we can't easily cross-ref
-        # here without re-reading). We emit conservatively -- only if the no_footer
-        # list is non-empty overall, and note the count. The residue claim marks
-        # the page for a downstream agent or OCR pass.
-        pass  # See summary report below -- counts are reported, not claimed
+        # PLU-968: the dead residue path, wired up. emit_unknown_page_claim was
+        # defined above but this loop was a bare `pass` -- a no-footer page
+        # (text present, no recognisable section code: a TOC page, a cover
+        # page, or genuine residue) vanished from the durable claim set
+        # entirely. Every scanned page must be attributed to a section OR
+        # surfaced as residue; this is the surfacing. NOTE: in folder mode the
+        # emitted subject (specSection:unknown-pg<N>, unchanged from the
+        # reference) is keyed on the PDF-local page index only, not
+        # (pdf_label, page index) -- see the PLU-968 report for the resulting
+        # cross-PDF collision class this inherits from the reference design.
+        claims_out.append(emit_unknown_page_claim(pg))
+        residue_claims += 1
 
     # ── Print per-section table ───────────────────────────────────────────────
     div_dist = Counter(division_of(csi) for csi in merged_sections)
@@ -798,6 +827,8 @@ def main():
 
     # ── Summary ───────────────────────────────────────────────────────────────
     print("=" * 100)
+    print(f"files opened .................. {files_opened}/{files_requested}"
+          + (f"  (failed: {[f['file'] for f in files_failed]})" if files_failed else ""))
     print(f"total pages scanned .......... {total_pages}")
     print(f"sections found (footer) ...... {len(footer_codes)}")
     print(f"  corroborated by bookmark ... {len(agree)}  (footer AND bookmark)")
@@ -813,7 +844,7 @@ def main():
         print(f"footer/header code mismatches  {mismatch_claims}  (proposed findings):"
               + "".join(f"\n  footer={a} header={b}" for a, b in mismatch_sections))
     print(f"pages with no footer CSI ..... {len(all_no_footer)}"
-          + "  (TOC/cover/divider/residue -- counted, not silently dropped)")
+          + f"  (TOC/cover/divider/residue -- {residue_claims} claim(s) emitted, never silently dropped)")
     print(f"image-only pages ............. {len(all_image_only)}"
           + "  (no text layer -- expected divider tabs)")
     print(f"division coverage ............ {dict(sorted(div_dist.items()))}")
@@ -845,8 +876,48 @@ def main():
     print(f"wrote {len(claims_out)} spec claims ({len(merged_sections)} sections x 4 predicates"
           f" + {completeness_claims} completeness diffs"
           + (f" + {mismatch_claims} mismatch findings" if mismatch_claims else "")
-          + f") -> {os.path.relpath(out_path)}")
+          + f" + {residue_claims} residue findings"
+          f") -> {os.path.relpath(out_path)}")
     print("=" * 100)
+
+    # ── Structured run-summary sidecar (PLU-968, extract_spec_toc) ────────────
+    # The same per-section table + counts already printed to the console,
+    # serialized so the server-side extract_spec_toc worker function reads
+    # structured data instead of scraping stdout -- the same sidecar contract
+    # sheet_inventory.py's sheet_inventory_summary.json already carries
+    # (PLU-225 ground_sheets). Additive: the local CLI workflow ignores this
+    # file. Nothing new is computed here -- every field mirrors a value already
+    # printed above.
+    summary_out = os.path.join(OUT_DIR, "spec_inventory_summary.json")
+    run_summary = {
+        "setTag": SET_TAG,
+        "mode": mode_label,
+        # PLU-968 follow-up: honest per-file accounting -- a source file that
+        # never opens must be visible here, never just a lower pagesScanned.
+        "filesRequested": files_requested,
+        "filesOpened": files_opened,
+        "filesFailed": files_failed,
+        "pagesScanned": total_pages,
+        "sectionsFound": len(footer_codes),
+        "corroboratedCount": len(agree),
+        "footerOnlyCount": len(footer_only),
+        "bookmarkOnlyCount": len(bm_only),
+        "sectionsTitled": sections_titled,
+        "titleFromHeaderCount": title_from_header,
+        "titleFromBookmarkCount": title_from_bm,
+        "noTitleCount": len(sections_no_title),
+        "completenessDiffCount": completeness_claims,
+        "mismatchCount": mismatch_claims,
+        # Residue: every no-footer page, now durably claimed above (PLU-968) --
+        # this count/list is the same set, projected for the worker's summary
+        # read rather than a re-derivation.
+        "residueCount": residue_claims,
+        "imageOnlyCount": len(all_image_only),
+        "residue": [{"pdf": pdf_label, "page": pg} for pdf_label, pg in all_no_footer],
+        "divisionCoverage": dict(sorted(div_dist.items())),
+    }
+    with open(summary_out, "w", encoding="utf-8") as f:
+        json.dump(run_summary, f)
 
 
 if __name__ == "__main__":
