@@ -94,7 +94,7 @@ yet** — that is a gap in what's been run for this project, not a missing capab
 
 ## 2b · Read the reconciliation report, if the gate has run
 
-The pre-read reconciliation gate (`drawing-upload` step 8, `scope-package-architecture.md` §4.7)
+The pre-read reconciliation gate (`drawing-upload` step 9, `scope-package-architecture.md` §4.7)
 checks the delivery's drawing index against the sheets actually present and the spec sections, before
 anything reads the set for scope. Its findings are orientation-grade facts — a sheet the index lists
 that never arrived, or a sheet in the set the index never mentioned, changes what "the set" means
