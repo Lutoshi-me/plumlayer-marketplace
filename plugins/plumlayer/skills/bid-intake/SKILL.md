@@ -184,17 +184,30 @@ this takes in the real corpus:
 If the document leaves the contracting party genuinely ambiguous, stop and ask the user — never
 guess a bidder into existence.
 
-Then match each proposal's resolved bidder against `get_bid_package`'s `bidders[]` by name:
+Then place each proposal's resolved bidder, in this order:
 
-- **Already a bidder on this package** → reuse that bidder's `partySubject`. This is an existing
-  bidder, so supersession may apply (stage 6).
-- **New bidder** → mint a stable party subject `party:<slug>` from the bidder's company name (a short,
-  stable slug, e.g. `party:acme-drywall`), matching the party-subject convention the other skills use.
-  A new bidder has no prior claims, so nothing supersedes.
+1. **Already a bidder on this package** → reuse that bidder's `partySubject`. This is an existing
+   bidder, so supersession may apply (stage 6).
+2. **Otherwise, look for the company you invited.** Call `solicitation_list_invitations` for this
+   package and read the invited companies. If the proposal's contracting party is plainly one of
+   them, use that company's directory id as the party: **`party:<companyId>`**. This is the identity
+   the rest of the system already knows the company by, and it is what lets a filed proposal move
+   that company to Bid received on the coverage board by itself. **Only the exact company id does
+   that** — a name-shaped party never will.
+3. **No invited company matches** → mint a stable `party:<slug>` from the bidder's company name (a
+   short, stable slug, e.g. `party:acme-drywall`). A bidder who was never invited is still a real
+   bidder and files normally; their proposal simply moves no funnel it was never part of.
 
-> Party identity is a known seam (the Sub-CRM owns it long-term; see the contract's CONSUME SEAM note).
-> Matching a proposal's bidder to an invited party versus minting `party:<slug>` from the name is a
-> point the proving run should confirm — surface the party subject you chose per bidder in the report.
+The matching in step 2 is **your judgment, and you say so**: names differ from legal entities, a
+proposal may come from a division or a DBA, and two invited companies can look alike. Match only
+when you are actually confident, name the company you matched and why in your report, and fall to
+step 3 rather than forcing a doubtful match. A wrong match files a real proposal against the wrong
+company's record — worse than an unlinked one, which is merely incomplete. If two invited companies
+are plausible, stop and ask the user; never break the tie yourself.
+
+> Party identity was a known seam and this closes it on the intake side (the Sub-CRM owns company
+> identity; the bid contract consumes it). Surface the party subject you chose per bidder in the
+> report, and whether it came from an invitation or a minted slug.
 
 ## 4 · The two-pass read (the anti-anchoring discipline)
 
@@ -463,10 +476,11 @@ edits `SKILL.md`; it runs the same pipeline against new paths.
 
 ## Deferred / for the proving run to decide (named, not skipped silently)
 
-- **Party identity resolution.** Matching a proposal's bidder to an invited solicitation party versus
-  minting `party:<slug>` from the company name. The contract treats party identity as a CONSUME SEAM
-  the Sub-CRM will own; this skill reuses an existing bidder's `partySubject` when it can and mints a
-  slug otherwise. Confirm the intended bridge in the proving run.
+- **Party identity resolution — SETTLED 2026-08-07 (PLU-874), see stage 3.** The bridge is the
+  directory company id: an invited company's proposal files under `party:<companyId>`, which is what
+  moves that company to Bid received on the coverage board. An uninvited bidder still mints
+  `party:<slug>`. What remains for a proving run is only how often real proposals match cleanly by
+  name against the invited list, and how the ambiguous cases actually read in practice.
 - **Head ids for profile / summary / coverage supersession.** `get_bid_package` exposes only response
   head ids; the other three are resolved by targeted `search` on their deterministic subjects (stage 6
   note). Confirm this resolution path on a real revised proposal.
