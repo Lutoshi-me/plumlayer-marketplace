@@ -50,7 +50,9 @@ about what was actually happening. Say instead:
 - "recognizing sheet numbers" (step 5, while a job is running)
 - "N sheets recognized" (step 5, on job success)
 - "M pages need review" (step 6/6b residue and untyped sheets — never "residue pass")
-- "checking the drawing index against what we recognized" (step 8, while the reconciliation calls run)
+- "reading the spec book's table of contents" (step 8, while the extraction job is running)
+- "N sections found" (step 8, on job success)
+- "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
 
 ## What this is, and the boundary
 
@@ -140,6 +142,12 @@ Filenames and folder shape *orient* you; they never *decide*. A drawing sheet ha
 sheet-number token in the bottom-right title block (`A-101`, `S-201`); a spec/geotech/narrative page has
 dense body text and no corner title block.
 
+**A non-drawing file is not automatically dead weight.** Judge each one: a project manual / spec book
+(a bound, CSI-numbered document — often named "Project Manual", "Specifications", or "Spec Book" — with
+a Division 00-49 table of contents, whether it's one combined PDF or a folder of per-division PDFs) is
+**filed into the project and read by step 8 below, not simply excluded.** Genuinely out-of-scope files —
+geotech reports, RFP boilerplate, transmittal emails, meeting minutes — stay excluded.
+
 **Dual-source repackaging:** when a delivery contains both a combined PDF and a full set of per-sheet
 PDFs, check page totals first. If the per-sheet PDFs' combined page count equals the combined PDF's page
 count, that's duplicate repackaging of the same set, not two sources — **prefer the single combined file
@@ -155,8 +163,9 @@ claim, and no claim's evidence ever cites a local read (every claim's evidence c
 recognition tools in steps 5–6).
 
 Emit a short packaging report before uploading: the class, which file(s) are the drawings and why,
-page counts, which files you are excluding (specs, geotech, emails) and why, and the picked source if
-there was a dual-source quirk.
+page counts, which file(s) (if any) are the project manual / spec book headed to step 8, which files
+you are excluding (geotech, emails, unrelated attachments) and why, and the picked source if there was
+a dual-source quirk.
 
 ## 3 · Register the delivery
 
@@ -358,7 +367,49 @@ project, delivery, the job's `report` counts, its `deposit` summary, your residu
 count-verified deposit, and that the set is now readable on plumlayer.com with each sheet's source
 page behind it.
 
-## 8 · Reconcile the index against the set
+## 8 · Extract the spec book's table of contents
+
+When step 2's packaging pass turned up a project manual / spec book, file it and read its table of
+contents now — before the reconciliation gate below. The gate's spec-comparison leg needs this layer to
+run against; reconciling first always reports the spec leg as not having run, even when a manual sat on
+disk the whole time.
+
+1. **File it as a document.** Run the same upload mechanics as step 4 — `request_file_upload`, PUT the
+   bytes to `signedUrl`, then `register_file(projectId, fileId, filename, contentType, kind:
+   "document")` — for the manual PDF(s) step 2 identified. A project manual is a project record, not a
+   drawing sheet, so it does not attach to a `deliveryId`. Misfiled earlier as a drawing? Fix it in
+   place with `update_file(projectId, fileId, kind: "document")` rather than re-uploading —
+   reclassifying away from `drawing` sweeps its stray page rows in the same call.
+2. **Start the extraction — one job, never N.** Call `extract_spec_toc(projectId, fileIds, issueLabel?)`.
+   Pass the single manual's `fileId` for a combined-manual delivery. For a folder-of-divisions delivery
+   (`Division 01.pdf`, `Division 02.pdf`, ... instead of one bound manual), pass every division PDF's
+   `fileId` together in the SAME call — the extraction unions across them into one section set; never
+   call it once per division file. It returns `{jobId, status}` immediately.
+3. **Poll `extract_spec_toc_status(projectId, jobId)`** every ~3-5s until `state` is `succeeded` or
+   `failed` — the same queued/running/stale rhythm as `recognize_sheets_status` in step 5. On `failed`,
+   read `error`, stop, and report it; don't retry blindly. On `stale`, re-call `extract_spec_toc` on the
+   same file set to restart.
+4. **Report the counts honestly, not just "N sections found."** From the succeeded job's `report`:
+   sections found, files opened vs failed (a multi-file run can succeed overall while still naming one
+   corrupt division PDF in `failedFiles` — that's a finding for the operator, never a silent retry
+   loop), and the completeness-diff / mismatch / residue counts. **`sectionsFound` counts only
+   footer-confirmed sections** (the per-page CSI-code footer read) — a section declared solely in the
+   PDF bookmark tree, with no confirming footer, does NOT add to that count; it surfaces instead through
+   the completeness findings, never as a silent gap in the number you report.
+5. **Read-back verify.** Call `search(projectId, predicate: "inDivision")` and confirm the deposited row
+   count matches the job's `sectionsFound` (plus any residue/completeness rows the report named). A
+   mismatch stops the run and gets reported, never a guessed correction.
+
+**If `extract_spec_toc` / `extract_spec_toc_status` don't appear in your tool list**, the session
+started before these verbs were deployed — the same situation the frontmatter's `ground_sheets` →
+`recognize_sheets` rename note covers for the recognition verbs. Start a fresh session rather than
+assuming the manual can't be read.
+
+**No project manual in this delivery?** Say so plainly in the report and move on to step 9 — nothing
+here blocks the reconciliation gate; it only means the gate's spec leg reports as not having run (step
+9 already covers that honestly).
+
+## 9 · Reconcile the index against the set
 
 Doctrine: `scope-package-architecture.md` §4.7, the pre-read reconciliation gate. Before anything
 downstream reads this set for scope, run one deterministic check: does the delivery's own drawing
@@ -387,8 +438,9 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    - What couldn't be read — `report.residue.parseRejectedSample` and
      `report.residue.unparsedPages` name the tokens and pages this run could not account for; state
      those counts out loud rather than folding them into "no problems found."
-   - Whether the spec comparison ran at all — when no project manual has been read yet, the spec
-     leg is reported as not having run. Say exactly that; never present it as a finding of zero.
+   - Whether the spec comparison ran at all — when step 8 found no project manual to extract for
+     this delivery, the spec leg is reported as not having run. Say exactly that; never present it
+     as a finding of zero.
 4. **Offer to record the residue.** Once the operator has seen the report, offer
    `reconcile_set(projectId, deposit: true)` to record the sheet findings and the grouped questions
    for the design team (grouped by discipline series, not one per sheet). Only run it on the
@@ -412,7 +464,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   construction (re-running `recognize_sheets` on the same file+delivery is always safe).
 - Honest coverage at every stage — pages skipped, files excluded, residue left unread, or sheets left
   untyped are named, not buried in a total.
-- The reconciliation gate (step 8) is honest about its own bounds — no classified index page, a
+- The spec-book leg (step 8) extracts a file set once, never once per division file, and its counts are
+  read back with `search` and verified against the job's own `report`, never assumed. A named
+  `failedFiles` entry is a finding for the operator, never a silent retry loop.
+- The reconciliation gate (step 9) is honest about its own bounds — no classified index page, a
   backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
   problems found." `reconcile_set` residue is recorded only on the operator's go-ahead.
 

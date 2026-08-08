@@ -80,9 +80,12 @@ repo, never the MOSOT.
 
 Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects. When spec reading
 has run for a project, these claims are real and cited — `hasTitle`, `locatedAt`, `inDivision`, and
-`partOfIssue` on each section (verified on at least one live project). What's missing today is only the
-packaged extraction skill for it, so **many projects won't have these claims yet** — that is a gap in
-what's been run, not the expected steady state.
+`partOfIssue` on each section (verified on at least one live project). Extraction now ships as
+`drawing-upload`'s spec-TOC leg (its step 8, wired to `extract_spec_toc` / `extract_spec_toc_status`) —
+a project whose drawing-upload pass has run that leg will have these claims. What's still true is that
+not every project has run it yet — a set uploaded before the leg shipped, or a manual that arrived
+after the drawings and hasn't been filed and extracted, so **some projects won't have these claims
+yet** — that is a gap in what's been run for this project, not a missing capability.
 
 - **If present:** read the division spread and section count into the packet's set-shape section.
 - **If absent:** write "spec reading hasn't run for this project" in the packet's set-shape section
@@ -242,6 +245,8 @@ or model hosting on this path.
 - **The definitions-as-context envelope (PLU-351).** The packet's final section is a placeholder only;
   how orientation and definitions-first context share one envelope's token budget is PLU-351's design
   question, not this skill's.
-- **Spec-section extraction as a packaged skill (PLU-223's tail).** Step 2 reads spec-section claims if
-  they already exist; it does not extract them. Until that extraction skill ships, most projects will hit
-  the "hasn't run yet" branch.
+- **Spec-section extraction as a packaged skill (PLU-223's tail, shipped PLU-968).** Extraction now
+  lives in `drawing-upload`'s spec-TOC leg (step 8) — step 2 above still only reads spec-section claims
+  if they already exist, it never extracts them itself. A project whose drawing-upload pass predates
+  that leg, or whose manual hasn't been run through it yet, still hits the "hasn't run yet" branch in
+  step 2.
