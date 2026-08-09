@@ -424,10 +424,13 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    `backstop.requested` came back true — that means the parse could not stand as the declared
    register (no text layer, too few sheets found, a column structure that did not resolve), and you
    should read the rendered index page yourself with `render_page` before trusting the count.
-2. **Run the diff, report-only.** Call `reconcile_set(projectId)` (it defaults to the newest
-   delivery) without `deposit`. It compares three sides — what the index declares, what sheets are
-   actually in the set, and what the spec sections say — and returns a full report; it writes
-   nothing on this call.
+2. **Run the diff, report-only.** Call `reconcile_set(projectId)` without `deposit`. The bare call
+   runs the ORIENTATION check: the index of record (the newest delivery that actually has a read
+   drawing index) against the current compiled set across every delivery, not just one. Pass
+   `deliveryId` instead to run the per-delivery RECEIVING check — that one delivery's own drawing
+   index against only the sheets delivered in it. `result.mode` reports which comparison ran. Either
+   way it compares three sides — what the index declares, what sheets are actually in the set, and
+   what the spec sections say — and returns a full report; it writes nothing on this call.
 3. **Walk the operator through the report** before recording anything:
    - What matched — the overlap between the index and the set.
    - What the index lists that isn't in the set — while the delivery still holds pages nobody has
@@ -439,6 +442,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    - What couldn't be read — `report.residue.parseRejectedSample` and
      `report.residue.unparsedPages` name the tokens and pages this run could not account for; state
      those counts out loud rather than folding them into "no problems found."
+   - Whether the index re-read agreed with the stored records — check `report.declaredLedgerDrift.ran`
+     first. It's `false`, never a hollow zero, whenever no index page could be read at all, or a
+     receiving-check run had to widen its re-read to another delivery's pages; the drift arrays are
+     empty in that case too, and that's a check that didn't run, not a check that found nothing.
    - Whether the spec comparison ran at all — when step 8 found no project manual to extract for
      this delivery, the spec leg is reported as not having run. Say exactly that; never present it
      as a finding of zero.

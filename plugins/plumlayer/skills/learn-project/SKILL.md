@@ -101,14 +101,22 @@ that never arrived, or a sheet in the set the index never mentioned, changes wha
 before you read a single plan.
 
 Call `reconcile_set(projectId)` **report-only** (never pass `deposit`) — this step reads the gate's
-findings, it never records residue itself, and depositing is not this skill's decision to make.
+findings, it never records residue itself, and depositing is not this skill's decision to make. The
+bare call (no `deliveryId`) runs the ORIENTATION check: the index of record — the newest delivery
+that actually has a read drawing index — against the current compiled set across every delivery,
+which is what an orientation pass over the whole project wants. `result.mode` reports which
+comparison ran.
 
-- **If the gate has already run for this delivery:** read the report's counts — what matched, what
+- **If the gate has already run for this set:** read the report's counts — what matched, what
   the index lists that isn't in the set, what's in the set the index doesn't list, and whether the
   spec comparison ran. Fold anything real into the packet: an unmatched index entry as a
   `missingScopeFamily` or `setShapeObservation` candidate (per step 4's rules — flag if inferred),
-  and an unrecognized-in-index sheet as a `setShapeObservation`.
-- **If it hasn't run yet** (no drawing index was ever parsed for this delivery — `reconcile_index`
+  and an unrecognized-in-index sheet as a `setShapeObservation`. Before citing anything from
+  `report.declaredLedgerDrift`, check `.ran` first — it's `false`, never a hollow zero, whenever no
+  index page could be read at all, or a receiving-check run had to widen its re-read to another
+  delivery's pages; a drift check that didn't run is never folded into the packet as if it found
+  nothing.
+- **If it hasn't run yet** (no drawing index was ever parsed for any delivery in this set — `reconcile_index`
   has not been called, or `reconcile_set` reports nothing to compare), write "the reconciliation gate
   hasn't run for this set" in the packet's set-shape section and continue. Never write "no
   discrepancies found" for a check that never ran.
