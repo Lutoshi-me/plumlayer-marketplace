@@ -2,7 +2,7 @@
 name: drawing-upload
 description: >
   Upload a construction drawing delivery in ANY packaging and turn it into cited sheet records in the
-  project's Plumlayer MOSOT — no manual conforming, no local CSV intermediate. Use
+  project's Plumlayer record — no manual conforming, no local CSV intermediate. Use
   whenever the user hands over a new drawing set, bulletin, addendum, ASI, permit/CD/conformed set,
   or any pile of drawing PDFs and wants it read, registered, indexed, or inventoried. Trigger on
   "we got a new set for <project>", "upload this set", "register the drawings", "drawing index",
@@ -31,8 +31,8 @@ supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue
 field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
 mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
 it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
-skill's Words section.
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
+project-record skill's Words section.
 
 Take whatever the architect actually sent, in whatever shape, and turn it into the one canonical,
 recognized set of **cited sheet claims** in the project's MOSOT. This is **Stage 0**: the first

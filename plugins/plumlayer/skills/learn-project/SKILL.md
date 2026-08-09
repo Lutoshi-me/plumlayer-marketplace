@@ -24,8 +24,8 @@ supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue
 field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
 mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
 it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
-skill's Words section.
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
+project-record skill's Words section.
 
 The first stage of the scope engine (`scope-package-architecture.md` §4). Before anything is read
 deep, one cheap pass over what's already recognized builds the project's **context**: what it is, its

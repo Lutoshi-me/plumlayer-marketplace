@@ -1,9 +1,9 @@
 ---
-name: mosot
-description: Work with a Plumlayer MOSOT — the cloud source of truth for a construction project's claims. Use when the user wants to read, search, review, or propose claims on their Plumlayer projects (sheet/set grid, ambiguities, RFI candidates, scope/door takeoffs), or asks "what's in my MOSOT / project". Explains the verb surface and the trust model: what an agent writes governs provisionally as agent-stated, carrying its author, timestamp, and evidence.
+name: project-record
+description: Work with a Plumlayer project record — the cloud source of truth for a construction project. Use when the user wants to read, search, review, or add records to their Plumlayer projects (sheet/set grid, flagged items, RFI candidates, scope/takeoffs), or asks "what's in my project". Explains the verb surface and the trust model: what an agent writes takes effect provisionally as its own reading, carrying its author, timestamp, and evidence.
 ---
 
-# Working a Plumlayer MOSOT
+# Working a Plumlayer project record
 
 A **MOSOT** (Machine-Optimized Source of Truth) is the cloud, claim-based model of a
 construction project's *current governing truth*. Each Plumlayer **project is one MOSOT**.

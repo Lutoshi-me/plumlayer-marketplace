@@ -1,7 +1,7 @@
 ---
 name: drawing-set-assemble
 description: >
-  Assemble the project's CURRENT drawing set into fresh PDFs, straight off the cloud MOSOT set grid —
+  Assemble the project's CURRENT drawing set into fresh PDFs, straight off the cloud project record's set grid —
   one PDF per discipline, plus an optional combined PDF. Use whenever the user asks to assemble,
   build, generate, or produce the current set, the merged drawing set, the discipline-split PDFs, or a
   single combined latest-set PDF. Trigger on "assemble the set", "current set", "merged PDFs",
@@ -26,8 +26,8 @@ supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue
 field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
 mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
 it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
-skill's Words section.
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
+project-record skill's Words section.
 
 Take the project's current governing sheet set and turn it into fresh, ready-to-use PDFs — one per
 discipline, and, by default, a single combined PDF of the whole set. This is an on-demand projection

@@ -1,7 +1,7 @@
 ---
 name: drawing-index-publish
 description: >
-  Publish the project's Master Drawing Index Excel workbook straight off the cloud MOSOT set grid —
+  Publish the project's Master Drawing Index Excel workbook straight off the cloud project record's set grid —
   a Current Set tab, one tab per drawing delivery (chronological), and a trailing Review tab of
   sheets that still need a look. Use whenever the user asks to publish, build, or generate the Master Drawing Index, the
   drawing index workbook, or an xlsx/Excel version of the drawing index. Trigger on "master drawing
@@ -26,8 +26,8 @@ supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue
 field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
 mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
 it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
-skill's Words section.
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
+project-record skill's Words section.
 
 Publish a single Excel workbook that lays out the project's whole drawing history: the current set,
 every delivery in order, and the sheets that still need review. This is an on-demand projection off

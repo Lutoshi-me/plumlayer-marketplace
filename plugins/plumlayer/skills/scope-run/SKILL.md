@@ -18,8 +18,8 @@ supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue
 field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
 mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
 it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
-skill's Words section.
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
+project-record skill's Words section.
 
 This installed skill is a guard, not an active production scope engine.
 
@@ -53,7 +53,7 @@ dispatching the old harness.
 
 3. Offer only safe next actions:
    - run or help with `drawing-upload` so the set is identified and recognized;
-   - inspect existing MOSOT data with the `mosot` skill;
+   - inspect existing project data with the `project-record` skill;
    - work on PLU-274's scope-item-first design or implementation;
    - inspect the removed route-first machinery through git history before PLU-349, clearly labeled
      superseded.

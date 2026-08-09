@@ -3,7 +3,7 @@ name: takeoff
 description: >
   Turn a plain-language takeoff request — "do window takeoffs on the elevations", "count the doors
   on the level 2 plans", "measure the retaining wall" — into a named takeoff condition with
-  individual placed marks or measurements in the project's Plumlayer MOSOT, exactly as if a person
+  individual placed marks or measurements in the project's Plumlayer record, exactly as if a person
   had drawn them in the takeoff editor. Use when the user asks to take off, count, or measure
   something from drawing sheets already uploaded to a Plumlayer project. Trigger on "takeoff",
   "take off the <item>", "count the <item>", "do a <item> takeoff", "measure the <item>",
@@ -29,8 +29,8 @@ supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue
 field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
 mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
 it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
-skill's Words section.
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
+project-record skill's Words section.
 
 Take the operator's sentence — what to count or measure, and where — and come back with the same
 artifact an intern at the next desk would produce: a named condition in the Measurements panel with
