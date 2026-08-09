@@ -1,7 +1,7 @@
 ---
 name: bid-intake
 description: >
-  Read a trade's sub-proposal PDFs and turn them into cited bid claims on the matching bid
+  Read a trade's sub-proposal PDFs and turn them into cited bid records on the matching bid
   package in the project's Plumlayer MOSOT — bidder profiles, per-row responses (inclusion / routing /
   amount), coverage, summary totals, and the off-checklist items a proposal prices that no scope row
   covers, each grounded to a page of the proposal it came from. Use when
@@ -10,14 +10,26 @@ description: >
   "level the proposals", "get sub quotes into plumlayer", "intake this quote for <trade>", "we got
   bids back for <package>", "load the drywall proposals", "/bid-intake". Drives proposal upload +
   registration, the two-pass blind-then-peer read, supersession for revised proposals, and a
-  count-verified claim deposit over the hosted Plumlayer MCP verb surface. The agent reads and judges;
-  deterministic tooling grounds; nothing enters untraced. Every claim cites the proposal page it came
+  count-verified record deposit over the hosted Plumlayer MCP verb surface. The agent reads and judges;
+  deterministic tooling grounds; nothing enters untraced. Every record cites the proposal page it came
   from and records as the agent's reading. This skill does NOT create the project (project-create),
   define the bid package or invite bidders (the plumlayer.com solicitation flow), read drawings
   (drawing-upload), or sign anything on the operator's behalf.
 ---
 
 # Bid Intake — read sub proposals into cited bid claims, cloud-first
+
+## Talk to your user like an estimator
+
+Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
+words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
+trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
+field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
+mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
+it for you to set on the site"; cross-checking the index is "checking the drawing list against the
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
+skill's Words section.
 
 Take a trade's subcontractor proposals — the PDFs a sub actually sent back against a bid package — and
 turn each one into the bundle of **cited bid claims** the leveling surface reads: who bid, what

@@ -3,7 +3,7 @@ name: project-create
 description: >
   Create and customize a new Plumlayer project (= a MOSOT) by interviewing the user or reading in
   project info they already have (an ITB, a drawing index, a spec TOC, a project summary), then
-  seeding the new MOSOT with cited project-level claims. Trigger on "create a project",
+  seeding the new MOSOT with cited project-level facts. Trigger on "create a project",
   "new project", "set up / start a new MOSOT", "onboard this project", "start a new bid / pursuit",
   "/project-create", or when the user hands over project documents to spin up a project. Creates the
   project via the create_project MCP verb, seeds parties / delivery / type / trades / sets via the
@@ -12,6 +12,18 @@ description: >
 ---
 
 # Project Create — stand up a new MOSOT and customize it
+
+## Talk to your user like an estimator
+
+Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
+words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
+trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
+field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
+mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
+it for you to set on the site"; cross-checking the index is "checking the drawing list against the
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
+skill's Words section.
 
 A Plumlayer **project is one MOSOT** — the cloud, claim-based model of that project's current
 governing truth. This skill **creates the project and customizes it** by turning what the user knows

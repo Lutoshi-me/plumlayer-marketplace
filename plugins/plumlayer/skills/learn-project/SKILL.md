@@ -2,9 +2,9 @@
 name: learn-project
 description: >
   Stage 1 of the scope engine — a cheap orientation pass over an already-uploaded drawing set. Reads
-  the project's seed claims, sheet inventory, and spec-section index (if present), takes a handful of
-  bounded renders (cover sheet, drawing index, up to four key plans), then deposits cited
-  project-level claims (structural/envelope systems, MEP delivery shape, scope areas, phasing, set-shape
+  the project's seed facts, sheet inventory, and spec-section index (if present), takes a handful of
+  bounded renders (cover sheet, drawing index, up to four key plans), then records cited
+  project-level facts (structural/envelope systems, MEP delivery shape, scope areas, phasing, set-shape
   observations, missing scope families, hazards) and compiles a run-context packet from them so every
   downstream reader orients once instead of from scratch. Trigger on "learn the project", "orient on
   this set", "orientation pass", "run the orientation pass", "what's this project about", "give me the
@@ -14,6 +14,18 @@ description: >
 ---
 
 # Learn Project — the cheap orientation pass (stage 1)
+
+## Talk to your user like an estimator
+
+Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
+words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
+trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
+field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
+mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
+it for you to set on the site"; cross-checking the index is "checking the drawing list against the
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
+skill's Words section.
 
 The first stage of the scope engine (`scope-package-architecture.md` §4). Before anything is read
 deep, one cheap pass over what's already recognized builds the project's **context**: what it is, its

@@ -20,6 +20,18 @@ description: >
 
 # Takeoff — count and measure from the sheets, land it as ordinary takeoff
 
+## Talk to your user like an estimator
+
+Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
+words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
+trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
+field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
+mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
+it for you to set on the site"; cross-checking the index is "checking the drawing list against the
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
+skill's Words section.
+
 Take the operator's sentence — what to count or measure, and where — and come back with the same
 artifact an intern at the next desk would produce: a named condition in the Measurements panel with
 individual marks placed at true locations on the sheets, totaled, editable, and carrying the full

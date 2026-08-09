@@ -8,8 +8,8 @@ description: >
   "discipline split", "build the current drawing set", "give me the latest PDFs", "combine into one
   pdf", or "/assemble-set". Drives project selection and the `assemble_current_set` /
   `assemble_current_set_status` hosted MCP verbs — an async job you start then poll. The verb is a
-  read-only PROJECTION off the current set grid: it writes no claims and changes no selection policy,
-  it only registers the assembled PDFs as project files. Outputs are downloaded from the project on
+  read-only PROJECTION off the current set grid: it records nothing new and changes no selection
+  policy, it only registers the assembled PDFs as project files. Outputs are downloaded from the project on
   plumlayer.com; there is no download verb. Do NOT use this skill to publish the Master Drawing Index
   Excel workbook — that is `drawing-index-publish`. Requires a project whose drawings were already
   registered via `drawing-upload`.
@@ -17,17 +17,29 @@ description: >
 
 # Drawing Set Assemble — current-set PDF export
 
+## Talk to your user like an estimator
+
+Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
+words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
+trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
+field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
+mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
+it for you to set on the site"; cross-checking the index is "checking the drawing list against the
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
+skill's Words section.
+
 Take the project's current governing sheet set and turn it into fresh, ready-to-use PDFs — one per
 discipline, and, by default, a single combined PDF of the whole set. This is an on-demand projection
-off the MOSOT set grid, not a new source of truth: it writes no claims, and it never changes which
+off the MOSOT set grid, not a new source of truth: it records nothing new, and it never changes which
 sheet is current for a subject.
 
 ## What this is, and the boundary
 
-The canonical form is the claims in the project's MOSOT (deposited by `drawing-upload`). This skill
-renders one view of that truth as physical PDFs, for people who need to print, share, or browse a set
-outside plumlayer.com. It does not read drawings, decide which sheet is current, or write any claims
-— `assemble_current_set` is a pure export off the current set grid.
+The canonical form is the project record in the project's MOSOT (built by `drawing-upload`). This
+skill renders one view of that record as physical PDFs, for people who need to print, share, or
+browse a set outside plumlayer.com. It does not read drawings, decide which sheet is current, or
+record anything new — `assemble_current_set` is a pure export off the current set grid.
 
 ## 1 · Pick the project
 
@@ -63,9 +75,10 @@ On `succeeded`, tell the user:
   `Current Set - Combined.pdf` if requested), size, page count, discipline.
 - **The counts** from `report`: `sheetsInProjection` (every subject considered), `included`, and
   `excluded` (counts add up: in = included + excluded).
-- **The residue** — always relay this, never suppress it: review-status sheets that were still
-  included in the assembled PDFs (flagged, not omitted), and sheets excluded because they had no
-  locatable source page. Both are the tail a human should look at before treating the set as final.
+- **What still needs a look** — always relay this, never suppress it: review-status sheets that were
+  still included in the assembled PDFs (flagged, not omitted), and sheets excluded because they had
+  no locatable source page. Both are the tail a human should look at before treating the set as
+  final.
 - **Where to get the files** — the assembled PDFs live on the project on plumlayer.com; there is
   deliberately no download link served here, so point the user there rather than looking for a path
   or URL in the tool result.

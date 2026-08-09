@@ -3,13 +3,13 @@ name: drawing-index-publish
 description: >
   Publish the project's Master Drawing Index Excel workbook straight off the cloud MOSOT set grid —
   a Current Set tab, one tab per drawing delivery (chronological), and a trailing Review tab of
-  residue. Use whenever the user asks to publish, build, or generate the Master Drawing Index, the
+  sheets that still need a look. Use whenever the user asks to publish, build, or generate the Master Drawing Index, the
   drawing index workbook, or an xlsx/Excel version of the drawing index. Trigger on "master drawing
   index", "publish the drawing index", "drawing index workbook", "drawing index xlsx", or
   "/publish-drawing-index". Drives project selection and the `publish_master_index` /
   `publish_master_index_status` hosted MCP verbs — an async job you start then poll. The verb is a
-  read-only PROJECTION off the set grid: it writes no claims and changes no selection policy, it only
-  registers the workbook as a project file. The workbook's Open links jump straight to the sheet in
+  read-only PROJECTION off the set grid: it records nothing new and changes no selection policy, it
+  only registers the workbook as a project file. The workbook's Open links jump straight to the sheet in
   the plumlayer.com viewer. Output is downloaded from the project on plumlayer.com; there is no
   download verb. Do NOT use this skill to assemble the PDFs — that is `drawing-set-assemble`.
   Requires a project whose drawings were already registered via `drawing-upload`.
@@ -17,16 +17,28 @@ description: >
 
 # Drawing Index Publish — Master Drawing Index.xlsx
 
+## Talk to your user like an estimator
+
+Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
+words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
+trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
+field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
+mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
+it for you to set on the site"; cross-checking the index is "checking the drawing list against the
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
+skill's Words section.
+
 Publish a single Excel workbook that lays out the project's whole drawing history: the current set,
 every delivery in order, and the sheets that still need review. This is an on-demand projection off
-the MOSOT set grid, not a new source of truth: it writes no claims, and it never changes which sheet
-is current for a subject.
+the MOSOT set grid, not a new source of truth: it records nothing new, and it never changes which
+sheet is current for a subject.
 
 ## What this is, and the boundary
 
-The canonical form is the claims in the project's MOSOT (deposited by `drawing-upload`). This skill
-renders one view of that truth as a workbook, for people who want a spreadsheet to browse or share.
-It does not read drawings or decide anything — `publish_master_index` is a pure export off the
+The canonical form is the project record in the project's MOSOT (built by `drawing-upload`). This
+skill renders one view of that record as a workbook, for people who want a spreadsheet to browse or
+share. It does not read drawings or decide anything — `publish_master_index` is a pure export off the
 current set grid.
 
 ## 1 · Pick the project
@@ -59,9 +71,9 @@ On `succeeded`, tell the user:
 - **The workbook** — filename (`Master Drawing Index.xlsx`), size, and its tabs from `report`: a
   Current Set tab, one tab per drawing delivery in chronological order, and a trailing Review tab —
   each with its row count.
-- **The residue** — always relay this, never suppress it: the Review tab holds review-status sheets
-  still in the current set, and sheets excluded from the current set for having no locatable page.
-  Say how many rows are in that tab, not just that it exists.
+- **What still needs a look** — always relay this, never suppress it: the Review tab holds
+  review-status sheets still in the current set, and sheets excluded from the current set for having
+  no locatable page. Say how many rows are in that tab, not just that it exists.
 - **The Open links** — every sheet row's Open link jumps straight to that sheet in the plumlayer.com
   viewer, not a local file path — clicking it takes the user into the live project, not a PDF page.
 - **Where to get the file** — the workbook lives on the project on plumlayer.com; there is

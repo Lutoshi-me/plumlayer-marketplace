@@ -1,7 +1,7 @@
 ---
 name: drawing-upload
 description: >
-  Upload a construction drawing delivery in ANY packaging and turn it into cited sheet claims in the
+  Upload a construction drawing delivery in ANY packaging and turn it into cited sheet records in the
   project's Plumlayer MOSOT — no manual conforming, no local CSV intermediate. Use
   whenever the user hands over a new drawing set, bulletin, addendum, ASI, permit/CD/conformed set,
   or any pile of drawing PDFs and wants it read, registered, indexed, or inventoried. Trigger on
@@ -11,16 +11,28 @@ description: >
   the set is ALREADY uploaded to the project with nothing local: "read the uploaded set", "recognize
   the files already in <project>", "re-recognize the set". Drives project
   selection, delivery registration, cloud upload, bulk deterministic sheet-number recognition, agent
-  residue read, sheet-type classification, and claim deposit over the hosted Plumlayer MCP verb
+  residue read, sheet-type classification, and recording sheet data over the hosted Plumlayer MCP verb
   surface. The primary verbs are `recognize_sheets` / `recognize_sheets_status`; older servers may
   still expose these as deprecated `ground_sheets` / `ground_sheets_status` aliases. The agent reads
   and judges; deterministic tooling grounds; nothing enters untraced. Supersedes the retired
   drawing-index / drawing-index-bulletin / drawing-index-merge skills (the export skills
   drawing-set-assemble / drawing-index-publish survive as on-demand projections off the cloud
-  claims).
+  records).
 ---
 
 # Drawing Upload — the foundation pass, agent-driven, cloud-first
+
+## Talk to your user like an estimator
+
+Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
+words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
+trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
+field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
+mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
+it for you to set on the site"; cross-checking the index is "checking the drawing list against the
+actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the mosot
+skill's Words section.
 
 Take whatever the architect actually sent, in whatever shape, and turn it into the one canonical,
 recognized set of **cited sheet claims** in the project's MOSOT. This is **Stage 0**: the first
@@ -326,8 +338,8 @@ of the 13 literal strings above — never invent a fourteenth value, and never w
 a partial phrase, or a full title as the value.
 
 **Unsure → leave untyped.** Do not deposit a `sheetType` claim for a sheet you can't confidently place
-in the vocabulary; skip it and count it. Narrate: "N sheets typed, M left untyped for review" — never
-imply full coverage when some sheets were skipped.
+in the vocabulary; skip it and count it. Narrate: "N sheets sorted by type, M I left for a closer
+look" — never imply full coverage when some sheets were skipped.
 
 ## 7 · Deposit residue and types, then verify
 
@@ -345,11 +357,28 @@ verification pass:
    "sheetType")` — and confirm with the user before sending it again; the server's recognized-claim
    idempotency does not cover claims you authored and sent yourself. Once clear, pool the full claim
    bundles you authored in steps 6 and 6b (recognized pages contribute nothing here — do not re-send
-   them) into one array per project and call `propose_batch(projectId, claims)`. It accepts 1–500
+   them) into one array per project.
+
+   **For a small bundle, call `propose_batch(projectId, claims)` directly.** It accepts 1–500
    entries and is atomic (one bad entry rejects the whole batch, naming the index); transport every
    entry **verbatim**, never re-typed from memory. **Verify**: the returned `count` must equal the
    number of entries you sent. If it doesn't, stop and report the discrepancy rather than retrying
    with a guessed correction.
+
+   **For a large agent-authored bundle (a deep set with thousands of residue/type entries), use
+   `propose_batch_file` instead of chaining many `propose_batch` calls.** The path: write the full
+   claim array as JSONL, `request_file_upload(projectId, filename)` for a signed URL, PUT the JSONL
+   bytes to it, `register_file(projectId, fileId, filename, contentType: "application/jsonl", kind:
+   "document")`, then call `propose_batch_file(projectId, fileId)` to deposit straight from the
+   registered file. Verify the same way — read back a count and confirm it matches what you wrote to
+   the file, never assume the upload landed intact. Keep `propose_batch` for small inline batches;
+   reach for `propose_batch_file` only once a single bundle is large enough that chaining
+   `propose_batch` calls would be the wrong shape.
+
+   **A freshly-shipped verb may not appear until the session reloads the plugin / reconnects MCP.**
+   If `propose_batch_file` (or any verb you expect) is missing from your tool list, reload the
+   session before concluding it doesn't exist — the same situation the frontmatter's `ground_sheets`
+   → `recognize_sheets` rename note covers for the recognition verbs.
 
 2. **Verify the recognized portion against the report — never a full-grid read.** Compare the
    succeeded job's `deposit` summary (`{deposited, alreadyDeposited, byPredicate}`) against its
