@@ -255,9 +255,21 @@ every residue row yourself:
   `region` like `{x0:0.74, y0:0.80, x1:1.0, y1:1.0}` to zoom the title-block corner at higher DPI);
   `get_page_text` returns exact spans with PDF-point bboxes, and `hasTextLayer:false` is the honest
   image-only-page signal (no vector text to read).
-- Judge the sheet number, title, and discipline from what you actually see. When you override a reader
-  pick (it grabbed a tag, not the sheet number), author your corrected claim and tag it with
-  `ambiguityClass` so both readings surface for human review in `ambiguities` — never silently pick.
+- Judge the sheet number, title, and discipline from what you actually see, and handle the two cases
+  differently:
+  - **A confident correction of a machine misread** — you can see the reader grabbed the wrong cell (a
+    tag instead of the sheet number, a boxed note instead of the title). If the recognizer already
+    stored a value for that slot, write your corrected value as a supersession **edge** onto it, not a
+    bare competing claim: `search(projectId, subject: "sheet:<n>", predicate:
+    "hasTitle"|"discipline"|"appearsOnPage")` to get the live claim's `id`, then author your corrected
+    claim with `supersedesId` set to that id, cited to the crop you read. The edge is what makes your
+    read govern — a bare competing claim loses to the machine value on authorship rank, which is the
+    anti-hallucination anchor working as designed (PLU-931/PLU-1115). If the slot is empty (the pass
+    left this page blank), just author the claim fresh — there is nothing to supersede.
+  - **Genuine ambiguity** — you honestly cannot tell which of two readings is right. Author your reading
+    as a bare claim tagged with `ambiguityClass` so both surface for a person in `ambiguities` — never
+    silently pick. Reserve the flag for real ambiguity; never use it for a correction you are confident
+    about (that just hands a person a title you already read correctly).
 - **Image-only / scanned pages**: flag them honestly. Mint the page as its own subject —
   `page:<fileId>:<pageInPdf>` — never `subject: null`, and never add an OCR dependency (deferred,
   PLU-186). Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
@@ -341,6 +353,36 @@ a partial phrase, or a full title as the value.
 in the vocabulary; skip it and count it. Narrate: "N sheets sorted by type, M I left for a closer
 look" — never imply full coverage when some sheets were skipped.
 
+## 6c · Correct a mis-bound recognized title or discipline (PLU-1115)
+
+The deterministic pass grounds the *tokens* it reads, but *which* cell fills the title or discipline
+slot is its reproducible-but-fallible guess — it can grab a boxed drawing note instead of the
+title-block cell. So a sheet can come through recognition "successfully" and still carry a wrong title.
+(The 18-MEP case: a sheet recognized as "NOTE: LEVEL 4 LAYOUT IS TYPICAL..." instead of "ELECTRICAL
+ENLARGED UNIT PLANS - LVL 4 PART A".) You are not re-reading every recognized title — recognition is
+trusted for the bulk. This is for the mis-grabs you actually notice: you will usually catch them in
+step 6b, where a recognized "title" that reads like a note, a general instruction, or a bare fragment
+rather than a sheet name is the tell, or when the user points one out.
+
+When you are confident a recognized title or discipline is a mis-grab, correct it with a supersession
+**edge**, exactly like a confident residue correction (step 6):
+
+1. `search(projectId, subject: "sheet:<n>", predicate: "hasTitle")` (or `"discipline"`) → the live
+   machine claim's `id`.
+2. `render_page` the title-block corner and read the real title yourself.
+3. Author the corrected claim with `supersedesId` set to that id, cited to the crop you read, and pool
+   it into your step 7 deposit.
+
+The edge is what makes your read govern the grid: the recognizer's binding is `machine-read`, and an
+agent edge onto it is honored regardless of that register — only a person's later word outranks you
+(PLU-931/PLU-1115). A **bare** corrected claim with no `supersedesId` does NOT win; it sits as a
+candidate beneath the machine value. Never reach for the `ambiguityClass` flag here — a flag is for
+genuine ambiguity, and flagging a title you already read correctly is the "go set it on the site" dead
+end this step exists to close.
+
+Narrate it in estimator words: "the automatic scan grabbed the wrong text on N sheets, so I read them
+and set them right" — never "supersede", "claim", or "edge".
+
 ## 7 · Deposit residue and types, then verify
 
 **The recognized portion needs no deposit call from you.** `recognize_sheets` already wrote it
@@ -348,16 +390,16 @@ server-side once its job succeeded (step 5), and re-running `recognize_sheets` o
 file+delivery is safe by construction: the concurrency guard returns the existing job, and the
 deposit itself is idempotent (`alreadyDeposited: true` on a poll means a prior run already wrote this
 delivery's sheet claims — no duplicate was written). You still make exactly one write of your own
-(pooling both the residue bundle from step 6 and the sheetType claims from step 6b), plus one
-verification pass:
+(pooling the residue bundle from step 6, the sheetType claims from step 6b, and any mis-bind
+corrections from step 6c — the edges carrying their `supersedesId`), plus one verification pass:
 
 1. **Deposit the residue + type bundle.** Before depositing, check whether you've already deposited
    residue or types for this delivery in a prior run of this skill — e.g. `search(projectId,
    predicate: "partOfIssue", text: <deliveryId or label>)` and `search(projectId, predicate:
    "sheetType")` — and confirm with the user before sending it again; the server's recognized-claim
    idempotency does not cover claims you authored and sent yourself. Once clear, pool the full claim
-   bundles you authored in steps 6 and 6b (recognized pages contribute nothing here — do not re-send
-   them) into one array per project.
+   bundles you authored in steps 6, 6b, and 6c (recognized pages you did not correct contribute
+   nothing here — do not re-send them) into one array per project.
 
    **For a small bundle, call `propose_batch(projectId, claims)` directly.** It accepts 1–500
    entries and is atomic (one bad entry rejects the whole batch, naming the index); transport every
@@ -492,6 +534,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
 - Residue is judged-or-flagged, never silently dropped; image-only pages are named, not guessed.
 - `sheetType` is agent judgment only — never a deterministic guess, never a value outside the
   13-value vocabulary, never assigned to a sheet you're not confident about.
+- A confident correction of a machine misread (a mis-grabbed title or discipline, in residue or on an
+  already-recognized sheet) is a supersession **edge** onto the stored claim (`supersedesId` from
+  `search`), never a bare competing claim and never an `ambiguityClass` flag — the flag is reserved for
+  a reading you genuinely cannot resolve.
 - The residue and type claims are your own reading, cited to the page you read; never present them as
   the deterministic pass's confirmed output.
 - Your own deposit (the residue + type bundle) is verbatim, count-verified transport — a count

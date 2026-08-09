@@ -1,6 +1,6 @@
 {
   "name": "plumlayer",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "description": "Connect Claude to your Plumlayer project (cloud) and guarded precon workflow skills. Create + onboard projects, read + record project entries through the hosted MCP; what you record counts as your word, carrying its authorship trail. Route-first scope-run is blocked while PLU-274 rebuilds it.",
   "author": {
     "name": "Plumlayer"

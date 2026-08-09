@@ -115,8 +115,9 @@ changes wins.
 
 **Write**
 - `propose` — append one claim (`subject`, `predicate`, `value`, `sourceInstrument`,
-  optional `evidence`/`ambiguityClass`). Stamped as you, and it takes effect immediately as
-  provisional working truth recorded as agent-stated.
+  optional `evidence`/`ambiguityClass`/`supersedesId`). Stamped as you, and it takes effect
+  immediately as provisional working truth recorded as agent-stated. `supersedesId` is the
+  correction edge — see "Correcting a machine misread" below.
 - `propose_batch` — append an array of claims in one atomic call (`projectId` + `claims`
   array). Atomic: a bad entry rejects the whole batch and names the index. Prefer this over
   repeated `propose` calls for bulk deposits (e.g. upload or scope deposit). Each call
@@ -169,6 +170,26 @@ it like this:
 Cite the sheet you genuinely read. A citation is a document reference, never a warrant that
 the tokens there mean what you concluded. That judgment is yours, recorded as yours.
 
+### Correcting a machine misread (a mis-bound title or discipline)
+
+The deterministic recognizer grounds the tokens it reads, but *which* cell fills a semantic slot —
+`hasTitle`, `discipline` — is its fallible positional guess, recorded as `machine-read`. When you read
+a sheet and can see it grabbed the wrong cell (a boxed drawing note recorded as the title, say),
+correct it with a supersession **edge**, not a bare competing claim:
+
+1. `search(projectId, subject: "sheet:<n>", predicate: "hasTitle")` (or `"discipline"`) → the live
+   claim's `id`.
+2. `propose` (or a `propose_batch` entry) with `supersedesId` set to that id, `value` = what you read,
+   cited to the sheet you read it from.
+
+The edge is what makes your read govern the grid: an agent edge onto a `machine-read` value is honored
+regardless of its register — only a person's word outranks you. A **bare** competing claim (no
+`supersedesId`) does not win; it stays a candidate beneath the machine value, which is the
+anti-hallucination anchor working as intended. So reserve the `ambiguityClass` flag for a reading you
+genuinely cannot resolve — never as the way to fix a title you already read correctly (that is the
+"go set it on the site" dead end). To the user this is plain: "the automatic scan grabbed the wrong
+text on those sheets, so I read them and set them right."
+
 ## Typical flows
 - **"What's in my project / MOSOT?"** → `list_projects` → pick one → `set_grid` for the
   drawing set, `ambiguities` for open issues, `rfi_candidates` for drafted RFIs; `search`
@@ -177,8 +198,10 @@ the tokens there mean what you concluded. That judgment is yours, recorded as yo
   grounded claims (`sourceInstrument` = where it came from, plus `evidence`). Tell the user
   what you wrote and that it reads as your judgment with your citations behind it. Drawn
   measurements and sheet scale are not this door's to write (see Write, above).
-- **"Find conflicts / RFIs"** → `ambiguities` + `rfi_candidates`; where you spot a real
-  conflict, `propose` an ambiguity-flagged claim (`ambiguityClass`), cited.
+- **"Find conflicts / RFIs"** → `ambiguities` + `rfi_candidates`; where you spot genuine ambiguity
+  you cannot resolve, `propose` an ambiguity-flagged claim (`ambiguityClass`), cited. Where instead
+  you can see the recognizer grabbed the wrong cell for a title or discipline, correct it with a
+  supersession edge (see "Correcting a machine misread"), not a flag.
 
 ## Discipline
 - Be honest about your own claims: they govern provisionally as your reading, not as a
