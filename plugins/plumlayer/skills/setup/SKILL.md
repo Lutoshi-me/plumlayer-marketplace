@@ -120,5 +120,5 @@ project-specific facts. Point them at `/project-create` to start their first pro
 
 - The profile lives **only** at `~/.plumlayer/operator.json`. Never write operator/company specifics
   into the plugin directory, the project repo, or any tracked/committed file.
-- This skill writes exactly one local file. It makes **no** cloud or MCP calls — it touches no MOSOT.
+- This skill writes exactly one local file. It makes **no** cloud or MCP calls — it touches no project record.
 - Re-runnable: always review-and-update an existing profile rather than clobbering it.

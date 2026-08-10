@@ -22,4 +22,4 @@ Hard guard:
 
 - normal `/scope-run` requests stop in `skills/scope-run/SKILL.md`;
 - do not revive the removed route-first fan-out/reconcile path as production scope;
-- do not deposit historical route-first output into MOSOT as current scope.
+- do not deposit historical route-first output into the project record as current scope.

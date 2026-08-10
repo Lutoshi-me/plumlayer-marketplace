@@ -39,7 +39,7 @@ dispatching the old harness.
 
 ## Required Behavior When Triggered
 
-1. Stop before running any route-first command, bundled scope subagent, or MOSOT deposit.
+1. Stop before running any route-first command, bundled scope subagent, or project record deposit.
 2. Tell the user plainly:
 
    ```text
@@ -62,7 +62,7 @@ dispatching the old harness.
 
 - Do not restore or run the removed route-first toolchain as a normal scope-run path.
 - Do not dispatch removed route-first scope subagents from a normal scope request.
-- Do not deposit route-first scope output into MOSOT unless Luke explicitly asks for a historical
+- Do not deposit route-first scope output into the project record unless Luke explicitly asks for a historical
   replay or migration experiment and the output is labeled `superseded route-first experiment`.
 - Do not present the legacy route-first harness as production, current, recommended, or doctrine-aligned.
 

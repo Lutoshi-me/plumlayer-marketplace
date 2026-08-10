@@ -59,7 +59,7 @@ for text-search false positives) does not apply to spec sections in this mode. S
 marks are unaffected either way -- they always use the scope-text token rule above. The report states
 which rule applied to each layer for the run that produced it.
 
-Transport: same as compile_context_packet.py -- this script does NOT call the MOSOT MCP server. It
+Transport: same as compile_context_packet.py -- this script does NOT call the project record MCP server. It
 reads pre-fetched claim dumps (JSONL or a raw `search`-response JSON) from caller-supplied paths and
 writes only to a caller-supplied `--out` path. Supersession / trust-tier resolution is out of scope
 here for the same reason as the sibling compiler: this reads whatever claim rows it is given,

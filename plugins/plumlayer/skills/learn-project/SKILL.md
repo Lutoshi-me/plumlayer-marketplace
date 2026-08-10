@@ -54,11 +54,11 @@ tag+project (stages 2–6, guarded by PLU-323 until PLU-274 ships).
 
 The run-context packet this skill compiles is a **projection**, never stored as truth — the same
 pattern as a trade package. It lives in the run's working context only (the private tree), never the
-repo, never the MOSOT.
+repo, never the project record.
 
 ## 0 · Preconditions
 
-1. **Project exists.** Call `list_projects` and confirm with the user which MOSOT this orientation pass
+1. **Project exists.** Call `list_projects` and confirm with the user which project record this orientation pass
    is for — get its `projectId`. If there is no project yet, hand off to `project-create` first, the
    same way `drawing-upload` step 1 does.
 2. **The baseline set is recognized.** Orientation reads the base set shape — it does not need revisions

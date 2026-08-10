@@ -56,7 +56,7 @@ are generic — never put a real client, project, or bidder name in this file.
 Proposal PDFs are confidential sub pricing. They are supplied to this skill by **local path** and are
 **never committed, never copied to a tracked path, and never quoted verbatim into any file the plugin
 or repo tracks.** The bytes upload to the project's private cloud bucket (project isolation + RLS) and
-the claims live in the cloud MOSOT — that is fine. What must never happen is a bidder's number or name
+the claims live in the cloud project record — that is fine. What must never happen is a bidder's number or name
 landing in a plugin file, a commit, or a note. Reading a proposal you were handed is the job; writing
 its contents into tracked source is the leak.
 
@@ -101,7 +101,7 @@ additional items → report.** Each stage has gates; they are non-negotiable and
 ## 1 · Preflight
 
 1. **Confirm the account and project.** Call `whoami`, then `list_projects` and confirm with the user
-   which project (one project = one MOSOT) these proposals belong to. Capture its `projectId`.
+   which project (one project = one project record) these proposals belong to. Capture its `projectId`.
 2. **Confirm the bid package exists.** Call `solicitation_list_packages(projectId)` and confirm the
    trade package these proposals are for is present. Capture its **CSI trade code** (e.g. `09 29 00`) —
    verbatim, spaces included, no slugging. That trade code keys the package subject and every read
@@ -686,7 +686,7 @@ readable there now, each with the proposal page behind it; the bid itself is the
   `list_scope_items` as a substitute.
 - A `get_bid_package` success with `lines: []` is not a green light — the checklist is empty, so stop
   and report rather than depositing a degenerate profile/summary-only run with no response claims.
-- Proposal specifics live in the cloud MOSOT and in local files; they never enter a tracked/committed
+- Proposal specifics live in the cloud project record and in local files; they never enter a tracked/committed
   plugin or repo file, and never appear verbatim in this skill's own text.
 
 ## Bundled vs. config

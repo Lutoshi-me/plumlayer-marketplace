@@ -37,7 +37,7 @@ claims are "proposed".
 
 Output: type_claims.jsonl -- the sheetType + coveredLevels claims, in the
 same Claim shape as the rest of the pipeline, suitable for append to
-set_claims.jsonl or direct feed to the current MOSOT deposit path.
+set_claims.jsonl or direct feed to the current project record deposit path.
 
 Confidential: reads/writes only caller-supplied paths (outside the repo).
 The rendered thumbnails for the agent queue also go to the caller-supplied

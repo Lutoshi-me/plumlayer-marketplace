@@ -3,7 +3,7 @@ spec_inventory.py -- deterministic spec-section skeleton extractor.
 
 The spec analog of sheet_inventory.py (the drawing-side foundation-pass tool).
 Reads a project manual PDF, or a folder of per-division PDFs, and emits one
-grounded MOSOT skeleton per CSI spec section (specSection:<6-digit-packed>):
+grounded project record skeleton per CSI spec section (specSection:<6-digit-packed>):
 
   hasTitle       the section title ("Gypsum Board Assemblies")
   locatedAt      where the section lives in the manual: {instrument, pageStart, pageEnd}
@@ -434,7 +434,7 @@ def _make_claim(
     evidence_locator,
     snippet: str,
 ) -> dict:
-    """Build a MOSOT claim dict in the canonical shape."""
+    """Build a project record claim dict in the canonical shape."""
     ev: dict = {
         "source": evidence_source,
         "method": method,

@@ -3,7 +3,7 @@
 Private plugin marketplace for the **Plumlayer** plugin. The plugin started as a Claude Code
 marketplace plugin and now has side-by-side Codex packaging infrastructure.
 
-It connects an agent to your Plumlayer MOSOT (cloud) and the precon workflow skills.
+It connects an agent to your Plumlayer project record (cloud) and the precon workflow skills.
 
 ## Setup: Claude Code
 
@@ -56,12 +56,12 @@ unless Claude compatibility is handled separately.
 
 ## What's in the plugin
 
-- **MCP connector** to the hosted Plumlayer MOSOT (`api-production-0a7b.up.railway.app/mcp`)
+- **MCP connector** to the hosted Plumlayer project record (`api-production-0a7b.up.railway.app/mcp`)
   — auto-wired on install; no manual `claude mcp add`.
-- **`mosot` skill** — teaches Claude the MOSOT verb surface (`set_grid`, `ambiguities`,
+- **`project-record` skill** — teaches Claude the project record verb surface (`set_grid`, `ambiguities`,
   `rfi_candidates`, `search`, `propose`, …) and the trust model: what an agent writes takes effect
   as its own cited reading, and a person's word outranks it.
-- **`drawing-upload` skill** — register any drawing delivery into the cloud MOSOT as recognized,
+- **`drawing-upload` skill** — register any drawing delivery into the cloud project record as recognized,
   cited sheet claims (including sheet-type classification).
 - **`drawing-index-publish` skill** — legacy export projection that publishes a Master Drawing Index
   workbook from cloud claims.
@@ -75,7 +75,7 @@ unless Claude compatibility is handled separately.
 - **`trade-specialist` subagent** — legacy route-first asset retained for PLU-274 history/migration
   only; guarded against normal production scope dispatch.
 
-Drawing upload, MOSOT, and export skills are active. The old route-first scope harness remains bundled
+Drawing upload, project record, and export skills are active. The old route-first scope harness remains bundled
 as historical material while PLU-274 rebuilds the current production scope engine.
 
 ## Updating
@@ -118,7 +118,7 @@ plugins/plumlayer/
     scope-decomposer.md             # legacy route-first scope read guard
     trade-specialist.md             # legacy route-first fan-out guard
   skills/
-    mosot/SKILL.md                  # the starter MOSOT skill
+    project-record/SKILL.md         # the starter project record skill
     drawing-upload/SKILL.md
     drawing-index-publish/SKILL.md + references/
     drawing-set-assemble/SKILL.md + references/

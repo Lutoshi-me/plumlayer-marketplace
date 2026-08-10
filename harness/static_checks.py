@@ -31,7 +31,7 @@ EXPECTED_SKILLS = {
     "drawing-index-publish",
     "drawing-ingest",
     "drawing-set-assemble",
-    "mosot",
+    "project-record",
     "project-create",
     "scope-run",
     "setup",

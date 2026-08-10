@@ -35,7 +35,7 @@ actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidan
 project-record skill's Words section.
 
 Take whatever the architect actually sent, in whatever shape, and turn it into the one canonical,
-recognized set of **cited sheet claims** in the project's MOSOT. This is **Stage 0**: the first
+recognized set of **cited sheet claims** in the project's project record. This is **Stage 0**: the first
 thing that touches a delivery, before anything is split by discipline, routed, or deep-read.
 
 Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing enters
@@ -69,11 +69,11 @@ about what was actually happening. Say instead:
 ## What this is, and the boundary
 
 `drawing-upload` does exactly one thing: take a drawing delivery and register every sheet in it as
-cited claims in the project's MOSOT. The canonical form is claims + provenance over the
+cited claims in the project's project record. The canonical form is claims + provenance over the
 untouched original delivery — discipline organization, by-discipline PDFs, page labels, and a
 drawing-index CSV are all **projections** of that form, rendered on demand by other skills, never the
 foundation. So this skill does **not**: physically split files by discipline (discipline is derived
-per sheet, never from a filename); produce a CSV (the deliverable is claims in the MOSOT — export
+per sheet, never from a filename); produce a CSV (the deliverable is claims in the project record — export
 skills `drawing-set-assemble` / `drawing-index-publish` render artifacts from the cloud claims on
 request); scope, take off, or comprehend the sheets (guarded by PLU-323 / owned by PLU-274); or create
 the project (`project-create`).
@@ -87,8 +87,8 @@ phase) — do not resolve `$PLUGIN` or run anything under it; every step below i
 
 ## 1 · Pick the project
 
-Call `list_projects` and confirm with the user which MOSOT this delivery belongs to (a project is one
-MOSOT) — get its `projectId`. If there is no project yet, hand off to `project-create` first; this
+Call `list_projects` and confirm with the user which project record this delivery belongs to (a project is one
+project record) — get its `projectId`. If there is no project yet, hand off to `project-create` first; this
 skill does not create projects. Confirm you also know the **issue label** for this delivery (e.g. a
 generic "2025-12-22 CD Set" or "Bulletin 01") — ask the user, or plan to read it off the cover sheet
 during recognition. It is load-bearing for supersession later.

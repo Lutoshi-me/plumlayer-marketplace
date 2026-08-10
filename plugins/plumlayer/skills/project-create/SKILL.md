@@ -11,7 +11,7 @@ description: >
   themselves say), then points the user to drawing-upload. Scope execution is guarded by PLU-323 until PLU-274 ships the scope-item-first engine.
 ---
 
-# Project Create — stand up a new MOSOT and customize it
+# Project Create — stand up a new project record and customize it
 
 ## Talk to your user like an estimator
 
@@ -25,9 +25,9 @@ it for you to set on the site"; cross-checking the index is "checking the drawin
 actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
 project-record skill's Words section.
 
-A Plumlayer **project is one MOSOT** — the cloud, claim-based model of that project's current
+A Plumlayer **project has one project record** — the cloud, claim-based model of that project's current
 governing truth. This skill **creates the project and customizes it** by turning what the user knows
-(or can hand you in a file) into **cited claims** seeded into the new MOSOT.
+(or can hand you in a file) into **cited claims** seeded into the new project record.
 
 > **Doctrine (binds every step):** you read and judge; deterministic tooling grounds; nothing leaves
 > unsigned and nothing enters untraced. What you seed here takes effect right away as the project's
@@ -36,7 +36,7 @@ governing truth. This skill **creates the project and customizes it** by turning
 > thing in the ledger, so when real drawings and specs are read later, better-grounded claims
 > supersede or corroborate it. **Cite every claim, never invent a fact, and flag what's uncertain.**
 >
-> **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud MOSOT
+> **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud project record
 > (project isolation + private bucket + RLS) — that's fine. They must **never** land in tracked or
 > committed plugin/repo files.
 
@@ -46,7 +46,7 @@ governing truth. This skill **creates the project and customizes it** by turning
 
 `project-create` stands up the **shell + a minimal starting frame** — it is **not** the project's
 data-entry form. It runs **early, before the drawings are read**, and its whole job is to get a named
-MOSOT into existence carrying the few facts only *you* can supply.
+project record into existence carrying the few facts only *you* can supply.
 
 **The arc:**
 `setup` (operator profile, once) → **`project-create` (this skill — shell + minimal frame)** →
@@ -72,7 +72,7 @@ on.**
    the `setup` skill) — use its `defaults` to pre-fill and avoid re-asking. If it's missing and the
    user wants personalization, suggest running `/setup` first (optional, not required).
 3. **Avoid a duplicate.** Call `list_projects`. If something close already exists, confirm the user
-   wants a *new* one rather than adding to the existing MOSOT.
+   wants a *new* one rather than adding to the existing project record.
 
 ---
 
@@ -133,7 +133,7 @@ ambiguous in the source → mark `uncertain` / `conflicting`.
 
 ---
 
-## Step 2 — Create the MOSOT shell
+## Step 2 — Create the project record shell
 
 Call the **`create_project`** MCP tool with the confirmed `name` (required) and optional
 `description`. **Capture the returned `projectId`** — every claim in Step 3 is scoped to it.
@@ -142,7 +142,7 @@ Call the **`create_project`** MCP tool with the confirmed `name` (required) and 
 > user to create the project on **plumlayer.com** (one click), then call `list_projects` and resolve
 > the new `projectId` from the list. The rest of the skill is unchanged.
 
-Confirm back to the user: "Created project **<name>** (`<projectId>`)." One project = one MOSOT.
+Confirm back to the user: "Created project **<name>** (`<projectId>`)." One project = one project record.
 
 ---
 
@@ -238,6 +238,6 @@ anything a person changes (or a drawing read later replaces) wins.
 - **Seeds are the weakest claims in the ledger.** They take effect as the starting frame, recorded as
   agent-stated from what the operator told you, and a drawing read supersedes them. Never present one
   as a fact read off the documents.
-- **One project = one MOSOT.** Always seed within the correct `projectId` returned by `create_project`.
-- **Data hygiene.** Project specifics may live in the cloud MOSOT and in the user's cwd config; they
+- **One project = one project record.** Always seed within the correct `projectId` returned by `create_project`.
+- **Data hygiene.** Project specifics may live in the cloud project record and in the user's cwd config; they
   must **never** be written to a tracked/committed plugin or repo file.

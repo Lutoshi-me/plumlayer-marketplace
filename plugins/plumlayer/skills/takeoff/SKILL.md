@@ -54,7 +54,7 @@ treat them as information, not errors.
 ## Confidentiality (non-negotiable)
 
 Drawing sheets, tag conventions, counts, and project names are a client's confidential project
-data. They live in the cloud MOSOT (project isolation) and in the run's own evidence and report —
+data. They live in the cloud project record (project isolation) and in the run's own evidence and report —
 **never in this file, never in a committed plugin or repo file, never quoted into a durable note.**
 The examples in this skill are generic; a real project's specifics never replace them. Reading the
 sheets you were pointed at is the job; writing what they contain into tracked source is the leak.

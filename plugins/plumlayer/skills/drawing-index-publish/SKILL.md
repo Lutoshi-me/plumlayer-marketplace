@@ -31,19 +31,19 @@ project-record skill's Words section.
 
 Publish a single Excel workbook that lays out the project's whole drawing history: the current set,
 every delivery in order, and the sheets that still need review. This is an on-demand projection off
-the MOSOT set grid, not a new source of truth: it records nothing new, and it never changes which
+the project record's set grid, not a new source of truth: it records nothing new, and it never changes which
 sheet is current for a subject.
 
 ## What this is, and the boundary
 
-The canonical form is the project record in the project's MOSOT (built by `drawing-upload`). This
+The canonical form is the project's project record (built by `drawing-upload`). This
 skill renders one view of that record as a workbook, for people who want a spreadsheet to browse or
 share. It does not read drawings or decide anything — `publish_master_index` is a pure export off the
 current set grid.
 
 ## 1 · Pick the project
 
-Call `list_projects` and confirm with the user which project (MOSOT) to publish. Get its
+Call `list_projects` and confirm with the user which project (project record) to publish. Get its
 `projectId`. If the project has no drawings uploaded yet, hand off to `drawing-upload` first.
 
 ## 2 · Start the publish job

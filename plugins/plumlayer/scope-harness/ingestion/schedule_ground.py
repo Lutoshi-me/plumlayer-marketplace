@@ -6,12 +6,12 @@ Doctrine role (schedule-ingestion-design.md, recalibration 2026-06-28):
   This script is the GROUND phase: given a manifest that the agent has filled in
   with column-maps (one per table per sheet), it reads the prepared spans, assigns
   each span to its column by the agent-provided x-ranges, clusters into row y-bands,
-  stitches multi-span cells, and emits one grounded MOSOT claim per cell.
+  stitches multi-span cells, and emits one grounded project record claim per cell.
 
 The agent-column-map contract (written into manifest 'column_maps' entries):
   {
     "tableTitle": str,             -- human label for the table (from sheet title / header)
-    "kind": str,                   -- MOSOT kind namespace (e.g. "plumbingFixtureType")
+    "kind": str,                   -- project record kind namespace (e.g. "plumbingFixtureType")
     "tableType": "definition" | "instance",  -- default "definition"; "instance" for
                                    --   opening/room/instance keyed tables. Adds
                                    --   ambiguityClass:"instance" to all claims.
@@ -80,7 +80,7 @@ Grounding logic (deterministic, no inference):
 Every emitted value carries its exact grounded span text + bbox. Nothing invented.
 
 Output:
-  schedule_claims.jsonl          -- grounded MOSOT claims (one per line)
+  schedule_claims.jsonl          -- grounded project record claims (one per line)
   schedule_ground_residue.json   -- rows that could not be grounded
   schedule_ground_stats.json     -- per-sheet counts
 

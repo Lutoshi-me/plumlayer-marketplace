@@ -7,11 +7,11 @@ hazards, compiled from the project-level claims `learn-project` deposits) and th
 index (SS4.4: one line per defined subject -- code -> kind -> name -> where-defined -- covering the
 schedule-definitions layer and the specSection skeleton). Both are PROJECTIONS: regenerated in full
 from already-deposited claims, never themselves proposed, never stored as truth, never written to
-the repo or the MOSOT. This script is the deterministic tooling that performs that projection --
+the repo or the project record. This script is the deterministic tooling that performs that projection --
 compiling is a mechanical scan over claim rows, not agent judgment, so no paraphrase happens here.
 
 Transport (reused from fetch_schedule_roster.py's lineage, per the PLU-351 dispatch): this script
-does NOT call the MOSOT MCP server itself. The agent fetches claims with the `search` verb
+does NOT call the project record MCP server itself. The agent fetches claims with the `search` verb
 (paginating as needed -- the schedule-definitions layer alone can run ~10 pages at the 500-row
 max) and writes each page's `claims` rows to a JSONL file (one claim object per line, the same flat
 shape every other script in this directory reads/writes). This script only reads those files and
@@ -43,7 +43,7 @@ dump can be handed over unmodified.
 Supersession / trust-tier resolution is explicitly OUT of scope here: this script projects whatever
 claim rows it is given, taking the first-seen value per (subject, predicate) as a stable, named
 tie-break -- resolving competing claims to the actually-governing one is the projection engine's job
-(mosot-projection-logic.md), not this packet compiler's. Callers who want only currently-governing
+(truth-model-projection-logic.md), not this packet compiler's. Callers who want only currently-governing
 values should filter at fetch time (e.g. `search(..., trustClass: "approved")`).
 
 Confidential: reads only caller-supplied paths (kept outside the repo) and writes only to a

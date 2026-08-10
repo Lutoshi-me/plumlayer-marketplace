@@ -5,8 +5,8 @@ description: Work with a Plumlayer project record — the cloud source of truth 
 
 # Working a Plumlayer project record
 
-A **MOSOT** (Machine-Optimized Source of Truth) is the cloud, claim-based model of a
-construction project's *current governing truth*. Each Plumlayer **project is one MOSOT**.
+**The project record** is the cloud, claim-based model of a
+construction project's *current governing truth*. Each Plumlayer **project has one project record**.
 You interact with it through the `plumlayer` MCP tools (every tool is scoped to the
 signed-in user's own projects).
 
@@ -40,8 +40,8 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
 Everything above is machinery vocabulary for working the verbs — it is never the language the user
 reads. Speak estimator words in everything you say to them: **project record, entry, sheet, set,
 scale, scope item, bid response, flagged item, trail**. Say "recorded 14 entries to the project,
-each citing the sheet I read it from", "2 flagged for your judgment". Prefer "project" over
-"MOSOT" unless the user uses the word. Plain prose, no em dashes, no bolded emphasis words.
+each citing the sheet I read it from", "2 flagged for your judgment". Prefer "project" or
+"the project record" in plain words the user already uses. Plain prose, no em dashes, no bolded emphasis words.
 
 Never say to the user: *claim, deposit, predicate, subject, proposed, governing, trust class,
 supersede, ledger, grounding, residue*. Those are machinery. If a concept has to surface, translate it: a
@@ -69,9 +69,9 @@ changes wins.
 ## The verbs
 **Identity / discovery**
 - `whoami` — confirm which account you're acting as.
-- `list_projects` — the user's projects (each is a MOSOT). Confirm the right one before acting.
+- `list_projects` — the user's projects (each has a project record). Confirm the right one before acting.
 - `get_project` — one project's details.
-- `create_project` — create a new project (= a new MOSOT). Supply `name` (required) and optional
+- `create_project` — create a new project (= a new project record). Supply `name` (required) and optional
   `description`; returns the new `projectId`. Use before any propose or upload on a new bid/pursuit.
 
 **Read**
@@ -191,7 +191,7 @@ genuinely cannot resolve — never as the way to fix a title you already read co
 text on those sheets, so I read them and set them right."
 
 ## Typical flows
-- **"What's in my project / MOSOT?"** → `list_projects` → pick one → `set_grid` for the
+- **"What's in my project / project record?"** → `list_projects` → pick one → `set_grid` for the
   drawing set, `ambiguities` for open issues, `rfi_candidates` for drafted RFIs; `search`
   to inspect specific subjects/claims.
 - **"Scope something"** → read the relevant sheets/claims, judge, then `propose`
@@ -208,4 +208,4 @@ text on those sheets, so I read them and set them right."
   person's word, and a human correction outranks them.
 - Always cite, and shape the citation so it actually renders (see "How to shape a citation").
   Separate what's grounded from what's inferred.
-- One project = one MOSOT; always act within the correct `projectId`.
+- One project = one project record; always act within the correct `projectId`.

@@ -53,7 +53,7 @@ EXPECTED_SKILL_NAMES = {
     "plumlayer:drawing-index-publish",
     "plumlayer:drawing-ingest",
     "plumlayer:drawing-set-assemble",
-    "plumlayer:mosot",
+    "plumlayer:project-record",
     "plumlayer:project-create",
     "plumlayer:scope-run",
     "plumlayer:setup",
