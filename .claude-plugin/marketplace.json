@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "Plumlayer — an agentic construction operating model. The Plumlayer plugin + precon harness for Claude Code.",
-    "version": "0.25.0"
+    "version": "0.26.0"
   },
   "plugins": [
     {
       "name": "plumlayer",
       "description": "Connect Claude to your Plumlayer project (cloud) and precon workflow skills. Create + onboard projects, read + record project entries through the hosted MCP; what you record counts as your word, carrying its authorship trail. Includes the scope-run engine: one grounded, cited scope list for the job, then derived trade packages.",
-      "version": "0.25.0",
+      "version": "0.26.0",
       "author": {
         "name": "Plumlayer"
       },
