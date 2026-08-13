@@ -103,6 +103,26 @@ Also: never author door-owned records. Retractions, flag resolutions, questions-
 package definitions mint only at their own doors — a reader that thinks an item should be deleted
 or a flag should be closed says so in its report; a person acts at the door.
 
+## The scope item row
+
+A minted scope item is a full row, not a name. Every mint writes:
+
+- **name** — the concise line the sub reads: aim under ten words, estimator wording, no code
+  dump ("Interior metal-stud partitions", not a recitation of every type mark).
+- **category** — required: the intrinsic work grouping an estimator would use as a checklist
+  section ("Metal Stud Partitions", "Unit Casework", "Sealants & Firestopping"). Group like work
+  under the same category string; never invent a fresh category per item. The review surface
+  groups by this — an uncategorized list renders as a wall.
+- **description** — one to three tight sentences carrying only what changes price or scope.
+  Never a re-narration of the schedule: the citation points at the sheet, and the doctrine is
+  cite, don't rewrite — rewriting is the telephone game the grounding exists to prevent.
+- **notesExternal / notesInternal** — only when there is a real note (a bidder-facing caveat; an
+  internal watch item). Most items carry neither.
+- **quantity** — only where the sheet itself carries one, as `{value, unit}`.
+
+Recorded text is operator-facing prose: plain estimator words, no em dashes, no bolding, no
+machinery vocabulary. A verbose row is a defect, not diligence.
+
 ## Run artifacts and the ledger
 
 All run working files live under `~/.plumlayer/runs/<project-slug>/` (slug from the project name,
@@ -367,13 +387,20 @@ at start (list_scope_items, plus targeted search):
    a trade's scope sheet — split by type or significant distinction, never by instance (floor);
    never one item per sheet or package headers (ceiling). Distinctions that don't earn a row ride
    in the description and notes.
-5. GRAIN: follow your entries' grain sections; where silent, mint at best judgment AND flag the
+5. THE ROW: every mint writes the full row — name (concise, under ~10 words, estimator wording),
+   category (REQUIRED: the checklist-section grouping an estimator would use; reuse category
+   strings across like work, never one per item), description (1-3 tight sentences, only what
+   changes price or scope — never a re-narration of the schedule; the citation does the
+   explaining), notesExternal/notesInternal only when there is a real note, quantity only where
+   the sheet carries one as {value, unit}. Recorded text is operator-facing: plain estimator
+   prose, no em dashes, no bolding, no machinery words. Verbose rows are defects.
+6. GRAIN: follow your entries' grain sections; where silent, mint at best judgment AND flag the
    grain as unspecced.
-6. DEPOSIT directly: propose_batch (≤500 per call; subjects scopeItem:<run-prefix>-<seq> for
+7. DEPOSIT directly: propose_batch (≤500 per call; subjects scopeItem:<run-prefix>-<seq> for
    mints; the item's existing subject for enrichments), or upload a JSONL and propose_batch_file
    for large runs. After every batch, READ BACK and verify the count landed equals the count
    sent; recheck any contested ids individually. Report exact counts.
-7. Definitions lane only: also record what the schedules define (extending the existing subject
+8. Definitions lane only: also record what the schedules define (extending the existing subject
    kinds you see in the definitions index — never minting a parallel vocabulary), AND own the
    scope items the schedules themselves ground (the schedules-scope duty): a schedule row family
    that is real priced work becomes scope items at the grain bracket, cited to the schedule
