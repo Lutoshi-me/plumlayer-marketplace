@@ -75,7 +75,7 @@ drawing-index CSV are all **projections** of that form, rendered on demand by ot
 foundation. So this skill does **not**: physically split files by discipline (discipline is derived
 per sheet, never from a filename); produce a CSV (the deliverable is claims in the project record — export
 skills `drawing-set-assemble` / `drawing-index-publish` render artifacts from the cloud claims on
-request); scope, take off, or comprehend the sheets (guarded by PLU-323 / owned by PLU-274); or create
+request); scope, take off, or comprehend the sheets (`scope-run` / `takeoff` / `learn-project`); or create
 the project (`project-create`).
 
 **Retired:** `drawing-index`, `drawing-index-bulletin`, `drawing-index-merge` — they organized before

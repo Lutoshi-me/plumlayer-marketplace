@@ -105,7 +105,7 @@ Schema (`~/.plumlayer/operator.json`):
   },
   "_meta": {
     "version": 1,
-    "note": "Local Plumlayer operator profile. NEVER commit. Written by the `setup` skill; read by project-create and future scope workflows for personalized defaults. The legacy route-first /scope-run path is guarded by PLU-323."
+    "note": "Local Plumlayer operator profile. NEVER commit. Written by the `setup` skill; read by project-create and the scope workflows for personalized defaults."
   }
 }
 ```

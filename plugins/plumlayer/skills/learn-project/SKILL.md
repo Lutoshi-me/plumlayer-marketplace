@@ -10,7 +10,7 @@ description: >
   this set", "orientation pass", "run the orientation pass", "what's this project about", "give me the
   project context", "/learn-project". Everything emitted is the agent's own reading, cited, and flagged
   where it was inferred. Does not upload drawings (that's `drawing-upload`) or run the scope/derive stages
-  (guarded by PLU-323 until PLU-274 ships).
+  (that's `scope-run`).
 ---
 
 # Learn Project — the cheap orientation pass (stage 1)
@@ -50,7 +50,7 @@ orientation claims, and compile a packet from them. So it does **not**: upload a
 (precondition, owned by `drawing-upload`); extract spec sections itself (it reads the spec-section index
 if `drawing-upload`'s later spec-reading work has already deposited one — it never extracts specs);
 run definitions-first extract, content-keyed decompose, the one scope list, package derivation, or
-tag+project (stages 2–6, guarded by PLU-323 until PLU-274 ships).
+tag+project (stages 2–6, owned by `scope-run`).
 
 The run-context packet this skill compiles is a **projection**, never stored as truth — the same
 pattern as a trade package. It lives in the run's working context only (the private tree), never the

@@ -8,7 +8,7 @@ description: >
   "/project-create", or when the user hands over project documents to spin up a project. Creates the
   project via the create_project MCP verb, seeds parties / delivery / type / trades / sets via the
   propose verb (each one cited and recorded as agent-stated, superseded later by what the drawings
-  themselves say), then points the user to drawing-upload. Scope execution is guarded by PLU-323 until PLU-274 ships the scope-item-first engine.
+  themselves say), then points the user to drawing-upload. Scope execution is the `scope-run` skill (the scope-item-first engine).
 ---
 
 # Project Create — stand up a new project record and customize it
@@ -191,14 +191,13 @@ sourced. **Every claim carries a `sourceInstrument` and evidence — no exceptio
 
 ---
 
-## Step 4 — Name the guarded scope handoff
+## Step 4 — Name the scope handoff
 
-Do not create a `scope-run` cluster config as the normal next step. PLU-323 guards that retired
-route-first path while PLU-274 rebuilds the production scope engine.
-
-Tell the user the safe next step is `drawing-upload` to register and recognize the drawing delivery. If
-they ask for scope execution, state that `/scope-run` currently fails loud and that PLU-274 owns the
-scope-item-first replacement.
+Tell the user the next step is `drawing-upload` to register and recognize the drawing delivery (and
+the spec book, when there is one — the scope engine's package derivation anchors on it). Once the
+set is recognized, `/scope-run` runs the scope-item-first engine: one grounded, cited scope list,
+then derived trade packages. Never suggest the retired route-first path (removed in PLU-349) or a
+`scope-run` cluster config — `scope-run` is a skill, not a config.
 
 ---
 
