@@ -12,7 +12,7 @@ the entries don't move it.
   signal rides as ratios and multiples). Confidentiality-reviewed before first shipping
   (2026-08-13).
 - Content-defining source snapshot: commit `83be34d` (2026-08-01) of the source corpus repository.
-- Copied into this plugin: 2026-08-13 (PLU-1201, plugin v0.26.0).
+- Copied into this plugin: 2026-08-13 (PLU-1201).
 
 ## What an entry carries
 

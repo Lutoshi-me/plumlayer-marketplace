@@ -219,8 +219,10 @@ Per wave, in this exact loop:
    "<kind>:<code>")`), never from a paraphrase.
 2. **Dispatch the wave's readers** with the reader brief (template below), each carrying: its
    bundle's sheets with file/page references, its lane and lenses, the context packet, its
-   trade-knowledge entries, and the mandates verbatim. Parallel only across content-disjoint
-   bundles. Record each dispatch in the ledger (unit, model, purpose).
+   trade-knowledge entries, and the mandates verbatim. Assign each dispatch a unique run-prefix
+   (the bundle or unit id) when filling the brief's subject scheme, so parallel readers can never
+   collide on a minted subject. Parallel only across content-disjoint bundles. Record each
+   dispatch in the ledger (unit, model, purpose).
 3. **Readers read deep and deposit directly**: render + text per sheet (`render_page` +
    `get_page_text`), mint/enrich/flag against the live list (readers pull it fresh via
    `list_scope_items` + targeted `search` at start), deposit via `propose_batch` (≤500 per call,
@@ -286,8 +288,9 @@ actually split themselves in the market, not by the book's divisions.
 
 Creating live bid packages on the project (the outward-facing objects the solicitation flow uses)
 is the operator's call at their door: offer it after approval — one `solicitation_create_package`
-per package they want live (tradeCode = the primary section, notes carrying the bundled sections)
-— and skip it cleanly if they'd rather create packages when soliciting. The approved split
+per package they want live (tradeCode = the primary section, name = the package's display name,
+notes carrying the bundled sections) — and skip it cleanly if they'd rather create packages when
+soliciting. The approved split
 artifact, not the package rows, is what tagging needs.
 
 ## 6 · Tag

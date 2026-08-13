@@ -53,8 +53,8 @@ run definitions-first extract, content-keyed decompose, the one scope list, pack
 tag+project (stages 2–6, owned by `scope-run`).
 
 The run-context packet this skill compiles is a **projection**, never stored as truth — the same
-pattern as a trade package. It lives in the run's working context only (the private tree), never the
-repo, never the project record.
+pattern as a trade package. It lives in the operator's local run folder only, never a repo, never
+the project record.
 
 ## 0 · Preconditions
 
@@ -204,10 +204,10 @@ deposited as a claim, never stored as truth.** Sections, in order:
 6. `[PLACEHOLDER — definitions-as-context envelope, PLU-351]` — a clearly marked final section; this
    skill does not design that envelope, it only reserves the slot.
 
-Write it to `$MOSOT_DATA_PATH/<project-slug>/run-context/learn-project-packet.md` in the private tree —
-derive `<project-slug>` from the project name (lowercase, spaces to hyphens) or fall back to the
-`projectId` if the name doesn't produce a clean slug. Never write it into the repo, and never deposit it
-as a claim. Regenerate it in full the next time this skill runs for the project — it is a projection,
+Write it to `~/.plumlayer/runs/<project-slug>/learn-project-packet.md` (the same local run folder
+the `scope-run` skill uses) — derive `<project-slug>` from the project name (lowercase, spaces to
+hyphens) or fall back to the `projectId` if the name doesn't produce a clean slug. Never write it
+into a repo, and never deposit it as a claim. Regenerate it in full the next time this skill runs for the project — it is a projection,
 not a document to patch.
 
 ## 6 · Report
