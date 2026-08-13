@@ -231,7 +231,11 @@ Per wave, in this exact loop:
 4. **The lead verifies**: re-run the counts with your own queries (`search` filtered to the
    reader's sourceInstrument or subjects; `list_scope_items` delta), check contested rows, and
    record verified counts in the ledger. A mismatch stops the wave and gets investigated, never
-   papered over.
+   papered over. When the wave ran readers in parallel, also scan the wave's new items for
+   cross-reader overlaps — the same work captured from two sides, convention lines especially,
+   since parallel readers cannot see each other's mints. List any overlap as a flag for the
+   operator at the checkpoint; merging is a person's call at the review surface, never the
+   lead's.
 5. **Checkpoint with the operator** (format below). Proceed to the next wave only on their
    go-ahead.
 
