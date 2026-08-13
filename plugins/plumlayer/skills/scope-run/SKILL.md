@@ -302,26 +302,41 @@ actually split themselves in the market, not by the book's divisions.
    out, a primary CSI section per package. Probe the usually-present families the TOC is silent
    on (site/civil, SOE, landscaping/exterior improvements, thin design-build MEP divisions) and
    propose estimator-declared packages for them. Present the split as a reviewable artifact —
-   package name, primary section, bundled sections, one-line market rationale each — and **get
-   the operator's approval before any tagging**. Tagging happens into an approved structure,
-   never an inferred one.
+   package name, primary section, bundled sections, catalog trade (id + name, from step 3),
+   one-line market rationale each — and **get the operator's approval before any tagging**.
+   Tagging happens into an approved structure, never an inferred one.
 2. **Phase 2 — scope-driven amendments.** Where the scope list surfaces what the TOC cannot see
    (a specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
    package that should collapse into another once scale is understood), propose amendments the
    same way: named, rationaled, operator-approved.
+3. **Resolve every package to the trade catalog.** The trade tag and the live package speak the
+   curated CSI trade catalog's vocabulary, not the spec book's. Before presenting the split, look
+   up each proposed package's home trade via `directory_list_trades` — exact `code` lookup first,
+   then a `query` by trade name or alias ("tile", "sheetrock") — and record the catalog trade id
+   verbatim (the spaced form, e.g. `09 21 16`) in the split artifact alongside the primary
+   section. The primary section and bundled sections keep their spec-TOC granularity: the finer
+   spec-section reading lives there and in each item's category and description, never in the
+   trade tag. A package with no reasonable catalog match may keep its raw primary section as its
+   tag value, but only as a deliberate, named choice — mark it "no catalog trade" in the split
+   artifact so the operator approves that knowingly. An unresolved tag is never the silent
+   default, and a catalog id is never guessed from memory: every id in the split comes from a
+   `directory_list_trades` result in this run (store-resolution, non-negotiable 4, applies to the
+   catalog too).
 
 Creating live bid packages on the project (the outward-facing objects the solicitation flow uses)
 is the operator's call at their door: offer it after approval — one `solicitation_create_package`
-per package they want live (tradeCode = the primary section, name = the package's display name,
-notes carrying the bundled sections) — and skip it cleanly if they'd rather create packages when
-soliciting. The approved split
+per package they want live (tradeCode = the package's catalog trade id from the approved split,
+or its raw primary section only for a package the split explicitly marked "no catalog trade";
+name = the package's display name, notes carrying the bundled sections) — and skip it cleanly if
+they'd rather create packages when soliciting. The approved split
 artifact, not the package rows, is what tagging needs.
 
 ## 6 · Tag
 
 Assign each scope item its home trade off the approved split: one `belongsToTrade` record per item
-(value: the CSI code, verbatim from the split), deposited in batches with the same read-back
-verification. Where an item genuinely straddles a package boundary, flag it as a package-boundary
+(value: the package's catalog trade id, verbatim from the approved split — a raw spec section only
+for a package the split explicitly marked "no catalog trade", never as an unmarked default),
+deposited in batches with the same read-back verification. Where an item genuinely straddles a package boundary, flag it as a package-boundary
 question instead of force-tagging — the validation run tagged 275 of 283 and flagged 8, and those
 8 flags were correct output, not failure. Boundary enrollments (exclusions, general requirements,
 alternates on other packages) are manual-first doctrine: the engine does not auto-author them;
