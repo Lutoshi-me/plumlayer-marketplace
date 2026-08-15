@@ -82,7 +82,17 @@ Each of these is a harness check.
   `drawing-set-intake-design.md`). These live in a repo the user does not have. Either state the
   rule inline or drop the citation.
 - **`MOSOT`**, retired as operator-facing vocabulary.
-- **Em dashes and middle dots** (`—`, `·`) anywhere in shipped text, per house style.
+- **Em dashes and middle dots** (`—`, `·`) in prose, per house style. This applies to skill
+  instruction bodies too, not only to text a user reads: a model mirrors the register of its
+  instructions, so em-dash-saturated instructions push the agent toward the exact writing tic the
+  house style bans (Luke's ruling, 2026-08-15).
+
+  **Exemption: inside fenced code blocks and inline code spans, these characters are data, not
+  prose, and they stay.** The `evidence.source` format is literally `A-746 — millwork elevation`,
+  and the claim atom is written `subject — predicate — value`. A blanket find-and-replace across
+  those would silently change a documented data format the agent has to emit correctly. A sweep
+  that touches a backtick or a code fence has overreached. Everything else in this section stays
+  whole-file: a client name or a ticket ID is banned inside a code block just as much as outside it.
 - **Bold for emphasis** on ordinary words, and **Title-Case labels**. Bold is for genuine labels
   only.
 

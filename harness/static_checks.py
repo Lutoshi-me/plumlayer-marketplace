@@ -11,9 +11,13 @@ Checks:
   4. Description contract: every skill description is non-empty, folded YAML
      style (`description: >`), and at most DESC_MAX_CHARS characters.
   5. The estimator-voice block ("## Talk to your user like an estimator") is
-     byte-identical across every skill that carries it.
+     byte-identical, in every skill that carries it, against the canonical
+     copy in docs/plugin-text-style.md §3 (not compared pairwise across
+     skills — each skill's own unheaded intro paragraph follows the block).
   6. No banned string in shipped text: client-name denylist, `PLU-\\d+`,
-     internal vault filenames, `MOSOT`, em dash, middle dot.
+     internal vault filenames, `MOSOT`, em dash, middle dot. Em dash and
+     middle dot are exempt inside fenced code blocks and inline code spans
+     (data, not prose); every other pattern applies to code too.
   7. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
   8. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
      plugin.json (Claude), plugin.json (Codex), or marketplace.json.
@@ -209,25 +213,58 @@ def _extract_description(path: Path) -> dict:
     return {"style": "missing", "exact_indicator": False, "text": ""}
 
 
-def _extract_section(path: Path, heading: str) -> str | None:
-    """Return the text of the section starting at `heading` (a literal '## '
-    line) up to (not including) the next '## ' heading, or None if the
-    heading is not present in the file."""
-    text = path.read_text(encoding="utf-8")
-    lines = text.splitlines()
-    start = None
-    for i, line in enumerate(lines):
-        if line.strip() == heading:
-            start = i
-            break
-    if start is None:
+_ESTIMATOR_SECTION_HEADING_RE = re.compile(r'^##\s+3\.\s+The estimator-voice block\s*$')
+
+
+def _extract_canonical_estimator_block(style_doc_path: Path) -> list[str] | None:
+    """
+    Parse the canonical estimator-voice block out of docs/plugin-text-style.md
+    section 3 ("## 3. The estimator-voice block"): the content of the first
+    fenced code block following that heading. Returns the block as a list of
+    lines (no trailing/leading blank lines), or None if the doc, the section,
+    or the fenced block cannot be found — the caller must treat None as a
+    hard failure, not a quiet pass, since there is then nothing to compare
+    skills against.
+    """
+    if not style_doc_path.exists():
         return None
-    end = len(lines)
-    for j in range(start + 1, len(lines)):
-        if lines[j].startswith("## "):
-            end = j
+    try:
+        lines = style_doc_path.read_text(encoding="utf-8").splitlines()
+    except Exception:
+        return None
+
+    section_start = None
+    for i, line in enumerate(lines):
+        if _ESTIMATOR_SECTION_HEADING_RE.match(line.strip()):
+            section_start = i
             break
-    return "\n".join(lines[start:end]).strip()
+    if section_start is None:
+        return None
+
+    fence_start = None
+    for i in range(section_start + 1, len(lines)):
+        if lines[i].strip().startswith("```"):
+            fence_start = i
+            break
+    if fence_start is None:
+        return None
+
+    fence_end = None
+    for i in range(fence_start + 1, len(lines)):
+        if lines[i].strip() == "```":
+            fence_end = i
+            break
+    if fence_end is None:
+        return None
+
+    block_lines = lines[fence_start + 1:fence_end]
+    # Trim only leading/trailing blank lines the fence itself may carry;
+    # internal blank lines are part of the contract and must survive.
+    while block_lines and block_lines[0].strip() == "":
+        block_lines.pop(0)
+    while block_lines and block_lines[-1].strip() == "":
+        block_lines.pop()
+    return block_lines if block_lines else None
 
 
 # --------------------------------------------------------------------------- #
@@ -408,43 +445,80 @@ def check_description_contract(plugin_path: Path) -> Result:
 # Check — Estimator-voice block identical across skills
 # --------------------------------------------------------------------------- #
 
-def check_estimator_block(plugin_path: Path) -> Result:
+def check_estimator_block(plugin_path: Path, marketplace_root: Path) -> Result:
+    """
+    Every skill that carries the estimator-voice block must reproduce it byte
+    for byte against the single canonical source: the fenced block in
+    docs/plugin-text-style.md §3 (that file is the contract, so a skill that
+    disagrees with it is wrong by definition, not the doc). This deliberately
+    does NOT compare skills pairwise — an unheaded intro paragraph follows the
+    block in every skill before the next '## ' heading, so a naive
+    heading-to-next-heading extraction swallows that per-skill prose and
+    reports false drift. Taking exactly as many lines as the canonical block
+    has, starting at the heading, avoids that.
+    """
     name = "estimator-block-identical"
+    style_doc_path = marketplace_root / "docs" / "plugin-text-style.md"
+
+    canonical_lines = _extract_canonical_estimator_block(style_doc_path)
+    if canonical_lines is None:
+        return Result(
+            name, False,
+            detail=(
+                f"could not parse the canonical estimator-voice block from "
+                f"{style_doc_path} (expected '## 3. The estimator-voice block' "
+                f"followed by a fenced code block) — this check has no reference "
+                f"to compare skills against and cannot run"
+            ),
+        )
+    n = len(canonical_lines)
+
     skills_dir = plugin_path / "skills"
     if not skills_dir.is_dir():
         return Result(name, False, detail=f"skills/ directory not found at {skills_dir}")
 
-    sections: dict[str, str] = {}
+    carriers: list[str] = []
+    mismatches: list[str] = []
+
     for skill_dir in sorted(d for d in skills_dir.iterdir() if d.is_dir()):
         entry = skill_dir / "SKILL.md"
         if not entry.exists():
             continue
-        section = _extract_section(entry, ESTIMATOR_HEADING)
-        if section is not None:
-            sections[skill_dir.name] = section
+        lines = entry.read_text(encoding="utf-8").splitlines()
 
-    if not sections:
-        return Result(name, False, detail="no skill carries the estimator-voice block")
+        heading_idx = None
+        for i, line in enumerate(lines):
+            if line.strip() == ESTIMATOR_HEADING:
+                heading_idx = i
+                break
+        if heading_idx is None:
+            continue  # doesn't carry the block (e.g. project-record) — not scored
 
-    reference_name = sorted(sections.keys())[0]
-    reference_text = sections[reference_name]
+        carriers.append(skill_dir.name)
+        skill_block = lines[heading_idx:heading_idx + n]
 
-    mismatches: list[str] = []
-    for skill_name in sorted(sections.keys()):
-        if skill_name == reference_name:
+        if len(skill_block) < n:
+            mismatches.append(
+                f"{skill_dir.name}: block runs off the end of the file at line "
+                f"{heading_idx + len(skill_block)} ({len(skill_block)} lines found, "
+                f"{n} expected starting at line {heading_idx + 1})"
+            )
             continue
-        text = sections[skill_name]
-        if text != reference_text:
-            ref_lines = reference_text.splitlines()
-            cur_lines = text.splitlines()
-            first_diff = "line count differs, no differing line found in common prefix"
-            for a, b in zip(ref_lines, cur_lines):
-                if a != b:
-                    first_diff = f"{reference_name}: {a!r} vs {skill_name}: {b!r}"
-                    break
-            mismatches.append(f"{skill_name} differs from {reference_name} — {first_diff}")
 
-    detail = f"{len(sections)} skills carry the block: {sorted(sections.keys())}"
+        if skill_block != canonical_lines:
+            first_diff_line = None
+            first_diff_detail = "content differs beyond a line-by-line walk"
+            for offset, (ref, cur) in enumerate(zip(canonical_lines, skill_block)):
+                if ref != cur:
+                    first_diff_line = heading_idx + 1 + offset
+                    first_diff_detail = f"expected {ref!r}, got {cur!r}"
+                    break
+            mismatches.append(
+                f"{skill_dir.name}: differs from docs/plugin-text-style.md §3 "
+                f"at line {first_diff_line} — {first_diff_detail}"
+            )
+
+    detail = f"{len(carriers)} skills carry the block: {carriers}"
     if mismatches:
         detail += " | " + "; ".join(mismatches)
 
@@ -455,21 +529,52 @@ def check_estimator_block(plugin_path: Path) -> Result:
 # Check — Banned strings in shipped text
 # --------------------------------------------------------------------------- #
 
-def _build_banned_patterns(client_names_only: bool) -> list[tuple[str, re.Pattern]]:
-    patterns: list[tuple[str, re.Pattern]] = [
-        (f"client name '{n}'", re.compile(re.escape(n), re.IGNORECASE))
+# Inline code span: single backtick-delimited, no newline inside.
+_INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+
+
+def _build_banned_patterns(client_names_only: bool) -> list[tuple[str, re.Pattern, bool]]:
+    """Return (label, pattern, code_exempt) triples. code_exempt marks the two
+    patterns (em dash, middle dot) that are data, not prose, inside fenced
+    code blocks and inline code spans — docs/plugin-text-style.md §4. Every
+    other pattern (confidentiality, ticket IDs, vault filenames, MOSOT) stays
+    whole-file, code included, and must never be marked code_exempt."""
+    patterns: list[tuple[str, re.Pattern, bool]] = [
+        (f"client name '{n}'", re.compile(re.escape(n), re.IGNORECASE), False)
         for n in BANNED_CLIENT_NAMES
     ]
     if client_names_only:
         return patterns
 
-    patterns.append(("internal ticket ID", re.compile(r"PLU-\d+")))
+    patterns.append(("internal ticket ID", re.compile(r"PLU-\d+"), False))
     for fname in BANNED_VAULT_FILENAMES:
-        patterns.append((f"internal vault filename '{fname}'", re.compile(re.escape(fname))))
-    patterns.append(("'MOSOT' as operator-facing vocabulary", re.compile(r"\bMOSOT\b", re.IGNORECASE)))
-    patterns.append(("em dash", re.compile(r"—")))
-    patterns.append(("middle dot", re.compile(r"·")))
+        patterns.append((f"internal vault filename '{fname}'", re.compile(re.escape(fname)), False))
+    patterns.append(("'MOSOT' as operator-facing vocabulary", re.compile(r"\bMOSOT\b", re.IGNORECASE), False))
+    patterns.append(("em dash", re.compile(r"—"), True))
+    patterns.append(("middle dot", re.compile(r"·"), True))
     return patterns
+
+
+def _fenced_code_line_mask(lines: list[str]) -> list[bool]:
+    """Return a list parallel to `lines`: True if that line is a fenced
+    code-block delimiter or falls inside one (``` ... ```)."""
+    in_fence = False
+    mask: list[bool] = []
+    for line in lines:
+        is_fence_delim = line.strip().startswith("```")
+        if is_fence_delim:
+            mask.append(True)  # the delimiter line itself counts as code
+            in_fence = not in_fence
+        else:
+            mask.append(in_fence)
+    return mask
+
+
+def _mask_inline_code(line: str) -> str:
+    """Blank out inline code spans (single backtick-delimited), preserving
+    line length, so code-exempt patterns never match their contents while
+    everything else on the line is still scanned normally."""
+    return _INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), line)
 
 
 def _scan_file_for_banned(path: Path, client_names_only: bool) -> list[str]:
@@ -479,10 +584,22 @@ def _scan_file_for_banned(path: Path, client_names_only: bool) -> list[str]:
     except Exception as e:
         return [f"{path}: read error: {e}"]
 
+    lines = text.splitlines()
+    fence_mask = _fenced_code_line_mask(lines)
     patterns = _build_banned_patterns(client_names_only)
-    for i, line in enumerate(text.splitlines(), 1):
-        for label, pattern in patterns:
-            m = pattern.search(line)
+
+    for i, line in enumerate(lines, 1):
+        in_fence = fence_mask[i - 1]
+        for label, pattern, code_exempt in patterns:
+            if code_exempt:
+                if in_fence:
+                    continue  # whole line is fenced code — data, not prose
+                scan_line = _mask_inline_code(line)
+            else:
+                # Confidentiality / ticket-ID / vault-filename / MOSOT bans
+                # apply whole-file, code included — never masked.
+                scan_line = line
+            m = pattern.search(scan_line)
             if m:
                 hits.append(f"{path.name}:{i}: {label} — {m.group(0)!r} in: {line.strip()[:160]}")
     return hits
@@ -598,7 +715,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_version_quadruple(plugin_path, marketplace_root),
         check_skills(plugin_path),
         check_description_contract(plugin_path),
-        check_estimator_block(plugin_path),
+        check_estimator_block(plugin_path, marketplace_root),
         check_banned_strings(plugin_path, marketplace_root),
         check_mcp_url(plugin_path),
         check_no_absolute_paths(plugin_path, marketplace_root),

@@ -160,7 +160,7 @@ atomic: one bad entry rejects the batch and names the index). **Fallback:** if `
 available (older server), call the **`propose`** tool once per claim, batched in parallel (many per
 message).
 
-**Claim shape** (matches the Claim atom: `subject / predicate / value` + evidence):
+**Claim shape** (matches the Claim atom: `subject — predicate — value` + evidence):
 - `sourceInstrument` = `project-setup-interview` (interview) or the **uploaded file name** (read-in).
   This correctly marks the claim as low-instrument / operator-asserted.
 - `evidence` = `{ source: "<operator-interview | filename>", method: "human", snippet: "<what was
