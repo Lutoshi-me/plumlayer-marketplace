@@ -1,4 +1,0 @@
-# Scope harness — Python dependencies for the deterministic grounding tools.
-# Everything else the tools use is the Python standard library.
-#   install:  pip install -r requirements.txt
-pymupdf>=1.24        # imported as `fitz` — PDF render/tile + sheet inventory (tools/, ingestion/)
