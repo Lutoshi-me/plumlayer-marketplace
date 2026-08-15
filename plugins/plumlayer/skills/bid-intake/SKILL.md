@@ -30,7 +30,7 @@ the index is "checking the drawing list against the actual sheets"; what you cou
 
 The full list, with translations, is in the project-record skill's Words section.
 
-Take a trade's subcontractor proposals — the PDFs a sub actually sent back against a bid package — and
+Take a trade's subcontractor proposals (the PDFs a sub actually sent back against a bid package) and
 turn each one into the bundle of **cited bid claims** the leveling surface reads: who bid, what
 they included or excluded per scope row, the dollars they attached, their coverage, and their totals.
 Each claim cites the page of the proposal it was read from. A person levels the package and signs the
@@ -41,11 +41,11 @@ untraced.** Every claim this skill writes records as your reading of one bidder'
 the page it came from. You are the reader; the MCP tools
 (`render_page`, `get_page_text` for reading; `get_bid_package` for the rows and peer context;
 `propose_batch` and `deposit_additional_item` for the deposit) are the anti-hallucination anchor and
-the grounding gate, not the inference engine. There is no server-side proposal reader — you drive
+the grounding gate, not the inference engine. There is no server-side proposal reader: you drive
 every read, judge every row, and author every claim.
 
 The claim shapes below mirror the `@plumlayer/contract` bid builders exactly; that contract, not this
-prose, is the source of truth for a shape. Examples here are generic — never put a real client,
+prose, is the source of truth for a shape. Examples here are generic; never put a real client,
 project, or bidder name in this file.
 
 ## Confidentiality (non-negotiable)
@@ -53,26 +53,26 @@ project, or bidder name in this file.
 Proposal PDFs are confidential sub pricing. They are supplied to this skill by **local path** and are
 **never committed, never copied to a tracked path, and never quoted verbatim into any file the plugin
 or repo tracks.** The bytes upload to the project's private cloud bucket (project isolation + RLS) and
-the claims live in the cloud project record — that is fine. What must never happen is a bidder's number or name
+the claims live in the cloud project record; that is fine. What must never happen is a bidder's number or name
 landing in a plugin file, a commit, or a note. Reading a proposal you were handed is the job; writing
 its contents into tracked source is the leak.
 
 ## Narration to the user
 
-Keep the words honest and plain — no jargon, no invented certainty. Use plain prose in everything you
+Keep the words honest and plain: no jargon, no invented certainty. Use plain prose in everything you
 say to the user (no em dashes, no bolded emphasis words). Say:
 
 - "uploading proposals" (upload stage)
 - "reading <bidder>'s proposal" (per-proposal read)
-- "N rows answered, M rows silent" (after a proposal read — never imply a silent row is a zero)
+- "N rows answered, M rows silent" (after a proposal read; never imply a silent row is a zero)
 - "N things they priced that aren't on the checklist" (after a proposal read, when the proposal
-  carries off-checklist content — plain words for what stage 7b records; never "scope-gap findings")
+  carries off-checklist content: plain words for what stage 7b records; never "scope-gap findings")
 - "K proposals read, J entries to record" (before recording)
 - "declared this a revised proposal, which replaces their prior bid" or "declared a clarification"
-  (before recording, when a repeat proposal applies — see stage 6)
+  (before recording, when a repeat proposal applies, see stage 6)
 
 Never narrate "claims", "deposit", "proposed", "grounding", "the ledger", "residue", or "the pivot"
-to the user — those are machinery. What you record is the package's working data as soon as it
+to the user: those are machinery. What you record is the package's working data as soon as it
 lands, carrying your name and the page it came from; never call it "pending review".
 
 ## What this is, and the boundary
@@ -81,14 +81,14 @@ lands, carrying your name and the page it came from; never call it "pending revi
 deposit each bidder's bid claims against that package's existing scope rows. It does **not**:
 
 - create the project (`project-create`) or read drawings (`drawing-upload`);
-- define the bid package, or invite / manage bidders — that is the plumlayer.com solicitation flow;
+- define the bid package, or invite / manage bidders: that is the plumlayer.com solicitation flow;
   this skill reads an **existing** package's rows and adds bidder responses to them;
-- mint a new scope row for proposal content that matches no known row — that content lands as an
+- mint a new scope row for proposal content that matches no known row: that content lands as an
   **Additional item** on the package, that bidder's own off-checklist word cited to the page it came
   from, never a minted `scopeItem:` subject (see the hard read rules and stage 7b);
 - level or rank the bids (`get_bid_package` computes the leveling projection; this skill only reads it
   for context and deposits the raw response claims the leveling reads from);
-- sign or submit anything — leveling the package and committing the bid stay with the operator, on
+- sign or submit anything: leveling the package and committing the bid stay with the operator, on
   plumlayer.com.
 
 The pipeline: **preflight → upload/register → fetch rows + context → two-pass read (blind, then peer) →
@@ -100,12 +100,12 @@ additional items → report.** Each stage has gates; they are non-negotiable and
 1. **Confirm the account and project.** Call `whoami`, then `list_projects` and confirm with the user
    which project (one project = one project record) these proposals belong to. Capture its `projectId`.
 2. **Confirm the bid package exists.** Call `solicitation_list_packages(projectId)` and confirm the
-   trade package these proposals are for is present. Capture its **CSI trade code** (e.g. `09 29 00`) —
+   trade package these proposals are for is present. Capture its **CSI trade code** (e.g. `09 29 00`),
    verbatim, spaces included, no slugging. That trade code keys the package subject and every read
    below. If no package exists for this trade, stop: this skill reads into an existing package; the
    package is defined through the plumlayer.com solicitation flow first.
 3. **Take the proposal paths.** The user supplies the proposal PDFs by **local path** (one or more,
-   one per bidder — or several from one bidder if a base plus revisions). Confirm which bidder each
+   one per bidder, or several from one bidder if a base plus revisions). Confirm which bidder each
    path is for when the filename does not make it obvious; do not guess a bidder from a filename.
 4. **Sanity-check each PDF before upload.** The corpus contains at least one 0-byte file. For each
    path, confirm it exists, is non-empty, and is a readable PDF before you upload it:
@@ -118,7 +118,7 @@ additional items → report.** Each stage has gates; they are non-negotiable and
    guessed at.
 5. **Check for byte-identical duplicates.** The corpus has produced the same proposal saved under two
    filenames (a re-send, a renamed copy). Hash each surviving path and intake one copy per distinct
-   hash — never upload and read the same content twice under different filenames:
+   hash: never upload and read the same content twice under different filenames:
    ```bash
    for f in "$@"; do sha256sum "$f"; done | sort | uniq -c -w64
    ```
@@ -136,13 +136,13 @@ sanity check:
    curl -X PUT "$SIGNED_URL" -H "Content-Type: application/pdf" --data-binary @"$LOCAL_PDF_PATH"
    ```
 3. `register_file(projectId, fileId, filename, contentType: "application/pdf", kind: "proposal")`.
-   A proposal is **not** a drawing delivery — pass `kind: "proposal"` and **no `deliveryId`** (the
+   A proposal is **not** a drawing delivery: pass `kind: "proposal"` and **no `deliveryId`** (the
    `deliveryId` argument is for drawing deliveries only). Idempotent: a retried call for the same
    `fileId` returns the existing row. If it rejects `not_found` / `empty` / `oversize`, stop and report
    rather than retrying blindly.
 
 `render_page` and `get_page_text` gate on file ownership only, so a registered proposal is immediately
-readable. Keep the `fileId` for each proposal — **every claim you deposit from it cites that `fileId`
+readable. Keep the `fileId` for each proposal: **every claim you deposit from it cites that `fileId`
 and the page** in its evidence.
 
 You do **not** need `register_pages` for proposals. A file registered as `kind: "proposal"` is
@@ -153,30 +153,30 @@ file ownership, not on page rows, so your proposals are readable the moment they
 ## 3. Fetch the rows and the peer context
 
 `get_bid_package(projectId, trade)` is your one source for the package's checklist. If the live call
-fails, **stop and report it — do not reconstruct the rows or the package from raw `search`.** That
+fails, **stop and report it; do not reconstruct the rows or the package from raw `search`.** That
 fallback is expressly rejected: raw-claim reconstruction re-implements supersession and the scope-item
 pivot client-side and drifts from the surface.
 
 **A second failure mode looks like success and is not: an empty checklist.** `get_bid_package` can
-return normally with a defined package and `lines: []` — the package exists but no scope items are
+return normally with a defined package and `lines: []`: the package exists but no scope items are
 enrolled in it yet. This is not an error the tool raises; you have to check for it. If `lines` comes
-back empty, **stop and report**: "package scope not yet populated — enroll scope items via
-plumlayer.com first." Never proceed to read and deposit proposals against an empty checklist — a
+back empty, **stop and report**: "package scope not yet populated, enroll scope items via
+plumlayer.com first." Never proceed to read and deposit proposals against an empty checklist: a
 profile/summary-only deposit with no response claims to anchor it is a degenerate run, not a partial
 one, and it hides the real blocker (no rows to answer) behind what looks like a normal intake.
 
 - **`get_bid_package(projectId, trade)`** → the leveled projection of the package: the server-computed,
-  authoritative, pre-filtered set of scope rows for this trade (`lines[]`, each with its `lineSubject` —
+  authoritative, pre-filtered set of scope rows for this trade (`lines[]`, each with its `lineSubject`:
   a `scopeItem:` subject and the row identity you answer against, never minted by you), every current
   bidder (`bidders[].partySubject`, name, laborType, coverage), the head response per cell
-  (`lines[].responses[]`, each with `partySubject`, the resolved response, and `receipt.id` — the
+  (`lines[].responses[]`, each with `partySubject`, the resolved response, and `receipt.id`: the
   current head claim id for that bidder × row), and the divergence view. **These `lines[]` are the
-  checklist** — a bidder responds to these, and only these; do not derive package membership by hand
+  checklist**: a bidder responds to these, and only these; do not derive package membership by hand
   from any other read. This is also your **pass-two peer context** and your **supersession head source**
   for existing bidders. It errors "bid package not found" if no package definition claim exists yet for
-  the trade — if it does, stop and report (the package definition is a plumlayer.com step), do not fall
+  the trade; if it does, stop and report (the package definition is a plumlayer.com step), do not fall
   back to `search`.
-  It also returns **`additionalItems[]`** — the package's existing off-checklist items, per bidder,
+  It also returns **`additionalItems[]`**: the package's existing off-checklist items, per bidder,
   each with its `subject`, `label`, `citation`, and `receipt.id`. **Read this now and keep it**, before
   you read a single proposal. It is what stage 7b checks against so a re-run never records the same
   off-checklist item twice, and it tells you what a prior run already captured for a bidder you are
@@ -184,25 +184,25 @@ one, and it hides the real blocker (no rows to answer) behind what looks like a 
 - **`list_scope_items(projectId)`** (optional enrichment only) → the project-wide canonical scope-item
   view. `get_bid_package`'s `lines[]` already carries what this skill needs for the checklist; reach for
   `list_scope_items` only if a specific row needs a field `lines[]` doesn't carry, never to re-derive or
-  double-check package membership — that restatement of the server's own filter is exactly the kind of
+  double-check package membership: that restatement of the server's own filter is exactly the kind of
   client-side drift the read verbs exist to prevent.
 
-**Resolve the contracting party from the whole document — never from the first letterhead.** A
+**Resolve the contracting party from the whole document: never from the first letterhead.** A
 proposal's opening page is often not the bidder's: manufacturer quote sheets and vendor-system
 printouts arrive branded with the manufacturer or the quoting software, while the actual contracting
 party appears only in a forwarded cover email, a signature block, or a remit-to line deeper in the
 bundle. Read the whole submission (cover email included) before deciding who is bidding. Two shapes
 this takes in the real corpus:
 
-- **Letterhead mismatch** — the front page carries a vendor or manufacturer name; the cover email or
+- **Letterhead mismatch**: the front page carries a vendor or manufacturer name; the cover email or
   signature names the sub who actually carries the contract. The contracting party is the bidder; the
   vendor branding is just where their pricing came from.
-- **One submission, several embedded quotes** — a single bidder's package can bundle two or more
+- **One submission, several embedded quotes**: a single bidder's package can bundle two or more
   embedded vendor-system quotes covering complementary halves of the scope. That is **one bidder and
-  one claim bundle**, with each value cited to the page of the embedded quote it was read from —
+  one claim bundle**, with each value cited to the page of the embedded quote it was read from;
   never two bidders.
 
-If the document leaves the contracting party genuinely ambiguous, stop and ask the user — never
+If the document leaves the contracting party genuinely ambiguous, stop and ask the user; never
 guess a bidder into existence.
 
 Then place each proposal's resolved bidder, in this order:
@@ -214,7 +214,7 @@ Then place each proposal's resolved bidder, in this order:
    them, use that company's directory id as the party: **`party:<companyId>`**. This is the identity
    the rest of the system already knows the company by, and it is what lets a filed proposal move
    that company to Bid received on the coverage board by itself. **Only the exact company id does
-   that** — a name-shaped party never will.
+   that**: a name-shaped party never will.
 3. **No invited company matches** → mint a stable `party:<slug>` from the bidder's company name (a
    short, stable slug, e.g. `party:acme-drywall`). A bidder who was never invited is still a real
    bidder and files normally; their proposal simply moves no funnel it was never part of.
@@ -223,7 +223,7 @@ The matching in step 2 is **your judgment, and you say so**: names differ from l
 proposal may come from a division or a DBA, and two invited companies can look alike. Match only
 when you are actually confident, name the company you matched and why in your report, and fall to
 step 3 rather than forcing a doubtful match. A wrong match files a real proposal against the wrong
-company's record — worse than an unlinked one, which is merely incomplete. If two invited companies
+company's record, worse than an unlinked one, which is merely incomplete. If two invited companies
 are plausible, stop and ask the user; never break the tie yourself.
 
 > Party identity was a known seam and this closes it on the intake side (the Sub-CRM owns company
@@ -238,28 +238,28 @@ only to flag divergence, never to revise a value.
 
 ### Pass one: blind, per proposal
 
-For each proposal, read it against **only the scope rows (stage 3) and that one proposal** — no peer
+For each proposal, read it against **only the scope rows (stage 3) and that one proposal**: no peer
 proposal, no other bidder's numbers in view. Use `render_page` (returns the page image inline; pass a
 normalized `region` to zoom a table or a signature block) and `get_page_text` (exact text spans;
 `hasTextLayer:false` is the honest image-only signal). Produce, for this bidder:
 
-- **The bidder profile** — name, labor type (one of `Open Shop` / `Union` / `Prevailing Wage` /
+- **The bidder profile**: name, labor type (one of `Open Shop` / `Union` / `Prevailing Wage` /
   `Supplier`), contact, **proposal date read from the document itself**, and a revision marker if the
   document carries one (R1 / R2 / "Revised"). Never use upload time for the date.
-- **Per-row responses** — for each scope row the proposal **addresses**, the response along the three
+- **Per-row responses**: for each scope row the proposal **addresses**, the response along the three
   axes plus amount and note, per the response value shape (stage 7):
-  - **inclusion** — `base` (in the base bid), `adder` (a priced add), or `excluded` (not carried).
-  - **routing** — `self` / `by-others` / `NIC`, when the proposal says who carries it. Distinguishes a
+  - **inclusion**: `base` (in the base bid), `adder` (a priced add), or `excluded` (not carried).
+  - **routing**: `self` / `by-others` / `NIC`, when the proposal says who carries it. Distinguishes a
     true exclusion from a scope-gap the bidder routes elsewhere. Omit when it is plain base scope.
-  - **amount** — the dollar figure when one is given (an adder's add, or a broken-out base cost). Omit
+  - **amount**: the dollar figure when one is given (an adder's add, or a broken-out base cost). Omit
     when none is stated. **Never** derive a number the proposal does not state.
-  - **ambiguity** — `OSV` / `TV` / `unclear` when the proposal prices a row ambiguously ("other scope
+  - **ambiguity**: `OSV` / `TV` / `unclear` when the proposal prices a row ambiguously ("other scope
     value", "to verify", a bare "?"). An ambiguous token **never** resolves to a hard `amount`.
-  - **note** — the free-note residue ("included above", "option 1", a typed comment).
-- **Coverage** — did this proposal bid the whole package (`full`) or a subset (`partial`)? A `partial`
+  - **note**: the free-note residue ("included above", "option 1", a typed comment).
+- **Coverage**: did this proposal bid the whole package (`full`) or a subset (`partial`)? A `partial`
   coverage carries a human label ("Framing only") and, when the proposal names the covered rows, the
   explicit `coveredItems` subset (the `scopeItem:` subjects from stage 3).
-- **Summary totals** — the entered lump figures the proposal states: `base_bid`, and optionally
+- **Summary totals**: the entered lump figures the proposal states: `base_bid`, and optionally
   `adjustments`, `allowances_alternates` (a parallel bucket, never folded into the total), and
   `total_adj_bid`. These are read as entered, never summed by you from the rows.
 
@@ -270,13 +270,13 @@ normalized `region` to zoom a table or a signature block) and `get_page_text` (e
   what the document states, and a total you computed is your arithmetic wearing the bidder's name.
   Deposit the profile, the coverage, and every row response as normal, and simply **omit the
   `bidSummary`**. The leveling projection already handles a bidder with no summary by totalling their
-  own row responses and additional items — that is the designed path, not a degraded one, and it
+  own row responses and additional items: that is the designed path, not a degraded one, and it
   reaches the same number without anyone inventing it. Say in the report that the bidder carries no
   stated total and name the separate quote figures and their pages, so a person can see what you saw.
 
 **Watch where your project knowledge came from.** A bidder frequently bundles the project's own
 schedules and drawings into their submission as attachments. Reading those is grounding against the
-project documents, not peer anchoring, and it is legitimate — but if you read them out of the first
+project documents, not peer anchoring, and it is legitimate. But if you read them out of the first
 bidder's file, every later bidder's mark-mapping leans on a document you obtained from inside a
 competitor's package. Prefer the project's own registered drawings for that grounding when they are
 available, and if you did lean on a bundled copy, say so in the report so the blind pass is honest
@@ -285,15 +285,15 @@ about what it actually had in view.
 **Do not let a bidder's phrasing decide where the estimator sees a gap.** The same underlying
 exclusion arrives two ways: one bidder writes a blanket "no fire rated glass" that maps to no single
 row, another qualifies two specific marks as non-rated. The blanket one becomes an Additional item and
-the per-mark one belongs on those rows — both correct, and the result is that the same question
+the per-mark one belongs on those rows, both correct, and the result is that the same question
 surfaces in two different places depending on wording. So when a blanket exclusion you are recording
 as an item also qualifies particular rows, note it on those rows too, and name the connection in the
 item's note. The estimator's question is "are we getting rated windows", and it should not be
 answerable only for the bidder who happened to phrase it per-mark.
 
 Each of these carries a **receipt** (the `fileId` and page, plus a short `evidence.rationale` paraphrase
-of what you read there — the only prose slot the evidence shape carries) and a **confidence** in `[0,1]`
-(your read confidence, carried in `evidence.confidence`). Note per flag / value which pass produced it —
+of what you read there, the only prose slot the evidence shape carries) and a **confidence** in `[0,1]`
+(your read confidence, carried in `evidence.confidence`). Note per flag / value which pass produced it:
 pass one for everything here.
 
 ### Pass two: peer-aware, flags only
@@ -301,9 +301,9 @@ pass one for everything here.
 Now, with `get_bid_package`'s peer responses in view, make a second pass over the same proposals. Pass
 two may **only**:
 
-- add or adjust **ambiguity flags** — a row you now see every peer priced but this bidder left blank is
+- add or adjust **ambiguity flags**: a row you now see every peer priced but this bidder left blank is
   a sharper scope-gap signal; a token you read as plain may now read as `OSV` against the peer pattern;
-- run the **miss-direction checks** — is this bidder an outlier low because they excluded a row the
+- run the **miss-direction checks**: is this bidder an outlier low because they excluded a row the
   peers all carried? Flag it for review.
 
 Pass two **must never** revise a pass-one `amount` or `inclusion` to move a bidder toward the peers.
@@ -316,18 +316,18 @@ These are gates. Write them into every read:
 
 - **Silence is not a claim.** A scope row the proposal does not address gets **no response claim** at
   all. Count it as silent for that bidder in the report. Never deposit a `base`/`excluded`/zero to
-  represent silence — silence is unknown, and a bare grid that treats it as answered is the exact
+  represent silence: silence is unknown, and a bare grid that treats it as answered is the exact
   conflation coverage exists to prevent.
 - **Proposal content matching no known row becomes an Additional item, never a minted row.** If a
   proposal says something about the work that maps to none of the stage-3 scope rows, it lands as an
-  **Additional item** on the package (stage 7b) — that bidder's own off-checklist word, cited to the
-  `fileId` and page it sits on — and **never** as a new `scopeItem:` subject this skill mints. Minting
+  **Additional item** on the package (stage 7b): that bidder's own off-checklist word, cited to the
+  `fileId` and page it sits on, and **never** as a new `scopeItem:` subject this skill mints. Minting
   scope from a bid would let a bidder's document silently define the scope checklist; recording it as
   that bidder's item says exactly who said it, and leaves the checklist decision with the estimator.
 
   **What qualifies, in two tests that must both hold.**
 
-  **Test one: is it a statement about work?** The content has to change what this bidder is carrying —
+  **Test one: is it a statement about work?** The content has to change what this bidder is carrying:
   something they priced into their base, priced as an add, named as an exclusion, or routed to someone
   else. Standing commercial terms fail this outright and never reach test two: payment, retainage and
   credit terms, price-validity windows and escalation clauses, liquidated damages, schedule and access
@@ -337,9 +337,9 @@ These are gates. Write them into every read:
 
   **Test two: is the work anchored to this project?** The named work must ALSO be either
 
-  - **anchored in the documents** — it appears in this project's drawings, schedules, or the package's
+  - **anchored in the documents**: it appears in this project's drawings, schedules, or the package's
     scope rows; or
-  - **anchored by a peer** — another bidder on this package priced it or named it.
+  - **anchored by a peer**: another bidder on this package priced it or named it.
 
   Anchoring is what keeps the section honest, and it is not optional. A facade vendor's standard
   exclusion list runs to forty-odd entries naming revolving doors, curtain wall, card readers and
@@ -347,40 +347,40 @@ These are gates. Write them into every read:
   statement about work and passes test one; not one is about *this* building. Without the anchor the
   section fills with another project's boilerplate.
 
-  Two consequences to hold honestly. The peer anchor is **not available during a blind pass one** — it
+  Two consequences to hold honestly. The peer anchor is **not available during a blind pass one**: it
   is a pass-two admission, and admitting an item on peer evidence is not the same as revising a value
   toward a peer, so it does not breach the pass-two rule. And the **first or only bidder on a package
   gets the weaker filter**, with only the document anchor available; say so in the report when that is
   the situation, rather than implying the same bar was applied.
 
-  The reason the gate is this tight: the Additional items section is read by its **mere presence** —
-  anything sitting in it is awaiting the estimator's judgment. Five bidders' worth of boilerplate would
+  The reason the gate is this tight: the Additional items section is read by its **mere presence**.
+  Anything sitting in it is awaiting the estimator's judgment. Five bidders' worth of boilerplate would
   drown the three real ones and destroy exactly the property that makes the section useful. When a
   piece of content genuinely sits on the line after both tests, record it and say in the report that
   you were unsure; a borderline item a person dismisses in one move beats a real gap you swallowed.
 - **Aggregation is narrow, stated once, and flagged per claim.** A proposal often prices one scope
-  row across several of its own lines — a variant pair (a tempered option beside the standard unit),
+  row across several of its own lines: a variant pair (a tempered option beside the standard unit),
   a split line-item pair, a companion component priced on its own line. Folding those lines into one
   row response is allowed **only** when all three hold: same bidder, same scope row (same mark), and
-  the lines are complementary components of that one row's scope — never alternatives to choose
+  the lines are complementary components of that one row's scope; never alternatives to choose
   between. Apply one consistent aggregation rule for the whole run, state it in the report, and flag
   every aggregated response (its note names the lines folded in; the receipt cites where they sit).
   Lines that belong to different rows stay split, and a line that maps to no row becomes an Additional
-  item — aggregation never absorbs it into a nearby row. When you cannot tell whether lines are
-  complementary or alternative, do not fold — keep the clearest single line as the response, put the
+  item; aggregation never absorbs it into a nearby row. When you cannot tell whether lines are
+  complementary or alternative, do not fold: keep the clearest single line as the response, put the
   rest in the note, and flag the row `unclear`.
 
   **The reverse case: one proposal line covering several rows.** A bidder often prices a single
   combined type against what the schedule splits into two or more marks. Do not silently attach it to
   the likeliest one. Deposit a response on **each** row the line genuinely covers, flag every one of
   them `unclear`, and say in each note that they share one undivided proposal figure and which line it
-  was — so a person can see the split is yours and not the bidder's. Never divide the money between
+  was, so a person can see the split is yours and not the bidder's. Never divide the money between
   rows by your own arithmetic.
 
   **Do not fold across a checklist row and a door assembly.** A line named for a window mark can be
   the glazed half of a door assembly rather than extra units of that mark. When a line's quantity does
   not reconcile against the schedule's own quantity for that mark, treat that as the signal it is a
-  different thing, and check before folding — a wrong fold inflates the largest row on the package.
+  different thing, and check before folding: a wrong fold inflates the largest row on the package.
 
   **Additional items aggregate under the same rule.** Two proposal lines may fold into one item only
   when they are complementary components of the same off-checklist thing; say in the item's note which
@@ -413,8 +413,8 @@ not from a guess:
 - **A "revised proposal" / "revised bid" / a higher revision marker → wholesale.** The revised document
   restates the bidder's whole position. Deposit a fresh response claim for every row you read from it,
   each with `supersedesId` set to that row's **current head response claim id** (from
-  `get_bid_package`'s `lines[].responses[]` — the cell for this `partySubject` on that row, its
-  `receipt.id`). Rows the revised proposal is now **silent** on get **no re-assertion** — their prior
+  `get_bid_package`'s `lines[].responses[]`: the cell for this `partySubject` on that row, its
+  `receipt.id`). Rows the revised proposal is now **silent** on get **no re-assertion**: their prior
   claim simply lapses (silence lapses; you do not carry a stale prior forward). Also supersede the
   bidder's profile, coverage, and summary claims (see the head-id note below).
 - **A "clarification" / "delta" / an addendum letter naming specific items → surgical.** The document
@@ -435,7 +435,7 @@ State the declared mode in the report and confirm it with the user **before** yo
 > the current head (the claim no other supersedes). This is a targeted single-subject lookup, not the
 > rejected raw-`search` reconstruction of the package. If two revisions land without an explicit
 > supersession edge on these subjects, both survive and the head resolves by id tie-break, not
-> chronology — so the edge is load-bearing. Surface this in the proving run.
+> chronology, so the edge is load-bearing. Surface this in the proving run.
 
 ## 7. Deposit: author the claim JSON, batch, verify
 
@@ -443,7 +443,7 @@ Author the claim JSON directly, matching the `@plumlayer/contract` bid builder o
 subjects are deterministic recipes; the predicates and value shapes are fixed. Get them wrong and the
 claim lands on the wrong subject or fails validation.
 
-**Subject recipes** (build from already-stable constituents — the `partySubject` from stage 3, the
+**Subject recipes** (build from already-stable constituents: the `partySubject` from stage 3, the
 package subject, and the `scopeItem:` subjects (`lineSubject`) from `get_bid_package`'s `lines[]`):
 
 ```
@@ -454,7 +454,7 @@ coverage subject   bidCoverage:<partySubject>:<bidPackageSubject>
 profile subject    <partySubject>                                       (the party subject itself)
 ```
 
-**Predicate + value per claim** (the value must satisfy the contract's zod schema — extra keys are
+**Predicate + value per claim** (the value must satisfy the contract's zod schema; extra keys are
 rejected by `.strict()`, enums are exact):
 
 ```json
@@ -494,29 +494,29 @@ rejected by `.strict()`, enums are exact):
    "rationale": "proposal total block", "fileId": "<fileId>", "page": 3}}
 ```
 
-Value rules that the schema enforces — honor them at authoring time:
+Value rules that the schema enforces, honor them at authoring time:
 
 - `inclusion` ∈ `base | adder | excluded`; `routing` ∈ `self | by-others | NIC`; `ambiguity` ∈
   `OSV | TV | unclear`; `laborType` ∈ `Open Shop | Union | Prevailing Wage | Supplier`; coverage
   `basis` ∈ `full | partial`. No other values, ever.
 - Optional fields are **omitted** when absent, never set to `null`. Every optional field in the bid
-  schemas is `.optional()`, not `.nullable()` — an explicit `null` is rejected, not treated as "none."
+  schemas is `.optional()`, not `.nullable()`: an explicit `null` is rejected, not treated as "none."
   Omission is the only correct encoding of "not stated."
 - `sourceInstrument` equals `evidence.instrument` (the builder sets it from there).
-- `evidence.page` requires `evidence.fileId` — a page pointer with no file is rejected.
+- `evidence.page` requires `evidence.fileId`: a page pointer with no file is rejected.
 - For a **surgical or wholesale supersession**, add `"supersedesId": "<current head claim id>"` to the
   claim, resolved per stage 6.
-- Bid claims carry **no `versionScope`** (the bid builders do not set one) — omit it.
+- Bid claims carry **no `versionScope`** (the bid builders do not set one); omit it.
 
 **Batch and verify.** Pool the authored claims and call `propose_batch(projectId, claims)` in batches
 of **≤50** claims (the door accepts up to 500, but ≤50 keeps each read faithful and count-verifiable).
-It is atomic — one bad entry rejects the whole batch and names the index. Transport every entry
+It is atomic: one bad entry rejects the whole batch and names the index. Transport every entry
 **verbatim**; never re-type a value from memory. **Verify:** the returned `count` must equal the number
-of entries you sent in that batch. If it does not, **stop and report** the discrepancy — never retry
+of entries you sent in that batch. If it does not, **stop and report** the discrepancy; never retry
 with a reconstructed or guessed correction.
 
-**Recount before you confirm.** Any count you are about to restate as checked — rows answered, rows
-silent, claims per predicate, entries in a batch, additional items recorded — gets an explicit fresh
+**Recount before you confirm.** Any count you are about to restate as checked (rows answered, rows
+silent, claims per predicate, entries in a batch, additional items recorded) gets an explicit fresh
 recount against its source at the moment you restate it. Echoing a number you computed earlier (or
 that the user read back to you) and calling it "confirmed" is not verification; the word "confirmed"
 is earned by the recount that precedes it, every time.
@@ -524,14 +524,14 @@ is earned by the recount that precedes it, every time.
 ## 7b. Deposit the additional items (a different door, after the batch)
 
 The off-checklist content you gathered under the stage-4 gate lands here. **This does not ride
-`propose_batch`.** The generic deposit door refuses the `additionalItem` predicate outright — the only
+`propose_batch`.** The generic deposit door refuses the `additionalItem` predicate outright: the only
 way in is `deposit_additional_item`, **one call per item**.
 
 **Order is a gate, not a preference. Run this stage only after stage 7's batch has landed.** The door
 refuses a `partySubject` that is not already a bidder on this package, and what makes a party a bidder
 is having a response, a coverage, or a summary claim on it. Deposit an item first and it is refused;
 deposit it after the batch and the bidder exists. A bidder whose proposal answered no rows at all is
-still fine — their coverage claim alone establishes them.
+still fine; their coverage claim alone establishes them.
 
 **Check what already stands before each call.** This door has **no idempotency key**: two identical
 calls mint two separate items, silently. Against the `additionalItems[]` you captured in stage 3, for
@@ -544,7 +544,7 @@ this bidder:
 - **The item has a non-null `migratedFrom`** → **leave it alone entirely.** That is not your record.
   It is a response of this bidder's whose scope row stopped projecting, presented here by the
   projection itself, and it recomputes on every read. Never supersede one, and never re-record its
-  content as a fresh item — that would double-count the bidder's money.
+  content as a fresh item: that would double-count the bidder's money.
 - **The item has a non-null `resolution`** → a person already reconciled it. Leave it alone and say so
   in the report; re-recording it would reopen a decision someone already made.
 
@@ -572,7 +572,7 @@ deposit_additional_item(
 ```
 
 Shape notes that will bite otherwise: `label` is required and capped at 200 characters; the enums are
-exact and there is **no `ambiguity` axis on this door** (unlike a response — carry an ambiguous
+exact and there is **no `ambiguity` axis on this door** (unlike a response, carry an ambiguous
 qualifier in the `note` instead); optional fields are **omitted** when absent, never `null`;
 `trade` is the CSI code **exactly** as the package was created with, spaces kept and never slugged,
 the same string `get_bid_package` reads with (a different spelling mints the item on a package subject
@@ -590,7 +590,7 @@ bidder's total stays equal to what they actually submitted. A summary-level alte
 `bidSummary.allowances_alternates`, which is the parallel bucket built for exactly this and is never
 folded into a total.
 
-**Verify by reading back, not by counting your own calls — and read back NARROWLY.**
+**Verify by reading back, not by counting your own calls, and read back NARROWLY.**
 
 Do **not** re-call `get_bid_package` for this check. On a real package its response is enormous: three
 bidders against a sixteen-row checklist with twenty-six items returned roughly 154,000 characters and
@@ -599,18 +599,18 @@ context call, made once; it is not a verification instrument.
 
 Verify with a targeted `search(projectId, predicate: "additionalItem")` instead. That returns only
 these rows, and its `count` is the number you need. This is a single-predicate lookup, not the
-raw-`search` reconstruction of the package that stage 3 forbids — you are counting rows you just
+raw-`search` reconstruction of the package that stage 3 forbids: you are counting rows you just
 wrote, not rebuilding a projection.
 
 Two things to be careful of when you read that count. `search` returns **every** row including
-superseded ones, so count **distinct subjects**, not rows — a correction adds a row to an existing
+superseded ones, so count **distinct subjects**, not rows: a correction adds a row to an existing
 subject. And the count covers the whole project, so if the project carries additional items on other
 trade packages, filter to the subjects containing this package's infix.
 
 The rise over the count you captured in stage 3 must equal the number of **fresh** items you deposited
 (a correction supersedes in place and raises no count). Each `deposit_additional_item` call also
-returns the item's `subject` — keep them, and confirm every one of them appears. If the numbers
-disagree, **stop and report** — do not deposit again to "fix" it, and do not reconcile the difference
+returns the item's `subject`: keep them, and confirm every one of them appears. If the numbers
+disagree, **stop and report**: do not deposit again to "fix" it, and do not reconcile the difference
 by reasoning. A duplicate you can see is recoverable in one move by a person; a duplicate you papered
 over is not.
 
@@ -622,7 +622,7 @@ The run report **is** the manifest. State, plainly:
   summary), whether this was a fresh bid, a full revision, or a partial update, and what it replaced,
   and the silent-row count (rows the proposal did not address).
 - **Additional items:** how many off-checklist items you recorded per bidder, and where they now live
-  (the package's Additional items section on plumlayer.com) — a pointer to what landed, not a
+  (the package's Additional items section on plumlayer.com), a pointer to what landed, not a
   re-listing of it. The items carry their own descriptions and citations; restating them here would
   make the report a second, staler copy of the record. Do name any you judged **borderline** under the
   stage-4 gate, and anything you deliberately left out of the section as a commercial term, so the
@@ -641,7 +641,7 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - Every claim's evidence cites a `fileId` and page of a proposal you actually read; no receipt → no
   deposit.
 - Silence is never a claim; an unaddressed row is counted silent, never deposited as a value. Silence
-  produces no Additional item either — the empty cell already says it, and an item nobody asserted
+  produces no Additional item either: the empty cell already says it, and an item nobody asserted
   would be a record of nothing.
 - Proposal content matching no scope row becomes an Additional item, never a minted `scopeItem:`. It
   qualifies only if it passes BOTH tests: it states something about work (not a commercial term), and
@@ -649,7 +649,7 @@ readable there now, each with the proposal page behind it; the bid itself is the
   unanchored boilerplate exclusion naming work this project does not contain never becomes an item.
 - A summary is only ever a figure the document states. A submission carrying several quotes and no
   printed combined total gets NO `bidSummary`; the projection totals that bidder from their own rows.
-- A deduct or un-accepted alternate is never a negative-amount adder — `excluded` with the amount
+- A deduct or un-accepted alternate is never a negative-amount adder: `excluded` with the amount
   omitted and the figure in the note, so the bidder's total still equals what they submitted.
 - Additional items go through `deposit_additional_item` one at a time, never `propose_batch` (which
   refuses the predicate), and only after the response batch has landed (the door refuses a party who
@@ -663,12 +663,12 @@ readable there now, each with the proposal page behind it; the bid itself is the
   letterhead mismatches), never from the first letterhead; a bundle of embedded vendor quotes under
   one party is one bidder; genuinely ambiguous identity stops and asks.
 - Line aggregation only ever folds same-bidder, same-row, complementary-component lines, under one
-  stated rule, flagged per aggregated response — never across rows, and never to absorb off-checklist
+  stated rule, flagged per aggregated response; never across rows, and never to absorb off-checklist
   content that should stand as its own Additional item.
 - Any count restated as "confirmed" gets an explicit fresh recount against its source first; an
   echoed number is never verification.
 - An ambiguous token (`OSV` / `TV` / `?`) never resolves to a hard `amount`.
-- Pass two never revises a pass-one amount or inclusion toward the peers — it only flags.
+- Pass two never revises a pass-one amount or inclusion toward the peers; it only flags.
 - Supersession mode is read from the document's own framing; ambiguous framing stops and asks. The
   declared mode is confirmed with the user before deposit.
 - Rows a wholesale revision is silent on lapse (no re-assertion); a surgical delta touches only named
@@ -678,37 +678,37 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - Deposit is verbatim, count-verified transport in ≤50-claim batches; a count mismatch stops the run.
 - Nothing this skill writes carries a person's authority or a signature; leveling the package and
   submitting the bid stay with the operator.
-- `get_bid_package` is the row + context source; a failure stops the run and is reported — never a
+- `get_bid_package` is the row + context source; a failure stops the run and is reported; never a
   raw-`search` reconstruction of the package, and never a hand-derived membership filter over
   `list_scope_items` as a substitute.
-- A `get_bid_package` success with `lines: []` is not a green light — the checklist is empty, so stop
+- A `get_bid_package` success with `lines: []` is not a green light: the checklist is empty, so stop
   and report rather than depositing a degenerate profile/summary-only run with no response claims.
 - Proposal specifics live in the cloud project record and in local files; they never enter a tracked/committed
   plugin or repo file, and never appear verbatim in this skill's own text.
 
 ## Bundled vs. config
 
-This skill generalizes once. The per-job delta — which project, which trade package, which proposal
-folder — is **data** the user supplies at run time, never an edit to the skill. A new intake job never
+This skill generalizes once. The per-job delta (which project, which trade package, which proposal
+folder) is **data** the user supplies at run time, never an edit to the skill. A new intake job never
 edits `SKILL.md`; it runs the same pipeline against new paths.
 
 ## Deferred / for the proving run to decide (named, not skipped silently)
 
-- **The Additional-items gate — PROVEN on a real run 2026-08-09, and tightened by it.** Three real
+- **The Additional-items gate: PROVEN on a real run 2026-08-09, and tightened by it.** Three real
   window proposals against a sixteen-row package produced twenty-six items and caught a gap nothing
   else in the record held: every bidder excluded installation, so nobody was installing. The
-  statement-about-work test alone proved **too loose** — roughly fifteen of one facade vendor's
+  statement-about-work test alone proved **too loose**: roughly fifteen of one facade vendor's
   forty-odd boilerplate exclusions passed it, naming work the project does not contain. That is why
   the anchoring test above exists; it cut those fifteen to eleven defensible items. Still open for the
   next run: how the weaker single-bidder filter behaves when there is no peer to anchor against, and
   whether the anchoring test is now too tight on a genuinely novel exclusion no peer thought to name.
 - **Where a whole-bid qualification lives.** A bid can substitute a different material against the
-  specified one across every row — the single most important leveling fact about that bidder, and it
+  specified one across every row, the single most important leveling fact about that bidder, and it
   is neither per-row nor off-checklist. `bidCoverage` carries `basis`, `label` and `coveredItems` but
   no note, and `bidSummary` has no note either, so it currently gets crammed into the coverage label.
   Raised on the board; until it is settled, put it in the coverage label and lead with it in the
   report so it is not lost.
-- **Party identity resolution — settled, see stage 3.** The bridge is the
+- **Party identity resolution: settled, see stage 3.** The bridge is the
   directory company id: an invited company's proposal files under `party:<companyId>`, which is what
   moves that company to Bid received on the coverage board. An uninvited bidder still mints
   `party:<slug>`. What remains for a proving run is only how often real proposals match cleanly by
@@ -719,6 +719,6 @@ edits `SKILL.md`; it runs the same pipeline against new paths.
 - **Solicitation package vs. bid-package-definition claim.** `solicitation_list_packages` confirms the
   solicitation package; `get_bid_package` needs a `bidPackageDefinition` claim for the trade. If the
   former exists but the latter does not, this skill stops and reports rather than fabricating the
-  definition — confirm where the definition is expected to come from.
+  definition: confirm where the definition is expected to come from.
 - **Image-only / scanned proposals.** `hasTextLayer:false` means no vector text; read what you can from
-  the render and flag the rest honestly (no OCR dependency here — that is a separate, deferred concern).
+  the render and flag the rest honestly (no OCR dependency here; that is a separate, deferred concern).
