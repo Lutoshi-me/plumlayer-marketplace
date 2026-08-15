@@ -28,10 +28,9 @@ Empirical findings from real init-event inspection (2026-06-20, v2.1.183):
 
 Assertions built against the actual observed event shape:
   - Plugin "plumlayer" present in plugins[] by name.
-  - All 7 expected skills present in skills[] with "plumlayer:" prefix.
-  - Plugin-bundled agents (scope-decomposer, trade-specialist)
-    are NOT assertable from the init event — they do not surface there.
-    This is documented as a limitation, not a fake pass.
+  - All 10 expected skills present in skills[] with "plumlayer:" prefix.
+  - The plugin ships no agents/ directory (removed) — there is nothing for
+    Layer 2 to assert about plugin agents, and no limitation to document.
   - MCP under --bare: bundled hosted MCP not observed in mcp_servers[].
     Documented limitation — needs non-bare invocation with auth to test.
 
@@ -50,13 +49,16 @@ from _cli import invoke_headless, find_init_event
 EXPECTED_PLUGIN_NAME = "plumlayer"
 
 EXPECTED_SKILL_NAMES = {
+    "plumlayer:bid-intake",
     "plumlayer:drawing-index-publish",
-    "plumlayer:drawing-ingest",
     "plumlayer:drawing-set-assemble",
-    "plumlayer:project-record",
+    "plumlayer:drawing-upload",
+    "plumlayer:learn-project",
     "plumlayer:project-create",
+    "plumlayer:project-record",
     "plumlayer:scope-run",
     "plumlayer:setup",
+    "plumlayer:takeoff",
 }
 
 HEADLESS_TIMEOUT_SEC = 120
@@ -100,7 +102,7 @@ def check_plugin_present(init_event: dict) -> Result:
 
 
 def check_skills_present(init_event: dict) -> Result:
-    name = "skills-all-7-present"
+    name = "skills-all-10-present"
     skills_in_event = set(init_event.get("skills", []))
     plumlayer_skills = {s for s in skills_in_event if s.startswith("plumlayer:")}
     missing = EXPECTED_SKILL_NAMES - plumlayer_skills
@@ -165,25 +167,6 @@ def check_mcp_under_bare(init_event: dict) -> Result:
         )
 
 
-def check_plugin_agents_limitation() -> Result:
-    """
-    Documents that plugin-bundled agents (scope-decomposer, trade-specialist)
-    do NOT surface in the init event's agents[] field.
-    This is a known runtime behavior, not a test gap we can close at Layer 2.
-    """
-    name = "plugin-agents (limitation noted)"
-    return Result(
-        name, True,  # not a failure — structural limitation
-        warning=(
-            "Plugin agents/ dir (scope-decomposer, trade-specialist) "
-            "are NOT listed in the init event agents[] field. That field only contains "
-            "globally-configured agent types. Plugin agents load correctly at runtime "
-            "but cannot be asserted from the --bare --plugin-dir JSONL stream. "
-            "Layer 1 check_agents() validates the file presence + frontmatter statically."
-        ),
-    )
-
-
 # --------------------------------------------------------------------------- #
 # Public entry point
 # --------------------------------------------------------------------------- #
@@ -235,7 +218,6 @@ def run_load_check(plugin_path: Path) -> tuple[list[Result], bool]:
         check_no_plugin_load_errors(init_event),
         check_skills_present(init_event),
         check_mcp_under_bare(init_event),
-        check_plugin_agents_limitation(),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

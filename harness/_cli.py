@@ -41,6 +41,7 @@ def invoke_headless(
             stderr=subprocess.STDOUT,  # merge stderr into stdout for capture
             timeout=timeout_sec,
             encoding="utf-8",
+            errors="replace",
         )
         fh.write(result.stdout)
 

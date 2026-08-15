@@ -2,14 +2,21 @@
 static_checks.py — Layer 1: deterministic, no model calls.
 
 Checks:
-  1. `claude plugin validate <plugin_path> --strict` exits 0.
-  2. Version-triple lockstep across plugin.json / marketplace.json (2 fields).
-  3. Skills: no duplicate `name`; no missing/empty `description`.
-     WARN (not fail) if description > SKILL_DESC_WARN_CHARS.
-  4. Agents: 3 expected agent files exist with non-empty `name` + `description`.
-  5. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
-  6. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json /
-     plugin.json / marketplace.json.
+  1. `claude plugin validate <plugin_path> --strict` exits 0 (SKIP if the
+     `claude` CLI is not on PATH).
+  2. Version-quadruple lockstep across plugin.json (Claude), plugin.json
+     (Codex), and marketplace.json (2 fields).
+  3. Skills: no duplicate `name`; no missing/empty `description`; the shipped
+     skill set matches EXPECTED_SKILLS exactly, in both directions.
+  4. Description contract: every skill description is non-empty, folded YAML
+     style (`description: >`), and at most DESC_MAX_CHARS characters.
+  5. The estimator-voice block ("## Talk to your user like an estimator") is
+     byte-identical across every skill that carries it.
+  6. No banned string in shipped text: client-name denylist, `PLU-\\d+`,
+     internal vault filenames, `MOSOT`, em dash, middle dot.
+  7. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
+  8. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
+     plugin.json (Claude), plugin.json (Codex), or marketplace.json.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -18,7 +25,6 @@ import json
 import re
 import subprocess
 from pathlib import Path
-from typing import Iterator
 
 # --------------------------------------------------------------------------- #
 # Constants
@@ -28,22 +34,44 @@ EXPECTED_PLUGIN_NAME = "plumlayer"
 EXPECTED_MCP_URL = "https://api-production-0a7b.up.railway.app/mcp"
 
 EXPECTED_SKILLS = {
+    "bid-intake",
     "drawing-index-publish",
-    "drawing-ingest",
     "drawing-set-assemble",
-    "project-record",
+    "drawing-upload",
+    "learn-project",
     "project-create",
+    "project-record",
     "scope-run",
     "setup",
+    "takeoff",
 }
 
-EXPECTED_AGENTS = {
-    "scope-decomposer",
-    "trade-specialist",
-}
+# Hard ceiling on a skill's frontmatter description length (chars). Above
+# this is a FAIL, not a warning — docs/plugin-text-style.md §2.
+DESC_MAX_CHARS = 600
 
-# Descriptions longer than this are flagged as WARNINGs (not FAILures).
-SKILL_DESC_WARN_CHARS = 600
+# The estimator-voice block every skill (except project-record, which carries
+# the extended "## Words (operator-facing language)" section instead) must
+# reproduce byte-identically. docs/plugin-text-style.md §3.
+ESTIMATOR_HEADING = "## Talk to your user like an estimator"
+
+# Client / project names that must never appear in shipped text. Add new
+# names here as they turn up — matching is case-insensitive and whole-string,
+# not word-bounded, so partials inside longer strings still hit.
+BANNED_CLIENT_NAMES = [
+    "150 Main",
+    "31 Milk",
+    "248 Dorchester",
+    "South Shore",
+]
+
+# Internal vault filenames that live in a repo the plugin's user does not have.
+BANNED_VAULT_FILENAMES = [
+    "scope-package-architecture.md",
+    "agent-driven-ingestion.md",
+    "drawing-set-intake-design.md",
+    "package-identity-design.md",
+]
 
 # Patterns that indicate an absolute local path baked into a config file.
 _ABS_PATH_PATTERNS = [
@@ -59,14 +87,18 @@ _ABS_PATH_PATTERNS = [
 # --------------------------------------------------------------------------- #
 
 class Result:
-    def __init__(self, name: str, passed: bool, detail: str = "", warning: str = ""):
+    def __init__(self, name: str, passed: bool, detail: str = "", warning: str = "", skipped: bool = False):
         self.name = name
         self.passed = passed
         self.detail = detail
         self.warning = warning
+        self.skipped = skipped
 
     def __repr__(self) -> str:
-        status = "PASS" if self.passed else "FAIL"
+        if self.skipped:
+            status = "SKIP"
+        else:
+            status = "PASS" if self.passed else "FAIL"
         s = f"  [{status}] {self.name}"
         if self.detail:
             s += f"\n         {self.detail}"
@@ -83,6 +115,8 @@ def _parse_frontmatter(path: Path) -> dict[str, str]:
     """
     Parse simple YAML-style frontmatter delimited by '---' lines.
     Returns a dict of key -> value strings (values are stripped of quotes).
+    Block-scalar values (e.g. `description: >`) come back as the bare
+    indicator (">") here — use `_extract_description` for the real text.
     Returns {} if no frontmatter block is found.
     """
     text = path.read_text(encoding="utf-8")
@@ -97,12 +131,10 @@ def _parse_frontmatter(path: Path) -> dict[str, str]:
                 break
             in_block = True
             continue
-        # Parse "key: value" or 'key: "value"'
         m = re.match(r'^(\w[\w-]*):\s*(.*)', line)
         if m:
             key = m.group(1)
             val = m.group(2).strip()
-            # Strip surrounding quotes if present
             if (val.startswith('"') and val.endswith('"')) or \
                (val.startswith("'") and val.endswith("'")):
                 val = val[1:-1]
@@ -110,14 +142,96 @@ def _parse_frontmatter(path: Path) -> dict[str, str]:
     return fields
 
 
-# Frontmatter block is between the first and second '---' lines.
-# Re-implement to handle multi-line values (description can span lines
-# in theory, but in practice all current SKILL.mds use a single quoted
-# line). The simple regex parser above handles the real corpus correctly.
+def _extract_description(path: Path) -> dict:
+    """
+    Parse the frontmatter `description` field specifically, handling the
+    YAML folded block-scalar style (`description: >`). Returns:
+      style: "folded" | "inline" | "missing"
+      exact_indicator: True if the source line is exactly "description: >"
+      text: the folded/joined description text (for char counting)
+    """
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {"style": "missing", "exact_indicator": False, "text": ""}
+
+    end_idx = None
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            end_idx = i
+            break
+    if end_idx is None:
+        return {"style": "missing", "exact_indicator": False, "text": ""}
+    fm_lines = lines[1:end_idx]
+
+    desc_idx = None
+    desc_val = ""
+    for i, line in enumerate(fm_lines):
+        m = re.match(r'^description:\s*(.*)$', line)
+        if m:
+            desc_idx = i
+            desc_val = m.group(1).strip()
+            break
+    if desc_idx is None:
+        return {"style": "missing", "exact_indicator": False, "text": ""}
+
+    if desc_val.startswith(">"):
+        block_lines: list[str] = []
+        for line in fm_lines[desc_idx + 1:]:
+            if line.strip() == "":
+                block_lines.append("")
+                continue
+            if re.match(r'^\S', line):  # dedent = next top-level key, block ends
+                break
+            block_lines.append(line.strip())
+
+        paragraphs: list[str] = []
+        para: list[str] = []
+        for l in block_lines:
+            if l == "":
+                if para:
+                    paragraphs.append(" ".join(para))
+                    para = []
+            else:
+                para.append(l)
+        if para:
+            paragraphs.append(" ".join(para))
+        folded_text = "\n".join(paragraphs)
+        return {"style": "folded", "exact_indicator": desc_val == ">", "text": folded_text}
+
+    if desc_val:
+        val = desc_val
+        if (val.startswith('"') and val.endswith('"')) or \
+           (val.startswith("'") and val.endswith("'")):
+            val = val[1:-1]
+        return {"style": "inline", "exact_indicator": False, "text": val}
+
+    return {"style": "missing", "exact_indicator": False, "text": ""}
+
+
+def _extract_section(path: Path, heading: str) -> str | None:
+    """Return the text of the section starting at `heading` (a literal '## '
+    line) up to (not including) the next '## ' heading, or None if the
+    heading is not present in the file."""
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if line.strip() == heading:
+            start = i
+            break
+    if start is None:
+        return None
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if lines[j].startswith("## "):
+            end = j
+            break
+    return "\n".join(lines[start:end]).strip()
 
 
 # --------------------------------------------------------------------------- #
-# Check 1 — CLI validate
+# Check — CLI validate
 # --------------------------------------------------------------------------- #
 
 def check_cli_validate(plugin_path: Path) -> Result:
@@ -127,39 +241,49 @@ def check_cli_validate(plugin_path: Path) -> Result:
             ["claude", "plugin", "validate", str(plugin_path), "--strict"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=30,
         )
-        output = (r.stdout + r.stderr).strip()
-        if r.returncode == 0:
-            return Result(name, True, detail=output)
-        else:
-            return Result(name, False, detail=f"exit {r.returncode}: {output}")
     except FileNotFoundError:
-        return Result(name, False, detail="`claude` not found on PATH")
+        return Result(name, True, detail="`claude` not found on PATH — check skipped", skipped=True)
     except subprocess.TimeoutExpired:
         return Result(name, False, detail="timed out after 30s")
 
+    stdout = r.stdout or ""
+    stderr = r.stderr or ""
+    output = (stdout + stderr).strip()
+    if r.returncode == 0:
+        return Result(name, True, detail=output)
+    else:
+        return Result(name, False, detail=f"exit {r.returncode}: {output}")
+
 
 # --------------------------------------------------------------------------- #
-# Check 2 — Version-triple lockstep
+# Check — Version-quadruple lockstep
 # --------------------------------------------------------------------------- #
 
-def check_version_triple(plugin_path: Path, marketplace_root: Path) -> Result:
-    name = "version-triple-lockstep"
+def check_version_quadruple(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "version-quadruple-lockstep"
     plugin_json_path = plugin_path / ".claude-plugin" / "plugin.json"
+    codex_plugin_json_path = plugin_path / ".codex-plugin" / "plugin.json"
     marketplace_json_path = marketplace_root / ".claude-plugin" / "marketplace.json"
 
     errors: list[str] = []
     versions: dict[str, str] = {}
 
-    # plugin.json
     try:
         pj = json.loads(plugin_json_path.read_text(encoding="utf-8"))
         versions["plugin.json[version]"] = pj.get("version", "<missing>")
     except Exception as e:
         errors.append(f"plugin.json read error: {e}")
 
-    # marketplace.json — metadata.version and plugins[0].version
+    try:
+        cpj = json.loads(codex_plugin_json_path.read_text(encoding="utf-8"))
+        versions[".codex-plugin/plugin.json[version]"] = cpj.get("version", "<missing>")
+    except Exception as e:
+        errors.append(f".codex-plugin/plugin.json read error: {e}")
+
     try:
         mj = json.loads(marketplace_json_path.read_text(encoding="utf-8"))
         versions["marketplace.json[metadata.version]"] = mj.get("metadata", {}).get("version", "<missing>")
@@ -183,7 +307,7 @@ def check_version_triple(plugin_path: Path, marketplace_root: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# Check 3 — Skills
+# Check — Skills
 # --------------------------------------------------------------------------- #
 
 def check_skills(plugin_path: Path) -> Result:
@@ -197,7 +321,6 @@ def check_skills(plugin_path: Path) -> Result:
         return Result(name, False, detail="no skill directories found")
 
     errors: list[str] = []
-    warnings: list[str] = []
     seen_names: dict[str, str] = {}  # skill_name -> dir name
 
     for skill_dir in sorted(skill_dirs):
@@ -220,13 +343,8 @@ def check_skills(plugin_path: Path) -> Result:
             else:
                 seen_names[skill_name] = skill_dir.name
 
-        description = fm.get("description", "").strip()
-        if not description:
+        if not fm.get("description", "").strip():
             errors.append(f"{skill_dir.name}: frontmatter `description` is missing or empty")
-        elif len(description) > SKILL_DESC_WARN_CHARS:
-            warnings.append(
-                f"{skill_dir.name}: description length {len(description)} > {SKILL_DESC_WARN_CHARS} chars"
-            )
 
     found_names = set(seen_names.keys())
     missing = EXPECTED_SKILLS - found_names
@@ -240,60 +358,180 @@ def check_skills(plugin_path: Path) -> Result:
     if errors:
         detail_parts.extend(errors)
     detail = "; ".join(detail_parts)
-    warn_str = "; ".join(warnings) if warnings else ""
-
-    return Result(name, passed=len(errors) == 0, detail=detail, warning=warn_str)
-
-
-# --------------------------------------------------------------------------- #
-# Check 4 — Agents
-# --------------------------------------------------------------------------- #
-
-def check_agents(plugin_path: Path) -> Result:
-    name = "agents-frontmatter"
-    agents_dir = plugin_path / "agents"
-    if not agents_dir.is_dir():
-        return Result(name, False, detail=f"agents/ directory not found at {agents_dir}")
-
-    errors: list[str] = []
-    found_names: set[str] = set()
-
-    for agent_name in sorted(EXPECTED_AGENTS):
-        agent_file = agents_dir / f"{agent_name}.md"
-        if not agent_file.exists():
-            errors.append(f"{agent_name}.md: file missing")
-            continue
-
-        fm = _parse_frontmatter(agent_file)
-        fm_name = fm.get("name", "").strip()
-        fm_desc = fm.get("description", "").strip()
-
-        if not fm_name:
-            errors.append(f"{agent_name}.md: frontmatter `name` missing or empty")
-        else:
-            found_names.add(fm_name)
-
-        if not fm_desc:
-            errors.append(f"{agent_name}.md: frontmatter `description` missing or empty")
-
-    # Check for unexpected agent files
-    all_md = list(agents_dir.glob("*.md"))
-    unexpected = [f.stem for f in all_md if f.stem not in EXPECTED_AGENTS]
-    if unexpected:
-        errors.append(f"unexpected agent files: {unexpected}")
-
-    detail = (
-        f"{len(EXPECTED_AGENTS)} expected agents; "
-        f"{len(EXPECTED_AGENTS) - len(errors)} error-free"
-    )
-    if errors:
-        detail = "; ".join([detail] + errors)
 
     return Result(name, passed=len(errors) == 0, detail=detail)
 
 
 # --------------------------------------------------------------------------- #
-# Check 5 — MCP URL
+# Check — Description contract
+# --------------------------------------------------------------------------- #
+
+def check_description_contract(plugin_path: Path) -> Result:
+    name = "description-contract"
+    skills_dir = plugin_path / "skills"
+    if not skills_dir.is_dir():
+        return Result(name, False, detail=f"skills/ directory not found at {skills_dir}")
+
+    skill_dirs = sorted(d for d in skills_dir.iterdir() if d.is_dir())
+    counts: list[str] = []
+    errors: list[str] = []
+
+    for skill_dir in skill_dirs:
+        entry = skill_dir / "SKILL.md"
+        if not entry.exists():
+            continue  # already reported by check_skills
+
+        info = _extract_description(entry)
+        style = info["style"]
+        char_count = len(info["text"])
+        counts.append(f"{skill_dir.name}={char_count} chars")
+
+        if style == "missing" or not info["text"].strip():
+            errors.append(f"{skill_dir.name}: description missing or empty")
+            continue
+        if not (style == "folded" and info["exact_indicator"]):
+            errors.append(
+                f"{skill_dir.name}: description is not folded YAML style "
+                f"(expected the frontmatter line to be exactly 'description: >')"
+            )
+        if char_count > DESC_MAX_CHARS:
+            errors.append(f"{skill_dir.name}: description length {char_count} > {DESC_MAX_CHARS} chars")
+
+    detail = ", ".join(counts)
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check — Estimator-voice block identical across skills
+# --------------------------------------------------------------------------- #
+
+def check_estimator_block(plugin_path: Path) -> Result:
+    name = "estimator-block-identical"
+    skills_dir = plugin_path / "skills"
+    if not skills_dir.is_dir():
+        return Result(name, False, detail=f"skills/ directory not found at {skills_dir}")
+
+    sections: dict[str, str] = {}
+    for skill_dir in sorted(d for d in skills_dir.iterdir() if d.is_dir()):
+        entry = skill_dir / "SKILL.md"
+        if not entry.exists():
+            continue
+        section = _extract_section(entry, ESTIMATOR_HEADING)
+        if section is not None:
+            sections[skill_dir.name] = section
+
+    if not sections:
+        return Result(name, False, detail="no skill carries the estimator-voice block")
+
+    reference_name = sorted(sections.keys())[0]
+    reference_text = sections[reference_name]
+
+    mismatches: list[str] = []
+    for skill_name in sorted(sections.keys()):
+        if skill_name == reference_name:
+            continue
+        text = sections[skill_name]
+        if text != reference_text:
+            ref_lines = reference_text.splitlines()
+            cur_lines = text.splitlines()
+            first_diff = "line count differs, no differing line found in common prefix"
+            for a, b in zip(ref_lines, cur_lines):
+                if a != b:
+                    first_diff = f"{reference_name}: {a!r} vs {skill_name}: {b!r}"
+                    break
+            mismatches.append(f"{skill_name} differs from {reference_name} — {first_diff}")
+
+    detail = f"{len(sections)} skills carry the block: {sorted(sections.keys())}"
+    if mismatches:
+        detail += " | " + "; ".join(mismatches)
+
+    return Result(name, passed=len(mismatches) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check — Banned strings in shipped text
+# --------------------------------------------------------------------------- #
+
+def _build_banned_patterns(client_names_only: bool) -> list[tuple[str, re.Pattern]]:
+    patterns: list[tuple[str, re.Pattern]] = [
+        (f"client name '{n}'", re.compile(re.escape(n), re.IGNORECASE))
+        for n in BANNED_CLIENT_NAMES
+    ]
+    if client_names_only:
+        return patterns
+
+    patterns.append(("internal ticket ID", re.compile(r"PLU-\d+")))
+    for fname in BANNED_VAULT_FILENAMES:
+        patterns.append((f"internal vault filename '{fname}'", re.compile(re.escape(fname))))
+    patterns.append(("'MOSOT' as operator-facing vocabulary", re.compile(r"\bMOSOT\b", re.IGNORECASE)))
+    patterns.append(("em dash", re.compile(r"—")))
+    patterns.append(("middle dot", re.compile(r"·")))
+    return patterns
+
+
+def _scan_file_for_banned(path: Path, client_names_only: bool) -> list[str]:
+    hits: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return [f"{path}: read error: {e}"]
+
+    patterns = _build_banned_patterns(client_names_only)
+    for i, line in enumerate(text.splitlines(), 1):
+        for label, pattern in patterns:
+            m = pattern.search(line)
+            if m:
+                hits.append(f"{path.name}:{i}: {label} — {m.group(0)!r} in: {line.strip()[:160]}")
+    return hits
+
+
+def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "banned-strings"
+
+    full_scope_files: list[Path] = []
+    skills_dir = plugin_path / "skills"
+    if skills_dir.is_dir():
+        full_scope_files.extend(sorted(skills_dir.rglob("*.md")))
+
+    readme = marketplace_root / "README.md"
+    if readme.exists():
+        full_scope_files.append(readme)
+
+    manifest_files = [
+        plugin_path / ".claude-plugin" / "plugin.json",
+        marketplace_root / ".claude-plugin" / "marketplace.json",
+        plugin_path / ".codex-plugin" / "plugin.json",
+        marketplace_root / ".agents" / "plugins" / "marketplace.json",
+    ]
+    full_scope_files.extend(f for f in manifest_files if f.exists())
+
+    hits: list[str] = []
+    for f in full_scope_files:
+        hits.extend(_scan_file_for_banned(f, client_names_only=False))
+
+    client_only_files: list[Path] = []
+    trade_packages_dir = plugin_path / "trade-packages"
+    if trade_packages_dir.is_dir():
+        client_only_files.extend(sorted(trade_packages_dir.rglob("*.md")))
+
+    for f in client_only_files:
+        hits.extend(_scan_file_for_banned(f, client_names_only=True))
+
+    detail = (
+        f"{len(full_scope_files)} files under full banned-set scan, "
+        f"{len(client_only_files)} trade-package files under client-name-only scan"
+    )
+    if hits:
+        detail += " | " + "; ".join(hits)
+
+    return Result(name, passed=len(hits) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check — MCP URL
 # --------------------------------------------------------------------------- #
 
 def check_mcp_url(plugin_path: Path) -> Result:
@@ -320,7 +558,7 @@ def check_mcp_url(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# Check 6 — No absolute paths in config files
+# Check — No absolute paths in config files
 # --------------------------------------------------------------------------- #
 
 def check_no_absolute_paths(plugin_path: Path, marketplace_root: Path) -> Result:
@@ -328,6 +566,7 @@ def check_no_absolute_paths(plugin_path: Path, marketplace_root: Path) -> Result
     config_files = [
         plugin_path / ".mcp.json",
         plugin_path / ".claude-plugin" / "plugin.json",
+        plugin_path / ".codex-plugin" / "plugin.json",
         marketplace_root / ".claude-plugin" / "marketplace.json",
     ]
 
@@ -338,7 +577,6 @@ def check_no_absolute_paths(plugin_path: Path, marketplace_root: Path) -> Result
         text = cfg_path.read_text(encoding="utf-8")
         for pattern in _ABS_PATH_PATTERNS:
             if pattern.search(text):
-                # Find the offending lines for context
                 for i, line in enumerate(text.splitlines(), 1):
                     if pattern.search(line):
                         hits.append(f"{cfg_path.name} line {i}: {line.strip()[:120]}")
@@ -357,9 +595,11 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
         check_cli_validate(plugin_path),
-        check_version_triple(plugin_path, marketplace_root),
+        check_version_quadruple(plugin_path, marketplace_root),
         check_skills(plugin_path),
-        check_agents(plugin_path),
+        check_description_contract(plugin_path),
+        check_estimator_block(plugin_path),
+        check_banned_strings(plugin_path, marketplace_root),
         check_mcp_url(plugin_path),
         check_no_absolute_paths(plugin_path, marketplace_root),
     ]

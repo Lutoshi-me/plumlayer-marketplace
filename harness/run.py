@@ -16,6 +16,15 @@ Exits nonzero if any layer fails.
 import sys
 from pathlib import Path
 
+# Windows consoles default stdout to the system codepage (cp1252), which
+# can't encode characters some checks legitimately surface (e.g. a banned
+# em dash quoted in a violation detail, or a checkmark in `claude`'s own
+# CLI output). Reconfigure to UTF-8 with a safe fallback so a check result
+# never crashes the harness on the way out.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # Resolve the marketplace repo root and plugin path relative to this file.
 _HARNESS_DIR = Path(__file__).parent.resolve()
 _MARKETPLACE_ROOT = _HARNESS_DIR.parent.resolve()
