@@ -1,6 +1,6 @@
-# Trade Knowledge Base — manifest
+# Trade knowledge base: manifest
 
-**Knowledge version: `83be34d`** — the version string every convention-line record cites
+**Knowledge version: `83be34d`**. This is the version string every convention-line record cites
 (`sourceInstrument: "trade-convention:<trade>@83be34d"`, per the `scope-run` skill's convention-line
 mandate). This pin changes only when the entries themselves change; plugin releases that don't touch
 the entries don't move it.
@@ -8,11 +8,11 @@ the entries don't move it.
 - Entries: 44 (one per trade; the file list below).
 - Source: distilled from a real subcontractor-quote corpus (proposals and matching estimator
   leveling workbooks across multiple multifamily projects in one regional market), scrubbed of all
-  identifying data — no company, person, or project names, no addresses, no dollar figures (cost
+  identifying data: no company, person, or project names, no addresses, no dollar figures (cost
   signal rides as ratios and multiples). Confidentiality-reviewed before first shipping
   (2026-08-13).
 - Content-defining source snapshot: commit `83be34d` (2026-08-01) of the source corpus repository.
-- Copied into this plugin: 2026-08-13 (PLU-1201).
+- Copied into this plugin: 2026-08-13.
 
 ## What an entry carries
 

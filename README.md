@@ -156,7 +156,7 @@ plugins/plumlayer/
     bid-intake/SKILL.md
     takeoff/SKILL.md
     project-record/SKILL.md
-    drawing-index-publish/SKILL.md + references/
-    drawing-set-assemble/SKILL.md + references/
+    drawing-index-publish/SKILL.md
+    drawing-set-assemble/SKILL.md
   trade-packages/                   # 44 trade reference files + MANIFEST.md, read by scope-run
 ```

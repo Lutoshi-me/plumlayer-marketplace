@@ -581,7 +581,7 @@ because an off-checklist item nobody can trace back to its source is not worth h
 
 **A deduct alternate is not an adder with a minus sign.** `inclusion` offers only
 `base | adder | excluded`, and a priced `adder` counts straight into that bidder's as-submitted total.
-So encoding a deduct ("change the glazing and take $35,838 off") as a negative-amount adder makes the
+So encoding a deduct ("change the glazing and take $40,000 off") as a negative-amount adder makes the
 grid disagree with the paper by subtracting an alternate nobody accepted, and rendered prices on this
 surface are unsigned, so it displays as its own opposite. Until the model carries alternates properly,
 record a deduct or an un-accepted alternate as `inclusion: "excluded"` with the **amount omitted**, and
