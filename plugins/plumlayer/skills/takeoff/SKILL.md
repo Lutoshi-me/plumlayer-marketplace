@@ -1,36 +1,34 @@
 ---
 name: takeoff
 description: >
-  Turn a plain-language takeoff request — "do window takeoffs on the elevations", "count the doors
-  on the level 2 plans", "measure the retaining wall" — into a named takeoff condition with
-  individual placed marks or measurements in the project's Plumlayer record, exactly as if a person
-  had drawn them in the takeoff editor. Use when the user asks to take off, count, or measure
-  something from drawing sheets already uploaded to a Plumlayer project. Trigger on "takeoff",
-  "take off the <item>", "count the <item>", "do a <item> takeoff", "measure the <item>",
-  "how many <item> on <sheets>", "/takeoff". Drives project and sheet discovery, the read of what
-  already stands (so re-runs never silently duplicate), scale grounding, the agent's own read of the
-  sheets, a condition definition, per-instance deposits, and read-back verification over the hosted
-  Plumlayer MCP verbs (takeoff_read, takeoff_condition, takeoff_deposit, render_page,
-  get_page_text). The agent reads and judges; deterministic tooling grounds; nothing enters
-  untraced. Every deposit cites the sheet it was read from and records as the agent's word with its
-  trail. This skill does NOT upload drawings (drawing-upload), create the project (project-create),
-  run scope stages (guarded), read sub proposals (bid-intake), or delete or approve anything on the
-  operator's behalf.
+  Turn a plain-language takeoff request into a named condition with marks or measurements placed
+  in the project record, like a person drawing them in the editor. Trigger on "take off the
+  windows", "count the doors", "measure the wall", "/takeoff". Drives sheet discovery and the
+  takeoff verbs (takeoff_read, takeoff_condition, takeoff_deposit, render_page, get_page_text).
+  Does not upload drawings (drawing-upload), create the project (project-create), run scope
+  stages (scope-run), or read sub proposals (bid-intake).
 ---
 
-# Takeoff — count and measure from the sheets, land it as ordinary takeoff
+# Takeoff: count and measure from the sheets, land it as ordinary takeoff
 
 ## Talk to your user like an estimator
 
-Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
-words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
-trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
-supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
-field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
-mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
-it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
-project-record skill's Words section.
+Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
+everything the user sees, including your closing report: a report template is user-facing text.
+
+Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
+item, trail.
+
+Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
+sheetType, or any raw verb, field, or parameter name.
+
+Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
+is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
+the index is "checking the drawing list against the actual sheets"; what you could not settle is
+"what is still open". Plain prose, no em dashes, no bolded emphasis words.
+
+The full list, with translations, is in the project-record skill's Words section.
 
 Take the operator's sentence — what to count or measure, and where — and come back with the same
 artifact an intern at the next desk would produce: a named condition in the Measurements panel with
@@ -65,13 +63,7 @@ outside the repo and acceptable — the rule you own is what you write into trac
 
 Speak estimator words in everything the user reads: **condition, mark, measurement, count, total,
 scale, sheet, trail**. Say "placed 89 marks under the Windows condition on A-3.01", "the scale on
-A-3.02 was already set, I used it", "3 judgment calls below". Plain prose, no em dashes, no bolded
-emphasis words.
-
-Never say to the user: *claim, deposit, predicate, subject, proposed, governing, trust class,
-supersede, ledger, grounding, residue, idempotency*. Those are machinery. If a concept has to
-surface, translate it: a superseded scale is "replaced the scale"; a contest refusal is "that one
-was set by a person, so I left it alone and noted it".
+A-3.02 was already set, I used it", "3 judgment calls below".
 
 Never tell the user something is "pending review" or "awaiting approval". It is their takeoff now;
 the honest framing is "it's in the editor; anything you change wins".
@@ -83,7 +75,7 @@ genuinely spans kinds — a count plus a linear measure) with its marks, on the 
 names. It does **not**:
 
 - upload or register drawings (`drawing-upload`) or create the project (`project-create`);
-- run scope identification or trade derivation (guarded elsewhere; a takeoff is quantities, not
+- run scope identification or trade derivation (`scope-run`; a takeoff is quantities, not
   scope);
 - delete, approve, or reorganize existing takeoff work — corrections to standing work belong to the
   operator in the editor; you may add to it and may revise your own prior work, never remove
@@ -96,7 +88,7 @@ The pipeline: **preflight → what already stands → find the sheets → ground
 judge → define the condition → place the marks → verify by reading back → report.** Each stage has
 gates, collected at the end.
 
-## 1 · Preflight — resolve the sentence
+## 1. Preflight: resolve the sentence
 
 1. **Account and project.** `whoami`, then `list_projects`; match the project the request names and
    confirm with the user only if the match is not obvious. Capture `projectId`.
@@ -111,7 +103,7 @@ gates, collected at the end.
 3. **Do not ask what you can read.** Which tags mark the item, what the legend says, where the
    sheets are — that is your job in stages 3–5, not a questionnaire for the operator.
 
-## 2 · What already stands (before anything else writes)
+## 2. What already stands (before anything else writes)
 
 Call `takeoff_read(projectId)` and read the **whole summary, not only the conditions list**:
 `summary.conditions` (every live condition, its type, unit, member count, total, sheets) **and**
@@ -152,7 +144,7 @@ replaced anything.
 - The read-back is also your source for **conditionIds** — a prior run's condition you are
   extending is addressed by the id this read returns, never by a remembered one.
 
-## 3 · Find the sheets
+## 3. Find the sheets
 
 Resolve "the elevations" to concrete sheets with file and page locations, from the project's own
 records — never from filename guesses.
@@ -184,7 +176,7 @@ records — never from filename guesses.
    become "and also the window schedule for cross-check" unless you name it as context reading —
    context reads are free; marks land only on the requested sheets.
 
-## 4 · Ground the scale (per sheet that needs one)
+## 4. Ground the scale (per sheet that needs one)
 
 Counts do not need a scale; lengths and areas do, and a correct standing scale helps either way.
 Per target sheet:
@@ -205,7 +197,7 @@ Per target sheet:
 - A scale disagreement you cannot resolve (label says one thing, the datums say another) is a
   judgment call: go with what the geometry proves, and put the discrepancy in the report.
 
-## 5 · Read and judge (the method, not the answers)
+## 5. Read and judge (the method, not the answers)
 
 This is your reading. The discipline below is method — what a careful estimator does — and none of
 it pre-decides what a tag means on this project's sheets. Every project's legend is its own law.
@@ -257,7 +249,7 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
    render in front of the operator; below that, make the call, apply it consistently, and lead
    the report with it.
 
-## 6 · Define the condition
+## 6. Define the condition
 
 One `takeoff_condition` call per condition. The server mints the identity and returns it as the
 landed record's `subject` — **that string is the conditionId every mark in stage 7 carries.** You
@@ -276,7 +268,7 @@ never invent one.
   revise a condition definition (`supersedesId`) when it is your own and the revision is real
   (rename, note); type and unit are immutable — a different kind is a new condition.
 
-## 7 · Place the marks
+## 7. Place the marks
 
 One `takeoff_deposit` per instance — a count mark per counted tag, a length per run, an area per
 region. Never a list of points in one call, never a rollup: the total the operator sees is the
@@ -309,7 +301,7 @@ marks summed, so the marks are the takeoff.
   report are where your unsureness lives — and it must live somewhere. Silent confidence you do
   not have is the one dishonesty this skill cannot absorb.)
 
-## 8 · Verify by reading back
+## 8. Verify by reading back
 
 Two reads, because they answer different questions:
 
@@ -336,7 +328,7 @@ A mismatch stops the run and is reported as a discrepancy with both numbers — 
 re-sending, never rounded into "close enough". The read-back result is the only ground for telling
 the operator the takeoff landed; a successful deposit call alone is not.
 
-## 9 · Report
+## 9. Report
 
 The report is the manifest, in estimator words:
 
@@ -346,7 +338,7 @@ The report is the manifest, in estimator words:
 - **Judgment calls, led with, numbered:** every border case counted or excluded, each with its
   location and reason, so the operator can check exactly those in the editor. This is the first
   thing after the totals, not a footnote.
-- **The reconciliation:** candidates found → counted → excluded (named) per sheet, and the
+- **The count check:** candidates found → counted → excluded (named) per sheet, and the
   read-back verification result.
 - **Anything left alone:** human-set scales you disagreed with, refusals near human work, sheets
   skipped and why.

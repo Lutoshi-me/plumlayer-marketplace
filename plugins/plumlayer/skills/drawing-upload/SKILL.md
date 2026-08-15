@@ -1,38 +1,34 @@
 ---
 name: drawing-upload
 description: >
-  Upload a construction drawing delivery in ANY packaging and turn it into cited sheet records in the
-  project's Plumlayer record — no manual conforming, no local CSV intermediate. Use
-  whenever the user hands over a new drawing set, bulletin, addendum, ASI, permit/CD/conformed set,
-  or any pile of drawing PDFs and wants it read, registered, indexed, or inventoried. Trigger on
-  "we got a new set for <project>", "upload this set", "register the drawings", "drawing index",
-  "drawing list", "sheet schedule", "sheet inventory", "list every sheet", "what's in this drawing
-  set", "index this bulletin", "franken set / current set", "/drawing-upload" — and equally when
-  the set is ALREADY uploaded to the project with nothing local: "read the uploaded set", "recognize
-  the files already in <project>", "re-recognize the set". Drives project
-  selection, delivery registration, cloud upload, bulk deterministic sheet-number recognition, agent
-  residue read, sheet-type classification, and recording sheet data over the hosted Plumlayer MCP verb
-  surface. The primary verbs are `recognize_sheets` / `recognize_sheets_status`; older servers may
-  still expose these as deprecated `ground_sheets` / `ground_sheets_status` aliases. The agent reads
-  and judges; deterministic tooling grounds; nothing enters untraced. Supersedes the retired
-  drawing-index / drawing-index-bulletin / drawing-index-merge skills (the export skills
-  drawing-set-assemble / drawing-index-publish survive as on-demand projections off the cloud
-  records).
+  Upload a drawing delivery in any packaging and turn it into cited sheet records in the project
+  record. Use for a new set, bulletin, or addendum, or to read an already-uploaded set. Trigger on
+  "upload this set", "register the drawings", "drawing index", "/drawing-upload". Drives delivery
+  registration, cloud upload, sheet-number recognition, and sheet-type classification via
+  `recognize_sheets`. Does not split by discipline, produce a CSV, scope or take off sheets
+  (`scope-run` / `takeoff`), or create the project (`project-create`).
 ---
 
-# Drawing Upload — the foundation pass, agent-driven, cloud-first
+# Drawing upload: the foundation pass, agent-driven, cloud-first
 
 ## Talk to your user like an estimator
 
-Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
-words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
-trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
-supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
-field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
-mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
-it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
-project-record skill's Words section.
+Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
+everything the user sees, including your closing report: a report template is user-facing text.
+
+Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
+item, trail.
+
+Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
+sheetType, or any raw verb, field, or parameter name.
+
+Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
+is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
+the index is "checking the drawing list against the actual sheets"; what you could not settle is
+"what is still open". Plain prose, no em dashes, no bolded emphasis words.
+
+The full list, with translations, is in the project-record skill's Words section.
 
 Take whatever the architect actually sent, in whatever shape, and turn it into the one canonical,
 recognized set of **cited sheet claims** in the project's project record. This is **Stage 0**: the first
@@ -48,15 +44,15 @@ server-side autonomous *reader* — the server runs the deterministic bulk pass 
 output, but you still drive every job, judge every residue page, classify every sheet's type, and
 author every claim that isn't the deterministic pass's own grounded output.
 
-Design lineage: `agent-driven-ingestion.md` (who runs the read and where — the 2026-06-28 cloud-first
-decision this skill implements) and `drawing-set-intake-design.md` (what a good read produces, the
-packaging taxonomy). Examples in this file are generic; never put a real client or project name here.
+This skill runs the read cloud-first: recognition and every recorded claim come from the server or
+your own read of the cloud-hosted pages, never from a local pass. Examples in this file are generic;
+never put a real client or project name here.
 
 ## Narration to the user
 
 Never let the words "grounding", "ingestion", "the ledger", or "residue pass" reach the user — a
-real transcript (South Shore, 2026-07-15) showed an agent narrating all four and confusing the user
-about what was actually happening. Say instead:
+real transcript showed an agent narrating all four and confusing the user about what was actually
+happening. Say instead:
 
 - "uploading" (steps 3–4)
 - "recognizing sheet numbers" (step 5, while a job is running)
@@ -81,11 +77,9 @@ the project (`project-create`).
 **Retired:** `drawing-index`, `drawing-index-bulletin`, `drawing-index-merge` — they organized before
 reading (hand-split into discipline PDFs, then parsed a master list), which commits a discipline guess
 before any read confirms it and depends on a master list that failed on 3 of 4 characterized projects.
-This skill reads first; a master list is corroboration only, never the bootstrap. The vendored
-`scope-harness/` tree in this plugin is no longer used by this skill (removal is a separate PLU-274
-phase) — do not resolve `$PLUGIN` or run anything under it; every step below is an MCP tool call.
+This skill reads first; a master list is corroboration only, never the bootstrap.
 
-## 1 · Pick the project
+## 1. Pick the project
 
 Call `list_projects` and confirm with the user which project record this delivery belongs to (a project is one
 project record) — get its `projectId`. If there is no project yet, hand off to `project-create` first; this
@@ -93,7 +87,7 @@ skill does not create projects. Confirm you also know the **issue label** for th
 generic "2025-12-22 CD Set" or "Bulletin 01") — ask the user, or plan to read it off the cover sheet
 during recognition. It is load-bearing for supersession later.
 
-## 1b · Cloud-resident entry (files already in the project, nothing local)
+## 1b. Cloud-resident entry (files already in the project, nothing local)
 
 Not every run starts from a local delivery. When the user points you at a project whose set is
 already in cloud storage — uploaded in a prior session, or they ask you to "read the uploaded set"
@@ -134,10 +128,10 @@ applies unchanged.
 **Re-recognize semantics (the honest limits).** Re-running `recognize_sheets` on a file+delivery is
 always safe: a `stale` or `failed` job restarts; a `succeeded` one returns the existing job and the
 deposit stays idempotent. That also means this branch cannot force a fresh read of a file+delivery
-that already succeeded — a corrected re-read after a bad run needs the force-re-recognize path
-(PLU-338, not built). Say so plainly rather than re-running and implying new output.
+that already succeeded — a corrected re-read after a bad run needs the force-re-recognize path,
+which is not built yet. Say so plainly rather than re-running and implying new output.
 
-## 2 · Recognize the delivery's packaging
+## 2. Recognize the delivery's packaging
 
 Steps 2–4 are the local-delivery path; a set already in cloud storage enters at 1b above and skips
 them. A delivery arrives in one of four packaging classes — recognize the class before uploading
@@ -179,7 +173,7 @@ page counts, which file(s) (if any) are the project manual / spec book headed to
 you are excluding (geotech, emails, unrelated attachments) and why, and the picked source if there was
 a dual-source quirk.
 
-## 3 · Register the delivery
+## 3. Register the delivery
 
 Call `list_drawing_deliveries(projectId)` first — if a delivery with this issue label already exists,
 reuse it rather than registering a duplicate. Otherwise call `create_drawing_delivery`:
@@ -196,7 +190,7 @@ reuse it rather than registering a duplicate. Otherwise call `create_drawing_del
 
 Every file you upload in step 4 attaches to this one `deliveryId`.
 
-## 4 · Upload bytes
+## 4. Upload bytes
 
 For each drawing PDF you identified in step 2:
 
@@ -215,7 +209,7 @@ For each drawing PDF you identified in step 2:
 Repeat for every file in the delivery; each one registers to the **same** `deliveryId`. No local run
 folder, no manifest file — the project files list (`list_files`) is the record.
 
-## 5 · Recognize sheets (async — start, then poll)
+## 5. Recognize sheets (async, start then poll)
 
 Call `register_pages(projectId)` **once** for the project — it registers viewable page rows for every
 uploaded PDF (not claims, just renderable pages) and only needs to run once per project, not per file.
@@ -244,7 +238,7 @@ For a multi-file delivery, start and poll a separate job per file; there is no m
 `SET_TAG` — each file's recognized claims land under the shared `deliveryId` as soon as its own job
 succeeds, with no pooling step required.
 
-## 6 · Residue read
+## 6. Residue read
 
 A `succeeded` `recognize_sheets_status` result carries `residue`: the tail where the deterministic
 pass is least sure (low confidence, no sheet number found, or a degraded text layer). Read and judge
@@ -264,15 +258,15 @@ every residue row yourself:
     "hasTitle"|"discipline"|"appearsOnPage")` to get the live claim's `id`, then author your corrected
     claim with `supersedesId` set to that id, cited to the crop you read. The edge is what makes your
     read govern — a bare competing claim loses to the machine value on authorship rank, which is the
-    anti-hallucination anchor working as designed (PLU-931/PLU-1115). If the slot is empty (the pass
+    anti-hallucination anchor working as designed. If the slot is empty (the pass
     left this page blank), just author the claim fresh — there is nothing to supersede.
   - **Genuine ambiguity** — you honestly cannot tell which of two readings is right. Author your reading
     as a bare claim tagged with `ambiguityClass` so both surface for a person in `ambiguities` — never
     silently pick. Reserve the flag for real ambiguity; never use it for a correction you are confident
     about (that just hands a person a title you already read correctly).
 - **Image-only / scanned pages**: flag them honestly. Mint the page as its own subject —
-  `page:<fileId>:<pageInPdf>` — never `subject: null`, and never add an OCR dependency (deferred,
-  PLU-186). Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
+  `page:<fileId>:<pageInPdf>` — never `subject: null`, and never add an OCR dependency (deferred).
+  Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
 
 For every residue subject you *do* resolve, author the **full bundle** of claims, mirroring the shape the
 server deposits for the pages the deterministic pass already recognized (matching predicate and value
@@ -294,28 +288,32 @@ evidence block cites the render or text span you actually read — never a fabri
 **Discipline convention:** derive strictly from the sheet number's own leading letter run, matching the
 server's `disciplineFromSheetNumber` logic (all letters before the first digit/dash, uppercased) —
 never a full NCS discipline name. Do **not** add client-side compensation for prefixes the server can't
-classify; that gap is tracked as PLU-334, not this skill's problem to solve.
+classify; that gap is a known limitation, not this skill's problem to solve.
 
 **Gate:** every residue row ends up judged (a full claim bundle) or flagged (image-only or genuinely
 unreadable) — never silently dropped. State how many you read, corrected, and flagged.
 
-## 6b · Type the sheets (PLU-567)
+## 6b. Type the sheets
 
 After residue is judged, classify every recognized sheet — the deterministic pass's own output and
 your residue corrections alike — into the project's 13-value `sheetType` vocabulary, and deposit a
 claim per sheet. This is agent judgment only: the deterministic recognizer never binds a type, and
 an unclear sheet stays untyped rather than getting a guess.
 
-**The vocabulary (exactly these 13 values, no others):**
+### The vocabulary
+
+Exactly these 13 values, no others:
 
 ```
 schedule, plan, overall-plan, enlarged-plan, section, elevation, detail, RCP, schematic, legend,
 notes, cover-index, other
 ```
 
-**Efficiency — an 850-sheet set must not require 850 renders.** Classify from the sheet number and
-title you already have from steps 5–6 wherever the mapping is unambiguous — no new render needed,
-cite the recognized title as your evidence:
+### Efficiency
+
+An 850-sheet set must not require 850 renders. Classify from the sheet number and title you already
+have from steps 5-6 wherever the mapping is unambiguous, no new render needed, citing the recognized
+title as your evidence:
 
 - Title contains "FLOOR PLAN" / "SITE PLAN" / "FOUNDATION PLAN" → `plan`
 - Title contains "OVERALL" and "PLAN" → `overall-plan`
@@ -335,7 +333,9 @@ Only reach for `render_page` when the number and title genuinely leave the type 
 cryptic title, a discipline whose naming convention you haven't seen yet) — render that one sheet,
 judge it, move on. Do not render sheets whose type is already obvious from what recognition gave you.
 
-**Claim shape** — one `sheetType` claim per sheet you classify, matching the residue bundle's shape:
+### Claim shape
+
+One `sheetType` claim per sheet you classify, matching the residue bundle's shape:
 
 ```json
 {"subject": "sheet:S-501", "predicate": "sheetType", "value": "schedule",
@@ -349,17 +349,19 @@ Use `evidence.method: "agent-read"` when the number/title alone decided it (no n
 of the 13 literal strings above — never invent a fourteenth value, and never write a discipline name,
 a partial phrase, or a full title as the value.
 
-**Unsure → leave untyped.** Do not deposit a `sheetType` claim for a sheet you can't confidently place
-in the vocabulary; skip it and count it. Narrate: "N sheets sorted by type, M I left for a closer
-look" — never imply full coverage when some sheets were skipped.
+### Unsure sheets
 
-## 6c · Correct a mis-bound recognized title or discipline (PLU-1115)
+Do not deposit a `sheetType` claim for a sheet you can't confidently place in the vocabulary; skip it
+and count it. Narrate: "N sheets sorted by type, M I left for a closer look" — never imply full
+coverage when some sheets were skipped.
+
+## 6c. Correct a mis-bound recognized title or discipline
 
 The deterministic pass grounds the *tokens* it reads, but *which* cell fills the title or discipline
 slot is its reproducible-but-fallible guess — it can grab a boxed drawing note instead of the
 title-block cell. So a sheet can come through recognition "successfully" and still carry a wrong title.
-(The 18-MEP case: a sheet recognized as "NOTE: LEVEL 4 LAYOUT IS TYPICAL..." instead of "ELECTRICAL
-ENLARGED UNIT PLANS - LVL 4 PART A".) You are not re-reading every recognized title — recognition is
+(For example, a sheet recognized with the title "SEE NOTE 3 FOR TYPICAL MOUNTING HEIGHT" instead of
+"PLUMBING ENLARGED RESTROOM PLANS - LEVEL 3 PART A".) You are not re-reading every recognized title — recognition is
 trusted for the bulk. This is for the mis-grabs you actually notice: you will usually catch them in
 step 6b, where a recognized "title" that reads like a note, a general instruction, or a bare fragment
 rather than a sheet name is the tell, or when the user points one out.
@@ -374,8 +376,8 @@ When you are confident a recognized title or discipline is a mis-grab, correct i
    it into your step 7 deposit.
 
 The edge is what makes your read govern the grid: the recognizer's binding is `machine-read`, and an
-agent edge onto it is honored regardless of that register — only a person's later word outranks you
-(PLU-931/PLU-1115). A **bare** corrected claim with no `supersedesId` does NOT win; it sits as a
+agent edge onto it is honored regardless of that register — only a person's later word outranks you.
+A **bare** corrected claim with no `supersedesId` does NOT win; it sits as a
 candidate beneath the machine value. Never reach for the `ambiguityClass` flag here — a flag is for
 genuine ambiguity, and flagging a title you already read correctly is the "go set it on the site" dead
 end this step exists to close.
@@ -383,7 +385,7 @@ end this step exists to close.
 Narrate it in estimator words: "the automatic scan grabbed the wrong text on N sheets, so I read them
 and set them right" — never "supersede", "claim", or "edge".
 
-## 7 · Deposit residue and types, then verify
+## 7. Deposit residue and types, then verify
 
 **The recognized portion needs no deposit call from you.** `recognize_sheets` already wrote it
 server-side once its job succeeded (step 5), and re-running `recognize_sheets` on the same
@@ -419,8 +421,7 @@ corrections from step 6c — the edges carrying their `supersedesId`), plus one 
 
    **A freshly-shipped verb may not appear until the session reloads the plugin / reconnects MCP.**
    If `propose_batch_file` (or any verb you expect) is missing from your tool list, reload the
-   session before concluding it doesn't exist — the same situation the frontmatter's `ground_sheets`
-   → `recognize_sheets` rename note covers for the recognition verbs.
+   session before concluding it doesn't exist.
 
 2. **Verify the recognized portion against the report — never a full-grid read.** Compare the
    succeeded job's `deposit` summary (`{deposited, alreadyDeposited, byPredicate}`) against its
@@ -433,12 +434,14 @@ corrections from step 6c — the edges carrying their `supersedesId`), plus one 
    whole grid, not this verify step.
 
 Point any unresolved residue, flagged image-only pages, or untyped sheets at `ambiguities(projectId)`
-or the plain untyped count — the review queue, not something this skill resolves itself. Report:
-project, delivery, the job's `report` counts, its `deposit` summary, your residue-and-type bundle's
-count-verified deposit, and that the set is now readable on plumlayer.com with each sheet's source
-page behind it.
+or the plain untyped count — the review queue, not something this skill resolves itself. Report: the
+project and delivery; the recognition run's counts (pages scanned, sheets recognized, how many were
+high-confidence, how many were flagged for a closer look); how many sheet records were saved and how
+many were already on file; the count of entries you added yourself for the sheets you reviewed and
+typed, confirmed against what you sent; and that the set is now readable on plumlayer.com with each
+sheet's source page behind it.
 
-## 8 · Extract the spec book's table of contents
+## 8. Extract the spec book's table of contents
 
 When step 2's packaging pass turned up a project manual / spec book, file it and read its table of
 contents now — before the reconciliation gate below. The gate's spec-comparison leg needs this layer to
@@ -472,20 +475,19 @@ disk the whole time.
    predicate (`hasCompletenessStatus`) and never appear in this read. A mismatch stops the run and gets
    reported, never a guessed correction.
 
-**If `extract_spec_toc` / `extract_spec_toc_status` don't appear in your tool list**, the session
-started before these verbs were deployed — the same situation the frontmatter's `ground_sheets` →
-`recognize_sheets` rename note covers for the recognition verbs. Start a fresh session rather than
+**If `extract_spec_toc` / `extract_spec_toc_status` don't appear in your tool list**, the same
+session-reload rule from step 7 applies. Start a fresh session rather than
 assuming the manual can't be read.
 
 **No project manual in this delivery?** Say so plainly in the report and move on to step 9 — nothing
 here blocks the reconciliation gate; it only means the gate's spec leg reports as not having run (step
 9 already covers that honestly).
 
-## 9 · Reconcile the index against the set
+## 9. Reconcile the index against the set
 
-Doctrine: `scope-package-architecture.md` §4.7, the pre-read reconciliation gate. Before anything
-downstream reads this set for scope, run one deterministic check: does the delivery's own drawing
-index agree with what actually got recognized, and with the spec sections read from the project
+This is the pre-read reconciliation gate. Before anything downstream reads this set for scope, run
+one deterministic check: does the delivery's own drawing index agree with what actually got
+recognized, and with the spec sections read from the project
 manual. Catching a set-level mismatch here keeps it from poisoning every read that follows.
 
 1. **Read the index as stated.** Call `reconcile_index(projectId)` to parse the delivery's drawing
@@ -567,13 +569,13 @@ packaging report — not a hidden cost. No GPU or model hosting on this path.
 
 ## Deferred (named, not skipped silently)
 
-- **OCR for image-only/scanned pages (PLU-186).** No text layer means both the bulk pass and your own
-  read come up empty; flag, don't guess.
-- **Scale auto-detect at intake (PLU-277).** Not built into this skill yet.
+- **OCR for image-only/scanned pages.** No text layer means both the bulk pass and your own read come
+  up empty; flag, don't guess.
+- **Scale auto-detect at intake.** Not built into this skill yet.
 - **Master-list reconciliation as corroboration only.** A full diff against an architect drawing list
   (to surface RFI-worthy discrepancies) is a corroboration layer, never the bootstrap for this skill.
 - **Discipline-uncertainty compensation.** The server's prefix-based discipline derivation has a known
-  gap for unusual prefixes (PLU-334); this skill does not add client-side heuristics to cover it.
-- **Server-side auto-typing for the web-only upload door (PLU-567 web door).** A website-only upload
-  has no agent in the loop; a server-side classification job is a separate architecture decision, not
-  this skill's problem.
+  gap for unusual prefixes; this skill does not add client-side heuristics to cover it.
+- **Server-side auto-typing for the web-only upload door.** A website-only upload has no agent in the
+  loop; a server-side classification job is a separate architecture decision, not this skill's
+  problem.

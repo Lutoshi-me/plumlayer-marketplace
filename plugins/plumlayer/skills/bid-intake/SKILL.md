@@ -1,35 +1,34 @@
 ---
 name: bid-intake
 description: >
-  Read a trade's sub-proposal PDFs and turn them into cited bid records on the matching bid
-  package in the project's Plumlayer record — bidder profiles, per-row responses (inclusion / routing /
-  amount), coverage, summary totals, and the off-checklist items a proposal prices that no scope row
-  covers, each grounded to a page of the proposal it came from. Use when
-  the user hands over one or more subcontractor proposals / quotes for a trade package and wants them
-  read into Plumlayer for leveling. Trigger on "bid intake", "read the bids", "read these proposals",
-  "level the proposals", "get sub quotes into plumlayer", "intake this quote for <trade>", "we got
-  bids back for <package>", "load the drywall proposals", "/bid-intake". Drives proposal upload +
-  registration, the two-pass blind-then-peer read, supersession for revised proposals, and a
-  count-verified record deposit over the hosted Plumlayer MCP verb surface. The agent reads and judges;
-  deterministic tooling grounds; nothing enters untraced. Every record cites the proposal page it came
-  from and records as the agent's reading. This skill does NOT create the project (project-create),
-  define the bid package or invite bidders (the plumlayer.com solicitation flow), read drawings
-  (drawing-upload), or sign anything on the operator's behalf.
+  Read a trade's sub proposals into cited bid records on the bid package: bidder profiles, per-row
+  responses, coverage, and totals, each cited to its page. Use when the user hands over subcontractor
+  proposals to level. Trigger on "bid intake", "read the bids", "level the proposals", "/bid-intake".
+  Drives proposal upload, the two-pass blind-then-peer read, supersession for revisions, and a
+  count-verified deposit. Does not create the project (project-create), define the bid package (the
+  plumlayer.com flow), read drawings (drawing-upload), or sign for the operator.
 ---
 
-# Bid Intake — read sub proposals into cited bid claims, cloud-first
+# Bid intake: read sub proposals into cited bid claims, cloud-first
 
 ## Talk to your user like an estimator
 
-Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
-words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
-trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
-supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
-field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
-mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
-it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
-project-record skill's Words section.
+Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
+everything the user sees, including your closing report: a report template is user-facing text.
+
+Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
+item, trail.
+
+Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
+sheetType, or any raw verb, field, or parameter name.
+
+Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
+is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
+the index is "checking the drawing list against the actual sheets"; what you could not settle is
+"what is still open". Plain prose, no em dashes, no bolded emphasis words.
+
+The full list, with translations, is in the project-record skill's Words section.
 
 Take a trade's subcontractor proposals — the PDFs a sub actually sent back against a bid package — and
 turn each one into the bundle of **cited bid claims** the leveling surface reads: who bid, what
@@ -45,11 +44,9 @@ the page it came from. You are the reader; the MCP tools
 the grounding gate, not the inference engine. There is no server-side proposal reader — you drive
 every read, judge every row, and author every claim.
 
-Design lineage: `proposal-intake-design.md` (the two-pass discipline, the read gates, the verb surface
-this skill drives) and `bid-leveling-surface-design.md` (the claim data model this deposits into — the
-subject recipes, predicates, and value schemas). The claim shapes below mirror the `@plumlayer/contract`
-bid builders exactly; that contract, not this prose, is the source of truth for a shape. Examples here
-are generic — never put a real client, project, or bidder name in this file.
+The claim shapes below mirror the `@plumlayer/contract` bid builders exactly; that contract, not this
+prose, is the source of truth for a shape. Examples here are generic — never put a real client,
+project, or bidder name in this file.
 
 ## Confidentiality (non-negotiable)
 
@@ -70,9 +67,9 @@ say to the user (no em dashes, no bolded emphasis words). Say:
 - "N rows answered, M rows silent" (after a proposal read — never imply a silent row is a zero)
 - "N things they priced that aren't on the checklist" (after a proposal read, when the proposal
   carries off-checklist content — plain words for what stage 7b records; never "scope-gap findings")
-- "K proposals read, J entries to record" (before deposit)
-- "declared this a revised proposal (supersedes the prior bid)" or "declared a clarification"
-  (before deposit, when supersession applies — see stage 6)
+- "K proposals read, J entries to record" (before recording)
+- "declared this a revised proposal, which replaces their prior bid" or "declared a clarification"
+  (before recording, when a repeat proposal applies — see stage 6)
 
 Never narrate "claims", "deposit", "proposed", "grounding", "the ledger", "residue", or "the pivot"
 to the user — those are machinery. What you record is the package's working data as soon as it
@@ -98,7 +95,7 @@ The pipeline: **preflight → upload/register → fetch rows + context → two-p
 assemble + confidence audit → declare supersession mode → deposit the responses → deposit the
 additional items → report.** Each stage has gates; they are non-negotiable and collected at the end.
 
-## 1 · Preflight
+## 1. Preflight
 
 1. **Confirm the account and project.** Call `whoami`, then `list_projects` and confirm with the user
    which project (one project = one project record) these proposals belong to. Capture its `projectId`.
@@ -127,7 +124,7 @@ additional items → report.** Each stage has gates; they are non-negotiable and
    ```
    Report which filenames collapsed to the same file and which one you kept.
 
-## 2 · Upload and register each proposal (cloud-first)
+## 2. Upload and register each proposal (cloud-first)
 
 Proposals read from the cloud, like every other Plumlayer document. Per proposal PDF that passed the
 sanity check:
@@ -153,7 +150,7 @@ deliberately neither sheet-recognized nor page-registered, so the call probes on
 drawing files and does nothing for what you just uploaded. `render_page` and `get_page_text` gate on
 file ownership, not on page rows, so your proposals are readable the moment they are registered.
 
-## 3 · Fetch the rows and the peer context
+## 3. Fetch the rows and the peer context
 
 `get_bid_package(projectId, trade)` is your one source for the package's checklist. If the live call
 fails, **stop and report it — do not reconstruct the rows or the package from raw `search`.** That
@@ -233,13 +230,13 @@ are plausible, stop and ask the user; never break the tie yourself.
 > identity; the bid contract consumes it). Surface the party subject you chose per bidder in the
 > report, and whether it came from an invitation or a minted slug.
 
-## 4 · The two-pass read (the anti-anchoring discipline)
+## 4. The two-pass read (the anti-anchoring discipline)
 
 Read each proposal in **two passes in the same session**. The order is the discipline: pass one reads
 each proposal **blind** so a bidder's numbers are never anchored to a peer's; pass two adds peer context
 only to flag divergence, never to revise a value.
 
-### Pass one — blind, per proposal
+### Pass one: blind, per proposal
 
 For each proposal, read it against **only the scope rows (stage 3) and that one proposal** — no peer
 proposal, no other bidder's numbers in view. Use `render_page` (returns the page image inline; pass a
@@ -299,7 +296,7 @@ of what you read there — the only prose slot the evidence shape carries) and a
 (your read confidence, carried in `evidence.confidence`). Note per flag / value which pass produced it —
 pass one for everything here.
 
-### Pass two — peer-aware, flags only
+### Pass two: peer-aware, flags only
 
 Now, with `get_bid_package`'s peer responses in view, make a second pass over the same proposals. Pass
 two may **only**:
@@ -395,7 +392,7 @@ These are gates. Write them into every read:
 - **Nothing you write is a person's word.** Every claim records as your reading of the document; this
   door cannot record one as human-authored, and a human correction outranks yours on the same row.
 
-## 5 · Assemble and audit confidence
+## 5. Assemble and audit confidence
 
 Assemble the full claim bundle per bidder (profile, coverage, summary, one response per answered
 row, and the additional items this proposal earned under the stage-4 gate). Before depositing, run a
@@ -405,7 +402,7 @@ receipt, but it is called out, not buried in a count. State the per-bidder count
 silent-row count per bidder, and the additional-item count per bidder, so the deposit manifest is
 honest.
 
-## 6 · Declare the supersession mode (before deposit)
+## 6. Declare the supersession mode (before deposit)
 
 If a bidder is **new** to this package (no prior claims in `get_bid_package`), there is no
 supersession: deposit fresh claims, and skip to stage 7.
@@ -440,7 +437,7 @@ State the declared mode in the report and confirm it with the user **before** yo
 > supersession edge on these subjects, both survive and the head resolves by id tie-break, not
 > chronology — so the edge is load-bearing. Surface this in the proving run.
 
-## 7 · Deposit — author the claim JSON, batch, verify
+## 7. Deposit: author the claim JSON, batch, verify
 
 Author the claim JSON directly, matching the `@plumlayer/contract` bid builder outputs **exactly**. The
 subjects are deterministic recipes; the predicates and value shapes are fixed. Get them wrong and the
@@ -524,7 +521,7 @@ recount against its source at the moment you restate it. Echoing a number you co
 that the user read back to you) and calling it "confirmed" is not verification; the word "confirmed"
 is earned by the recount that precedes it, every time.
 
-## 7b · Deposit the additional items (a different door, after the batch)
+## 7b. Deposit the additional items (a different door, after the batch)
 
 The off-checklist content you gathered under the stage-4 gate lands here. **This does not ride
 `propose_batch`.** The generic deposit door refuses the `additionalItem` predicate outright — the only
@@ -617,13 +614,13 @@ disagree, **stop and report** — do not deposit again to "fix" it, and do not r
 by reasoning. A duplicate you can see is recoverable in one move by a person; a duplicate you papered
 over is not.
 
-## 8 · Report and hand off
+## 8. Report and hand off
 
 The run report **is** the manifest. State, plainly:
 
-- **Per bidder:** the party subject you used, claim counts **by predicate** (profile / responses /
-  coverage / summary), the **declared supersession mode** (new / wholesale / surgical) and what it
-  superseded, and the **silent-row count** (rows the proposal did not address).
+- **Per bidder:** the bidder identity you used, entry counts by type (profile / responses / coverage /
+  summary), whether this was a fresh bid, a full revision, or a partial update, and what it replaced,
+  and the silent-row count (rows the proposal did not address).
 - **Additional items:** how many off-checklist items you recorded per bidder, and where they now live
   (the package's Additional items section on plumlayer.com) — a pointer to what landed, not a
   re-listing of it. The items carry their own descriptions and citations; restating them here would
@@ -632,9 +629,9 @@ The run report **is** the manifest. State, plainly:
   judgment call is visible rather than silent.
 - **Low-confidence reads:** every value below 0.7 confidence, called out for review.
 - **Pass attribution:** which flags pass one produced versus pass two.
-- **Deposit verification:** each batch's sent-vs-returned count, confirmed equal, and the
-  additional-items read-back (the stage-3 count, the count after, and the rise), confirmed to match
-  what you deposited.
+- **Record verification:** each batch's sent-and-recorded count, confirmed equal, and the
+  additional-items check (the count before, the count after, and the rise), confirmed to match what
+  you recorded.
 
 Then point the user at the **package view on plumlayer.com** to review and level. The numbers are
 readable there now, each with the proposal page behind it; the bid itself is theirs to sign.
@@ -711,7 +708,7 @@ edits `SKILL.md`; it runs the same pipeline against new paths.
   no note, and `bidSummary` has no note either, so it currently gets crammed into the coverage label.
   Raised on the board; until it is settled, put it in the coverage label and lead with it in the
   report so it is not lost.
-- **Party identity resolution — SETTLED 2026-08-07 (PLU-874), see stage 3.** The bridge is the
+- **Party identity resolution — settled, see stage 3.** The bridge is the
   directory company id: an invited company's proposal files under `party:<companyId>`, which is what
   moves that company to Bid received on the coverage board. An uninvited bidder still mints
   `party:<slug>`. What remains for a proving run is only how often real proposals match cleanly by

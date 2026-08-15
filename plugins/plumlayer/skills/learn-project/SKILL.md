@@ -1,145 +1,145 @@
 ---
 name: learn-project
 description: >
-  Stage 1 of the scope engine — a cheap orientation pass over an already-uploaded drawing set. Reads
-  the project's seed facts, sheet inventory, and spec-section index (if present), takes a handful of
-  bounded renders (cover sheet, drawing index, up to four key plans), then records cited
-  project-level facts (structural/envelope systems, MEP delivery shape, scope areas, phasing, set-shape
-  observations, missing scope families, hazards) and compiles a run-context packet from them so every
-  downstream reader orients once instead of from scratch. Trigger on "learn the project", "orient on
-  this set", "orientation pass", "run the orientation pass", "what's this project about", "give me the
-  project context", "/learn-project". Everything emitted is the agent's own reading, cited, and flagged
-  where it was inferred. Does not upload drawings (that's `drawing-upload`) or run the scope/derive stages
-  (that's `scope-run`).
+  A cheap orientation pass over an already-uploaded drawing set: reads the project's seed facts and
+  sheet inventory, takes a handful of bounded renders (cover sheet, drawing index, key plans), then
+  records cited project-level facts (systems, MEP delivery shape, scope areas, hazards) into a
+  run-context packet so every downstream reader orients once. Trigger on "learn the project",
+  "orient on this set", "orientation pass", "/learn-project". Drives search, set_grid, render_page,
+  get_page_text, and propose_batch. Does not upload drawings (drawing-upload) or run scope-run.
 ---
 
-# Learn Project — the cheap orientation pass (stage 1)
+# Learn project: the cheap orientation pass (stage 1)
 
 ## Talk to your user like an estimator
 
-Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
-words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
-trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
-supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
-field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
-mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
-it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
-project-record skill's Words section.
+Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
+everything the user sees, including your closing report: a report template is user-facing text.
 
-The first stage of the scope engine (`scope-package-architecture.md` §4). Before anything is read
-deep, one cheap pass over what's already recognized builds the project's **context**: what it is, its
-structural and envelope systems, its scope areas, the shape of the set, and what's missing. Every
-downstream reader (stage 3's content-keyed specialists) gets this context instead of orienting from
-scratch, which is where tokens leak and reads get unreliable.
+Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
+item, trail.
+
+Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
+sheetType, or any raw verb, field, or parameter name.
+
+Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
+is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
+the index is "checking the drawing list against the actual sheets"; what you could not settle is
+"what is still open". Plain prose, no em dashes, no bolded emphasis words.
+
+The full list, with translations, is in the project-record skill's Words section.
+
+The first stage of the scope engine. Before anything is read deep, one cheap pass over what's already
+recognized builds the project's **context**: what it is, its structural and envelope systems, its
+scope areas, the shape of the set, and what's missing. Every downstream reader in the scope engine
+gets this context instead of orienting from scratch, which is where tokens leak and reads get
+unreliable.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
-untraced.** This is an *orientation* pass, not comprehension — it reads what upload already
+untraced.** This is an *orientation* pass, not comprehension, it reads what upload already
 recognized, takes a handful of bounded renders, and stops. Everything it emits is **your own reading**,
 cited, and it becomes the project's working context the moment it lands, so what you flagged as
-inferred is what a person should judge. Examples in this file are generic — never put a real
+inferred is what a person should judge. Examples in this file are generic, never put a real
 project name, client data, or a real extracted value here.
-
-Governing spec: `scope-package-architecture.md` §4.3 (the emit-shape decision this skill implements) and
-§4 (the six-stage pipeline this is stage 1 of).
 
 ## What this is, and the boundary
 
 `learn-project` does exactly one thing: read an already-uploaded set, deposit **net-new** project-level
 orientation claims, and compile a packet from them. So it does **not**: upload a drawing delivery
 (precondition, owned by `drawing-upload`); extract spec sections itself (it reads the spec-section index
-if `drawing-upload`'s later spec-reading work has already deposited one — it never extracts specs);
-run definitions-first extract, content-keyed decompose, the one scope list, package derivation, or
-tag+project (stages 2–6, owned by `scope-run`).
+if `drawing-upload`'s later spec-reading work has already deposited one, it never extracts specs); or
+run any of the scope engine's later stages, reading the set in waves, building the one scope list,
+deriving trade packages, or tagging items to a trade (all owned by `scope-run`).
 
-The run-context packet this skill compiles is a **projection**, never stored as truth — the same
+The run-context packet this skill compiles is a **projection**, never stored as truth, the same
 pattern as a trade package. It lives in the operator's local run folder only, never a repo, never
 the project record.
 
-## 0 · Preconditions
+## 1. Preconditions
 
 1. **Project exists.** Call `list_projects` and confirm with the user which project record this orientation pass
-   is for — get its `projectId`. If there is no project yet, hand off to `project-create` first, the
+   is for, get its `projectId`. If there is no project yet, hand off to `project-create` first, the
    same way `drawing-upload` step 1 does.
-2. **The baseline set is recognized.** Orientation reads the base set shape — it does not need revisions
+2. **The baseline set is recognized.** Orientation reads the base set shape, it does not need revisions
    or bulletins to have landed, and spec-TOC presence is optional/best-effort, **not** a precondition.
    What it does need is a delivery that has actually been through `recognize_sheets`. There is normally no
    retained `jobId` to poll at orientation time (that job ran, and finished, in an earlier session), so
    confirm recognition by its observable effect rather than by re-polling a job you don't hold: call
-   `list_drawing_deliveries(projectId)` — if none exist, stop plainly and hand off to `drawing-upload`.
+   `list_drawing_deliveries(projectId)`, if none exist, stop plainly and hand off to `drawing-upload`.
    If a delivery exists, spot-check with a small `search(projectId, predicate: "appearsOnPage", limit:
-   1)` — zero rows means recognition hasn't actually deposited anything yet; stop and hand off to
+   1)`, zero rows means recognition hasn't actually deposited anything yet; stop and hand off to
    `drawing-upload` rather than orienting on an empty set.
 
-## 1 · Read the claims (identity, seeds, sheet inventory)
+## 2. Read the claims (identity, seeds, sheet inventory)
 
-1. `get_project(projectId)` — the project's identity (name, description, created date).
-2. **Read the project-create seed claims verbatim — never re-mint them.** For each of `projectType`,
+1. `get_project(projectId)`, the project's identity (name, description, created date).
+2. **Read the project-create seed claims verbatim, never re-mint them.** For each of `projectType`,
    `deliveryMethod`, `location`, `grossArea`, `floorCount`, `bidDueDate`, `tradeInScope`,
    `knownExclusion`, call `search(projectId, predicate: "<predicate>")` and read what's there. These
    feed the packet's Identity section directly; where a seed is thin or missing, orientation may add a
-   document-grounded claim on the same predicate later (competing claims on one slot resolve at review —
+   document-grounded claim on the same predicate later (competing claims on one slot resolve at review,
    no bespoke merge here).
 3. **Sheet inventory.** Call `list_drawing_deliveries(projectId)` for the registered deliveries, then
    attempt `set_grid(projectId)` once. A set_grid payload on a set of real size can be large enough to
-   file-redirect instead of returning inline — if that happens, fall back to sampled
+   file-redirect instead of returning inline, if that happens, fall back to sampled
    `search(projectId, predicate: "discipline")` calls for the disciplines you need (A, S, M, P, E, C, G)
    rather than pulling the full grid. Either path gives you discipline, sheet number, and governing
-   issue per sheet, plus the file/page reference each row carries — the render targets for step 3 come
+   issue per sheet, plus the file/page reference each row carries, the render targets for step 5 come
    from here, not from a separate `list_files` call.
 
-## 2 · Read the spec-section index, if present
+## 3. Read the spec-section index, if present
 
 Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects. When spec reading
-has run for a project, these claims are real and cited — `hasTitle`, `locatedAt`, `inDivision`, and
+has run for a project, these claims are real and cited, `hasTitle`, `locatedAt`, `inDivision`, and
 `partOfIssue` on each section (verified on at least one live project). Extraction now ships as
-`drawing-upload`'s spec-TOC leg (its step 8, wired to `extract_spec_toc` / `extract_spec_toc_status`) —
+`drawing-upload`'s spec-TOC leg (its step 8, wired to `extract_spec_toc` / `extract_spec_toc_status`),
 a project whose drawing-upload pass has run that leg will have these claims. What's still true is that
-not every project has run it yet — a set uploaded before the leg shipped, or a manual that arrived
+not every project has run it yet, a set uploaded before the leg shipped, or a manual that arrived
 after the drawings and hasn't been filed and extracted, so **some projects won't have these claims
-yet** — that is a gap in what's been run for this project, not a missing capability.
+yet**, that is a gap in what's been run for this project, not a missing capability.
 
 - **If present:** read the division spread and section count into the packet's set-shape section.
 - **If absent:** write "spec reading hasn't run for this project" in the packet's set-shape section
   and continue. Never write "expected empty today," never treat absence as the norm, and never let this
   block the rest of the pass.
 
-## 2b · Read the reconciliation report, if the gate has run
+## 4. Read the reconciliation report, if the gate has run
 
-The pre-read reconciliation gate (`drawing-upload` step 9, `scope-package-architecture.md` §4.7)
-checks the delivery's drawing index against the sheets actually present and the spec sections, before
-anything reads the set for scope. Its findings are orientation-grade facts — a sheet the index lists
+The pre-read reconciliation gate (`drawing-upload` step 9) checks the delivery's drawing index
+against the sheets actually present and the spec sections, before
+anything reads the set for scope. Its findings are orientation-grade facts, a sheet the index lists
 that never arrived, or a sheet in the set the index never mentioned, changes what "the set" means
 before you read a single plan.
 
-Call `reconcile_set(projectId)` **report-only** (never pass `deposit`) — this step reads the gate's
+Call `reconcile_set(projectId)` **report-only** (never pass `deposit`), this step reads the gate's
 findings, it never records residue itself, and depositing is not this skill's decision to make. The
-bare call (no `deliveryId`) runs the ORIENTATION check: the index of record — the newest delivery
-that actually has a read drawing index — against the current compiled set across every delivery,
+bare call (no `deliveryId`) runs the ORIENTATION check: the index of record, the newest delivery
+that actually has a read drawing index, against the current compiled set across every delivery,
 which is what an orientation pass over the whole project wants. `result.mode` reports which
 comparison ran.
 
-- **If the gate has already run for this set:** read the report's counts — what matched, what
+- **If the gate has already run for this set:** read the report's counts, what matched, what
   the index lists that isn't in the set, what's in the set the index doesn't list, and whether the
   spec comparison ran. Fold anything real into the packet: an unmatched index entry as a
-  `missingScopeFamily` or `setShapeObservation` candidate (per step 4's rules — flag if inferred),
+  `missingScopeFamily` or `setShapeObservation` candidate (per step 6's rules, flag if inferred),
   and an unrecognized-in-index sheet as a `setShapeObservation`. Before citing anything from
-  `report.declaredLedgerDrift`, check `.ran` first — it's `false`, never a hollow zero, whenever no
+  `report.declaredLedgerDrift`, check `.ran` first, it's `false`, never a hollow zero, whenever no
   index page could be read at all, or a receiving-check run had to widen its re-read to another
   delivery's pages; a drift check that didn't run is never folded into the packet as if it found
   nothing.
-- **If it hasn't run yet** (no drawing index was ever parsed for any delivery in this set — `reconcile_index`
+- **If it hasn't run yet** (no drawing index was ever parsed for any delivery in this set, `reconcile_index`
   has not been called, or `reconcile_set` reports nothing to compare), write "the reconciliation gate
   hasn't run for this set" in the packet's set-shape section and continue. Never write "no
   discrepancies found" for a check that never ran.
 - **When the spec leg specifically didn't run** (no project manual read yet), the report says so
-  itself — carry that distinction into the packet rather than collapsing it into the same "hasn't
+  itself, carry that distinction into the packet rather than collapsing it into the same "hasn't
   run" note as the whole gate.
 
-## 3 · Bounded renders (budget: ≤6 total)
+## 5. Bounded renders (budget: at most 6 total)
 
-Use the file/page references already surfaced by step 1's sheet inventory to pick `fileId` /
-`pageInPdf` targets — don't call `list_files` separately for this. For every render, pair `render_page`
+Use the file/page references already surfaced by step 2's sheet inventory to pick `fileId` /
+`pageInPdf` targets, don't call `list_files` separately for this. For every render, pair `render_page`
 with `get_page_text` on the same page (render for layout and meaning, text for exact tokens).
 
 1. **Cover sheet (1 render).** Find it via `search(projectId, predicate: "hasTitle", text: "cover")` or
@@ -149,19 +149,19 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
    hasTitle match for a cover/title sheet; used the lowest G-series sheet instead").
 2. **Drawing-index page (1 render).** Find it via `search(projectId, predicate: "hasTitle", text:
    "index")`, `"drawing list"`, or `"sheet list"`. If none of these match, **skip the render** and note
-   the absence in the report — never synthesize an index page that isn't there.
-3. **Key plans (up to 4 renders).** For each series in this order — **A**, then **S**, then **M/P/E**
-   (one representative render for whichever of M, P, E exists first, in that order — it counts as one
-   slot, not three), then **C** — render the lowest-numbered sheet you judge, from its title and
+   the absence in the report, never synthesize an index page that isn't there.
+3. **Key plans (up to 4 renders).** For each series in this order, **A**, then **S**, then **M/P/E**
+   (one representative render for whichever of M, P, E exists first, in that order, it counts as one
+   slot, not three), then **C**, render the lowest-numbered sheet you judge, from its title and
    position in the inventory, to actually be a plan (not a detail, schedule, or elevation) in that
    series, and only if the series exists in the inventory at all. A series that is genuinely absent from
    the inventory renders nothing for that slot and instead becomes a `missingScopeFamily` candidate in
-   step 4 — don't force a render to fill the slot.
+   step 6, don't force a render to fill the slot.
 
 If the set is large enough that six renders plainly can't cover it (many buildings, many phases, an
 unusually deep set), say so explicitly in the report rather than quietly rendering more.
 
-## 4 · Emit orientation claims
+## 6. Emit orientation claims
 
 All net-new, subject `project` unless noted, deposited via **one** `propose_batch(projectId, claims)`
 call:
@@ -170,71 +170,63 @@ call:
 |---|---|---|
 | `structuralSystem` | free text, one claim per system (e.g. "post-tensioned concrete flat plate") | flag if inferred rather than labeled on the drawings |
 | `envelopeSystem` | free text, one claim per system (e.g. "unitized curtain wall") | flag if inferred |
-| `mepDeliveryShape` | `{division, shape}`, `shape` ∈ `full-design` \| `design-build-thin`, one claim per MEP division present | **always flagged** — this is a judgment claim by §4.3 |
+| `mepDeliveryShape` | `{division, shape}`, `shape` ∈ `full-design` \| `design-build-thin`, one claim per MEP division present | **always flagged**, this is a judgment claim |
 | `scopeArea` | free text, one claim per area (e.g. "below-grade parking", "amenity terrace") | flag if the boundary was inferred rather than labeled |
 | `phasingNote` | free text (e.g. "occupied renovation, phased by wing") | flag if inferred |
-| `setShapeObservation` | free text (e.g. "schedules live on the A-10 series") | usually unflagged — a direct observation |
-| `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC") | **always flagged** — an absence claim is defeasible |
-| `hazardFlag` | free text (e.g. "occupied renovation — coordinate around active tenants") | flag when inferred from context rather than stated outright |
+| `setShapeObservation` | free text (e.g. "schedules live on the A-10 series") | usually unflagged, a direct observation |
+| `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC") | **always flagged**, an absence claim is defeasible |
+| `hazardFlag` | free text (e.g. "occupied renovation, coordinate around active tenants") | flag when inferred from context rather than stated outright |
 
-**`sourceInstrument` is per-claim, not one batch label** (the PLU-350 correction). For a claim grounded
-in a specific page or render, cite the specific source file/instrument name — the same convention
+**`sourceInstrument` is per-claim, not one batch label.** For a claim grounded
+in a specific page or render, cite the specific source file/instrument name, the same convention
 `drawing-upload` and `project-create`'s Mode B (reading in existing docs) use. Reserve the label
 `learn-project-orientation`
 only for derived or absence observations with no single source page: `missingScopeFamily` and any
 set-level `setShapeObservation`. Every claim's `evidence` cites the exact page/render or claims-query
-that produced it — never a fabricated locator.
+that produced it, never a fabricated locator.
 
 Call `propose_batch` once with the full array. **Verify:** the returned `count` must equal the number of
 entries sent; a mismatch stops the run and gets reported, never a guessed correction.
 
-## 5 · Compile the run-context packet
+## 7. Compile the run-context packet
 
-A projection compiled fresh from the claims read in step 1 and deposited in step 4 — **never itself
+A projection compiled fresh from the claims read in step 2 and deposited in step 6, **never itself
 deposited as a claim, never stored as truth.** Sections, in order:
 
-1. **Identity** — name, type, delivery method, location, size, key dates (from the seed claims).
-2. **Systems** — structural and envelope systems, MEP delivery shape per division.
-3. **Scope areas** — the `scopeArea` and `phasingNote` claims.
-4. **Set shape** — disciplines present, issue labels seen, `setShapeObservation` claims,
+1. **Identity**, name, type, delivery method, location, size, key dates (from the seed claims).
+2. **Systems**, structural and envelope systems, MEP delivery shape per division.
+3. **Scope areas**, the `scopeArea` and `phasingNote` claims.
+4. **Set shape**, disciplines present, issue labels seen, `setShapeObservation` claims,
    `missingScopeFamily` claims, the spec-TOC status (division spread + count, or the "hasn't run
-   yet" note from step 2), and the reconciliation-gate status (its report counts, or "hasn't run yet"
-   from step 2b).
-5. **Hazards** — the `hazardFlag` claims.
-6. `[PLACEHOLDER — definitions-as-context envelope, PLU-351]` — a clearly marked final section; this
+   yet" note from step 3), and the reconciliation-gate status (its report counts, or "hasn't run yet"
+   from step 4).
+5. **Hazards**, the `hazardFlag` claims.
+6. `[PLACEHOLDER, definitions-as-context envelope]`, a clearly marked final section; this
    skill does not design that envelope, it only reserves the slot.
 
 Write it to `~/.plumlayer/runs/<project-slug>/learn-project-packet.md` (the same local run folder
-the `scope-run` skill uses) — derive `<project-slug>` from the project name (lowercase, spaces to
+the `scope-run` skill uses), derive `<project-slug>` from the project name (lowercase, spaces to
 hyphens) or fall back to the `projectId` if the name doesn't produce a clean slug. Never write it
-into a repo, and never deposit it as a claim. Regenerate it in full the next time this skill runs for the project — it is a projection,
+into a repo, and never deposit it as a claim. Regenerate it in full the next time this skill runs for the project, it is a projection,
 not a document to patch.
 
-## 6 · Report
+## 8. Report
 
-Tell the user, in plain terms (mirrors `project-create` step 5):
-- **What was read** — identity, which of the seeded project facts were present, the sheet-inventory
+Tell the user, in plain terms (mirrors `project-create`'s closing report step):
+- **What was read**, identity, which of the seeded project facts were present, the sheet-inventory
   scope (disciplines covered, set_grid vs. sampled search), and the spec-TOC status.
-- **What was learned**, per checklist category — systems, MEP delivery shape, scope areas, set shape,
+- **What was learned**, per checklist category, systems, MEP delivery shape, scope areas, set shape,
   hazards.
-- **What the reconciliation gate found**, or that it hasn't run yet for this set — never silent on
+- **What the reconciliation gate found**, or that it hasn't run yet for this set, never silent on
   which.
-- **What was recorded** — how many entries, and how many were flagged for a person's judgment.
-- **Where the packet landed** — the full path.
-- **The placeholder note** — the definitions-as-context section is a stub pending PLU-351.
-- **What a person should look at** — the flagged entries, visible on plumlayer.com with the
+- **What was recorded**, how many entries, and how many were flagged for a person's judgment, for
+  example "recorded 14 project facts, 3 flagged for your judgment". What you recorded is the
+  project's working context now, carrying your name and citations, never say it is "pending review"
+  or "awaiting approval"; anything a person changes wins.
+- **Where the packet landed**, the full path.
+- **The placeholder note**, the definitions-as-context section is a stub, not yet designed.
+- **What a person should look at**, the flagged entries, visible on plumlayer.com with the
   page each one was read from.
-
-## Words (operator-facing language)
-
-Speak estimator words in everything the user reads: **project facts, entries, systems, scope areas,
-sheets, flagged items, trail**. Say "recorded 14 project facts, 3 flagged for your judgment". Plain
-prose, no em dashes, no bolded emphasis words.
-
-Never say to the user: *claim, deposit, predicate, subject, proposed, governing, trust class,
-supersede, ledger, projection*. Those are machinery. Never say something is "pending review" or
-"awaiting approval" — what you recorded is the project's working context now, carrying your name
-and citations; anything a person changes wins.
 
 ## Gates (non-negotiable)
 
@@ -245,9 +237,9 @@ and citations; anything a person changes wins.
   whenever the value was inferred rather than read off a label.
 - **Say it is your reading.** These claims become the project's working context immediately, so an
   inferred value that reads as a documented one is the failure to avoid.
-- **Orientation, not comprehension.** Respect the ≤6 render budget — if the set is too large for it to
+- **Orientation, not comprehension.** Respect the ≤6 render budget, if the set is too large for it to
   cover meaningfully, say so in the report rather than silently exceeding it.
-- **The reconciliation gate is read, never run or deposited, by this skill.** Step 2b reads
+- **The reconciliation gate is read, never run or deposited, by this skill.** Step 4 reads
   `reconcile_set` report-only; a gate that hasn't run for this set is named as not having run, never
   paraphrased into "no discrepancies."
 - **The packet is a projection only.** Never deposited as a claim, never written to the repo, always
@@ -255,18 +247,18 @@ and citations; anything a person changes wins.
 
 ## Cost (cheapest tier first)
 
-The bulk of this pass is `search` over claims `project-create` and `drawing-upload` already deposited —
+The bulk of this pass is `search` over claims `project-create` and `drawing-upload` already deposited,
 already-paid-for reads, effectively free. Token cost is fenced to the ≤6 renders and their paired
 `get_page_text` calls, plus the small, fixed cost of compiling the packet from a small claim set. No GPU
 or model hosting on this path.
 
 ## Deferred (named, not skipped silently)
 
-- **The definitions-as-context envelope (PLU-351).** The packet's final section is a placeholder only;
-  how orientation and definitions-first context share one envelope's token budget is PLU-351's design
-  question, not this skill's.
-- **Spec-section extraction as a packaged skill (PLU-223's tail, shipped PLU-968).** Extraction now
-  lives in `drawing-upload`'s spec-TOC leg (step 8) — step 2 above still only reads spec-section claims
+- **The definitions-as-context envelope.** The packet's final section is a placeholder only; how
+  orientation and definitions-first context share one envelope's token budget is a design question
+  for a future skill, not this one's.
+- **Spec-section extraction as a packaged skill.** Extraction now
+  lives in `drawing-upload`'s spec-TOC leg (step 8); step 3 above still only reads spec-section claims
   if they already exist, it never extracts them itself. A project whose drawing-upload pass predates
   that leg, or whose manual hasn't been run through it yet, still hits the "hasn't run yet" branch in
-  step 2.
+  step 3.

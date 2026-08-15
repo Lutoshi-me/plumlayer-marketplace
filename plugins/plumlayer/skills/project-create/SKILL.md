@@ -1,31 +1,36 @@
 ---
 name: project-create
 description: >
-  Create and customize a new Plumlayer project by interviewing the user or reading in
-  project info they already have (an ITB, a drawing index, a spec TOC, a project summary), then
-  seeding the new project record with cited project-level facts. Trigger on "create a project",
-  "new project", "set up / start a new project", "onboard this project", "start a new bid / pursuit",
-  "/project-create", or when the user hands over project documents to spin up a project. Creates the
-  project via the create_project MCP verb, seeds parties / delivery / type / trades / sets via the
-  propose verb (each one cited and recorded as agent-stated, superseded later by what the drawings
-  themselves say), then points the user to drawing-upload. Scope execution is the `scope-run` skill (the scope-item-first engine).
+  Create and customize a new Plumlayer project: interview the user or read in what they already have
+  (an ITB, drawing index, spec TOC, project summary), then seed the new project record with cited
+  project-level facts. Trigger on "create a project", "new project", "start a new bid or pursuit",
+  "onboard this project", "/project-create", or when the user hands over project documents. Drives
+  the create_project and propose (or propose_batch) MCP tools. Does not upload or read drawings
+  (drawing-upload) or run the scope engine (scope-run).
 ---
 
-# Project Create — stand up a new project record and customize it
+# Project create: stand up a new project record and customize it
 
 ## Talk to your user like an estimator
 
-Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
-words to them: project record, entry, sheet, set, scale, scope item, bid response, flagged item,
-trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
-supersede, promote, reconcile, QA, sheet type as "sheetType", grounding, residue, or any raw verb or
-field name. Translate instead: a value you replaced is "I updated my earlier read"; a machine
-mis-read you caught is "the automatic scan grabbed the wrong text, so I read the sheet and flagged
-it for you to set on the site"; cross-checking the index is "checking the drawing list against the
-actual sheets". Plain prose, no em dashes, no bolded emphasis words. Full guidance is in the
-project-record skill's Words section.
+Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
+everything the user sees, including your closing report: a report template is user-facing text.
 
-A Plumlayer **project has one project record** — the cloud, claim-based model of that project's current
+Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
+item, trail.
+
+Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
+sheetType, or any raw verb, field, or parameter name.
+
+Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
+is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
+the index is "checking the drawing list against the actual sheets"; what you could not settle is
+"what is still open". Plain prose, no em dashes, no bolded emphasis words.
+
+The full list, with translations, is in the project-record skill's Words section.
+
+A Plumlayer **project has one project record**, the cloud, claim-based model of that project's current
 governing truth. This skill **creates the project and customizes it** by turning what the user knows
 (or can hand you in a file) into **cited claims** seeded into the new project record.
 
@@ -37,92 +42,92 @@ governing truth. This skill **creates the project and customizes it** by turning
 > supersede or corroborate it. **Cite every claim, never invent a fact, and flag what's uncertain.**
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud project record
-> (project isolation + private bucket + RLS) — that's fine. They must **never** land in tracked or
+> (project isolation + private bucket + RLS), that's fine. They must **never** land in tracked or
 > committed plugin/repo files.
 
 ---
 
 ## Where this sits in the workflow (read this before you start asking questions)
 
-`project-create` stands up the **shell + a minimal starting frame** — it is **not** the project's
+`project-create` stands up the **shell + a minimal starting frame**, it is **not** the project's
 data-entry form. It runs **early, before the drawings are read**, and its whole job is to get a named
 project record into existence carrying the few facts only *you* can supply.
 
 **The arc:**
-`setup` (operator profile, once) → **`project-create` (this skill — shell + minimal frame)** →
-**`drawing-upload`** (the agent reads and registers the drawing delivery as recognized sheet claims) →
-**PLU-274 scope-item-first engine** (when shipped) → **review what's uncertain on plumlayer.com**.
+`setup` (operator profile, once), then **`project-create`** (this skill, the shell plus minimal
+frame), then **`drawing-upload`** (the agent reads and registers the drawing delivery as recognized
+sheet claims), then **`scope-run`** (the live scope-item-first engine), then review what's uncertain
+on plumlayer.com.
 
-**The load-bearing consequence — don't interrogate for what the set is about to tell you.** Almost
+**The load-bearing consequence, don't interrogate for what the set is about to tell you.** Almost
 everything about a project is **read off the drawings, in the very next step, at a far higher
 instrument tier** than anything the user can recite here. An operator answering from memory produces
-the **weakest claim there is** — your restatement of what someone told you; a cover-sheet /
+the **weakest claim there is**, your restatement of what someone told you; a cover-sheet /
 title-block read produces a value confirmed off the drawing itself, which **outranks it minutes
 later.** So asking the user to guess the project type, the engineers, the trades, or the square footage
-isn't just slow — it seeds bottom-tier claims the next step overwrites, cluttering the ledger. **Ask
+isn't just slow, it seeds bottom-tier claims the next step overwrites, cluttering the ledger. **Ask
 only for what no drawing will ever carry; for the rest, say "I'll read that off the set next" and move
 on.**
 
 ---
 
-## Step 0 — Preflight
+## 1. Preflight
 
 1. **Confirm the account.** Call `whoami`. State which account the project will be created under.
 2. **Load operator defaults (optional).** Read `~/.plumlayer/operator.json` if it exists (written by
-   the `setup` skill) — use its `defaults` to pre-fill and avoid re-asking. If it's missing and the
+   the `setup` skill), use its `defaults` to pre-fill and avoid re-asking. If it's missing and the
    user wants personalization, suggest running `/setup` first (optional, not required).
 3. **Avoid a duplicate.** Call `list_projects`. If something close already exists, confirm the user
    wants a *new* one rather than adding to the existing project record.
 
 ---
 
-## Step 1 — Gather project facts (ask narrow; read what you're handed)
+## 2. Gather project facts (ask narrow, read what you're handed)
 
-The goal is **a named shell plus only the facts the drawings won't supply** — not a complete project
-record. **Never invent a fact.** Mark each one `confirmed`, `uncertain`, or `conflicting` as you go —
+The goal is **a named shell plus only the facts the drawings won't supply**, not a complete project
+record. **Never invent a fact.** Mark each one `confirmed`, `uncertain`, or `conflicting` as you go,
 that classification drives `ambiguityClass` at seed time.
 
 ### Ask now vs. defer to the read (the triage that keeps this short)
 
-**Ask now — operator-only facts no drawing carries.** Even these: *offer, don't interrogate* — accept
+**Ask now, operator-only facts no drawing carries.** Even these: *offer, don't interrogate*, accept
 "skip" freely.
-- **Project name** *(required)* — the user's working name for the pursuit.
-- **Delivery method** (DBB / CM-at-risk / design-build / GMP) — a contract fact often absent from the
+- **Project name** *(required)*, the user's working name for the pursuit.
+- **Delivery method** (DBB / CM-at-risk / design-build / GMP), a contract fact often absent from the
   drawings. Take it if known; skip if not (the ITB / contract confirms it later). Don't argue it
-  against the operator default — just record what they say.
-- **How they're bidding / buying it** — the trade *packages* they intend to carry, *if* they already
-  have a commercial plan in mind. A business decision, not a drawing fact — but it firms up fast once
+  against the operator default, just record what they say.
+- **How they're bidding / buying it**, the trade *packages* they intend to carry, *if* they already
+  have a commercial plan in mind. A business decision, not a drawing fact, but it firms up fast once
   they see the set, so don't force it.
 - **Known exclusions / allowances / strategy notes** they already hold in mind.
-- **Bid due date / key dates** — only if one actually matters to them now; otherwise skip.
+- **Bid due date / key dates**, only if one actually matters to them now; otherwise skip.
 
-**Defer to the read — do NOT interrogate.** The next step reads each of these off the set at a higher
+**Defer to the read, do NOT interrogate.** The next step reads each of these off the set at a higher
 tier. Note in one line that you'll read it, then move on:
 - Project **type** (cover sheet + index).
-- **Parties** beyond any the user volunteers — owner, architect, structural EOR, MEP / civil engineers
+- **Parties** beyond any the user volunteers, owner, architect, structural EOR, MEP / civil engineers
   (title blocks + cover stamps). If an engineer is stamped nowhere, that's an **upload-time finding / RFI**,
   not an interview question.
-- **Size** — gross area, floor / unit counts (the drawings, often a code-summary sheet).
+- **Size**, gross area, floor / unit counts (the drawings, often a code-summary sheet).
 - **Location** (cover sheet).
-- The **drawing-set inventory** — which issues exist and their dates (the drawing index *is* this;
+- The **drawing-set inventory**, which issues exist and their dates (the drawing index *is* this;
   `drawing-upload` + sheet registration produce it).
 
-### Mode A — Interview (the ask-now set only)
+### Mode A: interview (the ask-now set only)
 Ask conversationally, in **one short group**, pre-filled from operator defaults
 (`~/.plumlayer/operator.json`). **Only `name` is required; everything else is "skip if you don't have
 it handy."** Do **not** reconcile the operator's saved defaults (e.g. interior-only scope lenses)
-against this project here. Scope execution is guarded until PLU-274, and the future scope-item-first
-engine will own any package/trade-fit inputs.
+against this project here. Package and trade-fit decisions belong to `scope-run`, not this step.
 
-### Mode B — Read what they already have (preferred when docs exist)
-If the user points you at files, **read them locally** and pre-fill — reading a document they handed
+### Mode B: read what they already have (preferred when docs exist)
+If the user points you at files, **read them locally** and pre-fill, reading a document they handed
 you is not interrogation, it's the high-value path. Good sources:
 - An **ITB / invitation-to-bid** or project summary → name, type, parties, key dates.
 - A **drawing index** (`.csv`/`.xlsx` from the `drawing-upload` skill) → the set inventory + disciplines.
 - A **spec TOC** → divisions/trades in scope.
 
 ```bash
-# read the files the user names (local only — do NOT upload them to the cloud here;
+# read the files the user names (local only, do NOT upload them to the cloud here;
 # cloud upload + recognition is a separate path on plumlayer.com)
 ls -la <path/to/their/files>
 ```
@@ -133,10 +138,11 @@ ambiguous in the source → mark `uncertain` / `conflicting`.
 
 ---
 
-## Step 2 — Create the project record shell
+## 3. Create the project record shell
 
 Call the **`create_project`** MCP tool with the confirmed `name` (required) and optional
-`description`. **Capture the returned `projectId`** — every claim in Step 3 is scoped to it.
+`description`. **Capture the returned `projectId`**: every claim in the Customize step below is
+scoped to it.
 
 > **Fallback if `create_project` isn't available** (older plugin/server without the verb): ask the
 > user to create the project on **plumlayer.com** (one click), then call `list_projects` and resolve
@@ -146,15 +152,15 @@ Confirm back to the user: "Created project **<name>** (`<projectId>`)." One proj
 
 ---
 
-## Step 3 — Customize: seed the starting claims
+## 4. Customize: seed the starting claims
 
 Map the confirmed facts to claims and deposit them. **Prefer the `propose_batch` MCP
-tool** — one call with `projectId=<the new project>` and a `claims` array of all the seed entries (it's
+tool**, one call with `projectId=<the new project>` and a `claims` array of all the seed entries (it's
 atomic: one bad entry rejects the batch and names the index). **Fallback:** if `propose_batch` isn't
 available (older server), call the **`propose`** tool once per claim, batched in parallel (many per
 message).
 
-**Claim shape** (matches the Claim atom — `subject — predicate — value` + evidence):
+**Claim shape** (matches the Claim atom: `subject / predicate / value` + evidence):
 - `sourceInstrument` = `project-setup-interview` (interview) or the **uploaded file name** (read-in).
   This correctly marks the claim as low-instrument / operator-asserted.
 - `evidence` = `{ source: "<operator-interview | filename>", method: "human", snippet: "<what was
@@ -162,9 +168,9 @@ message).
 - `ambiguityClass` = set it when the fact was `uncertain` or `conflicting` (this is what later
   surfaces it in the `ambiguities` queue / RFI pile for human resolution). Omit for `confirmed`.
 
-**What to seed** (skip any the user didn't give — never fabricate):
+**What to seed** (skip any the user didn't give, never fabricate):
 
-> At create time this table is **often mostly empty — a sparse shell is the correct early state**, not a
+> At create time this table is **often mostly empty, a sparse shell is the correct early state**, not a
 > failure. Seed only what the user volunteered or a handed-over document supports; the set read fills the
 > rest, at a higher tier. Never ask a question just to populate a row.
 
@@ -187,44 +193,34 @@ message).
 | Known exclusion | `project` | `knownExclusion` | the exclusion text |
 
 Use short, stable slugs for party subjects (`party:smma`, `party:owner`). Keep values literal and
-sourced. **Every claim carries a `sourceInstrument` and evidence — no exceptions.**
+sourced. **Every claim carries a `sourceInstrument` and evidence, no exceptions.**
 
 ---
 
-## Step 4 — Name the scope handoff
+## 5. Name the scope handoff
 
-Tell the user the next step is `drawing-upload` to register and recognize the drawing delivery (and
-the spec book, when there is one — the scope engine's package derivation anchors on it). Once the
-set is recognized, `/scope-run` runs the scope-item-first engine: one grounded, cited scope list,
-then derived trade packages. Never suggest the retired route-first path (removed in PLU-349) or a
-`scope-run` cluster config — `scope-run` is a skill, not a config.
+Tell the user the next step is `drawing-upload` to register and recognize the drawing delivery, and
+the spec book too, when there is one, since the scope engine's package derivation anchors on it.
+Once the set is recognized, `/scope-run` runs the scope-item-first engine: one grounded, cited scope
+list, then derived trade packages. Never suggest the retired route-first path or a `scope-run`
+cluster config: `scope-run` is a skill, not a config.
 
 ---
 
-## Step 5 — Report + handoff
+## 6. Report and handoff
 
 Tell the user, in plain terms:
 - **Created:** project name + `projectId`.
 - **Seeded:** how many entries, broken down (facts / parties / trades / sets), and **how many were
   flagged ambiguous** (the pile a person should resolve).
-- **Where it landed** — visible now via `search` / `set_grid` / `ambiguities` in this session, and on
+- **Where it landed**, visible now via `search` / `set_grid` / `ambiguities` in this session, and on
   **plumlayer.com**, where every seeded value carries your name, the time, and what you read it from.
   Anything you flagged is what a person should look at.
-- **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then use
-  the PLU-274 scope-item-first engine once it ships; `/scope-run` is guarded meanwhile.
-
----
-
-## Words (operator-facing language)
-
-Speak estimator words in everything the user reads: **project facts, entries, parties, trades,
-sets, flagged items**. Say "seeded 12 project facts, 2 flagged for your judgment". Plain prose, no
-em dashes, no bolded emphasis words.
-
-Never say to the user: *claim, deposit, predicate, subject, proposed, governing, trust class,
-ledger*. Those are machinery. Never say something is "pending review" or "awaiting approval" —
-what you seeded is the project's starting frame now, carrying your name and what you were told;
-anything a person changes (or a drawing read later replaces) wins.
+- **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then run
+  `/scope-run`, the live scope-item-first engine, to build the scope list and derive trade packages.
+  Say "seeded 12 project facts, 2 flagged for your judgment" rather than "pending review": what you
+  seeded is the project's starting frame now, carrying your name and what you were told, and anything
+  a person changes, or a drawing read later replaces, wins.
 
 ---
 

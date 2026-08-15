@@ -1,9 +1,34 @@
 ---
 name: project-record
-description: Work with a Plumlayer project record — the cloud source of truth for a construction project. Use when the user wants to read, search, review, or add records to their Plumlayer projects (sheet/set grid, flagged items, RFI candidates, scope/takeoffs), or asks "what's in my project". Explains the verb surface and the trust model: what an agent writes takes effect provisionally as its own reading, carrying its author, timestamp, and evidence.
+description: >
+  Read, search, review, or add entries to a Plumlayer project record: the drawing set, flagged
+  items, RFI candidates, scope items, and takeoff data. Use when the user asks "what's in my
+  project" or says "/project-record". Drives the read verbs (set_grid, ambiguities,
+  rfi_candidates, search, list_scope_items) and write verbs (propose, propose_batch,
+  propose_batch_file). Does not upload drawings (drawing-upload), run the scope engine
+  (scope-run), or place takeoff measurements (takeoff).
 ---
 
 # Working a Plumlayer project record
+
+## Talk to your user like an estimator
+
+Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
+everything the user sees, including your closing report: a report template is user-facing text.
+
+Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
+item, trail.
+
+Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
+sheetType, or any raw verb, field, or parameter name.
+
+Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
+is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
+the index is "checking the drawing list against the actual sheets"; what you could not settle is
+"what is still open". Plain prose, no em dashes, no bolded emphasis words.
+
+The full list, with translations, is in the project-record skill's Words section.
 
 **The project record** is the cloud, claim-based model of a
 construction project's *current governing truth*. Each Plumlayer **project has one project record**.
@@ -37,16 +62,19 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
 
 ## Words (operator-facing language)
 
-Everything above is machinery vocabulary for working the verbs — it is never the language the user
-reads. Speak estimator words in everything you say to them: **project record, entry, sheet, set,
-scale, scope item, bid response, flagged item, trail**. Say "recorded 14 entries to the project,
-each citing the sheet I read it from", "2 flagged for your judgment". Prefer "project" or
-"the project record" in plain words the user already uses. Plain prose, no em dashes, no bolded emphasis words.
+Everything above is machinery vocabulary for working the verbs, never the language the user reads.
+This rule covers everything the user sees, including your closing report and any other report
+template: a report template is user-facing text, not machinery, even when it summarizes
+machinery-driven work. Speak estimator words in everything you say to them: **project record,
+entry, sheet, set, scale, scope item, bid response, flagged item, trail**. Say "recorded 14 entries
+to the project, each citing the sheet I read it from", "2 flagged for your judgment". Prefer
+"project" or "the project record" in plain words the user already uses.
 
 Never say to the user: *claim, deposit, predicate, subject, proposed, governing, trust class,
-supersede, ledger, grounding, residue*. Those are machinery. If a concept has to surface, translate it: a
-superseded value is "replaced my earlier read"; a contest refusal is "a person set that one, so I
-left it alone and noted it"; the trust class is simply who recorded it and when.
+supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
+sheetType*. Those are machinery. If a concept has to surface, translate it: a superseded value is
+"replaced my earlier read"; a contest refusal is "a person set that one, so I left it alone and
+noted it"; the trust class is simply who recorded it and when.
 
 The kill list also covers these, each with its estimator translation:
 
@@ -82,6 +110,8 @@ changes wins.
 - `search` — the raw claim ledger (ANY trust class, including `proposed`). Filter by
   subject / predicate / trustClass / text; paginated. Use this to see what's actually been
   asserted — including your own proposals.
+- `list_scope_items` — the live scope list (name, category, description, notes, quantity per item).
+  Use this to see what's already been captured before minting or enriching a scope item.
 
 **Drawing recognition** (cloud PDF — these work against files already uploaded to the project)
 - `list_files` — list the drawing files registered to a project.
@@ -123,6 +153,9 @@ changes wins.
   repeated `propose` calls for bulk deposits (e.g. upload or scope deposit). Each call
   accepts up to 500 claims; stay at ≤50 per batch so each read is faithful and
   count-verifiable.
+- `propose_batch_file` — like `propose_batch`, but for a run whose claims are too large to send
+  inline: upload a JSONL file of claims, then deposit from it in one atomic call. Use this instead
+  of `propose_batch` for large runs (e.g. a scope-run wave depositing hundreds of items).
 
 Both write doors refuse the takeoff-domain predicates (`hasTakeoffCount`, `hasTakeoffRollup`,
 `hasScale`, `hasTakeoffLength`, `hasTakeoffArea`, `hasTakeoffCountMark`, `hasTakeoffCondition`,

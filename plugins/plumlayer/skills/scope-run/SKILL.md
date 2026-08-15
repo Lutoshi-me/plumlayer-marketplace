@@ -1,35 +1,43 @@
 ---
 name: scope-run
 description: >
-  Run the scope-item-first engine on a Plumlayer project whose drawings are already uploaded and
-  recognized: build the project's context floor, read the set in reference-dependency waves through
-  dispatched readers, produce the one grounded, cited, trade-agnostic scope list, audit it with the
-  completeness pass, then derive and tag the trade packages — all on the hosted project record, with
-  the operator reviewing at every wave checkpoint. Trigger on "scope this set", "run the scope
-  engine", "scope run", "build the scope list", "generate per-trade scope", "derive the trade
-  packages", "/scope-run". Attended by design: the operator approves the read plan, each wave, and
-  the package split. Does not upload drawings (drawing-upload), orient from scratch (learn-project
-  runs as its first stage when needed), read sub proposals (bid-intake), or place takeoff
-  measurements (takeoff).
+  Run the scope-item-first engine on a Plumlayer project: read the drawing set in waves, produce
+  one grounded, cited, trade-agnostic scope list, audit it for completeness, then derive and tag
+  trade packages. Trigger on "scope this set", "run the scope engine", "/scope-run". Attended:
+  the operator approves each stage. Drives the project record's read and write verbs. Does not
+  upload drawings (drawing-upload), orient from scratch (learn-project), read sub proposals
+  (bid-intake), or place takeoff measurements (takeoff).
 ---
 
-# Scope Run — the scope-item-first engine
+# Scope Run: the scope-item-first engine
 
 ## Talk to your user like an estimator
 
-Verbs, claims, and trust classes are machinery for you, never words the user reads. Speak estimator
-words to them: project record, entry, sheet, set, scope item, scope list, trade package, flagged
-item, trail. Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust
-class, supersede, promote, reconcile, QA, grounding, residue, anti-join, or any raw verb or field
-name. Say "the completeness check" for the audit pass, "your review points" for flags, "the read
-plan" for the bundle map. Plain prose, no em dashes, no bolded emphasis words. Full guidance is in
-the project-record skill's Words section.
+Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
+everything the user sees, including your closing report: a report template is user-facing text.
+
+Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
+item, trail.
+
+Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
+sheetType, or any raw verb, field, or parameter name.
+
+Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
+is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
+the index is "checking the drawing list against the actual sheets"; what you could not settle is
+"what is still open". Plain prose, no em dashes, no bolded emphasis words.
+
+The full list, with translations, is in the project-record skill's Words section.
 
 ## What this is
 
-The production scope engine, stages 2 through 6 of the pipeline in `scope-package-architecture.md`
-§4 (the canonical contract; PLU-274). Stage 1 is the `learn-project` skill, which this skill runs
-when orientation hasn't happened yet. The engine's shape, in the estimator's own order:
+The production scope engine: it builds the project's context floor, reads the set in
+reference-dependency waves through dispatched readers, produces one grounded, cited,
+trade-agnostic scope list, audits it with the completeness pass, then derives and tags the trade
+packages, all on the hosted project record, with the operator reviewing at every wave checkpoint.
+Orientation is the `learn-project` skill, which this skill runs first when orientation hasn't
+happened yet. The engine's shape, in the estimator's own order:
 
 > First assemble one massive singular list of all the scope line items across the entire job; then
 > sort through and decide which trade packages to create; assembling them is assigning one new meta
@@ -133,7 +141,7 @@ uploaded to the project except deposit files, never recorded as project entries.
   purpose, and the token usage the harness reports when the worker completes), every deposit batch
   (count sent, count verified, contested), the definitions-kind roster as kinds land, checkpoint
   outcomes, and every deviation or repair. The ledger is what makes the close-out report honest.
-- `bundle-map.md` — the read plan (stage 2), operator-approved before any wave runs.
+- `bundle-map.md` — the read plan (stage 3), operator-approved before any wave runs.
 - `context-packet.md` — the compiled context packet, regenerated between waves (a projection off
   live records, never itself recorded).
 - `anti-join/` — the completeness pass's rosters, accounting output, and residue lists.
@@ -152,7 +160,7 @@ relevant to their bundle's content families as part of their brief. Where an ent
 reader mints at best judgment and flags (non-negotiable 7); the flag is a proposed amendment to the
 entry, surfaced in the close-out report.
 
-## 0 · Preconditions
+## 1. Preconditions
 
 1. **Project exists and is the user's intent.** `list_projects`, confirm which project with the
    user, get its `projectId`. No project → hand off to `project-create`.
@@ -176,7 +184,7 @@ entry, surfaced in the close-out report.
    a ~36%-of-set validation run took ~26 worker dispatches), and confirm they're staying for the
    checkpoints.
 
-## 1 · Context floor
+## 2. Context floor
 
 Run these in order; each is read-or-run, never re-minted (net-new facts only, everywhere).
 
@@ -194,7 +202,7 @@ Run these in order; each is read-or-run, never re-minted (net-new facts only, ev
    and the definitions index section (empty before the first definitions wave; recompiled after
    every wave). The packet is a projection — regenerate whole, never patch, never record it.
 
-## 2 · The read plan (bundle map) — operator-approved
+## 3. The read plan (bundle map), operator-approved
 
 Compile the set into content-keyed bundles and sequence them by reference dependency. Pull the
 sheet inventory (`set_grid`, falling back to sampled `search(predicate: "discipline")` reads if the
@@ -228,7 +236,7 @@ are named residue, never silence). **Show the user the plan in estimator terms a
 approval before any wave runs.** The read plan is a reviewable artifact; the operator may cut,
 add, or resequence.
 
-## 3 · Wave reads
+## 4. Wave reads
 
 Per wave, in this exact loop:
 
@@ -263,7 +271,7 @@ Token accounting: when the harness reports a completed worker's token usage, rec
 ledger against that dispatch. Where the harness doesn't surface a number, record the dispatch with
 usage unknown — never estimate and never leave the row out.
 
-## 4 · The completeness check (standing, with a closure loop)
+## 5. The completeness check (standing, with a closure loop)
 
 The definitions layer is the checklist: every defined thing must be accounted for by the scope
 list. Run this after the placement waves complete (and any time coverage is in doubt):
@@ -288,11 +296,11 @@ list. Run this after the placement waves complete (and any time coverage is in d
 6. **Name the final residue** in the ledger and the close-out report, row by row.
 
 Spec sections account differently (estimators never write CSI digit strings into scope text): a
-spec section is accounted when the approved package split (stage 5) bundles it into a package.
+spec section is accounted when the approved package split (stage 6) bundles it into a package.
 After the split is approved, list every TOC section not bundled anywhere — that list is the
 TOC-coverage residue, reported the same way.
 
-## 5 · Derive the packages — spec-TOC-anchored, two-phase, operator-approved
+## 6. Derive the packages: spec-TOC-anchored, two-phase, operator-approved
 
 The estimator-judgment stage. Packages are bundles of spec sections grouped by how subcontractors
 actually split themselves in the market, not by the book's divisions.
@@ -331,7 +339,7 @@ name = the package's display name, notes carrying the bundled sections) — and 
 they'd rather create packages when soliciting. The approved split
 artifact, not the package rows, is what tagging needs.
 
-## 6 · Tag
+## 7. Tag
 
 Assign each scope item its home trade off the approved split: one `belongsToTrade` record per item
 (value: the package's catalog trade id, verbatim from the approved split — a raw spec section only
@@ -345,7 +353,7 @@ boundary rides in flags and notes. Sheet-to-package assignment (`mosot_assign_sh
 an operator-approved override — offer it only when the operator asks; the derived relevant-pages
 list already falls out of the citations.
 
-## 7 · Close out
+## 8. Close out
 
 Report to the user, in estimator terms:
 
@@ -355,19 +363,19 @@ Report to the user, in estimator terms:
   package-boundary questions, document defects found (contradictions, missing schedule entries,
   duplicate sheets), convention entries judged inapplicable. Document defects worth sending to
   the design team are named as question candidates.
-- **The completeness check**: what was enumerated, what closed, the named residue.
+- **The count check**: what was enumerated, what closed, what is still open.
 - **The package split**: approved packages, amendments, TOC sections deliberately unbundled.
-- **The cost ledger**: dispatches by wave and model, token totals where the harness reported
+- **The run cost**: dispatches by wave and model, token totals where the harness reported
   them, unknowns stated as unknown — honest bounds, never estimates presented as measurements.
 - **Knowledge amendments**: entry-silent flags and inapplicability flags, proposed as amendments
   to the trade knowledge base.
 
-## The reader brief (template — every reader dispatch carries this, mechanically)
+## The reader brief (template: every reader dispatch carries this, mechanically)
 
 Fill the slots; never trim the mandates. A brief that omits a mandate reproduces a measured
 failure.
 
-```
+```text
 You are a scope reader for a construction drawing set, reading for a Plumlayer project record.
 Project: <projectId>. Your read unit: <bundle name> — sheets <numbers, with fileId + 1-based
 pageInPdf for each>. Lane: <definitions + schedules-scope | placement>. Lenses: <content lenses>.
@@ -459,8 +467,6 @@ After each wave, before the next dispatch, in estimator terms:
 
 ## Historical note
 
-The route-first harness (per-trade fan-out, reconcile-by-overlap) is retired doctrine, removed in
-PLU-349 and guarded by PLU-323 until this skill replaced the guard (PLU-1201). Do not restore or
-run route-first machinery from git history as a scope path, and never present it as current. The
-`scope-harness/` directory that remains in this plugin is ingestion helpers and design lineage,
-not the engine.
+The route-first harness (per-trade fan-out, reconcile-by-overlap) is retired doctrine. Do not
+restore or run route-first machinery from git history as a scope path, and never present it as
+current.
