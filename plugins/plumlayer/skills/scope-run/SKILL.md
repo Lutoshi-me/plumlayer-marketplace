@@ -46,7 +46,7 @@ happened yet. The engine's shape, in the estimator's own order:
 One grounded, cited, trade-agnostic scope list first; trade packages are projections off it. The
 method was validated end to end against a real precon bid evaluation before this skill shipped
 (subset acceptance run, 2026-08: recall 94.8% / precision 100% on the amended pre-registered
-method), and everything this skill mandates below is what that validation proved necessary — each
+method), and everything this skill mandates below is what that validation proved necessary: each
 mandate exists because its absence produced a measured failure.
 
 **This run is attended.** The operator approves the read plan before any reading, reviews at every
@@ -59,7 +59,7 @@ becomes working truth the moment it lands; anything a person changes wins.
 
 ## The non-negotiables
 
-Every stage below honors these. They are restated where they apply, but read them first — a run
+Every stage below honors these. They are restated where they apply, but read them first: a run
 that relaxes any one of them reproduces a measured, named failure from the validation study.
 
 1. **Cite everything, in the uniform shape.** Every drawing-grounded record carries evidence naming
@@ -71,7 +71,7 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    citation, a note, a resolved cross-reference), or flag an observation. Never a parallel list,
    never a re-mint of what exists, never silent skipping of what's already listed.
 3. **The convention-line emit mandate.** A reader whose trade-knowledge entries carry convention
-   lines for the content families it reads MUST emit them — mint if absent from the live list,
+   lines for the content families it reads MUST emit them: mint if absent from the live list,
    enrich if present. Silence is a violation, not a judgment call; a reader judging a convention
    entry inapplicable to this project flags that with its reason. Convention lines never masquerade
    as sheet-cited reads: their `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>`
@@ -88,14 +88,14 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    never in the reader.
 6. **Every deposit is count-verified by read-back.** After every batch write, read back and confirm
    the count landed equals the count sent; check any contested rows individually. The lead
-   re-verifies reader-reported counts with its own queries — a reader's summary is a claim to
+   re-verifies reader-reported counts with its own queries: a reader's summary is a claim to
    verify, not a fact to relay.
 7. **The grain bracket.** A scope item is the unit a subcontractor would include / exclude / price
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are the derive stage's output,
    never the reader's). One item per sheet is a ceiling violation; one item per instance is a floor
    violation. Where the trade-knowledge entry's grain section is silent, mint at best judgment AND
-   flag the grain as unspecced — recall never drops to grain uncertainty.
+   flag the grain as unspecced: recall never drops to grain uncertainty.
 8. **Definitions before placements.** A bundle reads only after the bundles it references are
    already recorded (legends and schedules before the plans that tag them). The read plan encodes
    this order and the operator approves it.
@@ -104,29 +104,29 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    themselves ground. The validation's single biggest capture gap was nobody owning
    schedule-grounded scope.
 10. **The completeness check runs; residue is named.** The enumerate-and-audit pass (below) is a
-    standing stage with a closure loop, never optional, and its final residue is reported by name —
+    standing stage with a closure loop, never optional, and its final residue is reported by name:
     never assumed closed, never zeroed by hope.
 
 Also: never author door-owned records. Retractions, flag resolutions, questions-as-answers, and
-package definitions mint only at their own doors — a reader that thinks an item should be deleted
+package definitions mint only at their own doors: a reader that thinks an item should be deleted
 or a flag should be closed says so in its report; a person acts at the door.
 
 ## The scope item row
 
 A minted scope item is a full row, not a name. Every mint writes:
 
-- **name** — the concise line the sub reads: aim under ten words, estimator wording, no code
+- **name**: the concise line the sub reads: aim under ten words, estimator wording, no code
   dump ("Interior metal-stud partitions", not a recitation of every type mark).
-- **category** — required: the intrinsic work grouping an estimator would use as a checklist
+- **category** (required): the intrinsic work grouping an estimator would use as a checklist
   section ("Metal Stud Partitions", "Unit Casework", "Sealants & Firestopping"). Group like work
   under the same category string; never invent a fresh category per item. The review surface
-  groups by this — an uncategorized list renders as a wall.
-- **description** — one to three tight sentences carrying only what changes price or scope.
+  groups by this: an uncategorized list renders as a wall.
+- **description**: one to three tight sentences carrying only what changes price or scope.
   Never a re-narration of the schedule: the citation points at the sheet, and the doctrine is
-  cite, don't rewrite — rewriting is the telephone game the grounding exists to prevent.
-- **notesExternal / notesInternal** — only when there is a real note (a bidder-facing caveat; an
+  cite, don't rewrite: rewriting is the telephone game the grounding exists to prevent.
+- **notesExternal / notesInternal**: only when there is a real note (a bidder-facing caveat; an
   internal watch item). Most items carry neither.
-- **quantity** — only where the sheet itself carries one, as `{value, unit}`.
+- **quantity**: only where the sheet itself carries one, as `{value, unit}`.
 
 Recorded text is operator-facing prose: plain estimator words, no em dashes, no bolding, no
 machinery vocabulary. A verbose row is a defect, not diligence.
@@ -137,24 +137,24 @@ All run working files live under `~/.plumlayer/runs/<project-slug>/` (slug from 
 lowercase, spaces to hyphens; fall back to the projectId). Never committed to any repo, never
 uploaded to the project except deposit files, never recorded as project entries. The set:
 
-- `ledger.md` — the run ledger, appended as the run proceeds: every dispatch (wave, unit, model,
+- `ledger.md`: the run ledger, appended as the run proceeds: every dispatch (wave, unit, model,
   purpose, and the token usage the harness reports when the worker completes), every deposit batch
   (count sent, count verified, contested), the definitions-kind roster as kinds land, checkpoint
   outcomes, and every deviation or repair. The ledger is what makes the close-out report honest.
-- `bundle-map.md` — the read plan (stage 3), operator-approved before any wave runs.
-- `context-packet.md` — the compiled context packet, regenerated between waves (a projection off
+- `bundle-map.md`: the read plan (stage 3), operator-approved before any wave runs.
+- `context-packet.md`: the compiled context packet, regenerated between waves (a projection off
   live records, never itself recorded).
-- `anti-join/` — the completeness pass's rosters, accounting output, and residue lists.
-- `deposits/` — JSONL files for large batch deposits (these do get uploaded, as the deposit
+- `anti-join/`: the completeness pass's rosters, accounting output, and residue lists.
+- `deposits/`: JSONL files for large batch deposits (these do get uploaded, as the deposit
   mechanism).
 
 ## The trade knowledge base
 
-Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-packages/` — one entry per trade
+Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-packages/`: one entry per trade
 (`painting.md`, `drywall.md`, …), mined from a real subcontractor-quote corpus, carrying what the
 drawings will not say: how the trade bids, scope grain rules, exclusions and counterparties,
 furnish/install seams, convention work no sheet states. `MANIFEST.md` there records the knowledge
-version and source snapshot — read it at run start, record the version in the ledger, and cite it
+version and source snapshot: read it at run start, record the version in the ledger, and cite it
 in every convention-line record (`trade-convention:<trade>@<version>`). Readers receive the entries
 relevant to their bundle's content families as part of their brief. Where an entry is silent, the
 reader mints at best judgment and flags (non-negotiable 7); the flag is a proposed amendment to the
@@ -164,14 +164,14 @@ entry, surfaced in the close-out report.
 
 1. **Project exists and is the user's intent.** `list_projects`, confirm which project with the
    user, get its `projectId`. No project → hand off to `project-create`.
-2. **Drawings are recognized.** `list_drawing_deliveries(projectId)` — no deliveries → stop
+2. **Drawings are recognized.** `list_drawing_deliveries(projectId)`: no deliveries → stop
    plainly, hand off to `drawing-upload`. Spot-check recognition actually deposited:
-   `search(projectId, predicate: "appearsOnPage", limit: 1)` — zero rows → hand off to
+   `search(projectId, predicate: "appearsOnPage", limit: 1)`: zero rows → hand off to
    `drawing-upload`.
-3. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)` — spec
+3. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)`: spec
    sections present means the spec-TOC leg has run. Absent: ask the user whether a project manual /
    spec book exists. If one does, run it through `drawing-upload`'s spec-book leg first (upload +
-   `extract_spec_toc`) — the package derivation anchors on the spec table of contents and is
+   `extract_spec_toc`): the package derivation anchors on the spec table of contents and is
    substantially weaker without it. If the project genuinely has no spec book, proceed, name that
    in the ledger and the close-out report, and derive packages from the drawing disciplines plus
    the trade knowledge base's market conventions instead (an explicitly weaker anchor, said so to
@@ -180,7 +180,7 @@ entry, surfaced in the close-out report.
    the version in the ledger. Missing → stop and report a broken plugin install rather than running
    knowledge-blind.
 5. **The operator is present.** Say what the run will do, roughly what it costs (a real read of a
-   full set is a multi-hour, many-dispatch run — share the dispatch shape from the ledger of record:
+   full set is a multi-hour, many-dispatch run: share the dispatch shape from the ledger of record:
    a ~36%-of-set validation run took ~26 worker dispatches), and confirm they're staying for the
    checkpoints.
 
@@ -189,8 +189,8 @@ entry, surfaced in the close-out report.
 Run these in order; each is read-or-run, never re-minted (net-new facts only, everywhere).
 
 1. **The reconciliation gate, read.** Call `reconcile_set(projectId)` report-only (never pass
-   `deposit`, never pass a `deliveryId` — the bare call is the orientation check). Fold what it
-   reports into the context packet. Check `.ran` flags before citing any drift number — a check
+   `deposit`, never pass a `deliveryId`: the bare call is the orientation check). Fold what it
+   reports into the context packet. Check `.ran` flags before citing any drift number: a check
    that did not run is named as not-run, never folded in as "found nothing". Genuine document
    inconsistencies it surfaces are design-team question material, not blockers; extraction-miss
    residue is noted for the record.
@@ -200,7 +200,7 @@ Run these in order; each is read-or-run, never re-minted (net-new facts only, ev
 3. **Compile the context packet** (`context-packet.md`): identity and seed facts; systems; scope
    areas; set shape (disciplines, deliveries, spec-TOC status, reconciliation findings); hazards;
    and the definitions index section (empty before the first definitions wave; recompiled after
-   every wave). The packet is a projection — regenerate whole, never patch, never record it.
+   every wave). The packet is a projection: regenerate whole, never patch, never record it.
 
 ## 3. The read plan (bundle map), operator-approved
 
@@ -214,10 +214,10 @@ grid file-redirects), then:
    legend+schedule family and its placement family, and so on. A bundle is sheets a reader should
    hold together because they explain each other.
 2. **Sequence by reference dependency**: a bundle reads only after the bundles it references are
-   recorded. Definitions parents first — schedules, legends, assembly sheets — then placements
+   recorded. Definitions parents first: schedules, legends, assembly sheets, then placements
    that tag them. Structural general notes before framing plans; MEP legends/schedules before
    distribution.
-3. **Assign each bundle a lane and a lens**: definitions lane (extracting what marks mean —
+3. **Assign each bundle a lane and a lens**: definitions lane (extracting what marks mean;
    these readers also carry the schedules-scope duty, non-negotiable 9), or placement lane
    (capturing scope where it's shown). Name the trade-knowledge entries each bundle's reader will
    carry (by content family: a kitchens bundle carries appliances, casework, countertops, tiling,
@@ -227,11 +227,11 @@ grid file-redirects), then:
    for reading.
 5. **Wave the bundles**: a wave is a set of bundles whose reads can run together. Bundles that
    plausibly see the same scope (kitchens and unit plans, say) go in different waves or run
-   serially — two parallel readers minting the same work double-mint. Content-disjoint bundles may
+   serially: two parallel readers minting the same work double-mint. Content-disjoint bundles may
    run in parallel within a wave.
 
 Write `bundle-map.md`: bundles, sheets per bundle (numbers + file/page references), lane, lenses,
-knowledge entries, model tier, wave order, and what's deliberately excluded (name it — exclusions
+knowledge entries, model tier, wave order, and what's deliberately excluded (name it: exclusions
 are named residue, never silence). **Show the user the plan in estimator terms and get their
 approval before any wave runs.** The read plan is a reviewable artifact; the operator may cut,
 add, or resequence.
@@ -240,8 +240,8 @@ add, or resequence.
 
 Per wave, in this exact loop:
 
-1. **Recompile the definitions index** into the context packet: one line per defined thing —
-   code, kind, one-line name, where defined — compiled from the record (`search` per known kind,
+1. **Recompile the definitions index** into the context packet: one line per defined thing:
+   code, kind, one-line name, where defined, compiled from the record (`search` per known kind,
    paged to the real total; the ledger's kind roster tracks which kinds exist so far). Depth stays
    in the record: readers resolve full definitions on demand mid-read (`search(subject:
    "<kind>:<code>")`), never from a paraphrase.
@@ -260,7 +260,7 @@ Per wave, in this exact loop:
    reader's sourceInstrument or subjects; `list_scope_items` delta), check contested rows, and
    record verified counts in the ledger. A mismatch stops the wave and gets investigated, never
    papered over. When the wave ran readers in parallel, also scan the wave's new items for
-   cross-reader overlaps — the same work captured from two sides, convention lines especially,
+   cross-reader overlaps: the same work captured from two sides, convention lines especially,
    since parallel readers cannot see each other's mints. List any overlap as a flag for the
    operator at the checkpoint; merging is a person's call at the review surface, never the
    lead's.
@@ -269,7 +269,7 @@ Per wave, in this exact loop:
 
 Token accounting: when the harness reports a completed worker's token usage, record it in the
 ledger against that dispatch. Where the harness doesn't surface a number, record the dispatch with
-usage unknown — never estimate and never leave the row out.
+usage unknown: never estimate and never leave the row out.
 
 ## 5. The completeness check (standing, with a closure loop)
 
@@ -279,25 +279,25 @@ list. Run this after the placement waves complete (and any time coverage is in d
 1. **Enumerate the defined things**: page through the record per definitions kind (the ledger's
    kind roster; `search` with the kind prefix, compact rows, to the real total) into a roster
    file under `anti-join/`.
-2. **Pull the scope list**: `list_scope_items` — names, descriptions, notes per item.
-3. **Account deterministically**: write and run a small local script — word-boundary token
+2. **Pull the scope list**: `list_scope_items`: names, descriptions, notes per item.
+3. **Account deterministically**: write and run a small local script: word-boundary token
    reference of each defined code in scope-item text (name / description / notes; evidence
    snippets excluded); kind-collisions and codes ≤2 characters divert to an ambiguous bucket for
    agent adjudication rather than string-match guessing. "Accounted" means textually referenced,
-   not priced. This is a script's job, not an eyeball's — the judgment lives in adjudicating the
+   not priced. This is a script's job, not an eyeball's: the judgment lives in adjudicating the
    ambiguous bucket and classifying the residue, not in the matching.
 4. **Classify the residue**, every row: accounted / plausibly-carried (inside an existing coarse
-   item — name which) / not-scope (a definition with no work attached — say why) / unaccounted.
+   item: name which) / not-scope (a definition with no work attached: say why) / unaccounted.
 5. **Close the loop**: cluster the unaccounted rows into capture gaps, define supplemental
    schedule-grounded capture units for them, dispatch those reads (same brief template, same
    mandates), re-run the accounting. The validation run's first pass found 269 of 564 defined
-   things unaccounted, closed 267 with one supplemental wave, and named a residue of 2 — that
+   things unaccounted, closed 267 with one supplemental wave, and named a residue of 2: that
    loop is the designed behavior, not a recovery.
 6. **Name the final residue** in the ledger and the close-out report, row by row.
 
 Spec sections account differently (estimators never write CSI digit strings into scope text): a
 spec section is accounted when the approved package split (stage 6) bundles it into a package.
-After the split is approved, list every TOC section not bundled anywhere — that list is the
+After the split is approved, list every TOC section not bundled anywhere: that list is the
 TOC-coverage residue, reported the same way.
 
 ## 6. Derive the packages: spec-TOC-anchored, two-phase, operator-approved
@@ -305,52 +305,52 @@ TOC-coverage residue, reported the same way.
 The estimator-judgment stage. Packages are bundles of spec sections grouped by how subcontractors
 actually split themselves in the market, not by the book's divisions.
 
-1. **Phase 1 — baseline split.** Propose the package structure from the spec TOC plus the trade
+1. **Phase 1: baseline split.** Propose the package structure from the spec TOC plus the trade
    knowledge base's market conventions: which sections bundle into which package, which get carved
    out, a primary CSI section per package. Probe the usually-present families the TOC is silent
    on (site/civil, SOE, landscaping/exterior improvements, thin design-build MEP divisions) and
-   propose estimator-declared packages for them. Present the split as a reviewable artifact —
+   propose estimator-declared packages for them. Present the split as a reviewable artifact:
    package name, primary section, bundled sections, catalog trade (id + name, from step 3),
-   one-line market rationale each — and **get the operator's approval before any tagging**.
+   one-line market rationale each, and **get the operator's approval before any tagging**.
    Tagging happens into an approved structure, never an inferred one.
-2. **Phase 2 — scope-driven amendments.** Where the scope list surfaces what the TOC cannot see
+2. **Phase 2: scope-driven amendments.** Where the scope list surfaces what the TOC cannot see
    (a specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
    package that should collapse into another once scale is understood), propose amendments the
    same way: named, rationaled, operator-approved.
 3. **Resolve every package to the trade catalog.** The trade tag and the live package speak the
    curated CSI trade catalog's vocabulary, not the spec book's. Before presenting the split, look
-   up each proposed package's home trade via `directory_list_trades` — exact `code` lookup first,
-   then a `query` by trade name or alias ("tile", "sheetrock") — and record the catalog trade id
+   up each proposed package's home trade via `directory_list_trades`: exact `code` lookup first,
+   then a `query` by trade name or alias ("tile", "sheetrock"), and record the catalog trade id
    verbatim (the spaced form, e.g. `09 21 16`) in the split artifact alongside the primary
    section. The primary section and bundled sections keep their spec-TOC granularity: the finer
    spec-section reading lives there and in each item's category and description, never in the
    trade tag. A package with no reasonable catalog match may keep its raw primary section as its
-   tag value, but only as a deliberate, named choice — mark it "no catalog trade" in the split
+   tag value, but only as a deliberate, named choice: mark it "no catalog trade" in the split
    artifact so the operator approves that knowingly. An unresolved tag is never the silent
    default, and a catalog id is never guessed from memory: every id in the split comes from a
    `directory_list_trades` result in this run (store-resolution, non-negotiable 4, applies to the
    catalog too).
 
 Creating live bid packages on the project (the outward-facing objects the solicitation flow uses)
-is the operator's call at their door: offer it after approval — one `solicitation_create_package`
+is the operator's call at their door. Offer it after approval, one `solicitation_create_package`
 per package they want live (tradeCode = the package's catalog trade id from the approved split,
 or its raw primary section only for a package the split explicitly marked "no catalog trade";
-name = the package's display name, notes carrying the bundled sections) — and skip it cleanly if
+name = the package's display name, notes carrying the bundled sections), and skip it cleanly if
 they'd rather create packages when soliciting. The approved split
 artifact, not the package rows, is what tagging needs.
 
 ## 7. Tag
 
 Assign each scope item its home trade off the approved split: one `belongsToTrade` record per item
-(value: the package's catalog trade id, verbatim from the approved split — a raw spec section only
+(value: the package's catalog trade id, verbatim from the approved split, a raw spec section only
 for a package the split explicitly marked "no catalog trade", never as an unmarked default),
 deposited in batches with the same read-back verification. Where an item genuinely straddles a package boundary, flag it as a package-boundary
-question instead of force-tagging — the validation run tagged 275 of 283 and flagged 8, and those
+question instead of force-tagging: the validation run tagged 275 of 283 and flagged 8, and those
 8 flags were correct output, not failure. Boundary enrollments (exclusions, general requirements,
 alternates on other packages) are manual-first doctrine: the engine does not auto-author them;
 the operator authors boundary lines on the package surface, and anything the read suggested as a
 boundary rides in flags and notes. Sheet-to-package assignment (`mosot_assign_sheet_packages`) is
-an operator-approved override — offer it only when the operator asks; the derived relevant-pages
+an operator-approved override: offer it only when the operator asks; the derived relevant-pages
 list already falls out of the citations.
 
 ## 8. Close out
@@ -359,14 +359,14 @@ Report to the user, in estimator terms:
 
 - **The scope list**: how many items, by category family; where to review it (the project's Scope
   view on plumlayer.com), and that every line shows the sheet and page it was read from.
-- **Their review points**: how many flagged items, the leading ones by name — unspecced grain,
+- **Their review points**: how many flagged items, the leading ones by name: unspecced grain,
   package-boundary questions, document defects found (contradictions, missing schedule entries,
   duplicate sheets), convention entries judged inapplicable. Document defects worth sending to
   the design team are named as question candidates.
 - **The count check**: what was enumerated, what closed, what is still open.
 - **The package split**: approved packages, amendments, TOC sections deliberately unbundled.
 - **The run cost**: dispatches by wave and model, token totals where the harness reported
-  them, unknowns stated as unknown — honest bounds, never estimates presented as measurements.
+  them, unknowns stated as unknown: honest bounds, never estimates presented as measurements.
 - **Knowledge amendments**: entry-silent flags and inapplicability flags, proposed as amendments
   to the trade knowledge base.
 
@@ -441,27 +441,27 @@ so flag what you're unsure of rather than smoothing it.
 
 After each wave, before the next dispatch, in estimator terms:
 
-- What was read (units, sheets), what landed: items added, items enriched, flags raised — verified
+- What was read (units, sheets), what landed (items added, items enriched, flags raised): verified
   counts, not reader-reported ones.
-- The flags worth their eyes now: document defects, grain questions, anomalies — each with its
+- The flags worth their eyes now: document defects, grain questions, anomalies, each with its
   sheet reference, reviewable on plumlayer.com.
 - What changed in the definitions index (new kinds, new codes) and anything the next wave depends
   on.
 - Anything that deviated: a count mismatch and its repair, an unreadable page, a reader that
-  stopped — named plainly.
+  stopped, named plainly.
 - The next wave's plan, and the ask: proceed, adjust, or pause.
 
 ## What this skill does not do
 
 - **Upload or recognize drawings** (`drawing-upload`), **create projects** (`project-create`),
   **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`).
-- **Author boundary enrollments** — manual-first doctrine; the operator authors boundary lines at
+- **Author boundary enrollments**: manual-first doctrine; the operator authors boundary lines at
   the package surface.
-- **Score itself against a bid eval** — the acceptance harness was repo-side study machinery, not
+- **Score itself against a bid eval**: the acceptance harness was repo-side study machinery, not
   product.
-- **Delete, resolve, or approve anything on the operator's behalf** — door-owned acts stay at
+- **Delete, resolve, or approve anything on the operator's behalf**: door-owned acts stay at
   their doors.
-- **Run unattended** — wave checkpoints are load-bearing until the operator has enough cold runs
+- **Run unattended**: wave checkpoints are load-bearing until the operator has enough cold runs
   behind them to decide otherwise, and that is their decision to make out loud, per run, never
   this skill's default.
 

@@ -96,64 +96,64 @@ changes wins.
 
 ## The verbs
 **Identity / discovery**
-- `whoami` — confirm which account you're acting as.
-- `list_projects` — the user's projects (each has a project record). Confirm the right one before acting.
-- `get_project` — one project's details.
-- `create_project` — create a new project (= a new project record). Supply `name` (required) and optional
+- `whoami`: confirm which account you're acting as.
+- `list_projects`: the user's projects (each has a project record). Confirm the right one before acting.
+- `get_project`: one project's details.
+- `create_project`: create a new project (= a new project record). Supply `name` (required) and optional
   `description`; returns the new `projectId`. Use before any propose or upload on a new bid/pursuit.
 
 **Read**
-- `set_grid` — the sheet inventory (the drawing set as a grid: discipline, sheet number,
+- `set_grid`: the sheet inventory (the drawing set as a grid: discipline, sheet number,
   governing issue, open-ambiguity count per sheet).
-- `ambiguities` — the open-conflict / review ledger, severity-sorted (legitimate-RFI first).
-- `rfi_candidates` — drafted RFI candidates with citations.
-- `search` — the raw claim ledger (ANY trust class, including `proposed`). Filter by
+- `ambiguities`: the open-conflict / review ledger, severity-sorted (legitimate-RFI first).
+- `rfi_candidates`: drafted RFI candidates with citations.
+- `search`: the raw claim ledger (ANY trust class, including `proposed`). Filter by
   subject / predicate / trustClass / text; paginated. Use this to see what's actually been
-  asserted — including your own proposals.
-- `list_scope_items` — the live scope list (name, category, description, notes, quantity per item).
+  asserted, including your own proposals.
+- `list_scope_items`: the live scope list (name, category, description, notes, quantity per item).
   Use this to see what's already been captured before minting or enriching a scope item.
 
-**Drawing recognition** (cloud PDF — these work against files already uploaded to the project)
-- `list_files` — list the drawing files registered to a project.
-- `register_pages` — once per project, register renderable page rows for every uploaded PDF (not
+**Drawing recognition** (cloud PDF: these work against files already uploaded to the project)
+- `list_files`: list the drawing files registered to a project.
+- `register_pages`: once per project, register renderable page rows for every uploaded PDF (not
   claims, just viewable pages) so uploaded files are readable even before recognition runs.
-- `recognize_sheets` — start the async deterministic bulk sheet-number recognition pass over one
+- `recognize_sheets`: start the async deterministic bulk sheet-number recognition pass over one
   uploaded PDF. Returns `{jobId, status}` immediately; poll `recognize_sheets_status` rather than
-  waiting inline. Recognized sheet claims deposit server-side as `proposed` on success — never
+  waiting inline. Recognized sheet claims deposit server-side as `proposed` on success; never
   `propose_batch` them yourself.
-- `recognize_sheets_status` — poll a `recognize_sheets` job. Returns run counts (`report`), the
+- `recognize_sheets_status`: poll a `recognize_sheets` job. Returns run counts (`report`), the
   server-side deposit summary (`deposit`), and the residue tail (`residue`) for you to read and
   judge; it never carries the recognized claims themselves.
-- `render_page` — render a single page of a registered PDF to an image so you can read it.
-- `get_page_text` — extract the text layer from a registered PDF page (deterministic; use
-  alongside `render_page` — text for tokens, render for layout/meaning).
+- `render_page`: render a single page of a registered PDF to an image so you can read it.
+- `get_page_text`: extract the text layer from a registered PDF page (deterministic; use
+  alongside `render_page`: text for tokens, render for layout/meaning).
 
 **Delivery** (group uploaded files into a source package)
-- `list_drawing_deliveries` — list a project's registered drawing deliveries (baseline sets and
+- `list_drawing_deliveries`: list a project's registered drawing deliveries (baseline sets and
   revision packages like bulletins/addenda).
-- `create_drawing_delivery` — register one delivery (e.g. "2025-12-15 Conformed Set" as
+- `create_drawing_delivery`: register one delivery (e.g. "2025-12-15 Conformed Set" as
   `deliveryKind: "baseline"`, or "2026-02-09 Bulletin 01" as `"revision"`). Project metadata, not a
   governing claim. Attach files with `register_file.deliveryId`, then recognize with
   `recognize_sheets.deliveryId`.
-- `update_drawing_delivery` — correct a delivery's label, kind, or issue date after the fact; never
+- `update_drawing_delivery`: correct a delivery's label, kind, or issue date after the fact; never
   renames or mutates the uploaded files themselves.
 
 **Upload** (register a new delivery)
-- `request_file_upload` — get a signed upload URL for a drawing PDF you want to register.
-- `register_file` — after uploading, register the file to the project so it becomes available
+- `request_file_upload`: get a signed upload URL for a drawing PDF you want to register.
+- `register_file`: after uploading, register the file to the project so it becomes available
   to `list_files` / `render_page` / `get_page_text` and the `drawing-upload` pipeline.
 
 **Write**
-- `propose` — append one claim (`subject`, `predicate`, `value`, `sourceInstrument`,
+- `propose`: append one claim (`subject`, `predicate`, `value`, `sourceInstrument`,
   optional `evidence`/`ambiguityClass`/`supersedesId`). Stamped as you, and it takes effect
   immediately as provisional working truth recorded as agent-stated. `supersedesId` is the
-  correction edge — see "Correcting a machine misread" below.
-- `propose_batch` — append an array of claims in one atomic call (`projectId` + `claims`
+  correction edge: see "Correcting a machine misread" below.
+- `propose_batch`: append an array of claims in one atomic call (`projectId` + `claims`
   array). Atomic: a bad entry rejects the whole batch and names the index. Prefer this over
   repeated `propose` calls for bulk deposits (e.g. upload or scope deposit). Each call
   accepts up to 500 claims; stay at ≤50 per batch so each read is faithful and
   count-verifiable.
-- `propose_batch_file` — like `propose_batch`, but for a run whose claims are too large to send
+- `propose_batch_file`: like `propose_batch`, but for a run whose claims are too large to send
   inline: upload a JSONL file of claims, then deposit from it in one atomic call. Use this instead
   of `propose_batch` for large runs (e.g. a scope-run wave depositing hundreds of items).
 
@@ -186,7 +186,7 @@ it like this:
 
 - `evidence` may be one entry or an array of them; both are read. What fails is an **empty**
   `{}`, which carries no source and so cites nothing.
-- `source` **must lead with the document reference** — a sheet number (`A-746`, `S-201.1`) or
+- `source` **must lead with the document reference**: a sheet number (`A-746`, `S-201.1`) or
   a spec section (`09 21 16`). That leading reference is what becomes the chip. An internal id
   like `bidPackage:proj-…`, or a prose sentence, is not a document reference and renders
   nothing by design.
@@ -205,8 +205,8 @@ the tokens there mean what you concluded. That judgment is yours, recorded as yo
 
 ### Correcting a machine misread (a mis-bound title or discipline)
 
-The deterministic recognizer grounds the tokens it reads, but *which* cell fills a semantic slot —
-`hasTitle`, `discipline` — is its fallible positional guess, recorded as `machine-read`. When you read
+The deterministic recognizer grounds the tokens it reads, but *which* cell fills a semantic slot
+(`hasTitle`, `discipline`) is its fallible positional guess, recorded as `machine-read`. When you read
 a sheet and can see it grabbed the wrong cell (a boxed drawing note recorded as the title, say),
 correct it with a supersession **edge**, not a bare competing claim:
 
@@ -216,10 +216,10 @@ correct it with a supersession **edge**, not a bare competing claim:
    cited to the sheet you read it from.
 
 The edge is what makes your read govern the grid: an agent edge onto a `machine-read` value is honored
-regardless of its register — only a person's word outranks you. A **bare** competing claim (no
+regardless of its register. Only a person's word outranks you. A **bare** competing claim (no
 `supersedesId`) does not win; it stays a candidate beneath the machine value, which is the
 anti-hallucination anchor working as intended. So reserve the `ambiguityClass` flag for a reading you
-genuinely cannot resolve — never as the way to fix a title you already read correctly (that is the
+genuinely cannot resolve, never as the way to fix a title you already read correctly (that is the
 "go set it on the site" dead end). To the user this is plain: "the automatic scan grabbed the wrong
 text on those sheets, so I read them and set them right."
 
