@@ -1,7 +1,7 @@
 {
   "name": "plumlayer",
   "version": "0.26.1",
-  "description": "Connect Claude to your Plumlayer project (cloud) and precon workflow skills. Create + onboard projects, read + record project entries through the hosted MCP; what you record counts as your word, carrying its authorship trail. Includes the scope-run engine: one grounded, cited scope list for the job, then derived trade packages.",
+  "description": "Connect your agent to your Plumlayer project record and the precon skills that work it: upload and index drawing sets, build one cited scope list for the job and split it into trade packages, level sub bids, and place takeoffs. Everything recorded carries its author, the time, and the sheet it came from.",
   "author": {
     "name": "Plumlayer"
   }

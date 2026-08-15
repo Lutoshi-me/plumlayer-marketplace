@@ -1,9 +1,10 @@
 # Plumlayer marketplace
 
-Private plugin marketplace for the **Plumlayer** plugin. The plugin started as a Claude Code
-marketplace plugin and now has side-by-side Codex packaging infrastructure.
-
-It connects an agent to your Plumlayer project record (cloud) and the precon workflow skills.
+Private plugin marketplace for the Plumlayer plugin. Plumlayer connects your Claude Code or
+Codex agent to your Plumlayer project record, the cloud record of a construction project, and gives
+it the precon workflow skills to work that record directly: upload and index drawing sets, build a
+grounded scope list for the job, level sub bids, and place takeoffs, all from inside your agent
+session.
 
 ## Setup: Claude Code
 
@@ -12,9 +13,9 @@ It connects an agent to your Plumlayer project record (cloud) and the precon wor
 /plugin install plumlayer@plumlayer
 ```
 
-On first use of a Plumlayer tool, Claude opens your browser to authorize against **your
-Plumlayer account** (OAuth). After that, Claude can read and propose claims on your own
-projects — scoped to you; you never see anyone else's.
+On first use of a Plumlayer tool, Claude opens your browser to authorize against your own
+Plumlayer account (OAuth). After that, Claude can read and record entries on your own
+projects, scoped to you; you never see anyone else's.
 
 > If you previously added the MCP manually (`claude mcp add plumlayer …`), remove it first
 > with `claude mcp remove plumlayer` so the plugin's connector is the one in use.
@@ -56,27 +57,58 @@ unless Claude compatibility is handled separately.
 
 ## What's in the plugin
 
-- **MCP connector** to the hosted Plumlayer project record (`api-production-0a7b.up.railway.app/mcp`)
-  — auto-wired on install; no manual `claude mcp add`.
-- **`project-record` skill** — teaches Claude the project record verb surface (`set_grid`, `ambiguities`,
-  `rfi_candidates`, `search`, `propose`, …) and the trust model: what an agent writes takes effect
-  as its own cited reading, and a person's word outranks it.
-- **`drawing-upload` skill** — register any drawing delivery into the cloud project record as recognized,
-  cited sheet claims (including sheet-type classification).
-- **`drawing-index-publish` skill** — legacy export projection that publishes a Master Drawing Index
-  workbook from cloud claims.
-- **`drawing-set-assemble` skill** — legacy export projection that assembles discipline PDFs from cloud
-  claims.
-- **`scope-run` skill** — guarded by PLU-323. It now refuses the retired route-first path and points
-  agents to the PLU-274 scope-item-first rebuild: one grounded whole-job scope list first, then
-  derived trade packages. It does not dispatch the old fan-out/reconcile harness by default.
-- **`scope-decomposer` subagent** — legacy route-first asset retained for PLU-274 history/migration
-  only; guarded against normal production scope dispatch.
-- **`trade-specialist` subagent** — legacy route-first asset retained for PLU-274 history/migration
-  only; guarded against normal production scope dispatch.
+A hosted MCP connector to your Plumlayer project record
+(`api-production-0a7b.up.railway.app/mcp`), auto-wired on install with no manual `claude mcp add`,
+and ten skills that use it.
 
-Drawing upload, project record, and export skills are active. The old route-first scope harness remains bundled
-as historical material while PLU-274 rebuilds the current production scope engine.
+### Getting started
+
+- **`setup`**: a one-time interview that captures your company profile and defaults, stored only
+  on your machine, so every other skill is personalized without any confidential config living in
+  the shared plugin.
+- **`project-create`**: stands up a new project record, either by interviewing you or by reading
+  documents you already have (an invitation to bid, a drawing index, a spec table of contents).
+
+### Drawings
+
+- **`drawing-upload`**: takes a drawing delivery in any packaging (a new set, a bulletin, an
+  addendum, a permit set) and turns it into a searchable, indexed set of sheet records, no manual
+  conforming and no local spreadsheet step.
+- **`learn-project`**: a quick orientation pass over an uploaded set that reads the cover sheet,
+  the drawing index, and the key plans, then records what it found so every other skill starts from
+  a shared picture of the project instead of from scratch.
+
+### Scope and bids
+
+- **`scope-run`**: reads the drawing set and builds one complete, cited scope list for the whole
+  job, checks it for gaps, then splits it into trade packages. Draws on a bundled reference set of
+  44 trade packages (see below) so each split follows how that trade actually bids and scopes work
+  in the market.
+- **`bid-intake`**: reads a trade's sub proposals and turns them into bid responses against the
+  matching trade package, so you can level bids side by side with the amounts, inclusions, and
+  exclusions each sub actually quoted.
+
+### Takeoff
+
+- **`takeoff`**: turns a plain request like "count the doors on the level 2 plans" or "measure the
+  retaining wall" into placed marks or measurements on the actual sheets, the same as if you had
+  drawn them yourself.
+
+### Records and exports
+
+- **`project-record`**: the general-purpose skill for reading, searching, and adding to a project
+  record directly: the sheet and set grid, flagged items, and scope and takeoff data.
+- **`drawing-index-publish`**: publishes a Master Drawing Index Excel workbook straight off the
+  current set, with a tab per delivery and links that jump to each sheet.
+- **`drawing-set-assemble`**: assembles the current drawing set into fresh PDFs, one per
+  discipline plus an optional combined PDF.
+
+### Trade reference set
+
+The plugin also ships `trade-packages/`, a set of 44 trade reference files plus a manifest, read by
+`scope-run` when it splits the job's scope list into packages. Each entry covers how that trade
+bids and scopes work in the market, distilled and scrubbed of any identifying project or company
+data.
 
 ## Updating
 
@@ -110,22 +142,21 @@ codex plugin add plumlayer@plumlayer
 ```
 .claude-plugin/marketplace.json     # Claude marketplace manifest (lists the plugin)
 .agents/plugins/marketplace.json    # Codex marketplace manifest (lists the plugin)
+docs/                               # authoring contracts for this repo's shipped text
 plugins/plumlayer/
   .claude-plugin/plugin.json        # Claude plugin manifest
   .codex-plugin/plugin.json         # Codex plugin manifest
   .mcp.json                         # the hosted MCP connector shared by both surfaces
-  agents/
-    scope-decomposer.md             # legacy route-first scope read guard
-    trade-specialist.md             # legacy route-first fan-out guard
   skills/
-    project-record/SKILL.md         # the starter project record skill
+    setup/SKILL.md
+    project-create/SKILL.md
     drawing-upload/SKILL.md
+    learn-project/SKILL.md
+    scope-run/SKILL.md
+    bid-intake/SKILL.md
+    takeoff/SKILL.md
+    project-record/SKILL.md
     drawing-index-publish/SKILL.md + references/
     drawing-set-assemble/SKILL.md + references/
-    scope-run/SKILL.md              # PLU-323 guard; refuses retired route-first scope-run
-  scope-harness/                    # superseded route-first assets retained for history/migration
-    tools/*.py                      # legacy deterministic grounding + glue + prepare_deposit.py
-    ingestion/sheet_inventory.py    # vendored set-inventory tool
-    trade-lenses.json               # legacy trade-lens data (7 interior lenses, v0.1)
-    reference/  prompts/  clusters/cluster_TEMPLATE.json  requirements.txt
+  trade-packages/                   # 44 trade reference files + MANIFEST.md, read by scope-run
 ```

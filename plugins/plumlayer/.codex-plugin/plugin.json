@@ -1,7 +1,7 @@
 {
   "name": "plumlayer",
-  "version": "0.10.2",
-  "description": "Connect agents to your Plumlayer project (cloud) and guarded precon workflow skills. Create and onboard projects, read and record project entries through the hosted MCP; route-first scope-run is blocked while PLU-274 rebuilds it.",
+  "version": "0.26.1",
+  "description": "Connect your agent to your Plumlayer project record and the precon skills that work it: upload and index drawing sets, build one cited scope list for the job and split it into trade packages, level sub bids, and place takeoffs. Everything recorded carries its author, the time, and the sheet it came from.",
   "author": {
     "name": "Plumlayer"
   },
@@ -16,7 +16,7 @@
   "interface": {
     "displayName": "Plumlayer",
     "shortDescription": "Work with Plumlayer projects from Codex.",
-    "longDescription": "Read, search, and record grounded construction project entries through the hosted Plumlayer MCP, with guarded Plumlayer precon workflow skills. Route-first scope-run is blocked while PLU-274 rebuilds the scope engine.",
+    "longDescription": "Read, search, and record construction project entries through the hosted Plumlayer MCP, with the full Plumlayer precon workflow skills: drawing upload, project setup, scope-run, takeoff, and bid intake.",
     "developerName": "Plumlayer",
     "category": "Developer Tools",
     "capabilities": [
@@ -27,7 +27,7 @@
     "defaultPrompt": [
       "Show me my Plumlayer projects",
       "Search this project's records",
-      "Record grounded entries for review"
+      "Record what I read into the project"
     ]
   }
 }
