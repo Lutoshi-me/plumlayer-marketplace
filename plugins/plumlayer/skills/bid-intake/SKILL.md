@@ -579,16 +579,23 @@ the same string `get_bid_package` reads with (a different spelling mints the ite
 nothing reads, so it lands and then renders nowhere); and `evidenceFileId` is refused if missing,
 because an off-checklist item nobody can trace back to its source is not worth having.
 
-**A deduct alternate is not an adder with a minus sign.** `inclusion` offers only
-`base | adder | excluded`, and a priced `adder` counts straight into that bidder's as-submitted total.
-So encoding a deduct ("change the glazing and take $40,000 off") as a negative-amount adder makes the
-grid disagree with the paper by subtracting an alternate nobody accepted, and rendered prices on this
-surface are unsigned, so it displays as its own opposite. Until the model carries alternates properly,
-record a deduct or an un-accepted alternate as `inclusion: "excluded"` with the **amount omitted**, and
-put the figure and what triggers it in the `note`. The information stays visible with its citation; the
-bidder's total stays equal to what they actually submitted. A summary-level alternate belongs in
-`bidSummary.allowances_alternates`, which is the parallel bucket built for exactly this and is never
-folded into a total.
+**An alternate has its own field. Never encode one as an inclusion or a signed amount.** When a
+bidder offers an alternate, meaning any price contingent on someone choosing it, whether it raises or
+lowers the base bid, record it with the `alternate` field: `direction` is `"add"` or `"deduct"`, and
+`amount` is the plain positive magnitude the proposal states. Never make the amount negative and never
+use a negative adder; the door refuses a negative magnitude outright. Leave `inclusion` and `amount`
+alone for the alternate's money: those describe the base bid, and an alternate says nothing about the
+base bid. On an additional item the door refuses `amount` and `alternate` together, since the item's
+own `amount` counts into the bidder's total and the pair would move a total nobody accepted; if a
+proposal both prices an item and states an alternate on it, land the base price on the scope-line
+response and put the alternate there, where the two may coexist. File each alternate as its own
+additional item so it carries its own citation, or set the field on a response when the alternate
+modifies a checklist row the bidder answered. The `note` carries only what the paper says the figures
+do not: tax treatment, whether alternates combine, which building or scope the figure covers. Never
+write an explanation of how the record is stored. A summary-level alternate still belongs in
+`bidSummary.allowances_alternates`, the parallel bucket that is never folded into a total; the
+`alternate` field is the same idea at item and response level, and it likewise never moves any total
+until someone accepts it.
 
 **Verify by reading back, not by counting your own calls, and read back NARROWLY.**
 
@@ -649,8 +656,9 @@ readable there now, each with the proposal page behind it; the bid itself is the
   unanchored boilerplate exclusion naming work this project does not contain never becomes an item.
 - A summary is only ever a figure the document states. A submission carrying several quotes and no
   printed combined total gets NO `bidSummary`; the projection totals that bidder from their own rows.
-- A deduct or un-accepted alternate is never a negative-amount adder: `excluded` with the amount
-  omitted and the figure in the note, so the bidder's total still equals what they submitted.
+- An alternate is never a negative-amount adder and never an inclusion: it goes in the `alternate`
+  field (`direction` plus a positive magnitude), so the bidder's total still equals what they
+  submitted and the offer stays visible, priced, and attributable.
 - Additional items go through `deposit_additional_item` one at a time, never `propose_batch` (which
   refuses the predicate), and only after the response batch has landed (the door refuses a party who
   is not yet a bidder).
