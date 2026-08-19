@@ -180,7 +180,9 @@ one, and it hides the real blocker (no rows to answer) behind what looks like a 
   each with its `subject`, `label`, `citation`, and `receipt.id`. **Read this now and keep it**, before
   you read a single proposal. It is what stage 7b checks against so a re-run never records the same
   off-checklist item twice, and it tells you what a prior run already captured for a bidder you are
-  about to re-read.
+  about to re-read. This full read is a stage-3 instrument only. For the post-deposit check, stage 7
+  uses `view: "summary"`, a bounded projection of the same read (per-bidder counts and totals, no
+  per-line grid, no receipts). Never re-call the full read to verify.
 - **`list_scope_items(projectId)`** (optional enrichment only) → the project-wide canonical scope-item
   view. `get_bid_package`'s `lines[]` already carries what this skill needs for the checklist; reach for
   `list_scope_items` only if a specific row needs a field `lines[]` doesn't carry, never to re-derive or
@@ -597,29 +599,32 @@ write an explanation of how the record is stored. A summary-level alternate stil
 `alternate` field is the same idea at item and response level, and it likewise never moves any total
 until someone accepts it.
 
-**Verify by reading back, not by counting your own calls, and read back NARROWLY.**
+**Verify by reading back, not by counting your own calls, and read back BOUNDED.**
 
-Do **not** re-call `get_bid_package` for this check. On a real package its response is enormous: three
-bidders against a sixteen-row checklist with twenty-six items returned roughly 154,000 characters and
-overran the tool output limit outright. That is a small job. The full package read is the stage-3
-context call, made once; it is not a verification instrument.
+Do **not** re-call the full `get_bid_package` for this check. On a real package the full response is
+enormous: three bidders against a nineteen-row checklist measured roughly 165,000 characters and
+overran the tool output limit outright, and that is a small job. The full read is the stage-3 context
+call, made once; it is not a verification instrument.
 
-Verify with a targeted `search(projectId, predicate: "additionalItem")` instead. That returns only
-these rows, and its `count` is the number you need. This is a single-predicate lookup, not the
-raw-`search` reconstruction of the package that stage 3 forbids: you are counting rows you just
-wrote, not rebuilding a projection.
+Verify with **`get_bid_package(projectId, trade, view: "summary")`** instead. That returns the bounded
+verification projection: per bidder, `responseCount` (that bidder's response cells with a non-null
+receipt), `additionalItemCount` (all of the package's additional items for that bidder, reconciled or
+not), and the carried totals and ranks. No per-line grid, no receipts: a couple of thousand
+characters on a real package.
 
-Two things to be careful of when you read that count. `search` returns **every** row including
-superseded ones, so count **distinct subjects**, not rows: a correction adds a row to an existing
-subject. And the count covers the whole project, so if the project carries additional items on other
-trade packages, filter to the subjects containing this package's infix.
+Check, for each bidder you deposited for:
 
-The rise over the count you captured in stage 3 must equal the number of **fresh** items you deposited
-(a correction supersedes in place and raises no count). Each `deposit_additional_item` call also
-returns the item's `subject`: keep them, and confirm every one of them appears. If the numbers
-disagree, **stop and report**: do not deposit again to "fix" it, and do not reconcile the difference
-by reasoning. A duplicate you can see is recoverable in one move by a person; a duplicate you papered
-over is not.
+- **`responseCount`** equals that bidder's stage-3 baseline (their `lines[].responses[]` cells with a
+  non-null `receipt` in the read you kept) plus the **fresh** rows you answered. A new bidder's
+  baseline is zero. A correction supersedes in place and raises no count.
+- **`additionalItemCount`** equals that bidder's stage-3 `additionalItems[]` count plus the **fresh**
+  items you deposited (same in-place rule for corrections). Baseline and check come from the same
+  projection, so derived (`migratedFrom`) items appear in both and cancel out of the comparison.
+
+Each `deposit_additional_item` call also returns the item's `subject`: keep them for the report. If
+any number disagrees, **stop and report**: do not deposit again to "fix" it, and do not reconcile the
+difference by reasoning. A duplicate you can see is recoverable in one move by a person; a duplicate
+you papered over is not.
 
 ## 8. Report and hand off
 
@@ -665,8 +670,10 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - No item is deposited without first checking the package's existing `additionalItems[]` for it; this
   door has no idempotency key, so an unchecked re-run duplicates silently. A derived item (non-null
   `migratedFrom`) and a reconciled one (non-null `resolution`) are never touched.
-- The additional-items deposit is verified by reading the package back and matching the rise in count;
-  a mismatch stops the run and is reported, never deposited over.
+- Deposits are verified by reading the package back in **summary view** (`get_bid_package` with
+  `view: "summary"`) and matching the rise in per-bidder counts against the stage-3 baseline; a
+  mismatch stops the run and is reported, never deposited over. The full read is never re-called for
+  verification.
 - The contracting party is resolved from the whole document (cover emails, signature blocks,
   letterhead mismatches), never from the first letterhead; a bundle of embedded vendor quotes under
   one party is one bidder; genuinely ambiguous identity stops and asks.
