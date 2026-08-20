@@ -4,6 +4,8 @@ _cli.py — shared helper: invoke the `claude` CLI and parse stream-json events.
 Grounding role: thin wrapper around subprocess + JSONL parsing. No inference.
 """
 
+from __future__ import annotations
+
 import json
 import subprocess
 from pathlib import Path

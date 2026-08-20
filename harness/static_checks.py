@@ -28,6 +28,8 @@ Checks:
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
 
+from __future__ import annotations
+
 import json
 import re
 import subprocess
