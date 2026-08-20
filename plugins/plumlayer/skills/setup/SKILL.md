@@ -84,15 +84,23 @@ project-specific, that's `project-create`'s job. Keep it short.
 
 ## 3. Confirm and write
 
+<!-- user-facing -->
 Summarize the profile back to the user in plain language, not raw JSON, for example: "Here's what
 I've got: Acme Construction, GC, focused on interior fit-out work in Massachusetts, defaulting to
-CM-at-risk projects and a coarser bid-level scope grain. Sound right?" Confirm each part they want
+CM-at-risk projects and a coarser bid-level scope grain. Sound right?"
+<!-- /user-facing -->
+Confirm each part they want
 changed, then write the file. **Do not write until they confirm.**
 
 ```bash
 mkdir -p "$HOME/.plumlayer"
 # write the confirmed JSON to "$CONFIG"
 ```
+
+Audience: agent. `operator.json` is read by `project-create` and the scope workflows to pre-fill
+defaults; its values reach the user only through the plain-language summary in step 3 and the
+report in step 4, and whatever crosses into that summary or report becomes user-facing at the
+crossing and is translated there.
 
 Schema (`~/.plumlayer/operator.json`):
 
@@ -124,11 +132,13 @@ Schema (`~/.plumlayer/operator.json`):
 
 ## 4. Report
 
+<!-- user-facing -->
 Tell the user: the profile is saved at `~/.plumlayer/operator.json`; give a one-line summary of what's
 in it (company, role, delivery default, grain default) so they know exactly what they configured;
 confirm it's local-only and never committed; and that `project-create` will now reuse these defaults
 so each new project only asks for project-specific facts. Point them at `/project-create` to start
 their first project.
+<!-- /user-facing -->
 
 ## Discipline (non-negotiable)
 

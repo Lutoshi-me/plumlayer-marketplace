@@ -61,12 +61,14 @@ outside the repo and acceptable: the rule you own is what you write into tracked
 
 ## Words (operator-facing language)
 
+<!-- user-facing -->
 Speak estimator words in everything the user reads: **condition, mark, measurement, count, total,
 scale, sheet, trail**. Say "placed 89 marks under the Windows condition on A-3.01", "the scale on
 A-3.02 was already set, I used it", "3 judgment calls below".
 
 Never tell the user something is "pending review" or "awaiting approval". It is their takeoff now;
 the honest framing is "it's in the editor; anything you change wins".
+<!-- /user-facing -->
 
 ## What this is, and the boundary
 
@@ -118,7 +120,9 @@ only one of them is a condition:
   but they are standing counted work all the same: a count of the same item on the same sheet
   **is** overlap even though no condition exists.
 
-**Either shape → stop and put the choice to the operator** before reading a single sheet. Name
+**Either shape → stop and put the choice to the operator** before reading a single sheet.
+<!-- user-facing -->
+Name
 what stands, say plainly whether it is visible in the editor or on record only, and offer the
 honest options with their real costs:
 
@@ -133,6 +137,7 @@ honest options with their real costs:
 - **count fresh**: a genuinely independent second read; slower, and the standing record remains
   on record beside it;
 - **leave it**: report what stands and stop.
+<!-- /user-facing -->
 
 Be honest about removal: you cannot remove standing work, and a legacy per-sheet count is not in
 the editor for the operator to delete either. Whatever is added lands **alongside** it. Never
@@ -168,8 +173,12 @@ records: never from filename guesses.
 3. **Settle the roster from titles first; render only the residue.** Titles usually separate an
    exterior elevation from an interior or structural one at zero render cost; render a candidate
    only when its title and type leave the call genuinely unclear, and to spot-check the roster
-   (one render on a sheet you will read anyway is free confirmation). State the final roster to
-   the user before the heavy read, naming the sheets you will count on. Interior elevations,
+   (one render on a sheet you will read anyway is free confirmation).
+<!-- user-facing -->
+State the final roster to
+   the user before the heavy read, naming the sheets you will count on.
+<!-- /user-facing -->
+Interior elevations,
    enlarged partial elevations, and similar near-misses are a judgment call: include or exclude
    deliberately and say which in the report.
 4. **Scope discipline.** The request's surface bounds the run. "The elevations" does not quietly
@@ -330,6 +339,7 @@ the operator the takeoff landed; a successful deposit call alone is not.
 
 ## 9. Report
 
+<!-- user-facing -->
 The report is the manifest, in estimator words:
 
 - **What landed:** per sheet: marks placed, by tag/type breakdown where tags exist; the condition
@@ -350,6 +360,7 @@ successful run, not an apology: what stands (named, with whether it is visible i
 on record only), why that blocks proceeding without a choice, the options from stage 2 with their
 real costs, and the standing work's own judgment calls and caveats. The operator inherits those
 the moment they lean on the standing number, so they are part of the answer, not trivia.
+<!-- /user-facing -->
 
 ## Gates (non-negotiable)
 

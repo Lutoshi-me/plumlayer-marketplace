@@ -23,6 +23,31 @@ The boundary that keeps getting missed: **a report template is user-facing text.
 prints a kill list and then writes "report the deposit counts and the residue" has violated its own
 rule. Check every report and narration block against section 3.
 
+### Declaring the audience
+
+Audience is declared, never inferred. The register rule above is unenforceable while the boundary
+it governs is unmarked, so every skill marks it explicitly:
+
+- **User-facing spans are wrapped in paired markers**, each on its own line:
+  `<!-- user-facing -->` before the span and `<!-- /user-facing -->` after it. This covers every
+  report template, narration block, checkpoint format, closing report, and any question or
+  statement the skill mandates the agent put to the user. Unmarked skill body text is agent-facing
+  by default. Frontmatter descriptions, the README, and manifest descriptions are user-facing by
+  category and carry no per-instance marker.
+- **Every run artifact a skill mandates writing carries an audience clause** beginning with the
+  exact token `Audience:`, naming one of user, agent, or machine. An agent-audience artifact says
+  so precisely so a later reader never has to guess whether machinery vocabulary is acceptable in
+  it (it is). An agent-audience artifact that feeds user-facing output, a ledger feeding a cost
+  line in a closing report or a packet whose path is handed to the user, says that too: whatever
+  crosses from it into user-facing text becomes user-facing at the crossing and is translated
+  there.
+- **The markers are mechanical on purpose.** The static check finds user-facing spans by these
+  exact tokens; a span the markers miss is ungoverned. When in doubt, over-mark: the expensive
+  failure is marking too little.
+- **Markers never go inside the estimator-voice block** (section 3), which stays byte-identical
+  across every skill that carries it. The block is itself an instruction about user-facing text,
+  not a user-facing template.
+
 ## 2. The frontmatter description contract
 
 The description does two jobs at once. A human reads it in a listing; the model reads it to decide

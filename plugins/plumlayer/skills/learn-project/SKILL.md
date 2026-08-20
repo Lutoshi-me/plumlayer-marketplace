@@ -208,10 +208,13 @@ Write it to `~/.plumlayer/runs/<project-slug>/learn-project-packet.md` (the same
 the `scope-run` skill uses), derive `<project-slug>` from the project name (lowercase, spaces to
 hyphens) or fall back to the `projectId` if the name doesn't produce a clean slug. Never write it
 into a repo, and never deposit it as a claim. Regenerate it in full the next time this skill runs for the project, it is a projection,
-not a document to patch.
+not a document to patch. Audience: agent. Its path is handed to the user at run end (step 8) and
+its content orients later readers; whatever crosses from it into user-facing text becomes
+user-facing at the crossing and is translated there.
 
 ## 8. Report
 
+<!-- user-facing -->
 Tell the user, in plain terms (mirrors `project-create`'s closing report step):
 - **What was read**, identity, which of the seeded project facts were present, the sheet-inventory
   scope (disciplines covered, set_grid vs. sampled search), and the spec-TOC status.
@@ -227,6 +230,7 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
 - **The placeholder note**, the definitions-as-context section is a stub, not yet designed.
 - **What a person should look at**, the flagged entries, visible on plumlayer.com with the
   page each one was read from.
+<!-- /user-facing -->
 
 ## Gates (non-negotiable)
 

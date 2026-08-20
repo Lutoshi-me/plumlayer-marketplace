@@ -50,6 +50,7 @@ never put a real client or project name here.
 
 ## Narration to the user
 
+<!-- user-facing -->
 Never let the words "grounding", "ingestion", "the ledger", or "residue pass" reach the user: a
 real transcript showed an agent narrating all four and confusing the user about what was actually
 happening. Say instead:
@@ -61,6 +62,7 @@ happening. Say instead:
 - "reading the spec book's table of contents" (step 8, while the extraction job is running)
 - "N sections found" (step 8, on job success)
 - "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
+<!-- /user-facing -->
 
 ## What this is, and the boundary
 
@@ -102,8 +104,11 @@ The branch substitutes the local-only stages and reuses everything else unchange
   source list: each row carries `fileId`, `filename`, `sizeBytes`, and its `deliveryId` (or null).
   Apply step 2's judgment to that list: which files are drawings and which aren't. When a filename
   doesn't decide, sample a page or two with `render_page` / `get_page_text`: on this branch even the
-  file-selection sampling is cloud-side, since there are no local bytes. Emit the same packaging
+  file-selection sampling is cloud-side, since there are no local bytes.
+<!-- user-facing -->
+Emit the same packaging
   report: which files you will recognize, which you're excluding and why.
+<!-- /user-facing -->
 - **Delivery attribution instead of registration (replaces steps 3–4).** Read each drawing file's
   `deliveryId` from `list_files`, cross-referenced against `list_drawing_deliveries(projectId)`:
   - **Attributed**: the file already carries its delivery. Reuse it; never register a duplicate
@@ -168,10 +173,12 @@ title-block grammar vs spec-prose and pick the authoritative source. This local 
 claim, and no claim's evidence ever cites a local read (every claim's evidence comes from the cloud
 recognition tools in steps 5–6).
 
+<!-- user-facing -->
 Emit a short packaging report before uploading: the class, which file(s) are the drawings and why,
 page counts, which file(s) (if any) are the project manual / spec book headed to step 8, which files
 you are excluding (geotech, emails, unrelated attachments) and why, and the picked source if there was
 a dual-source quirk.
+<!-- /user-facing -->
 
 ## 3. Register the delivery
 
@@ -352,8 +359,11 @@ a partial phrase, or a full title as the value.
 ### Unsure sheets
 
 Do not deposit a `sheetType` claim for a sheet you can't confidently place in the vocabulary; skip it
-and count it. Narrate: "N sheets sorted by type, M I left for a closer look"; never imply full
+and count it.
+<!-- user-facing -->
+Narrate: "N sheets sorted by type, M I left for a closer look"; never imply full
 coverage when some sheets were skipped.
+<!-- /user-facing -->
 
 ## 6c. Correct a mis-bound recognized title or discipline
 
@@ -382,8 +392,10 @@ candidate beneath the machine value. Never reach for the `ambiguityClass` flag h
 genuine ambiguity, and flagging a title you already read correctly is the "go set it on the site" dead
 end this step exists to close.
 
+<!-- user-facing -->
 Narrate it in estimator words: "the automatic scan grabbed the wrong text on N sheets, so I read them
 and set them right"; never "supersede", "claim", or "edge".
+<!-- /user-facing -->
 
 ## 7. Deposit residue and types, then verify
 
@@ -434,12 +446,15 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    whole grid, not this verify step.
 
 Point any unresolved residue, flagged image-only pages, or untyped sheets at `ambiguities(projectId)`
-or the plain untyped count: the review queue, not something this skill resolves itself. Report: the
+or the plain untyped count: the review queue, not something this skill resolves itself.
+<!-- user-facing -->
+Report: the
 project and delivery; the recognition run's counts (pages scanned, sheets recognized, how many were
 high-confidence, how many were flagged for a closer look); how many sheet records were saved and how
 many were already on file; the count of entries you added yourself for the sheets you reviewed and
 typed, confirmed against what you sent; and that the set is now readable on plumlayer.com with each
 sheet's source page behind it.
+<!-- /user-facing -->
 
 ## 8. Extract the spec book's table of contents
 
@@ -463,13 +478,16 @@ disk the whole time.
    `failed`: the same queued/running/stale rhythm as `recognize_sheets_status` in step 5. On `failed`,
    read `error`, stop, and report it; don't retry blindly. On `stale`, re-call `extract_spec_toc` on the
    same file set to restart.
-4. **Report the counts honestly, not just "N sections found."** From the succeeded job's `report`:
+4.
+<!-- user-facing -->
+**Report the counts honestly, not just "N sections found."** From the succeeded job's `report`:
    sections found, files opened vs failed (a multi-file run can succeed overall while still naming one
    corrupt division PDF in `failedFiles`: that's a finding for the operator, never a silent retry
    loop), and the completeness-diff / mismatch / residue counts. **`sectionsFound` counts only
    footer-confirmed sections** (the per-page CSI-code footer read): a section declared solely in the
    PDF bookmark tree, with no confirming footer, does NOT add to that count; it surfaces instead through
    the completeness findings, never as a silent gap in the number you report.
+<!-- /user-facing -->
 5. **Read-back verify.** Call `search(projectId, predicate: "inDivision")` and confirm the deposited row
    count matches the job's `sectionsFound` exactly: completeness/residue findings ride their own
    predicate (`hasCompletenessStatus`) and never appear in this read. A mismatch stops the run and gets
@@ -504,7 +522,9 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    index against only the sheets delivered in it. `result.mode` reports which comparison ran. Either
    way it compares three sides: what the index declares, what sheets are actually in the set, and
    what the spec sections say. It returns a full report; it writes nothing on this call.
-3. **Walk the operator through the report** before recording anything:
+3.
+<!-- user-facing -->
+**Walk the operator through the report** before recording anything:
    - What matched: the overlap between the index and the set.
    - What the index lists that isn't in the set: while the delivery still holds pages nobody has
      recognized, this sits in your own review queue (the sheet may be on one of them); once every
@@ -522,6 +542,7 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    - Whether the spec comparison ran at all: when step 8 found no project manual to extract for
      this delivery, the spec leg is reported as not having run. Say exactly that; never present it
      as a finding of zero.
+<!-- /user-facing -->
 4. **Offer to record the residue.** Once the operator has seen the report, offer
    `reconcile_set(projectId, deposit: true)` to record the sheet findings and the grouped questions
    for the design team (grouped by discipline series, not one per sheet). Only run it on the

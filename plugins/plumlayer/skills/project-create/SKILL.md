@@ -65,9 +65,12 @@ instrument tier** than anything the user can recite here. An operator answering 
 the **weakest claim there is**, your restatement of what someone told you; a cover-sheet /
 title-block read produces a value confirmed off the drawing itself, which **outranks it minutes
 later.** So asking the user to guess the project type, the engineers, the trades, or the square footage
-isn't just slow, it seeds bottom-tier claims the next step overwrites, cluttering the ledger. **Ask
+isn't just slow, it seeds bottom-tier claims the next step overwrites, cluttering the ledger.
+<!-- user-facing -->
+**Ask
 only for what no drawing will ever carry; for the rest, say "I'll read that off the set next" and move
 on.**
+<!-- /user-facing -->
 
 ---
 
@@ -148,7 +151,10 @@ scoped to it.
 > user to create the project on **plumlayer.com** (one click), then call `list_projects` and resolve
 > the new `projectId` from the list. The rest of the skill is unchanged.
 
-Confirm back to the user: "Created project **<name>** (`<projectId>`)." One project = one project record.
+<!-- user-facing -->
+Confirm back to the user: "Created project **<name>** (`<projectId>`)."
+<!-- /user-facing -->
+One project = one project record.
 
 ---
 
@@ -199,16 +205,20 @@ sourced. **Every claim carries a `sourceInstrument` and evidence, no exceptions.
 
 ## 5. Name the scope handoff
 
+<!-- user-facing -->
 Tell the user the next step is `drawing-upload` to register and recognize the drawing delivery, and
 the spec book too, when there is one, since the scope engine's package derivation anchors on it.
 Once the set is recognized, `/scope-run` runs the scope-item-first engine: one grounded, cited scope
-list, then derived trade packages. Never suggest the retired route-first path or a `scope-run`
+list, then derived trade packages.
+<!-- /user-facing -->
+Never suggest the retired route-first path or a `scope-run`
 cluster config: `scope-run` is a skill, not a config.
 
 ---
 
 ## 6. Report and handoff
 
+<!-- user-facing -->
 Tell the user, in plain terms:
 - **Created:** project name + `projectId`.
 - **Seeded:** how many entries, broken down (facts / parties / trades / sets), and **how many were
@@ -221,6 +231,7 @@ Tell the user, in plain terms:
   Say "seeded 12 project facts, 2 flagged for your judgment" rather than "pending review": what you
   seeded is the project's starting frame now, carrying your name and what you were told, and anything
   a person changes, or a drawing read later replaces, wins.
+<!-- /user-facing -->
 
 ---
 

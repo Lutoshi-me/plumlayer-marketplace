@@ -67,6 +67,7 @@ Call `publish_master_index_status(projectId, jobId)` every 3-5 seconds until `st
 
 ## 4. Report the result
 
+<!-- user-facing -->
 On `succeeded`, tell the user:
 
 - **The workbook**, filename (`Master Drawing Index.xlsx`), size, and its tabs from `report`: a
@@ -80,6 +81,7 @@ On `succeeded`, tell the user:
 - **Where to get the file**, the workbook lives on the project on plumlayer.com; there is
   deliberately no download link served here, so point the user there rather than looking for a path
   or URL in the tool result.
+<!-- /user-facing -->
 
 ## Failure modes
 

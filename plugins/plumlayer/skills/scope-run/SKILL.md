@@ -141,12 +141,17 @@ uploaded to the project except deposit files, never recorded as project entries.
   purpose, and the token usage the harness reports when the worker completes), every deposit batch
   (count sent, count verified, contested), the definitions-kind roster as kinds land, checkpoint
   outcomes, and every deviation or repair. The ledger is what makes the close-out report honest.
-- `bundle-map.md`: the read plan (stage 3), operator-approved before any wave runs.
+  Audience: agent. Its dispatch and token-cost figures feed the close-out report's run-cost bullet;
+  whatever crosses from it into that report becomes user-facing at the crossing and is translated
+  there.
+- `bundle-map.md`: the read plan (stage 3), operator-approved before any wave runs. Audience: user,
+  it is shown to the user for approval.
 - `context-packet.md`: the compiled context packet, regenerated between waves (a projection off
-  live records, never itself recorded).
-- `anti-join/`: the completeness pass's rosters, accounting output, and residue lists.
+  live records, never itself recorded). Audience: agent.
+- `anti-join/`: the completeness pass's rosters, accounting output, and residue lists. Audience:
+  agent.
 - `deposits/`: JSONL files for large batch deposits (these do get uploaded, as the deposit
-  mechanism).
+  mechanism). Audience: machine.
 
 ## The trade knowledge base
 
@@ -179,10 +184,13 @@ entry, surfaced in the close-out report.
 4. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-packages/MANIFEST.md`; record
    the version in the ledger. Missing → stop and report a broken plugin install rather than running
    knowledge-blind.
-5. **The operator is present.** Say what the run will do, roughly what it costs (a real read of a
+5. **The operator is present.**
+<!-- user-facing -->
+Say what the run will do, roughly what it costs (a real read of a
    full set is a multi-hour, many-dispatch run: share the dispatch shape from the ledger of record:
    a ~36%-of-set validation run took ~26 worker dispatches), and confirm they're staying for the
    checkpoints.
+<!-- /user-facing -->
 
 ## 2. Context floor
 
@@ -232,8 +240,12 @@ grid file-redirects), then:
 
 Write `bundle-map.md`: bundles, sheets per bundle (numbers + file/page references), lane, lenses,
 knowledge entries, model tier, wave order, and what's deliberately excluded (name it: exclusions
-are named residue, never silence). **Show the user the plan in estimator terms and get their
-approval before any wave runs.** The read plan is a reviewable artifact; the operator may cut,
+are named residue, never silence).
+<!-- user-facing -->
+**Show the user the plan in estimator terms and get their
+approval before any wave runs.**
+<!-- /user-facing -->
+The read plan is a reviewable artifact; the operator may cut,
 add, or resequence.
 
 ## 4. Wave reads
@@ -309,9 +321,12 @@ actually split themselves in the market, not by the book's divisions.
    knowledge base's market conventions: which sections bundle into which package, which get carved
    out, a primary CSI section per package. Probe the usually-present families the TOC is silent
    on (site/civil, SOE, landscaping/exterior improvements, thin design-build MEP divisions) and
-   propose estimator-declared packages for them. Present the split as a reviewable artifact:
+   propose estimator-declared packages for them.
+<!-- user-facing -->
+Present the split as a reviewable artifact:
    package name, primary section, bundled sections, catalog trade (id + name, from step 3),
    one-line market rationale each, and **get the operator's approval before any tagging**.
+<!-- /user-facing -->
    Tagging happens into an approved structure, never an inferred one.
 2. **Phase 2: scope-driven amendments.** Where the scope list surfaces what the TOC cannot see
    (a specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
@@ -355,6 +370,7 @@ list already falls out of the citations.
 
 ## 8. Close out
 
+<!-- user-facing -->
 Report to the user, in estimator terms:
 
 - **The scope list**: how many items, by category family; where to review it (the project's Scope
@@ -369,6 +385,7 @@ Report to the user, in estimator terms:
   them, unknowns stated as unknown: honest bounds, never estimates presented as measurements.
 - **Knowledge amendments**: entry-silent flags and inapplicability flags, proposed as amendments
   to the trade knowledge base.
+<!-- /user-facing -->
 
 ## The reader brief (template: every reader dispatch carries this, mechanically)
 
@@ -439,6 +456,7 @@ so flag what you're unsure of rather than smoothing it.
 
 ## The wave checkpoint (what the operator sees)
 
+<!-- user-facing -->
 After each wave, before the next dispatch, in estimator terms:
 
 - What was read (units, sheets), what landed (items added, items enriched, flags raised): verified
@@ -450,6 +468,7 @@ After each wave, before the next dispatch, in estimator terms:
 - Anything that deviated: a count mismatch and its repair, an unreadable page, a reader that
   stopped, named plainly.
 - The next wave's plan, and the ask: proceed, adjust, or pause.
+<!-- /user-facing -->
 
 ## What this skill does not do
 

@@ -62,6 +62,7 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
 
 ## Words (operator-facing language)
 
+<!-- user-facing -->
 Everything above is machinery vocabulary for working the verbs, never the language the user reads.
 This rule covers everything the user sees, including your closing report and any other report
 template: a report template is user-facing text, not machinery, even when it summarizes
@@ -93,6 +94,7 @@ The kill list also covers these, each with its estimator translation:
 Never tell the user something is "pending review" or "awaiting approval". What you write is the
 project's working record now, carrying your name, the time, and your citations; anything a person
 changes wins.
+<!-- /user-facing -->
 
 ## The verbs
 **Identity / discovery**
@@ -220,16 +222,23 @@ regardless of its register. Only a person's word outranks you. A **bare** compet
 `supersedesId`) does not win; it stays a candidate beneath the machine value, which is the
 anti-hallucination anchor working as intended. So reserve the `ambiguityClass` flag for a reading you
 genuinely cannot resolve, never as the way to fix a title you already read correctly (that is the
-"go set it on the site" dead end). To the user this is plain: "the automatic scan grabbed the wrong
+"go set it on the site" dead end).
+<!-- user-facing -->
+To the user this is plain: "the automatic scan grabbed the wrong
 text on those sheets, so I read them and set them right."
+<!-- /user-facing -->
 
 ## Typical flows
 - **"What's in my project / project record?"** → `list_projects` → pick one → `set_grid` for the
   drawing set, `ambiguities` for open issues, `rfi_candidates` for drafted RFIs; `search`
   to inspect specific subjects/claims.
 - **"Scope something"** → read the relevant sheets/claims, judge, then `propose`
-  grounded claims (`sourceInstrument` = where it came from, plus `evidence`). Tell the user
-  what you wrote and that it reads as your judgment with your citations behind it. Drawn
+  grounded claims (`sourceInstrument` = where it came from, plus `evidence`).
+<!-- user-facing -->
+Tell the user
+  what you wrote and that it reads as your judgment with your citations behind it.
+<!-- /user-facing -->
+Drawn
   measurements and sheet scale are not this door's to write (see Write, above).
 - **"Find conflicts / RFIs"** → `ambiguities` + `rfi_candidates`; where you spot genuine ambiguity
   you cannot resolve, `propose` an ambiguity-flagged claim (`ambiguityClass`), cited. Where instead

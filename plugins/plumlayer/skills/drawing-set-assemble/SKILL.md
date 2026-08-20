@@ -70,6 +70,7 @@ Call `assemble_current_set_status(projectId, jobId)` every 3-5 seconds until `st
 
 ## 4. Report the result
 
+<!-- user-facing -->
 On `succeeded`, tell the user:
 
 - **The outputs**, one entry per file: filename (`Current Set - <Discipline>.pdf`, or
@@ -83,6 +84,7 @@ On `succeeded`, tell the user:
 - **Where to get the files**, the assembled PDFs live on the project on plumlayer.com; there is
   deliberately no download link served here, so point the user there rather than looking for a path
   or URL in the tool result.
+<!-- /user-facing -->
 
 ## Failure modes
 

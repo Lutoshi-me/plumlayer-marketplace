@@ -59,6 +59,7 @@ its contents into tracked source is the leak.
 
 ## Narration to the user
 
+<!-- user-facing -->
 Keep the words honest and plain: no jargon, no invented certainty. Use plain prose in everything you
 say to the user (no em dashes, no bolded emphasis words). Say:
 
@@ -74,6 +75,7 @@ say to the user (no em dashes, no bolded emphasis words). Say:
 Never narrate "claims", "deposit", "proposed", "grounding", "the ledger", "residue", or "the pivot"
 to the user: those are machinery. What you record is the package's working data as soon as it
 lands, carrying your name and the page it came from; never call it "pending review".
+<!-- /user-facing -->
 
 ## What this is, and the boundary
 
@@ -628,6 +630,7 @@ you papered over is not.
 
 ## 8. Report and hand off
 
+<!-- user-facing -->
 The run report **is** the manifest. State, plainly:
 
 - **Per bidder:** the bidder identity you used, entry counts by type (profile / responses / coverage /
@@ -647,6 +650,7 @@ The run report **is** the manifest. State, plainly:
 
 Then point the user at the **package view on plumlayer.com** to review and level. The numbers are
 readable there now, each with the proposal page behind it; the bid itself is theirs to sign.
+<!-- /user-facing -->
 
 ## Gates (non-negotiable)
 
