@@ -229,7 +229,7 @@ So enumerate at the full tag. Give each of these its own line:
 - Balcony and terrace doors as their own family with their own tag block.
 - Storefront and any transom or infill glazing at a window opening, as its own family.
 - Interior storm windows on renovation work, as their own family.
-- Mockup units. Suppliers routinely mint a mockup tag because no scheduled window matches the
+- Mockup units. Suppliers routinely create a mockup tag because no scheduled window matches the
   mockup dimensions shown, and the mockup is a separate purchase with its own credit terms.
 
 ### Name your denominator
@@ -402,7 +402,7 @@ other proposals:
 - An exclusion justified by absence from the drawings. A bidder pricing blocking as an alternate on
   the stated ground that none is shown is telling you the detail is incomplete, not that it is
   expensive.
-- A minted tag. A bidder that adds a mockup tag because nothing on the schedule matches the mockup
+- A created tag. A bidder that adds a mockup tag because nothing on the schedule matches the mockup
   dimensions, or carries positions labelled unknown, is reporting a schedule gap.
 - Any exclusion naming a project-specific condition: a historic approval, a stretch energy code, a
   phasing requirement, an occupied floor, a specific elevation excluded from the scope.

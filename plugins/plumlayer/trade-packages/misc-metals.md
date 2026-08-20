@@ -94,7 +94,7 @@ kind of company it is.
 
 The shapes actually seen:
 
-- The enumerated take-off. Every scope item gets a bidder-minted mark, its own drawing references, a
+- The enumerated take-off. Every scope item gets a bidder-created mark, its own drawing references, a
   quantity with a unit, a finish, and separate supply and install columns. The deepest of these ran
   to roughly forty marks with landing areas, member sizes and per-line assumptions beneath each. A
   document of this kind is a take-off presented as a proposal, and it is the single most valuable

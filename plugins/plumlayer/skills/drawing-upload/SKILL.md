@@ -19,7 +19,7 @@ everything the user sees, including your closing report: a report template is us
 Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
 item, trail.
 
-Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+Never say to the user: claim, predicate, subject, governing, trust class,
 supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
 sheetType, or any raw verb, field, or parameter name.
 
@@ -40,7 +40,7 @@ what they read from: the recognition pass records what it confirmed off the page
 yourself records as your own reading, cited to the page you read it on. You are the reader; the MCP
 recognition verbs (`recognize_sheets`, `recognize_sheets_status`, `render_page`, `get_page_text`) are
 the anti-hallucination anchor, not the inference engine. There is no local pipeline and no
-server-side autonomous *reader*: the server runs the deterministic bulk pass and deposits its own
+server-side autonomous *reader*: the server runs the deterministic bulk pass and records its own
 output, but you still drive every job, judge every residue page, classify every sheet's type, and
 author every claim that isn't the deterministic pass's own grounded output.
 
@@ -125,14 +125,15 @@ Emit the same packaging
 
 From here the pipeline is identical: step 5 (`register_pages` once, then `recognize_sheets` per file,
 pass `deliveryId` explicitly for any file whose registration doesn't carry it), step 6 (residue
-read), step 6b (sheet-type classification), step 7 (residue + type deposit, verify). Every gate
+read), step 6b (sheet-type classification), step 7 (residue + type write, verify). Every gate
 applies unchanged.
 
 **Re-recognize semantics (the honest limits).** Re-running `recognize_sheets` on a file+delivery is
 always safe: a `stale` or `failed` job restarts; a `succeeded` one returns the existing job and the
-deposit stays idempotent. That also means this branch cannot force a fresh read of a file+delivery
+write stays idempotent. That also means this branch cannot force a fresh read of a file+delivery
 that already succeeded: a corrected re-read after a bad run needs the force-re-recognize path,
 which is not built yet. Say so plainly rather than re-running and implying new output.
+
 
 ## 2. Recognize the delivery's packaging
 
@@ -160,7 +161,7 @@ a Division 00-49 table of contents, whether it's one combined PDF or a folder of
 **Dual-source repackaging:** when a delivery contains both a combined PDF and a full set of per-sheet
 PDFs, check page totals first. If the per-sheet PDFs' combined page count equals the combined PDF's page
 count, that's duplicate repackaging of the same set, not two sources: **prefer the single combined file
-and don't recognize both**; recognizing both wastes a full pass and risks depositing the same sheets
+and don't recognize both**; recognizing both wastes a full pass and risks recording the same sheets
 twice under different `fileId`s. Only treat it as genuinely ambiguous when the totals disagree or
 there's no clean 1:1 correspondence.
 
@@ -200,7 +201,7 @@ Every file you upload in step 4 attaches to this one `deliveryId`.
 For each drawing PDF you identified in step 2:
 
 1. `request_file_upload(projectId, filename)` → `{fileId, path, bucket, token, signedUrl}`. The server
-   mints `fileId` and the storage path; you never supply either.
+   creates `fileId` and the storage path; you never supply either.
 2. PUT the raw file bytes to `signedUrl` with a `Content-Type` header (the bytes never pass through a
    tool call):
    ```bash
@@ -232,8 +233,8 @@ Poll `recognize_sheets_status(projectId, jobId)` every ~3-5s until `state` settl
   self-heal (it restarts the job).
 - `failed`: read `error`, stop, and report it; don't retry blindly.
 - `succeeded`: the recognized sheet claims (`appearsOnPage`, `hasTitle`, `locatedAt`, `discipline`,
-  `partOfIssue`) are **already deposited server-side.** This result never carries
-  those claims and you never `propose_batch` them yourself: that would double-write every sheet. Report
+  `partOfIssue`) are **already recorded server-side.** This result never carries
+  those claims and you never `record_batch` them yourself: that would double-write every sheet. Report
   the run-level counts from `report`: `pagesScanned`, `sheetsGrounded`, `highConfCount`, `flaggedCount`,
   `extractionWarningCount`, `calibrated`, `capHit`. Never assume "N pages scanned = N sheets recognized":
   state both numbers. `confidence` on individual claims (visible later via `search`/`set_grid`) is
@@ -269,12 +270,12 @@ every residue row yourself:
     as a bare claim tagged with `ambiguityClass` so both surface for a person in `ambiguities`; never
     silently pick. Reserve the flag for real ambiguity; never use it for a correction you are confident
     about (that just hands a person a title you already read correctly).
-- **Image-only / scanned pages**: flag them honestly. Mint the page as its own subject:
+- **Image-only / scanned pages**: flag them honestly. Create the page as its own subject:
   `page:<fileId>:<pageInPdf>`, never `subject: null`, and never add an OCR dependency (deferred).
   Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
 
 For every residue subject you *do* resolve, author the **full bundle** of claims, mirroring the shape the
-server deposits for the pages the deterministic pass already recognized (matching predicate and value
+server records for the pages the deterministic pass already recognized (matching predicate and value
 shapes keeps every sheet's claim set uniform regardless of which stage grounded it):
 
 ```json
@@ -301,7 +302,7 @@ unreadable); never silently dropped. State how many you read, corrected, and fla
 ## 6b. Type the sheets
 
 After residue is judged, classify every recognized sheet, the deterministic pass's own output and
-your residue corrections alike, into the project's 13-value `sheetType` vocabulary, and deposit a
+your residue corrections alike, into the project's 13-value `sheetType` vocabulary, and record a
 claim per sheet. This is agent judgment only: the deterministic recognizer never binds a type, and
 an unclear sheet stays untyped rather than getting a guess.
 
@@ -356,7 +357,7 @@ a partial phrase, or a full title as the value.
 
 ### Unsure sheets
 
-Do not deposit a `sheetType` claim for a sheet you can't confidently place in the vocabulary; skip it
+Do not record a `sheetType` claim for a sheet you can't confidently place in the vocabulary; skip it
 and count it.
 <!-- user-facing -->
 Narrate: "N sheets sorted by type, M I left for a closer look"; never imply full
@@ -381,7 +382,7 @@ When you are confident a recognized title or discipline is a mis-grab, correct i
    machine claim's `id`.
 2. `render_page` the title-block corner and read the real title yourself.
 3. Author the corrected claim with `supersedesId` set to that id, cited to the crop you read, and pool
-   it into your step 7 deposit.
+   it into your step 7 write.
 
 The edge is what makes your read govern the grid: the recognizer's binding is `machine-read`, and an
 agent edge onto it is honored regardless of that register; only a person's later word outranks you.
@@ -395,17 +396,17 @@ Narrate it in estimator words: "the automatic scan grabbed the wrong text on N s
 and set them right"; never "supersede", "claim", or "edge".
 <!-- /user-facing -->
 
-## 7. Deposit residue and types, then verify
+## 7. Record residue and types, then verify
 
-**The recognized portion needs no deposit call from you.** `recognize_sheets` already wrote it
+**The recognized portion needs no write call from you.** `recognize_sheets` already wrote it
 server-side once its job succeeded (step 5), and re-running `recognize_sheets` on the same
 file+delivery is safe by construction: the concurrency guard returns the existing job, and the
-deposit itself is idempotent (`alreadyDeposited: true` on a poll means a prior run already wrote this
+write itself is idempotent (`alreadyWritten: true` on a poll means a prior run already wrote this
 delivery's sheet claims, no duplicate was written). You still make exactly one write of your own
 (pooling the residue bundle from step 6, the sheetType claims from step 6b, and any mis-bind
 corrections from step 6c, the edges carrying their `supersedesId`), plus one verification pass:
 
-1. **Deposit the residue + type bundle.** Before depositing, check whether you've already deposited
+1. **Record the residue + type bundle.** Before recording, check whether you've already recorded
    residue or types for this delivery in a prior run of this skill (e.g. `search(projectId,
    predicate: "partOfIssue", text: <deliveryId or label>)` and `search(projectId, predicate:
    "sheetType")`), and confirm with the user before sending it again; the server's recognized-claim
@@ -413,28 +414,28 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    bundles you authored in steps 6, 6b, and 6c (recognized pages you did not correct contribute
    nothing here: do not re-send them) into one array per project.
 
-   **For a small bundle, call `propose_batch(projectId, claims)` directly.** It accepts 1–500
+   **For a small bundle, call `record_batch(projectId, claims)` directly.** It accepts 1–500
    entries and is atomic (one bad entry rejects the whole batch, naming the index); transport every
    entry **verbatim**, never re-typed from memory. **Verify**: the returned `count` must equal the
    number of entries you sent. If it doesn't, stop and report the discrepancy rather than retrying
    with a guessed correction.
 
    **For a large agent-authored bundle (a deep set with thousands of residue/type entries), use
-   `propose_batch_file` instead of chaining many `propose_batch` calls.** The path: write the full
+   `record_batch_file` instead of chaining many `record_batch` calls.** The path: write the full
    claim array as JSONL, `request_file_upload(projectId, filename)` for a signed URL, PUT the JSONL
    bytes to it, `register_file(projectId, fileId, filename, contentType: "application/jsonl", kind:
-   "document")`, then call `propose_batch_file(projectId, fileId)` to deposit straight from the
+   "document")`, then call `record_batch_file(projectId, fileId)` to write straight from the
    registered file. Verify the same way: read back a count and confirm it matches what you wrote to
-   the file, never assume the upload landed intact. Keep `propose_batch` for small inline batches;
-   reach for `propose_batch_file` only once a single bundle is large enough that chaining
-   `propose_batch` calls would be the wrong shape.
+   the file, never assume the upload landed intact. Keep `record_batch` for small inline batches;
+   reach for `record_batch_file` only once a single bundle is large enough that chaining
+   `record_batch` calls would be the wrong shape.
 
    **A freshly-shipped verb may not appear until the session reloads the plugin / reconnects MCP.**
-   If `propose_batch_file` (or any verb you expect) is missing from your tool list, reload the
+   If `record_batch_file` (or any verb you expect) is missing from your tool list, reload the
    session before concluding it doesn't exist.
 
 2. **Verify the recognized portion against the report; never a full-grid read.** Compare the
-   succeeded job's `deposit` summary (`{deposited, alreadyDeposited, byPredicate}`) against its
+   succeeded job's `write` summary (`{written, alreadyWritten, byPredicate}`) against its
    `report` (`sheetsGrounded` and the rest) for rough correspondence, then spot-check with a handful
    of targeted `search(projectId, predicate: "appearsOnPage", text: "<a sheet number you saw>")`
    calls. **Do not call `set_grid` to verify a delivery of real size**: on a set with hundreds of
@@ -486,7 +487,7 @@ disk the whole time.
    PDF bookmark tree, with no confirming footer, does NOT add to that count; it surfaces instead through
    the completeness findings, never as a silent gap in the number you report.
 <!-- /user-facing -->
-5. **Read-back verify.** Call `search(projectId, predicate: "inDivision")` and confirm the deposited row
+5. **Read-back verify.** Call `search(projectId, predicate: "inDivision")` and confirm the recorded row
    count matches the job's `sectionsFound` exactly: completeness/residue findings ride their own
    predicate (`hasCompletenessStatus`) and never appear in this read. A mismatch stops the run and gets
    reported, never a guessed correction.
@@ -513,7 +514,7 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    `backstop.requested` came back true: that means the parse could not stand as the declared
    register (no text layer, too few sheets found, a column structure that did not resolve), and you
    should read the rendered index page yourself with `render_page` before trusting the count.
-2. **Run the diff, report-only.** Call `reconcile_set(projectId)` without `deposit`. The bare call
+2. **Run the diff, report-only.** Call `reconcile_set(projectId)` without `record`. The bare call
    runs the ORIENTATION check: the index of record (the newest delivery that actually has a read
    drawing index) against the current compiled set across every delivery, not just one. Pass
    `deliveryId` instead to run the per-delivery RECEIVING check: that one delivery's own drawing
@@ -542,13 +543,13 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
      as a finding of zero.
 <!-- /user-facing -->
 4. **Offer to record the residue.** Once the operator has seen the report, offer
-   `reconcile_set(projectId, deposit: true)` to record the sheet findings and the grouped questions
+   `reconcile_set(projectId, record: true)` to record the sheet findings and the grouped questions
    for the design team (grouped by discipline series, not one per sheet). Only run it on the
    operator's go-ahead: this is where the residue becomes part of the review queue.
 
 ## Gates (non-negotiable)
 
-- Every claim's evidence is grounded **cloud-side**: a succeeded `recognize_sheets` job (deposited by
+- Every claim's evidence is grounded **cloud-side**: a succeeded `recognize_sheets` job (recorded by
   the server) or a `render_page`/`get_page_text` read you just made. A local read (step 2) may inform
   the packaging report; it never grounds a claim.
 - Discipline is derived from the sheet's own number prefix, never a filename or folder.
@@ -561,10 +562,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   a reading you genuinely cannot resolve.
 - The residue and type claims are your own reading, cited to the page you read; never present them as
   the deterministic pass's confirmed output.
-- Your own deposit (the residue + type bundle) is verbatim, count-verified transport: a count
+- Your own write (the residue + type bundle) is verbatim, count-verified transport: a count
   mismatch stops the run, never triggers a reconstructed or invented entry.
-- Before depositing your residue/type bundle, check for a prior deposit on this delivery and confirm
-  with the user rather than double-depositing; the recognized portion is server-idempotent by
+- Before recording your residue/type bundle, check for a prior write on this delivery and confirm
+  with the user rather than double-recording; the recognized portion is server-idempotent by
   construction (re-running `recognize_sheets` on the same file+delivery is always safe).
 - Honest coverage at every stage: pages skipped, files excluded, residue left unread, or sheets left
   untyped are named, not buried in a total.

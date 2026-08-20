@@ -5,7 +5,7 @@ description: >
   (an ITB, drawing index, spec TOC, project summary), then seed the new project record with cited
   project-level facts. Trigger on "create a project", "new project", "start a new bid or pursuit",
   "onboard this project", "/project-create", or when the user hands over project documents. Drives
-  the create_project and propose (or propose_batch) MCP tools. Does not upload or read drawings
+  the create_project and record (or record_batch) MCP tools. Does not upload or read drawings
   (drawing-upload) or run the scope engine (scope-run).
 ---
 
@@ -19,7 +19,7 @@ everything the user sees, including your closing report: a report template is us
 Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
 item, trail.
 
-Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+Never say to the user: claim, predicate, subject, governing, trust class,
 supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
 sheetType, or any raw verb, field, or parameter name.
 
@@ -160,10 +160,10 @@ One project = one project record.
 
 ## 4. Customize: seed the starting claims
 
-Map the confirmed facts to claims and deposit them. **Prefer the `propose_batch` MCP
+Map the confirmed facts to claims and record them. **Prefer the `record_batch` MCP
 tool**, one call with `projectId=<the new project>` and a `claims` array of all the seed entries (it's
-atomic: one bad entry rejects the batch and names the index). **Fallback:** if `propose_batch` isn't
-available (older server), call the **`propose`** tool once per claim, batched in parallel (many per
+atomic: one bad entry rejects the batch and names the index). **Fallback:** if `record_batch` isn't
+available (older server), call the **`record`** tool once per claim, batched in parallel (many per
 message).
 
 **Claim shape** (matches the Claim atom: `subject — predicate — value` + evidence):

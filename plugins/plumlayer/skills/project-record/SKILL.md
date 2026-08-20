@@ -4,8 +4,8 @@ description: >
   Read, search, review, or add entries to a Plumlayer project record: the drawing set, flagged
   items, RFI candidates, scope items, and takeoff data. Use when the user asks "what's in my
   project" or says "/project-record". Drives the read verbs (set_grid, ambiguities,
-  rfi_candidates, search, list_scope_items) and write verbs (propose, propose_batch,
-  propose_batch_file). Does not upload drawings (drawing-upload), run the scope engine
+  rfi_candidates, search, list_scope_items) and write verbs (record, record_batch,
+  record_batch_file). Does not upload drawings (drawing-upload), run the scope engine
   (scope-run), or place takeoff measurements (takeoff).
 ---
 
@@ -19,7 +19,7 @@ everything the user sees, including your closing report: a report template is us
 Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
 item, trail.
 
-Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+Never say to the user: claim, predicate, subject, governing, trust class,
 supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
 sheetType, or any raw verb, field, or parameter name.
 
@@ -71,7 +71,7 @@ entry, sheet, set, scale, scope item, bid response, flagged item, trail**. Say "
 to the project, each citing the sheet I read it from", "2 flagged for your judgment". Prefer
 "project" or "the project record" in plain words the user already uses.
 
-Never say to the user: *claim, deposit, predicate, subject, proposed, governing, trust class,
+Never say to the user: *claim, predicate, subject, governing, trust class,
 supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
 sheetType*. Those are machinery. If a concept has to surface, translate it: a superseded value is
 "replaced my earlier read"; a contest refusal is "a person set that one, so I left it alone and
@@ -102,7 +102,7 @@ changes wins.
 - `list_projects`: the user's projects (each has a project record). Confirm the right one before acting.
 - `get_project`: one project's details.
 - `create_project`: create a new project (= a new project record). Supply `name` (required) and optional
-  `description`; returns the new `projectId`. Use before any propose or upload on a new bid/pursuit.
+  `description`; returns the new `projectId`. Use before any write or upload on a new bid/pursuit.
 
 **Read**
 - `set_grid`: the sheet inventory (the drawing set as a grid: discipline, sheet number,
@@ -111,9 +111,9 @@ changes wins.
 - `rfi_candidates`: drafted RFI candidates with citations.
 - `search`: the raw claim ledger (ANY trust class, including `proposed`). Filter by
   subject / predicate / trustClass / text; paginated. Use this to see what's actually been
-  asserted, including your own proposals.
+  asserted, including your own recorded claims.
 - `list_scope_items`: the live scope list (name, category, description, notes, quantity per item).
-  Use this to see what's already been captured before minting or enriching a scope item.
+  Use this to see what's already been captured before creating or enriching a scope item.
 
 **Drawing recognition** (cloud PDF: these work against files already uploaded to the project)
 - `list_files`: list the drawing files registered to a project.
@@ -121,10 +121,10 @@ changes wins.
   claims, just viewable pages) so uploaded files are readable even before recognition runs.
 - `recognize_sheets`: start the async deterministic bulk sheet-number recognition pass over one
   uploaded PDF. Returns `{jobId, status}` immediately; poll `recognize_sheets_status` rather than
-  waiting inline. Recognized sheet claims deposit server-side as `proposed` on success; never
-  `propose_batch` them yourself.
+  waiting inline. Recognized sheet claims record server-side as `proposed` on success; never
+  `record_batch` them yourself.
 - `recognize_sheets_status`: poll a `recognize_sheets` job. Returns run counts (`report`), the
-  server-side deposit summary (`deposit`), and the residue tail (`residue`) for you to read and
+  server-side write summary (`written`), and the residue tail (`residue`) for you to read and
   judge; it never carries the recognized claims themselves.
 - `render_page`: render a single page of a registered PDF to an image so you can read it.
 - `get_page_text`: extract the text layer from a registered PDF page (deterministic; use
@@ -146,24 +146,24 @@ changes wins.
   to `list_files` / `render_page` / `get_page_text` and the `drawing-upload` pipeline.
 
 **Write**
-- `propose`: append one claim (`subject`, `predicate`, `value`, `sourceInstrument`,
+- `record`: append one claim (`subject`, `predicate`, `value`, `sourceInstrument`,
   optional `evidence`/`ambiguityClass`/`supersedesId`). Stamped as you, and it takes effect
   immediately as provisional working truth recorded as agent-stated. `supersedesId` is the
   correction edge: see "Correcting a machine misread" below.
-- `propose_batch`: append an array of claims in one atomic call (`projectId` + `claims`
+- `record_batch`: append an array of claims in one atomic call (`projectId` + `claims`
   array). Atomic: a bad entry rejects the whole batch and names the index. Prefer this over
-  repeated `propose` calls for bulk deposits (e.g. upload or scope deposit). Each call
+  repeated `record` calls for bulk writes (e.g. upload or scope writes). Each call
   accepts up to 500 claims; stay at ≤50 per batch so each read is faithful and
   count-verifiable.
-- `propose_batch_file`: like `propose_batch`, but for a run whose claims are too large to send
-  inline: upload a JSONL file of claims, then deposit from it in one atomic call. Use this instead
-  of `propose_batch` for large runs (e.g. a scope-run wave depositing hundreds of items).
+- `record_batch_file`: like `record_batch`, but for a run whose claims are too large to send
+  inline: upload a JSONL file of claims, then write from it in one atomic call. Use this instead
+  of `record_batch` for large runs (e.g. a scope-run wave recording hundreds of items).
 
 Both write doors refuse the takeoff-domain predicates (`hasTakeoffCount`, `hasTakeoffRollup`,
 `hasScale`, `hasTakeoffLength`, `hasTakeoffArea`, `hasTakeoffCountMark`, `hasTakeoffCondition`,
 `instanceVerdict`, `hasHumanInstance`). Those belong to the takeoff door on plumlayer.com, the
 only one that enforces their value shapes, subject identity, and unit immutability. Do not try
-to write a measurement, a count, or a sheet scale through `propose`.
+to write a measurement, a count, or a sheet scale through `record`.
 
 ### How to shape a citation
 
@@ -214,7 +214,7 @@ correct it with a supersession **edge**, not a bare competing claim:
 
 1. `search(projectId, subject: "sheet:<n>", predicate: "hasTitle")` (or `"discipline"`) → the live
    claim's `id`.
-2. `propose` (or a `propose_batch` entry) with `supersedesId` set to that id, `value` = what you read,
+2. `record` (or a `record_batch` entry) with `supersedesId` set to that id, `value` = what you read,
    cited to the sheet you read it from.
 
 The edge is what makes your read govern the grid: an agent edge onto a `machine-read` value is honored
@@ -232,7 +232,7 @@ text on those sheets, so I read them and set them right."
 - **"What's in my project / project record?"** → `list_projects` → pick one → `set_grid` for the
   drawing set, `ambiguities` for open issues, `rfi_candidates` for drafted RFIs; `search`
   to inspect specific subjects/claims.
-- **"Scope something"** → read the relevant sheets/claims, judge, then `propose`
+- **"Scope something"** → read the relevant sheets/claims, judge, then `record`
   grounded claims (`sourceInstrument` = where it came from, plus `evidence`).
 <!-- user-facing -->
 Tell the user
@@ -241,7 +241,7 @@ Tell the user
 Drawn
   measurements and sheet scale are not this door's to write (see Write, above).
 - **"Find conflicts / RFIs"** → `ambiguities` + `rfi_candidates`; where you spot genuine ambiguity
-  you cannot resolve, `propose` an ambiguity-flagged claim (`ambiguityClass`), cited. Where instead
+  you cannot resolve, `record` an ambiguity-flagged claim (`ambiguityClass`), cited. Where instead
   you can see the recognizer grabbed the wrong cell for a title or discipline, correct it with a
   supersession edge (see "Correcting a machine misread"), not a flag.
 

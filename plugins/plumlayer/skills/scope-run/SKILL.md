@@ -19,7 +19,7 @@ everything the user sees, including your closing report: a report template is us
 Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
 item, trail.
 
-Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+Never say to the user: claim, predicate, subject, governing, trust class,
 supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
 sheetType, or any raw verb, field, or parameter name.
 
@@ -66,12 +66,12 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    the sheet AND a resolvable 1-based page: `evidence.page` or `evidence.pageInPdf` as a positive
    integer for the page actually read. A sheet named with no page cannot be render-verified and the
    record door refuses it. Never fabricate a page or sheet to satisfy the door.
-2. **Mint / enrich / flag against the live list.** Every reader holds the current scope list as
-   match-or-mint context: for each thing seen, mint a new item, enrich an existing one (a new
+2. **Create / enrich / flag against the live list.** Every reader holds the current scope list as
+   match-or-create context: for each thing seen, create a new item, enrich an existing one (a new
    citation, a note, a resolved cross-reference), or flag an observation. Never a parallel list,
-   never a re-mint of what exists, never silent skipping of what's already listed.
+   never a re-create of what exists, never silent skipping of what's already listed.
 3. **The convention-line emit mandate.** A reader whose trade-knowledge entries carry convention
-   lines for the content families it reads MUST emit them: mint if absent from the live list,
+   lines for the content families it reads MUST emit them: create if absent from the live list,
    enrich if present. Silence is a violation, not a judgment call; a reader judging a convention
    entry inapplicable to this project flags that with its reason. Convention lines never masquerade
    as sheet-cited reads: their `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>`
@@ -86,7 +86,7 @@ that relaxes any one of them reproduces a measured, named failure from the valid
 5. **Capture never filters.** Capture is trade-agnostic and complete: everything seen goes into the
    one shared list. Deciding what matters, what's priced, and whose trade it is happens downstream,
    never in the reader.
-6. **Every deposit is count-verified by read-back.** After every batch write, read back and confirm
+6. **Every write is count-verified by read-back.** After every batch write, read back and confirm
    the count landed equals the count sent; check any contested rows individually. The lead
    re-verifies reader-reported counts with its own queries: a reader's summary is a claim to
    verify, not a fact to relay.
@@ -94,7 +94,7 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are the derive stage's output,
    never the reader's). One item per sheet is a ceiling violation; one item per instance is a floor
-   violation. Where the trade-knowledge entry's grain section is silent, mint at best judgment AND
+   violation. Where the trade-knowledge entry's grain section is silent, create at best judgment AND
    flag the grain as unspecced: recall never drops to grain uncertainty.
 8. **Definitions before placements.** A bundle reads only after the bundles it references are
    already recorded (legends and schedules before the plans that tag them). The read plan encodes
@@ -108,12 +108,12 @@ that relaxes any one of them reproduces a measured, named failure from the valid
     never assumed closed, never zeroed by hope.
 
 Also: never author door-owned records. Retractions, flag resolutions, questions-as-answers, and
-package definitions mint only at their own doors: a reader that thinks an item should be deleted
+package definitions are created only at their own doors: a reader that thinks an item should be deleted
 or a flag should be closed says so in its report; a person acts at the door.
 
 ## The scope item row
 
-A minted scope item is a full row, not a name. Every mint writes:
+A newly created scope item is a full row, not a name. Every new item writes:
 
 - **name**: the concise line the sub reads: aim under ten words, estimator wording, no code
   dump ("Interior metal-stud partitions", not a recitation of every type mark).
@@ -135,10 +135,10 @@ machinery vocabulary. A verbose row is a defect, not diligence.
 
 All run working files live under `~/.plumlayer/runs/<project-slug>/` (slug from the project name,
 lowercase, spaces to hyphens; fall back to the projectId). Never committed to any repo, never
-uploaded to the project except deposit files, never recorded as project entries. The set:
+uploaded to the project except record files, never recorded as project entries. The set:
 
 - `ledger.md`: the run ledger, appended as the run proceeds: every dispatch (wave, unit, model,
-  purpose, and the token usage the harness reports when the worker completes), every deposit batch
+  purpose, and the token usage the harness reports when the worker completes), every write batch
   (count sent, count verified, contested), the definitions-kind roster as kinds land, checkpoint
   outcomes, and every deviation or repair. The ledger is what makes the close-out report honest.
   Audience: agent. Its dispatch and token-cost figures feed the close-out report's run-cost bullet;
@@ -150,7 +150,7 @@ uploaded to the project except deposit files, never recorded as project entries.
   live records, never itself recorded). Audience: agent.
 - `anti-join/`: the completeness pass's rosters, accounting output, and residue lists. Audience:
   agent.
-- `deposits/`: JSONL files for large batch deposits (these do get uploaded, as the deposit
+- `records/`: JSONL files for large batch writes (these do get uploaded, as the write
   mechanism). Audience: machine.
 
 ## The trade knowledge base
@@ -162,7 +162,7 @@ furnish/install seams, convention work no sheet states. `MANIFEST.md` there reco
 version and source snapshot: read it at run start, record the version in the ledger, and cite it
 in every convention-line record (`trade-convention:<trade>@<version>`). Readers receive the entries
 relevant to their bundle's content families as part of their brief. Where an entry is silent, the
-reader mints at best judgment and flags (non-negotiable 7); the flag is a proposed amendment to the
+reader creates at best judgment and flags (non-negotiable 7); the flag is a suggested amendment to the
 entry, surfaced in the close-out report.
 
 ## 1. Preconditions
@@ -170,7 +170,7 @@ entry, surfaced in the close-out report.
 1. **Project exists and is the user's intent.** `list_projects`, confirm which project with the
    user, get its `projectId`. No project → hand off to `project-create`.
 2. **Drawings are recognized.** `list_drawing_deliveries(projectId)`: no deliveries → stop
-   plainly, hand off to `drawing-upload`. Spot-check recognition actually deposited:
+   plainly, hand off to `drawing-upload`. Spot-check recognition actually recorded:
    `search(projectId, predicate: "appearsOnPage", limit: 1)`: zero rows → hand off to
    `drawing-upload`.
 3. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)`: spec
@@ -194,10 +194,10 @@ Say what the run will do, roughly what it costs (a real read of a
 
 ## 2. Context floor
 
-Run these in order; each is read-or-run, never re-minted (net-new facts only, everywhere).
+Run these in order; each is read-or-run, never re-created (net-new facts only, everywhere).
 
 1. **The reconciliation gate, read.** Call `reconcile_set(projectId)` report-only (never pass
-   `deposit`, never pass a `deliveryId`: the bare call is the orientation check). Fold what it
+   `record`, never pass a `deliveryId`: the bare call is the orientation check). Fold what it
    reports into the context packet. Check `.ran` flags before citing any drift number: a check
    that did not run is named as not-run, never folded in as "found nothing". Genuine document
    inconsistencies it surfaces are design-team question material, not blockers; extraction-miss
@@ -235,7 +235,7 @@ grid file-redirects), then:
    for reading.
 5. **Wave the bundles**: a wave is a set of bundles whose reads can run together. Bundles that
    plausibly see the same scope (kitchens and unit plans, say) go in different waves or run
-   serially: two parallel readers minting the same work double-mint. Content-disjoint bundles may
+   serially: two parallel readers creating the same work create it twice. Content-disjoint bundles may
    run in parallel within a wave.
 
 Write `bundle-map.md`: bundles, sheets per bundle (numbers + file/page references), lane, lenses,
@@ -261,19 +261,19 @@ Per wave, in this exact loop:
    bundle's sheets with file/page references, its lane and lenses, the context packet, its
    trade-knowledge entries, and the mandates verbatim. Assign each dispatch a unique run-prefix
    (the bundle or unit id) when filling the brief's subject scheme, so parallel readers can never
-   collide on a minted subject. Parallel only across content-disjoint bundles. Record each
+   collide on a created subject. Parallel only across content-disjoint bundles. Record each
    dispatch in the ledger (unit, model, purpose).
-3. **Readers read deep and deposit directly**: render + text per sheet (`render_page` +
-   `get_page_text`), mint/enrich/flag against the live list (readers pull it fresh via
-   `list_scope_items` + targeted `search` at start), deposit via `propose_batch` (≤500 per call,
-   atomic) or `propose_batch_file` for larger runs, read back and count-verify, report counts and
+3. **Readers read deep and record directly**: render + text per sheet (`render_page` +
+   `get_page_text`), create/enrich/flag against the live list (readers pull it fresh via
+   `list_scope_items` + targeted `search` at start), record via `record_batch` (≤500 per call,
+   atomic) or `record_batch_file` for larger runs, read back and count-verify, report counts and
    anomalies.
 4. **The lead verifies**: re-run the counts with your own queries (`search` filtered to the
    reader's sourceInstrument or subjects; `list_scope_items` delta), check contested rows, and
    record verified counts in the ledger. A mismatch stops the wave and gets investigated, never
    papered over. When the wave ran readers in parallel, also scan the wave's new items for
    cross-reader overlaps: the same work captured from two sides, convention lines especially,
-   since parallel readers cannot see each other's mints. List any overlap as a flag for the
+   since parallel readers cannot see each other's new items. List any overlap as a flag for the
    operator at the checkpoint; merging is a person's call at the review surface, never the
    lead's.
 5. **Checkpoint with the operator** (format below). Proceed to the next wave only on their
@@ -317,11 +317,11 @@ TOC-coverage residue, reported the same way.
 The estimator-judgment stage. Packages are bundles of spec sections grouped by how subcontractors
 actually split themselves in the market, not by the book's divisions.
 
-1. **Phase 1: baseline split.** Propose the package structure from the spec TOC plus the trade
+1. **Phase 1: baseline split.** Draft the package structure from the spec TOC plus the trade
    knowledge base's market conventions: which sections bundle into which package, which get carved
    out, a primary CSI section per package. Probe the usually-present families the TOC is silent
    on (site/civil, SOE, landscaping/exterior improvements, thin design-build MEP divisions) and
-   propose estimator-declared packages for them.
+   draft estimator-declared packages for them.
 <!-- user-facing -->
 Present the split as a reviewable artifact:
    package name, primary section, bundled sections, catalog trade (id + name, from step 3),
@@ -330,11 +330,11 @@ Present the split as a reviewable artifact:
    Tagging happens into an approved structure, never an inferred one.
 2. **Phase 2: scope-driven amendments.** Where the scope list surfaces what the TOC cannot see
    (a specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
-   package that should collapse into another once scale is understood), propose amendments the
+   package that should collapse into another once scale is understood), draft amendments the
    same way: named, rationaled, operator-approved.
 3. **Resolve every package to the trade catalog.** The trade tag and the live package speak the
    curated CSI trade catalog's vocabulary, not the spec book's. Before presenting the split, look
-   up each proposed package's home trade via `directory_list_trades`: exact `code` lookup first,
+   up each drafted package's home trade via `directory_list_trades`: exact `code` lookup first,
    then a `query` by trade name or alias ("tile", "sheetrock"), and record the catalog trade id
    verbatim (the spaced form, e.g. `09 21 16`) in the split artifact alongside the primary
    section. The primary section and bundled sections keep their spec-TOC granularity: the finer
@@ -359,12 +359,12 @@ artifact, not the package rows, is what tagging needs.
 Assign each scope item its home trade off the approved split: one `belongsToTrade` record per item
 (value: the package's catalog trade id, verbatim from the approved split, a raw spec section only
 for a package the split explicitly marked "no catalog trade", never as an unmarked default),
-deposited in batches with the same read-back verification. Where an item genuinely straddles a package boundary, flag it as a package-boundary
+recorded in batches with the same read-back verification. Where an item genuinely straddles a package boundary, flag it as a package-boundary
 question instead of force-tagging: the validation run tagged 275 of 283 and flagged 8, and those
 8 flags were correct output, not failure. Boundary enrollments (exclusions, general requirements,
 alternates on other packages) are manual-first doctrine: the engine does not auto-author them;
 the operator authors boundary lines on the package surface, and anything the read suggested as a
-boundary rides in flags and notes. Sheet-to-package assignment (`mosot_assign_sheet_packages`) is
+boundary rides in flags and notes. Sheet-to-package assignment (`assign_sheet_packages`) is
 an operator-approved override: offer it only when the operator asks; the derived relevant-pages
 list already falls out of the citations.
 
@@ -383,7 +383,7 @@ Report to the user, in estimator terms:
 - **The package split**: approved packages, amendments, TOC sections deliberately unbundled.
 - **The run cost**: dispatches by wave and model, token totals where the harness reported
   them, unknowns stated as unknown: honest bounds, never estimates presented as measurements.
-- **Knowledge amendments**: entry-silent flags and inapplicability flags, proposed as amendments
+- **Knowledge amendments**: entry-silent flags and inapplicability flags, offered as amendments
   to the trade knowledge base.
 <!-- /user-facing -->
 
@@ -410,12 +410,12 @@ Read every sheet in your unit deep: render_page + get_page_text on each page (re
 and meaning, text for exact tokens). Then emit against the live scope list, which you pull fresh
 at start (list_scope_items, plus targeted search):
 
-1. MINT a new scope item for work not on the list; ENRICH an existing item (new citation, note,
+1. CREATE a new scope item for work not on the list; ENRICH an existing item (new citation, note,
    resolved reference) for work already listed; FLAG an observation (a gap, an anomaly, an
-   ungrounded reference you will not mint, a grain question where the knowledge entry is silent).
-   Never a parallel list; never re-mint; never silently skip.
+   ungrounded reference you will not create, a grain question where the knowledge entry is silent).
+   Never a parallel list; never re-create; never silently skip.
 2. CONVENTION LINES: for each convention entry in your trade knowledge that applies to your
-   content families, mint it if absent from the live list or enrich if present —
+   content families, create it if absent from the live list or enrich if present —
    sourceInstrument "trade-convention:<trade>@<version>", evidence quoting the entry's line and
    carrying basis: "trade-convention", NO sheet citation. If you judge an entry inapplicable to
    this project, FLAG that with your reason. Silence on a convention entry is a violation.
@@ -427,26 +427,26 @@ at start (list_scope_items, plus targeted search):
    a trade's scope sheet — split by type or significant distinction, never by instance (floor);
    never one item per sheet or package headers (ceiling). Distinctions that don't earn a row ride
    in the description and notes.
-5. THE ROW: every mint writes the full row — name (concise, under ~10 words, estimator wording),
+5. THE ROW: every new item writes the full row — name (concise, under ~10 words, estimator wording),
    category (REQUIRED: the checklist-section grouping an estimator would use; reuse category
    strings across like work, never one per item), description (1-3 tight sentences, only what
    changes price or scope — never a re-narration of the schedule; the citation does the
    explaining), notesExternal/notesInternal only when there is a real note, quantity only where
    the sheet carries one as {value, unit}. Recorded text is operator-facing: plain estimator
    prose, no em dashes, no bolding, no machinery words. Verbose rows are defects.
-6. GRAIN: follow your entries' grain sections; where silent, mint at best judgment AND flag the
+6. GRAIN: follow your entries' grain sections; where silent, create at best judgment AND flag the
    grain as unspecced.
-7. DEPOSIT directly: propose_batch (≤500 per call; subjects scopeItem:<run-prefix>-<seq> for
-   mints; the item's existing subject for enrichments), or upload a JSONL and propose_batch_file
+7. RECORD directly: record_batch (≤500 per call; subjects scopeItem:<run-prefix>-<seq> for
+   new items; the item's existing subject for enrichments), or upload a JSONL and record_batch_file
    for large runs. After every batch, READ BACK and verify the count landed equals the count
    sent; recheck any contested ids individually. Report exact counts.
 8. Definitions lane only: also record what the schedules define (extending the existing subject
-   kinds you see in the definitions index — never minting a parallel vocabulary), AND own the
+   kinds you see in the definitions index — never creating a parallel vocabulary), AND own the
    scope items the schedules themselves ground (the schedules-scope duty): a schedule row family
    that is real priced work becomes scope items at the grain bracket, cited to the schedule
    sheet + page.
 
-Report back: counts (minted / enriched / flagged, deposited / verified / contested), the
+Report back: counts (created / enriched / flagged, recorded / verified / contested), the
 definitions kinds you added (if any), anomalies and document defects you flagged, convention
 entries emitted and any judged inapplicable (with reasons), and anything you could not read
 (refused tokens, unreadable pages) stated honestly — an unread page is named, never silently

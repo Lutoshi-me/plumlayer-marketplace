@@ -6,7 +6,7 @@ description: >
   records cited project-level facts (systems, MEP delivery shape, scope areas, hazards) into a
   run-context packet so every downstream reader orients once. Trigger on "learn the project",
   "orient on this set", "orientation pass", "/learn-project". Drives search, set_grid, render_page,
-  get_page_text, and propose_batch. Does not upload drawings (drawing-upload) or run scope-run.
+  get_page_text, and record_batch. Does not upload drawings (drawing-upload) or run scope-run.
 ---
 
 # Learn project: the cheap orientation pass (stage 1)
@@ -19,7 +19,7 @@ everything the user sees, including your closing report: a report template is us
 Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
 item, trail.
 
-Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+Never say to the user: claim, predicate, subject, governing, trust class,
 supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
 sheetType, or any raw verb, field, or parameter name.
 
@@ -45,10 +45,10 @@ project name, client data, or a real extracted value here.
 
 ## What this is, and the boundary
 
-`learn-project` does exactly one thing: read an already-uploaded set, deposit **net-new** project-level
+`learn-project` does exactly one thing: read an already-uploaded set, record **net-new** project-level
 orientation claims, and compile a packet from them. So it does **not**: upload a drawing delivery
 (precondition, owned by `drawing-upload`); extract spec sections itself (it reads the spec-section index
-if `drawing-upload`'s later spec-reading work has already deposited one, it never extracts specs); or
+if `drawing-upload`'s later spec-reading work has already recorded one, it never extracts specs); or
 run any of the scope engine's later stages, reading the set in waves, building the one scope list,
 deriving trade packages, or tagging items to a trade (all owned by `scope-run`).
 
@@ -68,13 +68,13 @@ the project record.
    confirm recognition by its observable effect rather than by re-polling a job you don't hold: call
    `list_drawing_deliveries(projectId)`, if none exist, stop plainly and hand off to `drawing-upload`.
    If a delivery exists, spot-check with a small `search(projectId, predicate: "appearsOnPage", limit:
-   1)`, zero rows means recognition hasn't actually deposited anything yet; stop and hand off to
+   1)`, zero rows means recognition hasn't actually recorded anything yet; stop and hand off to
    `drawing-upload` rather than orienting on an empty set.
 
 ## 2. Read the claims (identity, seeds, sheet inventory)
 
 1. `get_project(projectId)`, the project's identity (name, description, created date).
-2. **Read the project-create seed claims verbatim, never re-mint them.** For each of `projectType`,
+2. **Read the project-create seed claims verbatim, never re-create them.** For each of `projectType`,
    `deliveryMethod`, `location`, `grossArea`, `floorCount`, `bidDueDate`, `tradeInScope`,
    `knownExclusion`, call `search(projectId, predicate: "<predicate>")` and read what's there. These
    feed the packet's Identity section directly; where a seed is thin or missing, orientation may add a
@@ -112,8 +112,8 @@ anything reads the set for scope. Its findings are orientation-grade facts, a sh
 that never arrived, or a sheet in the set the index never mentioned, changes what "the set" means
 before you read a single plan.
 
-Call `reconcile_set(projectId)` **report-only** (never pass `deposit`), this step reads the gate's
-findings, it never records residue itself, and depositing is not this skill's decision to make. The
+Call `reconcile_set(projectId)` **report-only** (never pass `record`), this step reads the gate's
+findings, it never records residue itself, and recording is not this skill's decision to make. The
 bare call (no `deliveryId`) runs the ORIENTATION check: the index of record, the newest delivery
 that actually has a read drawing index, against the current compiled set across every delivery,
 which is what an orientation pass over the whole project wants. `result.mode` reports which
@@ -163,7 +163,7 @@ unusually deep set), say so explicitly in the report rather than quietly renderi
 
 ## 6. Emit orientation claims
 
-All net-new, subject `project` unless noted, deposited via **one** `propose_batch(projectId, claims)`
+All net-new, subject `project` unless noted, recorded via **one** `record_batch(projectId, claims)`
 call:
 
 | Predicate | Value shape | Ambiguity rule |
@@ -185,13 +185,13 @@ only for derived or absence observations with no single source page: `missingSco
 set-level `setShapeObservation`. Every claim's `evidence` cites the exact page/render or claims-query
 that produced it, never a fabricated locator.
 
-Call `propose_batch` once with the full array. **Verify:** the returned `count` must equal the number of
+Call `record_batch` once with the full array. **Verify:** the returned `count` must equal the number of
 entries sent; a mismatch stops the run and gets reported, never a guessed correction.
 
 ## 7. Compile the run-context packet
 
-A projection compiled fresh from the claims read in step 2 and deposited in step 6, **never itself
-deposited as a claim, never stored as truth.** Sections, in order:
+A projection compiled fresh from the claims read in step 2 and recorded in step 6, **never itself
+recorded as a claim, never stored as truth.** Sections, in order:
 
 1. **Identity**, name, type, delivery method, location, size, key dates (from the seed claims).
 2. **Systems**, structural and envelope systems, MEP delivery shape per division.
@@ -207,7 +207,7 @@ deposited as a claim, never stored as truth.** Sections, in order:
 Write it to `~/.plumlayer/runs/<project-slug>/learn-project-packet.md` (the same local run folder
 the `scope-run` skill uses), derive `<project-slug>` from the project name (lowercase, spaces to
 hyphens) or fall back to the `projectId` if the name doesn't produce a clean slug. Never write it
-into a repo, and never deposit it as a claim. Regenerate it in full the next time this skill runs for the project, it is a projection,
+into a repo, and never record it as a claim. Regenerate it in full the next time this skill runs for the project, it is a projection,
 not a document to patch. Audience: agent. Its path is handed to the user at run end (step 8) and
 its content orients later readers; whatever crosses from it into user-facing text becomes
 user-facing at the crossing and is translated there.
@@ -235,23 +235,23 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
 ## Gates (non-negotiable)
 
 - **Cite everything.** No citation → don't emit the claim.
-- **Net-new facts only.** Never re-mint a seed claim `project-create` already deposited, or a sheet /
-  spec-section claim `drawing-upload` already deposited.
+- **Net-new facts only.** Never re-create a seed claim `project-create` already recorded, or a sheet /
+  spec-section claim `drawing-upload` already recorded.
 - **Judgment claims are cited and flagged.** `mepDeliveryShape` is always flagged; the rest are flagged
   whenever the value was inferred rather than read off a label.
 - **Say it is your reading.** These claims become the project's working context immediately, so an
   inferred value that reads as a documented one is the failure to avoid.
 - **Orientation, not comprehension.** Respect the ≤6 render budget, if the set is too large for it to
   cover meaningfully, say so in the report rather than silently exceeding it.
-- **The reconciliation gate is read, never run or deposited, by this skill.** Step 4 reads
+- **The reconciliation gate is read, never run or recorded, by this skill.** Step 4 reads
   `reconcile_set` report-only; a gate that hasn't run for this set is named as not having run, never
   paraphrased into "no discrepancies."
-- **The packet is a projection only.** Never deposited as a claim, never written to the repo, always
+- **The packet is a projection only.** Never recorded as a claim, never written to the repo, always
   regenerated in full on the next run rather than patched.
 
 ## Cost (cheapest tier first)
 
-The bulk of this pass is `search` over claims `project-create` and `drawing-upload` already deposited,
+The bulk of this pass is `search` over claims `project-create` and `drawing-upload` already recorded,
 already-paid-for reads, effectively free. Token cost is fenced to the ≤6 renders and their paired
 `get_page_text` calls, plus the small, fixed cost of compiling the packet from a small claim set. No GPU
 or model hosting on this path.

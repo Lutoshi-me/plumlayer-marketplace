@@ -25,7 +25,7 @@ into this package and they are not selling the same thing:
 - Retail sign franchises. Consumer-facing estimating systems, cash or deposit payment terms, online
   bill-pay links, charges for proof revisions beyond the first two, validity windows of thirty days.
   They price panels competently and treat submittals, samples and surveys as things that do not exist.
-- Architectural sign manufacturers and sign system houses. These mint their own sign-type vocabulary
+- Architectural sign manufacturers and sign system houses. These create their own sign-type vocabulary
   or their own location-class matrix, publish a sign count as the deliverable, sell shop drawings and
   a message schedule as priced work, and quote a design-level ladder rather than a single product.
 - Sign and awning shops. These carry exterior, illuminated and dimensional work alongside interior

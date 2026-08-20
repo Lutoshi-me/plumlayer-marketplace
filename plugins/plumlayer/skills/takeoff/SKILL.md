@@ -4,7 +4,7 @@ description: >
   Turn a plain-language takeoff request into a named condition with marks or measurements placed
   in the project record, like a person drawing them in the editor. Trigger on "take off the
   windows", "count the doors", "measure the wall", "/takeoff". Drives sheet discovery and the
-  takeoff verbs (takeoff_read, takeoff_condition, takeoff_deposit, render_page, get_page_text).
+  takeoff verbs (takeoff_read, takeoff_condition, takeoff_record, render_page, get_page_text).
   Does not upload drawings (drawing-upload), create the project (project-create), run scope
   stages (scope-run), or read sub proposals (bid-intake).
 ---
@@ -19,7 +19,7 @@ everything the user sees, including your closing report: a report template is us
 Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
 item, trail.
 
-Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+Never say to the user: claim, predicate, subject, governing, trust class,
 supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
 sheetType, or any raw verb, field, or parameter name.
 
@@ -114,9 +114,9 @@ only one of them is a condition:
 
 - **A condition matching this request**: same item, same kind, overlapping sheets; judge by name
   and members, not exact string match.
-- **A legacy per-sheet count on a target sheet.** Older agent runs deposited whole-sheet count
+- **A legacy per-sheet count on a target sheet.** Older agent runs recorded whole-sheet count
   records (`hasTakeoffCount`, visible in `byPredicate`, returned flagged `legacy: true`). These
-  render nowhere in the editor and can no longer be written (the deposit door refuses the family),
+  render nowhere in the editor and can no longer be written (the write door refuses the family),
   but they are standing counted work all the same: a count of the same item on the same sheet
   **is** overlap even though no condition exists.
 
@@ -132,7 +132,7 @@ honest options with their real costs:
   per-instance geometry (a legacy count's recorded instance boxes), marks can be placed under a
   new condition from that evidence without re-reading the sheets. Cheap and honest **only** if
   the earlier read's judgment calls and caveats travel with it, into the condition's notes, the
-  deposits' evidence, and the report, never quietly dropped: the marks inherit that read, and
+  records' evidence, and the report, never quietly dropped: the marks inherit that read, and
   the trail must say so;
 - **count fresh**: a genuinely independent second read; slower, and the standing record remains
   on record beside it;
@@ -192,15 +192,15 @@ Per target sheet:
 
 - **A scale already stands** (from stage 2's read-back): use it. If it was set by a person, it is
   theirs: never replace it, even if you read the title block differently; note the disagreement
-  in the report instead. If your own earlier run set it and it is wrong, revise it (the deposit
+  in the report instead. If your own earlier run set it and it is wrong, revise it (the record
   names what it replaces).
 - **No scale stands:** read the stated scale off the sheet (title block or the view labels), then
   **verify it against something the sheet itself dimensions**: level datums on an elevation
   (two labeled levels and their pixel distance), a dimension string on a plan, a graphic scale
-  bar. The stated label is a starting point; the verification is what earns the deposit. Deposit
+  bar. The stated label is a starting point; the verification is what earns the record. Record
   `hasScale` with `method: "auto-detected"`, the display label as read, the derived
   units-per-point, and the two-point `calibration` geometry of the very feature you verified
-  against. If the sheet states no scale and dimensions nothing you can calibrate on, deposit
+  against. If the sheet states no scale and dimensions nothing you can calibrate on, record
   no-scale only if the request needs no scale; otherwise stop and tell the operator that sheet
   cannot be measured yet.
 - A scale disagreement you cannot resolve (label says one thing, the datums say another) is a
@@ -216,7 +216,7 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
    thing they mark. If a legend sheet exists in the set, read it. Never import tag conventions
    from another project or from memory.
 2. **Census with coordinates.** `get_page_text` gives every text span with its box in PDF points:
-   the same coordinate frame the deposits use. Collect the candidate tokens and their positions.
+   the same coordinate frame the records use. Collect the candidate tokens and their positions.
    Expect a full-size sheet's census not to fit in your context (a thousand-plus spans is
    normal): the result spills to a local file, and the working pattern is to filter and tally it
    with a small script, not to read it. The census is your completeness backstop: it is how you
@@ -243,13 +243,13 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
    - **counted**: it is the item; it gets a mark;
    - **excluded, named**: it is not the item (or is a border case judged out: the full-height
      glazed unit that is probably a door, the partial view that re-shows counted instances); it
-     gets no mark, and the exclusion is recorded with its reason and location: in the deposit
+     gets no mark, and the exclusion is recorded with its reason and location: in the record
      evidence where it shaped a count, and always in the report;
    - **blocked**: you genuinely cannot tell and the answer materially changes the takeoff: stop
      and ask the operator, with the render in front of them. Rare by design; most border cases
      are calls you make and name.
    Nothing is silently dropped. The census count, the placed count, and the named exclusions must
-   reconcile exactly; if they do not, find the gap before depositing.
+   reconcile exactly; if they do not, find the gap before recording.
 5. **Double-count discipline.** Partial views, match-line repeats, and keyed enlargements can
    re-show instances another view already shows. Decide per sheet-family how you are treating
    them, apply it consistently, and name the rule in the report. When the sheet itself cannot
@@ -260,7 +260,7 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
 
 ## 6. Define the condition
 
-One `takeoff_condition` call per condition. The server mints the identity and returns it as the
+One `takeoff_condition` call per condition. The server creates the identity and returns it as the
 landed record's `subject`: **that string is the conditionId every mark in stage 7 carries.** You
 never invent one.
 
@@ -273,13 +273,13 @@ never invent one.
 - `sourceInstrument`: name what actually produced it (e.g. `takeoff-skill`). Never
   `takeoff-editor`: that name belongs to the human editor and the door refuses it.
 - Extending a person's existing condition (they defined "Windows", you are filling it) is allowed
-  and is the intended shape: reuse their conditionId from stage 2; do not mint a duplicate. Only
+  and is the intended shape: reuse their conditionId from stage 2; do not create a duplicate. Only
   revise a condition definition (`supersedesId`) when it is your own and the revision is real
   (rename, note); type and unit are immutable: a different kind is a new condition.
 
 ## 7. Place the marks
 
-One `takeoff_deposit` per instance: a count mark per counted tag, a length per run, an area per
+One `takeoff_record` per instance: a count mark per counted tag, a length per run, an area per
 region. Never a list of points in one call, never a rollup: the total the operator sees is the
 marks summed, so the marks are the takeoff.
 
@@ -287,26 +287,26 @@ marks summed, so the marks are the takeoff.
   mark's `point` is the instance's location (center of its tag/box); vertices for lengths and
   areas trace what you measured. Scaled quantities cite the scale they were computed under
   (`scaledUnder`).
-- **Every deposit carries `conditionId`** (from stage 6) and evidence: `method`: how this
+- **Every record carries `conditionId`** (from stage 6) and evidence: `method`: how this
   instance was read (census + visual confirmation, render-only on image sheets, and the judgment
   that included it when it was a border case); `source`: sheet and page. A mark you cannot cite
-  to a location you actually read is not deposited.
-- **Expect volume, and bookkeep for it.** One deposit per instance is the doctrine, and a normal
+  to a location you actually read is not recorded.
+- **Expect volume, and bookkeep for it.** One record per instance is the doctrine, and a normal
   elevation takeoff is hundreds of sequential calls with verbose responses. Before the first
-  deposit, fix **one canonical ordered list** of every mark to place and track sent/remaining
+  write, fix **one canonical ordered list** of every mark to place and track sent/remaining
   against it by index, programmatically, not by eye. Two differently-ordered copies of the same
-  list is how a duplicate or a gap happens at this volume. Deposit sheet by sheet, keeping a
+  list is how a duplicate or a gap happens at this volume. Record sheet by sheet, keeping a
   per-sheet sent count against the canonical list.
 - **Triage a failed call into one of three shapes:**
   - **refused near human-touched work**, the machinery protecting a person's word: skip it,
     count it, name it in the report;
   - **transport or auth error** (a timeout, an expired-token error; the call returned an error,
-    not a landed record): retry that one deposit once; the stage-8 read-back is what proves no
+    not a landed record): retry that one write once; the stage-8 read-back is what proves no
     duplicate resulted either way;
   - **a refusal you cannot explain**: stop the run rather than retrying blind.
 - **Judgment calls ride the trail.** A border-case instance you counted carries the call in its
   own evidence; exclusions shaped by judgment are recorded with the census reconciliation. (A
-  dedicated unsure-flag on deposits is coming to the verbs; until it exists, the trail and the
+  dedicated unsure-flag on records is coming to the verbs; until it exists, the trail and the
   report are where your unsureness lives, and it must live somewhere. Silent confidence you do
   not have is the one dishonesty this skill cannot absorb.)
 
@@ -324,18 +324,18 @@ Two reads, because they answer different questions:
    limit: 1)` returns an authoritative count for that sheet in one tiny call: one per sheet
    beats walking hundreds of rows.
 3. **The scales:** scale rows belong to sheets, not conditions, so the condition read does not
-   return them. Per sheet you deposited a scale on:
+   return them. Per sheet you recorded a scale on:
    `takeoff_read(projectId, sheet: "sheet:<number>", predicate: "hasScale")`.
 
 Check, with a fresh recount against your stage-7 canonical list (never an echoed number):
 
 - member count per sheet equals what you sent per sheet;
 - the condition's base total matches the arithmetic of its members;
-- each scale you deposited is live on its sheet.
+- each scale you recorded is live on its sheet.
 
 A mismatch stops the run and is reported as a discrepancy with both numbers: never patched by
 re-sending, never rounded into "close enough". The read-back result is the only ground for telling
-the operator the takeoff landed; a successful deposit call alone is not.
+the operator the takeoff landed; a successful write call alone is not.
 
 ## 9. Report
 
@@ -373,12 +373,12 @@ the moment they lean on the standing number, so they are part of the answer, not
   a prior run, or this file. Method travels; answers do not.
 - Census, placed marks, and named exclusions reconcile exactly; nothing is silently dropped. On
   image-only sheets the render-based count says it is render-based.
-- A scale is verified against the sheet's own dimensioned features before it is deposited;
+- A scale is verified against the sheet's own dimensioned features before it is recorded;
   a person's scale is never replaced, only noted.
 - Marks land only on sheets the request names; context sheets inform, they do not receive marks.
-- Every deposit cites what was read (sheet, page, method) and carries its conditionId; no
-  citation, no deposit.
-- One deposit per instance; no rollups, no multi-point payloads.
+- Every write cites what was read (sheet, page, method) and carries its conditionId; no
+  citation, no write.
+- One record per instance; no rollups, no multi-point payloads.
 - A refusal near human-touched work is skipped and named, never fought; a transport/auth error
   is retried once with the read-back as the duplicate-proof; an unexplained refusal stops the
   run.
@@ -387,7 +387,7 @@ the moment they lean on the standing number, so they are part of the answer, not
   for each scale; a mismatch is reported, never patched silently.
 - Judgment calls are named in the trail and led with in the report: never silently resolved,
   never buried.
-- Operator-facing language is estimator words; the machinery vocabulary (claim, proposed,
+- Operator-facing language is estimator words; the machinery vocabulary (claim,
   supersede, predicate, and kin) never reaches the user.
 - Nothing this skill writes is a person's word, and nothing it does deletes, approves, or signs;
   corrections and removals belong to the operator in the editor.
@@ -406,7 +406,7 @@ in that run's evidence and report, never here.
   real use makes redo common, a deliberate revision path for a whole condition's marks (and a
   retirement path for legacy records) is a verb-surface question, not something this skill
   improvises.
-- **Unsure-flag on deposits.** A first-class way for a deposit to carry "check this one" (visible
+- **Unsure-flag on writes.** A first-class way for a write to carry "check this one" (visible
   at the true location on the sheet) is designed but not yet in the verbs; the trail + report
   carry it meanwhile. Adopt the flag here when it ships.
 - **Untyped sets.** Sheet discovery leans on `sheetType` records from drawing-upload; the

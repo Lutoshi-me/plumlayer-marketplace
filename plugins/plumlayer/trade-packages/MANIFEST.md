@@ -39,5 +39,5 @@ smoke-curtains, soe, specialties, tiling, trash-chutes, waterproofing, window-tr
 Not yet mapped (no or near-no corpus): utilities as a standalone package, jobsite requirements /
 Division 01, pools and water features, fireplaces, site furnishings, EV charging as a package,
 tower crane / hoisting, structural steel as its own package (misc-metals holds the boundary).
-A reader hitting one of these trades runs entry-silent: mint at best judgment and flag the grain
+A reader hitting one of these trades runs entry-silent: create at best judgment and flag the grain
 as unspecced, per the `scope-run` skill's mandates.

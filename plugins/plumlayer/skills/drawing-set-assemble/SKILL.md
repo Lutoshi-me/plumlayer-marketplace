@@ -18,7 +18,7 @@ everything the user sees, including your closing report: a report template is us
 Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
 item, trail.
 
-Never say to the user: claim, deposit, predicate, subject, proposed, governing, trust class,
+Never say to the user: claim, predicate, subject, governing, trust class,
 supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
 sheetType, or any raw verb, field, or parameter name.
 
@@ -55,7 +55,7 @@ which are always produced regardless.
 It returns immediately: `{ jobId, status: "queued" | "running", alreadyActive? }`. A full set can
 exceed the request window, so this never blocks inline. `alreadyActive: true` means a job for this
 project is already queued or running, poll the returned `jobId` rather than starting a second one.
-Each fresh run mints new output files; prior exports are left in place, so re-running doesn't
+Each fresh run creates new output files; prior exports are left in place, so re-running doesn't
 overwrite or lose anything.
 
 ## 3. Poll until done
