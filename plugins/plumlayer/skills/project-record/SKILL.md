@@ -57,8 +57,6 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
   judgment, and human sign-off still gates what leaves the building: an ITB or package
   send, an RFI, anything published outside, a bid. Nothing leaves unsigned; nothing enters
   untraced.
-- The stored trust class on what you write still reads `proposed`. That is a compatibility
-  field, not a gate, and does not mean the claim is waiting on anyone.
 
 ## Words (operator-facing language)
 
@@ -109,7 +107,7 @@ changes wins.
   governing issue, open-ambiguity count per sheet).
 - `ambiguities`: the open-conflict / review ledger, severity-sorted (legitimate-RFI first).
 - `rfi_candidates`: drafted RFI candidates with citations.
-- `search`: the raw claim ledger (ANY trust class, including `proposed`). Filter by
+- `search`: the raw claim ledger (ANY trust class, including `recorded`). Filter by
   subject / predicate / trustClass / text; paginated. Use this to see what's actually been
   asserted, including your own recorded claims.
 - `list_scope_items`: the live scope list (name, category, description, notes, quantity per item).
@@ -121,7 +119,7 @@ changes wins.
   claims, just viewable pages) so uploaded files are readable even before recognition runs.
 - `recognize_sheets`: start the async deterministic bulk sheet-number recognition pass over one
   uploaded PDF. Returns `{jobId, status}` immediately; poll `recognize_sheets_status` rather than
-  waiting inline. Recognized sheet claims record server-side as `proposed` on success; never
+  waiting inline. Recognized sheet claims record server-side as `recorded` on success; never
   `record_batch` them yourself.
 - `recognize_sheets_status`: poll a `recognize_sheets` job. Returns run counts (`report`), the
   server-side write summary (`written`), and the residue tail (`residue`) for you to read and
