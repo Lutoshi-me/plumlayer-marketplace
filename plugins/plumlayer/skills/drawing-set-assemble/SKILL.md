@@ -5,8 +5,7 @@ description: >
   one PDF per discipline, plus an optional combined PDF. Trigger on "assemble the set", "current
   set", "merged PDFs", "discipline split", "give me the latest PDFs", "combine into one pdf", or
   "/assemble-set". Drives the async assemble_current_set and assemble_current_set_status MCP tools,
-  a pure export that records nothing new. Does not publish the Master Drawing Index workbook
-  (drawing-index-publish) or upload drawings (drawing-upload).
+  a pure export that records nothing new. Does not upload drawings (drawing-upload).
 ---
 
 # Drawing set assemble: current-set PDF export
@@ -77,10 +76,10 @@ On `succeeded`, tell the user:
   `Current Set - Combined.pdf` if requested), size, page count, discipline.
 - **The counts** from `report`: how many sheets were considered, how many were included, and how many
   were excluded (the two add up to the total considered).
-- **What still needs a look**, always relay this, never suppress it: review-status sheets that were
-  still included in the assembled PDFs (flagged, not omitted), and sheets excluded because they had
-  no locatable source page. Both are the tail a human should look at before treating the set as
-  final.
+- **What still needs a look**, always relay this, never suppress it: sheets still included that
+  carry an open question the read itself raised (two sheets citing the same page, or a page whose
+  identity was only partly read), and sheets excluded because they had no locatable source page.
+  Both are the tail a human should look at before treating the set as final.
 - **Where to get the files**, the assembled PDFs live on the project on plumlayer.com; there is
   deliberately no download link served here, so point the user there rather than looking for a path
   or URL in the tool result.

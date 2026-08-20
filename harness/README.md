@@ -43,7 +43,7 @@ contract each check is derived from.
 | 7 | MCP URL exact-match | `.mcp.json` `plumlayer` server url equals `https://api-production-0a7b.up.railway.app/mcp` |
 | 8 | No absolute paths | No `C:\`, `/Users/`, `/home/`, `/root/` literals baked into `.mcp.json`, `plugin.json` (Claude), `plugin.json` (Codex), or `marketplace.json` |
 
-The plugin ships ten skills and no `agents/` directory, so there is nothing
+The plugin ships nine skills and no `agents/` directory, so there is nothing
 for this harness to check about plugin agents.
 
 ## Layer 2, load check (`load_check.py`)

@@ -68,12 +68,10 @@ happening. Say instead:
 
 `drawing-upload` does exactly one thing: take a drawing delivery and register every sheet in it as
 cited claims in the project's project record. The canonical form is claims + provenance over the
-untouched original delivery. Discipline organization, by-discipline PDFs, page labels, and a
-drawing-index CSV are all **projections** of that form, rendered on demand by other skills, never the
-foundation. So this skill does **not**: physically split files by discipline (discipline is derived
-per sheet, never from a filename); produce a CSV (the deliverable is claims in the project record: export
-skills `drawing-set-assemble` / `drawing-index-publish` render artifacts from the cloud claims on
-request); scope, take off, or comprehend the sheets (`scope-run` / `takeoff` / `learn-project`); or create
+untouched original delivery. Discipline organization, by-discipline PDFs, and page labels
+are all **projections** of that form, rendered on demand by other skills, never the foundation. So this skill does **not**: physically split files by discipline (discipline is derived
+per sheet, never from a filename); produce a CSV (the deliverable is claims in the project record: the export
+skill `drawing-set-assemble` renders artifacts from the cloud claims on request); scope, take off, or comprehend the sheets (`scope-run` / `takeoff` / `learn-project`); or create
 the project (`project-create`).
 
 **Retired:** `drawing-index`, `drawing-index-bulletin`, `drawing-index-merge`: they organized before

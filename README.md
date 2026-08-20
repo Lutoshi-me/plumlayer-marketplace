@@ -59,7 +59,7 @@ unless Claude compatibility is handled separately.
 
 A hosted MCP connector to your Plumlayer project record
 (`api-production-0a7b.up.railway.app/mcp`), auto-wired on install with no manual `claude mcp add`,
-and ten skills that use it.
+and nine skills that use it.
 
 ### Getting started
 
@@ -98,8 +98,6 @@ and ten skills that use it.
 
 - **`project-record`**: the general-purpose skill for reading, searching, and adding to a project
   record directly: the sheet and set grid, flagged items, and scope and takeoff data.
-- **`drawing-index-publish`**: publishes a Master Drawing Index Excel workbook straight off the
-  current set, with a tab per delivery and links that jump to each sheet.
 - **`drawing-set-assemble`**: assembles the current drawing set into fresh PDFs, one per
   discipline plus an optional combined PDF.
 
@@ -156,7 +154,6 @@ plugins/plumlayer/
     bid-intake/SKILL.md
     takeoff/SKILL.md
     project-record/SKILL.md
-    drawing-index-publish/SKILL.md
     drawing-set-assemble/SKILL.md
   trade-packages/                   # 44 trade reference files + MANIFEST.md, read by scope-run
 ```

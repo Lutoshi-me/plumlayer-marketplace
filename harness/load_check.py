@@ -50,7 +50,6 @@ EXPECTED_PLUGIN_NAME = "plumlayer"
 
 EXPECTED_SKILL_NAMES = {
     "plumlayer:bid-intake",
-    "plumlayer:drawing-index-publish",
     "plumlayer:drawing-set-assemble",
     "plumlayer:drawing-upload",
     "plumlayer:learn-project",
