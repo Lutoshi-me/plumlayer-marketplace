@@ -4,9 +4,12 @@ description: >
   A cheap orientation pass over an already-uploaded drawing set: reads the project's seed facts and
   sheet inventory, takes a handful of bounded renders (cover sheet, drawing index, key plans), then
   records cited project-level facts (systems, MEP delivery shape, scope areas, hazards) into a
-  run-context packet so every downstream reader orients once. Trigger on "learn the project",
-  "orient on this set", "orientation pass", "/learn-project". Drives search, set_grid, render_page,
-  get_page_text, and record_batch. Does not upload drawings (drawing-upload) or run scope-run.
+  run-context packet, drafts the baseline trade-package split off the spec table of contents, and
+  creates the packages, so every downstream reader orients once and a package already exists for
+  every trade. Trigger on "learn the project", "orient on this set", "orientation pass",
+  "/learn-project". Drives search, set_grid, render_page, get_page_text, record_batch,
+  directory_list_trades, solicitation_list_packages, and solicitation_create_package. Does not
+  upload drawings (drawing-upload) or run scope-run.
 ---
 
 # Learn project: the cheap orientation pass (stage 1)
@@ -26,12 +29,15 @@ project name, client data, or a real extracted value here.
 
 ## What this is, and the boundary
 
-`learn-project` does exactly one thing: read an already-uploaded set, record **net-new** project-level
-orientation claims, and compile a packet from them. So it does **not**: upload a drawing delivery
-(precondition, owned by `drawing-upload`); extract spec sections itself (it reads the spec-section index
-if `drawing-upload`'s later spec-reading work has already recorded one, it never extracts specs); or
-run any of the later scope-run stages, reading the set in rounds, building the one scope list,
-deriving trade packages, or tagging items to a trade (all owned by `scope-run`).
+`learn-project` reads an already-uploaded set, records **net-new** project-level orientation claims,
+compiles a packet from them, and drafts and creates the baseline trade-package split off the spec
+table of contents (Phase 1 of package derivation, `scope-package-architecture.md` §4.1). So it does
+**not**: upload a drawing delivery (precondition, owned by `drawing-upload`); extract spec sections
+itself (it reads the spec-section index if `drawing-upload`'s later spec-reading work has already
+recorded one, it never extracts specs); or run any of the later scope-run stages, reading the set in
+rounds, building the one scope list, amending the package split, or tagging items to a trade (all
+owned by `scope-run`). Amending the split (Phase 2) is `scope-run`'s job; creating the baseline split
+is this skill's.
 
 The run-context packet this skill compiles is a **projection**, never stored as truth, the same
 pattern as a trade package. It lives in the user's local run folder only, never a repo, never
@@ -51,6 +57,9 @@ the project record.
    If a delivery exists, spot-check with a small `search(projectId, predicate: "appearsOnPage", limit:
    1)`, zero rows means recognition hasn't actually recorded anything yet; stop and hand off to
    `drawing-upload` rather than orienting on an empty set.
+3. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record the
+   version for use in step 7's package rationale. Missing means a broken plugin install: stop and
+   report rather than drafting a package split knowledge-blind.
 
 ## 2. Read the claims (identity, seeds, sheet inventory)
 
@@ -71,9 +80,11 @@ the project record.
 
 ## 3. Read the spec-section index, if present
 
-Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects. When spec reading
-has run for a project, these claims are real and cited, `hasTitle`, `locatedAt`, `inDivision`, and
-`partOfIssue` on each section (verified on at least one live project). Extraction now ships as
+Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects, **paging through
+every result to the real total** rather than a sample: this is the anchor step 7's package split
+drafts from, and a partial read under-declares the job the same way a silent TOC does. When spec
+reading has run for a project, these claims are real and cited, `hasTitle`, `locatedAt`, `inDivision`,
+and `partOfIssue` on each section (verified on at least one live project). Extraction now ships as
 `drawing-upload`'s spec-TOC leg (its step 8, wired to `extract_spec_toc` / `extract_spec_toc_status`),
 a project whose drawing-upload pass has run that leg will have these claims. What's still true is that
 not every project has run it yet, a set uploaded before the leg shipped, or a manual that arrived
@@ -169,7 +180,44 @@ that produced it, never a fabricated locator.
 Call `record_batch` once with the full array. **Verify:** the returned `count` must equal the number of
 entries sent; a mismatch stops the run and gets reported, never a guessed correction.
 
-## 7. Compile the run-context packet
+## 7. Draft the baseline package split and create the packages
+
+Phase 1 of package derivation (`scope-package-architecture.md` §4.1, re-cut 2026-08-21 PLU-1317):
+the cheap, high-value baseline split, drafted here so a package already exists for every trade
+before the expensive scope read starts. Phase 2, the scope-driven amendments, stays in `scope-run`.
+
+1. **Read what's already on the project.** Call `solicitation_list_packages(projectId)` first. This
+   step is match-or-create: never create a package whose catalog trade id already has one on the
+   project. Report existing packages as "already on the project" rather than re-drafting them.
+2. **No spec sections, no split.** If step 3 found no `inDivision` claims for this project, create
+   **no** packages. Drawing disciplines are never used as an anchor for a split (Luke's ruling,
+   2026-08-21). Say plainly, in the packet and the report: spec reading hasn't run for this project
+   (the remedy is to upload the project manual through `drawing-upload`'s spec-book leg and re-run
+   this skill); if the project genuinely has no spec book, the scope run derives the packages from
+   the finished scope list instead. No question asked, no branch beyond this sentence.
+3. **Draft the split** from the spec TOC (step 3) plus the trade knowledge base's market
+   conventions: which sections bundle into which package, which get carved out, a primary CSI
+   section per package. Probe the usually-present families the TOC is silent on (site/civil, SOE,
+   landscaping/exterior improvements, thin design-build MEP divisions) — the same probe that already
+   produces `missingScopeFamily` claims (step 6): a silent family becomes a `missingScopeFamily`
+   claim AND, where the trade knowledge says the trade is usually present, a package.
+4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
+   first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
+   an id from memory (store-resolution). A package with no reasonable catalog match cannot be
+   created (the verb requires a catalog code): name it in the report as "no catalog trade, not
+   created," never force a wrong code.
+5. **Create each missing package** with `solicitation_create_package(projectId, tradeCode, name,
+   notes)`: name = the package display name; notes carry the bundled sections in exactly this shape
+   (`scope-run` reads it back, so the two skills must match): `Bundled sections: 03 30 00, 03 35 00.
+   Primary: 03 30 00. Rationale: <one line>.` Count-verify: re-list packages
+   (`solicitation_list_packages`) and confirm every created one landed.
+<!-- user-facing -->
+6. **Show the split as what you did, not as a question**, mirroring `scope-run`'s wording: "I split
+   the job into N packages; here they are. Change any of them on the site or tell me and I will
+   redo it." No approval is collected.
+<!-- /user-facing -->
+
+## 8. Compile the run-context packet
 
 A projection compiled fresh from the claims read in step 2 and recorded in step 6, **never itself
 recorded as a claim, never stored as truth.** Sections, in order:
@@ -182,18 +230,21 @@ recorded as a claim, never stored as truth.** Sections, in order:
    yet" note from step 3), and the reconciliation-gate status (its report counts, or "hasn't run yet"
    from step 4).
 5. **Hazards**, the `hazardFlag` claims.
-6. `[PLACEHOLDER, definitions-as-context envelope]`, a clearly marked final section; this
+6. **Packages**, the packages on the project after step 7: name, catalog trade id, primary section,
+   bundled sections, per package, or the "spec reading hasn't run for this project" note when step 7
+   created none.
+7. `[PLACEHOLDER, definitions-as-context envelope]`, a clearly marked final section; this
    skill does not design that envelope, it only reserves the slot.
 
 Write it to `~/.plumlayer/runs/<project-slug>/learn-project-packet.md` (the same local run folder
 the `scope-run` skill uses), derive `<project-slug>` from the project name (lowercase, spaces to
 hyphens) or fall back to the `projectId` if the name doesn't produce a clean slug. Never write it
 into a repo, and never record it as a claim. Regenerate it in full the next time this skill runs for the project, it is a projection,
-not a document to patch. Audience: agent. Its path is handed to the user at run end (step 8) and
+not a document to patch. Audience: agent. Its path is handed to the user at run end (step 9) and
 its content orients later readers; whatever crosses from it into user-facing text becomes
 user-facing at the crossing and is translated there.
 
-## 8. Report
+## 9. Report
 
 <!-- user-facing -->
 Tell the user, in plain terms (mirrors `project-create`'s closing report step):
@@ -206,6 +257,9 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
 - **What was recorded**, how many entries, and how many were flagged for a person's judgment, for
   example "recorded 14 project facts, 3 flagged for your judgment". What you recorded is the
   project's working context now, carrying your name and citations; anything a person changes wins.
+- **The package split**, packages created, packages already present on the project, any package
+  named "no catalog trade, not created," TOC sections deliberately unbundled, or the "spec reading
+  hasn't run for this project" note when no spec sections exist.
 - **Where the packet landed**, the full path.
 - **The placeholder note**, the definitions-as-context section is a stub, not yet designed.
 - **What a person should look at**, the flagged entries, visible on plumlayer.com with the
@@ -228,13 +282,19 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
   paraphrased into "no discrepancies."
 - **The packet is a projection only.** Never recorded as a claim, never written to the repo, always
   regenerated in full on the next run rather than patched.
+- **The split anchors on the spec table of contents, never on drawing disciplines.** No spec
+  sections on the project means no packages, and the report says so plainly.
+- **Packages are match-or-create; a re-run never duplicates one.** Read `solicitation_list_packages`
+  first and skip any catalog trade id already represented on the project.
 
 ## Cost (cheapest tier first)
 
 The bulk of this pass is `search` over claims `project-create` and `drawing-upload` already recorded,
 already-paid-for reads, effectively free. Token cost is fenced to the ≤6 renders and their paired
-`get_page_text` calls, plus the small, fixed cost of compiling the packet from a small claim set. No GPU
-or model hosting on this path.
+`get_page_text` calls, the paged read of `inDivision` claims, the small, fixed cost of compiling the
+packet from a small claim set, and step 7's package derivation: one `directory_list_trades` lookup
+and one `solicitation_create_package` call per new package, plus the `solicitation_list_packages`
+read-back. No renders beyond the ≤6 budget, and no GPU or model hosting on this path.
 
 ## Deferred (named, not skipped silently)
 
