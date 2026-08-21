@@ -261,6 +261,9 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
 - **The placeholder note**, the definitions-as-context section is a stub, not yet designed.
 - **What a person should look at**, the flagged entries, visible on plumlayer.com with the
   page each one was read from.
+
+Close by saying orientation is done: everything it made is on the project record, and the scope run
+reads the project record, so it is ready to go.
 <!-- /user-facing -->
 
 ## Gates (non-negotiable)

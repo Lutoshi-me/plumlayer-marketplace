@@ -28,9 +28,10 @@ Empirical findings from real init-event inspection (2026-06-20, v2.1.183):
 
 Assertions built against the actual observed event shape:
   - Plugin "plumlayer" present in plugins[] by name.
-  - All 10 expected skills present in skills[] with "plumlayer:" prefix.
-  - The plugin ships no agents/ directory (removed) — there is nothing for
-    Layer 2 to assert about plugin agents, and no limitation to document.
+  - All nine expected skills present in skills[] with "plumlayer:" prefix.
+  - The plugin ships two agents under agents/, but the init event's agents[]
+    field carries globally-configured agent types only, so Layer 2 cannot
+    assert them. Their static check is Layer 1's agents-frontmatter.
   - MCP under --bare: bundled hosted MCP not observed in mcp_servers[].
     Documented limitation — needs non-bare invocation with auth to test.
 
@@ -101,7 +102,7 @@ def check_plugin_present(init_event: dict) -> Result:
 
 
 def check_skills_present(init_event: dict) -> Result:
-    name = "skills-all-10-present"
+    name = "skills-all-present"
     skills_in_event = set(init_event.get("skills", []))
     plumlayer_skills = {s for s in skills_in_event if s.startswith("plumlayer:")}
     missing = EXPECTED_SKILL_NAMES - plumlayer_skills

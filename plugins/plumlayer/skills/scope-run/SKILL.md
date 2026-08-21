@@ -73,9 +73,20 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    never in the reader that read it.
 6. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
    the record back and confirms the count that landed equals the count sent, and checks any
-   contested rows individually, before it ends. The lead separately re-verifies the same counts
-   with its own queries before the next unit of that pass starts. A reader's report that its
-   batches landed is verified at both its own boundary and the lead's; neither replaces the other.
+   contested rows individually, before it ends. The round runner separately re-verifies the same
+   counts with its own queries before the next unit of that pass starts. A reader's report that its
+   batches landed is verified at both its own boundary and the runner's; neither replaces the
+   other. The lead adds a third, count-only check at the check-in, bounded by what `search` can
+   actually filter on (subject, predicate, trustClass, and a `text` substring across subject,
+   predicate, and value; there is no `sourceInstrument` filter, so never claim one). What the lead
+   takes independently is the created count per unit: `search(text: "scopeItem:<unit-id>-",
+   limit: 1)`, reading `count`, a real total over the entries whose subject carries that prefix.
+   Updates and flags land on subjects that already existed, so no prefix finds them: they are
+   verified at the reader's boundary and again at the runner's, by reading the named subjects back,
+   and the lead reports them as runner-verified rather than claiming a check it did not run. The
+   lead never calls `list_scope_items` during the run: that verb returns the whole projected scope
+   list, unbounded, and pulling it is how the lead's context stops being cheap. When the record
+   grows a `sourceInstrument` filter, the lead's own check widens to the full per-unit totals.
 7. **The grain bracket.** A scope item is the unit a subcontractor would include / exclude / price
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are the derive stage's output,
@@ -128,18 +139,66 @@ lowercase, spaces to hyphens; fall back to the projectId). Never committed to an
 uploaded to the project except record files, never recorded as project entries. The set:
 
 - `ledger.md`: the run ledger, appended as the run proceeds: every read unit (round, pass, unit,
-  purpose), every write batch (count sent, reader-verified, lead-verified, contested), the list of
-  definitions kinds as they land, check-in outcomes, and every deviation or repair. The ledger is
-  what makes the close-out report honest. Audience: agent.
+  purpose), every write batch (count sent, reader-verified, runner-verified, contested), the list of
+  definitions kinds as they land, check-in outcomes, every deviation or repair, and the run's
+  `phase:` lines, one per phase boundary, appended by the lead. The ledger is what makes the
+  close-out report honest, and its `phase:` lines are what makes a run resumable. Audience: agent.
 - `read-plan.md`: the read plan (stage 3): passes and the read units within each, their sheets with
   file/page references, the trade files each pass carries, round order, and what is deliberately
   excluded. Audience: agent. What the user hears at the gate is defined in stage 3.
 - `context-packet.md`: the compiled context packet, regenerated between rounds (a projection off
   live records, never itself recorded). Audience: agent.
+- `briefs/`: one small file per pass, written by that round's runner, carrying the pass's filled
+  slot values: what the pass reads for, its content families, the knowledge version, the trade file
+  paths it carries, and the subject prefix scheme. A reader opens its own pass file from here. The
+  mandates are never in it. Audience: agent.
 - `completeness/`: the completeness pass's enumerations, accounting output, and lists of what is
   still open. Audience: agent.
 - `records/`: JSONL files for large batch writes (these do get uploaded, as the write
   mechanism). Audience: machine.
+
+## Phases, and who holds what
+
+The run is one attended conversation, and nothing in it accumulates. The project record is the
+run's memory; the run folder is its bookkeeping; no level of the run holds between its units
+anything a later unit needs. The user never manages context: the only decisions they make are
+the read plan and each check-in, and no prompt ever mentions sessions, compaction, or usage.
+
+The run executes at three levels. Each level is a separate agent context, bounded by construction:
+
+- **The lead** is this skill, running in the user's session. It does the cheap work only:
+  preconditions, context floor, the read plan, the check-ins, amending, tagging, close out. For
+  each round it starts one round runner and receives one fixed-shape summary. It never holds a
+  pass brief, a trade file, a reader's report, or a page of the set. What it keeps per round is
+  the dispatch line and the summary, nothing else.
+- **The round runner** (the plugin's `scope-round-runner` agent, one fresh instance per round)
+  owns the round: it recompiles the definitions index into the context packet, runs the round's
+  passes as read units exactly as stage 4 defines them, verifies every unit with its own queries,
+  runs the round-end overlap scan, appends the ledger, returns its summary, and ends. Its context
+  is bounded to one round. The completeness check (stage 5) runs the same way: one runner for the
+  enumeration, the accounting, and the closure loop, including any supplemental reads.
+- **The reader** (the plugin's `scope-reader` agent, one fresh instance per read unit) reads one
+  unit and records, as stage 4 and the pass brief define. It ends when it has reported.
+
+Handoff is by file and record, never by inlined text. A dispatch at any level carries only
+pointers: the project id, the round or unit id, the run folder path, and the page references.
+The reader opens its pass brief and the context packet from the run folder, and its trade files from
+the plugin's trade-knowledge directory, all by the paths it is handed; the runner opens the read
+plan and the ledger. Nothing from those files is pasted into a
+dispatch, because whatever is pasted stays in the dispatcher's context for the rest of the run.
+
+Reports travel upward in a fixed short shape, counts and named anomalies only (the shapes are
+given with the brief templates below). A runner's summary is what the lead reads at the check-in,
+verified against the record with the lead's own count queries, never relayed as-is.
+
+Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
+approved; round N complete; completeness closed; packages amended; tagged; closed out. On every
+start this skill reads the ledger first: a run in flight resumes at the phase after the last line,
+with the read plan read off disk and the packet regenerated from the record. A missing run folder
+for a project that already carries scope items is named plainly and the run re-plans against the
+record; the live-list mandate (non-negotiable 2) keeps a re-read from creating what is already
+there. Resumption is crash and multi-day hygiene. It is never offered to the user as a way to
+manage cost, and the check-in never suggests it.
 
 ## The trade knowledge base
 
@@ -157,11 +216,19 @@ amendment to that trade file, surfaced in the close-out report.
 
 1. **Project exists and is the user's intent.** `list_projects`, confirm which project with the
    user, get its `projectId`. No project → hand off to `project-create`.
-2. **Drawings are recognized.** `list_drawing_deliveries(projectId)`: no deliveries → stop
+2. **Resume, if a run is already in flight.** With the `projectId` in hand and before anything else,
+   read `ledger.md` from the run folder. A ledger with `phase:` lines means a run is in flight:
+   resume at the phase after the last one, reading `read-plan.md` off disk and regenerating the
+   context packet from the record rather than re-planning or re-reading what is already recorded.
+   A project that already carries scope items but has no run folder is named plainly and re-planned
+   against the record; the live-list mandate (non-negotiable 2) is what keeps a re-read from
+   creating what is already there. Resumption is crash and multi-day hygiene, nothing else: never
+   offer it to the user as a way to manage anything, and never raise it at a check-in.
+3. **Drawings are recognized.** `list_drawing_deliveries(projectId)`: no deliveries → stop
    plainly, hand off to `drawing-upload`. Spot-check recognition actually recorded:
    `search(projectId, predicate: "appearsOnPage", limit: 1)`: zero rows → hand off to
    `drawing-upload`.
-3. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)`: spec
+4. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)`: spec
    sections present means the spec-TOC leg has run. Absent: ask the user whether a project manual /
    spec book exists. If one does, run it through `drawing-upload`'s spec-book leg first (upload +
    `extract_spec_toc`): the package split anchors on the spec table of contents and is
@@ -169,16 +236,18 @@ amendment to that trade file, surfaced in the close-out report.
    that in the ledger and the close-out report: orientation created no baseline packages for this
    project (no spec sections, no anchor), and section 6 below derives the whole split from
    the finished scope list instead.
-4. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record
+5. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record
    the version in the ledger. Missing → stop and report a broken plugin install rather than running
    knowledge-blind.
-5. **The user is present.**
+6. **The user is present.**
 <!-- user-facing -->
 Tell them what the run will do: you read the set in rounds and build
    one scope list off it, stopping for a check-in after every round, and they can stop or change
    course at any check-in. Give a rough sense of how long this set will take from its size, and
    confirm they are staying for the check-ins.
 <!-- /user-facing -->
+   Where it can, the run starts from a clean conversation, but it never raises sessions,
+   compaction, context, or usage with the user, at run start or at any point after it.
 
 ## 2. Context floor
 
@@ -256,77 +325,59 @@ Never show passes as a table, counts of dispatches, bundle codes, lanes, model n
 about how the run is executed. Never offer a recommended option.
 <!-- /user-facing -->
 
+On the go-ahead, append `phase: plan approved` to the ledger. Nothing reads before that line exists.
+
 ## 4. Read the rounds
 
-Per round, in this exact loop:
+The reading happens one level down. Per round, the lead does exactly this and holds nothing else:
 
-1. **Recompile the definitions index** into the context packet: one line per defined thing:
-   code, kind, one-line name, where defined, compiled from the record (`search` per known kind,
-   paged to the real total; the ledger's list of kinds tracks which exist so far). Depth stays
-   in the record: a reader resolves full definitions on demand mid-read (`search(subject:
-   "<kind>:<code>")`), never from a paraphrase.
-2. **Start the round's passes.** Each pass runs as its read units in reading order: one reader per
-   unit, one unit at a time within a pass. A unit starts only after the previous unit of that pass
-   has reported and the lead has confirmed its counts (step 4). Passes whose content does not
-   overlap still run alongside each other. Each reader gets the pass brief (template below) with
-   its unit's pages filled in, carrying: the context packet, the pass's trade files, and the
-   mandates verbatim. Give each unit a unique run-prefix (its unit id) when filling the brief's
-   subject scheme, so concurrent readers can never collide on a created subject. Record each unit
-   in the ledger (round, pass, unit, purpose).
-3. **Each reader reads its unit deep and records directly**: at start, pull the scope items for its
-   content families with `search` by the `category` predicate and each category string it will
-   use, paged to the real total. Where the list is still small (say, under a few hundred items),
-   pulling the whole list with `list_scope_items` is fine and simpler; a reader may do either.
-   Before every CREATE, run one `search(text: <two or three distinguishing words of the item's
-   name>)` across the whole project; if a scope item matches, UPDATE that item instead of
-   creating a new one. This is what keeps non-negotiable 2 (never re-create what exists) true when
-   a reader has not read the whole list. Render plus text per page
-   (`render_page` + `get_page_text`). Create/update/flag against the live list. Record via
-   `record_batch` (≤500 per call, atomic) or `record_batch_file` for larger runs. Before it ends,
-   the reader reads its own deposit back and confirms the count that landed equals the count sent,
-   rechecks any contested ids, and reports counts and anomalies. A reader that has reported is
-   finished: it holds nothing the next unit needs, because the next unit reads what it recorded
-   from the record.
-4. **The lead verifies per unit, not per round**: re-run the unit's counts with your own queries
-   (`search` filtered to the unit's sourceInstrument or subjects; `list_scope_items` delta), check
-   contested rows, and record verified counts in the ledger. As part of this verify, list any new
-   item from this unit whose name matches an earlier unit's new item in the same pass, as an
-   overlap flag for the check-in: the intra-pass counterpart of the round-end scan below. The lead
-   starts the pass's next unit in the same turn only when the previous unit's counts confirm; a
-   mismatch stops that pass instead and gets investigated, never papered over. A reader that ended
-   without reporting (killed, stalled) is re-run on its own unit:
-   whatever it already recorded is on the record, and the re-run creates/updates against the live
-   list, so nothing is created twice by the re-run. At round end, separately, scan the round's new
-   items for overlaps between passes that ran together: the same work captured from two sides,
-   convention lines especially, since passes running together cannot see each other's new items.
-   List any overlap as a flag for the user at the check-in; merging is a person's call at the
-   review surface, never the lead's.
-5. **Check in with the user** (format below). Move to the next round only on their go-ahead.
+1. **Start one round runner.** Dispatch a fresh `plumlayer:scope-round-runner` with the runner
+   dispatch below: pointers only, no pass brief, no trade file, no read-plan text. Append the
+   dispatch line to the ledger. That line and the summary that comes back are the only things this
+   round leaves in the lead's context.
+2. **The runner owns the round.** It recompiles the definitions index into the context packet,
+   writes each pass's brief file, runs the passes as read units in reading order (one fresh
+   `plumlayer:scope-reader` per unit, one unit at a time within a pass, passes that do not overlap
+   running alongside each other), verifies every unit against the record with its own queries before
+   the next unit of that pass starts, flags intra-pass and round-end overlaps, and appends the
+   ledger. The per-unit loop lives in the `scope-round-runner` agent definition and the reader
+   mandates live in the `scope-reader` agent definition. Neither is restated here, and neither is
+   ever trimmed.
+3. **Read the summary and verify what you can yourself.** The runner returns one fixed-shape summary
+   (shape below). Before you say a number out loud, take the created count for each of the round's
+   units with your own `search(text: "scopeItem:<unit-id>-", limit: 1)`, reading `count`. That is
+   the third boundary of non-negotiable 6, and it is count-only: never a row list, never
+   `list_scope_items`. It reaches creates and not updates or flags, because those land on subjects
+   that already existed and `search` has no `sourceInstrument` filter to reach them by. Say the
+   update and flag counts as the runner verified them, and the created counts as your own. A
+   mismatch stops the run and gets investigated, never papered over.
+4. **Append `phase: round N complete` to the ledger**, with the verified totals.
+5. **Check in with the user** (format below). Move to the next round only on their go-ahead, and
+   start the next round with a fresh runner.
 
 ## 5. The completeness check (standing, with a closure loop)
 
 The definitions layer is the checklist: every defined thing must be accounted for by the scope
-list. Run this after the placement rounds complete (and any time coverage is in doubt):
+list. Run this after the placement rounds complete (and any time coverage is in doubt). It runs the
+same way a round does, one level down:
 
-1. **Enumerate the defined things**: page through the record per definitions kind (the ledger's
-   list of kinds; `search` with the kind prefix, compact rows, to the real total) into a file
-   under `completeness/`.
-2. **Pull the scope list**: `list_scope_items`: names, descriptions, notes per item.
-3. **Account deterministically**: write and run a small local script: word-boundary token
-   reference of each defined code in scope-item text (name / description / notes; evidence
-   snippets excluded); kind-collisions and codes ≤2 characters divert to an ambiguous bucket for
-   agent adjudication rather than string-match guessing. "Accounted" means textually referenced,
-   not priced. This is a script's job, not an eyeball's: the judgment lives in adjudicating the
-   ambiguous bucket and classifying what is left over, not in the matching.
-4. **Classify every row that is left over**: accounted / plausibly-carried (inside an existing
-   coarse item: name which) / not-scope (a definition with no work attached: say why) /
-   unaccounted.
-5. **Close the loop**: cluster the unaccounted rows into capture gaps, define supplemental
-   schedule-grounded passes for them, run those reads (same brief template, same mandates), re-run
-   the accounting. The validation run's first pass found 269 of 564 defined things unaccounted,
-   closed 267 with one supplemental round, and named 2 still open: that loop is the designed
-   behavior, not a recovery.
-6. **Name what is still open**, in the ledger and in the close-out report, row by row.
+1. **Start one round runner in completeness mode.** Same runner dispatch as stage 4, with
+   `completeness` in place of the round id. It enumerates the defined things per kind, pulls the
+   scope list, accounts deterministically with a small local script it writes, classifies every
+   leftover row (accounted, plausibly-carried, not-scope, unaccounted), clusters the unaccounted
+   rows into capture gaps, defines and runs supplemental schedule-grounded passes for them through
+   the same readers, and re-runs the accounting. The loop lives in the `scope-round-runner` agent
+   definition. The validation run's first pass found 269 of 564 defined things unaccounted, closed
+   267 with one supplemental round, and named 2 still open: that loop is the designed behavior, not
+   a recovery.
+2. **Read the summary and verify what you can yourself**, the same way stage 4 step 3 does: the
+   created counts for any supplemental units, by `search(text: "scopeItem:<unit-id>-", limit: 1)`,
+   `count` only, no row list and no `list_scope_items`. The accounting figures (enumerated,
+   accounted, plausibly carried, not scope, unaccounted, before and after the closure loop) come
+   from the runner's summary, and the still-open rows you check by name, reading back the ones the
+   runner named. Report the accounting as the runner's, the created counts as your own.
+3. **Name what is still open**, row by row, in the ledger and in the close-out report, then append
+   `phase: completeness closed`. Never assumed closed, never zeroed by hope.
 
 Spec sections account differently (estimators never write CSI digit strings into scope text): a
 spec section is accounted when the package split bundles it into a package. Read the bundled
@@ -360,9 +411,9 @@ Show what you did in plain words, mirroring orientation's wording: name the amen
 <!-- /user-facing -->
    No approval is collected: the amendment governs as applied and stays editable; a correction is
    a tool call. Tagging (section 7) happens into the split as amended, never into one you kept to
-   yourself.
+   yourself. Once the amendments are applied, append `phase: packages amended` to the ledger.
 2. **Empty-baseline case.** When `solicitation_list_packages` returned no packages because the
-   project has no spec sections (precondition 3), this stage derives the whole split from the
+   project has no spec sections (precondition 4), this stage derives the whole split from the
    finished scope list instead of amending a baseline: same bundling logic as orientation, same catalog
    resolution, same `solicitation_create_package` calls and notes shape. Say so plainly in the
    report: the split was derived here, from the scope list, because there was no spec book to
@@ -386,7 +437,7 @@ VE/alternates stay manual-first doctrine: the run does not auto-author them, the
 those boundary lines on the package surface, and anything the read suggested toward one rides in
 flags and notes. Sheet-to-package assignment (`assign_sheet_packages`) is the user's
 call: offer it only when the user asks; the derived relevant-pages list already falls out of
-the citations.
+the citations. When the tag batches are verified, append `phase: tagged` to the ledger.
 
 ## 8. Close out
 
@@ -412,84 +463,86 @@ Report to the user, in plain words:
   don't apply to this job.
 <!-- /user-facing -->
 
-## The pass brief (template: every reader carries this, mechanically)
+The report is written off the ledger, not off memory: the wall-clock, the counts, the deviations,
+and what is still open are all there. When it has been given, append `phase: closed out`.
 
-Fill the slots; never trim the mandates. A brief that omits a mandate reproduces a measured
-failure.
+## The dispatches and the report shapes
+
+Every dispatch carries pointers and nothing else. Whatever is pasted into a dispatch stays in the
+dispatcher's context for the rest of the run, so the packet, the trade files, the read plan, and the
+brief values are opened by the agent that needs them, from the paths it is handed.
+
+The mandates are not in these templates. They live in the two agent definitions the plugin ships,
+`scope-round-runner` and `scope-reader`, where each dispatched instance reads them fresh. They are
+never trimmed there and never restated here: a run that relaxes one reproduces a measured failure.
+
+**Runner dispatch** (the lead writes this, once per round and once for the completeness pass):
 
 ```text
-You are reading a construction drawing set for scope, for a Plumlayer project record.
+subagent_type: plumlayer:scope-round-runner
+Project: <projectId>. Round: <round number, or "completeness">.
+Run folder: <path>. Read plan: <path to read-plan.md>.
+Run your round as your definition says, then return your summary.
+```
 
-You are reading for: <legends and schedules, recording what the marks mean and the scope the
-schedules ground | plans, recording scope where it is shown>. Content: <content families>.
+**Reader dispatch** (the runner writes this, once per read unit):
 
-Context: the run context packet is below <or attached>. It carries the project's identity,
-systems, scope areas, set shape, hazards, and the definitions index (code → kind → name → where
-defined). Resolve any mark's full definition on demand from the record:
-search(subject: "<kind>:<code>"). Never resolve a mark from memory or from another sheet's
-pattern — query the record (store-resolution is mandatory).
+```text
+subagent_type: plumlayer:scope-reader
+Project: <projectId>. Round: <round number>. Pass: <pass name>. Unit: <unit id>.
+Pages: <sheet number + fileId + 1-based pageInPdf, one per page>.
+Run folder: <path>. Context packet: <path>. Pass brief: <path to briefs/<pass-id>.md>.
+Trade files: <paths>.
+Read your unit as your definition says, then return your report.
+```
 
-Trade knowledge: the trade files below <or attached> carry grain rules, seams, and convention
-lines for your content families. Knowledge version: <version from MANIFEST.md>.
+**The reader's report** comes back in this shape, counts and named anomalies only:
 
-Read every page in your unit deep: render_page + get_page_text on each page (render for layout
-and meaning, text for exact tokens). Then emit against the live scope list. At start, pull the
-scope items for your content families with search by the category predicate and each category
-string you will use, paged to the real total (or, where the list is still small, pull the whole
-list with list_scope_items). Items other units of your pass recorded are on the record; resolve
-them from there, not from anything you remember.
+```text
+unit: <unit id>   pass: <pass name>   round: <n>
+pages read: <sheet number + pageInPdf, one per page read>
+pages unread: <sheet number + pageInPdf + reason, or "none">
+created: <n>   updated: <n>   flagged: <n>
+updated subjects: <the subject of every item updated, or "none">
+sent: <n>   landed: <n>   contested: <ids and how each resolved, or "none">
+definitions kinds added: <kinds, or "none">
+convention lines: emitted <n>; inapplicable: <line + reason, one per line, or "none">
+anomalies: <one line each, with sheet and page, or "none">
+grain questions: <one line each, with sheet and page, or "none">
+door-owned suggestions: <one line each, or "none">
+```
 
-1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
-   resolved reference) for work already listed; FLAG an observation (a gap, an anomaly, an
-   ungrounded reference you will not create, a grain question where the trade file is silent).
-   Never a parallel list; never re-create; never silently skip. Before every CREATE, run one
-   search on two or three distinguishing words of the item's name across the whole project; if a
-   scope item matches, UPDATE that item instead.
-2. CONVENTION LINES: for each convention line in your trade files that applies to your content
-   families, create it if absent from the live list or update it if present —
-   sourceInstrument "trade-convention:<trade>@<version>", evidence quoting the trade file's line
-   and carrying basis: "trade-convention", NO sheet citation. If you judge a convention line
-   inapplicable to this project, FLAG that with your reason. Silence on a convention line is a
-   violation.
-3. CITATION SHAPE: every drawing-grounded record's evidence names the sheet AND carries
-   evidence.pageInPdf (1-based integer) for the page you actually read. Never a sheet without a
-   page; never a fabricated page. The record door refuses pageless sheet citations — if it
-   refuses something, fix the citation to what you actually read; never game the shape.
-4. CAPTURE NEVER FILTERS: capture everything you see, trade-agnostic, at the grain of one row on
-   a trade's scope sheet — split by type or significant distinction, never by instance (floor);
-   never one item per sheet or package headers (ceiling). Distinctions that don't earn a row ride
-   in the description and notes.
-5. THE ROW: every new item writes the full row — name (concise, under ~10 words, the way a sub
-   would say it),
-   category (REQUIRED: the checklist-section grouping an estimator would use; reuse category
-   strings across like work, never one per item), description (1-3 tight sentences, only what
-   changes price or scope — never a re-narration of the schedule; the citation does the
-   explaining), notesExternal/notesInternal only when there is a real note, quantity only where
-   the sheet carries one as {value, unit}. Recorded text is what the bidder reads: plain
-   sentences, no em dashes, no bolding. Verbose rows are defects.
-6. GRAIN: follow your trade files' grain sections; where a trade file is silent, create at best
-   judgment AND flag the grain question.
-7. RECORD directly: record_batch (≤500 per call; subjects scopeItem:<run-prefix>-<seq> for
-   new items; the item's existing subject for updates), or upload a JSONL and record_batch_file
-   for large runs. After every batch, VERIFY: read the record back and confirm the count that
-   landed equals the count sent; recheck any contested ids individually. This read-back happens
-   before you finish and is part of your report: if you cannot confirm your counts, report the
-   mismatch and stop rather than reporting success.
-8. Legends-and-schedules passes only: also record what the schedules define (extending the
-   existing subject kinds you see in the definitions index — never creating a parallel
-   vocabulary), AND own the scope items the schedules themselves ground: a schedule row family
-   that is real priced work becomes scope items at the grain bracket, cited to the schedule
-   sheet + page.
+The `updated subjects:` line is what lets the runner find an update back: a create is findable by
+its `scopeItem:<unit-id>-` prefix, an update lands on a subject that already existed and nothing
+else in the report names it.
 
-Your pass: <pass name>. Your unit: <unit id>, pages <sheet numbers, with fileId + 1-based
-pageInPdf for each>. Project: <projectId>. Round: <round number>.
+**The runner's summary** comes back in this shape, and is what the lead reads at the check-in,
+after taking the round's created counts off the record itself:
 
-Report back: counts (created / updated / flagged, recorded / verified / contested), the
-definitions kinds you added (if any), anomalies and document defects you flagged, convention
-lines emitted and any you judged inapplicable (with reasons), and anything you could not read
-(refused tokens, unreadable pages) stated honestly — an unread page is named, never silently
-skipped. Your reading is your word: it lands under your authorship and governs provisionally,
-so flag what you're unsure of rather than smoothing it.
+```text
+round: <n, or "completeness">   passes: <pass names>
+units read: <unit ids, in reading order>
+per unit: <unit id> created <n> updated <n> flagged <n> verified <yes/no>
+totals verified: created <n> (entry count under the unit prefixes), updated <n>, flagged <n>
+contested rows: <id + how each resolved, or "none">
+overlap flags: <item name + the two units, one per line, or "none">
+anomalies: <one line each, with sheet and page, or "none">
+unread pages: <sheet + page + reason, one per line, or "none">
+definitions kinds added: <kinds, or "none">
+deviations and repairs: <one line each, or "none">
+ledger: <path>, appended through <last line written>
+```
+
+In completeness mode the summary carries these lines as well, which are where the close-out
+report's "what was enumerated, what closed" figures come from:
+
+```text
+enumerated: <n>
+first pass: accounted <n>, plausibly carried <n>, not scope <n>, unaccounted <n>
+after closure: accounted <n>, plausibly carried <n>, not scope <n>, unaccounted <n>
+supplemental units run: <unit ids, or "none">
+still open: <one line per unaccounted row, naming it, or "none">
+spec sections bundled: <n>; TOC sections seen unbundled so far: <n>
 ```
 
 ## The check-in (what the user sees)
@@ -499,7 +552,7 @@ After each round, before the next one starts, name the round you finished and wh
 then cover, in plain sentences:
 
 - What you read and what landed: sheets read, items added, items updated, and what you flagged, by
-  kind. Your own verified counts, never the ones a pass reported about itself.
+  kind. Your own verified counts, never the ones reported up to you.
 - What you would like them to look at now: document defects, items you weren't sure how finely to
   split, anomalies, each with its sheet reference, reviewable on plumlayer.com.
 - What is defined now that wasn't before, and anything the next round depends on.
@@ -523,6 +576,9 @@ like you to look at, and the plan for round two. Proceed, adjust, or pause?"
   product.
 - **Delete, resolve, or approve anything on the user's behalf**: door-owned acts stay at
   their doors.
+- **Manage the user's session or context**: the run is bounded by its own structure. Each round and
+  each read unit runs in a fresh agent that ends when it has reported, so nothing accumulates and
+  there is nothing for the user to manage.
 - **Run unattended**: check-ins are load-bearing until the user has enough cold runs
   behind them to decide otherwise, and that is their decision to make out loud, per run, never
   this skill's default.

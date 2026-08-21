@@ -22,6 +22,13 @@ gives a per-check PASS/FAIL/SKIP with detail.
 Standard library only (`json`, `subprocess`, `pathlib`, `re`). No pip install
 needed.
 
+One optional import: `yaml` (PyYAML). Where it is importable, the frontmatter
+checks validate each block with a real parser, which is the only way to catch
+the general case of malformed frontmatter. Where it is not, they fall back to a
+stdlib check for the one failure this repo has actually shipped: an unquoted
+`": "` inside a plain scalar value, which makes the block invalid YAML while
+reading fine to a regex. Nothing is skipped either way.
+
 ```
 harness/requirements.txt   # empty / annotated, for completeness
 ```
@@ -36,14 +43,28 @@ contract each check is derived from.
 |---|-------|----------------|
 | 1 | `claude plugin validate --strict` | CLI validator passes with warnings-as-errors. Reports SKIP, not a crash or a silent pass, when `claude` isn't on PATH. |
 | 2 | Version-quadruple lockstep | `plugin.json` (Claude), `plugin.json` (Codex), and both version fields in `marketplace.json` are identical |
-| 3 | Skills frontmatter | Every skill dir has `SKILL.md` with non-empty `name` and `description`; no duplicates; the shipped skill set matches the expected ten exactly, in both directions |
+| 3 | Skills frontmatter | Every skill dir has `SKILL.md` whose frontmatter parses as YAML and carries a non-empty `name` and `description`; no duplicates; the shipped skill set matches the expected nine exactly, in both directions |
 | 4 | Description contract | Every description is non-empty, folded YAML style (`description: >`), and at most 600 characters. Reports each skill's actual character count. |
-| 5 | Banned strings | No client-name denylist hit, `PLU-\d+`, internal vault filename, `MOSOT`, em dash, or middle dot in shipped text. The full set applies to skills, the root README, all four manifest JSON files, and anything in `trade-knowledge/` that isn't a pinned corpus trade file (currently `MANIFEST.md`, hand-authored release prose, and any future hand-authored file dropped in beside the trade files); the client-name denylist alone applies to the pinned trade files themselves, read from `MANIFEST.md`'s own "## Trade files" list rather than hardcoded, so a file not on that list defaults to the full scan. Em dash and middle dot are exempt inside fenced code blocks and inline code spans, since those are data (e.g. the citation format, the claim-atom notation), not prose; every other pattern still applies inside code. The detail line reports the two scan populations as separate counts. Each hit is reported with file, line, and the offending match. |
+| 5 | Banned strings | No client-name denylist hit, `PLU-\d+`, internal vault filename, `MOSOT`, em dash, or middle dot in shipped text. The full set applies to skills, the plugin's `agents/` definitions, the root README, all four manifest JSON files, and anything in `trade-knowledge/` that isn't a pinned corpus trade file (currently `MANIFEST.md`, hand-authored release prose, and any future hand-authored file dropped in beside the trade files); the client-name denylist alone applies to the pinned trade files themselves, read from `MANIFEST.md`'s own "## Trade files" list rather than hardcoded, so a file not on that list defaults to the full scan. Em dash and middle dot are exempt inside fenced code blocks and inline code spans, since those are data (e.g. the citation format, the claim-atom notation), not prose; every other pattern still applies inside code. The detail line reports the two scan populations as separate counts. Each hit is reported with file, line, and the offending match. |
 | 6 | MCP URL exact-match | `.mcp.json` `plumlayer` server url equals `https://api-production-0a7b.up.railway.app/mcp` |
 | 7 | No absolute paths | No `C:\`, `/Users/`, `/home/`, `/root/` literals baked into `.mcp.json`, `plugin.json` (Claude), `plugin.json` (Codex), or `marketplace.json` |
 
-The plugin ships nine skills and no `agents/` directory, so there is nothing
-for this harness to check about plugin agents.
+Check 3b, agents frontmatter, sits between checks 3 and 4: every `agents/*.md`
+has frontmatter that parses as YAML and carries a non-empty `name` and
+`description`, the shipped agent set matches the expected two (`scope-reader`,
+`scope-round-runner`) in both directions, and no agent declares `hooks`,
+`mcpServers`, or `permissionMode`, the three frontmatter fields the runtime
+ignores for plugin-shipped agents. That last one is worth a check rather than
+review: declaring one is not a load error, so it reads as configured behavior
+and silently isn't. The agent definitions are also shipped text in the plugin's
+own voice, so they join the skills in the scan population for checks 5 through 8.
+
+The frontmatter reader itself takes line 1 as the opening `---` and stops at the
+next one. An earlier version treated the closing delimiter as the opener and
+scanned the body, so a `key: value` line anywhere in a skill body could
+overwrite a real frontmatter field. `claude plugin validate --strict` does not
+cover this: it validates the plugin manifest, and it passed while a shipped
+agent's frontmatter was invalid YAML.
 
 ## Layer 2, load check (`load_check.py`)
 
@@ -78,7 +99,7 @@ attempted and contains:
 | headless-claude-invocation | `claude` CLI runs and emits an init event within 120s |
 | plugin-plumlayer-loaded | Plugin `plumlayer` present in `plugins[]` by name |
 | no-plugin-load-errors | Plumlayer plugin loaded (absence means a load error); auth failure is a separate, expected event |
-| skills-all-10-present | All 10 `plumlayer:*` skills present in `skills[]` |
+| skills-all-present | All nine expected `plumlayer:*` skills present in `skills[]` |
 | mcp-under-bare (observational) | Documents MCP server presence or absence, see limitation below |
 
 ### Limitation: MCP under `--bare`

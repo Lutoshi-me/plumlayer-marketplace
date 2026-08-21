@@ -10,6 +10,13 @@ Checks:
      skill set matches EXPECTED_SKILLS exactly, in both directions.
   4. Description contract: every skill description is non-empty, folded YAML
      style (`description: >`), and at most DESC_MAX_CHARS characters.
+  4b. Agents: every agents/*.md has frontmatter that actually parses as YAML
+     and a non-empty `name` and `description`; the shipped agent set matches
+     EXPECTED_AGENTS exactly, in both directions; and no agent declares a
+     frontmatter field the runtime ignores for plugin-shipped agents
+     (`hooks`, `mcpServers`, `permissionMode`). Checks 3 and 4b both validate
+     the frontmatter block with PyYAML when it is importable, falling back to
+     a stdlib check for the unquoted ": " failure when it is not.
   5. No banned string in shipped text: client-name denylist, `PLU-\\d+`,
      internal vault filenames, `MOSOT`, em dash, middle dot. Em dash and
      middle dot are exempt inside fenced code blocks and inline code spans
@@ -60,6 +67,19 @@ EXPECTED_SKILLS = {
     "setup",
     "takeoff",
 }
+
+# The agent definitions the plugin ships under agents/. Both are dispatched by
+# the scope run: the lead starts one round runner per round, and the runner
+# starts one reader per read unit.
+EXPECTED_AGENTS = {
+    "scope-reader",
+    "scope-round-runner",
+}
+
+# Frontmatter fields the runtime ignores for plugin-shipped agents. Declaring
+# one is not a load error, which is exactly why it needs catching here: it
+# reads as configured behavior and silently isn't.
+AGENT_UNSUPPORTED_FIELDS = ("hooks", "mcpServers", "permissionMode")
 
 # Hard ceiling on a skill's frontmatter description length (chars). Above
 # this is a FAIL, not a warning — docs/plugin-text-style.md §2.
@@ -118,29 +138,101 @@ class Result:
 
 
 # --------------------------------------------------------------------------- #
-# Frontmatter parser (no pyyaml dependency)
+# Frontmatter parser
 # --------------------------------------------------------------------------- #
+#
+# PyYAML is used when it is importable, because only a real parser catches the
+# whole class of malformed frontmatter (the live example: an unquoted ": "
+# inside a plain scalar, which makes the block invalid YAML while looking
+# perfectly fine to a regex). harness/requirements.txt is stdlib-only, so the
+# import is optional and a hand-rolled fallback covers the same failure the
+# strict way when PyYAML is absent.
+
+try:  # optional; the fallback below covers the stdlib-only case
+    import yaml as _yaml
+except ImportError:  # pragma: no cover - depends on the environment
+    _yaml = None
+
+
+def _frontmatter_block(path: Path) -> str | None:
+    """
+    Return the raw text between the opening '---' on line 1 and the next '---'.
+
+    Line 1 IS the opening delimiter: the next '---' closes the block and
+    everything after it is body. Getting this wrong (treating the closing
+    delimiter as the opener) silently scans the body for `key: value` lines,
+    which is how body text can overwrite a real frontmatter field.
+    """
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    for i, line in enumerate(lines[1:], start=1):
+        if line.strip() == "---":
+            return "\n".join(lines[1:i])
+    return None  # unterminated block is no block
+
+
+def _frontmatter_errors(path: Path) -> list[str]:
+    """
+    Report what makes a frontmatter block unusable, in the terms the runtime
+    would see. With PyYAML present this is the parser's own verdict. Without
+    it, the fallback enforces the one failure mode that has actually bitten
+    this repo: an unquoted ": " inside a plain scalar value.
+    """
+    block = _frontmatter_block(path)
+    if block is None:
+        return ["no frontmatter block (missing or unterminated '---' delimiters)"]
+
+    if _yaml is not None:
+        try:
+            data = _yaml.safe_load(block)
+        except Exception as e:  # yaml.YAMLError and anything it wraps
+            first = str(e).splitlines()[0].strip()
+            return [f"frontmatter is not valid YAML: {first}"]
+        if data is not None and not isinstance(data, dict):
+            return [f"frontmatter parses as {type(data).__name__}, not a mapping"]
+        return []
+
+    errors: list[str] = []
+    for raw in block.splitlines():
+        m = re.match(r'^(\w[\w-]*):\s*(.*)$', raw)
+        if not m:
+            continue
+        val = m.group(2).strip()
+        if not val or val[0] in "\"'>|[{&*#":
+            continue  # quoted, block scalar, or a collection: not a plain scalar
+        if ": " in val or val.endswith(":"):
+            errors.append(
+                f"`{m.group(1)}` value contains an unquoted ': ', which is not valid "
+                f"YAML (quote the value or reword it)"
+            )
+    return errors
+
 
 def _parse_frontmatter(path: Path) -> dict[str, str]:
     """
-    Parse simple YAML-style frontmatter delimited by '---' lines.
-    Returns a dict of key -> value strings (values are stripped of quotes).
-    Block-scalar values (e.g. `description: >`) come back as the bare
-    indicator (">") here — use `_extract_description` for the real text.
-    Returns {} if no frontmatter block is found.
+    Parse YAML frontmatter delimited by '---' lines into key -> value strings.
+
+    With PyYAML present, block scalars (e.g. `description: >`) come back as
+    their folded text; without it they come back as the bare indicator (">").
+    Either way `_extract_description` remains the authority on description
+    text. Returns {} when there is no parseable frontmatter block.
     """
-    text = path.read_text(encoding="utf-8")
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
+    block = _frontmatter_block(path)
+    if block is None:
         return {}
+
+    if _yaml is not None:
+        try:
+            data = _yaml.safe_load(block)
+        except Exception:
+            data = None  # malformed: _frontmatter_errors reports it
+        if isinstance(data, dict):
+            return {str(k): ("" if v is None else str(v)) for k, v in data.items()}
+        return {}
+
     fields: dict[str, str] = {}
-    in_block = False
-    for line in lines[1:]:
-        if line.strip() == "---":
-            if in_block:
-                break
-            in_block = True
-            continue
+    for line in block.splitlines():
         m = re.match(r'^(\w[\w-]*):\s*(.*)', line)
         if m:
             key = m.group(1)
@@ -318,6 +410,9 @@ def check_skills(plugin_path: Path) -> Result:
             errors.append(f"{skill_dir.name}: SKILL.md missing")
             continue
 
+        for problem in _frontmatter_errors(entry):
+            errors.append(f"{skill_dir.name}: {problem}")
+
         fm = _parse_frontmatter(entry)
 
         skill_name = fm.get("name", "").strip()
@@ -349,6 +444,72 @@ def check_skills(plugin_path: Path) -> Result:
     detail = "; ".join(detail_parts)
 
     return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check — Agents
+# --------------------------------------------------------------------------- #
+
+def check_agents(plugin_path: Path) -> Result:
+    """
+    The plugin ships agent definitions under agents/ at the plugin root (the
+    location the runtime reads them from). This check proves the shipped set
+    is exactly EXPECTED_AGENTS, that each file carries a usable `name` and
+    `description`, and that none declares a field the runtime ignores for
+    plugin-shipped agents.
+    """
+    name = "agents-frontmatter"
+    agents_dir = plugin_path / "agents"
+    if not agents_dir.is_dir():
+        return Result(name, False, detail=f"agents/ directory not found at {agents_dir}")
+
+    agent_files = sorted(agents_dir.rglob("*.md"))
+    if not agent_files:
+        return Result(name, False, detail="no agent definitions found in agents/")
+
+    errors: list[str] = []
+    seen_names: dict[str, str] = {}  # agent name -> file name
+
+    for agent_file in agent_files:
+        for problem in _frontmatter_errors(agent_file):
+            errors.append(f"{agent_file.name}: {problem}")
+
+        fm = _parse_frontmatter(agent_file)
+
+        agent_name = fm.get("name", "").strip()
+        if not agent_name:
+            errors.append(f"{agent_file.name}: frontmatter `name` is missing or empty")
+        elif agent_name in seen_names:
+            errors.append(
+                f"duplicate agent name '{agent_name}' in files "
+                f"'{seen_names[agent_name]}' and '{agent_file.name}'"
+            )
+        else:
+            seen_names[agent_name] = agent_file.name
+
+        if not fm.get("description", "").strip():
+            errors.append(f"{agent_file.name}: frontmatter `description` is missing or empty")
+
+        for field in AGENT_UNSUPPORTED_FIELDS:
+            if field in fm:
+                errors.append(
+                    f"{agent_file.name}: declares `{field}`, which the runtime ignores "
+                    f"for plugin-shipped agents"
+                )
+
+    found_names = set(seen_names.keys())
+    missing = EXPECTED_AGENTS - found_names
+    unexpected = found_names - EXPECTED_AGENTS
+    if missing:
+        errors.append(f"expected agents missing: {sorted(missing)}")
+    if unexpected:
+        errors.append(f"unexpected agent names (not in expected set): {sorted(unexpected)}")
+
+    detail_parts = [f"{len(agent_files)} agent files scanned, {len(found_names)} valid names found"]
+    if errors:
+        detail_parts.extend(errors)
+
+    return Result(name, passed=len(errors) == 0, detail="; ".join(detail_parts))
 
 
 # --------------------------------------------------------------------------- #
@@ -557,6 +718,13 @@ def _collect_scope_files(
     skills_dir = plugin_path / "skills"
     if skills_dir.is_dir():
         full_scope_files.extend(sorted(skills_dir.rglob("*.md")))
+
+    # Agent definitions are shipped text in the plugin's own voice, and a
+    # dispatched agent reads them as its whole system prompt, so they get the
+    # same scan a skill body does.
+    agents_dir = plugin_path / "agents"
+    if agents_dir.is_dir():
+        full_scope_files.extend(sorted(agents_dir.rglob("*.md")))
 
     readme = marketplace_root / "README.md"
     if readme.exists():
@@ -1060,6 +1228,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_cli_validate(plugin_path),
         check_version_quadruple(plugin_path, marketplace_root),
         check_skills(plugin_path),
+        check_agents(plugin_path),
         check_description_contract(plugin_path),
         check_banned_strings(plugin_path, marketplace_root),
         check_retired_vocabulary(plugin_path, marketplace_root),
