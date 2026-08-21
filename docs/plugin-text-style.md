@@ -54,7 +54,7 @@ whether to invoke the skill. It must serve both.
 - **Style:** folded YAML (`description: >`) for every skill, no exceptions, so the ten look alike.
 - **Length:** target 450 characters, hard ceiling 600. The harness fails above 600.
 - **Shape**, in this order:
-  1. What the skill does, in estimator words, one sentence.
+  1. What the skill does, in one plain sentence.
   2. When to trigger it: quoted natural phrases, then the slash command.
   3. Which real tools it drives, named directly in a technical clause.
   4. What it does *not* do, pointing at sibling skills by their real current names.
