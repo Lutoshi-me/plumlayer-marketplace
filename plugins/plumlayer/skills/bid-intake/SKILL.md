@@ -46,9 +46,10 @@ say to the user (no em dashes, no bolded emphasis words). Say:
 
 - "uploading proposals" (upload stage)
 - "reading <bidder>'s proposal" (per-proposal read)
-- "N rows answered, M rows silent" (after a proposal read; never imply a silent row is a zero)
-- "N things they priced that aren't on the checklist" (after a proposal read, when the proposal
-  carries off-checklist content: plain words for what stage 7b records)
+- "N rows answered, M not addressed" (after a proposal read; never imply a row not addressed is a
+  zero)
+- "N unlisted scope items, things they priced that aren't on the checklist" (after a proposal read,
+  when the proposal carries unlisted content: plain words for what stage 7b records)
 - "K proposals read, J entries to record" (before recording)
 - "declared this a revised proposal, which replaces their prior bid" or "declared a clarification"
   (before recording, when a repeat proposal applies, see stage 6)
@@ -66,7 +67,7 @@ record each bidder's bid claims against that package's existing scope rows. It d
 - define the bid package, or invite / manage bidders: that is the plumlayer.com solicitation flow;
   this skill reads an **existing** package's rows and adds bidder responses to them;
 - create a new scope row for proposal content that matches no known row: that content lands as an
-  **Additional item** on the package, that bidder's own off-checklist word cited to the page it came
+  **Additional item** on the package, the bidder's own word for an unlisted item cited to the page it came
   from, never a created `scopeItem:` subject (see the hard read rules and stage 7b);
 - level or rank the bids (`get_bid_package` computes the leveling projection; this skill only reads it
   for context and records the raw response claims the leveling reads from);
@@ -158,10 +159,10 @@ one, and it hides the real blocker (no rows to answer) behind what looks like a 
   for existing bidders. It errors "bid package not found" if no package definition claim exists yet for
   the trade; if it does, stop and report (the package definition is a plumlayer.com step), do not fall
   back to `search`.
-  It also returns **`additionalItems[]`**: the package's existing off-checklist items, per bidder,
+  It also returns **`additionalItems[]`**: the package's existing unlisted items, per bidder,
   each with its `subject`, `label`, `citation`, and `receipt.id`. **Read this now and keep it**, before
   you read a single proposal. It is what stage 7b checks against so a re-run never records the same
-  off-checklist item twice, and it tells you what a prior run already captured for a bidder you are
+  unlisted item twice, and it tells you what a prior run already captured for a bidder you are
   about to re-read. This full read is a stage-3 instrument only. For the post-write check, stage 7
   uses `view: "summary"`, a bounded projection of the same read (per-bidder counts and totals, no
   per-line grid, no receipts). Never re-call the full read to verify.
@@ -298,13 +299,13 @@ report, state which pass produced which flag.
 
 These are gates. Write them into every read:
 
-- **Silence is not a claim.** A scope row the proposal does not address gets **no response claim** at
-  all. Count it as silent for that bidder in the report. Never record a `base`/`excluded`/zero to
-  represent silence: silence is unknown, and a bare grid that treats it as answered is the exact
-  conflation coverage exists to prevent.
+- **Not addressed is not a response.** A scope row the proposal does not address gets **no response
+  claim** at all. Count it as not addressed for that bidder in the report. Never record a
+  `base`/`excluded`/zero to represent it: a row not addressed is unknown, and a bare grid that treats
+  it as answered is the exact conflation coverage exists to prevent.
 - **Proposal content matching no known row becomes an Additional item, never a created row.** If a
   proposal says something about the work that maps to none of the stage-3 scope rows, it lands as an
-  **Additional item** on the package (stage 7b): that bidder's own off-checklist word, cited to the
+  **Additional item** on the package (stage 7b): the bidder's own word for an unlisted item, cited to the
   `fileId` and page it sits on, and **never** as a new `scopeItem:` subject this skill creates. Creating
   scope from a bid would let a bidder's document silently define the scope checklist; recording it as
   that bidder's item says exactly who said it, and leaves the checklist decision with the estimator.
@@ -367,7 +368,7 @@ These are gates. Write them into every read:
   different thing, and check before folding: a wrong fold inflates the largest row on the package.
 
   **Additional items aggregate under the same rule.** Two proposal lines may fold into one item only
-  when they are complementary components of the same off-checklist thing; say in the item's note which
+  when they are complementary components of the same unlisted thing; say in the item's note which
   lines were folded and where they sit.
 - **An ambiguous token never becomes a hard number.** `OSV` / `TV` / `?` set the `ambiguity` axis; they
   never populate `amount`.
@@ -383,7 +384,7 @@ row, and the additional items this proposal earned under the stage-4 gate). Befo
 **confidence audit**: collect every read whose `evidence.confidence` is **below 0.7** and list it in
 the report for human attention. A low-confidence read is still recorded, carrying its confidence and its
 receipt, but it is called out, not buried in a count. State the per-bidder counts by predicate, the
-silent-row count per bidder, and the additional-item count per bidder, so the write manifest is
+not-addressed count per bidder, and the additional-item count per bidder, so the write manifest is
 honest.
 
 ## 6. Declare the supersession mode (before recording)
@@ -398,7 +399,7 @@ not from a guess:
   restates the bidder's whole position. Record a fresh response claim for every row you read from it,
   each with `supersedesId` set to that row's **current head response claim id** (from
   `get_bid_package`'s `lines[].responses[]`: the cell for this `partySubject` on that row, its
-  `receipt.id`). Rows the revised proposal is now **silent** on get **no re-assertion**: their prior
+  `receipt.id`). Rows the revised proposal now does not address get **no re-assertion**: their prior
   claim simply lapses (silence lapses; you do not carry a stale prior forward). Also supersede the
   bidder's profile, coverage, and summary claims (see the head-id note below).
 - **A "clarification" / "delta" / an addendum letter naming specific items → surgical.** The document
@@ -500,14 +501,14 @@ of entries you sent in that batch. If it does not, **stop and report** the discr
 with a reconstructed or guessed correction.
 
 **Recount before you confirm.** Any count you are about to restate as checked (rows answered, rows
-silent, claims per predicate, entries in a batch, additional items recorded) gets an explicit fresh
+not addressed, claims per predicate, entries in a batch, additional items recorded) gets an explicit fresh
 recount against its source at the moment you restate it. Echoing a number you computed earlier (or
 that the user read back to you) and calling it "confirmed" is not verification; the word "confirmed"
 is earned by the recount that precedes it, every time.
 
 ## 7b. Record the additional items (a different door, after the batch)
 
-The off-checklist content you gathered under the stage-4 gate lands here. **This does not ride
+The unlisted content you gathered under the stage-4 gate lands here. **This does not ride
 `record_batch`.** The generic write door refuses the `additionalItem` predicate outright: the only
 way in is `record_additional_item`, **one call per item**.
 
@@ -561,7 +562,7 @@ qualifier in the `note` instead); optional fields are **omitted** when absent, n
 `trade` is the CSI code **exactly** as the package was created with, spaces kept and never slugged,
 the same string `get_bid_package` reads with (a different spelling creates the item on a package subject
 nothing reads, so it lands and then renders nowhere); and `evidenceFileId` is refused if missing,
-because an off-checklist item nobody can trace back to its source is not worth having.
+because an unlisted item nobody can trace back to its source is not worth having.
 
 **An alternate has its own field. Never encode one as an inclusion or a signed amount.** When a
 bidder offers an alternate, meaning any price contingent on someone choosing it, whether it raises or
@@ -615,8 +616,8 @@ The run report **is** the manifest. State, plainly:
 
 - **Per bidder:** the bidder identity you used, entry counts by type (profile / responses / coverage /
   summary), whether this was a fresh bid, a full revision, or a partial update, and what it replaced,
-  and the silent-row count (rows the proposal did not address).
-- **Additional items:** how many off-checklist items you recorded per bidder, and where they now live
+  and how many rows the proposal did not address.
+- **Additional items:** how many unlisted scope items you recorded per bidder, and where they now live
   (the package's Additional items section on plumlayer.com), a pointer to what landed, not a
   re-listing of it. The items carry their own descriptions and citations; restating them here would
   make the report a second, staler copy of the record. Do name any you judged **borderline** under the
@@ -624,9 +625,9 @@ The run report **is** the manifest. State, plainly:
   judgment call is visible rather than silent.
 - **Low-confidence reads:** every value below 0.7 confidence, called out for review.
 - **Pass attribution:** which flags pass one produced versus pass two.
-- **Record verification:** each batch's sent-and-recorded count, confirmed equal, and the
-  additional-items check (the count before, the count after, and the rise), confirmed to match what
-  you recorded.
+- **Verification:** for every write, the count you sent and the count recorded, confirmed equal, and
+  the additional-items check (the count before, the count after, and the rise), confirmed to match
+  what you recorded.
 
 Then point the user at the **package view on plumlayer.com** to review and level. The numbers are
 readable there now, each with the proposal page behind it; the bid itself is theirs to sign.
@@ -636,9 +637,9 @@ readable there now, each with the proposal page behind it; the bid itself is the
 
 - Every claim's evidence cites a `fileId` and page of a proposal you actually read; no receipt → no
   write.
-- Silence is never a claim; an unaddressed row is counted silent, never recorded as a value. Silence
-  produces no Additional item either: the empty cell already says it, and an item nobody asserted
-  would be a record of nothing.
+- A row not addressed is never a claim; it is counted as not addressed, never recorded as a value. A
+  row not addressed produces no Additional item either: the empty cell already says it, and an item
+  nobody asserted would be a record of nothing.
 - Proposal content matching no scope row becomes an Additional item, never a created `scopeItem:`. It
   qualifies only if it passes BOTH tests: it states something about work (not a commercial term), and
   that work is anchored either in this project's documents or by another bidder on this package. An
@@ -662,7 +663,7 @@ readable there now, each with the proposal page behind it; the bid itself is the
   letterhead mismatches), never from the first letterhead; a bundle of embedded vendor quotes under
   one party is one bidder; genuinely ambiguous identity stops and asks.
 - Line aggregation only ever folds same-bidder, same-row, complementary-component lines, under one
-  stated rule, flagged per aggregated response; never across rows, and never to absorb off-checklist
+  stated rule, flagged per aggregated response; never across rows, and never to absorb unlisted
   content that should stand as its own Additional item.
 - Any count restated as "confirmed" gets an explicit fresh recount against its source first; an
   echoed number is never verification.
@@ -670,8 +671,8 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - Pass two never revises a pass-one amount or inclusion toward the peers; it only flags.
 - Supersession mode is read from the document's own framing; ambiguous framing stops and asks. The
   declared mode is confirmed with the user before recording.
-- Rows a wholesale revision is silent on lapse (no re-assertion); a surgical delta touches only named
-  rows.
+- Rows a wholesale revision does not address lapse (no re-assertion); a surgical delta touches only
+  named rows.
 - Claim JSON matches the `@plumlayer/contract` bid shapes exactly (recipes, predicates, enums,
   `.strict()` values).
 - Recording is verbatim, count-verified transport in ≤50-claim batches; a count mismatch stops the run.
@@ -703,7 +704,7 @@ edits `SKILL.md`; it runs the same pipeline against new paths.
   whether the anchoring test is now too tight on a genuinely novel exclusion no peer thought to name.
 - **Where a whole-bid qualification lives.** A bid can substitute a different material against the
   specified one across every row, the single most important leveling fact about that bidder, and it
-  is neither per-row nor off-checklist. `bidCoverage` carries `basis`, `label` and `coveredItems` but
+  is neither per-row nor unlisted. `bidCoverage` carries `basis`, `label` and `coveredItems` but
   no note, and `bidSummary` has no note either, so it currently gets crammed into the coverage label.
   Raised on the board; until it is settled, put it in the coverage label and lead with it in the
   report so it is not lost.
