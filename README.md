@@ -103,7 +103,7 @@ and nine skills that use it.
 
 ### Trade reference set
 
-The plugin also ships `trade-packages/`, a set of 44 trade reference files plus a manifest, read by
+The plugin also ships `trade-knowledge/`, a set of 44 trade reference files plus a manifest, read by
 `scope-run` when it splits the job's scope list into packages. Each entry covers how that trade
 bids and scopes work in the market, distilled and scrubbed of any identifying project or company
 data.
@@ -155,5 +155,5 @@ plugins/plumlayer/
     takeoff/SKILL.md
     project-record/SKILL.md
     drawing-set-assemble/SKILL.md
-  trade-packages/                   # 44 trade reference files + MANIFEST.md, read by scope-run
+  trade-knowledge/                  # 44 trade reference files + MANIFEST.md, read by scope-run
 ```

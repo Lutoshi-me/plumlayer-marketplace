@@ -133,7 +133,7 @@ uploaded to the project except record files, never recorded as project entries. 
 
 ## The trade knowledge base
 
-Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-packages/`: one file per trade
+Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/`: one file per trade
 (`painting.md`, `drywall.md`, …), mined from a real subcontractor-quote corpus, carrying what the
 drawings will not say: how the trade bids, scope grain rules, exclusions and counterparties,
 furnish/install seams, convention work no sheet states. `MANIFEST.md` there records the knowledge
@@ -159,7 +159,7 @@ amendment to that trade file, surfaced in the close-out report.
    in the ledger and the close-out report, and derive packages from the drawing disciplines plus
    the trade knowledge base's market conventions instead (an explicitly weaker anchor, said so to
    the user).
-4. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-packages/MANIFEST.md`; record
+4. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record
    the version in the ledger. Missing → stop and report a broken plugin install rather than running
    knowledge-blind.
 5. **The user is present.**

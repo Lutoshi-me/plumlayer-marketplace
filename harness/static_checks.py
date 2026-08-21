@@ -14,9 +14,9 @@ Checks:
      internal vault filenames, `MOSOT`, em dash, middle dot. Em dash and
      middle dot are exempt inside fenced code blocks and inline code spans
      (data, not prose); every other pattern applies to code too. Only the
-     pinned trade-packages/ corpus entries (read from MANIFEST.md's own
-     Entries list) get the client-name-only scan; MANIFEST.md itself and any
-     other file in that directory get the full scan by default.
+     pinned trade-knowledge/ corpus files (read from MANIFEST.md's own
+     Trade files list) get the client-name-only scan; MANIFEST.md itself and
+     any other file in that directory get the full scan by default.
   6. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
   7. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
      plugin.json (Claude), plugin.json (Codex), or marketplace.json.
@@ -462,28 +462,29 @@ def _scan_file_for_banned(path: Path, client_names_only: bool) -> list[str]:
     return hits
 
 
-def _pinned_trade_package_names(trade_packages_dir: Path) -> set[str] | None:
+def _pinned_trade_package_names(trade_knowledge_dir: Path) -> set[str] | None:
     """
-    The pinned, corpus-derived trade entries (currently 44) are deliberately
+    The pinned, corpus-derived trade files (currently 44) are deliberately
     out of scope for style and get the client-name-only scan. Everything else
-    in trade-packages/ — MANIFEST.md, and any future hand-authored file
-    dropped in beside the entries — is ordinary shipped prose in the plugin's
-    own voice and must get the full scan by default.
+    in trade-knowledge/ — MANIFEST.md, and any future hand-authored file
+    dropped in beside the trade files — is ordinary shipped prose in the
+    plugin's own voice and must get the full scan by default.
 
-    Rather than hardcoding the entry list (or hardcoding "MANIFEST.md" as a
+    Rather than hardcoding the file list (or hardcoding "MANIFEST.md" as a
     one-off exception, which would leave the same hole for the next
-    hand-authored file), this reads the entry names from MANIFEST.md's own
-    "## Entries" section — that list is already the authoritative record of
-    what the pinned corpus contains, and a corpus update that adds or drops a
-    trade updates this scope automatically as long as the manifest itself
-    stays accurate. A file whose stem isn't in that list defaults to the full
-    scan, covered by default rather than by someone remembering to list it.
+    hand-authored file), this reads the trade file names from MANIFEST.md's
+    own "## Trade files" section — that list is already the authoritative
+    record of what the pinned corpus contains, and a corpus update that adds
+    or drops a trade updates this scope automatically as long as the
+    manifest itself stays accurate. A file whose stem isn't in that list
+    defaults to the full scan, covered by default rather than by someone
+    remembering to list it.
 
-    Returns None if MANIFEST.md or its Entries list can't be parsed — the
+    Returns None if MANIFEST.md or its Trade files list can't be parsed — the
     caller must then fail safe (treat every file as full scope) rather than
     guess which files are pinned.
     """
-    manifest_path = trade_packages_dir / "MANIFEST.md"
+    manifest_path = trade_knowledge_dir / "MANIFEST.md"
     if not manifest_path.exists():
         return None
     try:
@@ -493,15 +494,15 @@ def _pinned_trade_package_names(trade_packages_dir: Path) -> set[str] | None:
 
     heading_idx = None
     for i, line in enumerate(lines):
-        if line.strip() == "## Entries":
+        if line.strip() == "## Trade files":
             heading_idx = i
             break
     if heading_idx is None:
         return None
 
-    # The entries are a comma-separated prose list starting right after the
-    # heading (skipping the blank line that follows it) and ending at the
-    # next blank line or heading.
+    # The trade files are a comma-separated prose list starting right after
+    # the heading (skipping the blank line that follows it) and ending at
+    # the next blank line or heading.
     entry_lines: list[str] = []
     started = False
     for line in lines[heading_idx + 1:]:
@@ -541,14 +542,14 @@ def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
     full_scope_files.extend(f for f in manifest_files if f.exists())
 
     client_only_files: list[Path] = []
-    trade_packages_dir = plugin_path / "trade-packages"
+    trade_knowledge_dir = plugin_path / "trade-knowledge"
     pinned_names: set[str] | None = None
-    if trade_packages_dir.is_dir():
-        pinned_names = _pinned_trade_package_names(trade_packages_dir)
-        for f in sorted(trade_packages_dir.rglob("*.md")):
-            # Fail safe: if the pinned-entry list couldn't be parsed, every
-            # trade-packages file goes to the full scan rather than being
-            # guessed into the lenient one.
+    if trade_knowledge_dir.is_dir():
+        pinned_names = _pinned_trade_package_names(trade_knowledge_dir)
+        for f in sorted(trade_knowledge_dir.rglob("*.md")):
+            # Fail safe: if the pinned trade files list couldn't be parsed,
+            # every trade-knowledge file goes to the full scan rather than
+            # being guessed into the lenient one.
             if pinned_names is not None and f.stem in pinned_names:
                 client_only_files.append(f)
             else:
@@ -562,10 +563,10 @@ def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
 
     detail = (
         f"{len(full_scope_files)} files under full banned-set scan, "
-        f"{len(client_only_files)} pinned trade-package entries under client-name-only scan"
+        f"{len(client_only_files)} pinned trade files under client-name-only scan"
     )
-    if trade_packages_dir.is_dir() and pinned_names is None:
-        detail += " | WARNING: could not parse trade-packages/MANIFEST.md's Entries list, so every trade-packages file was scanned at full strictness as a safe default"
+    if trade_knowledge_dir.is_dir() and pinned_names is None:
+        detail += " | WARNING: could not parse trade-knowledge/MANIFEST.md's Trade files list, so every trade-knowledge file was scanned at full strictness as a safe default"
     if hits:
         detail += " | " + "; ".join(hits)
 
