@@ -76,9 +76,12 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    contested rows individually, before it ends. The round runner separately re-verifies the same
    counts with its own queries before the next unit of that pass starts. A reader's report that its
    batches landed is verified at both its own boundary and the runner's; neither replaces the
-   other. The lead adds a third, count-only check at the check-in: it re-runs the round's totals
-   against the record with its own queries before it tells the user what landed, so the numbers the
-   user hears are the lead's own, never a summary relayed as-is.
+   other. The lead adds a third, count-only check at the check-in: before it tells the user what
+   landed, it re-runs the round's totals with its own `search` calls, filtered to the round's units
+   (`sourceInstrument`, or the unit's subject prefix), `limit: 1`, reading the `count` the record
+   returns for the filter. Never a row list. The lead never calls `list_scope_items` during the run:
+   that verb returns the whole projected scope list, unbounded, and pulling it is how the lead's
+   context stops being cheap. The numbers the user hears are the lead's own, never relayed as-is.
 7. **The grain bracket.** A scope item is the unit a subcontractor would include / exclude / price
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are the derive stage's output,
@@ -339,11 +342,12 @@ The reading happens one level down. Per round, the lead does exactly this and ho
    mandates live in the `scope-reader` agent definition. Neither is restated here, and neither is
    ever trimmed.
 3. **Read the summary and verify it yourself.** The runner returns one fixed-shape summary (shape
-   below). Re-run the round's totals with your own count queries (`list_scope_items` delta over the
-   round, `search` filtered to the round's units) before you say a number out loud. This is the
-   third boundary of non-negotiable 6, and it is count-only: the reader verified its own batches,
-   the runner verified every unit, and you confirm the round's totals. A mismatch stops the run and
-   gets investigated, never papered over.
+   below). Before you say a number out loud, re-run the round's totals with your own `search` calls,
+   filtered to the round's units (`sourceInstrument`, or the unit's subject prefix), `limit: 1`,
+   reading the `count` the record returns for the filter. This is the third boundary of
+   non-negotiable 6, and it is count-only: the reader verified its own batches, the runner verified
+   every unit, and you confirm the round's totals. Never a row list, and never `list_scope_items`.
+   A mismatch stops the run and gets investigated, never papered over.
 4. **Append `phase: round N complete` to the ledger**, with the verified totals.
 5. **Check in with the user** (format below). Move to the next round only on their go-ahead, and
    start the next round with a fresh runner.
@@ -363,7 +367,8 @@ same way a round does, one level down:
    definition. The validation run's first pass found 269 of 564 defined things unaccounted, closed
    267 with one supplemental round, and named 2 still open: that loop is the designed behavior, not
    a recovery.
-2. **Read the summary, verify the totals with your own queries**, the same way stage 4 step 3 does.
+2. **Read the summary, verify the totals with your own `search` counts**, the same way stage 4
+   step 3 does: filtered, `limit: 1`, `count` only, no row list and no `list_scope_items`.
 3. **Name what is still open**, row by row, in the ledger and in the close-out report, then append
    `phase: completeness closed`. Never assumed closed, never zeroed by hope.
 

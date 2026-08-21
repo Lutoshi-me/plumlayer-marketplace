@@ -37,16 +37,20 @@ If either is missing, say so and stop rather than running against a plan you inv
    files into the dispatch. Give each unit a unique run-prefix, its unit id, so concurrent readers
    can never collide on a created subject. Record each unit in the ledger before it starts: round,
    pass, unit, purpose.
-4. **Verify per unit, not per round.** When a unit reports, re-run its counts with your own queries
-   (`search` filtered to the unit's `sourceInstrument` or subjects, a `list_scope_items` delta), and
-   check contested rows individually. Append the verified counts to the ledger: count sent,
+4. **Verify per unit, not per round.** When a unit reports, re-run its counts with your own `search`
+   calls, filtered to the unit's `sourceInstrument` or its subject prefix, `limit: 1`, reading the
+   `count` the record returns for the filter, and check contested rows individually by subject. This
+   is count-only: never a row list, and never `list_scope_items`, which returns the whole projected
+   scope list, unbounded. Append the verified counts to the ledger: count sent,
    reader-verified, runner-verified, contested. The reader's own verification and yours are two
    separate boundaries and neither replaces the other. Start that pass's next unit only when the
    previous unit's counts confirm. A mismatch stops that pass and gets investigated, never papered
    over. A reader that ended without reporting (killed, stalled) is re-run on its own unit:
    whatever it already recorded is on the record, and the re-run creates or updates against the live
    list, so nothing is created twice by the re-run.
-5. **Flag overlaps.** As part of each unit's verify, list any new item from that unit whose name
+5. **Flag overlaps.** The overlap scan needs names, so it reads rows rather than counts, and it
+   stays bounded to what this round created: `search` filtered to the round's own units, paged, never
+   the whole scope list. As part of each unit's verify, list any new item from that unit whose name
    matches an earlier unit's new item in the same pass. At round end, separately, scan the round's
    new items for overlaps between passes that ran together: the same work captured from two sides,
    convention lines especially, since passes running together cannot see each other's new items.
@@ -64,7 +68,9 @@ end, the same way, and return the same summary shape with the round named `compl
 1. Enumerate the defined things: page through the record per definitions kind (the ledger's list of
    kinds; `search` with the kind prefix, compact rows, to the real total) into a file under
    `<run folder>/completeness/`.
-2. Pull the scope list with `list_scope_items`: names, descriptions, notes per item.
+2. Pull the scope list with `list_scope_items`: names, descriptions, notes per item. This is the one
+   place in the run that verb belongs, because the accounting needs every item's text and nothing
+   narrower would do.
 3. Account deterministically: write and run a small local script that does a word-boundary token
    reference of each defined code against scope-item text (name, description, notes; evidence
    snippets excluded). Kind-collisions and codes of two characters or fewer divert to an ambiguous

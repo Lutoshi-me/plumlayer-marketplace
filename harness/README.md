@@ -36,7 +36,7 @@ contract each check is derived from.
 |---|-------|----------------|
 | 1 | `claude plugin validate --strict` | CLI validator passes with warnings-as-errors. Reports SKIP, not a crash or a silent pass, when `claude` isn't on PATH. |
 | 2 | Version-quadruple lockstep | `plugin.json` (Claude), `plugin.json` (Codex), and both version fields in `marketplace.json` are identical |
-| 3 | Skills frontmatter | Every skill dir has `SKILL.md` with non-empty `name` and `description`; no duplicates; the shipped skill set matches the expected ten exactly, in both directions |
+| 3 | Skills frontmatter | Every skill dir has `SKILL.md` with non-empty `name` and `description`; no duplicates; the shipped skill set matches the expected nine exactly, in both directions |
 | 4 | Description contract | Every description is non-empty, folded YAML style (`description: >`), and at most 600 characters. Reports each skill's actual character count. |
 | 5 | Banned strings | No client-name denylist hit, `PLU-\d+`, internal vault filename, `MOSOT`, em dash, or middle dot in shipped text. The full set applies to skills, the plugin's `agents/` definitions, the root README, all four manifest JSON files, and anything in `trade-knowledge/` that isn't a pinned corpus trade file (currently `MANIFEST.md`, hand-authored release prose, and any future hand-authored file dropped in beside the trade files); the client-name denylist alone applies to the pinned trade files themselves, read from `MANIFEST.md`'s own "## Trade files" list rather than hardcoded, so a file not on that list defaults to the full scan. Em dash and middle dot are exempt inside fenced code blocks and inline code spans, since those are data (e.g. the citation format, the claim-atom notation), not prose; every other pattern still applies inside code. The detail line reports the two scan populations as separate counts. Each hit is reported with file, line, and the offending match. |
 | 6 | MCP URL exact-match | `.mcp.json` `plumlayer` server url equals `https://api-production-0a7b.up.railway.app/mcp` |
@@ -85,7 +85,7 @@ attempted and contains:
 | headless-claude-invocation | `claude` CLI runs and emits an init event within 120s |
 | plugin-plumlayer-loaded | Plugin `plumlayer` present in `plugins[]` by name |
 | no-plugin-load-errors | Plumlayer plugin loaded (absence means a load error); auth failure is a separate, expected event |
-| skills-all-10-present | All 10 `plumlayer:*` skills present in `skills[]` |
+| skills-all-present | All nine expected `plumlayer:*` skills present in `skills[]` |
 | mcp-under-bare (observational) | Documents MCP server presence or absence, see limitation below |
 
 ### Limitation: MCP under `--bare`
