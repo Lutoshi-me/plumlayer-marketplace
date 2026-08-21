@@ -21,9 +21,10 @@ what they read from: the recognition pass records what it confirmed off the page
 yourself records as your own reading, cited to the page you read it on. You are the reader; the MCP
 recognition verbs (`recognize_sheets`, `recognize_sheets_status`, `render_page`, `get_page_text`) are
 the anti-hallucination anchor, not the inference engine. There is no local pipeline and no
-server-side autonomous *reader*: the server runs the deterministic bulk pass and records its own
-output, but you still drive every job, judge every page the pass could not name, classify every sheet's type, and
-author every claim that isn't the deterministic pass's own grounded output.
+server-side autonomous *reader*: the server runs the deterministic bulk pass, which also types most
+sheets by a rule match, and records its own output, but you still drive every job, judge every page
+the pass could not name, type the sheets the rule pass left untyped, and author every claim that
+isn't the deterministic pass's own grounded output.
 
 This skill runs the read cloud-first: recognition and every recorded claim come from the server or
 your own read of the cloud-hosted pages, never from a local pass. Examples in this file are generic;
@@ -288,17 +289,42 @@ unreadable); never silently dropped. State how many you read, corrected, and fla
 
 ## 6b. Type the sheets
 
-After those pages are judged, classify every recognized sheet, the deterministic pass's own output and
-your own corrections alike, into the project's 13-value `sheetType` vocabulary, and record a
-claim per sheet. This is agent judgment only: the deterministic recognizer never binds a type, and
-an unclear sheet stays untyped rather than getting a guess.
+Recognition itself now types most of the set: at `recognize_sheets` finalize, the server runs a
+deterministic rule pass over every newly recognized sheet, matching its sheet-number prefix or
+recognized title against the 13-value vocabulary below. A match writes a `sheetType` claim
+server-side, register `machine-read`, cited to the matched title words, with a `confidence` of
+`high` or `medium`. A sheet the rules can't place gets nothing: those leftover sheets, never `other` (the
+rule pass never writes `other`), is what you read here. So this step is the backstop to the
+server's typing, not the whole of it: type the leftover sheets the rules left untyped, plus any rule-typed
+sheet you judge to be wrong; an unclear sheet still stays untyped rather than getting a guess.
+
+Start from `recognize_sheets_status`'s `written.sheetTyping` summary: `{sheetsConsidered, typed,
+highConfidence, mediumConfidence, untyped, typedWritten}`. `typed` is how many the rules placed on
+this run; `untyped` is the leftover set you're about to read.
+<!-- user-facing -->
+Narrate the split in estimator words: "the recognition pass sorted N of M sheets by type; I'm
+looking at the K it left."
+<!-- /user-facing -->
+
+Find the leftover sheets from `set_grid` rows carrying no `sheetType`, or `search(projectId, predicate:
+"sheetType")` against the recognized set to see what's already covered. Apply the keyword/judgment
+guidance and render-only-when-unclear rule below to those leftover sheets only, and record a claim per sheet
+you can confidently place.
+
+**Correcting a rule-typed sheet.** When you judge a rule-typed sheet wrong, correct it the same way
+you'd correct any machine-read binding (step 6c): never a bare re-record, since a bare
+`agent-stated` claim does not outrank a `machine-read` one on the same slot and would just sit
+beneath it doing nothing. `search(projectId, subject: "sheet:<n>", predicate: "sheetType")`, take
+the row with `authorRegister: "machine-read"`, and author your corrected claim with `supersedesId`
+set to that row's id, cited to what you actually read. That edge is what makes your read govern.
 
 This step runs on every door this skill supports: a fresh baseline, a bulletin or revision, and the
 cloud-resident re-recognition branch (1b) all converge here before the skill reports done. If this
 delivery, or an earlier delivery in the same project, already went through recognition but was
-never typed, whether from a session that predates this step or one that stopped short, closing that
-gap is this run's job, not something to leave for later. A recognized sheet with no `sheetType`
-claim and no honest skip-count is never a valid resting state for any path through this skill.
+never typed (from a session that predates the server-side rule pass, or one that stopped short),
+closing that gap is this run's job, not something to leave for later. A recognized sheet with no
+`sheetType` claim, whether rule-typed or agent-typed, and no honest skip-count is never a valid
+resting state for any path through this skill.
 
 ### The vocabulary
 
@@ -439,12 +465,13 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    whole grid, not this verify step.
 3. **Verify typing coverage against the recognized count, not just pages.** Sum `sheetsGrounded`
    across every file's succeeded job for this delivery (from step 5) to get the recognized sheet
-   count in scope. Compare it against your own typed-plus-skipped count from step 6b: the sheets
-   you assigned a `sheetType` claim to, plus the ones you counted as honestly unsure. The two
-   totals should reconcile. A gap between them, sheets neither typed nor counted as skipped, means
-   step 6b did not actually reach every sheet in scope: go back and close it before this run
-   reports done, the same way a count mismatch in point 1 stops the run rather than getting waved
-   through.
+   count in scope. Compare it against the sum of the server's rule-typed count (`written.sheetTyping.
+   typed` from step 6b's status read) plus your own agent-typed-plus-skipped count from step 6b: the
+   sheets you assigned a `sheetType` claim to, plus the ones you counted as honestly unsure. The
+   three should reconcile: recognized count = rule-typed + agent-typed + honestly-skipped. A gap
+   between them, sheets neither typed by either author nor counted as skipped, means step 6b did not
+   actually reach every sheet in scope: go back and close it before this run reports done, the same
+   way a count mismatch in point 1 stops the run rather than getting waved through.
 
 Point any pages still unresolved, flagged image-only pages, or untyped sheets at `ambiguities(projectId)`
 or the plain untyped count: the review queue, not something this skill resolves itself.
@@ -567,14 +594,17 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
 - Discipline is derived from the sheet's own number prefix, never a filename or folder.
 - Every page the pass could not name is judged or flagged, never silently dropped; image-only pages
   are named, not guessed.
-- `sheetType` is agent judgment only: never a deterministic guess, never a value outside the
-  13-value vocabulary, never assigned to a sheet you're not confident about.
+- `sheetType` typing splits across two authors: the server's deterministic rule pass types with a
+  citation at recognition, and the agent types the sheets it left untyped. Never a value outside
+  the 13-value vocabulary; never assigned to a sheet you're not confident about; never a bare
+  re-record over a rule-typed sheet (correct it by supersession edge, per 6b); unsure stays untyped.
 - A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
   already-recognized sheet) is a supersession **edge** onto the stored claim (`supersedesId` from
   `search`), never a bare competing claim and never an `ambiguityClass` flag: the flag is reserved for
   a reading you genuinely cannot resolve.
-- The page and type claims are your own reading, cited to the page you read; never present them as
-  the deterministic pass's confirmed output.
+- The page claims and your own type claims (the leftover sheets and any correction) are your own reading,
+  cited to the page you read; never present them as the deterministic pass's confirmed output, and
+  never present a rule-typed sheet as your own read.
 - Your own write (the page + type bundle) is verbatim, count-verified transport: a count
   mismatch stops the run, never triggers a reconstructed or invented entry.
 - Before recording your page/type bundle, check for a prior write on this delivery and confirm
@@ -593,12 +623,12 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
 
 `recognize_sheets` (the deterministic bulk pass) is free server-side compute: it recognizes the
 large majority of sheets in seconds to low minutes depending on set size (that's why it runs as a job
-you poll, not an inline call). Your token cost is fenced to that tail (the pages the pass
-couldn't recognize, read once each) plus the sheet-typing pass (mostly free: reused from the
-recognized title, with renders reserved for genuinely unclear sheets), plus the small, fixed cost of
-polling `recognize_sheets_status` every few seconds while a job runs. The local packaging-recognition
-sampling (step 2) is small, bounded to a few pages per ambiguous candidate file, and named in the
-packaging report; not a hidden cost. No GPU or model hosting on this path.
+you poll, not an inline call), and now types most of them too, in the same free pass. Your token
+cost is fenced to that tail (the pages the pass couldn't recognize, read once each) plus the
+sheets the rules left untyped, plus any rule-typed sheet you correct, plus the small,
+fixed cost of polling `recognize_sheets_status` every few seconds while a job runs. The local
+packaging-recognition sampling (step 2) is small, bounded to a few pages per ambiguous candidate
+file, and named in the packaging report; not a hidden cost. No GPU or model hosting on this path.
 
 ## Deferred (named, not skipped silently)
 
@@ -609,6 +639,8 @@ packaging report; not a hidden cost. No GPU or model hosting on this path.
   (to surface RFI-worthy discrepancies) is a corroboration layer, never the bootstrap for this skill.
 - **Discipline-uncertainty compensation.** The server's prefix-based discipline derivation has a known
   gap for unusual prefixes; this skill does not add client-side heuristics to cover it.
-- **Server-side auto-typing for the web-only upload door.** A website-only upload has no agent in the
-  loop; a server-side classification job is a separate architecture decision, not this skill's
-  problem.
+- **Backfill typing for sets recognized before the server-side rule pass.** Server-side typing now
+  runs at recognition for every door, including the web-only upload door (a website-only upload has
+  no agent in the loop, but the rule pass runs regardless). What remains deferred is typing the
+  sheets from deliveries recognized before this pass existed, tracked separately, not this skill's problem to
+  solve on its own.
