@@ -364,8 +364,8 @@ same way a round does, one level down:
    267 with one supplemental round, and named 2 still open: that loop is the designed behavior, not
    a recovery.
 2. **Read the summary, verify the totals with your own queries**, the same way stage 4 step 3 does.
-3. **Name what is still open**, row by row, in the close-out report, then append
-   `phase: completeness closed` to the ledger.
+3. **Name what is still open**, row by row, in the ledger and in the close-out report, then append
+   `phase: completeness closed`. Never assumed closed, never zeroed by hope.
 
 Spec sections account differently (estimators never write CSI digit strings into scope text): a
 spec section is accounted when the package split bundles it into a package. Read the bundled
