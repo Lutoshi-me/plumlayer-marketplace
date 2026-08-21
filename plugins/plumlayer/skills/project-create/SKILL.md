@@ -100,8 +100,8 @@ tier. Note in one line that you'll read it, then move on:
 ### Mode A: interview (the ask-now set only)
 Ask conversationally, in **one short group**, pre-filled from user defaults
 (`~/.plumlayer/operator.json`). **Only `name` is required; everything else is "skip if you don't have
-it handy."** Do **not** reconcile the user's saved defaults (e.g. interior-only scope lenses)
-against this project here. Package and trade-fit decisions belong to `scope-run`, not this step.
+it handy."** Do **not** reconcile the user's saved defaults against this project here. Package and
+trade-fit decisions belong to `scope-run`, not this step.
 
 ### Mode B: read what they already have (preferred when docs exist)
 If the user points you at files, **read them locally** and pre-fill, reading a document they handed

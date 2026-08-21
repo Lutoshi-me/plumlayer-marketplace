@@ -35,7 +35,9 @@ ls -la "$CONFIG" 2>/dev/null
 ```
 
 - **If it exists:** read it, show the user the current values, and ask what to change. **Update in
-  place, never silently overwrite.** Preserve fields the user doesn't touch.
+  place, never silently overwrite.** Preserve fields the user doesn't touch. If the existing file
+  carries keys the current schema no longer defines, ignore them and drop them on rewrite; never
+  error on them.
 - **If not:** run the interview fresh.
 
 ## 2. The interview (user-level only)
@@ -46,28 +48,18 @@ project-specific, that's `project-create`'s job. Keep it short.
 **Identity**
 - Company / user name.
 - Your role: `GC` / `CM` / `subcontractor` / `owner-rep` / `architect` / `other`.
-- Trade focus, the disciplines or trade packages you typically bid or self-perform (drives the
-  default scope lenses). Skip if you cover everything.
 - Region (e.g. "Massachusetts / New England") and unit system (`imperial` / `metric`).
 
 **Defaults** (sensible starting points project-create can override per job)
 - Default delivery method (`DBB` / `design-build` / `CM-at-risk` / …).
 - Default project type (e.g. `interior fit-out`, `ground-up`, `renovation`).
-- Scope preferences, the trades and packages you usually care about. `scope-run` does not read
-  this field today: it derives its package split fresh each run from the spec table of contents
-  and the trade knowledge base, so treat this as a note for later use, not a current input.
-- Default scope grain preference, if useful later: `bid` (hard-bid or precon, coarser) or `ca`
-  (awarded or construction-admin, finer). `scope-run` does not read this field today either.
-
-**Branding** (optional, forward-looking, for the document-generator skills when they ship)
-- Logo path / letterhead reference. Optional; leave null if you're not using doc generators yet.
 
 ## 3. Confirm and write
 
 <!-- user-facing -->
 Summarize the profile back to the user in plain language, not raw JSON, for example: "Here's what
 I've got: Acme Construction, GC, focused on interior fit-out work in Massachusetts, defaulting to
-CM-at-risk projects and a coarser bid-level scope grain. Sound right?"
+CM-at-risk projects. Sound right?"
 <!-- /user-facing -->
 Confirm each part they want
 changed, then write the file. **Do not write until they confirm.**
@@ -89,19 +81,12 @@ Schema (`~/.plumlayer/operator.json`):
   "operator": {
     "company": "<company / user name>",
     "role": "GC | CM | subcontractor | owner-rep | architect | other",
-    "tradeFocus": ["<discipline or package>", "..."],
     "region": "<region>",
     "units": "imperial | metric"
   },
   "defaults": {
     "deliveryMethod": "<DBB | design-build | CM-at-risk | ...>",
-    "projectType": "<interior fit-out | ground-up | renovation | ...>",
-    "scopeLenses": ["<lens-key>", "..."],
-    "grainLevel": "bid | ca"
-  },
-  "branding": {
-    "logoPath": null,
-    "letterhead": null
+    "projectType": "<interior fit-out | ground-up | renovation | ...>"
   },
   "_meta": {
     "version": 1,
@@ -114,7 +99,7 @@ Schema (`~/.plumlayer/operator.json`):
 
 <!-- user-facing -->
 Tell the user: the profile is saved at `~/.plumlayer/operator.json`; give a one-line summary of what's
-in it (company, role, delivery default, grain default) so they know exactly what they configured;
+in it (company, role, delivery default, project type default) so they know exactly what they configured;
 confirm it's local-only and never committed; and that `project-create` will now reuse these defaults
 so each new project only asks for project-specific facts. Point them at `/project-create` to start
 their first project.
