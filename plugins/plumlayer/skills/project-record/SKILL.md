@@ -5,7 +5,7 @@ description: >
   items, RFI candidates, scope items, and takeoff data. Use when the user asks "what's in my
   project" or says "/project-record". Drives the read verbs (set_grid, ambiguities,
   rfi_candidates, search, list_scope_items) and write verbs (record, record_batch,
-  record_batch_file). Does not upload drawings (drawing-upload), run the scope engine
+  record_batch_file). Does not upload drawings (drawing-upload), build the scope list
   (scope-run), or place takeoff measurements (takeoff).
 ---
 
@@ -67,8 +67,8 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
   waiting inline. Recognized sheet claims record server-side as `recorded` on success; never
   `record_batch` them yourself.
 - `recognize_sheets_status`: poll a `recognize_sheets` job. Returns run counts (`report`), the
-  server-side write summary (`written`), and the residue tail (`residue`) for you to read and
-  judge; it never carries the recognized claims themselves.
+  server-side write summary (`written`), and the tail of pages it could not name (`residue`) for
+  you to read and judge; it never carries the recognized claims themselves.
 - `render_page`: render a single page of a registered PDF to an image so you can read it.
 - `get_page_text`: extract the text layer from a registered PDF page (deterministic; use
   alongside `render_page`: text for tokens, render for layout/meaning).
@@ -100,7 +100,7 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
   count-verifiable.
 - `record_batch_file`: like `record_batch`, but for a run whose claims are too large to send
   inline: upload a JSONL file of claims, then write from it in one atomic call. Use this instead
-  of `record_batch` for large runs (e.g. a scope-run wave recording hundreds of items).
+  of `record_batch` for large runs (e.g. a scope-run pass recording hundreds of items).
 
 Both write doors refuse the takeoff-domain predicates (`hasTakeoffCount`, `hasTakeoffRollup`,
 `hasScale`, `hasTakeoffLength`, `hasTakeoffArea`, `hasTakeoffCountMark`, `hasTakeoffCondition`,

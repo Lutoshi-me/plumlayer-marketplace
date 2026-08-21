@@ -22,7 +22,7 @@ yourself records as your own reading, cited to the page you read it on. You are 
 recognition verbs (`recognize_sheets`, `recognize_sheets_status`, `render_page`, `get_page_text`) are
 the anti-hallucination anchor, not the inference engine. There is no local pipeline and no
 server-side autonomous *reader*: the server runs the deterministic bulk pass and records its own
-output, but you still drive every job, judge every residue page, classify every sheet's type, and
+output, but you still drive every job, judge every page the pass could not name, classify every sheet's type, and
 author every claim that isn't the deterministic pass's own grounded output.
 
 This skill runs the read cloud-first: recognition and every recorded claim come from the server or
@@ -32,14 +32,14 @@ never put a real client or project name here.
 ## Narration to the user
 
 <!-- user-facing -->
-Never let the words "grounding", "ingestion", "the ledger", or "residue pass" reach the user: a
-real transcript showed an agent narrating all four and confusing the user about what was actually
+Never let the words "grounding", "ingestion", or "the ledger" reach the user: a
+real transcript showed an agent narrating them and confusing the user about what was actually
 happening. Say instead:
 
 - "uploading" (steps 3–4)
 - "recognizing sheet numbers" (step 5, while a job is running)
 - "N sheets recognized" (step 5, on job success)
-- "M pages need review" (step 6/6b residue and untyped sheets, never "residue pass")
+- "M pages need review" (the step 6/6b unnamed pages and untyped sheets)
 - "reading the spec book's table of contents" (step 8, while the extraction job is running)
 - "N sections found" (step 8, on job success)
 - "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
@@ -105,8 +105,9 @@ Emit the same packaging
     (the server refuses the mismatch).
 
 From here the pipeline is identical: step 5 (`register_pages` once, then `recognize_sheets` per file,
-pass `deliveryId` explicitly for any file whose registration doesn't carry it), step 6 (residue
-read), step 6b (sheet-type classification), step 7 (residue + type write, verify). Every gate
+pass `deliveryId` explicitly for any file whose registration doesn't carry it), step 6 (read the
+pages the pass could not name), step 6b (sheet-type classification), step 7 (page + type write,
+verify). Every gate
 applies unchanged.
 
 **Re-recognize semantics (the honest limits).** Re-running `recognize_sheets` on a file+delivery is
@@ -225,11 +226,11 @@ For a multi-file delivery, start and poll a separate job per file; there is no m
 `SET_TAG`: each file's recognized claims land under the shared `deliveryId` as soon as its own job
 succeeds, with no pooling step required.
 
-## 6. Residue read
+## 6. Read the pages the pass could not name
 
 A `succeeded` `recognize_sheets_status` result carries `residue`: the tail where the deterministic
 pass is least sure (low confidence, no sheet number found, or a degraded text layer). Read and judge
-every residue row yourself:
+every page in that tail yourself:
 
 - Use `residue[].pageNum` or `pageInPdf` (both 1-based) with `render_page` and `get_page_text`; never
   the legacy 0-based `residue[].page` field. `render_page` returns the PNG inline (pass a normalized
@@ -255,7 +256,7 @@ every residue row yourself:
   `page:<fileId>:<pageInPdf>`, never `subject: null`, and never add an OCR dependency (deferred).
   Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
 
-For every residue subject you *do* resolve, author the **full bundle** of claims, mirroring the shape the
+For every one of those pages you *do* resolve, author the **full bundle** of claims, mirroring the shape the
 server records for the pages the deterministic pass already recognized (matching predicate and value
 shapes keeps every sheet's claim set uniform regardless of which stage grounded it):
 
@@ -277,13 +278,13 @@ server's `disciplineFromSheetNumber` logic (all letters before the first digit/d
 never a full NCS discipline name. Do **not** add client-side compensation for prefixes the server can't
 classify; that gap is a known limitation, not this skill's problem to solve.
 
-**Gate:** every residue row ends up judged (a full claim bundle) or flagged (image-only or genuinely
+**Gate:** every page in that tail ends up judged (a full claim bundle) or flagged (image-only or genuinely
 unreadable); never silently dropped. State how many you read, corrected, and flagged.
 
 ## 6b. Type the sheets
 
-After residue is judged, classify every recognized sheet, the deterministic pass's own output and
-your residue corrections alike, into the project's 13-value `sheetType` vocabulary, and record a
+After those pages are judged, classify every recognized sheet, the deterministic pass's own output and
+your own corrections alike, into the project's 13-value `sheetType` vocabulary, and record a
 claim per sheet. This is agent judgment only: the deterministic recognizer never binds a type, and
 an unclear sheet stays untyped rather than getting a guess.
 
@@ -322,7 +323,7 @@ judge it, move on. Do not render sheets whose type is already obvious from what 
 
 ### Claim shape
 
-One `sheetType` claim per sheet you classify, matching the residue bundle's shape:
+One `sheetType` claim per sheet you classify, matching the step 6 bundle's shape:
 
 ```json
 {"subject": "sheet:S-501", "predicate": "sheetType", "value": "schedule",
@@ -357,7 +358,7 @@ step 6b, where a recognized "title" that reads like a note, a general instructio
 rather than a sheet name is the tell, or when the user points one out.
 
 When you are confident a recognized title or discipline is a mis-grab, correct it with a supersession
-**edge**, exactly like a confident residue correction (step 6):
+**edge**, exactly like a confident step 6 correction:
 
 1. `search(projectId, subject: "sheet:<n>", predicate: "hasTitle")` (or `"discipline"`) → the live
    machine claim's `id`.
@@ -377,18 +378,18 @@ Narrate it in estimator words: "the automatic scan grabbed the wrong text on N s
 and set them right"; never "supersede", "claim", or "edge".
 <!-- /user-facing -->
 
-## 7. Record residue and types, then verify
+## 7. Record the pages and types, then verify
 
 **The recognized portion needs no write call from you.** `recognize_sheets` already wrote it
 server-side once its job succeeded (step 5), and re-running `recognize_sheets` on the same
 file+delivery is safe by construction: the concurrency guard returns the existing job, and the
 write itself is idempotent (`alreadyWritten: true` on a poll means a prior run already wrote this
 delivery's sheet claims, no duplicate was written). You still make exactly one write of your own
-(pooling the residue bundle from step 6, the sheetType claims from step 6b, and any mis-bind
+(pooling the step 6 bundle, the sheetType claims from step 6b, and any mis-bind
 corrections from step 6c, the edges carrying their `supersedesId`), plus one verification pass:
 
-1. **Record the residue + type bundle.** Before recording, check whether you've already recorded
-   residue or types for this delivery in a prior run of this skill (e.g. `search(projectId,
+1. **Record the page + type bundle.** Before recording, check whether you've already recorded
+   these pages or types for this delivery in a prior run of this skill (e.g. `search(projectId,
    predicate: "partOfIssue", text: <deliveryId or label>)` and `search(projectId, predicate:
    "sheetType")`), and confirm with the user before sending it again; the server's recognized-claim
    idempotency does not cover claims you authored and sent yourself. Once clear, pool the full claim
@@ -401,7 +402,7 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    number of entries you sent. If it doesn't, stop and report the discrepancy rather than retrying
    with a guessed correction.
 
-   **For a large agent-authored bundle (a deep set with thousands of residue/type entries), use
+   **For a large agent-authored bundle (a deep set with thousands of page and type entries), use
    `record_batch_file` instead of chaining many `record_batch` calls.** The path: write the full
    claim array as JSONL, `request_file_upload(projectId, filename)` for a signed URL, PUT the JSONL
    bytes to it, `register_file(projectId, fileId, filename, contentType: "application/jsonl", kind:
@@ -425,7 +426,7 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    round trip. Reserve `set_grid` for a small project or a later session that genuinely needs the
    whole grid, not this verify step.
 
-Point any unresolved residue, flagged image-only pages, or untyped sheets at `ambiguities(projectId)`
+Point any pages still unresolved, flagged image-only pages, or untyped sheets at `ambiguities(projectId)`
 or the plain untyped count: the review queue, not something this skill resolves itself.
 <!-- user-facing -->
 Report: the
@@ -463,13 +464,13 @@ disk the whole time.
 **Report the counts honestly, not just "N sections found."** From the succeeded job's `report`:
    sections found, files opened vs failed (a multi-file run can succeed overall while still naming one
    corrupt division PDF in `failedFiles`: that's a finding for the user, never a silent retry
-   loop), and the completeness-diff / mismatch / residue counts. **`sectionsFound` counts only
+   loop), and the completeness-diff, mismatch, and could-not-read counts. **`sectionsFound` counts only
    footer-confirmed sections** (the per-page CSI-code footer read): a section declared solely in the
    PDF bookmark tree, with no confirming footer, does NOT add to that count; it surfaces instead through
    the completeness findings, never as a silent gap in the number you report.
 <!-- /user-facing -->
-5. **Read-back verify.** Call `search(projectId, predicate: "inDivision")` and confirm the recorded row
-   count matches the job's `sectionsFound` exactly: completeness/residue findings ride their own
+5. **Verify.** Call `search(projectId, predicate: "inDivision")` and confirm the recorded row
+   count matches the job's `sectionsFound` exactly: completeness and could-not-read findings ride their own
    predicate (`hasCompletenessStatus`) and never appear in this read. A mismatch stops the run and gets
    reported, never a guessed correction.
 
@@ -523,10 +524,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
      this delivery, the spec leg is reported as not having run. Say exactly that; never present it
      as a finding of zero.
 <!-- /user-facing -->
-4. **Offer to record the residue.** Once the user has seen the report, offer
+4. **Offer to record the findings.** Once the user has seen the report, offer
    `reconcile_set(projectId, record: true)` to record the sheet findings and the grouped questions
    for the design team (grouped by discipline series, not one per sheet). Only run it on the
-   user's go-ahead: this is where the residue becomes part of the review queue.
+   user's go-ahead: this is where those findings become part of the review queue.
 
 ## Gates (non-negotiable)
 
@@ -534,34 +535,35 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   the server) or a `render_page`/`get_page_text` read you just made. A local read (step 2) may inform
   the packaging report; it never grounds a claim.
 - Discipline is derived from the sheet's own number prefix, never a filename or folder.
-- Residue is judged-or-flagged, never silently dropped; image-only pages are named, not guessed.
+- Every page the pass could not name is judged or flagged, never silently dropped; image-only pages
+  are named, not guessed.
 - `sheetType` is agent judgment only: never a deterministic guess, never a value outside the
   13-value vocabulary, never assigned to a sheet you're not confident about.
-- A confident correction of a machine misread (a mis-grabbed title or discipline, in residue or on an
+- A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
   already-recognized sheet) is a supersession **edge** onto the stored claim (`supersedesId` from
   `search`), never a bare competing claim and never an `ambiguityClass` flag: the flag is reserved for
   a reading you genuinely cannot resolve.
-- The residue and type claims are your own reading, cited to the page you read; never present them as
+- The page and type claims are your own reading, cited to the page you read; never present them as
   the deterministic pass's confirmed output.
-- Your own write (the residue + type bundle) is verbatim, count-verified transport: a count
+- Your own write (the page + type bundle) is verbatim, count-verified transport: a count
   mismatch stops the run, never triggers a reconstructed or invented entry.
-- Before recording your residue/type bundle, check for a prior write on this delivery and confirm
+- Before recording your page/type bundle, check for a prior write on this delivery and confirm
   with the user rather than double-recording; the recognized portion is server-idempotent by
   construction (re-running `recognize_sheets` on the same file+delivery is always safe).
-- Honest coverage at every stage: pages skipped, files excluded, residue left unread, or sheets left
+- Honest coverage at every stage: pages skipped, files excluded, unnamed pages left unread, or sheets left
   untyped are named, not buried in a total.
 - The spec-book leg (step 8) extracts a file set once, never once per division file, and its counts are
   read back with `search` and verified against the job's own `report`, never assumed. A named
   `failedFiles` entry is a finding for the user, never a silent retry loop.
 - The reconciliation gate (step 9) is honest about its own bounds: no classified index page, a
   backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
-  problems found." `reconcile_set` residue is recorded only on the user's go-ahead.
+  problems found." `reconcile_set` findings are recorded only on the user's go-ahead.
 
 ## Cost (cheapest tier first)
 
 `recognize_sheets` (the deterministic bulk pass) is free server-side compute: it recognizes the
 large majority of sheets in seconds to low minutes depending on set size (that's why it runs as a job
-you poll, not an inline call). Your token cost is fenced to the residue tail (the pages the pass
+you poll, not an inline call). Your token cost is fenced to that tail (the pages the pass
 couldn't recognize, read once each) plus the sheet-typing pass (mostly free: reused from the
 recognized title, with renders reserved for genuinely unclear sheets), plus the small, fixed cost of
 polling `recognize_sheets_status` every few seconds while a job runs. The local packaging-recognition

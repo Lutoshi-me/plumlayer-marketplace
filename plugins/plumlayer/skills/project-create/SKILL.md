@@ -6,7 +6,7 @@ description: >
   project-level facts. Trigger on "create a project", "new project", "start a new bid or pursuit",
   "onboard this project", "/project-create", or when the user hands over project documents. Drives
   the create_project and record (or record_batch) MCP tools. Does not upload or read drawings
-  (drawing-upload) or run the scope engine (scope-run).
+  (drawing-upload) or build the scope list (scope-run).
 ---
 
 # Project create: stand up a new project record and customize it
@@ -37,7 +37,7 @@ project record into existence carrying the few facts only *you* can supply.
 **The arc:**
 `setup` (user profile, once), then **`project-create`** (this skill, the shell plus minimal
 frame), then **`drawing-upload`** (the agent reads and registers the drawing delivery as recognized
-sheet claims), then **`scope-run`** (the live scope-item-first engine), then review what's uncertain
+sheet claims), then **`scope-run`** (the scope list and the trade packages), then review what's uncertain
 on plumlayer.com.
 
 **The load-bearing consequence, don't interrogate for what the set is about to tell you.** Almost
@@ -188,8 +188,8 @@ sourced. **Every claim carries a `sourceInstrument` and evidence, no exceptions.
 
 <!-- user-facing -->
 Tell the user the next step is `drawing-upload` to register and recognize the drawing delivery, and
-the spec book too, when there is one, since the scope engine's package derivation anchors on it.
-Once the set is recognized, `/scope-run` runs the scope-item-first engine: one grounded, cited scope
+the spec book too, when there is one, since the package derivation in `scope-run` anchors on it.
+Once the set is recognized, `/scope-run` builds one grounded, cited scope
 list, then derived trade packages.
 <!-- /user-facing -->
 Never suggest the retired route-first path or a `scope-run`
@@ -208,7 +208,7 @@ Tell the user, in plain terms:
   **plumlayer.com**, where every seeded value carries your name, the time, and what you read it from.
   Anything you flagged is what a person should look at.
 - **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then run
-  `/scope-run`, the live scope-item-first engine, to build the scope list and derive trade packages.
+  `/scope-run`, to build the scope list and derive trade packages.
   Say "seeded 12 project facts, 2 flagged for your judgment" rather than "pending review": what you
   seeded is the project's starting frame now, carrying your name and what you were told, and anything
   a person changes, or a drawing read later replaces, wins.

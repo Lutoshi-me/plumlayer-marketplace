@@ -108,7 +108,7 @@ what stands, say plainly whether it is visible in the editor or on record only, 
 honest options with their real costs:
 
 - **extend**: count only sheets not yet covered and file the new marks under the existing
-  condition (its id is in the read-back);
+  condition (its id is in the stage 2 read);
 - **place marks from what was already read**: when the standing record carries complete
   per-instance geometry (a legacy count's recorded instance boxes), marks can be placed under a
   new condition from that evidence without re-reading the sheets. Cheap and honest **only** if
@@ -127,7 +127,7 @@ replaced anything.
 
 - **Nothing relevant stands** → proceed. Note any standing scale per target sheet (stage 4 uses
   this).
-- The read-back is also your source for **conditionIds**: a prior run's condition you are
+- That read is also your source for **conditionIds**: a prior run's condition you are
   extending is addressed by the id this read returns, never by a remembered one.
 
 ## 3. Find the sheets
@@ -151,12 +151,12 @@ records: never from filename guesses.
    subject+predicate query per candidate. If the project's sheets carry no type records at all
    (an old or partial upload), fall back honestly: read the drawing index sheet or titles, and
    say in the report that you resolved sheets by title because the set is untyped.
-3. **Settle the roster from titles first; render only the residue.** Titles usually separate an
+3. **Settle the sheet list from titles first; render only the ones still open.** Titles usually separate an
    exterior elevation from an interior or structural one at zero render cost; render a candidate
-   only when its title and type leave the call genuinely unclear, and to spot-check the roster
+   only when its title and type leave the call genuinely unclear, and to spot-check the list
    (one render on a sheet you will read anyway is free confirmation).
 <!-- user-facing -->
-State the final roster to
+State the final sheet list to
    the user before the heavy read, naming the sheets you will count on.
 <!-- /user-facing -->
 Interior elevations,
@@ -171,7 +171,7 @@ Interior elevations,
 Counts do not need a scale; lengths and areas do, and a correct standing scale helps either way.
 Per target sheet:
 
-- **A scale already stands** (from stage 2's read-back): use it. If it was set by a person, it is
+- **A scale already stands** (from the stage 2 read): use it. If it was set by a person, it is
   theirs: never replace it, even if you read the title block differently; note the disagreement
   in the report instead. If your own earlier run set it and it is wrong, revise it (the record
   names what it replaces).
@@ -282,7 +282,7 @@ marks summed, so the marks are the takeoff.
   - **refused near human-touched work**, the machinery protecting a person's word: skip it,
     count it, name it in the report;
   - **transport or auth error** (a timeout, an expired-token error; the call returned an error,
-    not a landed record): retry that one write once; the stage-8 read-back is what proves no
+    not a landed record): retry that one write once; the stage-8 verification is what proves no
     duplicate resulted either way;
   - **a refusal you cannot explain**: stop the run rather than retrying blind.
 - **Judgment calls ride the trail.** A border-case instance you counted carries the call in its
@@ -315,7 +315,7 @@ Check, with a fresh recount against your stage-7 canonical list (never an echoed
 - each scale you recorded is live on its sheet.
 
 A mismatch stops the run and is reported as a discrepancy with both numbers: never patched by
-re-sending, never rounded into "close enough". The read-back result is the only ground for telling
+re-sending, never rounded into "close enough". The verification result is the only ground for telling
 the user the takeoff landed; a successful write call alone is not.
 
 ## 9. Report
@@ -330,7 +330,7 @@ The report is the manifest, in estimator words:
   location and reason, so the user can check exactly those in the editor. This is the first
   thing after the totals, not a footnote.
 - **The count check:** candidates found → counted → excluded (named) per sheet, and the
-  read-back verification result.
+  verification result.
 - **Anything left alone:** human-set scales you disagreed with, refusals near human work, sheets
   skipped and why.
 - **Where to look:** the sheet in the takeoff editor on plumlayer.com: the condition is in the
@@ -349,7 +349,7 @@ the moment they lean on the standing number, so they are part of the answer, not
   work: conditions and legacy per-sheet counts (`summary.byPredicate`, not only
   `summary.conditions`); either stops the run for the user's choice. Re-running never
   silently duplicates and never claims to have replaced work it cannot remove.
-- The sheet roster is stated to the user before any mark lands.
+- The sheet list is stated to the user before any mark lands.
 - The legend and the sheet decide what a token means: never a rule imported from another project,
   a prior run, or this file. Method travels; answers do not.
 - Census, placed marks, and named exclusions reconcile exactly; nothing is silently dropped. On
@@ -361,9 +361,9 @@ the moment they lean on the standing number, so they are part of the answer, not
   citation, no write.
 - One record per instance; no rollups, no multi-point payloads.
 - A refusal near human-touched work is skipped and named, never fought; a transport/auth error
-  is retried once with the read-back as the duplicate-proof; an unexplained refusal stops the
+  is retried once with the verification read as the duplicate-proof; an unexplained refusal stops the
   run.
-- The landed result is verified by read-back with a fresh recount before the user is told it
+- The landed result is verified by a fresh recount read before the user is told it
   landed: the condition read (paginated to completion) for marks, a separate sheet-scoped read
   for each scale; a mismatch is reported, never patched silently.
 - Judgment calls are named in the trail and led with in the report: never silently resolved,

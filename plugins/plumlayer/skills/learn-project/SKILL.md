@@ -11,9 +11,9 @@ description: >
 
 # Learn project: the cheap orientation pass (stage 1)
 
-The first stage of the scope engine. Before anything is read deep, one cheap pass over what's already
+The first stage of a scope run. Before anything is read deep, one cheap pass over what's already
 recognized builds the project's **context**: what it is, its structural and envelope systems, its
-scope areas, the shape of the set, and what's missing. Every downstream reader in the scope engine
+scope areas, the shape of the set, and what's missing. Every later pass in the scope run
 gets this context instead of orienting from scratch, which is where tokens leak and reads get
 unreliable.
 
@@ -30,7 +30,7 @@ project name, client data, or a real extracted value here.
 orientation claims, and compile a packet from them. So it does **not**: upload a drawing delivery
 (precondition, owned by `drawing-upload`); extract spec sections itself (it reads the spec-section index
 if `drawing-upload`'s later spec-reading work has already recorded one, it never extracts specs); or
-run any of the scope engine's later stages, reading the set in waves, building the one scope list,
+run any of the later scope-run stages, reading the set in rounds, building the one scope list,
 deriving trade packages, or tagging items to a trade (all owned by `scope-run`).
 
 The run-context packet this skill compiles is a **projection**, never stored as truth, the same
@@ -94,7 +94,7 @@ that never arrived, or a sheet in the set the index never mentioned, changes wha
 before you read a single plan.
 
 Call `reconcile_set(projectId)` **report-only** (never pass `record`), this step reads the gate's
-findings, it never records residue itself, and recording is not this skill's decision to make. The
+findings, it never records those findings itself, and recording is not this skill's decision to make. The
 bare call (no `deliveryId`) runs the ORIENTATION check: the index of record, the newest delivery
 that actually has a read drawing index, against the current compiled set across every delivery,
 which is what an orientation pass over the whole project wants. `result.mode` reports which

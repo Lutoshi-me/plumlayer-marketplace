@@ -75,4 +75,4 @@ On `succeeded`, tell the user:
   restarts cleanly.
 - **High excluded count**, if the excluded count is large relative to the total considered, say so plainly
   rather than only reporting the PDFs, it usually means a chunk of the set has no locatable page yet
-  and needs a `drawing-upload` residue pass.
+  and needs `drawing-upload` to read the pages the scan could not name.

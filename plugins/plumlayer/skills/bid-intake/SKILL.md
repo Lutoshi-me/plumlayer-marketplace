@@ -53,7 +53,7 @@ say to the user (no em dashes, no bolded emphasis words). Say:
 - "declared this a revised proposal, which replaces their prior bid" or "declared a clarification"
   (before recording, when a repeat proposal applies, see stage 6)
 
-Never narrate "claims", "grounding", "the ledger", "residue", or "the pivot"
+Never narrate "claims", "grounding", "the ledger", or "the pivot"
 to the user: those are machinery. What you record is the package's working data as soon as it
 lands, carrying your name and the page it came from; never call it "pending review".
 <!-- /user-facing -->
@@ -240,7 +240,7 @@ normalized `region` to zoom a table or a signature block) and `get_page_text` (e
     when none is stated. **Never** derive a number the proposal does not state.
   - **ambiguity**: `OSV` / `TV` / `unclear` when the proposal prices a row ambiguously ("other scope
     value", "to verify", a bare "?"). An ambiguous token **never** resolves to a hard `amount`.
-  - **note**: the free-note residue ("included above", "option 1", a typed comment).
+  - **note**: whatever else the row says in free text ("included above", "option 1", a typed comment).
 - **Coverage**: did this proposal bid the whole package (`full`) or a subset (`partial`)? A `partial`
   coverage carries a human label ("Framing only") and, when the proposal names the covered rows, the
   explicit `coveredItems` subset (the `scopeItem:` subjects from stage 3).
@@ -545,7 +545,7 @@ record_additional_item(
   inclusion,             // optional: base | adder | excluded — what the proposal actually says
   routing,               // optional: self | by-others | NIC — when they say who carries it
   amount,                // optional: the stated dollar figure. NEVER a number you derived
-  note,                  // optional: the free-note residue, the qualifier as written
+  note,                  // optional: the row's free text, the qualifier as written
   evidenceFileId,        // REQUIRED — the proposal you read it from
   evidencePage,          // the 1-based page. Always send it; a citation with no page is a weak one
   evidenceMethod,        // e.g. "agent-read" / "agent-vision-read"
