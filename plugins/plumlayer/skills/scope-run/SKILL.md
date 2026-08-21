@@ -130,8 +130,9 @@ uploaded to the project except record files, never recorded as project entries. 
   every write batch (count sent, count verified, contested), the list of definitions kinds as they
   land, check-in outcomes, and every deviation or repair. The ledger is what makes the close-out
   report honest. Audience: agent.
-- `read-plan.md`: the read plan (stage 3), user-approved before any reading runs. Audience: user,
-  it is shown to the user for approval.
+- `read-plan.md`: the read plan (stage 3): passes, their sheets with file/page references, the
+  trade files each carries, round order, and what is deliberately excluded. Audience: agent. What
+  the user hears at the gate is defined in stage 3.
 - `context-packet.md`: the compiled context packet, regenerated between rounds (a projection off
   live records, never itself recorded). Audience: agent.
 - `completeness/`: the completeness pass's enumerations, accounting output, and lists of what is
@@ -226,11 +227,24 @@ Write `read-plan.md`: the passes, the sheets in each (numbers plus file/page ref
 files each pass carries, the order the rounds run in, and what is deliberately excluded, named
 outright rather than left silent.
 <!-- user-facing -->
-**Show the user the plan and get their approval before any
-   reading runs.** Say it as a sentence, not a table of jargon: "six passes, legends and schedules
-   first, then the plans that reference them; change anything before I start."
+Before any reading runs, tell the user, in a few plain sentences, not a table:
+
+- The order: which families go first and what follows, in one sentence. No reasons; they know why
+  schedules come before plans.
+- What is deliberately left out, by sheet family or number. Say it plainly: anything here will not
+  be scoped.
+- When the first check-in will be, roughly.
+- The ask: what is worth catching is a family left out that carries scope, something read before
+  what defines it, or two families read together that could double count. Then: go, or cut, add,
+  or reorder.
+
+For example: "Legends and schedules first, then unit plans, then kitchens and baths, then
+elevations and details, site last. I'm leaving out the ADA mounting-height sheets and the
+landscape set. First check-in in about twenty minutes. Go, or change anything."
+
+Never show passes as a table, counts of dispatches, bundle codes, lanes, model names, or anything
+about how the run is executed. Never offer a recommended option.
 <!-- /user-facing -->
-The read plan is a reviewable artifact; the user may cut, add, or resequence.
 
 ## 4. Read the rounds
 
