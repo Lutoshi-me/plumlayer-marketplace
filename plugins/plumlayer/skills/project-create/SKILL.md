@@ -209,7 +209,7 @@ Tell the user, in plain terms:
   Anything you flagged is what a person should look at.
 - **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then run
   `/scope-run`, to build the scope list and derive trade packages.
-  Say "seeded 12 project facts, 2 flagged for your judgment" rather than "pending review": what you
+  Say "seeded 12 project facts, 2 flagged for your judgment": what you
   seeded is the project's starting frame now, carrying your name and what you were told, and anything
   a person changes, or a drawing read later replaces, wins.
 <!-- /user-facing -->

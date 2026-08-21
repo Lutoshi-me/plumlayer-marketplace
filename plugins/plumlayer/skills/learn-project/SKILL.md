@@ -205,8 +205,7 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
   which.
 - **What was recorded**, how many entries, and how many were flagged for a person's judgment, for
   example "recorded 14 project facts, 3 flagged for your judgment". What you recorded is the
-  project's working context now, carrying your name and citations, never say it is "pending review"
-  or "awaiting approval"; anything a person changes wins.
+  project's working context now, carrying your name and citations; anything a person changes wins.
 - **Where the packet landed**, the full path.
 - **The placeholder note**, the definitions-as-context section is a stub, not yet designed.
 - **What a person should look at**, the flagged entries, visible on plumlayer.com with the

@@ -40,17 +40,6 @@ sheets you were pointed at is the job; writing what they contain into tracked so
 (Oversized tool results can spill to harness-managed local files outside your control; that is
 outside the repo and acceptable: the rule you own is what you write into tracked files.)
 
-## Words (user-facing language)
-
-<!-- user-facing -->
-Speak estimator words in everything the user reads: **condition, mark, measurement, count, total,
-scale, sheet, trail**. Say "placed 89 marks under the Windows condition on A-3.01", "the scale on
-A-3.02 was already set, I used it", "3 judgment calls below".
-
-Never tell the user something is "pending review" or "awaiting approval". It is their takeoff now;
-the honest framing is "it's in the editor; anything you change wins".
-<!-- /user-facing -->
-
 ## What this is, and the boundary
 
 One run of this skill produces **one condition** (or a small named set of them, when the request
@@ -321,7 +310,7 @@ the user the takeoff landed; a successful write call alone is not.
 ## 9. Report
 
 <!-- user-facing -->
-The report is the manifest, in estimator words:
+The report is the manifest:
 
 - **What landed:** per sheet: marks placed, by tag/type breakdown where tags exist; the condition
   name and its total; which scale each measured sheet used and where it came from (already set /
@@ -368,8 +357,6 @@ the moment they lean on the standing number, so they are part of the answer, not
   for each scale; a mismatch is reported, never patched silently.
 - Judgment calls are named in the trail and led with in the report: never silently resolved,
   never buried.
-- User-facing language is estimator words; the machinery vocabulary (claim,
-  supersede, predicate, and kin) never reaches the user.
 - Nothing this skill writes is a person's word, and nothing it does deletes, approves, or signs;
   corrections and removals belong to the user in the editor.
 

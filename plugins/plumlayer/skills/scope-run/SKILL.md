@@ -94,7 +94,7 @@ or a flag should be closed says so in its report; a person acts at the door.
 
 A newly created scope item is a full row, not a name. Every new item writes:
 
-- **name**: the concise line the sub reads: aim under ten words, estimator wording, no code
+- **name**: the concise line the sub reads: aim under ten words, the way a sub would say it, no code
   dump ("Interior metal-stud partitions", not a recitation of every type mark).
 - **category** (required): the intrinsic work grouping an estimator would use as a checklist
   section ("Metal Stud Partitions", "Unit Casework", "Sealants & Firestopping"). Group like work
@@ -107,8 +107,8 @@ A newly created scope item is a full row, not a name. Every new item writes:
   internal watch item). Most items carry neither.
 - **quantity**: only where the sheet itself carries one, as `{value, unit}`.
 
-Recorded text is user-facing prose: plain estimator words, no em dashes, no bolding, no
-machinery vocabulary. A verbose row is a defect, not diligence.
+Recorded text is what the bidder reads: plain sentences, no em dashes, no bolding. A verbose row
+is a defect, not diligence.
 
 ## Run artifacts and the ledger
 
@@ -401,13 +401,14 @@ at start (list_scope_items, plus targeted search):
    a trade's scope sheet — split by type or significant distinction, never by instance (floor);
    never one item per sheet or package headers (ceiling). Distinctions that don't earn a row ride
    in the description and notes.
-5. THE ROW: every new item writes the full row — name (concise, under ~10 words, estimator wording),
+5. THE ROW: every new item writes the full row — name (concise, under ~10 words, the way a sub
+   would say it),
    category (REQUIRED: the checklist-section grouping an estimator would use; reuse category
    strings across like work, never one per item), description (1-3 tight sentences, only what
    changes price or scope — never a re-narration of the schedule; the citation does the
    explaining), notesExternal/notesInternal only when there is a real note, quantity only where
-   the sheet carries one as {value, unit}. Recorded text is user-facing: plain estimator
-   prose, no em dashes, no bolding, no machinery words. Verbose rows are defects.
+   the sheet carries one as {value, unit}. Recorded text is what the bidder reads: plain
+   sentences, no em dashes, no bolding. Verbose rows are defects.
 6. GRAIN: follow your trade files' grain sections; where a trade file is silent, create at best
    judgment AND flag the grain question.
 7. RECORD directly: record_batch (≤500 per call; subjects scopeItem:<run-prefix>-<seq> for

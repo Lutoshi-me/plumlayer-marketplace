@@ -32,9 +32,7 @@ never put a real client or project name here.
 ## Narration to the user
 
 <!-- user-facing -->
-Never let the words "grounding", "ingestion", or "the ledger" reach the user: a
-real transcript showed an agent narrating them and confusing the user about what was actually
-happening. Say instead:
+How to say each thing as it happens:
 
 - "uploading" (steps 3–4)
 - "recognizing sheet numbers" (step 5, while a job is running)
@@ -374,8 +372,8 @@ genuine ambiguity, and flagging a title you already read correctly is the "go se
 end this step exists to close.
 
 <!-- user-facing -->
-Narrate it in estimator words: "the automatic scan grabbed the wrong text on N sheets, so I read them
-and set them right"; never "supersede", "claim", or "edge".
+Say it the way it happened: "the automatic scan grabbed the wrong text on N sheets, so I read them
+and set them right".
 <!-- /user-facing -->
 
 ## 7. Record the pages and types, then verify

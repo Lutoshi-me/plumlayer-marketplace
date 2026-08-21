@@ -48,14 +48,13 @@ say to the user (no em dashes, no bolded emphasis words). Say:
 - "reading <bidder>'s proposal" (per-proposal read)
 - "N rows answered, M rows silent" (after a proposal read; never imply a silent row is a zero)
 - "N things they priced that aren't on the checklist" (after a proposal read, when the proposal
-  carries off-checklist content: plain words for what stage 7b records; never "scope-gap findings")
+  carries off-checklist content: plain words for what stage 7b records)
 - "K proposals read, J entries to record" (before recording)
 - "declared this a revised proposal, which replaces their prior bid" or "declared a clarification"
   (before recording, when a repeat proposal applies, see stage 6)
 
-Never narrate "claims", "grounding", "the ledger", or "the pivot"
-to the user: those are machinery. What you record is the package's working data as soon as it
-lands, carrying your name and the page it came from; never call it "pending review".
+What you record is the package's working data as soon as it lands, carrying your name and the
+page it came from.
 <!-- /user-facing -->
 
 ## What this is, and the boundary
