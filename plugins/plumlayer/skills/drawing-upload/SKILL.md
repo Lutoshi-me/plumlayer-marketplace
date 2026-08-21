@@ -111,9 +111,16 @@ applies unchanged.
 **Re-recognize semantics (the honest limits).** Re-running `recognize_sheets` on a file+delivery is
 always safe: a `stale` or `failed` job restarts; a `succeeded` one returns the existing job and the
 write stays idempotent. That also means this branch cannot force a fresh read of a file+delivery
-that already succeeded: a corrected re-read after a bad run needs the force-re-recognize path,
-which is not built yet. Say so plainly rather than re-running and implying new output.
+that already succeeded: a corrected re-read after a bad run needs a force-re-recognize path, which
+is not built yet. Say so plainly rather than re-running and implying new output.
 
+**Idempotent recognition is not evidence of typing coverage.** A `succeeded` job returning
+unchanged tells you nothing about whether step 6b ever ran for these sheets. A delivery recognized
+before this skill carried a typing stage, or one whose earlier run stopped short of it, looks
+identical from `recognize_sheets_status` alone to a fully typed one. Before this branch reports
+done, check typing coverage directly (as in step 7's verify) rather than inferring it from the
+job's idempotent success. The force-re-recognize gap above is a recognition-fidelity limit only;
+it is never license to skip the typing check, which does not depend on it.
 
 ## 2. Recognize the delivery's packaging
 
@@ -286,6 +293,13 @@ your own corrections alike, into the project's 13-value `sheetType` vocabulary, 
 claim per sheet. This is agent judgment only: the deterministic recognizer never binds a type, and
 an unclear sheet stays untyped rather than getting a guess.
 
+This step runs on every door this skill supports: a fresh baseline, a bulletin or revision, and the
+cloud-resident re-recognition branch (1b) all converge here before the skill reports done. If this
+delivery, or an earlier delivery in the same project, already went through recognition but was
+never typed, whether from a session that predates this step or one that stopped short, closing that
+gap is this run's job, not something to leave for later. A recognized sheet with no `sheetType`
+claim and no honest skip-count is never a valid resting state for any path through this skill.
+
 ### The vocabulary
 
 Exactly these 13 values, no others:
@@ -423,6 +437,14 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    back instead of the payload inline, a poor substitute for a targeted check that also wastes the
    round trip. Reserve `set_grid` for a small project or a later session that genuinely needs the
    whole grid, not this verify step.
+3. **Verify typing coverage against the recognized count, not just pages.** Sum `sheetsGrounded`
+   across every file's succeeded job for this delivery (from step 5) to get the recognized sheet
+   count in scope. Compare it against your own typed-plus-skipped count from step 6b: the sheets
+   you assigned a `sheetType` claim to, plus the ones you counted as honestly unsure. The two
+   totals should reconcile. A gap between them, sheets neither typed nor counted as skipped, means
+   step 6b did not actually reach every sheet in scope: go back and close it before this run
+   reports done, the same way a count mismatch in point 1 stops the run rather than getting waved
+   through.
 
 Point any pages still unresolved, flagged image-only pages, or untyped sheets at `ambiguities(projectId)`
 or the plain untyped count: the review queue, not something this skill resolves itself.
@@ -431,8 +453,9 @@ Report: the
 project and delivery; the recognition run's counts (pages scanned, sheets recognized, how many were
 high-confidence, how many were flagged for a closer look); how many sheet records were saved and how
 many were already on file; the count of entries you added yourself for the sheets you reviewed and
-typed, confirmed against what you sent; and that the set is now readable on plumlayer.com with each
-sheet's source page behind it.
+typed, confirmed against what you sent; whether every recognized sheet in this delivery now carries a
+type or an honest skip-count, naming the gap plainly if there is one; and that the set is now readable
+on plumlayer.com with each sheet's source page behind it.
 <!-- /user-facing -->
 
 ## 8. Extract the spec book's table of contents
@@ -529,6 +552,14 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
 
 ## Gates (non-negotiable)
 
+- **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
+  (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
+  1b, or a corrected re-read once a force-re-recognize path exists) never reaches its closing
+  report while a recognized sheet in scope has had no typing attempt at all. "Unsure, so left
+  untyped and counted" is a valid outcome; "never looked at" is not, on any path, including one
+  where `recognize_sheets` came back already-succeeded with nothing new to write. Step 6b is where
+  every door converges before this skill calls a delivery done, not an optional refinement bolted
+  onto recognition.
 - Every claim's evidence is grounded **cloud-side**: a succeeded `recognize_sheets` job (recorded by
   the server) or a `render_page`/`get_page_text` read you just made. A local read (step 2) may inform
   the packaging report; it never grounds a claim.
