@@ -71,10 +71,11 @@ that relaxes any one of them reproduces a measured, named failure from the valid
 5. **Capture never filters.** Capture is trade-agnostic and complete: everything seen goes into the
    one shared list. Deciding what matters, what's priced, and whose trade it is happens downstream,
    never in the pass that read it.
-6. **Every write is count-verified.** After every batch write, read the record back and confirm the
-   count that landed equals the count sent; check any contested rows individually. The lead
-   re-verifies the counts a pass reports with its own queries: a pass's summary is something to
-   verify, not a fact to relay.
+6. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
+   the record back and confirms the count that landed equals the count sent, and checks any
+   contested rows individually, before it ends. The lead separately re-verifies the same counts
+   with its own queries before the next unit of that pass starts. A reader's report that its
+   batches landed is verified at both its own boundary and the lead's; neither replaces the other.
 7. **The grain bracket.** A scope item is the unit a subcontractor would include / exclude / price
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are the derive stage's output,
@@ -126,13 +127,13 @@ All run working files live under `~/.plumlayer/runs/<project-slug>/` (slug from 
 lowercase, spaces to hyphens; fall back to the projectId). Never committed to any repo, never
 uploaded to the project except record files, never recorded as project entries. The set:
 
-- `ledger.md`: the run ledger, appended as the run proceeds: every pass (round, unit, purpose),
-  every write batch (count sent, count verified, contested), the list of definitions kinds as they
-  land, check-in outcomes, and every deviation or repair. The ledger is what makes the close-out
-  report honest. Audience: agent.
-- `read-plan.md`: the read plan (stage 3): passes, their sheets with file/page references, the
-  trade files each carries, round order, and what is deliberately excluded. Audience: agent. What
-  the user hears at the gate is defined in stage 3.
+- `ledger.md`: the run ledger, appended as the run proceeds: every read unit (round, pass, unit,
+  purpose), every write batch (count sent, reader-verified, lead-verified, contested), the list of
+  definitions kinds as they land, check-in outcomes, and every deviation or repair. The ledger is
+  what makes the close-out report honest. Audience: agent.
+- `read-plan.md`: the read plan (stage 3): passes and the read units within each, their sheets with
+  file/page references, the trade files each pass carries, round order, and what is deliberately
+  excluded. Audience: agent. What the user hears at the gate is defined in stage 3.
 - `context-packet.md`: the compiled context packet, regenerated between rounds (a projection off
   live records, never itself recorded). Audience: agent.
 - `completeness/`: the completeness pass's enumerations, accounting output, and lists of what is
@@ -222,9 +223,15 @@ sampled `search(predicate: "discipline")` reads if the grid file-redirects), the
    plausibly see the same scope (kitchens and unit plans, say) go in different rounds or run one
    after the other: two passes running at once on the same work create it twice. Passes with no
    content overlap may run together inside a round.
+5. **Divide each pass into read units.** Within a pass, the sheets split into read units. A read
+   unit is one sheet. The exception is a multi-page instrument that cannot be understood in parts
+   (a schedule continued across pages, a legend split over sheets, a plan and the enlarged sheet
+   its keynotes point at), which stays one unit, capped at about four pages; beyond that it splits
+   at the page break, and the later unit resolves what the earlier one recorded from the record.
+   List the units in each pass, in reading order.
 
-Write `read-plan.md`: the passes, the sheets in each (numbers plus file/page references), the trade
-files each pass carries, the order the rounds run in, and what is deliberately excluded, named
+Write `read-plan.md`: the passes and the units within each (numbers plus file/page references), the
+trade files each pass carries, the order the rounds run in, and what is deliberately excluded, named
 outright rather than left silent.
 <!-- user-facing -->
 Before any reading runs, tell the user, in a few plain sentences, not a table:
@@ -255,23 +262,35 @@ Per round, in this exact loop:
    paged to the real total; the ledger's list of kinds tracks which exist so far). Depth stays
    in the record: a pass resolves full definitions on demand mid-read (`search(subject:
    "<kind>:<code>")`), never from a paraphrase.
-2. **Start the round's passes** with the pass brief (template below), each carrying: its sheets
-   with file/page references, what it is reading for, the context packet, its trade files, and the
-   mandates verbatim. Give each pass a unique run-prefix (its unit id) when filling the brief's
-   subject scheme, so passes running at the same time can never collide on a created subject. Run
-   passes at the same time only where their content does not overlap. Record each pass in the
-   ledger (unit, purpose).
-3. **Each pass reads deep and records directly**: render plus text per sheet (`render_page` +
-   `get_page_text`), create/update/flag against the live list (pulled fresh via `list_scope_items`
-   + targeted `search` at start), record via `record_batch` (≤500 per call, atomic) or
-   `record_batch_file` for larger runs, verify the counts, report counts and anomalies.
-4. **The lead verifies**: re-run the counts with your own queries (`search` filtered to the pass's
-   sourceInstrument or subjects; `list_scope_items` delta), check contested rows, and record
-   verified counts in the ledger. A mismatch stops the round and gets investigated, never
-   papered over. When passes ran at the same time, also scan the round's new items for overlaps
-   between them: the same work captured from two sides, convention lines especially, since passes
-   running together cannot see each other's new items. List any overlap as a flag for the user at
-   the check-in; merging is a person's call at the review surface, never the lead's.
+2. **Start the round's passes.** Each pass runs as its read units in reading order: one reader per
+   unit, one unit at a time within a pass. A unit starts only after the previous unit of that pass
+   has reported and the lead has confirmed its counts (step 4). Passes whose content does not
+   overlap still run alongside each other. Each reader gets the pass brief (template below) with
+   its unit's pages filled in, carrying: the context packet, the pass's trade files, and the
+   mandates verbatim. Give each unit a unique run-prefix (its unit id) when filling the brief's
+   subject scheme, so concurrent readers can never collide on a created subject. Record each unit
+   in the ledger (round, pass, unit, purpose).
+3. **Each reader reads its unit deep and records directly**: pull the live list fresh at start,
+   scoped to its content families (`list_scope_items` filtered where it can be, plus targeted
+   `search`), never the whole list once the list is large. Render plus text per page
+   (`render_page` + `get_page_text`). Create/update/flag against the live list. Record via
+   `record_batch` (≤500 per call, atomic) or `record_batch_file` for larger runs. Before it ends,
+   the reader reads its own deposit back and confirms the count that landed equals the count sent,
+   rechecks any contested ids, and reports counts and anomalies. A reader that has reported is
+   finished: it holds nothing the next unit needs, because the next unit reads what it recorded
+   from the record.
+4. **The lead verifies per unit, not per round**: re-run the unit's counts with your own queries
+   (`search` filtered to the unit's sourceInstrument or subjects; `list_scope_items` delta), check
+   contested rows, and record verified counts in the ledger. Do this in the same turn that starts
+   the pass's next unit (confirm the previous, start the next), so a pass never waits on a
+   separate verification turn. A mismatch stops that pass and gets investigated, never papered
+   over. A reader that ended without reporting (killed, stalled) is re-run on its own unit:
+   whatever it already recorded is on the record, and the re-run creates/updates against the live
+   list, so nothing is created twice by the re-run. At round end, separately, scan the round's new
+   items for overlaps between passes that ran together: the same work captured from two sides,
+   convention lines especially, since passes running together cannot see each other's new items.
+   List any overlap as a flag for the user at the check-in; merging is a person's call at the
+   review surface, never the lead's.
 5. **Check in with the user** (format below). Move to the next round only on their go-ahead.
 
 ## 5. The completeness check (standing, with a closure loop)
@@ -390,10 +409,6 @@ failure.
 
 ```text
 You are reading a construction drawing set for scope, for a Plumlayer project record.
-Project: <projectId>. Round: <round number>. Your pass: <pass name> — sheets <numbers, with
-fileId + 1-based pageInPdf for each>. You are reading for: <legends and schedules, recording what
-the marks mean and the scope the schedules ground | plans, recording scope where it is shown>.
-Content: <content families>.
 
 Context: the run context packet is below <or attached>. It carries the project's identity,
 systems, scope areas, set shape, hazards, and the definitions index (code → kind → name → where
@@ -404,9 +419,11 @@ pattern — query the record (store-resolution is mandatory).
 Trade knowledge: the trade files below <or attached> carry grain rules, seams, and convention
 lines for your content families. Knowledge version: <version from MANIFEST.md>.
 
-Read every sheet in your pass deep: render_page + get_page_text on each page (render for layout
+Read every page in your unit deep: render_page + get_page_text on each page (render for layout
 and meaning, text for exact tokens). Then emit against the live scope list, which you pull fresh
-at start (list_scope_items, plus targeted search):
+at start, scoped to your content families (list_scope_items filtered where it can be, plus
+targeted search). Items other units of your pass recorded are on the record; resolve them from
+there, not from anything you remember.
 
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
    resolved reference) for work already listed; FLAG an observation (a gap, an anomaly, an
@@ -439,12 +456,19 @@ at start (list_scope_items, plus targeted search):
 7. RECORD directly: record_batch (≤500 per call; subjects scopeItem:<run-prefix>-<seq> for
    new items; the item's existing subject for updates), or upload a JSONL and record_batch_file
    for large runs. After every batch, VERIFY: read the record back and confirm the count that
-   landed equals the count sent; recheck any contested ids individually. Report exact counts.
+   landed equals the count sent; recheck any contested ids individually. This read-back happens
+   before you finish and is part of your report: if you cannot confirm your counts, report the
+   mismatch and stop rather than reporting success.
 8. Legends-and-schedules passes only: also record what the schedules define (extending the
    existing subject kinds you see in the definitions index — never creating a parallel
    vocabulary), AND own the scope items the schedules themselves ground: a schedule row family
    that is real priced work becomes scope items at the grain bracket, cited to the schedule
    sheet + page.
+
+Your pass: <pass name>. Your unit: <unit id>, pages <sheet numbers, with fileId + 1-based
+pageInPdf for each>. Project: <projectId>. Round: <round number>. You are reading for: <legends
+and schedules, recording what the marks mean and the scope the schedules ground | plans, recording
+scope where it is shown>. Content: <content families>.
 
 Report back: counts (created / updated / flagged, recorded / verified / contested), the
 definitions kinds you added (if any), anomalies and document defects you flagged, convention
