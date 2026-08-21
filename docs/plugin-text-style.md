@@ -10,7 +10,9 @@ so a violation fails the release rather than waiting for someone to notice.
 
 Plugin text serves two readers, and confusing them is the most expensive mistake available here.
 
-**Agent-facing text** is the instructional body of a skill. The agent reads it to do the work.
+**Agent-facing text** is the instructional body of a skill, and the whole body of an agent
+definition under `agents/`, which a dispatched agent reads as its system prompt. The agent reads it
+to do the work.
 Machinery vocabulary belongs here and is load-bearing: `claim`, `predicate`, `trust class`,
 `supersede`, real verb names, real field names. Do not "de-jargon" this text. Precision here is
 what makes the product reliable.
@@ -113,7 +115,10 @@ Each of these is a harness check.
 
 1. The version quadruple in lockstep: both `marketplace.json` version fields, the Claude
    `plugin.json`, and the Codex `.codex-plugin/plugin.json`.
-2. The shipped skill set matches the expected set exactly, in both directions.
+2. The shipped skill set matches the expected set exactly, in both directions, and so does the
+   shipped agent set under `agents/`. Every agent definition carries a `name` and a `description`,
+   and none declares `hooks`, `mcpServers`, or `permissionMode`, the three fields the runtime
+   ignores for plugin-shipped agents.
 3. Every frontmatter description is non-empty, folded style, and at most 600 characters.
 4. No banned string in any shipped text: client-name denylist, `PLU-\d+`, internal vault filenames,
    `MOSOT`, em dash, middle dot.
@@ -123,7 +128,7 @@ Each of these is a harness check.
    the D6 rewrite, commit `8096333`), not "is this word acceptable" in general. Two scopes:
    - A **whole-file** list (e.g. `residue`, `roster`, `checkpoint`, `mint`, `enrich`, `operator` as
      the name for the person, `deposit`, `proposed`, `trade-packages`) must not appear anywhere in a
-     shipped skill, the README, or a manifest. A literal, current identifier that happens to share
+     shipped skill, an agent definition, the README, or a manifest. A literal, current identifier that happens to share
      the retired word — the API field `residue`, the `operator.json` filename, the JSON key
      `"operator"` — is exempt; it is a real name, not the retired concept.
    - A **scoped** list (e.g. `supersede`/`supersession`, `fan-out`, `idempotency`, `census`,

@@ -10,6 +10,10 @@ Checks:
      skill set matches EXPECTED_SKILLS exactly, in both directions.
   4. Description contract: every skill description is non-empty, folded YAML
      style (`description: >`), and at most DESC_MAX_CHARS characters.
+  4b. Agents: every agents/*.md has a non-empty `name` and `description`; the
+     shipped agent set matches EXPECTED_AGENTS exactly, in both directions;
+     and no agent declares a frontmatter field the runtime ignores for
+     plugin-shipped agents (`hooks`, `mcpServers`, `permissionMode`).
   5. No banned string in shipped text: client-name denylist, `PLU-\\d+`,
      internal vault filenames, `MOSOT`, em dash, middle dot. Em dash and
      middle dot are exempt inside fenced code blocks and inline code spans
@@ -60,6 +64,19 @@ EXPECTED_SKILLS = {
     "setup",
     "takeoff",
 }
+
+# The agent definitions the plugin ships under agents/. Both are dispatched by
+# the scope run: the lead starts one round runner per round, and the runner
+# starts one reader per read unit.
+EXPECTED_AGENTS = {
+    "scope-reader",
+    "scope-round-runner",
+}
+
+# Frontmatter fields the runtime ignores for plugin-shipped agents. Declaring
+# one is not a load error, which is exactly why it needs catching here: it
+# reads as configured behavior and silently isn't.
+AGENT_UNSUPPORTED_FIELDS = ("hooks", "mcpServers", "permissionMode")
 
 # Hard ceiling on a skill's frontmatter description length (chars). Above
 # this is a FAIL, not a warning — docs/plugin-text-style.md §2.
@@ -352,6 +369,69 @@ def check_skills(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
+# Check — Agents
+# --------------------------------------------------------------------------- #
+
+def check_agents(plugin_path: Path) -> Result:
+    """
+    The plugin ships agent definitions under agents/ at the plugin root (the
+    location the runtime reads them from). This check proves the shipped set
+    is exactly EXPECTED_AGENTS, that each file carries a usable `name` and
+    `description`, and that none declares a field the runtime ignores for
+    plugin-shipped agents.
+    """
+    name = "agents-frontmatter"
+    agents_dir = plugin_path / "agents"
+    if not agents_dir.is_dir():
+        return Result(name, False, detail=f"agents/ directory not found at {agents_dir}")
+
+    agent_files = sorted(agents_dir.rglob("*.md"))
+    if not agent_files:
+        return Result(name, False, detail="no agent definitions found in agents/")
+
+    errors: list[str] = []
+    seen_names: dict[str, str] = {}  # agent name -> file name
+
+    for agent_file in agent_files:
+        fm = _parse_frontmatter(agent_file)
+
+        agent_name = fm.get("name", "").strip()
+        if not agent_name:
+            errors.append(f"{agent_file.name}: frontmatter `name` is missing or empty")
+        elif agent_name in seen_names:
+            errors.append(
+                f"duplicate agent name '{agent_name}' in files "
+                f"'{seen_names[agent_name]}' and '{agent_file.name}'"
+            )
+        else:
+            seen_names[agent_name] = agent_file.name
+
+        if not fm.get("description", "").strip():
+            errors.append(f"{agent_file.name}: frontmatter `description` is missing or empty")
+
+        for field in AGENT_UNSUPPORTED_FIELDS:
+            if field in fm:
+                errors.append(
+                    f"{agent_file.name}: declares `{field}`, which the runtime ignores "
+                    f"for plugin-shipped agents"
+                )
+
+    found_names = set(seen_names.keys())
+    missing = EXPECTED_AGENTS - found_names
+    unexpected = found_names - EXPECTED_AGENTS
+    if missing:
+        errors.append(f"expected agents missing: {sorted(missing)}")
+    if unexpected:
+        errors.append(f"unexpected agent names (not in expected set): {sorted(unexpected)}")
+
+    detail_parts = [f"{len(agent_files)} agent files scanned, {len(found_names)} valid names found"]
+    if errors:
+        detail_parts.extend(errors)
+
+    return Result(name, passed=len(errors) == 0, detail="; ".join(detail_parts))
+
+
+# --------------------------------------------------------------------------- #
 # Check — Description contract
 # --------------------------------------------------------------------------- #
 
@@ -557,6 +637,13 @@ def _collect_scope_files(
     skills_dir = plugin_path / "skills"
     if skills_dir.is_dir():
         full_scope_files.extend(sorted(skills_dir.rglob("*.md")))
+
+    # Agent definitions are shipped text in the plugin's own voice, and a
+    # dispatched agent reads them as its whole system prompt, so they get the
+    # same scan a skill body does.
+    agents_dir = plugin_path / "agents"
+    if agents_dir.is_dir():
+        full_scope_files.extend(sorted(agents_dir.rglob("*.md")))
 
     readme = marketplace_root / "README.md"
     if readme.exists():
@@ -1060,6 +1147,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_cli_validate(plugin_path),
         check_version_quadruple(plugin_path, marketplace_root),
         check_skills(plugin_path),
+        check_agents(plugin_path),
         check_description_contract(plugin_path),
         check_banned_strings(plugin_path, marketplace_root),
         check_retired_vocabulary(plugin_path, marketplace_root),
