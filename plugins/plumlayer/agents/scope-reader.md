@@ -100,6 +100,7 @@ unit: <unit id>   pass: <pass name>   round: <n>
 pages read: <sheet number + pageInPdf, one per page read>
 pages unread: <sheet number + pageInPdf + reason, or "none">
 created: <n>   updated: <n>   flagged: <n>
+updated subjects: <the subject of every item you updated, or "none">
 sent: <n>   landed: <n>   contested: <ids and how each resolved, or "none">
 definitions kinds added: <kinds, or "none">
 convention lines: emitted <n>; inapplicable: <line + reason, one per line, or "none">
@@ -107,6 +108,10 @@ anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
+
+The `updated subjects:` line is load-bearing, not bookkeeping. Your creates are findable by their
+`scopeItem:<unit-id>-` prefix, but an update lands on a subject that already existed, so nothing
+else in your report lets the runner find it back. Name every one.
 
 An unread page is named, never silently skipped. Your reading is your word: it lands under your
 authorship and governs provisionally, so flag what you are unsure of rather than smoothing it.

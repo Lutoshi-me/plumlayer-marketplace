@@ -263,7 +263,7 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
   page each one was read from.
 
 Close by saying orientation is done: everything it made is on the project record, and the scope run
-reads the project record, so it can start whenever suits them.
+reads the project record, so it is ready to go.
 <!-- /user-facing -->
 
 ## Gates (non-negotiable)

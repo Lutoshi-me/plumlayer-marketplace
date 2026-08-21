@@ -1,6 +1,6 @@
 ---
 name: scope-round-runner
-description: Runs one round of a Plumlayer scope run, or the completeness pass, end to end: recompiles the definitions index, dispatches one scope-reader per read unit, verifies every unit against the record, scans for overlaps, appends the run ledger, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per round.
+description: Runs one round of a Plumlayer scope run, or the completeness pass, end to end. Recompiles the definitions index, dispatches one scope-reader per read unit, verifies every unit against the record, scans for overlaps, appends the run ledger, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per round.
 tools: Agent(scope-reader), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__*
 ---
 
@@ -30,27 +30,41 @@ If either is missing, say so and stop rather than running against a plan you inv
    The mandates are not in this file. They live in the `scope-reader` agent definition and are never
    restated, trimmed, or overridden here.
 3. **Run each pass as its read units, in reading order, one unit at a time within a pass.** Passes
-   whose content does not overlap run alongside each other. For each unit, dispatch one fresh
+   whose content does not overlap run alongside each other. You dispatch exactly one agent type,
+   `plumlayer:scope-reader`, and never any other. The parenthesized list on your `tools` line records
+   that intent and does not enforce it, since a type list inside `Agent(...)` is ignored for an agent
+   running as a subagent, so keeping to it is yours to do. For each unit, dispatch one fresh
    `plumlayer:scope-reader` with a pointer dispatch carrying: project id, round, pass name, unit id,
    the unit's pages (sheet number, `fileId`, 1-based `pageInPdf` for each), the run folder path, the
    context packet path, the pass brief path, and the trade file paths. Paste nothing from those
    files into the dispatch. Give each unit a unique run-prefix, its unit id, so concurrent readers
    can never collide on a created subject. Record each unit in the ledger before it starts: round,
    pass, unit, purpose.
-4. **Verify per unit, not per round.** When a unit reports, re-run its counts with your own `search`
-   calls, filtered to the unit's `sourceInstrument` or its subject prefix, `limit: 1`, reading the
-   `count` the record returns for the filter, and check contested rows individually by subject. This
-   is count-only: never a row list, and never `list_scope_items`, which returns the whole projected
-   scope list, unbounded. Append the verified counts to the ledger: count sent,
-   reader-verified, runner-verified, contested. The reader's own verification and yours are two
-   separate boundaries and neither replaces the other. Start that pass's next unit only when the
+4. **Verify per unit, not per round.** When a unit reports, verify it against the record yourself,
+   within what `search` can actually filter on, which is subject (exact), predicate, trustClass, and
+   a `text` substring across subject, predicate, and value. There is no `sourceInstrument` filter, so
+   do not pretend to one.
+   - **Created items, by count.** `search(text: "scopeItem:<unit-id>-", limit: 1)` and read `count`.
+     That is a real total over the entries the unit's subject prefix matches, taken independently of
+     what the reader told you. Record it in the ledger as an entry count under that prefix, which is
+     what it is, not as an item count.
+   - **Updated and flagged items, by subject.** These carry pre-existing subjects, so no prefix
+     finds them. Read back the subjects the reader named in its `updated subjects:` and flag lines,
+     `search(subject: "<subject>")` each, and confirm the update landed. Anything the reader named
+     that you cannot find back is a mismatch.
+   - Never a row list of the whole project, and never `list_scope_items`, which returns the whole
+     projected scope list, unbounded.
+
+   Append to the ledger: count sent, reader-verified, runner-verified, contested. The reader's own
+   verification and yours are two separate boundaries and neither replaces the other. Start that
+   pass's next unit only when the
    previous unit's counts confirm. A mismatch stops that pass and gets investigated, never papered
    over. A reader that ended without reporting (killed, stalled) is re-run on its own unit:
    whatever it already recorded is on the record, and the re-run creates or updates against the live
    list, so nothing is created twice by the re-run.
 5. **Flag overlaps.** The overlap scan needs names, so it reads rows rather than counts, and it
-   stays bounded to what this round created: `search` filtered to the round's own units, paged, never
-   the whole scope list. As part of each unit's verify, list any new item from that unit whose name
+   stays bounded to what this round created: `search(text: "scopeItem:<unit-id>-")` per unit, paged,
+   never the whole scope list. As part of each unit's verify, list any new item from that unit whose name
    matches an earlier unit's new item in the same pass. At round end, separately, scan the round's
    new items for overlaps between passes that ran together: the same work captured from two sides,
    convention lines especially, since passes running together cannot see each other's new items.
@@ -113,13 +127,24 @@ the next round reads it from.
 round: <n, or "completeness">   passes: <pass names>
 units read: <unit ids, in reading order>
 per unit: <unit id> created <n> updated <n> flagged <n> verified <yes/no>
-totals verified: created <n>, updated <n>, flagged <n>
+totals verified: created <n> (entry count under the unit prefixes), updated <n>, flagged <n>
 contested rows: <id + how each resolved, or "none">
 overlap flags: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 unread pages: <sheet + page + reason, one per line, or "none">
 definitions kinds added: <kinds, or "none">
-still open: <completeness mode only: one line per unaccounted row, or "none">
 deviations and repairs: <one line each, or "none">
 ledger: <path>, appended through <last line written>
+```
+
+In completeness mode, add these lines, giving the accounting before the closure loop and again
+after it, so the lead can say what was enumerated and what closed:
+
+```text
+enumerated: <n>
+first pass: accounted <n>, plausibly carried <n>, not scope <n>, unaccounted <n>
+after closure: accounted <n>, plausibly carried <n>, not scope <n>, unaccounted <n>
+supplemental units run: <unit ids, or "none">
+still open: <one line per unaccounted row, naming it, or "none">
+spec sections bundled: <n>; TOC sections seen unbundled so far: <n>
 ```
