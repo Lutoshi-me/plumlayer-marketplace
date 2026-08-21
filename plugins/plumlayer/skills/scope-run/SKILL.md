@@ -39,8 +39,8 @@ what the spec TOC could not see, shows what it did, and tags; they stay editable
 is a change on the site or a tool call.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
-untraced.** Everything a pass records is its own reading, cited, carrying its authorship trail; it
-becomes working truth the moment it lands; anything a person changes wins.
+untraced.** Everything a reader records is its own reading, cited, carrying its authorship trail;
+it becomes working truth the moment it lands; anything a person changes wins.
 
 ## The non-negotiables
 
@@ -55,9 +55,9 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    its content families as match-or-create context: for each thing seen, create a new item, update an existing one (a new
    citation, a note, a resolved cross-reference), or flag an observation. Never a parallel list,
    never a re-create of what exists, never silent skipping of what's already listed.
-3. **The convention-line emit mandate.** A pass whose trade files carry convention lines for the
+3. **The convention-line emit mandate.** A reader whose trade files carry convention lines for the
    content families it reads MUST emit them: create if absent from the live list, update if
-   present. Silence is a violation, not a judgment call; a pass judging a convention line
+   present. Silence is a violation, not a judgment call; a reader judging a convention line
    inapplicable to this project flags that with its reason. Convention lines never masquerade
    as sheet-cited reads: their `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>`
    (the pinned version from the knowledge manifest), their evidence quotes the trade file's line and
@@ -70,7 +70,7 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    inherited marks being misidentified.
 5. **Capture never filters.** Capture is trade-agnostic and complete: everything seen goes into the
    one shared list. Deciding what matters, what's priced, and whose trade it is happens downstream,
-   never in the pass that read it.
+   never in the reader that read it.
 6. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
    the record back and confirms the count that landed equals the count sent, and checks any
    contested rows individually, before it ends. The lead separately re-verifies the same counts
@@ -79,7 +79,7 @@ that relaxes any one of them reproduces a measured, named failure from the valid
 7. **The grain bracket.** A scope item is the unit a subcontractor would include / exclude / price
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are the derive stage's output,
-   never the pass's). One item per sheet is a ceiling violation; one item per instance is a floor
+   never the reader's). One item per sheet is a ceiling violation; one item per instance is a floor
    violation. Where the trade file's grain section is silent, create at best judgment AND flag the
    grain question: recall never drops to grain uncertainty.
 8. **Definitions before placements.** A pass reads only after the passes it references are already
@@ -98,7 +98,7 @@ that relaxes any one of them reproduces a measured, named failure from the valid
     the end is reported by name: never assumed closed, never zeroed by hope.
 
 Also: never author door-owned records. Retractions, flag resolutions, and questions-as-answers are
-created only at their own doors: a pass that thinks an item should be deleted or a flag should be
+created only at their own doors: a reader that thinks an item should be deleted or a flag should be
 closed says so in its report; a person acts at the door.
 
 ## The scope item row
@@ -149,8 +149,8 @@ drawings will not say: how the trade bids, scope grain rules, exclusions and cou
 furnish/install seams, convention work no sheet states. `MANIFEST.md` there records the knowledge
 version and source snapshot: read it at run start, record the version in the ledger, and cite it
 in every convention-line record (`trade-convention:<trade>@<version>`). Each pass carries the trade
-files relevant to its content families as part of its brief. Where a trade file is silent, the pass
-creates at best judgment and flags the question (non-negotiable 7); the flag is a suggested
+files relevant to its content families as part of its brief. Where a trade file is silent, the
+reader creates at best judgment and flags the question (non-negotiable 7); the flag is a suggested
 amendment to that trade file, surfaced in the close-out report.
 
 ## 1. Preconditions
@@ -225,10 +225,13 @@ sampled `search(predicate: "discipline")` reads if the grid file-redirects), the
    content overlap may run together inside a round.
 5. **Divide each pass into read units.** Within a pass, the sheets split into read units. A read
    unit is one sheet. The exception is a multi-page instrument that cannot be understood in parts
-   (a schedule continued across pages, a legend split over sheets, a plan and the enlarged sheet
-   its keynotes point at), which stays one unit, capped at about four pages; beyond that it splits
-   at the page break, and the later unit resolves what the earlier one recorded from the record.
-   List the units in each pass, in reading order.
+   (a schedule continued across pages, a legend split over sheets), which stays one unit, at most
+   four pages; beyond that it splits at the page break, and the later unit resolves what the
+   earlier one recorded from the record. Sheets that reference each other but are not contiguous
+   (a plan and the enlarged sheet its keynotes point at) are separate units; the later one resolves
+   what the earlier recorded from the record. A row that continues across the split belongs to the
+   unit that reads its first page, which reads the continuation page for that row only. List the
+   units in each pass, in reading order.
 
 Write `read-plan.md`: the passes and the units within each (numbers plus file/page references), the
 trade files each pass carries, the order the rounds run in, and what is deliberately excluded, named
@@ -270,9 +273,14 @@ Per round, in this exact loop:
    mandates verbatim. Give each unit a unique run-prefix (its unit id) when filling the brief's
    subject scheme, so concurrent readers can never collide on a created subject. Record each unit
    in the ledger (round, pass, unit, purpose).
-3. **Each reader reads its unit deep and records directly**: pull the live list fresh at start,
-   scoped to its content families (`list_scope_items` filtered where it can be, plus targeted
-   `search`), never the whole list once the list is large. Render plus text per page
+3. **Each reader reads its unit deep and records directly**: at start, pull the scope items for its
+   content families with `search` by the `category` predicate and each category string it will
+   use, paged to the real total. Where the list is still small (say, under a few hundred items),
+   pulling the whole list with `list_scope_items` is fine and simpler; a reader may do either.
+   Before every CREATE, run one `search(text: <two or three distinguishing words of the item's
+   name>)` across the whole project; if a scope item matches, UPDATE that item instead of
+   creating a new one. This is what keeps non-negotiable 2 (never re-create what exists) true when
+   a reader has not read the whole list. Render plus text per page
    (`render_page` + `get_page_text`). Create/update/flag against the live list. Record via
    `record_batch` (≤500 per call, atomic) or `record_batch_file` for larger runs. Before it ends,
    the reader reads its own deposit back and confirms the count that landed equals the count sent,
@@ -281,10 +289,12 @@ Per round, in this exact loop:
    from the record.
 4. **The lead verifies per unit, not per round**: re-run the unit's counts with your own queries
    (`search` filtered to the unit's sourceInstrument or subjects; `list_scope_items` delta), check
-   contested rows, and record verified counts in the ledger. Do this in the same turn that starts
-   the pass's next unit (confirm the previous, start the next), so a pass never waits on a
-   separate verification turn. A mismatch stops that pass and gets investigated, never papered
-   over. A reader that ended without reporting (killed, stalled) is re-run on its own unit:
+   contested rows, and record verified counts in the ledger. As part of this verify, list any new
+   item from this unit whose name matches an earlier unit's new item in the same pass, as an
+   overlap flag for the check-in: the intra-pass counterpart of the round-end scan below. The lead
+   starts the pass's next unit in the same turn only when the previous unit's counts confirm; a
+   mismatch stops that pass instead and gets investigated, never papered over. A reader that ended
+   without reporting (killed, stalled) is re-run on its own unit:
    whatever it already recorded is on the record, and the re-run creates/updates against the live
    list, so nothing is created twice by the re-run. At round end, separately, scan the round's new
    items for overlaps between passes that ran together: the same work captured from two sides,
@@ -402,13 +412,16 @@ Report to the user, in plain words:
   don't apply to this job.
 <!-- /user-facing -->
 
-## The pass brief (template: every pass carries this, mechanically)
+## The pass brief (template: every reader carries this, mechanically)
 
 Fill the slots; never trim the mandates. A brief that omits a mandate reproduces a measured
 failure.
 
 ```text
 You are reading a construction drawing set for scope, for a Plumlayer project record.
+
+You are reading for: <legends and schedules, recording what the marks mean and the scope the
+schedules ground | plans, recording scope where it is shown>. Content: <content families>.
 
 Context: the run context packet is below <or attached>. It carries the project's identity,
 systems, scope areas, set shape, hazards, and the definitions index (code → kind → name → where
@@ -420,15 +433,18 @@ Trade knowledge: the trade files below <or attached> carry grain rules, seams, a
 lines for your content families. Knowledge version: <version from MANIFEST.md>.
 
 Read every page in your unit deep: render_page + get_page_text on each page (render for layout
-and meaning, text for exact tokens). Then emit against the live scope list, which you pull fresh
-at start, scoped to your content families (list_scope_items filtered where it can be, plus
-targeted search). Items other units of your pass recorded are on the record; resolve them from
-there, not from anything you remember.
+and meaning, text for exact tokens). Then emit against the live scope list. At start, pull the
+scope items for your content families with search by the category predicate and each category
+string you will use, paged to the real total (or, where the list is still small, pull the whole
+list with list_scope_items). Items other units of your pass recorded are on the record; resolve
+them from there, not from anything you remember.
 
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
    resolved reference) for work already listed; FLAG an observation (a gap, an anomaly, an
    ungrounded reference you will not create, a grain question where the trade file is silent).
-   Never a parallel list; never re-create; never silently skip.
+   Never a parallel list; never re-create; never silently skip. Before every CREATE, run one
+   search on two or three distinguishing words of the item's name across the whole project; if a
+   scope item matches, UPDATE that item instead.
 2. CONVENTION LINES: for each convention line in your trade files that applies to your content
    families, create it if absent from the live list or update it if present —
    sourceInstrument "trade-convention:<trade>@<version>", evidence quoting the trade file's line
@@ -466,9 +482,7 @@ there, not from anything you remember.
    sheet + page.
 
 Your pass: <pass name>. Your unit: <unit id>, pages <sheet numbers, with fileId + 1-based
-pageInPdf for each>. Project: <projectId>. Round: <round number>. You are reading for: <legends
-and schedules, recording what the marks mean and the scope the schedules ground | plans, recording
-scope where it is shown>. Content: <content families>.
+pageInPdf for each>. Project: <projectId>. Round: <round number>.
 
 Report back: counts (created / updated / flagged, recorded / verified / contested), the
 definitions kinds you added (if any), anomalies and document defects you flagged, convention
