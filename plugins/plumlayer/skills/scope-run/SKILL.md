@@ -245,12 +245,9 @@ Tell them what the run will do: you read the set in rounds and build
    one scope list off it, stopping for a check-in after every round, and they can stop or change
    course at any check-in. Give a rough sense of how long this set will take from its size, and
    confirm they are staying for the check-ins.
-
-   This skill starts in its own session. If an upload or an orientation pass already ran in this
-   conversation, say so plainly and ask for a fresh session before starting.
 <!-- /user-facing -->
-   That is the only place in this skill a session is ever mentioned, and it is at run start. No
-   check-in, no report, and no gate ever raises it again.
+   Where it can, the run starts from a clean conversation, but it never raises sessions,
+   compaction, context, or usage with the user, at run start or at any point after it.
 
 ## 2. Context floor
 
