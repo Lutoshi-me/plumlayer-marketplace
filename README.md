@@ -84,7 +84,7 @@ and nine skills that use it.
   job, checks it for gaps, then splits it into trade packages. Draws on a bundled reference set of
   44 trade packages (see below) so each split follows how that trade actually bids and scopes work
   in the market.
-- **`bid-intake`**: reads a trade's sub proposals and turns them into bid responses against the
+- **`bid-intake`**: reads a trade's sub proposals and turns them into bid records against the
   matching trade package, so you can level bids side by side with the amounts, inclusions, and
   exclusions each sub actually quoted.
 

@@ -40,4 +40,4 @@ Not yet mapped (no or near-no corpus): utilities as a standalone package, jobsit
 Division 01, pools and water features, fireplaces, site furnishings, EV charging as a package,
 tower crane / hoisting, structural steel as its own package (misc-metals holds the boundary).
 A reader hitting one of these trades creates at best judgment where no trade file covers it, and
-flags the grain as unspecced, per the `scope-run` skill's mandates.
+flags the grain question, per the `scope-run` skill's mandates.

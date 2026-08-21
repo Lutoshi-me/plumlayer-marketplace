@@ -43,7 +43,7 @@ the project record.
    is for, get its `projectId`. If there is no project yet, hand off to `project-create` first, the
    same way `drawing-upload` step 1 does.
 2. **The baseline set is recognized.** Orientation reads the base set shape, it does not need revisions
-   or bulletins to have landed, and spec-TOC presence is optional/best-effort, **not** a precondition.
+   or bulletins to have landed, and spec-TOC presence is optional/best-effort, not a precondition.
    What it does need is a delivery that has actually been through `recognize_sheets`. There is normally no
    retained `jobId` to poll at orientation time (that job ran, and finished, in an earlier session), so
    confirm recognition by its observable effect rather than by re-polling a job you don't hold: call

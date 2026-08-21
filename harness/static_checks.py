@@ -17,9 +17,20 @@ Checks:
      pinned trade-knowledge/ corpus files (read from MANIFEST.md's own
      Trade files list) get the client-name-only scan; MANIFEST.md itself and
      any other file in that directory get the full scan by default.
-  6. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
-  7. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
-     plugin.json (Claude), plugin.json (Codex), or marketplace.json.
+  6. Retired vocabulary regression guard: a curated list of names retired by
+     the D6 vocabulary sweep (commit 8096333 and follow-ups) must not creep
+     back in. Whole-file terms (e.g. `residue`, `roster`, `operator` as the
+     name for the person) are banned everywhere in the full-scope files;
+     scoped terms (e.g. `supersede`, `fan-out`, `census`) are legitimate
+     agent-facing machinery and are banned only inside a
+     `<!-- user-facing -->` span or an `Audience: user` artifact clause.
+  7. Bold-for-emphasis on a short, high-precision denylist of ordinary words
+     (`not`, `never`, `only`, ...) not immediately followed by a colon.
+  8. Title-Case pseudo-heading lines (advisory only — reported as a WARN,
+     never fails the release; see the check's own docstring for why).
+  9. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
+  10. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
+      plugin.json (Claude), plugin.json (Codex), or marketplace.json.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -521,9 +532,27 @@ def _pinned_trade_package_names(trade_knowledge_dir: Path) -> set[str] | None:
     return names if names else None
 
 
-def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
-    name = "banned-strings"
+def _collect_scope_files(
+    plugin_path: Path, marketplace_root: Path
+) -> tuple[list[Path], list[Path], str | None]:
+    """
+    Shared file-scope collection for every text-content check (banned
+    strings, retired vocabulary, bold/Title-Case). Returns
+    (full_scope_files, client_only_files, warning):
 
+    - full_scope_files: every shipped-skill .md, README.md, the manifest
+      JSON files, and any trade-knowledge/ file that is NOT one of the
+      pinned corpus files (e.g. MANIFEST.md itself) — this is the plugin's
+      own prose, in its own voice, and gets the strictest scan.
+    - client_only_files: the pinned, corpus-derived trade files (currently
+      44), which get a lighter client-name-only scan elsewhere — ordinary
+      trade vocabulary there (e.g. "deposit", "proposed") is real and
+      expected, not a style violation.
+    - warning: set when trade-knowledge/MANIFEST.md's own Trade files list
+      couldn't be parsed, in which case every trade-knowledge file was
+      folded into full_scope_files as the fail-safe default (never silently
+      guessed into the lenient scan).
+    """
     full_scope_files: list[Path] = []
     skills_dir = plugin_path / "skills"
     if skills_dir.is_dir():
@@ -544,6 +573,7 @@ def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
     client_only_files: list[Path] = []
     trade_knowledge_dir = plugin_path / "trade-knowledge"
     pinned_names: set[str] | None = None
+    warning: str | None = None
     if trade_knowledge_dir.is_dir():
         pinned_names = _pinned_trade_package_names(trade_knowledge_dir)
         for f in sorted(trade_knowledge_dir.rglob("*.md")):
@@ -554,6 +584,19 @@ def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
                 client_only_files.append(f)
             else:
                 full_scope_files.append(f)
+        if pinned_names is None:
+            warning = (
+                "could not parse trade-knowledge/MANIFEST.md's Trade files list, "
+                "so every trade-knowledge file was scanned at full strictness as a safe default"
+            )
+
+    return full_scope_files, client_only_files, warning
+
+
+def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "banned-strings"
+
+    full_scope_files, client_only_files, warning = _collect_scope_files(plugin_path, marketplace_root)
 
     hits: list[str] = []
     for f in full_scope_files:
@@ -565,12 +608,382 @@ def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
         f"{len(full_scope_files)} files under full banned-set scan, "
         f"{len(client_only_files)} pinned trade files under client-name-only scan"
     )
-    if trade_knowledge_dir.is_dir() and pinned_names is None:
-        detail += " | WARNING: could not parse trade-knowledge/MANIFEST.md's Trade files list, so every trade-knowledge file was scanned at full strictness as a safe default"
+    if warning:
+        detail += f" | WARNING: {warning}"
     if hits:
         detail += " | " + "; ".join(hits)
 
     return Result(name, passed=len(hits) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check — Retired vocabulary regression guard (PLU-1346)
+# --------------------------------------------------------------------------- #
+#
+# The estimator-block enumeration and its byte-identical harness check were
+# deleted entirely (commit 8096333, "Rewrite scope-run vocabulary; delete the
+# estimator block everywhere") in favor of doctrine D6 (Luke): don't ban a
+# word and demand a live replacement — give every concept one settled name,
+# used identically on both sides of the user/agent boundary. This check does
+# NOT reintroduce that deleted mechanism. It is narrower and different in
+# kind: a regression guard for the SPECIFIC old names that D6's sweep (and
+# its follow-up commits) actually retired, so a stale name can't quietly
+# creep back into new text. It is not a live style enforcement layer and it
+# is not meant to grow into one.
+#
+# Two scopes, matching docs/plugin-text-style.md §1's two-audience split:
+#
+#   - RETIRED_WHOLE_FILE_TERMS never appear anywhere in a full-scope file
+#     (the same `full_scope_files` set `check_banned_strings` already scans —
+#     shipped skills, README, manifests; NOT the pinned trade-knowledge
+#     corpus, where ordinary English collides with several of these names —
+#     see the false-positive notes below).
+#   - RETIRED_SCOPED_TERMS are legitimate agent-facing machinery vocabulary
+#     everywhere else in a skill file; they are banned only where the file
+#     itself declares the text user-facing: inside a
+#     `<!-- user-facing --> ... <!-- /user-facing -->` span, or inside an
+#     `Audience: user` artifact clause.
+#
+# Deliberately NOT included, even though each term appears in the source
+# vocabulary work that motivated this issue, because each is ordinary
+# English or real, current construction-industry vocabulary and would make
+# this check noisy enough to get waived (this issue's own stated risk):
+#
+#   stage      - skills use "Stage 1/2/3" as their own structural headers
+#   door       - sign-off doors (real doctrine term) + a literal takeoff/sheet item
+#   edge       - "Edge of Slab" (E.O.S.) is a real, current sheet type
+#   slot, receipt, ledger, reader, engine
+#   packet     - "submittal packet" is real, current trade vocabulary
+#   dispatch   - bare word; "dispatch a crew to the site" is real construction usage
+#   governing  - "governing code" / "governing authority" is real construction vocabulary
+#   promote, reconcile - "index reconciliation" is a real, CURRENTLY SHIPPED
+#                        feature (reconcile_index / reconcile_set are live MCP
+#                        verbs) — banning "reconcile" would false-positive on
+#                        real product vocabulary
+#   QA, grounding - electrical grounding is real trade vocabulary
+#   projection, drift, backstop, wave, bundle
+#
+# Deviation from the issue brief: "trust class" is NOT whole-file banned.
+# It is live, current, agent-facing machinery vocabulary —
+# docs/plugin-text-style.md §1 itself names it as a load-bearing example of
+# what should NOT be de-jargoned ("claim, predicate, trust class,
+# supersede"), and plugins/plumlayer/skills/project-record/SKILL.md uses it
+# correctly and currently. Only the trust-class VALUE "proposed" was
+# retired (renamed to "recorded", commit 92e8243) — the field/concept name
+# itself was never deleted. A whole-file ban on the phrase would fail the
+# harness on real, correct, current text. It is instead added to
+# RETIRED_SCOPED_TERMS below: the user should never read "trust class" (this
+# repo's own estimator-words rule), but the agent legitimately reads and
+# writes it.
+
+RETIRED_WHOLE_FILE_TERMS: list[tuple[str, re.Pattern, bool]] = [
+    (
+        "'residue' as the retired open-items concept (renamed to 'open items'; "
+        "the API field `residue` is a real, current identifier and is exempt in code spans)",
+        re.compile(r"\bresidue\b", re.IGNORECASE),
+        True,
+    ),
+    ("'entry-silent' (deleted concept)", re.compile(r"\bentry-silent\b", re.IGNORECASE), False),
+    ("'unspecced' (deleted concept)", re.compile(r"\bunspecced\b", re.IGNORECASE), False),
+    ("'review-status' (deleted feature)", re.compile(r"\breview-status\b", re.IGNORECASE), False),
+    ("'bid response(s)' (renamed to 'bid records')", re.compile(r"\bbid responses?\b", re.IGNORECASE), False),
+    ("'model tier' (deleted from user narration)", re.compile(r"\bmodel tiers?\b", re.IGNORECASE), False),
+    ("'off-checklist' (renamed to 'unlisted scope items')", re.compile(r"\boff-checklist\b", re.IGNORECASE), False),
+    (
+        "'read-back' (renamed to 'verification'; the unhyphenated verb phrase "
+        "'read back' is ordinary English and is not matched)",
+        re.compile(r"\bread-back\b", re.IGNORECASE),
+        False,
+    ),
+    ("'silent-row' (renamed to 'not addressed')", re.compile(r"\bsilent-row\b", re.IGNORECASE), False),
+    ("'roster' (renamed to 'list')", re.compile(r"\broster\b", re.IGNORECASE), False),
+    ("'checkpoint' (renamed to 'check-in')", re.compile(r"\bcheckpoint\b", re.IGNORECASE), False),
+    ("'mint'/'minting' (renamed to 'create')", re.compile(r"\bmint(?:ing|s|ed)?\b", re.IGNORECASE), False),
+    ("'enrich'/'enriching' (renamed to 'update')", re.compile(r"\benrich(?:ing|es|ed)?\b", re.IGNORECASE), False),
+    (
+        "'operator' as the retired name for the person (renamed to 'user', PLU-1361; "
+        "the literal `operator.json` filename and the JSON key \"operator\" are real, "
+        "current identifiers and are exempt)",
+        re.compile(r'(?<!")\boperator\b(?!\.json)(?!")', re.IGNORECASE),
+        False,
+    ),
+    ("'schedule entries' (renamed to 'schedule rows')", re.compile(r"\bschedule entries\b", re.IGNORECASE), False),
+    ("'proposed' as the retired trust-class posture (renamed to 'recorded')", re.compile(r"\bproposed\b", re.IGNORECASE), False),
+    ("'deposit' (renamed to 'record' as a verb)", re.compile(r"\bdeposit(?:s|ing|ed)?\b", re.IGNORECASE), False),
+    ("'trade-packages' (directory renamed to 'trade-knowledge')", re.compile(r"\btrade-packages\b", re.IGNORECASE), False),
+]
+
+RETIRED_SCOPED_TERMS: list[tuple[str, re.Pattern]] = [
+    ("'anti-join'", re.compile(r"\banti-join\b", re.IGNORECASE)),
+    ("'context-packet'", re.compile(r"\bcontext-packet\b", re.IGNORECASE)),
+    ("'fan-out'", re.compile(r"\bfan-out\b", re.IGNORECASE)),
+    ("'idempotency'", re.compile(r"\bidempotency\b", re.IGNORECASE)),
+    ("'content-keyed'", re.compile(r"\bcontent-keyed\b", re.IGNORECASE)),
+    ("'content-disjoint'", re.compile(r"\bcontent-disjoint\b", re.IGNORECASE)),
+    ("'supersede'/'supersession'", re.compile(r"\bsupersede[sd]?\b|\bsupersession\b", re.IGNORECASE)),
+    ("'convention lines'", re.compile(r"\bconvention lines?\b", re.IGNORECASE)),
+    ("'closure loop'", re.compile(r"\bclosure loop\b", re.IGNORECASE)),
+    ("'grain bracket'", re.compile(r"\bgrain bracket\b", re.IGNORECASE)),
+    ("'census'", re.compile(r"\bcensus\b", re.IGNORECASE)),
+    ("'grain'", re.compile(r"\bgrain\b", re.IGNORECASE)),
+    ("'trust class'", re.compile(r"\btrust class\b", re.IGNORECASE)),
+]
+
+
+def _user_facing_span_mask(lines: list[str]) -> list[bool]:
+    """
+    Lines strictly between a `<!-- user-facing -->` / `<!-- /user-facing -->`
+    marker pair. The marker lines themselves are not included (they carry no
+    banned vocabulary of their own). Markers must be exact and each on its
+    own line, per docs/plugin-text-style.md §1 — the same contract the
+    markers themselves promise.
+    """
+    mask: list[bool] = []
+    in_span = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped == "<!-- user-facing -->":
+            in_span = True
+            mask.append(False)
+            continue
+        if stripped == "<!-- /user-facing -->":
+            in_span = False
+            mask.append(False)
+            continue
+        mask.append(in_span)
+    return mask
+
+
+_AUDIENCE_USER_RE = re.compile(r"Audience:\s*user\b")
+_LIST_ITEM_START_RE = re.compile(r"^\s*(?:[-*+]|\d+\.)\s")
+
+
+def _audience_user_clause_mask(lines: list[str]) -> list[bool]:
+    """
+    Lines that are part of an `Audience: user` artifact clause: the line
+    declaring it, plus any continuation lines of the same list item (e.g. a
+    bullet's wrapped second line), stopping at the next blank line, the next
+    top-level list item, or a heading. docs/plugin-text-style.md §1 writes
+    these clauses inline in prose (e.g. "... Audience: user, it is shown to
+    the user for approval."), not inside `<!-- user-facing -->` markers, so
+    they need their own scan.
+    """
+    mask = [False] * len(lines)
+    i = 0
+    while i < len(lines):
+        if _AUDIENCE_USER_RE.search(lines[i]):
+            mask[i] = True
+            j = i + 1
+            while j < len(lines):
+                stripped = lines[j].strip()
+                if not stripped or _LIST_ITEM_START_RE.match(lines[j]) or stripped.startswith("#"):
+                    break
+                mask[j] = True
+                j += 1
+            i = j
+        else:
+            i += 1
+    return mask
+
+
+def _scan_file_for_retired_whole_file(path: Path) -> list[str]:
+    hits: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return [f"{path}: read error: {e}"]
+
+    lines = text.splitlines()
+    fence_mask = _fenced_code_line_mask(lines)
+
+    for i, line in enumerate(lines, 1):
+        in_fence = fence_mask[i - 1]
+        for label, pattern, code_exempt in RETIRED_WHOLE_FILE_TERMS:
+            if code_exempt:
+                if in_fence:
+                    continue
+                scan_line = _mask_inline_code(line)
+            else:
+                scan_line = line
+            m = pattern.search(scan_line)
+            if m:
+                hits.append(f"{path.name}:{i}: retired term {label} — {m.group(0)!r} in: {line.strip()[:160]}")
+    return hits
+
+
+def _scan_file_for_retired_scoped(path: Path) -> list[str]:
+    hits: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return [f"{path}: read error: {e}"]
+
+    lines = text.splitlines()
+    uf_mask = _user_facing_span_mask(lines)
+    aud_mask = _audience_user_clause_mask(lines)
+
+    for i, line in enumerate(lines, 1):
+        if not (uf_mask[i - 1] or aud_mask[i - 1]):
+            continue
+        for label, pattern in RETIRED_SCOPED_TERMS:
+            m = pattern.search(line)
+            if m:
+                hits.append(
+                    f"{path.name}:{i}: agent-facing machinery term {label} used in user-facing text "
+                    f"— {m.group(0)!r} in: {line.strip()[:160]}"
+                )
+    return hits
+
+
+def check_retired_vocabulary(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "retired-vocabulary"
+    full_scope_files, _client_only_files, warning = _collect_scope_files(plugin_path, marketplace_root)
+
+    hits: list[str] = []
+    for f in full_scope_files:
+        hits.extend(_scan_file_for_retired_whole_file(f))
+        hits.extend(_scan_file_for_retired_scoped(f))
+
+    detail = f"{len(full_scope_files)} files scanned for retired vocabulary"
+    if warning:
+        detail += f" | WARNING: {warning}"
+    if hits:
+        detail += " | " + "; ".join(hits)
+
+    return Result(name, passed=len(hits) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check — Bold-for-emphasis (docs/plugin-text-style.md §4)
+# --------------------------------------------------------------------------- #
+#
+# A short, high-precision denylist of single ordinary words, rather than a
+# generic "any bold span not immediately followed by a colon" rule. The
+# broader rule was tested against the real shipped corpus (499 bold spans
+# total) and flagged 408 of them (82%) — almost all of them this codebase's
+# own established, legitimate conventions: a bolded imperative lead-in on a
+# numbered step ("1. **Confirm the account and project.** Call ...") and a
+# first-use term definition ("**edge**", "**identity**"), neither of which
+# happens to end in a colon but neither of which is "emphasis on an ordinary
+# word" either. This narrower denylist is the subset actually verified
+# against the shipped text: every current hit (20, listed in the PLU-1346
+# report) was a genuine emphasis violation, not a mislabeled genuine label.
+# It will not catch every possible emphasis-bolding — favor false negatives,
+# per the issue brief — but what it does flag is real.
+BOLD_EMPHASIS_WORDS = {
+    "not", "never", "always", "only", "must", "no", "none", "any", "every",
+    "all", "exactly", "actually", "really", "truly", "genuinely", "definitely",
+    "certainly", "absolutely", "literally", "especially", "particularly",
+    "explicitly", "precisely", "strictly", "solely",
+}
+
+_BOLD_RE = re.compile(r"\*\*([^*\n]+)\*\*")
+
+
+def _scan_file_for_bold_emphasis(path: Path) -> list[str]:
+    hits: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return [f"{path}: read error: {e}"]
+
+    lines = text.splitlines()
+    fence_mask = _fenced_code_line_mask(lines)
+
+    for i, line in enumerate(lines, 1):
+        if fence_mask[i - 1]:
+            continue
+        for m in _BOLD_RE.finditer(line):
+            content = m.group(1).strip()
+            if " " in content:
+                continue  # multi-word spans are out of this check's scope
+            after = line[m.end():m.end() + 1]
+            if after == ":":
+                continue  # genuine label, per the `**Label**:` convention
+            word = content.strip(".,;!?").lower()
+            if word in BOLD_EMPHASIS_WORDS:
+                hits.append(
+                    f"{path.name}:{i}: bold-for-emphasis on ordinary word {content!r} in: {line.strip()[:160]}"
+                )
+    return hits
+
+
+def check_bold_emphasis(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "bold-emphasis"
+    full_scope_files, _client_only_files, _warning = _collect_scope_files(plugin_path, marketplace_root)
+
+    hits: list[str] = []
+    for f in full_scope_files:
+        hits.extend(_scan_file_for_bold_emphasis(f))
+
+    detail = f"{len(full_scope_files)} files scanned"
+    if hits:
+        detail += " | " + "; ".join(hits)
+
+    return Result(name, passed=len(hits) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check — Title-Case pseudo-headings (docs/plugin-text-style.md §4) — advisory
+# --------------------------------------------------------------------------- #
+#
+# Conservative on purpose: only a STANDALONE line of 2+ consecutive
+# Title-Case words is flagged — not a real `#`/`##` heading, not a table
+# row, not a list item, not a blockquote, not fenced code. An inline
+# version of this check (scanning running prose for any 2+-word Title-Case
+# run) was tested against the real shipped corpus and found 13 hits, ALL of
+# them false positives: the product name ("Claude Code"), real proper nouns
+# ("New England", "Acme Construction"), sentence-initial capitalization
+# colliding with a proper noun ("The Additional", "If Codex"), and literal
+# quoted example values ("Metal Stud Partitions", "Unit Casework" — example
+# scope-category names in scope-run's own instructions). The standalone-line
+# version below had zero hits, true or false, against the same corpus.
+#
+# Because it is unproven against a single real positive case, and because a
+# two-word proper noun standing alone on its own line (a rare but possible
+# shape) would still false-positive it, this check is advisory only: it
+# always reports PASS and surfaces any hit as a WARN, never a FAIL. Promote
+# it to a real gate only after it has been observed catching a genuine
+# violation without also catching an innocent one.
+_TITLECASE_LINE_RE = re.compile(r"^([A-Z][A-Za-z0-9'/-]*(?:\s+[A-Z][A-Za-z0-9'/-]*){1,})[.:]?$")
+
+
+def _scan_file_for_titlecase_labels(path: Path) -> list[str]:
+    hits: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return [f"{path}: read error: {e}"]
+
+    lines = text.splitlines()
+    fence_mask = _fenced_code_line_mask(lines)
+
+    for i, line in enumerate(lines, 1):
+        if fence_mask[i - 1]:
+            continue
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("#", "|", "-", "*", "+", ">")):
+            continue
+        if re.match(r"^\d+\.", stripped):
+            continue
+        m = _TITLECASE_LINE_RE.match(stripped)
+        if m and len(m.group(1).split()) >= 2:
+            hits.append(f"{path.name}:{i}: possible Title-Case pseudo-heading: {stripped[:160]}")
+    return hits
+
+
+def check_titlecase_labels(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "titlecase-labels (advisory, never fails)"
+    full_scope_files, _client_only_files, _warning = _collect_scope_files(plugin_path, marketplace_root)
+
+    hits: list[str] = []
+    for f in full_scope_files:
+        hits.extend(_scan_file_for_titlecase_labels(f))
+
+    detail = f"{len(full_scope_files)} files scanned"
+    warning = "; ".join(hits) if hits else ""
+
+    return Result(name, passed=True, detail=detail, warning=warning)
 
 
 # --------------------------------------------------------------------------- #
@@ -642,6 +1055,9 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_skills(plugin_path),
         check_description_contract(plugin_path),
         check_banned_strings(plugin_path, marketplace_root),
+        check_retired_vocabulary(plugin_path, marketplace_root),
+        check_bold_emphasis(plugin_path, marketplace_root),
+        check_titlecase_labels(plugin_path, marketplace_root),
         check_mcp_url(plugin_path),
         check_no_absolute_paths(plugin_path, marketplace_root),
     ]

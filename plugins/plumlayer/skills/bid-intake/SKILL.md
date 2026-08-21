@@ -119,7 +119,7 @@ sanity check:
    curl -X PUT "$SIGNED_URL" -H "Content-Type: application/pdf" --data-binary @"$LOCAL_PDF_PATH"
    ```
 3. `register_file(projectId, fileId, filename, contentType: "application/pdf", kind: "proposal")`.
-   A proposal is **not** a drawing delivery: pass `kind: "proposal"` and **no `deliveryId`** (the
+   A proposal is not a drawing delivery: pass `kind: "proposal"` and **no `deliveryId`** (the
    `deliveryId` argument is for drawing deliveries only). Idempotent: a retried call for the same
    `fileId` returns the existing row. If it rejects `not_found` / `empty` / `oversize`, stop and report
    rather than retrying blindly.
@@ -128,7 +128,7 @@ sanity check:
 readable. Keep the `fileId` for each proposal: **every claim you record from it cites that `fileId`
 and the page** in its evidence.
 
-You do **not** need `register_pages` for proposals. A file registered as `kind: "proposal"` is
+You do not need `register_pages` for proposals. A file registered as `kind: "proposal"` is
 deliberately neither sheet-recognized nor page-registered, so the call probes only the project's
 drawing files and does nothing for what you just uploaded. `render_page` and `get_page_text` gate on
 file ownership, not on page rows, so your proposals are readable the moment they are registered.
@@ -237,9 +237,9 @@ normalized `region` to zoom a table or a signature block) and `get_page_text` (e
   - **routing**: `self` / `by-others` / `NIC`, when the proposal says who carries it. Distinguishes a
     true exclusion from a scope-gap the bidder routes elsewhere. Omit when it is plain base scope.
   - **amount**: the dollar figure when one is given (an adder's add, or a broken-out base cost). Omit
-    when none is stated. **Never** derive a number the proposal does not state.
+    when none is stated. Never derive a number the proposal does not state.
   - **ambiguity**: `OSV` / `TV` / `unclear` when the proposal prices a row ambiguously ("other scope
-    value", "to verify", a bare "?"). An ambiguous token **never** resolves to a hard `amount`.
+    value", "to verify", a bare "?"). An ambiguous token never resolves to a hard `amount`.
   - **note**: whatever else the row says in free text ("included above", "option 1", a typed comment).
 - **Coverage**: did this proposal bid the whole package (`full`) or a subset (`partial`)? A `partial`
   coverage carries a human label ("Framing only") and, when the proposal names the covered rows, the
@@ -306,7 +306,7 @@ These are gates. Write them into every read:
 - **Proposal content matching no known row becomes an Additional item, never a created row.** If a
   proposal says something about the work that maps to none of the stage-3 scope rows, it lands as an
   **Additional item** on the package (stage 7b): the bidder's own word for an unlisted item, cited to the
-  `fileId` and page it sits on, and **never** as a new `scopeItem:` subject this skill creates. Creating
+  `fileId` and page it sits on, and never as a new `scopeItem:` subject this skill creates. Creating
   scope from a bid would let a bidder's document silently define the scope checklist; recording it as
   that bidder's item says exactly who said it, and leaves the checklist decision with the estimator.
 
@@ -346,7 +346,7 @@ These are gates. Write them into every read:
 - **Aggregation is narrow, stated once, and flagged per claim.** A proposal often prices one scope
   row across several of its own lines: a variant pair (a tempered option beside the standard unit),
   a split line-item pair, a companion component priced on its own line. Folding those lines into one
-  row response is allowed **only** when all three hold: same bidder, same scope row (same mark), and
+  row response is allowed only when all three hold: same bidder, same scope row (same mark), and
   the lines are complementary components of that one row's scope; never alternatives to choose
   between. Apply one consistent aggregation rule for the whole run, state it in the report, and flag
   every aggregated response (its note names the lines folded in; the receipt cites where they sit).
@@ -403,7 +403,7 @@ not from a guess:
   claim simply lapses (silence lapses; you do not carry a stale prior forward). Also supersede the
   bidder's profile, coverage, and summary claims (see the head-id note below).
 - **A "clarification" / "delta" / an addendum letter naming specific items → surgical.** The document
-  changes only the rows it names. Record new claims **only** for those named rows, each with
+  changes only the rows it names. Record new claims only for those named rows, each with
   `supersedesId` set to that row's current head claim id; everything else the bidder previously said is
   left untouched.
 - **Ambiguous framing** (you cannot tell whether it restates or amends) → **stop and ask the user.**
@@ -413,7 +413,7 @@ not from a guess:
 State the declared mode in the report and confirm it with the user **before** you record.
 
 > **Head-id note (a real detail the proving run should confirm).** `get_bid_package` exposes the head
-> claim id only for **response cells** (`lines[].responses[].receipt.id`). It does **not** expose the
+> claim id only for **response cells** (`lines[].responses[].receipt.id`). It does not expose the
 > head ids for a bidder's `bidderProfile`, `bidSummary`, or `bidCoverage` claims. To supersede those
 > three on a wholesale revision, resolve each head with a targeted `search` on its deterministic subject
 > (e.g. `search(projectId, subject: "bidCoverage:<party>:<pkg>", predicate: "bidCoverage")`) and take
@@ -424,7 +424,7 @@ State the declared mode in the report and confirm it with the user **before** yo
 
 ## 7. Record: author the claim JSON, batch, verify
 
-Author the claim JSON directly, matching the `@plumlayer/contract` bid builder outputs **exactly**. The
+Author the claim JSON directly, matching the `@plumlayer/contract` bid builder outputs exactly. The
 subjects are deterministic recipes; the predicates and value shapes are fixed. Get them wrong and the
 claim lands on the wrong subject or fails validation.
 
@@ -559,7 +559,7 @@ record_additional_item(
 Shape notes that will bite otherwise: `label` is required and capped at 200 characters; the enums are
 exact and there is **no `ambiguity` axis on this door** (unlike a response, carry an ambiguous
 qualifier in the `note` instead); optional fields are **omitted** when absent, never `null`;
-`trade` is the CSI code **exactly** as the package was created with, spaces kept and never slugged,
+`trade` is the CSI code exactly as the package was created with, spaces kept and never slugged,
 the same string `get_bid_package` reads with (a different spelling creates the item on a package subject
 nothing reads, so it lands and then renders nowhere); and `evidenceFileId` is refused if missing,
 because an unlisted item nobody can trace back to its source is not worth having.
@@ -584,7 +584,7 @@ until someone accepts it.
 
 **Verify by reading back, not by counting your own calls, and read back BOUNDED.**
 
-Do **not** re-call the full `get_bid_package` for this check. On a real package the full response is
+Do not re-call the full `get_bid_package` for this check. On a real package the full response is
 enormous: three bidders against a nineteen-row checklist measured roughly 165,000 characters and
 overran the tool output limit outright, and that is a small job. The full read is the stage-3 context
 call, made once; it is not a verification instrument.

@@ -83,7 +83,7 @@ that relaxes any one of them reproduces a measured, named failure from the valid
 9. **Every round covers the scope the schedules themselves ground.** The passes reading legends and
    schedules record what a mark means, and they also own the scope items the schedules ground. The
    validation's single biggest capture gap was nobody owning schedule-grounded scope.
-10. **Run, or stop and report; never mint a consent step.** The user's decisions in this skill are
+10. **Run, or stop and report; never create a consent step.** The user's decisions in this skill are
    the read plan and each check-in. Everything else the run does is its own work, recorded with its
    trail and editable afterward. Never stop to collect approval for a course you have already
    chosen, and never offer a recommended yes: if something is genuinely wrong, stop, say what is

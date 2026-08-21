@@ -23,14 +23,14 @@ governing truth. This skill **creates the project and customizes it** by turning
 > supersede or corroborate it. **Cite every claim, never invent a fact, and flag what's uncertain.**
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud project record
-> (project isolation + private bucket + RLS), that's fine. They must **never** land in tracked or
+> (project isolation + private bucket + RLS), that's fine. They must never land in tracked or
 > committed plugin/repo files.
 
 ---
 
 ## Where this sits in the workflow (read this before you start asking questions)
 
-`project-create` stands up the **shell + a minimal starting frame**, it is **not** the project's
+`project-create` stands up the **shell + a minimal starting frame**, it is not the project's
 data-entry form. It runs **early, before the drawings are read**, and its whole job is to get a named
 project record into existence carrying the few facts only *you* can supply.
 
@@ -227,4 +227,4 @@ Tell the user, in plain terms:
   as a fact read off the documents.
 - **One project = one project record.** Always seed within the correct `projectId` returned by `create_project`.
 - **Data hygiene.** Project specifics may live in the cloud project record and in the user's cwd config; they
-  must **never** be written to a tracked/committed plugin or repo file.
+  must never be written to a tracked/committed plugin or repo file.

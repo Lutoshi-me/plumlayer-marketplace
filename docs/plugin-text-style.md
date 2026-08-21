@@ -118,6 +118,32 @@ Each of these is a harness check.
 4. No banned string in any shipped text: client-name denylist, `PLU-\d+`, internal vault filenames,
    `MOSOT`, em dash, middle dot.
 5. No absolute local paths in any manifest.
+6. Retired vocabulary does not creep back in. This is a regression guard, not a live enforcement
+   layer: it checks a fixed, curated list of names that a past sweep already retired (most recently
+   the D6 rewrite, commit `8096333`), not "is this word acceptable" in general. Two scopes:
+   - A **whole-file** list (e.g. `residue`, `roster`, `checkpoint`, `mint`, `enrich`, `operator` as
+     the name for the person, `deposit`, `proposed`, `trade-packages`) must not appear anywhere in a
+     shipped skill, the README, or a manifest. A literal, current identifier that happens to share
+     the retired word — the API field `residue`, the `operator.json` filename, the JSON key
+     `"operator"` — is exempt; it is a real name, not the retired concept.
+   - A **scoped** list (e.g. `supersede`/`supersession`, `fan-out`, `idempotency`, `census`,
+     `grain`, `trust class`) is legitimate agent-facing machinery vocabulary everywhere else in a
+     skill, and is banned only inside a `<!-- user-facing -->` span or an `Audience: user` artifact
+     clause — the places the file itself has already declared the text user-facing.
+   The pinned trade-knowledge/ corpus files are out of scope for this check entirely: ordinary
+   English collides with several of these names there (a subcontractor's payment "deposit", a
+   "proposed" product substitution), and that collision is real trade vocabulary, not drift.
+7. Bold used for emphasis on a short, high-precision denylist of ordinary words (`not`, `never`,
+   `only`, `must`, `no`, `exactly`, and similar) when the bold span is not immediately followed by a
+   colon (the `**Label**:` convention that marks a genuine label). This is deliberately narrower than
+   "any bold not followed by a colon": that broader rule flags the bulk of this codebase's own
+   legitimate bolded-lead-in and first-use-term conventions, not just emphasis.
+8. Title-Case pseudo-heading lines — a standalone line of 2+ consecutive Title-Case words that isn't
+   a real `#`/`##` heading, a table row, a list item, a blockquote, or code — are reported as a WARN.
+   This check is advisory only (it never fails the release): an inline version was tested against
+   the real shipped text and flagged only proper nouns and quoted example values, never a genuine
+   violation, so the narrower standalone-line version ships instead, unproven against a true
+   positive.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started.

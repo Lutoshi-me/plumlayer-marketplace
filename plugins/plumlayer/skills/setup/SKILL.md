@@ -17,7 +17,7 @@ code. The interview is the scrub: the plugin ships generic; your specifics live 
 config file in your environment. Re-run it any time to review or update.
 
 > **Doctrine:** confidential user/company details go in your **local** `~/.plumlayer/operator.json`
-> and **never** into a tracked or committed file, and never into the plugin itself. This skill writes
+> and never into a tracked or committed file, and never into the plugin itself. This skill writes
 > exactly one local file and nothing else.
 
 ## When to run
@@ -107,7 +107,7 @@ their first project.
 
 ## Discipline (non-negotiable)
 
-- The profile lives **only** at `~/.plumlayer/operator.json`. Never write user/company specifics
+- The profile lives only at `~/.plumlayer/operator.json`. Never write user/company specifics
   into the plugin directory, the project repo, or any tracked/committed file.
-- This skill writes exactly one local file. It makes **no** cloud or MCP calls; it touches no project record.
+- This skill writes exactly one local file. It makes no cloud or MCP calls; it touches no project record.
 - Re-runnable: always review-and-update an existing profile rather than clobbering it.

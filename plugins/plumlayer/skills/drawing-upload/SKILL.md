@@ -280,7 +280,7 @@ evidence block cites the render or text span you actually read; never a fabricat
 
 **Discipline convention:** derive strictly from the sheet number's own leading letter run, matching the
 server's `disciplineFromSheetNumber` logic (all letters before the first digit/dash, uppercased);
-never a full NCS discipline name. Do **not** add client-side compensation for prefixes the server can't
+never a full NCS discipline name. Do not add client-side compensation for prefixes the server can't
 classify; that gap is a known limitation, not this skill's problem to solve.
 
 **Gate:** every page in that tail ends up judged (a full claim bundle) or flagged (image-only or genuinely

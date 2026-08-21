@@ -100,7 +100,7 @@ honest options with their real costs:
   condition (its id is in the stage 2 read);
 - **place marks from what was already read**: when the standing record carries complete
   per-instance geometry (a legacy count's recorded instance boxes), marks can be placed under a
-  new condition from that evidence without re-reading the sheets. Cheap and honest **only** if
+  new condition from that evidence without re-reading the sheets. Cheap and honest only if
   the earlier read's judgment calls and caveats travel with it, into the condition's notes, the
   records' evidence, and the report, never quietly dropped: the marks inherit that read, and
   the trail must say so;
