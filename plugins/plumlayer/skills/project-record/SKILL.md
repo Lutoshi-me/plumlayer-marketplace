@@ -101,6 +101,15 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
 - `record_batch_file`: like `record_batch`, but for a run whose claims are too large to send
   inline: upload a JSONL file of claims, then write from it in one atomic call. Use this instead
   of `record_batch` for large runs (e.g. a scope-run pass recording hundreds of items).
+- `retire_scope_item`: remove ONE scope item from the scope list (`projectId`, `subject`,
+  `basis`, optional `reason`). Appends a retirement record; nothing is deleted and a later
+  record can bring the item back. Same door a person uses; the trail names you. Call it only
+  for a row the user asked removed and put their ask in `basis` in their words. A row you
+  merely suspect is wrong is reported, not retired. The generic write doors refuse the
+  `scopeItemRetraction` predicate; this verb and `restore_scope_item` are its only doors.
+- `restore_scope_item`: put a retired scope item back (`projectId`, `subject`, `basis`,
+  optional `reason`). Same door for a person and an agent; a person's word outranks yours, so
+  restoring an item a person retired lands in the trail but does not bring it back.
 
 Both write doors refuse the takeoff-domain predicates (`hasTakeoffCount`, `hasTakeoffRollup`,
 `hasScale`, `hasTakeoffLength`, `hasTakeoffArea`, `hasTakeoffCountMark`, `hasTakeoffCondition`,

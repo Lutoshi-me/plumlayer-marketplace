@@ -108,9 +108,11 @@ that relaxes any one of them reproduces a measured, named failure from the valid
     (below) is a standing stage with a closure loop, never optional, and whatever remains open at
     the end is reported by name: never assumed closed, never zeroed by hope.
 
-Also: never author door-owned records. Retractions, flag resolutions, and questions-as-answers are
-created only at their own doors: a reader that thinks an item should be deleted or a flag should be
-closed says so in its report; a person acts at the door.
+Also: door-owned records (flag resolutions, questions-as-answers) are created only at their own
+doors; a reader that thinks a flag should be closed says so in its report and a person acts at the
+door. Removing a scope item is different: `retire_scope_item` is the one door for that act, for a
+person and an agent alike. Use it only for a row the user asked removed, put the user's ask in
+`basis` in their words, one item per call; a row you merely suspect is wrong goes in the report.
 
 ## The scope item row
 
@@ -574,8 +576,8 @@ like you to look at, and the plan for round two. Proceed, adjust, or pause?"
   lines at the package surface.
 - **Score itself against a bid eval**: the acceptance harness was repo-side study machinery, not
   product.
-- **Delete, resolve, or approve anything on the user's behalf**: door-owned acts stay at
-  their doors.
+- **Resolve or approve anything on the user's behalf**: door-owned acts stay at their doors.
+  (Removing a scope item the user asked removed is not this: see `retire_scope_item` above.)
 - **Manage the user's session or context**: the run is bounded by its own structure. Each round and
   each read unit runs in a fresh agent that ends when it has reported, so nothing accumulates and
   there is nothing for the user to manage.
