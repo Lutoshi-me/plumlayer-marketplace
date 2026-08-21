@@ -165,8 +165,9 @@ amendment to that trade file, surfaced in the close-out report.
 5. **The user is present.**
 <!-- user-facing -->
 Tell them what the run will do: you read the set in rounds and build
-   one scope list off it. Say that a full set takes hours, that you stop for a check-in after
-   every round, and ask them to confirm they are staying for those.
+   one scope list off it, stopping for a check-in after every round, and they can stop or change
+   course at any check-in. Give a rough sense of how long this set will take from its size, and
+   confirm they are staying for the check-ins.
 <!-- /user-facing -->
 
 ## 2. Context floor
@@ -345,10 +346,11 @@ Report to the user, in plain words:
 
 - **The scope list**: how many items, by category family; where to review it (the project's Scope
   view on plumlayer.com), and that every line shows the sheet and page it was read from.
-- **What you would like them to look at**: the grain questions, the package-boundary questions, the
-  document defects found (contradictions, missing schedule rows, duplicate sheets), and the
-  convention lines you judged not to apply on this job, each counted by kind and the leading ones
-  named. Document defects worth sending to the design team are named as question candidates.
+- **What you would like them to look at**: the items you weren't sure how finely to split, the
+  package-boundary questions, the document defects found (contradictions, missing schedule rows,
+  duplicate sheets), and the assumed items that don't fit this job, each counted by kind and the
+  leading ones named. Document defects worth sending to the design team are named as question
+  candidates.
 - **The count check**: what was enumerated, what closed, what is still open.
 - **The package split**: approved packages, amendments, TOC sections deliberately unbundled.
 - **What the run cost them**: how long it took, and the token totals where the harness reported
@@ -432,20 +434,20 @@ so flag what you're unsure of rather than smoothing it.
 ## The check-in (what the user sees)
 
 <!-- user-facing -->
-After each round, before the next one starts, talk to the user like a person who has just finished
-a stretch of work. Name the round you finished and what it covered, then cover, in plain sentences:
+After each round, before the next one starts, name the round you finished and what it covered,
+then cover, in plain sentences:
 
 - What you read and what landed: sheets read, items added, items updated, and what you flagged, by
   kind. Your own verified counts, never the ones a pass reported about itself.
-- What you would like them to look at now: document defects, grain questions, anomalies, each with
-  its sheet reference, reviewable on plumlayer.com.
+- What you would like them to look at now: document defects, items you weren't sure how finely to
+  split, anomalies, each with its sheet reference, reviewable on plumlayer.com.
 - What is defined now that wasn't before, and anything the next round depends on.
 - Anything that went sideways: a count that didn't match and how you fixed it, a page you couldn't
   read, a pass that stopped. Say it plainly.
 - The plan for the next round, and the ask: proceed, adjust, or pause.
 
-It should read like a person talking: "I've finished round one, the legends and schedules. Here is
-what landed, what I'd like you to look at, and the plan for round two. Proceed, adjust, or pause?"
+For example: "I've finished round one, the legends and schedules. Here is what landed, what I'd
+like you to look at, and the plan for round two. Proceed, adjust, or pause?"
 <!-- /user-facing -->
 
 ## What this skill does not do
