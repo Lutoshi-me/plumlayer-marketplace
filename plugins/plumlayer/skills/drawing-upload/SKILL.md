@@ -619,17 +619,6 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
   problems found." `reconcile_set` findings are recorded without asking, and the report says what landed.
 
-## Cost (cheapest tier first)
-
-`recognize_sheets` (the deterministic bulk pass) is free server-side compute: it recognizes the
-large majority of sheets in seconds to low minutes depending on set size (that's why it runs as a job
-you poll, not an inline call), and now types most of them too, in the same free pass. Your token
-cost is fenced to that tail (the pages the pass couldn't recognize, read once each) plus the
-sheets the rules left untyped, plus any rule-typed sheet you correct, plus the small,
-fixed cost of polling `recognize_sheets_status` every few seconds while a job runs. The local
-packaging-recognition sampling (step 2) is small, bounded to a few pages per ambiguous candidate
-file, and named in the packaging report; not a hidden cost. No GPU or model hosting on this path.
-
 ## Deferred (named, not skipped silently)
 
 - **OCR for image-only/scanned pages.** No text layer means both the bulk pass and your own read come

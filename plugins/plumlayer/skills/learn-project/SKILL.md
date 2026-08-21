@@ -15,8 +15,7 @@ description: >
 The first stage of a scope run. Before anything is read deep, one cheap pass over what's already
 recognized builds the project's **context**: what it is, its structural and envelope systems, its
 scope areas, the shape of the set, and what's missing. Every later pass in the scope run
-gets this context instead of orienting from scratch, which is where tokens leak and reads get
-unreliable.
+gets this context instead of orienting from scratch, which is where reads get unreliable.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
 untraced.** This is an *orientation* pass, not comprehension, it reads what upload already
@@ -285,19 +284,10 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
 - **Packages are match-or-create; a re-run never duplicates one.** Read `solicitation_list_packages`
   first and skip any catalog trade id already represented on the project.
 
-## Cost (cheapest tier first)
-
-The bulk of this pass is `search` over claims `project-create` and `drawing-upload` already recorded,
-already-paid-for reads, effectively free. Token cost is fenced to the ≤6 renders and their paired
-`get_page_text` calls, the paged read of `inDivision` claims, the small, fixed cost of compiling the
-packet from a small claim set, and step 7's package derivation: one `directory_list_trades` lookup
-and one `solicitation_create_package` call per new package, plus the `solicitation_list_packages`
-verification read. No renders beyond the ≤6 budget, and no GPU or model hosting on this path.
-
 ## Deferred (named, not skipped silently)
 
 - **The definitions-as-context envelope.** The packet's final section is a placeholder only; how
-  orientation and definitions-first context share one envelope's token budget is a design question
+  orientation and definitions-first context share one envelope's context window is a design question
   for a future skill, not this one's.
 - **Spec-section extraction as a packaged skill.** Extraction now
   lives in `drawing-upload`'s spec-TOC leg (step 8); step 3 above still only reads spec-section claims

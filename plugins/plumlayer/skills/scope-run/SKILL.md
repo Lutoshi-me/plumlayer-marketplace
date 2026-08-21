@@ -126,12 +126,10 @@ All run working files live under `~/.plumlayer/runs/<project-slug>/` (slug from 
 lowercase, spaces to hyphens; fall back to the projectId). Never committed to any repo, never
 uploaded to the project except record files, never recorded as project entries. The set:
 
-- `ledger.md`: the run ledger, appended as the run proceeds: every pass (round, unit, purpose, and
-  the token usage the harness reports when the pass completes), every write batch (count sent,
-  count verified, contested), the list of definitions kinds as they land, check-in outcomes, and
-  every deviation or repair. The ledger is what makes the close-out report honest.
-  Audience: agent. Its cost figures feed the close-out report's cost line; whatever crosses from
-  it into that report becomes user-facing at the crossing and is translated there.
+- `ledger.md`: the run ledger, appended as the run proceeds: every pass (round, unit, purpose),
+  every write batch (count sent, count verified, contested), the list of definitions kinds as they
+  land, check-in outcomes, and every deviation or repair. The ledger is what makes the close-out
+  report honest. Audience: agent.
 - `read-plan.md`: the read plan (stage 3), user-approved before any reading runs. Audience: user,
   it is shown to the user for approval.
 - `context-packet.md`: the compiled context packet, regenerated between rounds (a projection off
@@ -262,10 +260,6 @@ Per round, in this exact loop:
    the check-in; merging is a person's call at the review surface, never the lead's.
 5. **Check in with the user** (format below). Move to the next round only on their go-ahead.
 
-Token accounting: when the harness reports a completed pass's token usage, record it in the ledger
-against that pass. Where the harness doesn't surface a number, record the pass with usage unknown:
-never estimate and never leave the row out.
-
 ## 5. The completeness check (standing, with a closure loop)
 
 The definitions layer is the checklist: every defined thing must be accounted for by the scope
@@ -370,9 +364,7 @@ Report to the user, in plain words:
 - **The package split**: the amendments made this run (created / split / collapsed / renamed,
   each with its rationale), the packages derived here from scratch only in the no-spec-book case,
   and TOC sections deliberately unbundled.
-- **What the run cost them**: how long it took, and the token totals where the harness reported
-  them. Where a number was never reported, say it is unknown rather than presenting an estimate
-  as a measurement.
+- **How long it took**: wall-clock from the read plan's approval to this report.
 - **What the trade files should learn**: cases the trade file doesn't cover, and things in it that
   don't apply to this job.
 <!-- /user-facing -->

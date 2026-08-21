@@ -711,6 +711,13 @@ RETIRED_WHOLE_FILE_TERMS: list[tuple[str, re.Pattern, bool]] = [
     ("'proposed' as the retired trust-class posture (renamed to 'recorded')", re.compile(r"\bproposed\b", re.IGNORECASE), False),
     ("'deposit' (renamed to 'record' as a verb)", re.compile(r"\bdeposit(?:s|ing|ed)?\b", re.IGNORECASE), False),
     ("'trade-packages' (directory renamed to 'trade-knowledge')", re.compile(r"\btrade-packages\b", re.IGNORECASE), False),
+    # Token cost vocabulary retired (cost is measured outside the plugin, from
+    # harness transcripts, never narrated by a skill; PLU-1345).
+    (
+        "token cost vocabulary (cost is measured outside the plugin)",
+        re.compile(r"\btoken (cost|totals?|usage|budget)s?\b", re.IGNORECASE),
+        False,
+    ),
 ]
 
 RETIRED_SCOPED_TERMS: list[tuple[str, re.Pattern]] = [
