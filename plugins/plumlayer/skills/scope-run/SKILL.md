@@ -336,8 +336,8 @@ Show what you did in plain words, mirroring orientation's wording: name the amen
 
 Assign each scope item its home trade off the live packages: one `belongsToTrade` record per item
 (value: the package's catalog trade id, read fresh via `solicitation_list_packages`, a raw spec
-section only for a package that could not be created for lack of a catalog match — named "no
-catalog trade, not created" in the report — never as an unmarked default), recorded in batches
+section only for a package that could not be created for lack of a catalog match, named "no
+catalog trade, not created" in the report, never as an unmarked default), recorded in batches
 with the same count verification. Where an item genuinely straddles a package
 boundary, never hold it as a question: tag it to every candidate trade and keep moving.
 `belongsToTrade` carries the best single guess as the home trade; each other candidate trade gets

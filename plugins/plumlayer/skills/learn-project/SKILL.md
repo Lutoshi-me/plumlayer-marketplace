@@ -198,7 +198,7 @@ before the expensive scope read starts. Phase 2, the scope-driven amendments, st
 3. **Draft the split** from the spec TOC (step 3) plus the trade knowledge base's market
    conventions: which sections bundle into which package, which get carved out, a primary CSI
    section per package. Probe the usually-present families the TOC is silent on (site/civil, SOE,
-   landscaping/exterior improvements, thin design-build MEP divisions) — the same probe that already
+   landscaping/exterior improvements, thin design-build MEP divisions), the same probe that already
    produces `missingScopeFamily` claims (step 6): a silent family becomes a `missingScopeFamily`
    claim AND, where the trade knowledge says the trade is usually present, a package.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
