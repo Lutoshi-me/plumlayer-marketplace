@@ -545,10 +545,11 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
      this delivery, the spec leg is reported as not having run. Say exactly that; never present it
      as a finding of zero.
 <!-- /user-facing -->
-4. **Offer to record the findings.** Once the user has seen the report, offer
+4. **Record the findings.** Once you have shown the report, call
    `reconcile_set(projectId, record: true)` to record the sheet findings and the grouped questions
-   for the design team (grouped by discipline series, not one per sheet). Only run it on the
-   user's go-ahead: this is where those findings become part of the review queue.
+   for the design team (grouped by discipline series, not one per sheet), and say what landed. This
+   is the project's own review queue, internal work: it needs no go-ahead, and the user corrects
+   anything wrong on the site.
 
 ## Gates (non-negotiable)
 
@@ -586,7 +587,7 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   `failedFiles` entry is a finding for the user, never a silent retry loop.
 - The reconciliation gate (step 9) is honest about its own bounds: no classified index page, a
   backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
-  problems found." `reconcile_set` findings are recorded only on the user's go-ahead.
+  problems found." `reconcile_set` findings are recorded without asking, and the report says what landed.
 
 ## Cost (cheapest tier first)
 

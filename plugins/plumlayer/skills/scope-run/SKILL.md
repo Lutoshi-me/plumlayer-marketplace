@@ -3,7 +3,7 @@ name: scope-run
 description: >
   Read a Plumlayer project's drawing set into one grounded, cited, trade-agnostic scope list,
   audit it for completeness, then derive and tag trade packages. Trigger on "scope this set",
-  "/scope-run". Attended: the user approves the read plan, every check-in, and the package split.
+  "/scope-run". Attended: the user approves the read plan and reviews at every check-in.
   Drives the project record's read and write verbs. Does not upload drawings (drawing-upload),
   orient from scratch (learn-project), read sub proposals (bid-intake), or place takeoff
   measurements (takeoff).
@@ -29,9 +29,10 @@ method was validated end to end against a real precon bid evaluation before this
 method), and everything this skill mandates below is what that validation proved necessary: each
 mandate exists because its absence produced a measured failure.
 
-**This run is attended.** The user approves the read plan before any reading, reviews at every
-check-in, and approves the package split before any tagging. Never read past a check-in without
-the user's go-ahead.
+**This run is attended.** The user approves the read plan before any reading and reviews at every
+check-in. Never read past a check-in without the user's go-ahead. The package split is not a gate:
+the run drafts the packages, shows them, and tags; they stay editable, and a correction is a change
+on the site or a tool call.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
 untraced.** Everything a pass records is its own reading, cited, carrying its authorship trail; it
@@ -82,6 +83,11 @@ that relaxes any one of them reproduces a measured, named failure from the valid
 9. **Every round covers the scope the schedules themselves ground.** The passes reading legends and
    schedules record what a mark means, and they also own the scope items the schedules ground. The
    validation's single biggest capture gap was nobody owning schedule-grounded scope.
+10. **Run, or stop and report; never mint a consent step.** The user's decisions in this skill are
+   the read plan and each check-in. Everything else the run does is its own work, recorded with its
+   trail and editable afterward. Never stop to collect approval for a course you have already
+   chosen, and never offer a recommended yes: if something is genuinely wrong, stop, say what is
+   wrong, and hand it over; if nothing is wrong, proceed and say what you did.
 10. **The completeness check runs; what is still open is named.** The enumerate-and-audit pass
     (below) is a standing stage with a closure loop, never optional, and whatever remains open at
     the end is reported by name: never assumed closed, never zeroed by hope.
@@ -279,11 +285,11 @@ list. Run this after the placement rounds complete (and any time coverage is in 
 6. **Name what is still open**, in the ledger and in the close-out report, row by row.
 
 Spec sections account differently (estimators never write CSI digit strings into scope text): a
-spec section is accounted when the approved package split (stage 6) bundles it into a package.
-After the split is approved, list every TOC section not bundled anywhere: those are the TOC
+spec section is accounted when the package split (stage 6) bundles it into a package.
+After the split is drafted, list every TOC section not bundled anywhere: those are the TOC
 sections still open, reported the same way.
 
-## 6. Derive the packages: spec-TOC-anchored, two-phase, user-approved
+## 6. Derive the packages: spec-TOC-anchored, two-phase
 
 The estimator-judgment stage. Packages are bundles of spec sections grouped by how subcontractors
 actually split themselves in the market, not by the book's divisions.
@@ -294,15 +300,17 @@ actually split themselves in the market, not by the book's divisions.
    on (site/civil, SOE, landscaping/exterior improvements, thin design-build MEP divisions) and
    draft estimator-declared packages for them.
 <!-- user-facing -->
-Present the split as a reviewable artifact:
-   package name, primary section, bundled sections, catalog trade (id + name, from step 3),
-   one-line market rationale each, and **get the user's approval before any tagging**.
+Show the split in plain words: package name, primary section, bundled sections, catalog trade
+   (id + name, from step 3), one-line market rationale each. Say it as what you did, not as a
+   question: "I split the job into 31 packages; here they are. Change any of them on the site or
+   tell me and I will redo it."
 <!-- /user-facing -->
-   Tagging happens into an approved structure, never an inferred one.
+   No approval is collected here: the split governs as drafted and stays editable; a correction is
+   a tool call. Tagging happens into the split you showed, never into one you kept to yourself.
 2. **Phase 2: scope-driven amendments.** Where the scope list surfaces what the TOC cannot see
    (a specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
    package that should collapse into another once scale is understood), draft amendments the
-   same way: named, rationaled, user-approved.
+   same way: named, rationaled, shown.
 3. **Resolve every package to the trade catalog.** The trade tag and the live package speak the
    curated CSI trade catalog's vocabulary, not the spec book's. Before presenting the split, look
    up each drafted package's home trade via `directory_list_trades`: exact `code` lookup first,
@@ -312,23 +320,23 @@ Present the split as a reviewable artifact:
    spec-section reading lives there and in each item's category and description, never in the
    trade tag. A package with no reasonable catalog match may keep its raw primary section as its
    tag value, but only as a deliberate, named choice: mark it "no catalog trade" in the split
-   artifact so the user approves that knowingly. An unresolved tag is never the silent
+   artifact so the user sees that choice plainly. An unresolved tag is never the silent
    default, and a catalog id is never guessed from memory: every id in the split comes from a
    `directory_list_trades` result in this run (store-resolution, non-negotiable 4, applies to the
    catalog too).
 
 Creating live bid packages on the project (the outward-facing objects the solicitation flow uses)
-is the user's call at their door. Offer it after approval, one `solicitation_create_package`
-per package they want live (tradeCode = the package's catalog trade id from the approved split,
+is the user's call at their door. Offer it once the split is shown, one `solicitation_create_package`
+per package they want live (tradeCode = the package's catalog trade id from the split,
 or its raw primary section only for a package the split explicitly marked "no catalog trade";
 name = the package's display name, notes carrying the bundled sections), and skip it cleanly if
-they'd rather create packages when soliciting. The approved split
+they'd rather create packages when soliciting. The split
 artifact, not the package rows, is what tagging needs.
 
 ## 7. Tag
 
-Assign each scope item its home trade off the approved split: one `belongsToTrade` record per item
-(value: the package's catalog trade id, verbatim from the approved split, a raw spec section only
+Assign each scope item its home trade off the split: one `belongsToTrade` record per item
+(value: the package's catalog trade id, verbatim from the split, a raw spec section only
 for a package the split explicitly marked "no catalog trade", never as an unmarked default),
 recorded in batches with the same count verification. Where an item genuinely straddles a package
 boundary, never hold it as a question: tag it to every candidate trade and keep moving.
@@ -339,8 +347,8 @@ these alongside the `belongsToTrade` batch, with the same count verification. Th
 placement is the one enrollment kind this run authors; exclusions, general requirements, and
 VE/alternates stay manual-first doctrine: the run does not auto-author them, the user authors
 those boundary lines on the package surface, and anything the read suggested toward one rides in
-flags and notes. Sheet-to-package assignment (`assign_sheet_packages`) is a user-approved
-override: offer it only when the user asks; the derived relevant-pages list already falls out of
+flags and notes. Sheet-to-package assignment (`assign_sheet_packages`) is the user's
+call: offer it only when the user asks; the derived relevant-pages list already falls out of
 the citations.
 
 ## 8. Close out
@@ -359,7 +367,7 @@ Report to the user, in plain words:
   to review them (the "Trade responsibility to confirm" section in each affected trade's package
   on plumlayer.com).
 - **The count check**: what was enumerated, what closed, what is still open.
-- **The package split**: approved packages, amendments, TOC sections deliberately unbundled.
+- **The package split**: the packages as drafted, amendments, TOC sections deliberately unbundled.
 - **What the run cost them**: how long it took, and the token totals where the harness reported
   them. Where a number was never reported, say it is unknown rather than presenting an estimate
   as a measurement.
