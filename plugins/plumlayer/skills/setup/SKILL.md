@@ -53,10 +53,9 @@ project-specific, that's `project-create`'s job. Keep it short.
 **Defaults** (sensible starting points project-create can override per job)
 - Default delivery method (`DBB` / `design-build` / `CM-at-risk` / …).
 - Default project type (e.g. `interior fit-out`, `ground-up`, `renovation`).
-- Scope preferences, the trades and packages you usually care about. `scope-run`, the live
-  scope-item-first engine, does not read this field today: it derives its package split fresh each
-  run from the spec table of contents and the trade knowledge base, so treat this as a note for
-  later use, not a current input.
+- Scope preferences, the trades and packages you usually care about. `scope-run` does not read
+  this field today: it derives its package split fresh each run from the spec table of contents
+  and the trade knowledge base, so treat this as a note for later use, not a current input.
 - Default scope grain preference, if useful later: `bid` (hard-bid or precon, coarser) or `ca`
   (awarded or construction-admin, finer). `scope-run` does not read this field today either.
 

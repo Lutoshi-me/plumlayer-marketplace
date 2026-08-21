@@ -165,7 +165,7 @@ one, and it hides the real blocker (no rows to answer) behind what looks like a 
   about to re-read. This full read is a stage-3 instrument only. For the post-write check, stage 7
   uses `view: "summary"`, a bounded projection of the same read (per-bidder counts and totals, no
   per-line grid, no receipts). Never re-call the full read to verify.
-- **`list_scope_items(projectId)`** (optional enrichment only) → the project-wide canonical scope-item
+- **`list_scope_items(projectId)`** (optional, adds context only) → the project-wide canonical scope-item
   view. `get_bid_package`'s `lines[]` already carries what this skill needs for the checklist; reach for
   `list_scope_items` only if a specific row needs a field `lines[]` doesn't carry, never to re-derive or
   double-check package membership: that restatement of the server's own filter is exactly the kind of

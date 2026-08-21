@@ -56,7 +56,7 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
   subject / predicate / trustClass / text; paginated. Use this to see what's actually been
   asserted, including your own recorded claims.
 - `list_scope_items`: the live scope list (name, category, description, notes, quantity per item).
-  Use this to see what's already been captured before creating or enriching a scope item.
+  Use this to see what's already been captured before creating or updating a scope item.
 
 **Drawing recognition** (cloud PDF: these work against files already uploaded to the project)
 - `list_files`: list the drawing files registered to a project.

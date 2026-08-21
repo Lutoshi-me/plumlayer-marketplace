@@ -345,10 +345,10 @@ Report to the user, in plain words:
 
 - **The scope list**: how many items, by category family; where to review it (the project's Scope
   view on plumlayer.com), and that every line shows the sheet and page it was read from.
-- **What you would like them to look at**: how many flagged items and the leading ones by name:
-  grain questions, package-boundary questions, document defects found (contradictions, missing
-  schedule rows, duplicate sheets), convention lines you judged not to apply on this job. Document
-  defects worth sending to the design team are named as question candidates.
+- **What you would like them to look at**: the grain questions, the package-boundary questions, the
+  document defects found (contradictions, missing schedule rows, duplicate sheets), and the
+  convention lines you judged not to apply on this job, each counted by kind and the leading ones
+  named. Document defects worth sending to the design team are named as question candidates.
 - **The count check**: what was enumerated, what closed, what is still open.
 - **The package split**: approved packages, amendments, TOC sections deliberately unbundled.
 - **What the run cost them**: how long it took, and the token totals where the harness reported
@@ -435,8 +435,8 @@ so flag what you're unsure of rather than smoothing it.
 After each round, before the next one starts, talk to the user like a person who has just finished
 a stretch of work. Name the round you finished and what it covered, then cover, in plain sentences:
 
-- What you read and what landed: sheets read, items added, items updated, things flagged. Your own
-  verified counts, never the ones a pass reported about itself.
+- What you read and what landed: sheets read, items added, items updated, and what you flagged, by
+  kind. Your own verified counts, never the ones a pass reported about itself.
 - What you would like them to look at now: document defects, grain questions, anomalies, each with
   its sheet reference, reviewable on plumlayer.com.
 - What is defined now that wasn't before, and anything the next round depends on.
