@@ -11,25 +11,6 @@ description: >
 
 # Plumlayer setup: your user profile (run once)
 
-## Talk to your user like an estimator
-
-Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
-everything the user sees, including your closing report: a report template is user-facing text.
-
-Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
-item, trail.
-
-Never say to the user: claim, predicate, subject, governing, trust class,
-supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
-sheetType, or any raw verb, field, or parameter name.
-
-Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
-is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
-the index is "checking the drawing list against the actual sheets"; what you could not settle is
-"what is still open". Plain prose, no em dashes, no bolded emphasis words.
-
-The full list, with translations, is in the project-record skill's Words section.
-
 This skill captures who you are and how you usually work so every other Plumlayer skill can be
 personalized to you without ever baking your company's details into shared, version-controlled plugin
 code. The interview is the scrub: the plugin ships generic; your specifics live only in a local

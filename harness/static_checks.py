@@ -10,19 +10,15 @@ Checks:
      skill set matches EXPECTED_SKILLS exactly, in both directions.
   4. Description contract: every skill description is non-empty, folded YAML
      style (`description: >`), and at most DESC_MAX_CHARS characters.
-  5. The estimator-voice block ("## Talk to your user like an estimator") is
-     byte-identical, in every skill that carries it, against the canonical
-     copy in docs/plugin-text-style.md §3 (not compared pairwise across
-     skills — each skill's own unheaded intro paragraph follows the block).
-  6. No banned string in shipped text: client-name denylist, `PLU-\\d+`,
+  5. No banned string in shipped text: client-name denylist, `PLU-\\d+`,
      internal vault filenames, `MOSOT`, em dash, middle dot. Em dash and
      middle dot are exempt inside fenced code blocks and inline code spans
      (data, not prose); every other pattern applies to code too. Only the
      pinned trade-packages/ corpus entries (read from MANIFEST.md's own
      Entries list) get the client-name-only scan; MANIFEST.md itself and any
      other file in that directory get the full scan by default.
-  7. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
-  8. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
+  6. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
+  7. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
      plugin.json (Claude), plugin.json (Codex), or marketplace.json.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
@@ -57,11 +53,6 @@ EXPECTED_SKILLS = {
 # Hard ceiling on a skill's frontmatter description length (chars). Above
 # this is a FAIL, not a warning — docs/plugin-text-style.md §2.
 DESC_MAX_CHARS = 600
-
-# The estimator-voice block every skill (except project-record, which carries
-# the extended "## Words (user-facing language)" section instead) must
-# reproduce byte-identically. docs/plugin-text-style.md §3.
-ESTIMATOR_HEADING = "## Talk to your user like an estimator"
 
 # Client / project names that must never appear in shipped text. Add new
 # names here as they turn up — matching is case-insensitive and whole-string,
@@ -215,60 +206,6 @@ def _extract_description(path: Path) -> dict:
         return {"style": "inline", "exact_indicator": False, "text": val}
 
     return {"style": "missing", "exact_indicator": False, "text": ""}
-
-
-_ESTIMATOR_SECTION_HEADING_RE = re.compile(r'^##\s+3\.\s+The estimator-voice block\s*$')
-
-
-def _extract_canonical_estimator_block(style_doc_path: Path) -> list[str] | None:
-    """
-    Parse the canonical estimator-voice block out of docs/plugin-text-style.md
-    section 3 ("## 3. The estimator-voice block"): the content of the first
-    fenced code block following that heading. Returns the block as a list of
-    lines (no trailing/leading blank lines), or None if the doc, the section,
-    or the fenced block cannot be found — the caller must treat None as a
-    hard failure, not a quiet pass, since there is then nothing to compare
-    skills against.
-    """
-    if not style_doc_path.exists():
-        return None
-    try:
-        lines = style_doc_path.read_text(encoding="utf-8").splitlines()
-    except Exception:
-        return None
-
-    section_start = None
-    for i, line in enumerate(lines):
-        if _ESTIMATOR_SECTION_HEADING_RE.match(line.strip()):
-            section_start = i
-            break
-    if section_start is None:
-        return None
-
-    fence_start = None
-    for i in range(section_start + 1, len(lines)):
-        if lines[i].strip().startswith("```"):
-            fence_start = i
-            break
-    if fence_start is None:
-        return None
-
-    fence_end = None
-    for i in range(fence_start + 1, len(lines)):
-        if lines[i].strip() == "```":
-            fence_end = i
-            break
-    if fence_end is None:
-        return None
-
-    block_lines = lines[fence_start + 1:fence_end]
-    # Trim only leading/trailing blank lines the fence itself may carry;
-    # internal blank lines are part of the contract and must survive.
-    while block_lines and block_lines[0].strip() == "":
-        block_lines.pop(0)
-    while block_lines and block_lines[-1].strip() == "":
-        block_lines.pop()
-    return block_lines if block_lines else None
 
 
 # --------------------------------------------------------------------------- #
@@ -443,90 +380,6 @@ def check_description_contract(plugin_path: Path) -> Result:
         detail += " | " + "; ".join(errors)
 
     return Result(name, passed=len(errors) == 0, detail=detail)
-
-
-# --------------------------------------------------------------------------- #
-# Check — Estimator-voice block identical across skills
-# --------------------------------------------------------------------------- #
-
-def check_estimator_block(plugin_path: Path, marketplace_root: Path) -> Result:
-    """
-    Every skill that carries the estimator-voice block must reproduce it byte
-    for byte against the single canonical source: the fenced block in
-    docs/plugin-text-style.md §3 (that file is the contract, so a skill that
-    disagrees with it is wrong by definition, not the doc). This deliberately
-    does NOT compare skills pairwise — an unheaded intro paragraph follows the
-    block in every skill before the next '## ' heading, so a naive
-    heading-to-next-heading extraction swallows that per-skill prose and
-    reports false drift. Taking exactly as many lines as the canonical block
-    has, starting at the heading, avoids that.
-    """
-    name = "estimator-block-identical"
-    style_doc_path = marketplace_root / "docs" / "plugin-text-style.md"
-
-    canonical_lines = _extract_canonical_estimator_block(style_doc_path)
-    if canonical_lines is None:
-        return Result(
-            name, False,
-            detail=(
-                f"could not parse the canonical estimator-voice block from "
-                f"{style_doc_path} (expected '## 3. The estimator-voice block' "
-                f"followed by a fenced code block) — this check has no reference "
-                f"to compare skills against and cannot run"
-            ),
-        )
-    n = len(canonical_lines)
-
-    skills_dir = plugin_path / "skills"
-    if not skills_dir.is_dir():
-        return Result(name, False, detail=f"skills/ directory not found at {skills_dir}")
-
-    carriers: list[str] = []
-    mismatches: list[str] = []
-
-    for skill_dir in sorted(d for d in skills_dir.iterdir() if d.is_dir()):
-        entry = skill_dir / "SKILL.md"
-        if not entry.exists():
-            continue
-        lines = entry.read_text(encoding="utf-8").splitlines()
-
-        heading_idx = None
-        for i, line in enumerate(lines):
-            if line.strip() == ESTIMATOR_HEADING:
-                heading_idx = i
-                break
-        if heading_idx is None:
-            continue  # doesn't carry the block (e.g. project-record) — not scored
-
-        carriers.append(skill_dir.name)
-        skill_block = lines[heading_idx:heading_idx + n]
-
-        if len(skill_block) < n:
-            mismatches.append(
-                f"{skill_dir.name}: block runs off the end of the file at line "
-                f"{heading_idx + len(skill_block)} ({len(skill_block)} lines found, "
-                f"{n} expected starting at line {heading_idx + 1})"
-            )
-            continue
-
-        if skill_block != canonical_lines:
-            first_diff_line = None
-            first_diff_detail = "content differs beyond a line-by-line walk"
-            for offset, (ref, cur) in enumerate(zip(canonical_lines, skill_block)):
-                if ref != cur:
-                    first_diff_line = heading_idx + 1 + offset
-                    first_diff_detail = f"expected {ref!r}, got {cur!r}"
-                    break
-            mismatches.append(
-                f"{skill_dir.name}: differs from docs/plugin-text-style.md §3 "
-                f"at line {first_diff_line} — {first_diff_detail}"
-            )
-
-    detail = f"{len(carriers)} skills carry the block: {carriers}"
-    if mismatches:
-        detail += " | " + "; ".join(mismatches)
-
-    return Result(name, passed=len(mismatches) == 0, detail=detail)
 
 
 # --------------------------------------------------------------------------- #
@@ -787,7 +640,6 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_version_quadruple(plugin_path, marketplace_root),
         check_skills(plugin_path),
         check_description_contract(plugin_path),
-        check_estimator_block(plugin_path, marketplace_root),
         check_banned_strings(plugin_path, marketplace_root),
         check_mcp_url(plugin_path),
         check_no_absolute_paths(plugin_path, marketplace_root),

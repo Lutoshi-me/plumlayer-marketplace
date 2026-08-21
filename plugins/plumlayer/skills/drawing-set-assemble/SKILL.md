@@ -10,25 +10,6 @@ description: >
 
 # Drawing set assemble: current-set PDF export
 
-## Talk to your user like an estimator
-
-Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
-everything the user sees, including your closing report: a report template is user-facing text.
-
-Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
-item, trail.
-
-Never say to the user: claim, predicate, subject, governing, trust class,
-supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
-sheetType, or any raw verb, field, or parameter name.
-
-Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
-is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
-the index is "checking the drawing list against the actual sheets"; what you could not settle is
-"what is still open". Plain prose, no em dashes, no bolded emphasis words.
-
-The full list, with translations, is in the project-record skill's Words section.
-
 Take the project's current governing sheet set and turn it into fresh, ready-to-use PDFs, one per
 discipline, and, by default, a single combined PDF of the whole set. This is an on-demand projection
 off the project record's set grid, not a new source of truth: it records nothing new, and it never changes which

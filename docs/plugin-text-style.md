@@ -19,9 +19,10 @@ what makes the product reliable.
 frontmatter descriptions, and, inside a skill body, every narration template, example sentence, and
 closing report format. Machinery vocabulary is banned here.
 
-The boundary that keeps getting missed: **a report template is user-facing text.** A skill that
-prints a kill list and then writes "report the deposit counts and the residue" has violated its own
-rule. Check every report and narration block against section 3.
+The boundary that keeps getting missed: **a report template is user-facing text.** A skill whose
+instructions say pass and open items, and whose closing report then says "deposits" and "residue",
+is running two vocabularies where section 3 requires one. Check every report and narration block
+against section 3.
 
 ### Declaring the audience
 
@@ -30,7 +31,7 @@ it governs is unmarked, so every skill marks it explicitly:
 
 - **User-facing spans are wrapped in paired markers**, each on its own line:
   `<!-- user-facing -->` before the span and `<!-- /user-facing -->` after it. This covers every
-  report template, narration block, checkpoint format, closing report, and any question or
+  report template, narration block, check-in format, closing report, and any question or
   statement the skill mandates the agent put to the user. Unmarked skill body text is agent-facing
   by default. Frontmatter descriptions, the README, and manifest descriptions are user-facing by
   category and carry no per-instance marker.
@@ -44,9 +45,6 @@ it governs is unmarked, so every skill marks it explicitly:
 - **The markers are mechanical on purpose.** The static check finds user-facing spans by these
   exact tokens; a span the markers miss is ungoverned. When in doubt, over-mark: the expensive
   failure is marking too little.
-- **Markers never go inside the estimator-voice block** (section 3), which stays byte-identical
-  across every skill that carries it. The block is itself an instruction about user-facing text,
-  not a user-facing template.
 
 ## 2. The frontmatter description contract
 
@@ -64,36 +62,15 @@ whether to invoke the skill. It must serve both.
   deterministic tooling grounds; nothing enters untraced"), trust-model vocabulary, the phrase
   "verb surface", deprecated tool aliases, or migration history.
 
-## 3. The estimator-voice block
+## 3. One vocabulary, both sides of the boundary
 
-Every skill carries this block verbatim, byte for byte. It is duplicated deliberately: skills load
-independently, so an agent running `takeoff` may never read `project-record`, and a pointer alone
-would leave that agent ungoverned. Duplication is the reliability choice; **drift** is the defect the
-harness now catches by comparing all ten copies for exact equality.
+The project record's concepts have settled names, and those names are used identically in what the
+user reads and in the instructions to the agent. One concept, one name. There is no translation
+step, because there is nothing left to translate: a skill that names a round a round and an open
+item an open item produces the right register in its output without being told to.
 
-Only `project-record` carries the extended list with per-term translations. Everything else carries
-exactly this and nothing more:
-
-```markdown
-## Talk to your user like an estimator
-
-Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
-everything the user sees, including your closing report: a report template is user-facing text.
-
-Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
-item, trail.
-
-Never say to the user: claim, predicate, subject, governing, trust class,
-supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
-sheetType, or any raw verb, field, or parameter name.
-
-Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
-is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
-the index is "checking the drawing list against the actual sheets"; what you could not settle is
-"what is still open". Plain prose, no em dashes, no bolded emphasis words.
-
-The full list, with translations, is in the project-record skill's Words section.
-```
+The one carve-out: a raw verb, parameter, or field name is an identifier, not a concept. It stays
+what it is, and it appears in a code span, never standing in for a sentence the user reads.
 
 ## 4. Banned from all shipped text
 
@@ -123,8 +100,8 @@ Each of these is a harness check.
 
 ## 5. Formatting
 
-- Headings are sentence case: `## 3. Read the residue`, not `## 3 · Read The Residue` and not
-  `## Step 3 — Read the residue`.
+- Headings are sentence case: `## 3. Read the open pages`, not `## 3 · Read The Open Pages` and
+  not `## Step 3 — Read the open pages`.
 - Numbered stages start at 1 and use `N.` as the separator.
 - Use `###` for genuine sub-stages; do not substitute a bolded lead-in paragraph.
 - Fenced code blocks carry a language tag.
@@ -138,10 +115,9 @@ Each of these is a harness check.
    `plugin.json`, and the Codex `.codex-plugin/plugin.json`.
 2. The shipped skill set matches the expected set exactly, in both directions.
 3. Every frontmatter description is non-empty, folded style, and at most 600 characters.
-4. The estimator-voice block is byte-identical across every skill that carries it.
-5. No banned string in any shipped text: client-name denylist, `PLU-\d+`, internal vault filenames,
+4. No banned string in any shipped text: client-name denylist, `PLU-\d+`, internal vault filenames,
    `MOSOT`, em dash, middle dot.
-6. No absolute local paths in any manifest.
+5. No absolute local paths in any manifest.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started.

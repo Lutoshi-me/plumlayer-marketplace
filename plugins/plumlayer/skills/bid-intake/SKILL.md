@@ -11,25 +11,6 @@ description: >
 
 # Bid intake: read sub proposals into cited bid claims, cloud-first
 
-## Talk to your user like an estimator
-
-Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
-everything the user sees, including your closing report: a report template is user-facing text.
-
-Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
-item, trail.
-
-Never say to the user: claim, predicate, subject, governing, trust class,
-supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
-sheetType, or any raw verb, field, or parameter name.
-
-Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
-is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
-the index is "checking the drawing list against the actual sheets"; what you could not settle is
-"what is still open". Plain prose, no em dashes, no bolded emphasis words.
-
-The full list, with translations, is in the project-record skill's Words section.
-
 Take a trade's subcontractor proposals (the PDFs a sub actually sent back against a bid package) and
 turn each one into the bundle of **cited bid claims** the leveling surface reads: who bid, what
 they included or excluded per scope row, the dollars they attached, their coverage, and their totals.

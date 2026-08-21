@@ -11,25 +11,6 @@ description: >
 
 # Working a Plumlayer project record
 
-## Talk to your user like an estimator
-
-Verbs, claims, and trust classes are machinery for you, never words the user reads. This covers
-everything the user sees, including your closing report: a report template is user-facing text.
-
-Speak estimator words: project record, entry, sheet, set, scale, scope item, bid response, flagged
-item, trail.
-
-Never say to the user: claim, predicate, subject, governing, trust class,
-supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
-sheetType, or any raw verb, field, or parameter name.
-
-Translate instead: a value you replaced is "I updated my earlier read"; a machine misread you caught
-is "the automatic scan grabbed the wrong text, so I read the sheet and set it right"; cross-checking
-the index is "checking the drawing list against the actual sheets"; what you could not settle is
-"what is still open". Plain prose, no em dashes, no bolded emphasis words.
-
-The full list, with translations, is in the project-record skill's Words section.
-
 **The project record** is the cloud, claim-based model of a
 construction project's *current governing truth*. Each Plumlayer **project has one project record**.
 You interact with it through the `plumlayer` MCP tools (every tool is scoped to the
@@ -57,42 +38,6 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
   judgment, and human sign-off still gates what leaves the building: an ITB or package
   send, an RFI, anything published outside, a bid. Nothing leaves unsigned; nothing enters
   untraced.
-
-## Words (user-facing language)
-
-<!-- user-facing -->
-Everything above is machinery vocabulary for working the verbs, never the language the user reads.
-This rule covers everything the user sees, including your closing report and any other report
-template: a report template is user-facing text, not machinery, even when it summarizes
-machinery-driven work. Speak estimator words in everything you say to them: **project record,
-entry, sheet, set, scale, scope item, bid response, flagged item, trail**. Say "recorded 14 entries
-to the project, each citing the sheet I read it from", "2 flagged for your judgment". Prefer
-"project" or "the project record" in plain words the user already uses.
-
-Never say to the user: *claim, predicate, subject, governing, trust class,
-supersede, promote, reconcile, reconciliation, ledger, grounding, residue, idempotency, QA,
-sheetType*. Those are machinery. If a concept has to surface, translate it: a superseded value is
-"replaced my earlier read"; a contest refusal is "a person set that one, so I left it alone and
-noted it"; the trust class is simply who recorded it and when.
-
-The kill list also covers these, each with its estimator translation:
-
-- **promote / promotion** ("promote it on plumlayer.com") → "set it right on the site" / "yours to
-  correct on the site" / "I flagged it for you to fix". Never "promote".
-- **QA / QA-findings / set-QA** → "set checks" / "things I found to fix in the set".
-- **sheetType / typed / untyped** → "sheet type" / "what kind of sheet each is" / "I left 15 for a
-  closer look".
-- **reconcile / reconciliation** → "cross-checking the drawing list against the actual sheets".
-- **indexDeclaresButAbsent** and similar raw field names → "sheets the index lists that aren't in
-  the set" (and the inverse, for the field naming the reverse gap).
-- Any raw verb name, predicate name, or field name that would otherwise appear in user narration
-  → translate it to plain words before it reaches the user; never let a JSON key or MCP verb stand in
-  for a sentence.
-
-Never tell the user something is "pending review" or "awaiting approval". What you write is the
-project's working record now, carrying your name, the time, and your citations; anything a person
-changes wins.
-<!-- /user-facing -->
 
 ## The verbs
 **Identity / discovery**
