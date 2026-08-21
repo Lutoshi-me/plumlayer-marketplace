@@ -1,15 +1,13 @@
 ---
 name: learn-project
 description: >
-  A cheap orientation pass over an already-uploaded drawing set: reads the project's seed facts and
-  sheet inventory, takes a handful of bounded renders (cover sheet, drawing index, key plans), then
-  records cited project-level facts (systems, MEP delivery shape, scope areas, hazards) into a
-  run-context packet, drafts the baseline trade-package split off the spec table of contents, and
-  creates the packages, so every downstream reader orients once and a package already exists for
-  every trade. Trigger on "learn the project", "orient on this set", "orientation pass",
-  "/learn-project". Drives search, set_grid, render_page, get_page_text, record_batch,
-  directory_list_trades, solicitation_list_packages, and solicitation_create_package. Does not
-  upload drawings (drawing-upload) or run scope-run.
+  A cheap orientation pass over an already-uploaded drawing set: reads seed facts and sheet
+  inventory, takes a handful of bounded renders (cover, index, key plans), records cited
+  project-level facts into a run-context packet, and drafts and creates the baseline trade-package
+  split off the spec table of contents. Trigger on "learn the project", "orient on this set",
+  "orientation pass", "/learn-project". Drives search, set_grid, render_page, get_page_text,
+  record_batch, directory_list_trades, solicitation_list_packages, solicitation_create_package.
+  Does not upload drawings or run scope-run.
 ---
 
 # Learn project: the cheap orientation pass (stage 1)
@@ -31,7 +29,7 @@ project name, client data, or a real extracted value here.
 
 `learn-project` reads an already-uploaded set, records **net-new** project-level orientation claims,
 compiles a packet from them, and drafts and creates the baseline trade-package split off the spec
-table of contents (Phase 1 of package derivation, `scope-package-architecture.md` §4.1). So it does
+table of contents (Phase 1 of package derivation). So it does
 **not**: upload a drawing delivery (precondition, owned by `drawing-upload`); extract spec sections
 itself (it reads the spec-section index if `drawing-upload`'s later spec-reading work has already
 recorded one, it never extracts specs); or run any of the later scope-run stages, reading the set in
@@ -182,16 +180,16 @@ entries sent; a mismatch stops the run and gets reported, never a guessed correc
 
 ## 7. Draft the baseline package split and create the packages
 
-Phase 1 of package derivation (`scope-package-architecture.md` §4.1, re-cut 2026-08-21 PLU-1317):
-the cheap, high-value baseline split, drafted here so a package already exists for every trade
-before the expensive scope read starts. Phase 2, the scope-driven amendments, stays in `scope-run`.
+Phase 1 of package derivation: the cheap, high-value baseline split, drafted here so a package
+already exists for every trade before the expensive scope read starts. Phase 2, the scope-driven
+amendments, stays in `scope-run`.
 
 1. **Read what's already on the project.** Call `solicitation_list_packages(projectId)` first. This
    step is match-or-create: never create a package whose catalog trade id already has one on the
    project. Report existing packages as "already on the project" rather than re-drafting them.
 2. **No spec sections, no split.** If step 3 found no `inDivision` claims for this project, create
-   **no** packages. Drawing disciplines are never used as an anchor for a split (Luke's ruling,
-   2026-08-21). Say plainly, in the packet and the report: spec reading hasn't run for this project
+   no packages. Drawing disciplines are never used as an anchor for a split. Say plainly, in the
+   packet and the report: spec reading hasn't run for this project
    (the remedy is to upload the project manual through `drawing-upload`'s spec-book leg and re-run
    this skill); if the project genuinely has no spec book, the scope run derives the packages from
    the finished scope list instead. No question asked, no branch beyond this sentence.
@@ -294,7 +292,7 @@ already-paid-for reads, effectively free. Token cost is fenced to the ≤6 rende
 `get_page_text` calls, the paged read of `inDivision` claims, the small, fixed cost of compiling the
 packet from a small claim set, and step 7's package derivation: one `directory_list_trades` lookup
 and one `solicitation_create_package` call per new package, plus the `solicitation_list_packages`
-read-back. No renders beyond the ≤6 budget, and no GPU or model hosting on this path.
+verification read. No renders beyond the ≤6 budget, and no GPU or model hosting on this path.
 
 ## Deferred (named, not skipped silently)
 

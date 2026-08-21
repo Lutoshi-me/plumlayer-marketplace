@@ -18,10 +18,9 @@ by reference dependency, produces one grounded, cited, trade-agnostic scope list
 the completeness pass, then amends and tags the trade packages, all on the hosted project record,
 with the user reviewing at every check-in. Orientation is the `learn-project` skill, which this
 skill runs first when orientation hasn't happened yet; orientation also drafts and creates the
-baseline package split off the spec table of contents (Phase 1, `scope-package-architecture.md`
-§4.1), so a package already exists for every trade before this skill's expensive read starts. This
-skill amends that split with what the scope read surfaces (Phase 2) and tags. The shape, in the
-estimator's own order:
+baseline package split off the spec table of contents (Phase 1), so a package already exists for
+every trade before this skill's expensive read starts. This skill amends that split with what the
+scope read surfaces (Phase 2) and tags. The shape, in the estimator's own order:
 
 > First assemble one massive singular list of all the scope line items across the entire job; then
 > sort through and decide which trade packages to create; assembling them is assigning one new meta
@@ -303,8 +302,8 @@ reported the same way.
 
 The estimator-judgment stage. Packages are bundles of spec sections grouped by how subcontractors
 actually split themselves in the market, not by the book's divisions. The baseline split (Phase 1)
-was drafted and created at orientation (`learn-project`, `scope-package-architecture.md` §4.1):
-read it fresh via `solicitation_list_packages(projectId)` rather than re-drafting it.
+was drafted and created at orientation (`learn-project`): read it fresh via
+`solicitation_list_packages(projectId)` rather than re-drafting it.
 
 1. **Phase 2: scope-driven amendments.** Where the scope list surfaces what the TOC cannot see (a
    specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
