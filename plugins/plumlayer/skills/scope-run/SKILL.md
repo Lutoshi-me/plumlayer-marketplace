@@ -141,6 +141,48 @@ uploaded to the project except record files, never recorded as project entries. 
 - `records/`: JSONL files for large batch writes (these do get uploaded, as the write
   mechanism). Audience: machine.
 
+## Phases, and who holds what
+
+The run is one attended conversation, and nothing in it accumulates. The project record is the
+run's memory; the run folder is its bookkeeping; no level of the run holds between its units
+anything a later unit needs. The user never manages context: the only decisions they make are
+the read plan and each check-in, and no prompt ever mentions sessions, compaction, or usage.
+
+The run executes at three levels. Each level is a separate agent context, bounded by construction:
+
+- **The lead** is this skill, running in the user's session. It does the cheap work only:
+  preconditions, context floor, the read plan, the check-ins, amending, tagging, close out. For
+  each round it starts one round runner and receives one fixed-shape summary. It never holds a
+  pass brief, a trade file, a reader's report, or a page of the set. What it keeps per round is
+  the dispatch line and the summary, nothing else.
+- **The round runner** (the plugin's `scope-round-runner` agent, one fresh instance per round)
+  owns the round: it recompiles the definitions index into the context packet, runs the round's
+  passes as read units exactly as stage 4 defines them, verifies every unit with its own queries,
+  runs the round-end overlap scan, appends the ledger, returns its summary, and ends. Its context
+  is bounded to one round. The completeness check (stage 5) runs the same way: one runner for the
+  enumeration, the accounting, and the closure loop, including any supplemental reads.
+- **The reader** (the plugin's `scope-reader` agent, one fresh instance per read unit) reads one
+  unit and records, as stage 4 and the pass brief define. It ends when it has reported.
+
+Handoff is by file and record, never by inlined text. A dispatch at any level carries only
+pointers: the project id, the round or unit id, the run folder path, and the page references.
+The reader opens the brief template, the context packet, and its trade files from the run folder
+itself; the runner opens the read plan and the ledger. Nothing from those files is pasted into a
+dispatch, because whatever is pasted stays in the dispatcher's context for the rest of the run.
+
+Reports travel upward in a fixed short shape, counts and named anomalies only (the shapes are
+given with the brief templates below). A runner's summary is what the lead reads at the check-in,
+verified against the record with the lead's own count queries, never relayed as-is.
+
+Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
+approved; round N complete; completeness closed; packages amended; tagged; closed out. On every
+start this skill reads the ledger first: a run in flight resumes at the phase after the last line,
+with the read plan read off disk and the packet regenerated from the record. A missing run folder
+for a project that already carries scope items is named plainly and the run re-plans against the
+record; the live-list mandate (non-negotiable 2) keeps a re-read from creating what is already
+there. Resumption is crash and multi-day hygiene. It is never offered to the user as a way to
+manage cost, and the check-in never suggests it.
+
 ## The trade knowledge base
 
 Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/`: one file per trade
