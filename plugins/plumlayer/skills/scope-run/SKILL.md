@@ -88,7 +88,7 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    trail and editable afterward. Never stop to collect approval for a course you have already
    chosen, and never offer a recommended yes: if something is genuinely wrong, stop, say what is
    wrong, and hand it over; if nothing is wrong, proceed and say what you did.
-10. **The completeness check runs; what is still open is named.** The enumerate-and-audit pass
+11. **The completeness check runs; what is still open is named.** The enumerate-and-audit pass
     (below) is a standing stage with a closure loop, never optional, and whatever remains open at
     the end is reported by name: never assumed closed, never zeroed by hope.
 
