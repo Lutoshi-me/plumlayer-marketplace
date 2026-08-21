@@ -167,7 +167,7 @@ amendment to that trade file, surfaced in the close-out report.
    `extract_spec_toc`): the package split anchors on the spec table of contents and is
    substantially weaker without it. If the project genuinely has no spec book, proceed and name
    that in the ledger and the close-out report: orientation created no baseline packages for this
-   project (§4.1's "no spec sections, no anchor"), and section 6 below derives the whole split from
+   project (no spec sections, no anchor), and section 6 below derives the whole split from
    the finished scope list instead.
 4. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record
    the version in the ledger. Missing → stop and report a broken plugin install rather than running
@@ -294,7 +294,7 @@ list. Run this after the placement rounds complete (and any time coverage is in 
 Spec sections account differently (estimators never write CSI digit strings into scope text): a
 spec section is accounted when the package split bundles it into a package. Read the bundled
 sections off the live packages' notes (`solicitation_list_packages`, the fixed `Bundled sections:`
-shape §6 and `learn-project` both write), not a local artifact. After stage 6's amendments are
+shape section 6 and `learn-project` both write), not a local artifact. After stage 6's amendments are
 applied, list every TOC section not bundled anywhere: those are the TOC sections still open,
 reported the same way.
 
@@ -326,7 +326,7 @@ Show what you did in plain words, mirroring orientation's wording: name the amen
    yourself.
 2. **Empty-baseline case.** When `solicitation_list_packages` returned no packages because the
    project has no spec sections (precondition 3), this stage derives the whole split from the
-   finished scope list instead of amending a baseline: same bundling logic (§4.1), same catalog
+   finished scope list instead of amending a baseline: same bundling logic as orientation, same catalog
    resolution, same `solicitation_create_package` calls and notes shape. Say so plainly in the
    report: the split was derived here, from the scope list, because there was no spec book to
    anchor an earlier baseline.
