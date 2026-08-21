@@ -378,10 +378,14 @@ a partial phrase, or a full title as the value.
 ### Unsure sheets
 
 Do not record a `sheetType` claim for a sheet you can't confidently place in the vocabulary; skip it
-and count it.
+and count it. Build the skipped list from the record, not from memory: `search(projectId,
+predicate: "sheetType")` against the recognized sheet list gives the exact set with no type entry.
 <!-- user-facing -->
 Narrate: "N sheets sorted by type, M I left for a closer look"; never imply full
-coverage when some sheets were skipped.
+coverage when some sheets were skipped. Name the M by sheet number and say what the list is: the
+sheets left without a type. It is a different list from the title disagreements in the index check,
+even when most numbers repeat; if you mention that earlier list, say which sheets are in both and
+which are in only one, never "the same".
 <!-- /user-facing -->
 
 ## 6c. Correct a mis-bound recognized title or discipline
@@ -612,6 +616,15 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   construction (re-running `recognize_sheets` on the same file+delivery is always safe).
 - Honest coverage at every stage: pages skipped, files excluded, unnamed pages left unread, or sheets left
   untyped are named, not buried in a total.
+- Every list of sheets you put in front of the user names the criterion that produced it (left
+  untyped, index title disagrees with the title block, delivered but not listed) and is read back
+  from the record, never recomposed from an earlier report. Two lists built on different criteria
+  are different lists: when a later one overlaps an earlier one, say which sheets are in both and
+  which are in only one. Never call them "the same" from memory. A private judgment that resolves a
+  difference you noticed is still a finding the user has not seen; report the difference, not your
+  resolution of it. (Field-proven on a real set: a close-out named FP-000 among five title
+  disagreements, the next report named FP-005 among five untyped sheets and called them "the exact
+  same 5"; both lists were right on their own terms and the narration was wrong.)
 - The spec-book leg (step 8) extracts a file set once, never once per division file, and its counts are
   read back with `search` and verified against the job's own `report`, never assumed. A named
   `failedFiles` entry is a finding for the user, never a silent retry loop.
