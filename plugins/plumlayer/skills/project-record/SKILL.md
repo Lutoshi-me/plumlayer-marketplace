@@ -58,7 +58,7 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
   send, an RFI, anything published outside, a bid. Nothing leaves unsigned; nothing enters
   untraced.
 
-## Words (operator-facing language)
+## Words (user-facing language)
 
 <!-- user-facing -->
 Everything above is machinery vocabulary for working the verbs, never the language the user reads.
@@ -85,7 +85,7 @@ The kill list also covers these, each with its estimator translation:
 - **reconcile / reconciliation** → "cross-checking the drawing list against the actual sheets".
 - **indexDeclaresButAbsent** and similar raw field names → "sheets the index lists that aren't in
   the set" (and the inverse, for the field naming the reverse gap).
-- Any raw verb name, predicate name, or field name that would otherwise appear in operator narration
+- Any raw verb name, predicate name, or field name that would otherwise appear in user narration
   → translate it to plain words before it reaches the user; never let a JSON key or MCP verb stand in
   for a sentence.
 

@@ -4,7 +4,7 @@ description: >
   Run the scope-item-first engine on a Plumlayer project: read the drawing set in waves, produce
   one grounded, cited, trade-agnostic scope list, audit it for completeness, then derive and tag
   trade packages. Trigger on "scope this set", "run the scope engine", "/scope-run". Attended:
-  the operator approves each stage. Drives the project record's read and write verbs. Does not
+  the user approves each stage. Drives the project record's read and write verbs. Does not
   upload drawings (drawing-upload), orient from scratch (learn-project), read sub proposals
   (bid-intake), or place takeoff measurements (takeoff).
 ---
@@ -35,7 +35,7 @@ The full list, with translations, is in the project-record skill's Words section
 The production scope engine: it builds the project's context floor, reads the set in
 reference-dependency waves through dispatched readers, produces one grounded, cited,
 trade-agnostic scope list, audits it with the completeness pass, then derives and tags the trade
-packages, all on the hosted project record, with the operator reviewing at every wave checkpoint.
+packages, all on the hosted project record, with the user reviewing at every wave checkpoint.
 Orientation is the `learn-project` skill, which this skill runs first when orientation hasn't
 happened yet. The engine's shape, in the estimator's own order:
 
@@ -49,9 +49,9 @@ method was validated end to end against a real precon bid evaluation before this
 method), and everything this skill mandates below is what that validation proved necessary: each
 mandate exists because its absence produced a measured failure.
 
-**This run is attended.** The operator approves the read plan before any reading, reviews at every
+**This run is attended.** The user approves the read plan before any reading, reviews at every
 wave checkpoint, and approves the package split before any tagging. Never run waves past a
-checkpoint without the operator's go-ahead.
+checkpoint without the user's go-ahead.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
 untraced.** Everything a reader records is its own reading, cited, carrying its authorship trail; it
@@ -98,7 +98,7 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    flag the grain as unspecced: recall never drops to grain uncertainty.
 8. **Definitions before placements.** A bundle reads only after the bundles it references are
    already recorded (legends and schedules before the plans that tag them). The read plan encodes
-   this order and the operator approves it.
+   this order and the user approves it.
 9. **Every wave carries a schedules-scope lane alongside its definitions lane.** Definitions
    readers record what a mark means; the schedules-scope lane owns the scope items the schedules
    themselves ground. The validation's single biggest capture gap was nobody owning
@@ -128,7 +128,7 @@ A newly created scope item is a full row, not a name. Every new item writes:
   internal watch item). Most items carry neither.
 - **quantity**: only where the sheet itself carries one, as `{value, unit}`.
 
-Recorded text is operator-facing prose: plain estimator words, no em dashes, no bolding, no
+Recorded text is user-facing prose: plain estimator words, no em dashes, no bolding, no
 machinery vocabulary. A verbose row is a defect, not diligence.
 
 ## Run artifacts and the ledger
@@ -144,7 +144,7 @@ uploaded to the project except record files, never recorded as project entries. 
   Audience: agent. Its dispatch and token-cost figures feed the close-out report's run-cost bullet;
   whatever crosses from it into that report becomes user-facing at the crossing and is translated
   there.
-- `bundle-map.md`: the read plan (stage 3), operator-approved before any wave runs. Audience: user,
+- `bundle-map.md`: the read plan (stage 3), user-approved before any wave runs. Audience: user,
   it is shown to the user for approval.
 - `context-packet.md`: the compiled context packet, regenerated between waves (a projection off
   live records, never itself recorded). Audience: agent.
@@ -184,7 +184,7 @@ entry, surfaced in the close-out report.
 4. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-packages/MANIFEST.md`; record
    the version in the ledger. Missing → stop and report a broken plugin install rather than running
    knowledge-blind.
-5. **The operator is present.**
+5. **The user is present.**
 <!-- user-facing -->
 Say what the run will do, roughly what it costs (a real read of a
    full set is a multi-hour, many-dispatch run: share the dispatch shape from the ledger of record:
@@ -210,7 +210,7 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    and the definitions index section (empty before the first definitions wave; recompiled after
    every wave). The packet is a projection: regenerate whole, never patch, never record it.
 
-## 3. The read plan (bundle map), operator-approved
+## 3. The read plan (bundle map), user-approved
 
 Compile the set into content-keyed bundles and sequence them by reference dependency. Pull the
 sheet inventory (`set_grid`, falling back to sampled `search(predicate: "discipline")` reads if the
@@ -245,7 +245,7 @@ are named residue, never silence).
 **Show the user the plan in estimator terms and get their
 approval before any wave runs.**
 <!-- /user-facing -->
-The read plan is a reviewable artifact; the operator may cut,
+The read plan is a reviewable artifact; the user may cut,
 add, or resequence.
 
 ## 4. Wave reads
@@ -274,9 +274,9 @@ Per wave, in this exact loop:
    papered over. When the wave ran readers in parallel, also scan the wave's new items for
    cross-reader overlaps: the same work captured from two sides, convention lines especially,
    since parallel readers cannot see each other's new items. List any overlap as a flag for the
-   operator at the checkpoint; merging is a person's call at the review surface, never the
+   user at the checkpoint; merging is a person's call at the review surface, never the
    lead's.
-5. **Checkpoint with the operator** (format below). Proceed to the next wave only on their
+5. **Checkpoint with the user** (format below). Proceed to the next wave only on their
    go-ahead.
 
 Token accounting: when the harness reports a completed worker's token usage, record it in the
@@ -312,7 +312,7 @@ spec section is accounted when the approved package split (stage 6) bundles it i
 After the split is approved, list every TOC section not bundled anywhere: that list is the
 TOC-coverage residue, reported the same way.
 
-## 6. Derive the packages: spec-TOC-anchored, two-phase, operator-approved
+## 6. Derive the packages: spec-TOC-anchored, two-phase, user-approved
 
 The estimator-judgment stage. Packages are bundles of spec sections grouped by how subcontractors
 actually split themselves in the market, not by the book's divisions.
@@ -325,13 +325,13 @@ actually split themselves in the market, not by the book's divisions.
 <!-- user-facing -->
 Present the split as a reviewable artifact:
    package name, primary section, bundled sections, catalog trade (id + name, from step 3),
-   one-line market rationale each, and **get the operator's approval before any tagging**.
+   one-line market rationale each, and **get the user's approval before any tagging**.
 <!-- /user-facing -->
    Tagging happens into an approved structure, never an inferred one.
 2. **Phase 2: scope-driven amendments.** Where the scope list surfaces what the TOC cannot see
    (a specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
    package that should collapse into another once scale is understood), draft amendments the
-   same way: named, rationaled, operator-approved.
+   same way: named, rationaled, user-approved.
 3. **Resolve every package to the trade catalog.** The trade tag and the live package speak the
    curated CSI trade catalog's vocabulary, not the spec book's. Before presenting the split, look
    up each drafted package's home trade via `directory_list_trades`: exact `code` lookup first,
@@ -341,13 +341,13 @@ Present the split as a reviewable artifact:
    spec-section reading lives there and in each item's category and description, never in the
    trade tag. A package with no reasonable catalog match may keep its raw primary section as its
    tag value, but only as a deliberate, named choice: mark it "no catalog trade" in the split
-   artifact so the operator approves that knowingly. An unresolved tag is never the silent
+   artifact so the user approves that knowingly. An unresolved tag is never the silent
    default, and a catalog id is never guessed from memory: every id in the split comes from a
    `directory_list_trades` result in this run (store-resolution, non-negotiable 4, applies to the
    catalog too).
 
 Creating live bid packages on the project (the outward-facing objects the solicitation flow uses)
-is the operator's call at their door. Offer it after approval, one `solicitation_create_package`
+is the user's call at their door. Offer it after approval, one `solicitation_create_package`
 per package they want live (tradeCode = the package's catalog trade id from the approved split,
 or its raw primary section only for a package the split explicitly marked "no catalog trade";
 name = the package's display name, notes carrying the bundled sections), and skip it cleanly if
@@ -363,9 +363,9 @@ recorded in batches with the same read-back verification. Where an item genuinel
 question instead of force-tagging: the validation run tagged 275 of 283 and flagged 8, and those
 8 flags were correct output, not failure. Boundary enrollments (exclusions, general requirements,
 alternates on other packages) are manual-first doctrine: the engine does not auto-author them;
-the operator authors boundary lines on the package surface, and anything the read suggested as a
+the user authors boundary lines on the package surface, and anything the read suggested as a
 boundary rides in flags and notes. Sheet-to-package assignment (`assign_sheet_packages`) is
-an operator-approved override: offer it only when the operator asks; the derived relevant-pages
+a user-approved override: offer it only when the user asks; the derived relevant-pages
 list already falls out of the citations.
 
 ## 8. Close out
@@ -432,7 +432,7 @@ at start (list_scope_items, plus targeted search):
    strings across like work, never one per item), description (1-3 tight sentences, only what
    changes price or scope — never a re-narration of the schedule; the citation does the
    explaining), notesExternal/notesInternal only when there is a real note, quantity only where
-   the sheet carries one as {value, unit}. Recorded text is operator-facing: plain estimator
+   the sheet carries one as {value, unit}. Recorded text is user-facing: plain estimator
    prose, no em dashes, no bolding, no machinery words. Verbose rows are defects.
 6. GRAIN: follow your entries' grain sections; where silent, create at best judgment AND flag the
    grain as unspecced.
@@ -454,7 +454,7 @@ skipped. Your reading is your word: it lands under your authorship and governs p
 so flag what you're unsure of rather than smoothing it.
 ```
 
-## The wave checkpoint (what the operator sees)
+## The wave checkpoint (what the user sees)
 
 <!-- user-facing -->
 After each wave, before the next dispatch, in estimator terms:
@@ -474,13 +474,13 @@ After each wave, before the next dispatch, in estimator terms:
 
 - **Upload or recognize drawings** (`drawing-upload`), **create projects** (`project-create`),
   **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`).
-- **Author boundary enrollments**: manual-first doctrine; the operator authors boundary lines at
+- **Author boundary enrollments**: manual-first doctrine; the user authors boundary lines at
   the package surface.
 - **Score itself against a bid eval**: the acceptance harness was repo-side study machinery, not
   product.
-- **Delete, resolve, or approve anything on the operator's behalf**: door-owned acts stay at
+- **Delete, resolve, or approve anything on the user's behalf**: door-owned acts stay at
   their doors.
-- **Run unattended**: wave checkpoints are load-bearing until the operator has enough cold runs
+- **Run unattended**: wave checkpoints are load-bearing until the user has enough cold runs
   behind them to decide otherwise, and that is their decision to make out loud, per run, never
   this skill's default.
 

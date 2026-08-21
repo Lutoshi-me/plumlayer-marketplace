@@ -6,7 +6,7 @@ description: >
   proposals to level. Trigger on "bid intake", "read the bids", "level the proposals", "/bid-intake".
   Drives proposal upload, the two-pass blind-then-peer read, supersession for revisions, and a
   count-verified write. Does not create the project (project-create), define the bid package (the
-  plumlayer.com flow), read drawings (drawing-upload), or sign for the operator.
+  plumlayer.com flow), read drawings (drawing-upload), or sign for the user.
 ---
 
 # Bid intake: read sub proposals into cited bid claims, cloud-first
@@ -90,7 +90,7 @@ record each bidder's bid claims against that package's existing scope rows. It d
   from, never a created `scopeItem:` subject (see the hard read rules and stage 7b);
 - level or rank the bids (`get_bid_package` computes the leveling projection; this skill only reads it
   for context and records the raw response claims the leveling reads from);
-- sign or submit anything: leveling the package and committing the bid stay with the operator, on
+- sign or submit anything: leveling the package and committing the bid stay with the user, on
   plumlayer.com.
 
 The pipeline: **preflight → upload/register → fetch rows + context → two-pass read (blind, then peer) →
@@ -696,7 +696,7 @@ readable there now, each with the proposal page behind it; the bid itself is the
   `.strict()` values).
 - Recording is verbatim, count-verified transport in ≤50-claim batches; a count mismatch stops the run.
 - Nothing this skill writes carries a person's authority or a signature; leveling the package and
-  submitting the bid stay with the operator.
+  submitting the bid stay with the user.
 - `get_bid_package` is the row + context source; a failure stops the run and is reported; never a
   raw-`search` reconstruction of the package, and never a hand-derived membership filter over
   `list_scope_items` as a substitute.

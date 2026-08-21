@@ -36,7 +36,7 @@ governing truth. This skill **creates the project and customizes it** by turning
 
 > **Doctrine (binds every step):** you read and judge; deterministic tooling grounds; nothing leaves
 > unsigned and nothing enters untraced. What you seed here takes effect right away as the project's
-> starting frame, recorded as agent-stated with your citation, and it is operator-asserted at the
+> starting frame, recorded as agent-stated with your citation, and it is user-asserted at the
 > source: someone *told you*, you didn't read it off a stamped drawing. That makes it the weakest
 > thing in the ledger, so when real drawings and specs are read later, better-grounded claims
 > supersede or corroborate it. **Cite every claim, never invent a fact, and flag what's uncertain.**
@@ -54,14 +54,14 @@ data-entry form. It runs **early, before the drawings are read**, and its whole 
 project record into existence carrying the few facts only *you* can supply.
 
 **The arc:**
-`setup` (operator profile, once), then **`project-create`** (this skill, the shell plus minimal
+`setup` (user profile, once), then **`project-create`** (this skill, the shell plus minimal
 frame), then **`drawing-upload`** (the agent reads and registers the drawing delivery as recognized
 sheet claims), then **`scope-run`** (the live scope-item-first engine), then review what's uncertain
 on plumlayer.com.
 
 **The load-bearing consequence, don't interrogate for what the set is about to tell you.** Almost
 everything about a project is **read off the drawings, in the very next step, at a far higher
-instrument tier** than anything the user can recite here. An operator answering from memory produces
+instrument tier** than anything the user can recite here. A user answering from memory produces
 the **weakest claim there is**, your restatement of what someone told you; a cover-sheet /
 title-block read produces a value confirmed off the drawing itself, which **outranks it minutes
 later.** So asking the user to guess the project type, the engineers, the trades, or the square footage
@@ -77,7 +77,7 @@ on.**
 ## 1. Preflight
 
 1. **Confirm the account.** Call `whoami`. State which account the project will be created under.
-2. **Load operator defaults (optional).** Read `~/.plumlayer/operator.json` if it exists (written by
+2. **Load user defaults (optional).** Read `~/.plumlayer/operator.json` if it exists (written by
    the `setup` skill), use its `defaults` to pre-fill and avoid re-asking. If it's missing and the
    user wants personalization, suggest running `/setup` first (optional, not required).
 3. **Avoid a duplicate.** Call `list_projects`. If something close already exists, confirm the user
@@ -93,12 +93,12 @@ that classification drives `ambiguityClass` at seed time.
 
 ### Ask now vs. defer to the read (the triage that keeps this short)
 
-**Ask now, operator-only facts no drawing carries.** Even these: *offer, don't interrogate*, accept
+**Ask now, user-only facts no drawing carries.** Even these: *offer, don't interrogate*, accept
 "skip" freely.
 - **Project name** *(required)*, the user's working name for the pursuit.
 - **Delivery method** (DBB / CM-at-risk / design-build / GMP), a contract fact often absent from the
   drawings. Take it if known; skip if not (the ITB / contract confirms it later). Don't argue it
-  against the operator default, just record what they say.
+  against the user default, just record what they say.
 - **How they're bidding / buying it**, the trade *packages* they intend to carry, *if* they already
   have a commercial plan in mind. A business decision, not a drawing fact, but it firms up fast once
   they see the set, so don't force it.
@@ -117,9 +117,9 @@ tier. Note in one line that you'll read it, then move on:
   `drawing-upload` + sheet registration produce it).
 
 ### Mode A: interview (the ask-now set only)
-Ask conversationally, in **one short group**, pre-filled from operator defaults
+Ask conversationally, in **one short group**, pre-filled from user defaults
 (`~/.plumlayer/operator.json`). **Only `name` is required; everything else is "skip if you don't have
-it handy."** Do **not** reconcile the operator's saved defaults (e.g. interior-only scope lenses)
+it handy."** Do **not** reconcile the user's saved defaults (e.g. interior-only scope lenses)
 against this project here. Package and trade-fit decisions belong to `scope-run`, not this step.
 
 ### Mode B: read what they already have (preferred when docs exist)
@@ -168,8 +168,8 @@ message).
 
 **Claim shape** (matches the Claim atom: `subject — predicate — value` + evidence):
 - `sourceInstrument` = `project-setup-interview` (interview) or the **uploaded file name** (read-in).
-  This correctly marks the claim as low-instrument / operator-asserted.
-- `evidence` = `{ source: "<operator-interview | filename>", method: "human", snippet: "<what was
+  This correctly marks the claim as low-instrument / user-asserted.
+- `evidence` = `{ source: "<user-interview | filename>", method: "human", snippet: "<what was
   said / the source line>" }`.
 - `ambiguityClass` = set it when the fact was `uncertain` or `conflicting` (this is what later
   surfaces it in the `ambiguities` queue / RFI pile for human resolution). Omit for `confirmed`.
@@ -242,7 +242,7 @@ Tell the user, in plain terms:
 - **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. Uncertain or
   conflicting facts are seeded **with `ambiguityClass`**, not silently resolved or dropped.
 - **Seeds are the weakest claims in the ledger.** They take effect as the starting frame, recorded as
-  agent-stated from what the operator told you, and a drawing read supersedes them. Never present one
+  agent-stated from what the user told you, and a drawing read supersedes them. Never present one
   as a fact read off the documents.
 - **One project = one project record.** Always seed within the correct `projectId` returned by `create_project`.
 - **Data hygiene.** Project specifics may live in the cloud project record and in the user's cwd config; they

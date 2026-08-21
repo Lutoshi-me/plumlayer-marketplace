@@ -59,7 +59,7 @@ EXPECTED_SKILLS = {
 DESC_MAX_CHARS = 600
 
 # The estimator-voice block every skill (except project-record, which carries
-# the extended "## Words (operator-facing language)" section instead) must
+# the extended "## Words (user-facing language)" section instead) must
 # reproduce byte-identically. docs/plugin-text-style.md §3.
 ESTIMATOR_HEADING = "## Talk to your user like an estimator"
 
@@ -553,7 +553,7 @@ def _build_banned_patterns(client_names_only: bool) -> list[tuple[str, re.Patter
     patterns.append(("internal ticket ID", re.compile(r"PLU-\d+"), False))
     for fname in BANNED_VAULT_FILENAMES:
         patterns.append((f"internal vault filename '{fname}'", re.compile(re.escape(fname)), False))
-    patterns.append(("'MOSOT' as operator-facing vocabulary", re.compile(r"\bMOSOT\b", re.IGNORECASE), False))
+    patterns.append(("'MOSOT' as user-facing vocabulary", re.compile(r"\bMOSOT\b", re.IGNORECASE), False))
     patterns.append(("em dash", re.compile(r"—"), True))
     patterns.append(("middle dot", re.compile(r"·"), True))
     return patterns

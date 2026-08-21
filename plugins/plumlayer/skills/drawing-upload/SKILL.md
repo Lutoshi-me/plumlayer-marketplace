@@ -481,7 +481,7 @@ disk the whole time.
 <!-- user-facing -->
 **Report the counts honestly, not just "N sections found."** From the succeeded job's `report`:
    sections found, files opened vs failed (a multi-file run can succeed overall while still naming one
-   corrupt division PDF in `failedFiles`: that's a finding for the operator, never a silent retry
+   corrupt division PDF in `failedFiles`: that's a finding for the user, never a silent retry
    loop), and the completeness-diff / mismatch / residue counts. **`sectionsFound` counts only
    footer-confirmed sections** (the per-page CSI-code footer read): a section declared solely in the
    PDF bookmark tree, with no confirming footer, does NOT add to that count; it surfaces instead through
@@ -523,7 +523,7 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    what the spec sections say. It returns a full report; it writes nothing on this call.
 3.
 <!-- user-facing -->
-**Walk the operator through the report** before recording anything:
+**Walk the user through the report** before recording anything:
    - What matched: the overlap between the index and the set.
    - What the index lists that isn't in the set: while the delivery still holds pages nobody has
      recognized, this sits in your own review queue (the sheet may be on one of them); once every
@@ -542,10 +542,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
      this delivery, the spec leg is reported as not having run. Say exactly that; never present it
      as a finding of zero.
 <!-- /user-facing -->
-4. **Offer to record the residue.** Once the operator has seen the report, offer
+4. **Offer to record the residue.** Once the user has seen the report, offer
    `reconcile_set(projectId, record: true)` to record the sheet findings and the grouped questions
    for the design team (grouped by discipline series, not one per sheet). Only run it on the
-   operator's go-ahead: this is where the residue becomes part of the review queue.
+   user's go-ahead: this is where the residue becomes part of the review queue.
 
 ## Gates (non-negotiable)
 
@@ -571,10 +571,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   untyped are named, not buried in a total.
 - The spec-book leg (step 8) extracts a file set once, never once per division file, and its counts are
   read back with `search` and verified against the job's own `report`, never assumed. A named
-  `failedFiles` entry is a finding for the operator, never a silent retry loop.
+  `failedFiles` entry is a finding for the user, never a silent retry loop.
 - The reconciliation gate (step 9) is honest about its own bounds: no classified index page, a
   backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
-  problems found." `reconcile_set` residue is recorded only on the operator's go-ahead.
+  problems found." `reconcile_set` residue is recorded only on the user's go-ahead.
 
 ## Cost (cheapest tier first)
 

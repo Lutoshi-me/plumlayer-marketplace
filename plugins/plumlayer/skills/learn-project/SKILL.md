@@ -53,7 +53,7 @@ run any of the scope engine's later stages, reading the set in waves, building t
 deriving trade packages, or tagging items to a trade (all owned by `scope-run`).
 
 The run-context packet this skill compiles is a **projection**, never stored as truth, the same
-pattern as a trade package. It lives in the operator's local run folder only, never a repo, never
+pattern as a trade package. It lives in the user's local run folder only, never a repo, never
 the project record.
 
 ## 1. Preconditions

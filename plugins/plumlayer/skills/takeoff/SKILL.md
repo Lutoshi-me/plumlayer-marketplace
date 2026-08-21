@@ -30,10 +30,10 @@ the index is "checking the drawing list against the actual sheets"; what you cou
 
 The full list, with translations, is in the project-record skill's Words section.
 
-Take the operator's sentence (what to count or measure, and where) and come back with the same
+Take the user's sentence (what to count or measure, and where) and come back with the same
 artifact an intern at the next desk would produce: a named condition in the Measurements panel with
 individual marks placed at true locations on the sheets, totaled, editable, and carrying the full
-trail of who counted what from where. The operator opens the takeoff editor and sees a takeoff,
+trail of who counted what from where. The user opens the takeoff editor and sees a takeoff,
 not a data import.
 
 Doctrine binds every stage: **you read and judge; deterministic tooling grounds; nothing enters
@@ -44,7 +44,7 @@ citation. There is no counting algorithm in this skill and none behind the verbs
 table would replace your reading with a guess that happens to be repeatable.
 
 Your work lands as working truth immediately, carrying its trail. There is no waiting pile and no
-review step to narrate: the operator corrects anything they disagree with directly in the editor,
+review step to narrate: the user corrects anything they disagree with directly in the editor,
 and anything a person touches or has said outranks your word on that spot from then on: the verbs
 enforce this; you never need to police it, only to expect refusals near human-touched work and to
 treat them as information, not errors.
@@ -59,7 +59,7 @@ sheets you were pointed at is the job; writing what they contain into tracked so
 (Oversized tool results can spill to harness-managed local files outside your control; that is
 outside the repo and acceptable: the rule you own is what you write into tracked files.)
 
-## Words (operator-facing language)
+## Words (user-facing language)
 
 <!-- user-facing -->
 Speak estimator words in everything the user reads: **condition, mark, measurement, count, total,
@@ -80,10 +80,10 @@ names. It does **not**:
 - run scope identification or trade derivation (`scope-run`; a takeoff is quantities, not
   scope);
 - delete, approve, or reorganize existing takeoff work: corrections to standing work belong to the
-  operator in the editor; you may add to it and may revise your own prior work, never remove
+  user in the editor; you may add to it and may revise your own prior work, never remove
   another author's;
 - derive quantities the sheets do not show (no "typical floor times 12" extrapolation unless the
-  operator asks for exactly that, and then it is named as arithmetic in the report, never placed as
+  user asks for exactly that, and then it is named as arithmetic in the report, never placed as
   marks on sheets you did not read).
 
 The pipeline: **preflight → what already stands → find the sheets → ground the scale → read and
@@ -96,14 +96,14 @@ gates, collected at the end.
    confirm with the user only if the match is not obvious. Capture `projectId`.
 2. **Parse the request into three facts** and hold them explicitly:
    - **The item**: what is being counted or measured ("windows", "hollow metal doors", "brick
-     veneer"). This is the operator's name for it; it becomes the condition name.
+     veneer"). This is the user's name for it; it becomes the condition name.
    - **The surface**: which sheets ("the elevations", "level 2 plans", "A-3.01"). A sheet family,
      a named list, or a discipline; resolved in stage 3.
    - **The kind**: count (each), linear (lf), or area (sf). Usually implied by the item; when the
      request is genuinely ambiguous ("take off the curtain wall": count of panels? sf of system?),
      ask before reading. One clarifying question up front is cheap; a wrong-kind takeoff is a redo.
 3. **Do not ask what you can read.** Which tags mark the item, what the legend says, where the
-   sheets are: that is your job in stages 3–5, not a questionnaire for the operator.
+   sheets are: that is your job in stages 3–5, not a questionnaire for the user.
 
 ## 2. What already stands (before anything else writes)
 
@@ -120,7 +120,7 @@ only one of them is a condition:
   but they are standing counted work all the same: a count of the same item on the same sheet
   **is** overlap even though no condition exists.
 
-**Either shape → stop and put the choice to the operator** before reading a single sheet.
+**Either shape → stop and put the choice to the user** before reading a single sheet.
 <!-- user-facing -->
 Name
 what stands, say plainly whether it is visible in the editor or on record only, and offer the
@@ -140,7 +140,7 @@ honest options with their real costs:
 <!-- /user-facing -->
 
 Be honest about removal: you cannot remove standing work, and a legacy per-sheet count is not in
-the editor for the operator to delete either. Whatever is added lands **alongside** it. Never
+the editor for the user to delete either. Whatever is added lands **alongside** it. Never
 silently count the same thing onto the same sheets twice; never present a new condition as if it
 replaced anything.
 
@@ -201,7 +201,7 @@ Per target sheet:
   `hasScale` with `method: "auto-detected"`, the display label as read, the derived
   units-per-point, and the two-point `calibration` geometry of the very feature you verified
   against. If the sheet states no scale and dimensions nothing you can calibrate on, record
-  no-scale only if the request needs no scale; otherwise stop and tell the operator that sheet
+  no-scale only if the request needs no scale; otherwise stop and tell the user that sheet
   cannot be measured yet.
 - A scale disagreement you cannot resolve (label says one thing, the datums say another) is a
   judgment call: go with what the geometry proves, and put the discrepancy in the report.
@@ -246,7 +246,7 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
      gets no mark, and the exclusion is recorded with its reason and location: in the record
      evidence where it shaped a count, and always in the report;
    - **blocked**: you genuinely cannot tell and the answer materially changes the takeoff: stop
-     and ask the operator, with the render in front of them. Rare by design; most border cases
+     and ask the user, with the render in front of them. Rare by design; most border cases
      are calls you make and name.
    Nothing is silently dropped. The census count, the placed count, and the named exclusions must
    reconcile exactly; if they do not, find the gap before recording.
@@ -255,7 +255,7 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
    them, apply it consistently, and name the rule in the report. When the sheet itself cannot
    settle whether views repeat (no cross-reference markers), size the ambiguity: if the
    ambiguous instances could move the total by more than a few percent, stop and ask with the
-   render in front of the operator; below that, make the call, apply it consistently, and lead
+   render in front of the user; below that, make the call, apply it consistently, and lead
    the report with it.
 
 ## 6. Define the condition
@@ -264,7 +264,7 @@ One `takeoff_condition` call per condition. The server creates the identity and 
 landed record's `subject`: **that string is the conditionId every mark in stage 7 carries.** You
 never invent one.
 
-- `value`: `name` is the operator's own words for the item, qualified by surface when it helps
+- `value`: `name` is the user's own words for the item, qualified by surface when it helps
   ("Windows: exterior elevations"); `type` is the kind from stage 1 (`count` / `linear` /
   `area`); `unit` to match (`ea`, `lf`, `sf`); `folder` / `color` / `notes` only when they carry
   real information (a note is a fine home for the run's counting rule).
@@ -280,7 +280,7 @@ never invent one.
 ## 7. Place the marks
 
 One `takeoff_record` per instance: a count mark per counted tag, a length per run, an area per
-region. Never a list of points in one call, never a rollup: the total the operator sees is the
+region. Never a list of points in one call, never a rollup: the total the user sees is the
 marks summed, so the marks are the takeoff.
 
 - **Geometry is the census's own coordinates** (PDF points, the `get_page_text` frame): a count
@@ -335,7 +335,7 @@ Check, with a fresh recount against your stage-7 canonical list (never an echoed
 
 A mismatch stops the run and is reported as a discrepancy with both numbers: never patched by
 re-sending, never rounded into "close enough". The read-back result is the only ground for telling
-the operator the takeoff landed; a successful write call alone is not.
+the user the takeoff landed; a successful write call alone is not.
 
 ## 9. Report
 
@@ -346,7 +346,7 @@ The report is the manifest, in estimator words:
   name and its total; which scale each measured sheet used and where it came from (already set /
   read off the sheet and checked against a dimensioned feature).
 - **Judgment calls, led with, numbered:** every border case counted or excluded, each with its
-  location and reason, so the operator can check exactly those in the editor. This is the first
+  location and reason, so the user can check exactly those in the editor. This is the first
   thing after the totals, not a footnote.
 - **The count check:** candidates found → counted → excluded (named) per sheet, and the
   read-back verification result.
@@ -358,7 +358,7 @@ The report is the manifest, in estimator words:
 **If the run stopped at stage 2**, the report is a different, shorter shape, and it is a
 successful run, not an apology: what stands (named, with whether it is visible in the editor or
 on record only), why that blocks proceeding without a choice, the options from stage 2 with their
-real costs, and the standing work's own judgment calls and caveats. The operator inherits those
+real costs, and the standing work's own judgment calls and caveats. The user inherits those
 the moment they lean on the standing number, so they are part of the answer, not trivia.
 <!-- /user-facing -->
 
@@ -366,9 +366,9 @@ the moment they lean on the standing number, so they are part of the answer, not
 
 - `takeoff_read` runs before any write, and the overlap check covers **both** shapes of standing
   work: conditions and legacy per-sheet counts (`summary.byPredicate`, not only
-  `summary.conditions`); either stops the run for the operator's choice. Re-running never
+  `summary.conditions`); either stops the run for the user's choice. Re-running never
   silently duplicates and never claims to have replaced work it cannot remove.
-- The sheet roster is stated to the operator before any mark lands.
+- The sheet roster is stated to the user before any mark lands.
 - The legend and the sheet decide what a token means: never a rule imported from another project,
   a prior run, or this file. Method travels; answers do not.
 - Census, placed marks, and named exclusions reconcile exactly; nothing is silently dropped. On
@@ -382,27 +382,27 @@ the moment they lean on the standing number, so they are part of the answer, not
 - A refusal near human-touched work is skipped and named, never fought; a transport/auth error
   is retried once with the read-back as the duplicate-proof; an unexplained refusal stops the
   run.
-- The landed result is verified by read-back with a fresh recount before the operator is told it
+- The landed result is verified by read-back with a fresh recount before the user is told it
   landed: the condition read (paginated to completion) for marks, a separate sheet-scoped read
   for each scale; a mismatch is reported, never patched silently.
 - Judgment calls are named in the trail and led with in the report: never silently resolved,
   never buried.
-- Operator-facing language is estimator words; the machinery vocabulary (claim,
+- User-facing language is estimator words; the machinery vocabulary (claim,
   supersede, predicate, and kin) never reaches the user.
 - Nothing this skill writes is a person's word, and nothing it does deletes, approves, or signs;
-  corrections and removals belong to the operator in the editor.
+  corrections and removals belong to the user in the editor.
 
 ## Bundled vs. config
 
 This skill generalizes once. The per-run delta (which project, which item, which sheets, which
-kind) is data the operator supplies in their sentence, never an edit to this file. A new takeoff
+kind) is data the user supplies in their sentence, never an edit to this file. A new takeoff
 never edits `SKILL.md`; observed specifics of one project (its tag conventions, its legends) live
 in that run's evidence and report, never here.
 
 ## Deferred / for proving runs to confirm (named, not skipped silently)
 
 - **Redo semantics.** There is no agent-side removal, and legacy per-sheet counts are not in the
-  editor for the operator to remove either, so every redo shape lands alongside what stands. If
+  editor for the user to remove either, so every redo shape lands alongside what stands. If
   real use makes redo common, a deliberate revision path for a whole condition's marks (and a
   retirement path for legacy records) is a verb-surface question, not something this skill
   improvises.

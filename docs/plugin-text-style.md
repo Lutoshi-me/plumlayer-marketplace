@@ -106,7 +106,7 @@ Each of these is a harness check.
 - **Internal vault filenames** (`scope-package-architecture.md`, `agent-driven-ingestion.md`,
   `drawing-set-intake-design.md`). These live in a repo the user does not have. Either state the
   rule inline or drop the citation.
-- **`MOSOT`**, retired as operator-facing vocabulary.
+- **`MOSOT`**, retired as user-facing vocabulary.
 - **Em dashes and middle dots** (`—`, `·`) in prose, per house style. This applies to skill
   instruction bodies too, not only to text a user reads: a model mirrors the register of its
   instructions, so em-dash-saturated instructions push the agent toward the exact writing tic the
