@@ -2,11 +2,11 @@
 name: scope-run
 description: >
   Read a Plumlayer project's drawing set into one grounded, cited, trade-agnostic scope list,
-  audit it for completeness, then derive and tag trade packages. Trigger on "scope this set",
+  audit it for completeness, then amend and tag trade packages. Trigger on "scope this set",
   "/scope-run". Attended: the user approves the read plan and reviews at every check-in.
   Drives the project record's read and write verbs. Does not upload drawings (drawing-upload),
-  orient from scratch (learn-project), read sub proposals (bid-intake), or place takeoff
-  measurements (takeoff).
+  orient from scratch or draft the baseline package split (learn-project), read sub proposals
+  (bid-intake), or place takeoff measurements (takeoff).
 ---
 
 # Scope run
@@ -15,9 +15,13 @@ description: >
 
 The production scope run: it builds the project's context floor, reads the set in rounds ordered
 by reference dependency, produces one grounded, cited, trade-agnostic scope list, audits it with
-the completeness pass, then derives and tags the trade packages, all on the hosted project record,
+the completeness pass, then amends and tags the trade packages, all on the hosted project record,
 with the user reviewing at every check-in. Orientation is the `learn-project` skill, which this
-skill runs first when orientation hasn't happened yet. The shape, in the estimator's own order:
+skill runs first when orientation hasn't happened yet; orientation also drafts and creates the
+baseline package split off the spec table of contents (Phase 1, `scope-package-architecture.md`
+§4.1), so a package already exists for every trade before this skill's expensive read starts. This
+skill amends that split with what the scope read surfaces (Phase 2) and tags. The shape, in the
+estimator's own order:
 
 > First assemble one massive singular list of all the scope line items across the entire job; then
 > sort through and decide which trade packages to create; assembling them is assigning one new meta
@@ -31,8 +35,9 @@ mandate exists because its absence produced a measured failure.
 
 **This run is attended.** The user approves the read plan before any reading and reviews at every
 check-in. Never read past a check-in without the user's go-ahead. The package split is not a gate:
-the run drafts the packages, shows them, and tags; they stay editable, and a correction is a change
-on the site or a tool call.
+this run reads the baseline packages orientation created, amends them as the scope list surfaces
+what the spec TOC could not see, shows what it did, and tags; they stay editable, and a correction
+is a change on the site or a tool call.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
 untraced.** Everything a pass records is its own reading, cited, carrying its authorship trail; it
@@ -92,9 +97,9 @@ that relaxes any one of them reproduces a measured, named failure from the valid
     (below) is a standing stage with a closure loop, never optional, and whatever remains open at
     the end is reported by name: never assumed closed, never zeroed by hope.
 
-Also: never author door-owned records. Retractions, flag resolutions, questions-as-answers, and
-package definitions are created only at their own doors: a pass that thinks an item should be deleted
-or a flag should be closed says so in its report; a person acts at the door.
+Also: never author door-owned records. Retractions, flag resolutions, and questions-as-answers are
+created only at their own doors: a pass that thinks an item should be deleted or a flag should be
+closed says so in its report; a person acts at the door.
 
 ## The scope item row
 
@@ -160,11 +165,11 @@ amendment to that trade file, surfaced in the close-out report.
 3. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)`: spec
    sections present means the spec-TOC leg has run. Absent: ask the user whether a project manual /
    spec book exists. If one does, run it through `drawing-upload`'s spec-book leg first (upload +
-   `extract_spec_toc`): the package derivation anchors on the spec table of contents and is
-   substantially weaker without it. If the project genuinely has no spec book, proceed, name that
-   in the ledger and the close-out report, and derive packages from the drawing disciplines plus
-   the trade knowledge base's market conventions instead (an explicitly weaker anchor, said so to
-   the user).
+   `extract_spec_toc`): the package split anchors on the spec table of contents and is
+   substantially weaker without it. If the project genuinely has no spec book, proceed and name
+   that in the ledger and the close-out report: orientation created no baseline packages for this
+   project (§4.1's "no spec sections, no anchor"), and section 6 below derives the whole split from
+   the finished scope list instead.
 4. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record
    the version in the ledger. Missing → stop and report a broken plugin install rather than running
    knowledge-blind.
@@ -188,7 +193,10 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    extraction missed are noted for the record.
 2. **Orientation.** If the project has no orientation facts yet (`search(projectId, predicate:
    "structuralSystem", limit: 1)` and siblings empty), run the `learn-project` skill now, in full.
-   If orientation exists, read its claims fresh instead of re-running it.
+   If orientation exists, read its claims fresh instead of re-running it. **Also re-run
+   `learn-project`** when the project has spec sections (`inDivision` claims present) but no
+   packages on it yet (`solicitation_list_packages(projectId)` empty): orientation owns the
+   baseline split, and a spec book with no packages means it hasn't drafted one yet.
 3. **Compile the context packet** (`context-packet.md`): identity and seed facts; systems; scope
    areas; set shape (disciplines, deliveries, spec-TOC status, reconciliation findings); hazards;
    and the definitions index section (empty before the first round; recompiled after every round).
@@ -285,60 +293,52 @@ list. Run this after the placement rounds complete (and any time coverage is in 
 6. **Name what is still open**, in the ledger and in the close-out report, row by row.
 
 Spec sections account differently (estimators never write CSI digit strings into scope text): a
-spec section is accounted when the package split (stage 6) bundles it into a package.
-After the split is drafted, list every TOC section not bundled anywhere: those are the TOC
-sections still open, reported the same way.
+spec section is accounted when the package split bundles it into a package. Read the bundled
+sections off the live packages' notes (`solicitation_list_packages`, the fixed `Bundled sections:`
+shape §6 and `learn-project` both write), not a local artifact. After stage 6's amendments are
+applied, list every TOC section not bundled anywhere: those are the TOC sections still open,
+reported the same way.
 
-## 6. Derive the packages: spec-TOC-anchored, two-phase
+## 6. Amend the packages: scope-driven (Phase 2)
 
 The estimator-judgment stage. Packages are bundles of spec sections grouped by how subcontractors
-actually split themselves in the market, not by the book's divisions.
+actually split themselves in the market, not by the book's divisions. The baseline split (Phase 1)
+was drafted and created at orientation (`learn-project`, `scope-package-architecture.md` §4.1):
+read it fresh via `solicitation_list_packages(projectId)` rather than re-drafting it.
 
-1. **Phase 1: baseline split.** Draft the package structure from the spec TOC plus the trade
-   knowledge base's market conventions: which sections bundle into which package, which get carved
-   out, a primary CSI section per package. Probe the usually-present families the TOC is silent
-   on (site/civil, SOE, landscaping/exterior improvements, thin design-build MEP divisions) and
-   draft estimator-declared packages for them.
+1. **Phase 2: scope-driven amendments.** Where the scope list surfaces what the TOC cannot see (a
+   specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
+   package that should collapse into another once scale is understood), apply the amendment live:
+   `solicitation_create_package` for a genuinely new package, `solicitation_update_package` to
+   fold, split, or rename an existing one. Resolve the amendment's trade the same way as
+   orientation (`directory_list_trades`, exact `code` first then `query` by name/alias; the
+   catalog trade id recorded verbatim, store-resolution, non-negotiable 4), and write the same
+   fixed notes shape orientation uses: `Bundled sections: 03 30 00, 03 35 00. Primary: 03 30 00.
+   Rationale: <one line>.` A package with no reasonable catalog match cannot be created or
+   amended into one: name it "no catalog trade, not created" in the report.
 <!-- user-facing -->
-Show the split in plain words: package name, primary section, bundled sections, catalog trade
-   (id + name, from step 3), one-line market rationale each. Say it as what you did, not as a
-   question: "I split the job into 31 packages; here they are. Change any of them on the site or
-   tell me and I will redo it."
+Show what you did in plain words, mirroring orientation's wording: name the amendments made
+   (packages created, split, collapsed, or renamed), each with its one-line rationale. Say it as
+   what you did, not as a question: "I amended the split: two packages, here's why. Change any of
+   them on the site or tell me and I will redo it."
 <!-- /user-facing -->
-   No approval is collected here: the split governs as drafted and stays editable; a correction is
-   a tool call. Tagging happens into the split you showed, never into one you kept to yourself.
-2. **Phase 2: scope-driven amendments.** Where the scope list surfaces what the TOC cannot see
-   (a specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
-   package that should collapse into another once scale is understood), draft amendments the
-   same way: named, rationaled, shown.
-3. **Resolve every package to the trade catalog.** The trade tag and the live package speak the
-   curated CSI trade catalog's vocabulary, not the spec book's. Before presenting the split, look
-   up each drafted package's home trade via `directory_list_trades`: exact `code` lookup first,
-   then a `query` by trade name or alias ("tile", "sheetrock"), and record the catalog trade id
-   verbatim (the spaced form, e.g. `09 21 16`) in the split artifact alongside the primary
-   section. The primary section and bundled sections keep their spec-TOC granularity: the finer
-   spec-section reading lives there and in each item's category and description, never in the
-   trade tag. A package with no reasonable catalog match may keep its raw primary section as its
-   tag value, but only as a deliberate, named choice: mark it "no catalog trade" in the split
-   artifact so the user sees that choice plainly. An unresolved tag is never the silent
-   default, and a catalog id is never guessed from memory: every id in the split comes from a
-   `directory_list_trades` result in this run (store-resolution, non-negotiable 4, applies to the
-   catalog too).
-
-Creating live bid packages on the project (the outward-facing objects the solicitation flow uses)
-is the user's call at their door. Offer it once the split is shown, one `solicitation_create_package`
-per package they want live (tradeCode = the package's catalog trade id from the split,
-or its raw primary section only for a package the split explicitly marked "no catalog trade";
-name = the package's display name, notes carrying the bundled sections), and skip it cleanly if
-they'd rather create packages when soliciting. The split
-artifact, not the package rows, is what tagging needs.
+   No approval is collected: the amendment governs as applied and stays editable; a correction is
+   a tool call. Tagging (section 7) happens into the split as amended, never into one you kept to
+   yourself.
+2. **Empty-baseline case.** When `solicitation_list_packages` returned no packages because the
+   project has no spec sections (precondition 3), this stage derives the whole split from the
+   finished scope list instead of amending a baseline: same bundling logic (§4.1), same catalog
+   resolution, same `solicitation_create_package` calls and notes shape. Say so plainly in the
+   report: the split was derived here, from the scope list, because there was no spec book to
+   anchor an earlier baseline.
 
 ## 7. Tag
 
-Assign each scope item its home trade off the split: one `belongsToTrade` record per item
-(value: the package's catalog trade id, verbatim from the split, a raw spec section only
-for a package the split explicitly marked "no catalog trade", never as an unmarked default),
-recorded in batches with the same count verification. Where an item genuinely straddles a package
+Assign each scope item its home trade off the live packages: one `belongsToTrade` record per item
+(value: the package's catalog trade id, read fresh via `solicitation_list_packages`, a raw spec
+section only for a package that could not be created for lack of a catalog match — named "no
+catalog trade, not created" in the report — never as an unmarked default), recorded in batches
+with the same count verification. Where an item genuinely straddles a package
 boundary, never hold it as a question: tag it to every candidate trade and keep moving.
 `belongsToTrade` carries the best single guess as the home trade; each other candidate trade gets
 a `packageRole:<trade>` record with role `candidate` and a note in the shape "confirm trade
@@ -367,7 +367,9 @@ Report to the user, in plain words:
   to review them (the "Trade responsibility to confirm" section in each affected trade's package
   on plumlayer.com).
 - **The count check**: what was enumerated, what closed, what is still open.
-- **The package split**: the packages as drafted, amendments, TOC sections deliberately unbundled.
+- **The package split**: the amendments made this run (created / split / collapsed / renamed,
+  each with its rationale), the packages derived here from scratch only in the no-spec-book case,
+  and TOC sections deliberately unbundled.
 - **What the run cost them**: how long it took, and the token totals where the harness reported
   them. Where a number was never reported, say it is unknown rather than presenting an estimate
   as a measurement.
@@ -468,7 +470,8 @@ like you to look at, and the plan for round two. Proceed, adjust, or pause?"
 ## What this skill does not do
 
 - **Upload or recognize drawings** (`drawing-upload`), **create projects** (`project-create`),
-  **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`).
+  **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`), **draft the
+  baseline package split** (Phase 1, owned by `learn-project`).
 - **Author boundary enrollments other than trade-responsibility candidates**: exclusions, general
   requirements, and VE/alternates stay manual-first doctrine; the user authors those boundary
   lines at the package surface.
