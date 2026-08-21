@@ -330,14 +330,18 @@ artifact, not the package rows, is what tagging needs.
 Assign each scope item its home trade off the approved split: one `belongsToTrade` record per item
 (value: the package's catalog trade id, verbatim from the approved split, a raw spec section only
 for a package the split explicitly marked "no catalog trade", never as an unmarked default),
-recorded in batches with the same count verification. Where an item genuinely straddles a package boundary, flag it as a package-boundary
-question instead of force-tagging: the validation run tagged 275 of 283 and flagged 8, and those
-8 flags were correct output, not failure. Boundary enrollments (exclusions, general requirements,
-alternates on other packages) are manual-first doctrine: the run does not auto-author them;
-the user authors boundary lines on the package surface, and anything the read suggested as a
-boundary rides in flags and notes. Sheet-to-package assignment (`assign_sheet_packages`) is
-a user-approved override: offer it only when the user asks; the derived relevant-pages
-list already falls out of the citations.
+recorded in batches with the same count verification. Where an item genuinely straddles a package
+boundary, never hold it as a question: tag it to every candidate trade and keep moving.
+`belongsToTrade` carries the best single guess as the home trade; each other candidate trade gets
+a `packageRole:<trade>` record with role `candidate` and a note in the shape "confirm trade
+responsibility: could be `<home>` or `<this trade>`" (internal only, never bidder-facing). Record
+these alongside the `belongsToTrade` batch, with the same count verification. The candidate
+placement is the one enrollment kind this run authors; exclusions, general requirements, and
+VE/alternates stay manual-first doctrine: the run does not auto-author them, the user authors
+those boundary lines on the package surface, and anything the read suggested toward one rides in
+flags and notes. Sheet-to-package assignment (`assign_sheet_packages`) is a user-approved
+override: offer it only when the user asks; the derived relevant-pages list already falls out of
+the citations.
 
 ## 8. Close out
 
@@ -347,10 +351,13 @@ Report to the user, in plain words:
 - **The scope list**: how many items, by category family; where to review it (the project's Scope
   view on plumlayer.com), and that every line shows the sheet and page it was read from.
 - **What you would like them to look at**: the items you weren't sure how finely to split, the
-  package-boundary questions, the document defects found (contradictions, missing schedule rows,
-  duplicate sheets), and the assumed items that don't fit this job, each counted by kind and the
-  leading ones named. Document defects worth sending to the design team are named as question
-  candidates.
+  document defects found (contradictions, missing schedule rows, duplicate sheets), and the
+  assumed items that don't fit this job, each counted by kind and the leading ones named.
+  Document defects worth sending to the design team are named as question candidates.
+- **Trade responsibility to confirm**: how many items you placed in more than one trade's package
+  (count each item once, however many packages it sits in), the leading trades named, and where
+  to review them (the "Trade responsibility to confirm" section in each affected trade's package
+  on plumlayer.com).
 - **The count check**: what was enumerated, what closed, what is still open.
 - **The package split**: approved packages, amendments, TOC sections deliberately unbundled.
 - **What the run cost them**: how long it took, and the token totals where the harness reported
@@ -454,8 +461,9 @@ like you to look at, and the plan for round two. Proceed, adjust, or pause?"
 
 - **Upload or recognize drawings** (`drawing-upload`), **create projects** (`project-create`),
   **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`).
-- **Author boundary enrollments**: manual-first doctrine; the user authors boundary lines at
-  the package surface.
+- **Author boundary enrollments other than trade-responsibility candidates**: exclusions, general
+  requirements, and VE/alternates stay manual-first doctrine; the user authors those boundary
+  lines at the package surface.
 - **Score itself against a bid eval**: the acceptance harness was repo-side study machinery, not
   product.
 - **Delete, resolve, or approve anything on the user's behalf**: door-owned acts stay at
