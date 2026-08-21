@@ -12,21 +12,21 @@ description: >
 # Drawing upload: the foundation pass, agent-driven, cloud-first
 
 Take whatever the architect actually sent, in whatever shape, and turn it into the one canonical,
-recognized set of **cited sheet claims** in the project's project record. This is **Stage 0**: the first
+recognized set of **cited sheet entries** in the project's project record. This is **Stage 0**: the first
 thing that touches a delivery, before anything is split by discipline, routed, or deep-read.
 
 Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing enters
-untraced.** Every claim in this pipeline takes effect as soon as it lands, carrying who wrote it and
+untraced.** Every entry in this pipeline takes effect as soon as it lands, carrying who wrote it and
 what they read from: the recognition pass records what it confirmed off the page, and what you judge
 yourself records as your own reading, cited to the page you read it on. You are the reader; the MCP
 recognition verbs (`recognize_sheets`, `recognize_sheets_status`, `render_page`, `get_page_text`) are
 the anti-hallucination anchor, not the inference engine. There is no local pipeline and no
 server-side autonomous *reader*: the server runs the deterministic bulk pass, which also types most
 sheets by a rule match, and records its own output, but you still drive every job, judge every page
-the pass could not name, type the sheets the rule pass left untyped, and author every claim that
+the pass could not name, type the sheets the rule pass left untyped, and author every entry that
 isn't the deterministic pass's own grounded output.
 
-This skill runs the read cloud-first: recognition and every recorded claim come from the server or
+This skill runs the read cloud-first: recognition and every recorded entry come from the server or
 your own read of the cloud-hosted pages, never from a local pass. Examples in this file are generic;
 never put a real client or project name here.
 
@@ -47,11 +47,11 @@ How to say each thing as it happens:
 ## What this is, and the boundary
 
 `drawing-upload` does exactly one thing: take a drawing delivery and register every sheet in it as
-cited claims in the project's project record. The canonical form is claims + provenance over the
+cited entries in the project's project record. The canonical form is entries + provenance over the
 untouched original delivery. Discipline organization, by-discipline PDFs, and page labels
 are all **projections** of that form, rendered on demand by other skills, never the foundation. So this skill does **not**: physically split files by discipline (discipline is derived
-per sheet, never from a filename); produce a CSV (the deliverable is claims in the project record: the export
-skill `drawing-set-assemble` renders artifacts from the cloud claims on request); scope, take off, or comprehend the sheets (`scope-run` / `takeoff` / `learn-project`); or create
+per sheet, never from a filename); produce a CSV (the deliverable is entries in the project record: the export
+skill `drawing-set-assemble` renders artifacts from the cloud entries on request); scope, take off, or comprehend the sheets (`scope-run` / `takeoff` / `learn-project`); or create
 the project (`project-create`).
 
 **Retired:** `drawing-index`, `drawing-index-bulletin`, `drawing-index-merge`: they organized before
@@ -156,8 +156,8 @@ there's no clean 1:1 correspondence.
 For any other genuinely ambiguous packaging (a mixed bag, or a dual-source case the page-total check
 didn't resolve), use the **Read tool** directly on a few local candidate pages of each file to judge
 title-block grammar vs spec-prose and pick the authoritative source. This local sampling is
-**file-selection judgment only**: it decides which local files you upload next; it never grounds a
-claim, and no claim's evidence ever cites a local read (every claim's evidence comes from the cloud
+**file-selection judgment only**: it decides which local files you upload next; it never grounds an
+entry, and no entry's evidence ever cites a local read (every entry's evidence comes from the cloud
 recognition tools in steps 5–6).
 
 <!-- user-facing -->
@@ -206,7 +206,7 @@ folder, no manifest file: the project files list (`list_files`) is the record.
 ## 5. Recognize sheets (async, start then poll)
 
 Call `register_pages(projectId)` **once** for the project: it registers viewable page rows for every
-uploaded PDF (not claims, just renderable pages) and only needs to run once per project, not per file.
+uploaded PDF (not entries, just renderable pages) and only needs to run once per project, not per file.
 
 Then, **once per file**, call `recognize_sheets(projectId, fileId, deliveryId)` to start the
 deterministic server-side pass over that PDF. It returns immediately (it does not scan inline) with
@@ -220,16 +220,16 @@ Poll `recognize_sheets_status(projectId, jobId)` every ~3-5s until `state` settl
 - `stale`: no progress for 15 minutes; re-call `recognize_sheets` on the same file/delivery to
   self-heal (it restarts the job).
 - `failed`: read `error`, stop, and report it; don't retry blindly.
-- `succeeded`: the recognized sheet claims (`appearsOnPage`, `hasTitle`, `locatedAt`, `discipline`,
+- `succeeded`: the recognized sheet entries (`appearsOnPage`, `hasTitle`, `locatedAt`, `discipline`,
   `partOfIssue`) are **already recorded server-side.** This result never carries
-  those claims and you never `record_batch` them yourself: that would double-write every sheet. Report
+  those entries and you never `record_batch` them yourself: that would double-write every sheet. Report
   the run-level counts from `report`: `pagesScanned`, `sheetsGrounded`, `highConfCount`, `flaggedCount`,
   `extractionWarningCount`, `calibrated`, `capHit`. Never assume "N pages scanned = N sheets recognized":
-  state both numbers. `confidence` on individual claims (visible later via `search`/`set_grid`) is
+  state both numbers. `confidence` on individual entries (visible later via `search`/`set_grid`) is
   triage/review-priority metadata only, never a trust tier.
 
 For a multi-file delivery, start and poll a separate job per file; there is no merge step and no
-`SET_TAG`: each file's recognized claims land under the shared `deliveryId` as soon as its own job
+`SET_TAG`: each file's recognized entries land under the shared `deliveryId` as soon as its own job
 succeeds, with no pooling step required.
 
 ## 6. Read the pages the pass could not name
@@ -248,23 +248,23 @@ every page in that tail yourself:
   - **A confident correction of a machine misread**: you can see the reader grabbed the wrong cell (a
     tag instead of the sheet number, a boxed note instead of the title). If the recognizer already
     stored a value for that slot, write your corrected value as a supersession **edge** onto it, not a
-    bare competing claim: `search(projectId, subject: "sheet:<n>", predicate:
-    "hasTitle"|"discipline"|"appearsOnPage")` to get the live claim's `id`, then author your corrected
-    claim with `supersedesId` set to that id, cited to the crop you read. The edge is what makes your
-    read govern: a bare competing claim loses to the machine value on authorship rank, which is the
+    bare competing entry: `search(projectId, subject: "sheet:<n>", predicate:
+    "hasTitle"|"discipline"|"appearsOnPage")` to get the live entry's `id`, then author your corrected
+    entry with `supersedesId` set to that id, cited to the crop you read. The edge is what makes your
+    read govern: a bare competing entry loses to the machine value on authorship rank, which is the
     anti-hallucination anchor working as designed. If the slot is empty (the pass
-    left this page blank), just author the claim fresh: there is nothing to supersede.
+    left this page blank), just author the entry fresh: there is nothing to supersede.
   - **Genuine ambiguity**: you honestly cannot tell which of two readings is right. Author your reading
-    as a bare claim tagged with `ambiguityClass` so both surface for a person in `ambiguities`; never
+    as a bare entry tagged with `ambiguityClass` so both surface for a person in `ambiguities`; never
     silently pick. Reserve the flag for real ambiguity; never use it for a correction you are confident
     about (that just hands a person a title you already read correctly).
 - **Image-only / scanned pages**: flag them honestly. Create the page as its own subject:
   `page:<fileId>:<pageInPdf>`, never `subject: null`, and never add an OCR dependency (deferred).
   Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
 
-For every one of those pages you *do* resolve, author the **full bundle** of claims, mirroring the shape the
+For every one of those pages you *do* resolve, author the **full bundle** of entries, mirroring the shape the
 server records for the pages the deterministic pass already recognized (matching predicate and value
-shapes keeps every sheet's claim set uniform regardless of which stage grounded it):
+shapes keeps every sheet's entry set uniform regardless of which stage grounded it):
 
 ```json
 {"subject": "sheet:S-501", "predicate": "appearsOnPage", "value": 412,
@@ -284,14 +284,14 @@ server's `disciplineFromSheetNumber` logic (all letters before the first digit/d
 never a full NCS discipline name. Do not add client-side compensation for prefixes the server can't
 classify; that gap is a known limitation, not this skill's problem to solve.
 
-**Gate:** every page in that tail ends up judged (a full claim bundle) or flagged (image-only or genuinely
+**Gate:** every page in that tail ends up judged (a full entry bundle) or flagged (image-only or genuinely
 unreadable); never silently dropped. State how many you read, corrected, and flagged.
 
 ## 6b. Type the sheets
 
 Recognition itself now types most of the set: at `recognize_sheets` finalize, the server runs a
 deterministic rule pass over every newly recognized sheet, matching its sheet-number prefix or
-recognized title against the 13-value vocabulary below. A match writes a `sheetType` claim
+recognized title against the 13-value vocabulary below. A match writes a `sheetType` entry
 server-side, register `machine-read`, cited to the matched title words, with a `confidence` of
 `high` or `medium`. A sheet the rules can't place gets nothing: those leftover sheets, never `other` (the
 rule pass never writes `other`), is what you read here. So this step is the backstop to the
@@ -308,14 +308,14 @@ looking at the K it left."
 
 Find the leftover sheets from `set_grid` rows carrying no `sheetType`, or `search(projectId, predicate:
 "sheetType")` against the recognized set to see what's already covered. Apply the keyword/judgment
-guidance and render-only-when-unclear rule below to those leftover sheets only, and record a claim per sheet
+guidance and render-only-when-unclear rule below to those leftover sheets only, and record an entry per sheet
 you can confidently place.
 
 **Correcting a rule-typed sheet.** When you judge a rule-typed sheet wrong, correct it the same way
 you'd correct any machine-read binding (step 6c): never a bare re-record, since a bare
-`agent-stated` claim does not outrank a `machine-read` one on the same slot and would just sit
+`agent-stated` entry does not outrank a `machine-read` one on the same slot and would just sit
 beneath it doing nothing. `search(projectId, subject: "sheet:<n>", predicate: "sheetType")`, take
-the row with `authorRegister: "machine-read"`, and author your corrected claim with `supersedesId`
+the row with `authorRegister: "machine-read"`, and author your corrected entry with `supersedesId`
 set to that row's id, cited to what you actually read. That edge is what makes your read govern.
 
 This step runs on every door this skill supports: a fresh baseline, a bulletin or revision, and the
@@ -323,7 +323,7 @@ cloud-resident re-recognition branch (1b) all converge here before the skill rep
 delivery, or an earlier delivery in the same project, already went through recognition but was
 never typed (from a session that predates the server-side rule pass, or one that stopped short),
 closing that gap is this run's job, not something to leave for later. A recognized sheet with no
-`sheetType` claim, whether rule-typed or agent-typed, and no honest skip-count is never a valid
+`sheetType` entry, whether rule-typed or agent-typed, and no honest skip-count is never a valid
 resting state for any path through this skill.
 
 ### The vocabulary
@@ -359,9 +359,9 @@ Only reach for `render_page` when the number and title genuinely leave the type 
 cryptic title, a discipline whose naming convention you haven't seen yet): render that one sheet,
 judge it, move on. Do not render sheets whose type is already obvious from what recognition gave you.
 
-### Claim shape
+### Entry shape
 
-One `sheetType` claim per sheet you classify, matching the step 6 bundle's shape:
+One `sheetType` entry per sheet you classify, matching the step 6 bundle's shape:
 
 ```json
 {"subject": "sheet:S-501", "predicate": "sheetType", "value": "schedule",
@@ -377,7 +377,7 @@ a partial phrase, or a full title as the value.
 
 ### Unsure sheets
 
-Do not record a `sheetType` claim for a sheet you can't confidently place in the vocabulary; skip it
+Do not record a `sheetType` entry for a sheet you can't confidently place in the vocabulary; skip it
 and count it. Build the skipped list from the record, not from memory: `search(projectId,
 predicate: "sheetType")` against the recognized sheet list gives the exact set with no type entry.
 <!-- user-facing -->
@@ -403,14 +403,14 @@ When you are confident a recognized title or discipline is a mis-grab, correct i
 **edge**, exactly like a confident step 6 correction:
 
 1. `search(projectId, subject: "sheet:<n>", predicate: "hasTitle")` (or `"discipline"`) → the live
-   machine claim's `id`.
+   machine entry's `id`.
 2. `render_page` the title-block corner and read the real title yourself.
-3. Author the corrected claim with `supersedesId` set to that id, cited to the crop you read, and pool
+3. Author the corrected entry with `supersedesId` set to that id, cited to the crop you read, and pool
    it into your step 7 write.
 
 The edge is what makes your read govern the grid: the recognizer's binding is `machine-read`, and an
 agent edge onto it is honored regardless of that register; only a person's later word outranks you.
-A **bare** corrected claim with no `supersedesId` does NOT win; it sits as a
+A **bare** corrected entry with no `supersedesId` does NOT win; it sits as a
 candidate beneath the machine value. Never reach for the `ambiguityClass` flag here: a flag is for
 genuine ambiguity, and flagging a title you already read correctly is the "go set it on the site" dead
 end this step exists to close.
@@ -426,19 +426,19 @@ and set them right".
 server-side once its job succeeded (step 5), and re-running `recognize_sheets` on the same
 file+delivery is safe by construction: the concurrency guard returns the existing job, and the
 write itself is idempotent (`alreadyWritten: true` on a poll means a prior run already wrote this
-delivery's sheet claims, no duplicate was written). You still make exactly one write of your own
-(pooling the step 6 bundle, the sheetType claims from step 6b, and any mis-bind
+delivery's sheet entries, no duplicate was written). You still make exactly one write of your own
+(pooling the step 6 bundle, the sheetType entries from step 6b, and any mis-bind
 corrections from step 6c, the edges carrying their `supersedesId`), plus one verification pass:
 
 1. **Record the page + type bundle.** Before recording, check whether you've already recorded
    these pages or types for this delivery in a prior run of this skill (e.g. `search(projectId,
    predicate: "partOfIssue", text: <deliveryId or label>)` and `search(projectId, predicate:
-   "sheetType")`), and confirm with the user before sending it again; the server's recognized-claim
-   idempotency does not cover claims you authored and sent yourself. Once clear, pool the full claim
+   "sheetType")`), and confirm with the user before sending it again; the server's recognized-entry
+   idempotency does not cover entries you authored and sent yourself. Once clear, pool the full entry
    bundles you authored in steps 6, 6b, and 6c (recognized pages you did not correct contribute
    nothing here: do not re-send them) into one array per project.
 
-   **For a small bundle, call `record_batch(projectId, claims)` directly.** It accepts 1–500
+   **For a small bundle, call `record_batch(projectId, entries)` directly.** It accepts 1–500
    entries and is atomic (one bad entry rejects the whole batch, naming the index); transport every
    entry **verbatim**, never re-typed from memory. **Verify**: the returned `count` must equal the
    number of entries you sent. If it doesn't, stop and report the discrepancy rather than retrying
@@ -446,7 +446,7 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
 
    **For a large agent-authored bundle (a deep set with thousands of page and type entries), use
    `record_batch_file` instead of chaining many `record_batch` calls.** The path: write the full
-   claim array as JSONL, `request_file_upload(projectId, filename)` for a signed URL, PUT the JSONL
+   entry array as JSONL, `request_file_upload(projectId, filename)` for a signed URL, PUT the JSONL
    bytes to it, `register_file(projectId, fileId, filename, contentType: "application/jsonl", kind:
    "document")`, then call `record_batch_file(projectId, fileId)` to write straight from the
    registered file. Verify the same way: read back a count and confirm it matches what you wrote to
@@ -471,7 +471,7 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    across every file's succeeded job for this delivery (from step 5) to get the recognized sheet
    count in scope. Compare it against the sum of the server's rule-typed count (`written.sheetTyping.
    typed` from step 6b's status read) plus your own agent-typed-plus-skipped count from step 6b: the
-   sheets you assigned a `sheetType` claim to, plus the ones you counted as honestly unsure. The
+   sheets you assigned a `sheetType` entry to, plus the ones you counted as honestly unsure. The
    three should reconcile: recognized count = rule-typed + agent-typed + honestly-skipped. A gap
    between them, sheets neither typed by either author nor counted as skipped, means step 6b did not
    actually reach every sheet in scope: go back and close it before this run reports done, the same
@@ -542,7 +542,7 @@ recognized, and with the spec sections read from the project
 manual. Catching a set-level mismatch here keeps it from poisoning every read that follows.
 
 1. **Read the index as stated.** Call `reconcile_index(projectId)` to parse the delivery's drawing
-   index page(s) and record each listed sheet as a cited `declaredInIndex` claim. It reads from
+   index page(s) and record each listed sheet as a cited `declaredInIndex` entry. It reads from
    sheets the set grid classified `cover-index` in step 6b; if none were classified, pass `pages`
    yourself, pointing at the index page(s) you know about. Report `declaredCount`, and whether
    `backstop.requested` came back true: that means the parse could not stand as the declared
@@ -592,9 +592,9 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   where `recognize_sheets` came back already-succeeded with nothing new to write. Step 6b is where
   every door converges before this skill calls a delivery done, not an optional refinement bolted
   onto recognition.
-- Every claim's evidence is grounded **cloud-side**: a succeeded `recognize_sheets` job (recorded by
+- Every entry's evidence is grounded **cloud-side**: a succeeded `recognize_sheets` job (recorded by
   the server) or a `render_page`/`get_page_text` read you just made. A local read (step 2) may inform
-  the packaging report; it never grounds a claim.
+  the packaging report; it never grounds an entry.
 - Discipline is derived from the sheet's own number prefix, never a filename or folder.
 - Every page the pass could not name is judged or flagged, never silently dropped; image-only pages
   are named, not guessed.
@@ -603,10 +603,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   the 13-value vocabulary; never assigned to a sheet you're not confident about; never a bare
   re-record over a rule-typed sheet (correct it by supersession edge, per 6b); unsure stays untyped.
 - A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
-  already-recognized sheet) is a supersession **edge** onto the stored claim (`supersedesId` from
-  `search`), never a bare competing claim and never an `ambiguityClass` flag: the flag is reserved for
+  already-recognized sheet) is a supersession **edge** onto the stored entry (`supersedesId` from
+  `search`), never a bare competing entry and never an `ambiguityClass` flag: the flag is reserved for
   a reading you genuinely cannot resolve.
-- The page claims and your own type claims (the leftover sheets and any correction) are your own reading,
+- The page entries and your own type entries (the leftover sheets and any correction) are your own reading,
   cited to the page you read; never present them as the deterministic pass's confirmed output, and
   never present a rule-typed sheet as your own read.
 - Your own write (the page + type bundle) is verbatim, count-verified transport: a count

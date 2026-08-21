@@ -11,25 +11,25 @@ description: >
 
 # Working a Plumlayer project record
 
-**The project record** is the cloud, claim-based model of a
+**The project record** is the cloud, entry-based model of a
 construction project's *current governing truth*. Each Plumlayer **project has one project record**.
 You interact with it through the `plumlayer` MCP tools (every tool is scoped to the
 signed-in user's own projects).
 
-## The atom: a Claim
+## The atom: an entry
 `subject — predicate — value` + evidence + trust class. Examples:
 - `sheet:A-101 — title — "First Floor Plan"`
 - `door:103 — count — 6`
 
 ## Trust: the trail is the mechanism
-A claim you write takes effect immediately as provisional working truth, recorded as
+An entry you write takes effect immediately as provisional working truth, recorded as
 agent-stated with your citation. There is no promotion step to wait for. What makes it
 trustworthy is the trail: author, timestamp, and the evidence it came from, so cite every
-claim (an ungrounded claim is a guess; say so instead of writing it).
+entry (an ungrounded entry is a guess; say so instead of writing it).
 - The server stamps the register from your identity, never from what you declare. An
   agent's judgment records as `agent-stated`, a reproducible machine transcription as
   `machine-read`, a value the deterministic layer confirmed as `tool-verified`, a person's
-  own gesture as `human-stated`. This door can never record a claim as human-authored or
+  own gesture as `human-stated`. This door can never record an entry as human-authored or
   tool-verified.
 - A person's word outranks yours on the same slot. You supersede your own prior reads
   freely, but a write against something a human said lands as a visible contest, and their
@@ -52,23 +52,23 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
   governing issue, open-ambiguity count per sheet).
 - `ambiguities`: the open-conflict / review ledger, severity-sorted (legitimate-RFI first).
 - `rfi_candidates`: drafted RFI candidates with citations.
-- `search`: the raw claim ledger (ANY trust class, including `recorded`). Filter by
+- `search`: the raw entry ledger (ANY trust class, including `recorded`). Filter by
   subject / predicate / trustClass / text; paginated. Use this to see what's actually been
-  asserted, including your own recorded claims.
+  asserted, including your own recorded entries.
 - `list_scope_items`: the live scope list (name, category, description, notes, quantity per item).
   Use this to see what's already been captured before creating or updating a scope item.
 
 **Drawing recognition** (cloud PDF: these work against files already uploaded to the project)
 - `list_files`: list the drawing files registered to a project.
 - `register_pages`: once per project, register renderable page rows for every uploaded PDF (not
-  claims, just viewable pages) so uploaded files are readable even before recognition runs.
+  entries, just viewable pages) so uploaded files are readable even before recognition runs.
 - `recognize_sheets`: start the async deterministic bulk sheet-number recognition pass over one
   uploaded PDF. Returns `{jobId, status}` immediately; poll `recognize_sheets_status` rather than
-  waiting inline. Recognized sheet claims record server-side as `recorded` on success; never
+  waiting inline. Recognized sheet entries record server-side as `recorded` on success; never
   `record_batch` them yourself.
 - `recognize_sheets_status`: poll a `recognize_sheets` job. Returns run counts (`report`), the
   server-side write summary (`written`), and the tail of pages it could not name (`residue`) for
-  you to read and judge; it never carries the recognized claims themselves.
+  you to read and judge; it never carries the recognized entries themselves.
 - `render_page`: render a single page of a registered PDF to an image so you can read it.
 - `get_page_text`: extract the text layer from a registered PDF page (deterministic; use
   alongside `render_page`: text for tokens, render for layout/meaning).
@@ -78,7 +78,7 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
   revision packages like bulletins/addenda).
 - `create_drawing_delivery`: register one delivery (e.g. "2025-12-15 Conformed Set" as
   `deliveryKind: "baseline"`, or "2026-02-09 Bulletin 01" as `"revision"`). Project metadata, not a
-  governing claim. Attach files with `register_file.deliveryId`, then recognize with
+  governing entry. Attach files with `register_file.deliveryId`, then recognize with
   `recognize_sheets.deliveryId`.
 - `update_drawing_delivery`: correct a delivery's label, kind, or issue date after the fact; never
   renames or mutates the uploaded files themselves.
@@ -89,17 +89,17 @@ claim (an ungrounded claim is a guess; say so instead of writing it).
   to `list_files` / `render_page` / `get_page_text` and the `drawing-upload` pipeline.
 
 **Write**
-- `record`: append one claim (`subject`, `predicate`, `value`, `sourceInstrument`,
+- `record`: append one entry (`subject`, `predicate`, `value`, `sourceInstrument`,
   optional `evidence`/`ambiguityClass`/`supersedesId`). Stamped as you, and it takes effect
   immediately as provisional working truth recorded as agent-stated. `supersedesId` is the
   correction edge: see "Correcting a machine misread" below.
-- `record_batch`: append an array of claims in one atomic call (`projectId` + `claims`
+- `record_batch`: append an array of entries in one atomic call (`projectId` + `entries`
   array). Atomic: a bad entry rejects the whole batch and names the index. Prefer this over
   repeated `record` calls for bulk writes (e.g. upload or scope writes). Each call
-  accepts up to 500 claims; stay at ≤50 per batch so each read is faithful and
+  accepts up to 500 entries; stay at ≤50 per batch so each read is faithful and
   count-verifiable.
-- `record_batch_file`: like `record_batch`, but for a run whose claims are too large to send
-  inline: upload a JSONL file of claims, then write from it in one atomic call. Use this instead
+- `record_batch_file`: like `record_batch`, but for a run whose entries are too large to send
+  inline: upload a JSONL file of entries, then write from it in one atomic call. Use this instead
   of `record_batch` for large runs (e.g. a scope-run pass recording hundreds of items).
 - `retire_scope_item`: remove ONE scope item from the scope list (`projectId`, `subject`,
   `basis`, optional `reason`). Appends a retirement record; nothing is deleted and a later
@@ -121,7 +121,7 @@ to write a measurement, a count, or a sheet scale through `record`.
 
 Your citation becomes a clickable chip on the scope surface, parsed deterministically from
 `evidence`. An entry the parser cannot read renders **nothing**, silently and with no error:
-an unreadable reference is treated as no citation rather than as a fake one. So a claim can
+an unreadable reference is treated as no citation rather than as a fake one. So an entry can
 land perfectly well and still show no source, purely from a malformed `evidence` entry. Shape
 it like this:
 
@@ -151,8 +151,8 @@ it like this:
 - `locator.bboxPts` with `frame: "page-points-rendered"` is what makes the chip land on the
   **region** you actually read instead of the top of the sheet. Supply them whenever you know
   where on the page you looked. Omit them and the chip still works, just sheet-level.
-- A `citedRegion` claim needs its **own** evidence entry. Putting the sheet and box only in
-  the claim's `value` records the region but cites nothing, so no chip appears for it.
+- A `citedRegion` entry needs its **own** item in `evidence`. Putting the sheet and box only in
+  the entry's `value` records the region but cites nothing, so no chip appears for it.
 
 Cite the sheet you genuinely read. A citation is a document reference, never a warrant that
 the tokens there mean what you concluded. That judgment is yours, recorded as yours.
@@ -162,15 +162,15 @@ the tokens there mean what you concluded. That judgment is yours, recorded as yo
 The deterministic recognizer grounds the tokens it reads, but *which* cell fills a semantic slot
 (`hasTitle`, `discipline`) is its fallible positional guess, recorded as `machine-read`. When you read
 a sheet and can see it grabbed the wrong cell (a boxed drawing note recorded as the title, say),
-correct it with a supersession **edge**, not a bare competing claim:
+correct it with a supersession **edge**, not a bare competing entry:
 
 1. `search(projectId, subject: "sheet:<n>", predicate: "hasTitle")` (or `"discipline"`) → the live
-   claim's `id`.
+   entry's `id`.
 2. `record` (or a `record_batch` entry) with `supersedesId` set to that id, `value` = what you read,
    cited to the sheet you read it from.
 
 The edge is what makes your read govern the grid: an agent edge onto a `machine-read` value is honored
-regardless of its register. Only a person's word outranks you. A **bare** competing claim (no
+regardless of its register. Only a person's word outranks you. A **bare** competing entry (no
 `supersedesId`) does not win; it stays a candidate beneath the machine value, which is the
 anti-hallucination anchor working as intended. So reserve the `ambiguityClass` flag for a reading you
 genuinely cannot resolve, never as the way to fix a title you already read correctly (that is the
@@ -183,9 +183,9 @@ text on those sheets, so I read them and set them right."
 ## Typical flows
 - **"What's in my project / project record?"** → `list_projects` → pick one → `set_grid` for the
   drawing set, `ambiguities` for open issues, `rfi_candidates` for drafted RFIs; `search`
-  to inspect specific subjects/claims.
-- **"Scope something"** → read the relevant sheets/claims, judge, then `record`
-  grounded claims (`sourceInstrument` = where it came from, plus `evidence`).
+  to inspect specific subjects/entries.
+- **"Scope something"** → read the relevant sheets/entries, judge, then `record`
+  grounded entries (`sourceInstrument` = where it came from, plus `evidence`).
 <!-- user-facing -->
 Tell the user
   what you wrote and that it reads as your judgment with your citations behind it.
@@ -193,12 +193,12 @@ Tell the user
 Drawn
   measurements and sheet scale are not this door's to write (see Write, above).
 - **"Find conflicts / RFIs"** → `ambiguities` + `rfi_candidates`; where you spot genuine ambiguity
-  you cannot resolve, `record` an ambiguity-flagged claim (`ambiguityClass`), cited. Where instead
+  you cannot resolve, `record` an ambiguity-flagged entry (`ambiguityClass`), cited. Where instead
   you can see the recognizer grabbed the wrong cell for a title or discipline, correct it with a
   supersession edge (see "Correcting a machine misread"), not a flag.
 
 ## Discipline
-- Be honest about your own claims: they govern provisionally as your reading, not as a
+- Be honest about your own entries: they govern provisionally as your reading, not as a
   person's word, and a human correction outranks them.
 - Always cite, and shape the citation so it actually renders (see "How to shape a citation").
   Separate what's grounded from what's inferred.

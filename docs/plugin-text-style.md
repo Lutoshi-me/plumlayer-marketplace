@@ -13,7 +13,7 @@ Plugin text serves two readers, and confusing them is the most expensive mistake
 **Agent-facing text** is the instructional body of a skill, and the whole body of an agent
 definition under `agents/`, which a dispatched agent reads as its system prompt. The agent reads it
 to do the work.
-Machinery vocabulary belongs here and is load-bearing: `claim`, `predicate`, `trust class`,
+Machinery vocabulary belongs here and is load-bearing: `entry`, `predicate`, `trust class`,
 `supersede`, real verb names, real field names. Do not "de-jargon" this text. Precision here is
 what makes the product reliable.
 
@@ -93,7 +93,7 @@ Each of these is a harness check.
 
   **Exemption: inside fenced code blocks and inline code spans, these characters are data, not
   prose, and they stay.** The `evidence.source` format is literally `A-746 — millwork elevation`,
-  and the claim atom is written `subject — predicate — value`. A blanket find-and-replace across
+  and the entry atom is written `subject — predicate — value`. A blanket find-and-replace across
   those would silently change a documented data format the agent has to emit correctly. A sweep
   that touches a backtick or a code fence has overreached. Everything else in this section stays
   whole-file: a client name or a ticket ID is banned inside a code block just as much as outside it.

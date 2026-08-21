@@ -11,16 +11,16 @@ description: >
 
 # Project create: stand up a new project record and customize it
 
-A Plumlayer **project has one project record**, the cloud, claim-based model of that project's current
+A Plumlayer **project has one project record**, the cloud, entry-based model of that project's current
 governing truth. This skill **creates the project and customizes it** by turning what the user knows
-(or can hand you in a file) into **cited claims** seeded into the new project record.
+(or can hand you in a file) into **cited entries** seeded into the new project record.
 
 > **Doctrine (binds every step):** you read and judge; deterministic tooling grounds; nothing leaves
 > unsigned and nothing enters untraced. What you seed here takes effect right away as the project's
 > starting frame, recorded as agent-stated with your citation, and it is user-asserted at the
 > source: someone *told you*, you didn't read it off a stamped drawing. That makes it the weakest
-> thing in the ledger, so when real drawings and specs are read later, better-grounded claims
-> supersede or corroborate it. **Cite every claim, never invent a fact, and flag what's uncertain.**
+> thing in the ledger, so when real drawings and specs are read later, better-grounded entries
+> supersede or corroborate it. **Cite every entry, never invent a fact, and flag what's uncertain.**
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud project record
 > (project isolation + private bucket + RLS), that's fine. They must never land in tracked or
@@ -37,16 +37,16 @@ project record into existence carrying the few facts only *you* can supply.
 **The arc:**
 `setup` (user profile, once), then **`project-create`** (this skill, the shell plus minimal
 frame), then **`drawing-upload`** (the agent reads and registers the drawing delivery as recognized
-sheet claims), then **`scope-run`** (the scope list and the trade packages), then review what's uncertain
+sheet entries), then **`scope-run`** (the scope list and the trade packages), then review what's uncertain
 on plumlayer.com.
 
 **The load-bearing consequence, don't interrogate for what the set is about to tell you.** Almost
 everything about a project is **read off the drawings, in the very next step, at a far higher
 instrument tier** than anything the user can recite here. A user answering from memory produces
-the **weakest claim there is**, your restatement of what someone told you; a cover-sheet /
+the **weakest entry there is**, your restatement of what someone told you; a cover-sheet /
 title-block read produces a value confirmed off the drawing itself, which **outranks it minutes
 later.** So asking the user to guess the project type, the engineers, the trades, or the square footage
-isn't just slow, it seeds bottom-tier claims the next step overwrites, cluttering the ledger.
+isn't just slow, it seeds bottom-tier entries the next step overwrites, cluttering the ledger.
 <!-- user-facing -->
 **Ask
 only for what no drawing will ever carry; for the rest, say "I'll read that off the set next" and move
@@ -125,7 +125,7 @@ ambiguous in the source → mark `uncertain` / `conflicting`.
 ## 3. Create the project record shell
 
 Call the **`create_project`** MCP tool with the confirmed `name` (required) and optional
-`description`. **Capture the returned `projectId`**: every claim in the Customize step below is
+`description`. **Capture the returned `projectId`**: every entry in the Customize step below is
 scoped to it.
 
 > **Fallback if `create_project` isn't available** (older plugin/server without the verb): ask the
@@ -139,17 +139,17 @@ One project = one project record.
 
 ---
 
-## 4. Customize: seed the starting claims
+## 4. Customize: seed the starting entries
 
-Map the confirmed facts to claims and record them. **Prefer the `record_batch` MCP
-tool**, one call with `projectId=<the new project>` and a `claims` array of all the seed entries (it's
+Map the confirmed facts to entries and record them. **Prefer the `record_batch` MCP
+tool**, one call with `projectId=<the new project>` and an `entries` array of all the seed entries (it's
 atomic: one bad entry rejects the batch and names the index). **Fallback:** if `record_batch` isn't
-available (older server), call the **`record`** tool once per claim, batched in parallel (many per
+available (older server), call the **`record`** tool once per entry, batched in parallel (many per
 message).
 
-**Claim shape** (matches the Claim atom: `subject — predicate — value` + evidence):
+**Entry shape** (matches the entry atom: `subject — predicate — value` + evidence):
 - `sourceInstrument` = `project-setup-interview` (interview) or the **uploaded file name** (read-in).
-  This correctly marks the claim as low-instrument / user-asserted.
+  This correctly marks the entry as low-instrument / user-asserted.
 - `evidence` = `{ source: "<user-interview | filename>", method: "human", snippet: "<what was
   said / the source line>" }`.
 - `ambiguityClass` = set it when the fact was `uncertain` or `conflicting` (this is what later
@@ -168,19 +168,19 @@ message).
 | Location | `project` | `location` | the location string |
 | Size | `project` | `grossArea` / `floorCount` | e.g. `42,000 SF` / `6` |
 | Bid due date | `project` | `bidDueDate` | ISO date |
-| Owner | `party:<slug>` | `hasRole` | `owner` (+ a `name` claim) |
+| Owner | `party:<slug>` | `hasRole` | `owner` (+ a `name` entry) |
 | Architect of record | `party:<slug>` | `hasRole` | `architect-of-record` |
 | Structural engineer | `party:<slug>` | `hasRole` | `structural-engineer` |
 | MEP engineer | `party:<slug>` | `hasRole` | `mep-engineer` |
 | GC / CM | `party:<slug>` | `hasRole` | `gc` / `cm` |
 | Party name | `party:<slug>` | `name` | the firm name |
-| Trade in scope | `project` | `tradeInScope` | one claim per trade |
+| Trade in scope | `project` | `tradeInScope` | one entry per trade |
 | Known set | `set:<id>` | `issueStatus` | `conformed` / `permit` / `bulletin-02` / … |
 | Set date | `set:<id>` | `issueDate` | ISO date |
 | Known exclusion | `project` | `knownExclusion` | the exclusion text |
 
 Use short, stable slugs for party subjects (`party:smma`, `party:owner`). Keep values literal and
-sourced. **Every claim carries a `sourceInstrument` and evidence, no exceptions.**
+sourced. **Every entry carries a `sourceInstrument` and evidence, no exceptions.**
 
 ---
 
@@ -219,11 +219,11 @@ Tell the user, in plain terms:
 
 ## Gates (non-negotiable)
 
-- **Cite everything.** Every seeded claim carries `sourceInstrument` + evidence. No citation → don't
+- **Cite everything.** Every seeded entry carries `sourceInstrument` + evidence. No citation → don't
   seed it.
 - **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. Uncertain or
   conflicting facts are seeded **with `ambiguityClass`**, not silently resolved or dropped.
-- **Seeds are the weakest claims in the ledger.** They take effect as the starting frame, recorded as
+- **Seeds are the weakest entries in the ledger.** They take effect as the starting frame, recorded as
   agent-stated from what the user told you, and a drawing read supersedes them. Never present one
   as a fact read off the documents.
 - **One project = one project record.** Always seed within the correct `projectId` returned by `create_project`.

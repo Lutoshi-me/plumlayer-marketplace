@@ -288,7 +288,7 @@ Two reads, because they answer different questions:
    editor's panel is fed from. Its summary carries the condition's live member count and base
    total for the whole set. Two traps: the row list includes the condition's own definition row
    (so raw row totals run one higher than the member count), and paging with `nextCursor` can
-   repeat a boundary row: if you walk rows across pages, dedupe by claim id before counting.
+   repeat a boundary row: if you walk rows across pages, dedupe by entry id before counting.
 2. **Per-sheet counts, the cheap way:** the summary always describes the **whole filtered set**,
    so `takeoff_read(projectId, sheet: "sheet:<number>", predicate: "hasTakeoffCountMark",
    limit: 1)` returns an authoritative count for that sheet in one tiny call: one per sheet

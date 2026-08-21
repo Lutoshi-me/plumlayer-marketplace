@@ -263,8 +263,8 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    extraction missed are noted for the record.
 2. **Orientation.** If the project has no orientation facts yet (`search(projectId, predicate:
    "structuralSystem", limit: 1)` and siblings empty), run the `learn-project` skill now, in full.
-   If orientation exists, read its claims fresh instead of re-running it. **Also re-run
-   `learn-project`** when the project has spec sections (`inDivision` claims present) but no
+   If orientation exists, read its entries fresh instead of re-running it. **Also re-run
+   `learn-project`** when the project has spec sections (`inDivision` entries present) but no
    packages on it yet (`solicitation_list_packages(projectId)` empty): orientation owns the
    baseline split, and a spec book with no packages means it hasn't drafted one yet.
 3. **Compile the context packet** (`context-packet.md`): identity and seed facts; systems; scope

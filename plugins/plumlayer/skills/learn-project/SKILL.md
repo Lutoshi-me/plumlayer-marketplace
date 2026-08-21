@@ -26,7 +26,7 @@ project name, client data, or a real extracted value here.
 
 ## What this is, and the boundary
 
-`learn-project` reads an already-uploaded set, records **net-new** project-level orientation claims,
+`learn-project` reads an already-uploaded set, records **net-new** project-level orientation entries,
 compiles a packet from them, and drafts and creates the baseline trade-package split off the spec
 table of contents (Phase 1 of package derivation). So it does
 **not**: upload a drawing delivery (precondition, owned by `drawing-upload`); extract spec sections
@@ -58,14 +58,14 @@ the project record.
    version for use in step 7's package rationale. Missing means a broken plugin install: stop and
    report rather than drafting a package split knowledge-blind.
 
-## 2. Read the claims (identity, seeds, sheet inventory)
+## 2. Read the entries (identity, seeds, sheet inventory)
 
 1. `get_project(projectId)`, the project's identity (name, description, created date).
-2. **Read the project-create seed claims verbatim, never re-create them.** For each of `projectType`,
+2. **Read the project-create seed entries verbatim, never re-create them.** For each of `projectType`,
    `deliveryMethod`, `location`, `grossArea`, `floorCount`, `bidDueDate`, `tradeInScope`,
    `knownExclusion`, call `search(projectId, predicate: "<predicate>")` and read what's there. These
    feed the packet's Identity section directly; where a seed is thin or missing, orientation may add a
-   document-grounded claim on the same predicate later (competing claims on one slot resolve at review,
+   document-grounded entry on the same predicate later (competing entries on one slot resolve at review,
    no bespoke merge here).
 3. **Sheet inventory.** Call `list_drawing_deliveries(projectId)` for the registered deliveries, then
    attempt `set_grid(projectId)` once. A set_grid payload on a set of real size can be large enough to
@@ -80,12 +80,12 @@ the project record.
 Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects, **paging through
 every result to the real total** rather than a sample: this is the anchor step 7's package split
 drafts from, and a partial read under-declares the job the same way a silent TOC does. When spec
-reading has run for a project, these claims are real and cited, `hasTitle`, `locatedAt`, `inDivision`,
+reading has run for a project, these entries are real and cited, `hasTitle`, `locatedAt`, `inDivision`,
 and `partOfIssue` on each section (verified on at least one live project). Extraction now ships as
 `drawing-upload`'s spec-TOC leg (its step 8, wired to `extract_spec_toc` / `extract_spec_toc_status`),
-a project whose drawing-upload pass has run that leg will have these claims. What's still true is that
+a project whose drawing-upload pass has run that leg will have these entries. What's still true is that
 not every project has run it yet, a set uploaded before the leg shipped, or a manual that arrived
-after the drawings and hasn't been filed and extracted, so **some projects won't have these claims
+after the drawings and hasn't been filed and extracted, so **some projects won't have these entries
 yet**, that is a gap in what's been run for this project, not a missing capability.
 
 - **If present:** read the division spread and section count into the packet's set-shape section.
@@ -134,7 +134,7 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
 1. **Cover sheet (1 render).** Find it via `search(projectId, predicate: "hasTitle", text: "cover")` or
    `text: "title sheet"`. If neither turns up a match, fall back to the lowest G-series sheet number in
    the inventory; if there's no G series either, fall back to the lowest sheet number in the set overall.
-   Whenever you use a fallback, record a `setShapeObservation` claim naming the substitution (e.g. "no
+   Whenever you use a fallback, record a `setShapeObservation` entry naming the substitution (e.g. "no
    hasTitle match for a cover/title sheet; used the lowest G-series sheet instead").
 2. **Drawing-index page (1 render).** Find it via `search(projectId, predicate: "hasTitle", text:
    "index")`, `"drawing list"`, or `"sheet list"`. If none of these match, **skip the render** and note
@@ -150,28 +150,28 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
 If the set is large enough that six renders plainly can't cover it (many buildings, many phases, an
 unusually deep set), say so explicitly in the report rather than quietly rendering more.
 
-## 6. Emit orientation claims
+## 6. Emit orientation entries
 
-All net-new, subject `project` unless noted, recorded via **one** `record_batch(projectId, claims)`
+All net-new, subject `project` unless noted, recorded via **one** `record_batch(projectId, entries)`
 call:
 
 | Predicate | Value shape | Ambiguity rule |
 |---|---|---|
-| `structuralSystem` | free text, one claim per system (e.g. "post-tensioned concrete flat plate") | flag if inferred rather than labeled on the drawings |
-| `envelopeSystem` | free text, one claim per system (e.g. "unitized curtain wall") | flag if inferred |
-| `mepDeliveryShape` | `{division, shape}`, `shape` ∈ `full-design` \| `design-build-thin`, one claim per MEP division present | **always flagged**, this is a judgment claim |
-| `scopeArea` | free text, one claim per area (e.g. "below-grade parking", "amenity terrace") | flag if the boundary was inferred rather than labeled |
+| `structuralSystem` | free text, one entry per system (e.g. "post-tensioned concrete flat plate") | flag if inferred rather than labeled on the drawings |
+| `envelopeSystem` | free text, one entry per system (e.g. "unitized curtain wall") | flag if inferred |
+| `mepDeliveryShape` | `{division, shape}`, `shape` ∈ `full-design` \| `design-build-thin`, one entry per MEP division present | **always flagged**, this is a judgment entry |
+| `scopeArea` | free text, one entry per area (e.g. "below-grade parking", "amenity terrace") | flag if the boundary was inferred rather than labeled |
 | `phasingNote` | free text (e.g. "occupied renovation, phased by wing") | flag if inferred |
 | `setShapeObservation` | free text (e.g. "schedules live on the A-10 series") | usually unflagged, a direct observation |
-| `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC") | **always flagged**, an absence claim is defeasible |
+| `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC") | **always flagged**, an absence entry is defeasible |
 | `hazardFlag` | free text (e.g. "occupied renovation, coordinate around active tenants") | flag when inferred from context rather than stated outright |
 
-**`sourceInstrument` is per-claim, not one batch label.** For a claim grounded
+**`sourceInstrument` is per-entry, not one batch label.** For an entry grounded
 in a specific page or render, cite the specific source file/instrument name, the same convention
 `drawing-upload` and `project-create`'s Mode B (reading in existing docs) use. Reserve the label
 `learn-project-orientation`
 only for derived or absence observations with no single source page: `missingScopeFamily` and any
-set-level `setShapeObservation`. Every claim's `evidence` cites the exact page/render or claims-query
+set-level `setShapeObservation`. Every entry's `evidence` cites the exact page/render or query of entries
 that produced it, never a fabricated locator.
 
 Call `record_batch` once with the full array. **Verify:** the returned `count` must equal the number of
@@ -186,7 +186,7 @@ amendments, stays in `scope-run`.
 1. **Read what's already on the project.** Call `solicitation_list_packages(projectId)` first. This
    step is match-or-create: never create a package whose catalog trade id already has one on the
    project. Report existing packages as "already on the project" rather than re-drafting them.
-2. **No spec sections, no split.** If step 3 found no `inDivision` claims for this project, create
+2. **No spec sections, no split.** If step 3 found no `inDivision` entries for this project, create
    no packages. Drawing disciplines are never used as an anchor for a split. Say plainly, in the
    packet and the report: spec reading hasn't run for this project
    (the remedy is to upload the project manual through `drawing-upload`'s spec-book leg and re-run
@@ -196,8 +196,8 @@ amendments, stays in `scope-run`.
    conventions: which sections bundle into which package, which get carved out, a primary CSI
    section per package. Probe the usually-present families the TOC is silent on (site/civil, SOE,
    landscaping/exterior improvements, thin design-build MEP divisions), the same probe that already
-   produces `missingScopeFamily` claims (step 6): a silent family becomes a `missingScopeFamily`
-   claim AND, where the trade knowledge says the trade is usually present, a package.
+   produces `missingScopeFamily` entries (step 6): a silent family becomes a `missingScopeFamily`
+   entry AND, where the trade knowledge says the trade is usually present, a package.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be
@@ -216,17 +216,17 @@ amendments, stays in `scope-run`.
 
 ## 8. Compile the run-context packet
 
-A projection compiled fresh from the claims read in step 2 and recorded in step 6, **never itself
-recorded as a claim, never stored as truth.** Sections, in order:
+A projection compiled fresh from the entries read in step 2 and recorded in step 6, **never itself
+recorded as an entry, never stored as truth.** Sections, in order:
 
-1. **Identity**, name, type, delivery method, location, size, key dates (from the seed claims).
+1. **Identity**, name, type, delivery method, location, size, key dates (from the seed entries).
 2. **Systems**, structural and envelope systems, MEP delivery shape per division.
-3. **Scope areas**, the `scopeArea` and `phasingNote` claims.
-4. **Set shape**, disciplines present, issue labels seen, `setShapeObservation` claims,
-   `missingScopeFamily` claims, the spec-TOC status (division spread + count, or the "hasn't run
+3. **Scope areas**, the `scopeArea` and `phasingNote` entries.
+4. **Set shape**, disciplines present, issue labels seen, `setShapeObservation` entries,
+   `missingScopeFamily` entries, the spec-TOC status (division spread + count, or the "hasn't run
    yet" note from step 3), and the reconciliation-gate status (its report counts, or "hasn't run yet"
    from step 4).
-5. **Hazards**, the `hazardFlag` claims.
+5. **Hazards**, the `hazardFlag` entries.
 6. **Packages**, the packages on the project after step 7: name, catalog trade id, primary section,
    bundled sections, per package, or the "spec reading hasn't run for this project" note when step 7
    created none.
@@ -236,7 +236,7 @@ recorded as a claim, never stored as truth.** Sections, in order:
 Write it to `~/.plumlayer/runs/<project-slug>/learn-project-packet.md` (the same local run folder
 the `scope-run` skill uses), derive `<project-slug>` from the project name (lowercase, spaces to
 hyphens) or fall back to the `projectId` if the name doesn't produce a clean slug. Never write it
-into a repo, and never record it as a claim. Regenerate it in full the next time this skill runs for the project, it is a projection,
+into a repo, and never record it as an entry. Regenerate it in full the next time this skill runs for the project, it is a projection,
 not a document to patch. Audience: agent. Its path is handed to the user at run end (step 9) and
 its content orients later readers; whatever crosses from it into user-facing text becomes
 user-facing at the crossing and is translated there.
@@ -268,19 +268,19 @@ reads the project record, so it is ready to go.
 
 ## Gates (non-negotiable)
 
-- **Cite everything.** No citation → don't emit the claim.
-- **Net-new facts only.** Never re-create a seed claim `project-create` already recorded, or a sheet /
-  spec-section claim `drawing-upload` already recorded.
-- **Judgment claims are cited and flagged.** `mepDeliveryShape` is always flagged; the rest are flagged
+- **Cite everything.** No citation → don't emit the entry.
+- **Net-new facts only.** Never re-create a seed entry `project-create` already recorded, or a sheet /
+  spec-section entry `drawing-upload` already recorded.
+- **Judgment entries are cited and flagged.** `mepDeliveryShape` is always flagged; the rest are flagged
   whenever the value was inferred rather than read off a label.
-- **Say it is your reading.** These claims become the project's working context immediately, so an
+- **Say it is your reading.** These entries become the project's working context immediately, so an
   inferred value that reads as a documented one is the failure to avoid.
 - **Orientation, not comprehension.** Respect the ≤6 render budget, if the set is too large for it to
   cover meaningfully, say so in the report rather than silently exceeding it.
 - **The reconciliation gate is read, never run or recorded, by this skill.** Step 4 reads
   `reconcile_set` report-only; a gate that hasn't run for this set is named as not having run, never
   paraphrased into "no discrepancies."
-- **The packet is a projection only.** Never recorded as a claim, never written to the repo, always
+- **The packet is a projection only.** Never recorded as an entry, never written to the repo, always
   regenerated in full on the next run rather than patched.
 - **The split anchors on the spec table of contents, never on drawing disciplines.** No spec
   sections on the project means no packages, and the report says so plainly.
@@ -293,7 +293,7 @@ reads the project record, so it is ready to go.
   orientation and definitions-first context share one envelope's context window is a design question
   for a future skill, not this one's.
 - **Spec-section extraction as a packaged skill.** Extraction now
-  lives in `drawing-upload`'s spec-TOC leg (step 8); step 3 above still only reads spec-section claims
+  lives in `drawing-upload`'s spec-TOC leg (step 8); step 3 above still only reads spec-section entries
   if they already exist, it never extracts them itself. A project whose drawing-upload pass predates
   that leg, or whose manual hasn't been run through it yet, still hits the "hasn't run yet" branch in
   step 3.
