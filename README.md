@@ -76,7 +76,9 @@ and nine skills that use it.
   conforming and no local spreadsheet step.
 - **`learn-project`**: a quick orientation pass over an uploaded set that reads the cover sheet,
   the drawing index, and the key plans, then records what it found so every other skill starts from
-  a shared picture of the project instead of from scratch.
+  a shared picture of the project instead of from scratch. It also drafts and creates the baseline
+  trade-package split off the spec table of contents, so a package already exists for every trade
+  before `scope-run` starts.
 
 ### Scope and bids
 

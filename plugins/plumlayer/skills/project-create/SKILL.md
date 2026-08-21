@@ -188,9 +188,9 @@ sourced. **Every claim carries a `sourceInstrument` and evidence, no exceptions.
 
 <!-- user-facing -->
 Tell the user the next step is `drawing-upload` to register and recognize the drawing delivery, and
-the spec book too, when there is one, since the package derivation in `scope-run` anchors on it.
-Once the set is recognized, `/scope-run` builds one grounded, cited scope
-list, then derived trade packages.
+the spec book too, when there is one, since the baseline package split anchors on it. Once the set
+is recognized, `/learn-project` orients on it and drafts the baseline package split, then
+`/scope-run` builds one grounded, cited scope list and amends and tags the packages.
 <!-- /user-facing -->
 Never suggest the retired route-first path or a `scope-run`
 cluster config: `scope-run` is a skill, not a config.
@@ -208,7 +208,8 @@ Tell the user, in plain terms:
   **plumlayer.com**, where every seeded value carries your name, the time, and what you read it from.
   Anything you flagged is what a person should look at.
 - **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then run
-  `/scope-run`, to build the scope list and derive trade packages.
+  `/learn-project` to orient and draft the baseline trade packages, then `/scope-run` to build the
+  scope list and amend and tag the packages.
   Say "seeded 12 project facts, 2 flagged for your judgment": what you
   seeded is the project's starting frame now, carrying your name and what you were told, and anything
   a person changes, or a drawing read later replaces, wins.
