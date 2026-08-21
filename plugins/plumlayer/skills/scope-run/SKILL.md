@@ -51,8 +51,8 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    the sheet AND a resolvable 1-based page: `evidence.page` or `evidence.pageInPdf` as a positive
    integer for the page actually read. A sheet named with no page cannot be render-verified and the
    record door refuses it. Never fabricate a page or sheet to satisfy the door.
-2. **Create / update / flag against the live list.** Every pass holds the current scope list as
-   match-or-create context: for each thing seen, create a new item, update an existing one (a new
+2. **Create / update / flag against the live list.** Every reader holds the current scope list for
+   its content families as match-or-create context: for each thing seen, create a new item, update an existing one (a new
    citation, a note, a resolved cross-reference), or flag an observation. Never a parallel list,
    never a re-create of what exists, never silent skipping of what's already listed.
 3. **The convention-line emit mandate.** A pass whose trade files carry convention lines for the
@@ -260,7 +260,7 @@ Per round, in this exact loop:
 1. **Recompile the definitions index** into the context packet: one line per defined thing:
    code, kind, one-line name, where defined, compiled from the record (`search` per known kind,
    paged to the real total; the ledger's list of kinds tracks which exist so far). Depth stays
-   in the record: a pass resolves full definitions on demand mid-read (`search(subject:
+   in the record: a reader resolves full definitions on demand mid-read (`search(subject:
    "<kind>:<code>")`), never from a paraphrase.
 2. **Start the round's passes.** Each pass runs as its read units in reading order: one reader per
    unit, one unit at a time within a pass. A unit starts only after the previous unit of that pass
