@@ -223,8 +223,8 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
 5. **Double-count discipline.** Partial views, match-line repeats, and keyed enlargements can
    re-show instances another view already shows. Decide per sheet-family how you are treating
    them, apply it consistently, and name the rule in the report. When the sheet itself cannot
-   settle whether views repeat (no cross-reference markers), size the ambiguity: if the
-   ambiguous instances could move the total by more than a few percent, stop and ask with the
+   settle whether views repeat (no cross-reference markers), size the uncertainty: if the
+   unclear instances could move the total by more than a few percent, stop and ask with the
    render in front of the user; below that, make the call, apply it consistently, and lead
    the report with it.
 
