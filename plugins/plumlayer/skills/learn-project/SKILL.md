@@ -20,8 +20,8 @@ gets this context instead of orienting from scratch, which is where reads get un
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
 untraced.** This is an *orientation* pass, not comprehension, it reads what upload already
 recognized, takes a handful of bounded renders, and stops. Everything it emits is **your own reading**,
-cited, and it becomes the project's working context the moment it lands, so what you flagged as
-inferred is what a person should judge. Examples in this file are generic, never put a real
+cited, and it becomes the project's working context the moment it lands, so what you raised a
+Question about as inferred is what a person should judge. Examples in this file are generic, never put a real
 project name, client data, or a real extracted value here.
 
 ## What this is, and the boundary
@@ -111,7 +111,7 @@ comparison ran.
 - **If the gate has already run for this set:** read the report's counts, what matched, what
   the index lists that isn't in the set, what's in the set the index doesn't list, and whether the
   spec comparison ran. Fold anything real into the packet: an unmatched index entry as a
-  `missingScopeFamily` or `setShapeObservation` candidate (per step 6's rules, flag if inferred),
+  `missingScopeFamily` or `setShapeObservation` candidate (per step 6's rules, raise a Question if inferred),
   and an unrecognized-in-index sheet as a `setShapeObservation`. Before citing anything from
   `report.declaredLedgerDrift`, check `.ran` first, it's `false`, never a hollow zero, whenever no
   index page could be read at all, or a receiving-check run had to widen its re-read to another
@@ -155,16 +155,16 @@ unusually deep set), say so explicitly in the report rather than quietly renderi
 All net-new, subject `project` unless noted, recorded via **one** `record_batch(projectId, entries)`
 call:
 
-| Predicate | Value shape | Ambiguity rule |
+| Predicate | Value shape | Question rule |
 |---|---|---|
-| `structuralSystem` | free text, one entry per system (e.g. "post-tensioned concrete flat plate") | flag if inferred rather than labeled on the drawings |
-| `envelopeSystem` | free text, one entry per system (e.g. "unitized curtain wall") | flag if inferred |
-| `mepDeliveryShape` | `{division, shape}`, `shape` ∈ `full-design` \| `design-build-thin`, one entry per MEP division present | **always flagged**, this is a judgment entry |
-| `scopeArea` | free text, one entry per area (e.g. "below-grade parking", "amenity terrace") | flag if the boundary was inferred rather than labeled |
-| `phasingNote` | free text (e.g. "occupied renovation, phased by wing") | flag if inferred |
-| `setShapeObservation` | free text (e.g. "schedules live on the A-10 series") | usually unflagged, a direct observation |
-| `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC") | **always flagged**, an absence entry is defeasible |
-| `hazardFlag` | free text (e.g. "occupied renovation, coordinate around active tenants") | flag when inferred from context rather than stated outright |
+| `structuralSystem` | free text, one entry per system (e.g. "post-tensioned concrete flat plate") | raise a Question if inferred rather than labeled on the drawings |
+| `envelopeSystem` | free text, one entry per system (e.g. "unitized curtain wall") | raise a Question if inferred |
+| `mepDeliveryShape` | `{division, shape}`, `shape` ∈ `full-design` \| `design-build-thin`, one entry per MEP division present | **always raises a Question**, this is a judgment entry |
+| `scopeArea` | free text, one entry per area (e.g. "below-grade parking", "amenity terrace") | raise a Question if the boundary was inferred rather than labeled |
+| `phasingNote` | free text (e.g. "occupied renovation, phased by wing") | raise a Question if inferred |
+| `setShapeObservation` | free text (e.g. "schedules live on the A-10 series") | usually no Question, a direct observation |
+| `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC") | **always raises a Question**, an absence entry is defeasible |
+| `hazardFlag` | free text (e.g. "occupied renovation, coordinate around active tenants") | raise a Question when inferred from context rather than stated outright |
 
 **`sourceInstrument` is per-entry, not one batch label.** For an entry grounded
 in a specific page or render, cite the specific source file/instrument name, the same convention
@@ -251,15 +251,15 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
   hazards.
 - **What the reconciliation gate found**, or that it hasn't run yet for this set, never silent on
   which.
-- **What was recorded**, how many entries, and how many were flagged for a person's judgment, for
-  example "recorded 14 project facts, 3 flagged for your judgment". What you recorded is the
+- **What was recorded**, how many entries, and how many raised a Question for a person's judgment,
+  for example "recorded 14 project facts, 3 questions for your judgment". What you recorded is the
   project's working context now, carrying your name and citations; anything a person changes wins.
 - **The package split**, packages created, packages already present on the project, any package
   named "no catalog trade, not created," TOC sections deliberately unbundled, or the "spec reading
   hasn't run for this project" note when no spec sections exist.
 - **Where the packet landed**, the full path.
 - **The placeholder note**, the definitions-as-context section is a stub, not yet designed.
-- **What a person should look at**, the flagged entries, visible on plumlayer.com with the
+- **What a person should look at**, the entries with Questions raised, visible on plumlayer.com with the
   page each one was read from.
 
 Close by saying orientation is done: everything it made is on the project record, and the scope run
@@ -271,8 +271,8 @@ reads the project record, so it is ready to go.
 - **Cite everything.** No citation → don't emit the entry.
 - **Net-new facts only.** Never re-create a seed entry `project-create` already recorded, or a sheet /
   spec-section entry `drawing-upload` already recorded.
-- **Judgment entries are cited and flagged.** `mepDeliveryShape` is always flagged; the rest are flagged
-  whenever the value was inferred rather than read off a label.
+- **Judgment entries are cited and raise a Question.** `mepDeliveryShape` always does; the rest raise
+  one whenever the value was inferred rather than read off a label.
 - **Say it is your reading.** These entries become the project's working context immediately, so an
   inferred value that reads as a documented one is the failure to avoid.
 - **Orientation, not comprehension.** Respect the ≤6 render budget, if the set is too large for it to

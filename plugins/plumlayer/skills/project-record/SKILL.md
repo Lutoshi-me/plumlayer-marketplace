@@ -1,8 +1,8 @@
 ---
 name: project-record
 description: >
-  Read, search, review, or add entries to a Plumlayer project record: the drawing set, flagged
-  items, RFI candidates, scope items, and takeoff data. Use when the user asks "what's in my
+  Read, search, review, or add entries to a Plumlayer project record: the drawing set, open
+  questions, RFI candidates, scope items, and takeoff data. Use when the user asks "what's in my
   project" or says "/project-record". Drives the read verbs (set_grid, ambiguities,
   rfi_candidates, search, list_scope_items) and write verbs (record, record_batch,
   record_batch_file). Does not upload drawings (drawing-upload), build the scope list
@@ -17,7 +17,7 @@ You interact with it through the `plumlayer` MCP tools (every tool is scoped to 
 signed-in user's own projects).
 
 ## The atom: an entry
-`subject — predicate — value` + evidence + trust class. Examples:
+`subject — predicate — value`, backed by evidence and a record of who said it. Examples:
 - `sheet:A-101 — title — "First Floor Plan"`
 - `door:103 — count — 6`
 
@@ -26,18 +26,18 @@ An entry you write takes effect immediately as provisional working truth, record
 agent-stated with your citation. There is no promotion step to wait for. What makes it
 trustworthy is the trail: author, timestamp, and the evidence it came from, so cite every
 entry (an ungrounded entry is a guess; say so instead of writing it).
-- The server stamps the register from your identity, never from what you declare. An
+- The server stamps the authorship from your identity, never from what you declare. An
   agent's judgment records as `agent-stated`, a reproducible machine transcription as
   `machine-read`, a value the deterministic layer confirmed as `tool-verified`, a person's
   own gesture as `human-stated`. This door can never record an entry as human-authored or
   tool-verified.
 - A person's word outranks yours on the same slot. You supersede your own prior reads
-  freely, but a write against something a human said lands as a visible contest, and their
+  freely, but a write against something a human said lands as a visible conflict, and their
   value keeps governing.
-- Flag what you are unsure of. Self-flagged uncertainty is what reaches a person for
-  judgment, and human sign-off still gates what leaves the building: an ITB or package
-  send, an RFI, anything published outside, a bid. Nothing leaves unsigned; nothing enters
-  untraced.
+- Raise a Question, with a title and a citation, for what you are unsure of. That is what
+  reaches a person for judgment, and human sign-off still gates what leaves the building: an
+  ITB or package send, an RFI, anything published outside, a bid. Nothing leaves unsigned;
+  nothing enters untraced.
 
 ## The verbs
 **Identity / discovery**
@@ -49,12 +49,12 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
 
 **Read**
 - `set_grid`: the sheet inventory (the drawing set as a grid: discipline, sheet number,
-  governing issue, open-ambiguity count per sheet).
+  governing issue, open-question count per sheet).
 - `ambiguities`: the open-conflict / review ledger, severity-sorted (legitimate-RFI first).
 - `rfi_candidates`: drafted RFI candidates with citations.
-- `search`: the raw entry ledger (ANY trust class, including `recorded`). Filter by
-  subject / predicate / trustClass / text; paginated. Use this to see what's actually been
-  asserted, including your own recorded entries.
+- `search`: the raw entry ledger, every entry that's ever been written, not just what's
+  currently governing. Filter by subject / predicate / trustClass / text; paginated. Use
+  this to see what's actually been asserted, including entries you wrote yourself.
 - `list_scope_items`: the live scope list (name, category, description, notes, quantity per item).
   Use this to see what's already been captured before creating or updating a scope item.
 
@@ -64,7 +64,7 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   entries, just viewable pages) so uploaded files are readable even before recognition runs.
 - `recognize_sheets`: start the async deterministic bulk sheet-number recognition pass over one
   uploaded PDF. Returns `{jobId, status}` immediately; poll `recognize_sheets_status` rather than
-  waiting inline. Recognized sheet entries record server-side as `recorded` on success; never
+  waiting inline. Recognized sheet entries land in the record automatically on success; never
   `record_batch` them yourself.
 - `recognize_sheets_status`: poll a `recognize_sheets` job. Returns run counts (`report`), the
   server-side write summary (`written`), and the tail of pages it could not name (`residue`) for
@@ -170,11 +170,11 @@ correct it with a supersession **edge**, not a bare competing entry:
    cited to the sheet you read it from.
 
 The edge is what makes your read govern the grid: an agent edge onto a `machine-read` value is honored
-regardless of its register. Only a person's word outranks you. A **bare** competing entry (no
-`supersedesId`) does not win; it stays a candidate beneath the machine value, which is the
-anti-hallucination anchor working as intended. So reserve the `ambiguityClass` flag for a reading you
-genuinely cannot resolve, never as the way to fix a title you already read correctly (that is the
-"go set it on the site" dead end).
+regardless of who or what originally produced it. Only a person's word outranks you. A **bare**
+competing entry (no `supersedesId`) does not win; it stays a candidate beneath the machine value,
+which is the anti-hallucination anchor working as intended. So reserve `ambiguityClass` (which raises
+a Question) for a reading you genuinely cannot resolve, never as the way to fix a title you already
+read correctly (that is the "go set it on the site" dead end).
 <!-- user-facing -->
 To the user this is plain: "the automatic scan grabbed the wrong
 text on those sheets, so I read them and set them right."
@@ -192,10 +192,10 @@ Tell the user
 <!-- /user-facing -->
 Drawn
   measurements and sheet scale are not this door's to write (see Write, above).
-- **"Find conflicts / RFIs"** → `ambiguities` + `rfi_candidates`; where you spot genuine ambiguity
-  you cannot resolve, `record` an ambiguity-flagged entry (`ambiguityClass`), cited. Where instead
-  you can see the recognizer grabbed the wrong cell for a title or discipline, correct it with a
-  supersession edge (see "Correcting a machine misread"), not a flag.
+- **"Find conflicts / RFIs"** → `ambiguities` + `rfi_candidates`; where you spot something you
+  genuinely can't resolve, `record` an entry that raises a Question (`ambiguityClass`), cited.
+  Where instead you can see the recognizer grabbed the wrong cell for a title or discipline,
+  correct it with a supersession edge (see "Correcting a machine misread"), not a Question.
 
 ## Discipline
 - Be honest about your own entries: they govern provisionally as your reading, not as a
