@@ -17,7 +17,7 @@ On first use of a Plumlayer tool, Claude opens your browser to authorize against
 Plumlayer account (OAuth). After that, Claude can read and record entries on your own
 projects, scoped to you; you never see anyone else's.
 
-> If you previously added the MCP manually (`claude mcp add plumlayer …`), remove it first
+> If you already added the MCP manually (`claude mcp add plumlayer …`), remove it first
 > with `claude mcp remove plumlayer` so the plugin's connector is the one in use.
 
 ## Setup: Codex
@@ -99,7 +99,7 @@ and nine skills that use it.
 ### Records and exports
 
 - **`project-record`**: the general-purpose skill for reading, searching, and adding to a project
-  record directly: the sheet and set grid, flagged items, and scope and takeoff data.
+  record directly: the sheet and set grid, open questions, and scope and takeoff data.
 - **`drawing-set-assemble`**: assembles the current drawing set into fresh PDFs, one per
   discipline plus an optional combined PDF.
 

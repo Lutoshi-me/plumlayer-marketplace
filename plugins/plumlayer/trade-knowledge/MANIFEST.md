@@ -9,10 +9,9 @@ touch the trade files don't move it.
 - Source: distilled from a real subcontractor-quote corpus (proposals and matching estimator
   leveling workbooks across multiple multifamily projects in one regional market), scrubbed of all
   identifying data: no company, person, or project names, no addresses, no dollar figures (cost
-  signal rides as ratios and multiples). Confidentiality-reviewed before first shipping
-  (2026-08-13).
-- Content-defining source snapshot: commit `83be34d` (2026-08-01) of the source corpus repository.
-- Copied into this plugin: 2026-08-13.
+  signal rides as ratios and multiples). Confidentiality-reviewed before first shipping.
+- Content-defining source snapshot: commit `83be34d` of the source corpus repository.
+- Copied into this plugin.
 
 ## What a trade file carries
 
@@ -40,4 +39,4 @@ Not yet mapped (no or near-no corpus): utilities as a standalone package, jobsit
 Division 01, pools and water features, fireplaces, site furnishings, EV charging as a package,
 tower crane / hoisting, structural steel as its own package (misc-metals holds the boundary).
 A reader hitting one of these trades creates at best judgment where no trade file covers it, and
-flags the grain question, per the `scope-run` skill's mandates.
+raises the grain question, per the `scope-run` skill's mandates.
