@@ -34,7 +34,7 @@ of them is ever trimmed.
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
    resolved reference) for work already listed; QUESTION where something needs a person's answer
    (a gap, an anomaly, an ungrounded reference you will not create, a grain question where the
-   trade file is silent) — raise it as a Question, with a title and a citation. Never a parallel
+   trade file is silent): raise it as a Question, with a title and a citation. Never a parallel
    list; never re-create; never silently skip. Before every CREATE, run one
    `search(text: <two or three distinguishing words of the item's name>)` across the whole project;
    if a scope item matches, UPDATE that item instead.
