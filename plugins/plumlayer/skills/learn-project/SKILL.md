@@ -204,9 +204,10 @@ amendments, stays in `scope-run`.
    created (the verb requires a catalog code): name it in the report as "no catalog trade, not
    created," never force a wrong code.
 5. **Create each missing package** with `solicitation_create_package(projectId, tradeCode, name,
-   notes)`: name = the package display name; notes carry the bundled sections in exactly this shape
-   (`scope-run` reads it back, so the two skills must match): `Bundled sections: 03 30 00, 03 35 00.
-   Primary: 03 30 00. Rationale: <one line>.` Count-verify: re-list packages
+   codes, notes)`: name = the package display name; `tradeCode` is the package's primary section;
+   `codes` lists the other sections bundled into it (verbatim catalog ids from the same
+   `directory_list_trades` resolution as step 4, never repeating `tradeCode`); `notes` carries a
+   one-line rationale in plain prose, no fixed shape. Count-verify: re-list packages
    (`solicitation_list_packages`) and confirm every created one landed.
 <!-- user-facing -->
 6. **Show the split as what you did, not as a question**, mirroring `scope-run`'s wording: "I split

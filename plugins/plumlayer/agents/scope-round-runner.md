@@ -102,10 +102,9 @@ end, the same way, and return the same summary shape with the round named `compl
    never zeroed by hope.
 
 Spec sections account differently, since estimators never write CSI digit strings into scope text: a
-spec section is accounted when the package split bundles it into a package. Read the bundled sections
-off the live packages' notes (`solicitation_list_packages`, the fixed `Bundled sections:` shape), not
-a local artifact. The TOC sections still open are listed after the lead's amendments land, so report
-the section list you can see and leave that comparison to the lead.
+TOC section is accounted when it appears as a package's `tradeCode` or in its `codes`, read fresh via
+`solicitation_list_packages`, not a local artifact. The TOC sections still open are listed after the
+lead's amendments land, so report the section list you can see and leave that comparison to the lead.
 
 ## What you never do
 

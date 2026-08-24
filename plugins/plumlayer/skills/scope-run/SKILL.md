@@ -378,11 +378,10 @@ same way a round does, one level down:
    `phase: completeness closed`. Never assumed closed, never zeroed by hope.
 
 Spec sections account differently (estimators never write CSI digit strings into scope text): a
-spec section is accounted when the package split bundles it into a package. Read the bundled
-sections off the live packages' notes (`solicitation_list_packages`, the fixed `Bundled sections:`
-shape section 6 and `learn-project` both write), not a local artifact. After stage 6's amendments are
-applied, list every TOC section not bundled anywhere: those are the TOC sections still open,
-reported the same way.
+TOC section is accounted when it appears as a package's `tradeCode` or in its `codes`, read fresh
+via `solicitation_list_packages`, not a local artifact. After stage 6's amendments are applied,
+list every TOC section that appears on no package's `tradeCode` or `codes`: those are the TOC
+sections still open, reported the same way.
 
 ## 6. Amend the packages: scope-driven (Phase 2)
 
@@ -397,10 +396,12 @@ was drafted and created at orientation (`learn-project`): read it fresh via
    `solicitation_create_package` for a genuinely new package, `solicitation_update_package` to
    fold, split, or rename an existing one. Resolve the amendment's trade the same way as
    orientation (`directory_list_trades`, exact `code` first then `query` by name/alias; the
-   catalog trade id recorded verbatim, store-resolution, non-negotiable 4), and write the same
-   fixed notes shape orientation uses: `Bundled sections: 03 30 00, 03 35 00. Primary: 03 30 00.
-   Rationale: <one line>.` A package with no reasonable catalog match cannot be created or
-   amended into one: name it "no catalog trade, not created" in the report.
+   catalog trade id recorded verbatim, store-resolution, non-negotiable 4), and set `codes` to the
+   other sections the package now covers (verbatim catalog ids, never repeating the package's own
+   `tradeCode`), with a one-line rationale in `notes` (plain prose, no fixed shape).
+   `solicitation_update_package(packageId, codes)` replaces the whole list, so a fold or split
+   rewrites the lists of every package involved. A package with no reasonable catalog match cannot
+   be created or amended into one: name it "no catalog trade, not created" in the report.
 <!-- user-facing -->
 Show what you did in plain words, mirroring orientation's wording: name the amendments made
    (packages created, split, collapsed, or renamed), each with its one-line rationale. Say it as
@@ -413,8 +414,8 @@ Show what you did in plain words, mirroring orientation's wording: name the amen
 2. **Empty-baseline case.** When `solicitation_list_packages` returned no packages because the
    project has no spec sections (precondition 4), this stage derives the whole split from the
    finished scope list instead of amending a baseline: same bundling logic as orientation, same catalog
-   resolution, same `solicitation_create_package` calls and notes shape. Say so plainly in the
-   report: the split was derived here, from the scope list, because there was no spec book to
+   resolution, same `solicitation_create_package` calls and `codes`/`notes` usage. Say so plainly in
+   the report: the split was derived here, from the scope list, because there was no spec book to
    anchor an earlier baseline.
 
 ## 7. Tag
