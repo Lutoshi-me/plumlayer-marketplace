@@ -28,21 +28,22 @@ record. If a path in your dispatch does not exist, say so and stop rather than r
 
 ## The mandates
 
-These are not guidance. Each one exists because its absence produced a measured failure in the
-validation study, and none of them is ever trimmed.
+These are not guidance. Each one exists because its absence produced a measured failure, and none
+of them is ever trimmed.
 
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
-   resolved reference) for work already listed; FLAG an observation (a gap, an anomaly, an
-   ungrounded reference you will not create, a grain question where the trade file is silent).
-   Never a parallel list; never re-create; never silently skip. Before every CREATE, run one
+   resolved reference) for work already listed; QUESTION where something needs a person's answer
+   (a gap, an anomaly, an ungrounded reference you will not create, a grain question where the
+   trade file is silent): raise it as a Question, with a title and a citation. Never a parallel
+   list; never re-create; never silently skip. Before every CREATE, run one
    `search(text: <two or three distinguishing words of the item's name>)` across the whole project;
    if a scope item matches, UPDATE that item instead.
 2. CONVENTION LINES: for each convention line in your trade files that applies to your content
    families, create it if absent from the live list or update it if present. Its `sourceInstrument`
    is `trade-convention:<trade>@<knowledge-version>`, its evidence quotes the trade file's line and
    carries the marker `basis: "trade-convention"`, and it carries NO sheet citation. If you judge a
-   convention line inapplicable to this project, FLAG that with your reason. Silence on a convention
-   line is a violation, not a judgment call.
+   convention line inapplicable to this project, raise a Question saying so, with your reason.
+   Silence on a convention line is a violation, not a judgment call.
 3. CITATION SHAPE: every drawing-grounded record's evidence names the sheet AND carries
    `evidence.pageInPdf` (a positive 1-based integer) for the page you actually read. Never a sheet
    without a page; never a fabricated page. The record door refuses pageless sheet citations. If it
@@ -64,11 +65,11 @@ validation study, and none of them is ever trimmed.
    note, `quantity` only where the sheet carries one, as `{value, unit}`. Recorded text is what the
    bidder reads: plain sentences, no em dashes, no bolding. A verbose row is a defect.
 7. GRAIN: follow your trade files' grain sections. Where a trade file is silent, create at best
-   judgment AND flag the grain question. Recall never drops to grain uncertainty.
+   judgment AND raise a Question naming the grain question. Recall never drops to grain uncertainty.
 8. RECORD directly and VERIFY: `record_batch` (at most 500 per call, atomic; subjects
    `scopeItem:<unit-id>-<seq>` for new items, the item's existing subject for updates), or upload a
    JSONL and use `record_batch_file` for larger runs. After every batch, read the record back and
-   confirm the count that landed equals the count sent, and recheck any contested ids individually.
+   confirm the count that landed equals the count sent, and recheck any conflicting ids individually.
    This verification happens before you finish and is part of your report. If you cannot confirm
    your counts, report the mismatch and stop rather than reporting success.
 9. LEGENDS AND SCHEDULES PASSES ONLY: also record what the schedules define, extending the existing
@@ -76,9 +77,9 @@ validation study, and none of them is ever trimmed.
    the scope items the schedules themselves ground. A schedule row family that is real priced work
    becomes scope items at the grain bracket, cited to the schedule sheet and page.
 
-Never author door-owned records. Retractions, flag resolutions, and questions-as-answers are created
-only at their own doors. If you think an item should be deleted or a flag should be closed, say so
-in your report; a person acts at the door.
+Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
+created only at their own doors. If you think an item should be deleted or a Question should be
+closed, say so in your report; a person acts at the door.
 
 ## How you read
 
@@ -99,9 +100,9 @@ of what you read.
 unit: <unit id>   pass: <pass name>   round: <n>
 pages read: <sheet number + pageInPdf, one per page read>
 pages unread: <sheet number + pageInPdf + reason, or "none">
-created: <n>   updated: <n>   flagged: <n>
+created: <n>   updated: <n>   questions: <n>
 updated subjects: <the subject of every item you updated, or "none">
-sent: <n>   landed: <n>   contested: <ids and how each resolved, or "none">
+sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 definitions kinds added: <kinds, or "none">
 convention lines: emitted <n>; inapplicable: <line + reason, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
@@ -114,4 +115,5 @@ The `updated subjects:` line is load-bearing, not bookkeeping. Your creates are 
 else in your report lets the runner find it back. Name every one.
 
 An unread page is named, never silently skipped. Your reading is your word: it lands under your
-authorship and governs provisionally, so flag what you are unsure of rather than smoothing it.
+authorship and governs provisionally, so raise a Question about what you are unsure of rather than
+smoothing it.

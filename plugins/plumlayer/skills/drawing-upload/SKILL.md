@@ -150,12 +150,12 @@ a Division 00-49 table of contents, whether it's one combined PDF or a folder of
 PDFs, check page totals first. If the per-sheet PDFs' combined page count equals the combined PDF's page
 count, that's duplicate repackaging of the same set, not two sources: **prefer the single combined file
 and don't recognize both**; recognizing both wastes a full pass and risks recording the same sheets
-twice under different `fileId`s. Only treat it as genuinely ambiguous when the totals disagree or
+twice under different `fileId`s. Only treat it as genuinely unclear when the totals disagree or
 there's no clean 1:1 correspondence.
 
-For any other genuinely ambiguous packaging (a mixed bag, or a dual-source case the page-total check
+For any other genuinely unclear packaging (a mixed bag, or a dual-source case the page-total check
 didn't resolve), use the **Read tool** directly on a few local candidate pages of each file to judge
-title-block grammar vs spec-prose and pick the authoritative source. This local sampling is
+title-block grammar vs spec-prose and pick which one to use. This local sampling is
 **file-selection judgment only**: it decides which local files you upload next; it never grounds an
 entry, and no entry's evidence ever cites a local read (every entry's evidence comes from the cloud
 recognition tools in steps 5–6).
@@ -178,7 +178,7 @@ reuse it rather than registering a duplicate. Otherwise call `create_drawing_del
 - `issuedOn` (`YYYY-MM-DD`) and `sequence`: read these off the documents themselves (a cover sheet, a
   bulletin header). **Never substitute upload time**: chronology drives supersession resolution.
   **When issue-date signals disagree** (the filename says one date, a cover sheet or transmittal says
-  another), the **drawing set's own revision table is authoritative** for `issuedOn`: it's the
+  another), the **drawing set's own revision table governs** `issuedOn`: it's the
   architect's own record of the issue, ahead of a filename someone typed or a transmittal cover letter.
   Note the disagreement in the packaging report rather than silently picking one.
 
@@ -254,9 +254,9 @@ every page in that tail yourself:
     read govern: a bare competing entry loses to the machine value on authorship rank, which is the
     anti-hallucination anchor working as designed. If the slot is empty (the pass
     left this page blank), just author the entry fresh: there is nothing to supersede.
-  - **Genuine ambiguity**: you honestly cannot tell which of two readings is right. Author your reading
+  - **Genuinely unclear**: you honestly cannot tell which of two readings is right. Author your reading
     as a bare entry tagged with `ambiguityClass` so both surface for a person in `ambiguities`; never
-    silently pick. Reserve the flag for real ambiguity; never use it for a correction you are confident
+    silently pick. Reserve that tag for a real toss-up; never use it for a correction you are confident
     about (that just hands a person a title you already read correctly).
 - **Image-only / scanned pages**: flag them honestly. Create the page as its own subject:
   `page:<fileId>:<pageInPdf>`, never `subject: null`, and never add an OCR dependency (deferred).
@@ -292,7 +292,7 @@ unreadable); never silently dropped. State how many you read, corrected, and fla
 Recognition itself now types most of the set: at `recognize_sheets` finalize, the server runs a
 deterministic rule pass over every newly recognized sheet, matching its sheet-number prefix or
 recognized title against the 13-value vocabulary below. A match writes a `sheetType` entry
-server-side, register `machine-read`, cited to the matched title words, with a `confidence` of
+server-side, authored as `machine-read`, cited to the matched title words, with a `confidence` of
 `high` or `medium`. A sheet the rules can't place gets nothing: those leftover sheets, never `other` (the
 rule pass never writes `other`), is what you read here. So this step is the backstop to the
 server's typing, not the whole of it: type the leftover sheets the rules left untyped, plus any rule-typed
@@ -409,10 +409,10 @@ When you are confident a recognized title or discipline is a mis-grab, correct i
    it into your step 7 write.
 
 The edge is what makes your read govern the grid: the recognizer's binding is `machine-read`, and an
-agent edge onto it is honored regardless of that register; only a person's later word outranks you.
-A **bare** corrected entry with no `supersedesId` does NOT win; it sits as a
-candidate beneath the machine value. Never reach for the `ambiguityClass` flag here: a flag is for
-genuine ambiguity, and flagging a title you already read correctly is the "go set it on the site" dead
+agent edge onto it is honored regardless of who wrote the value it corrects; only a person's later word
+outranks you. A **bare** corrected entry with no `supersedesId` does NOT win; it sits as a
+candidate beneath the machine value. Never reach for the `ambiguityClass` tag here: reserve that for
+genuine uncertainty, and tagging a title you already read correctly is the "go set it on the site" dead
 end this step exists to close.
 
 <!-- user-facing -->
@@ -604,7 +604,7 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   re-record over a rule-typed sheet (correct it by supersession edge, per 6b); unsure stays untyped.
 - A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
   already-recognized sheet) is a supersession **edge** onto the stored entry (`supersedesId` from
-  `search`), never a bare competing entry and never an `ambiguityClass` flag: the flag is reserved for
+  `search`), never a bare competing entry and never an `ambiguityClass` tag: reserve that for
   a reading you genuinely cannot resolve.
 - The page entries and your own type entries (the leftover sheets and any correction) are your own reading,
   cited to the page you read; never present them as the deterministic pass's confirmed output, and
@@ -622,9 +622,9 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   are different lists: when a later one overlaps an earlier one, say which sheets are in both and
   which are in only one. Never call them "the same" from memory. A private judgment that resolves a
   difference you noticed is still a finding the user has not seen; report the difference, not your
-  resolution of it. (Field-proven on a real set: a close-out named FP-000 among five title
-  disagreements, the next report named FP-005 among five untyped sheets and called them "the exact
-  same 5"; both lists were right on their own terms and the narration was wrong.)
+  resolution of it. (A close-out once named a sheet among five title disagreements, then the next
+  report named it among five untyped sheets and called the two lists "the exact same 5"; both lists
+  were right on their own terms and the narration was wrong.)
 - The spec-book leg (step 8) extracts a file set once, never once per division file, and its counts are
   read back with `search` and verified against the job's own `report`, never assumed. A named
   `failedFiles` entry is a finding for the user, never a silent retry loop.

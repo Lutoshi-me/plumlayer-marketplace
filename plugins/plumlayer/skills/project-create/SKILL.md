@@ -20,7 +20,8 @@ governing truth. This skill **creates the project and customizes it** by turning
 > starting frame, recorded as agent-stated with your citation, and it is user-asserted at the
 > source: someone *told you*, you didn't read it off a stamped drawing. That makes it the weakest
 > thing in the ledger, so when real drawings and specs are read later, better-grounded entries
-> supersede or corroborate it. **Cite every entry, never invent a fact, and flag what's uncertain.**
+> supersede or corroborate it. **Cite every entry, never invent a fact, and raise a Question for
+> what's uncertain.**
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud project record
 > (project isolation + private bucket + RLS), that's fine. They must never land in tracked or
@@ -203,14 +204,14 @@ cluster config: `scope-run` is a skill, not a config.
 Tell the user, in plain terms:
 - **Created:** project name + `projectId`.
 - **Seeded:** how many entries, broken down (facts / parties / trades / sets), and **how many were
-  flagged ambiguous** (the pile a person should resolve).
+  raised as Questions** (the pile a person should resolve).
 - **Where it landed**, visible now via `search` / `set_grid` / `ambiguities` in this session, and on
   **plumlayer.com**, where every seeded value carries your name, the time, and what you read it from.
-  Anything you flagged is what a person should look at.
+  Anything you raised as a Question is what a person should look at.
 - **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then run
   `/learn-project` to orient and draft the baseline trade packages, then `/scope-run` to build the
   scope list and amend and tag the packages.
-  Say "seeded 12 project facts, 2 flagged for your judgment": what you
+  Say "seeded 12 project facts, 2 raised as Questions for your judgment": what you
   seeded is the project's starting frame now, carrying your name and what you were told, and anything
   a person changes, or a drawing read later replaces, wins.
 <!-- /user-facing -->

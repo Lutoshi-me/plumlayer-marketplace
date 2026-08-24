@@ -223,8 +223,8 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
 5. **Double-count discipline.** Partial views, match-line repeats, and keyed enlargements can
    re-show instances another view already shows. Decide per sheet-family how you are treating
    them, apply it consistently, and name the rule in the report. When the sheet itself cannot
-   settle whether views repeat (no cross-reference markers), size the ambiguity: if the
-   ambiguous instances could move the total by more than a few percent, stop and ask with the
+   settle whether views repeat (no cross-reference markers), size the uncertainty: if the
+   unclear instances could move the total by more than a few percent, stop and ask with the
    render in front of the user; below that, make the call, apply it consistently, and lead
    the report with it.
 
@@ -276,7 +276,7 @@ marks summed, so the marks are the takeoff.
   - **a refusal you cannot explain**: stop the run rather than retrying blind.
 - **Judgment calls ride the trail.** A border-case instance you counted carries the call in its
   own evidence; exclusions shaped by judgment are recorded with the census reconciliation. (A
-  dedicated unsure-flag on records is coming to the verbs; until it exists, the trail and the
+  dedicated way to raise a Question on a record is coming to the verbs; until it exists, the trail and the
   report are where your unsureness lives, and it must live somewhere. Silent confidence you do
   not have is the one dishonesty this skill cannot absorb.)
 
@@ -291,7 +291,7 @@ Two reads, because they answer different questions:
    repeat a boundary row: if you walk rows across pages, dedupe by entry id before counting.
 2. **Per-sheet counts, the cheap way:** the summary always describes the **whole filtered set**,
    so `takeoff_read(projectId, sheet: "sheet:<number>", predicate: "hasTakeoffCountMark",
-   limit: 1)` returns an authoritative count for that sheet in one tiny call: one per sheet
+   limit: 1)` returns a definitive count for that sheet in one tiny call: one per sheet
    beats walking hundreds of rows.
 3. **The scales:** scale rows belong to sheets, not conditions, so the condition read does not
    return them. Per sheet you recorded a scale on:
@@ -374,9 +374,9 @@ in that run's evidence and report, never here.
   real use makes redo common, a deliberate revision path for a whole condition's marks (and a
   retirement path for legacy records) is a verb-surface question, not something this skill
   improvises.
-- **Unsure-flag on writes.** A first-class way for a write to carry "check this one" (visible
+- **A way to raise a Question on writes.** A first-class way for a write to carry "check this one" (visible
   at the true location on the sheet) is designed but not yet in the verbs; the trail + report
-  carry it meanwhile. Adopt the flag here when it ships.
+  carry it meanwhile. Adopt it here when it ships.
 - **Untyped sets.** Sheet discovery leans on `sheetType` records from drawing-upload; the
   title-based fallback for untyped sets should be confirmed against a real old project.
 - **Cross-check reads.** Reading a schedule to sanity-check an elevation count (not to mark it) is

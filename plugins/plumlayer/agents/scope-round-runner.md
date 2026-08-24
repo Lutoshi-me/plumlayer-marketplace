@@ -48,27 +48,28 @@ If either is missing, say so and stop rather than running against a plan you inv
      That is a real total over the entries the unit's subject prefix matches, taken independently of
      what the reader told you. Record it in the ledger as an entry count under that prefix, which is
      what it is, not as an item count.
-   - **Updated and flagged items, by subject.** These carry pre-existing subjects, so no prefix
-     finds them. Read back the subjects the reader named in its `updated subjects:` and flag lines,
-     `search(subject: "<subject>")` each, and confirm the update landed. Anything the reader named
-     that you cannot find back is a mismatch.
+   - **Updated and Questioned items, by subject.** These carry pre-existing subjects, so no prefix
+     finds them. Read back the subjects the reader named in its `updated subjects:` and Question
+     lines, `search(subject: "<subject>")` each, and confirm the update landed. Anything the reader
+     named that you cannot find back is a mismatch.
    - Never a row list of the whole project, and never `list_scope_items`, which returns the whole
      projected scope list, unbounded.
 
-   Append to the ledger: count sent, reader-verified, runner-verified, contested. The reader's own
+   Append to the ledger: count sent, reader-verified, runner-verified, conflicts. The reader's own
    verification and yours are two separate boundaries and neither replaces the other. Start that
    pass's next unit only when the
    previous unit's counts confirm. A mismatch stops that pass and gets investigated, never papered
    over. A reader that ended without reporting (killed, stalled) is re-run on its own unit:
    whatever it already recorded is on the record, and the re-run creates or updates against the live
    list, so nothing is created twice by the re-run.
-5. **Flag overlaps.** The overlap scan needs names, so it reads rows rather than counts, and it
+5. **Note overlaps.** The overlap scan needs names, so it reads rows rather than counts, and it
    stays bounded to what this round created: `search(text: "scopeItem:<unit-id>-")` per unit, paged,
    never the whole scope list. As part of each unit's verify, list any new item from that unit whose name
    matches an earlier unit's new item in the same pass. At round end, separately, scan the round's
    new items for overlaps between passes that ran together: the same work captured from two sides,
    convention lines especially, since passes running together cannot see each other's new items.
-   Both kinds travel up as flags. Merging is a person's call at the review surface, never yours.
+   Both kinds travel up as overlap notes. Merging is a person's call at the review surface, never
+   yours.
 6. **Append the ledger** with everything this round did: units, batches with their counts, the
    definitions kinds that landed, overlaps, and every deviation or repair. Do not append a `phase:`
    line. Those are the lead's, appended at the boundary.
@@ -87,10 +88,10 @@ end, the same way, and return the same summary shape with the round named `compl
    narrower would do.
 3. Account deterministically: write and run a small local script that does a word-boundary token
    reference of each defined code against scope-item text (name, description, notes; evidence
-   snippets excluded). Kind-collisions and codes of two characters or fewer divert to an ambiguous
+   snippets excluded). Kind-collisions and codes of two characters or fewer divert to an uncertain
    bucket for your adjudication rather than string-match guessing. Accounted means textually
    referenced, not priced. The matching is the script's job; your judgment goes into adjudicating
-   the ambiguous bucket and classifying what is left.
+   the uncertain bucket and classifying what is left.
 4. Classify every row that is left over: accounted, plausibly-carried (inside an existing coarse
    item, naming which), not-scope (a definition with no work attached, saying why), or unaccounted.
 5. Close the loop: cluster the unaccounted rows into capture gaps, define supplemental
@@ -113,7 +114,7 @@ the section list you can see and leave that comparison to the lead.
 - Read drawing pages yourself, or record scope items yourself. Reading and recording belong to the
   readers you dispatch.
 - Trim, restate, or soften a reader mandate. They live in the `scope-reader` agent definition.
-- Author door-owned records: retractions, flag resolutions, questions-as-answers. A reader's
+- Author door-owned records: retractions, Question resolutions, questions-as-answers. A reader's
   suggestion toward one travels up in your summary; a person acts at the door.
 - Append a `phase:` line, decide whether the run continues, or amend or tag packages.
 
@@ -126,10 +127,10 @@ the next round reads it from.
 ```text
 round: <n, or "completeness">   passes: <pass names>
 units read: <unit ids, in reading order>
-per unit: <unit id> created <n> updated <n> flagged <n> verified <yes/no>
-totals verified: created <n> (entry count under the unit prefixes), updated <n>, flagged <n>
-contested rows: <id + how each resolved, or "none">
-overlap flags: <item name + the two units, one per line, or "none">
+per unit: <unit id> created <n> updated <n> questions <n> verified <yes/no>
+totals verified: created <n> (entry count under the unit prefixes), updated <n>, questions <n>
+conflicting rows: <id + how each resolved, or "none">
+overlap notes: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 unread pages: <sheet + page + reason, one per line, or "none">
 definitions kinds added: <kinds, or "none">

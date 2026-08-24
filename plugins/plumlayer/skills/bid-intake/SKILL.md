@@ -149,7 +149,7 @@ profile/summary-only write with no response entries to anchor it is a degenerate
 one, and it hides the real blocker (no rows to answer) behind what looks like a normal intake.
 
 - **`get_bid_package(projectId, trade)`** → the leveled projection of the package: the server-computed,
-  authoritative, pre-filtered set of scope rows for this trade (`lines[]`, each with its `lineSubject`:
+  governing, pre-filtered set of scope rows for this trade (`lines[]`, each with its `lineSubject`:
   a `scopeItem:` subject and the row identity you answer against, never created by you), every current
   bidder (`bidders[].partySubject`, name, laborType, coverage), the head response per cell
   (`lines[].responses[]`, each with `partySubject`, the resolved response, and `receipt.id`: the
@@ -694,14 +694,11 @@ edits `SKILL.md`; it runs the same pipeline against new paths.
 
 ## Deferred / for the proving run to decide (named, not skipped silently)
 
-- **The Additional-items gate: PROVEN on a real run 2026-08-09, and tightened by it.** Three real
-  window proposals against a sixteen-row package produced twenty-six items and caught a gap nothing
-  else in the record held: every bidder excluded installation, so nobody was installing. The
-  statement-about-work test alone proved **too loose**: roughly fifteen of one facade vendor's
-  forty-odd boilerplate exclusions passed it, naming work the project does not contain. That is why
-  the anchoring test above exists; it cut those fifteen to eleven defensible items. Still open for the
-  next run: how the weaker single-bidder filter behaves when there is no peer to anchor against, and
-  whether the anchoring test is now too tight on a genuinely novel exclusion no peer thought to name.
+- **The Additional-items gate: still open.** The statement-about-work test alone runs **too loose** on
+  its own: a vendor's boilerplate exclusion list can pass it while naming work the project does not
+  contain. That is why the anchoring test above exists. Still open for the next run: how the weaker
+  single-bidder filter behaves when there is no peer to anchor against, and whether the anchoring test
+  is now too tight on a genuinely novel exclusion no peer thought to name.
 - **Where a whole-bid qualification lives.** A bid can substitute a different material against the
   specified one across every row, the single most important leveling fact about that bidder, and it
   is neither per-row nor unlisted. `bidCoverage` carries `basis`, `label` and `coveredItems` but

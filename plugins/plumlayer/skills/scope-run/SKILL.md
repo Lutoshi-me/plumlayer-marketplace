@@ -26,11 +26,8 @@ scope read surfaces (Phase 2) and tags. The shape, in the estimator's own order:
 > sort through and decide which trade packages to create; assembling them is assigning one new meta
 > variable on an entirely scoped line item.
 
-One grounded, cited, trade-agnostic scope list first; trade packages are projections off it. The
-method was validated end to end against a real precon bid evaluation before this skill shipped
-(subset acceptance run, 2026-08: recall 94.8% / precision 100% on the amended pre-registered
-method), and everything this skill mandates below is what that validation proved necessary: each
-mandate exists because its absence produced a measured failure.
+One grounded, cited, trade-agnostic scope list first; trade packages are projections off it. Every
+mandate below exists because skipping it produces a measured, real failure: follow all of them.
 
 **This run is attended.** The user approves the read plan before any reading and reviews at every
 check-in. Never read past a check-in without the user's go-ahead. The package split is not a gate:
@@ -45,20 +42,21 @@ it becomes working truth the moment it lands; anything a person changes wins.
 ## The non-negotiables
 
 Every stage below honors these. They are restated where they apply, but read them first: a run
-that relaxes any one of them reproduces a measured, named failure from the validation study.
+that relaxes any one of them reproduces a measured, named failure.
 
 1. **Cite everything, in the uniform shape.** Every drawing-grounded record carries evidence naming
    the sheet AND a resolvable 1-based page: `evidence.page` or `evidence.pageInPdf` as a positive
    integer for the page actually read. A sheet named with no page cannot be render-verified and the
    record door refuses it. Never fabricate a page or sheet to satisfy the door.
-2. **Create / update / flag against the live list.** Every reader holds the current scope list for
-   its content families as match-or-create context: for each thing seen, create a new item, update an existing one (a new
-   citation, a note, a resolved cross-reference), or flag an observation. Never a parallel list,
-   never a re-create of what exists, never silent skipping of what's already listed.
+2. **Create / update / question against the live list.** Every reader holds the current scope list
+   for its content families as match-or-create context: for each thing seen, create a new item,
+   update an existing one (a new citation, a note, a resolved cross-reference), or raise a Question,
+   with a title and a citation. Never a parallel list, never a re-create of what exists, never
+   silent skipping of what's already listed.
 3. **The convention-line emit mandate.** A reader whose trade files carry convention lines for the
    content families it reads MUST emit them: create if absent from the live list, update if
    present. Silence is a violation, not a judgment call; a reader judging a convention line
-   inapplicable to this project flags that with its reason. Convention lines never masquerade
+   inapplicable to this project raises a Question saying so, with its reason. Convention lines never masquerade
    as sheet-cited reads: their `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>`
    (the pinned version from the knowledge manifest), their evidence quotes the trade file's line and
    carries the marker `basis: "trade-convention"`, and they carry no sheet citation. Where a sheet
@@ -66,24 +64,23 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    in the trail.
 4. **Store-resolution is mandatory.** A mark, tag, or code is resolved by querying the project
    record (`search`), never from memory, never inherited from another sheet's read, never assumed
-   from a similar-looking mark. The validation's one repaired violation came from two of eight
-   inherited marks being misidentified.
+   from a similar-looking mark.
 5. **Capture never filters.** Capture is trade-agnostic and complete: everything seen goes into the
    one shared list. Deciding what matters, what's priced, and whose trade it is happens downstream,
    never in the reader that read it.
 6. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
    the record back and confirms the count that landed equals the count sent, and checks any
-   contested rows individually, before it ends. The round runner separately re-verifies the same
+   conflicting rows individually, before it ends. The round runner separately re-verifies the same
    counts with its own queries before the next unit of that pass starts. A reader's report that its
    batches landed is verified at both its own boundary and the runner's; neither replaces the
    other. The lead adds a third, count-only check at the check-in, bounded by what `search` can
    actually filter on (subject, predicate, trustClass, and a `text` substring across subject,
-   predicate, and value; there is no `sourceInstrument` filter, so never claim one). What the lead
+   predicate, and value; there is no `sourceInstrument` filter, so never assert one). What the lead
    takes independently is the created count per unit: `search(text: "scopeItem:<unit-id>-",
    limit: 1)`, reading `count`, a real total over the entries whose subject carries that prefix.
-   Updates and flags land on subjects that already existed, so no prefix finds them: they are
+   Updates and Questions land on subjects that already existed, so no prefix finds them: they are
    verified at the reader's boundary and again at the runner's, by reading the named subjects back,
-   and the lead reports them as runner-verified rather than claiming a check it did not run. The
+   and the lead reports them as runner-verified rather than asserting a check it did not run. The
    lead never calls `list_scope_items` during the run: that verb returns the whole projected scope
    list, unbounded, and pulling it is how the lead's context stops being cheap. When the record
    grows a `sourceInstrument` filter, the lead's own check widens to the full per-unit totals.
@@ -91,14 +88,13 @@ that relaxes any one of them reproduces a measured, named failure from the valid
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are the derive stage's output,
    never the reader's). One item per sheet is a ceiling violation; one item per instance is a floor
-   violation. Where the trade file's grain section is silent, create at best judgment AND flag the
-   grain question: recall never drops to grain uncertainty.
+   violation. Where the trade file's grain section is silent, create at best judgment AND raise a
+   Question naming the grain question: recall never drops to grain uncertainty.
 8. **Definitions before placements.** A pass reads only after the passes it references are already
    recorded (legends and schedules before the plans that tag them). The read plan encodes this
    order and the user approves it.
 9. **Every round covers the scope the schedules themselves ground.** The passes reading legends and
-   schedules record what a mark means, and they also own the scope items the schedules ground. The
-   validation's single biggest capture gap was nobody owning schedule-grounded scope.
+   schedules record what a mark means, and they also own the scope items the schedules ground.
 10. **Run, or stop and report; never create a consent step.** The user's decisions in this skill are
    the read plan and each check-in. Everything else the run does is its own work, recorded with its
    trail and editable afterward. Never stop to collect approval for a course you have already
@@ -108,9 +104,9 @@ that relaxes any one of them reproduces a measured, named failure from the valid
     (below) is a standing stage with a closure loop, never optional, and whatever remains open at
     the end is reported by name: never assumed closed, never zeroed by hope.
 
-Also: door-owned records (flag resolutions, questions-as-answers) are created only at their own
-doors; a reader that thinks a flag should be closed says so in its report and a person acts at the
-door. Removing a scope item is different: `retire_scope_item` is the one door for that act, for a
+Also: door-owned records (Question resolutions, questions-as-answers) are created only at their own
+doors; a reader that thinks a Question should be closed says so in its report and a person acts at
+the door. Removing a scope item is different: `retire_scope_item` is the one door for that act, for a
 person and an agent alike. Use it only for a row the user asked removed, put the user's ask in
 `basis` in their words, one item per call; a row you merely suspect is wrong goes in the report.
 
@@ -141,7 +137,7 @@ lowercase, spaces to hyphens; fall back to the projectId). Never committed to an
 uploaded to the project except record files, never recorded as project entries. The set:
 
 - `ledger.md`: the run ledger, appended as the run proceeds: every read unit (round, pass, unit,
-  purpose), every write batch (count sent, reader-verified, runner-verified, contested), the list of
+  purpose), every write batch (count sent, reader-verified, runner-verified, conflicts), the list of
   definitions kinds as they land, check-in outcomes, every deviation or repair, and the run's
   `phase:` lines, one per phase boundary, appended by the lead. The ledger is what makes the
   close-out report honest, and its `phase:` lines are what makes a run resumable. Audience: agent.
@@ -211,7 +207,7 @@ furnish/install seams, convention work no sheet states. `MANIFEST.md` there reco
 version and source snapshot: read it at run start, record the version in the ledger, and cite it
 in every convention-line record (`trade-convention:<trade>@<version>`). Each pass carries the trade
 files relevant to its content families as part of its brief. Where a trade file is silent, the
-reader creates at best judgment and flags the question (non-negotiable 7); the flag is a suggested
+reader creates at best judgment and raises a Question (non-negotiable 7); the Question is a suggested
 amendment to that trade file, surfaced in the close-out report.
 
 ## 1. Preconditions
@@ -341,7 +337,7 @@ The reading happens one level down. Per round, the lead does exactly this and ho
    writes each pass's brief file, runs the passes as read units in reading order (one fresh
    `plumlayer:scope-reader` per unit, one unit at a time within a pass, passes that do not overlap
    running alongside each other), verifies every unit against the record with its own queries before
-   the next unit of that pass starts, flags intra-pass and round-end overlaps, and appends the
+   the next unit of that pass starts, notes intra-pass and round-end overlaps, and appends the
    ledger. The per-unit loop lives in the `scope-round-runner` agent definition and the reader
    mandates live in the `scope-reader` agent definition. Neither is restated here, and neither is
    ever trimmed.
@@ -349,9 +345,9 @@ The reading happens one level down. Per round, the lead does exactly this and ho
    (shape below). Before you say a number out loud, take the created count for each of the round's
    units with your own `search(text: "scopeItem:<unit-id>-", limit: 1)`, reading `count`. That is
    the third boundary of non-negotiable 6, and it is count-only: never a row list, never
-   `list_scope_items`. It reaches creates and not updates or flags, because those land on subjects
+   `list_scope_items`. It reaches creates and not updates or Questions, because those land on subjects
    that already existed and `search` has no `sourceInstrument` filter to reach them by. Say the
-   update and flag counts as the runner verified them, and the created counts as your own. A
+   update and Question counts as the runner verified them, and the created counts as your own. A
    mismatch stops the run and gets investigated, never papered over.
 4. **Append `phase: round N complete` to the ledger**, with the verified totals.
 5. **Check in with the user** (format below). Move to the next round only on their go-ahead, and
@@ -437,7 +433,7 @@ these alongside the `belongsToTrade` batch, with the same count verification. Th
 placement is the one enrollment kind this run authors; exclusions, general requirements, and
 VE/alternates stay manual-first doctrine: the run does not auto-author them, the user authors
 those boundary lines on the package surface, and anything the read suggested toward one rides in
-flags and notes. Sheet-to-package assignment (`assign_sheet_packages`) is the user's
+Questions and notes. Sheet-to-package assignment (`assign_sheet_packages`) is the user's
 call: offer it only when the user asks; the derived relevant-pages list already falls out of
 the citations. When the tag batches are verified, append `phase: tagged` to the ledger.
 
@@ -504,9 +500,9 @@ Read your unit as your definition says, then return your report.
 unit: <unit id>   pass: <pass name>   round: <n>
 pages read: <sheet number + pageInPdf, one per page read>
 pages unread: <sheet number + pageInPdf + reason, or "none">
-created: <n>   updated: <n>   flagged: <n>
+created: <n>   updated: <n>   questions: <n>
 updated subjects: <the subject of every item updated, or "none">
-sent: <n>   landed: <n>   contested: <ids and how each resolved, or "none">
+sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 definitions kinds added: <kinds, or "none">
 convention lines: emitted <n>; inapplicable: <line + reason, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
@@ -524,10 +520,10 @@ after taking the round's created counts off the record itself:
 ```text
 round: <n, or "completeness">   passes: <pass names>
 units read: <unit ids, in reading order>
-per unit: <unit id> created <n> updated <n> flagged <n> verified <yes/no>
-totals verified: created <n> (entry count under the unit prefixes), updated <n>, flagged <n>
-contested rows: <id + how each resolved, or "none">
-overlap flags: <item name + the two units, one per line, or "none">
+per unit: <unit id> created <n> updated <n> questions <n> verified <yes/no>
+totals verified: created <n> (entry count under the unit prefixes), updated <n>, questions <n>
+conflicting rows: <id + how each resolved, or "none">
+overlap notes: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 unread pages: <sheet + page + reason, one per line, or "none">
 definitions kinds added: <kinds, or "none">
@@ -553,8 +549,8 @@ spec sections bundled: <n>; TOC sections seen unbundled so far: <n>
 After each round, before the next one starts, name the round you finished and what it covered,
 then cover, in plain sentences:
 
-- What you read and what landed: sheets read, items added, items updated, and what you flagged, by
-  kind. Your own verified counts, never the ones reported up to you.
+- What you read and what landed: sheets read, items added, items updated, and what you raised as
+  Questions, by kind. Your own verified counts, never the ones reported up to you.
 - What you would like them to look at now: document defects, items you weren't sure how finely to
   split, anomalies, each with its sheet reference, reviewable on plumlayer.com.
 - What is defined now that wasn't before, and anything the next round depends on.
@@ -585,8 +581,7 @@ like you to look at, and the plan for round two. Proceed, adjust, or pause?"
   behind them to decide otherwise, and that is their decision to make out loud, per run, never
   this skill's default.
 
-## Historical note
+## What this skill never runs
 
-The route-first harness (per-trade fan-out, reconcile-by-overlap) is retired doctrine. Do not
-restore or run route-first machinery from git history as a scope path, and never present it as
-current.
+Do not restore or run per-trade fan-out / reconcile-by-overlap machinery as a scope path, and never
+present it as current.
