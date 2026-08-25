@@ -312,11 +312,11 @@ guidance and render-only-when-unclear rule below to those leftover sheets only, 
 you can confidently place.
 
 **Correcting a rule-typed sheet.** When you judge a rule-typed sheet wrong, correct it the same way
-you'd correct any machine-read binding (step 6c): never a bare re-record, since a bare
-`agent-stated` entry does not outrank a `machine-read` one on the same slot and would just sit
-beneath it doing nothing. `search(projectId, subject: "sheet:<n>", predicate: "sheetType")`, take
-the row with `authorRegister: "machine-read"`, and author your corrected entry with `supersedesId`
-set to that row's id, cited to what you actually read. That edge is what makes your read govern.
+you'd correct any recognizer-set value (step 6c): never a bare re-record. A bare entry with no
+`supersedesId` onto an occupied slot is refused, naming the record it would have to replace.
+`search(projectId, subject: "sheet:<n>", predicate: "sheetType")`, take the id of the current row
+(the most recent one search returns for that slot), and author your corrected entry with
+`supersedesId` set to it, cited to what you actually read. That edge is what makes your read govern.
 
 This step runs on every door this skill supports: a fresh baseline, a bulletin or revision, and the
 cloud-resident re-recognition branch (1b) all converge here before the skill reports done. If this
