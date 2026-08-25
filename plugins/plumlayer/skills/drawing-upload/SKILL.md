@@ -234,12 +234,12 @@ succeeds, with no pooling step required.
 
 ## 6. Read the pages the pass could not name
 
-A `succeeded` `recognize_sheets_status` result carries `residue`: the tail where the deterministic
+A `succeeded` `recognize_sheets_status` result carries `unnamedPages`: the tail where the deterministic
 pass is least sure (low confidence, no sheet number found, or a degraded text layer). Read and judge
 every page in that tail yourself:
 
-- Use `residue[].pageNum` or `pageInPdf` (both 1-based) with `render_page` and `get_page_text`; never
-  the legacy 0-based `residue[].page` field. `render_page` returns the PNG inline (pass a normalized
+- Use `unnamedPages[].pageNum` or `pageInPdf` (both 1-based) with `render_page` and `get_page_text`; never
+  the legacy 0-based `unnamedPages[].page` field. `render_page` returns the PNG inline (pass a normalized
   `region` like `{x0:0.74, y0:0.80, x1:1.0, y1:1.0}` to zoom the title-block corner at higher DPI);
   `get_page_text` returns exact spans with PDF-point bboxes, and `hasTextLayer:false` is the honest
   image-only-page signal (no vector text to read).
@@ -565,8 +565,8 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    - What's in the set the index doesn't list: checked first against the index page's own raw
      text (a table-reading miss on our side lands in your review queue; a genuine absence becomes a
      question for the design team).
-   - What couldn't be read: `report.residue.parseRejectedSample` and
-     `report.residue.unparsedPages` name the tokens and pages this run could not account for; state
+   - What couldn't be read: `report.openItems.parseRejectedSample` and
+     `report.openItems.unparsedPages` name the tokens and pages this run could not account for; state
      those counts out loud rather than folding them into "no problems found."
    - Whether the index re-read agreed with the stored records: check `report.declaredLedgerDrift.ran`
      first. It's `false`, never a hollow zero, whenever no index page could be read at all, or a

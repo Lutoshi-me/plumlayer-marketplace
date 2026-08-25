@@ -846,10 +846,9 @@ def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
 
 RETIRED_WHOLE_FILE_TERMS: list[tuple[str, re.Pattern, bool]] = [
     (
-        "'residue' as the retired open-items concept (renamed to 'open items'; "
-        "the API field `residue` is a real, current identifier and is exempt in code spans)",
+        "'residue' as the retired open-items concept (renamed to 'open items')",
         re.compile(r"\bresidue\b", re.IGNORECASE),
-        True,
+        False,
     ),
     ("'entry-silent' (deleted concept)", re.compile(r"\bentry-silent\b", re.IGNORECASE), False),
     ("'unspecced' (deleted concept)", re.compile(r"\bunspecced\b", re.IGNORECASE), False),

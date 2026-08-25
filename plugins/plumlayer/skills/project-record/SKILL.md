@@ -67,7 +67,7 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   waiting inline. Recognized sheet entries land in the record automatically on success; never
   `record_batch` them yourself.
 - `recognize_sheets_status`: poll a `recognize_sheets` job. Returns run counts (`report`), the
-  server-side write summary (`written`), and the tail of pages it could not name (`residue`) for
+  server-side write summary (`written`), and the tail of pages it could not name (`unnamedPages`) for
   you to read and judge; it never carries the recognized entries themselves.
 - `render_page`: render a single page of a registered PDF to an image so you can read it.
 - `get_page_text`: extract the text layer from a registered PDF page (deterministic; use

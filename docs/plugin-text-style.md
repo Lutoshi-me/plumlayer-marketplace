@@ -129,7 +129,7 @@ Each of these is a harness check.
    - A **whole-file** list (e.g. `residue`, `roster`, `checkpoint`, `mint`, `enrich`, `operator` as
      the name for the person, `deposit`, `proposed`, `trade-packages`) must not appear anywhere in a
      shipped skill, an agent definition, the README, or a manifest. A literal, current identifier that happens to share
-     the retired word — the API field `residue`, the `operator.json` filename, the JSON key
+     the retired word — the `operator.json` filename, the JSON key
      `"operator"` — is exempt; it is a real name, not the retired concept.
    - A **scoped** list (e.g. `supersede`/`supersession`, `fan-out`, `idempotency`, `census`,
      `grain`, `trust class`) is legitimate agent-facing machinery vocabulary everywhere else in a
