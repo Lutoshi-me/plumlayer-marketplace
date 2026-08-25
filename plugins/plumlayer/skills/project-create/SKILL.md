@@ -70,8 +70,9 @@ on.**
 ## 2. Gather project facts (ask narrow, read what you're handed)
 
 The goal is **a named shell plus only the facts the drawings won't supply**, not a complete project
-record. **Never invent a fact.** Mark each one `confirmed`, `uncertain`, or `conflicting` as you go,
-that classification drives `ambiguityClass` at seed time.
+record. **Never invent a fact.** Mark each one `confirmed`, `uncertain`, or `conflicting` as you go:
+a confirmed fact seeds as a record entry; an uncertain or conflicting one gets raised as a Question
+with `ask_question` instead of seeded.
 
 ### Ask now vs. defer to the read (the triage that keeps this short)
 
@@ -119,7 +120,7 @@ ls -la <path/to/their/files>
 
 Extract candidate facts, **present them for confirmation** (don't trust an extraction silently), seed
 what's confirmed, and **defer the gaps to the read rather than interrogating** for them. Anything
-ambiguous in the source → mark `uncertain` / `conflicting`.
+unclear in the source → mark `uncertain` / `conflicting`.
 
 ---
 
@@ -142,8 +143,9 @@ One project = one project record.
 
 ## 4. Customize: seed the starting entries
 
-Map the confirmed facts to entries and record them. **Prefer the `record_batch` MCP
-tool**, one call with `projectId=<the new project>` and an `entries` array of all the seed entries (it's
+Map the confirmed facts to entries and record them; raise every uncertain or conflicting fact as a
+Question instead of seeding it. **Prefer the `record_batch` MCP tool**, one call with
+`projectId=<the new project>` and an `entries` array of all the confirmed-fact seed entries (it's
 atomic: one bad entry rejects the batch and names the index). **Fallback:** if `record_batch` isn't
 available (older server), call the **`record`** tool once per entry, batched in parallel (many per
 message).
@@ -153,8 +155,8 @@ message).
   This correctly marks the entry as low-instrument / user-asserted.
 - `evidence` = `{ source: "<user-interview | filename>", method: "human", snippet: "<what was
   said / the source line>" }`.
-- `ambiguityClass` = set it when the fact was `uncertain` or `conflicting` (this is what later
-  surfaces it in the `ambiguities` queue / RFI pile for human resolution). Omit for `confirmed`.
+- **Uncertain or conflicting fact:** don't seed it as an entry. Raise it with `ask_question` instead,
+  citing the source(s) it came from, so a person resolves it.
 
 **What to seed** (skip any the user didn't give, never fabricate):
 
@@ -205,7 +207,7 @@ Tell the user, in plain terms:
 - **Created:** project name + `projectId`.
 - **Seeded:** how many entries, broken down (facts / parties / trades / sets), and **how many were
   raised as Questions** (the pile a person should resolve).
-- **Where it landed**, visible now via `search` / `set_grid` / `ambiguities` in this session, and on
+- **Where it landed**, visible now via `search` / `set_grid` in this session, and on
   **plumlayer.com**, where every seeded value carries your name, the time, and what you read it from.
   Anything you raised as a Question is what a person should look at.
 - **Next steps:** upload the drawing set on plumlayer.com (or run `drawing-upload` locally), then run
@@ -223,7 +225,8 @@ Tell the user, in plain terms:
 - **Cite everything.** Every seeded entry carries `sourceInstrument` + evidence. No citation → don't
   seed it.
 - **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. Uncertain or
-  conflicting facts are seeded **with `ambiguityClass`**, not silently resolved or dropped.
+  conflicting facts are raised as Questions with `ask_question`, not silently resolved, seeded as
+  fact, or dropped.
 - **Seeds are the weakest entries in the ledger.** They take effect as the starting frame, recorded as
   agent-stated from what the user told you, and a drawing read supersedes them. Never present one
   as a fact read off the documents.

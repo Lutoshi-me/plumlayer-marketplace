@@ -255,9 +255,9 @@ every page in that tail yourself:
     anti-hallucination anchor working as designed. If the slot is empty (the pass
     left this page blank), just author the entry fresh: there is nothing to supersede.
   - **Genuinely unclear**: you honestly cannot tell which of two readings is right. Author your reading
-    as a bare entry tagged with `ambiguityClass` so both surface for a person in `ambiguities`; never
-    silently pick. Reserve that tag for a real toss-up; never use it for a correction you are confident
-    about (that just hands a person a title you already read correctly).
+    as a bare entry, cited to what you read, and raise it as a question with `ask_question` so a person
+    resolves it; never silently pick. Ask only for a real toss-up; never for a correction you are
+    confident about (that just hands a person a title you already read correctly).
 - **Image-only / scanned pages**: flag them honestly. Create the page as its own subject:
   `page:<fileId>:<pageInPdf>`, never `subject: null`, and never add an OCR dependency (deferred).
   Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
@@ -411,8 +411,8 @@ When you are confident a recognized title or discipline is a mis-grab, correct i
 The edge is what makes your read govern the grid: the recognizer's binding is `machine-read`, and an
 agent edge onto it is honored regardless of who wrote the value it corrects; only a person's later word
 outranks you. A **bare** corrected entry with no `supersedesId` does NOT win; it sits as a
-candidate beneath the machine value. Never reach for the `ambiguityClass` tag here: reserve that for
-genuine uncertainty, and tagging a title you already read correctly is the "go set it on the site" dead
+candidate beneath the machine value. Never raise this as a question here: reserve `ask_question` for
+genuine uncertainty, and asking about a title you already read correctly is the "go set it on the site" dead
 end this step exists to close.
 
 <!-- user-facing -->
@@ -477,8 +477,8 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    actually reach every sheet in scope: go back and close it before this run reports done, the same
    way a count mismatch in point 1 stops the run rather than getting waved through.
 
-Point any pages still unresolved, flagged image-only pages, or untyped sheets at `ambiguities(projectId)`
-or the plain untyped count: the review queue, not something this skill resolves itself.
+Raise any pages still unresolved or flagged image-only pages as questions with `ask_question`, and
+report the plain untyped count: a person resolves them, not something this skill resolves itself.
 <!-- user-facing -->
 Report: the
 project and delivery; the recognition run's counts (pages scanned, sheets recognized, how many were
@@ -604,8 +604,8 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
   re-record over a rule-typed sheet (correct it by supersession edge, per 6b); unsure stays untyped.
 - A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
   already-recognized sheet) is a supersession **edge** onto the stored entry (`supersedesId` from
-  `search`), never a bare competing entry and never an `ambiguityClass` tag: reserve that for
-  a reading you genuinely cannot resolve.
+  `search`), never a bare competing entry and never a question raised with `ask_question`: reserve
+  that for a reading you genuinely cannot resolve.
 - The page entries and your own type entries (the leftover sheets and any correction) are your own reading,
   cited to the page you read; never present them as the deterministic pass's confirmed output, and
   never present a rule-typed sheet as your own read.

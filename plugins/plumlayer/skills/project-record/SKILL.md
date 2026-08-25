@@ -3,10 +3,10 @@ name: project-record
 description: >
   Read, search, review, or add entries to a Plumlayer project record: the drawing set, open
   questions, RFI candidates, scope items, and takeoff data. Use when the user asks "what's in my
-  project" or says "/project-record". Drives the read verbs (set_grid, ambiguities,
-  rfi_candidates, search, list_scope_items) and write verbs (record, record_batch,
-  record_batch_file). Does not upload drawings (drawing-upload), build the scope list
-  (scope-run), or place takeoff measurements (takeoff).
+  project" or says "/project-record". Drives the read verbs (set_grid, rfi_candidates, search,
+  list_scope_items) and write verbs (record, record_batch, record_batch_file, ask_question).
+  Does not upload drawings (drawing-upload), build the scope list (scope-run), or place takeoff
+  measurements (takeoff).
 ---
 
 # Working a Plumlayer project record
@@ -50,7 +50,6 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
 **Read**
 - `set_grid`: the sheet inventory (the drawing set as a grid: discipline, sheet number,
   governing issue, open-question count per sheet).
-- `ambiguities`: the open-conflict / review ledger, severity-sorted (legitimate-RFI first).
 - `rfi_candidates`: drafted RFI candidates with citations.
 - `search`: the raw entry ledger, every entry that's ever been written, not just what's
   currently governing. Filter by subject / predicate / trustClass / text; paginated. Use
@@ -90,9 +89,13 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
 
 **Write**
 - `record`: append one entry (`subject`, `predicate`, `value`, `sourceInstrument`,
-  optional `evidence`/`ambiguityClass`/`supersedesId`). Stamped as you, and it takes effect
+  optional `evidence`/`supersedesId`). Stamped as you, and it takes effect
   immediately as provisional working truth recorded as agent-stated. `supersedesId` is the
   correction edge: see "Correcting a machine misread" below.
+- `ask_question`: raise ONE open item a person has to answer or resolve, with a title and the
+  citations it's about (a sheet, a spec section, or a record you read). This is how a
+  disagreement between sources, or a reading you genuinely cannot resolve yourself, reaches a
+  person's judgment. `supersedesId` revises your own prior wording.
 - `record_batch`: append an array of entries in one atomic call (`projectId` + `entries`
   array). Atomic: a bad entry rejects the whole batch and names the index. Prefer this over
   repeated `record` calls for bulk writes (e.g. upload or scope writes). Each call
@@ -172,9 +175,9 @@ correct it with a supersession **edge**, not a bare competing entry:
 The edge is what makes your read govern the grid: an agent edge onto a `machine-read` value is honored
 regardless of who or what originally produced it. Only a person's word outranks you. A **bare**
 competing entry (no `supersedesId`) does not win; it stays a candidate beneath the machine value,
-which is the anti-hallucination anchor working as intended. So reserve `ambiguityClass` (which raises
-a Question) for a reading you genuinely cannot resolve, never as the way to fix a title you already
-read correctly (that is the "go set it on the site" dead end).
+which is the anti-hallucination anchor working as intended. So reserve `ask_question` for a reading
+you genuinely cannot resolve, never as the way to fix a title you already read correctly (that is
+the "go set it on the site" dead end).
 <!-- user-facing -->
 To the user this is plain: "the automatic scan grabbed the wrong
 text on those sheets, so I read them and set them right."
@@ -182,8 +185,8 @@ text on those sheets, so I read them and set them right."
 
 ## Typical flows
 - **"What's in my project / project record?"** → `list_projects` → pick one → `set_grid` for the
-  drawing set, `ambiguities` for open issues, `rfi_candidates` for drafted RFIs; `search`
-  to inspect specific subjects/entries.
+  drawing set, `rfi_candidates` for drafted RFIs; `search` to inspect specific subjects/entries,
+  including open questions.
 - **"Scope something"** → read the relevant sheets/entries, judge, then `record`
   grounded entries (`sourceInstrument` = where it came from, plus `evidence`).
 <!-- user-facing -->
@@ -192,10 +195,11 @@ Tell the user
 <!-- /user-facing -->
 Drawn
   measurements and sheet scale are not this door's to write (see Write, above).
-- **"Find conflicts / RFIs"** → `ambiguities` + `rfi_candidates`; where you spot something you
-  genuinely can't resolve, `record` an entry that raises a Question (`ambiguityClass`), cited.
-  Where instead you can see the recognizer grabbed the wrong cell for a title or discipline,
-  correct it with a supersession edge (see "Correcting a machine misread"), not a Question.
+- **"Find conflicts / RFIs"** → `search` for open questions, `rfi_candidates` for drafted RFIs;
+  where you spot a disagreement between sources, or something you genuinely can't resolve,
+  `ask_question` with a title and the citations it's about. Where instead you can see the
+  recognizer grabbed the wrong cell for a title or discipline, correct it with a supersession
+  edge (see "Correcting a machine misread"), not a Question.
 
 ## Discipline
 - Be honest about your own entries: they govern provisionally as your reading, not as a
