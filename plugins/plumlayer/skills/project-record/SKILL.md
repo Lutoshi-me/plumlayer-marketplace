@@ -31,9 +31,9 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   `machine-read`, a value the deterministic layer confirmed as `tool-verified`, a person's
   own gesture as `human-stated`. This door can never record an entry as human-authored or
   tool-verified.
-- A person's word outranks yours on the same slot. You supersede your own prior reads
-  freely, but a write against something a human said lands as a visible conflict, and their
-  value keeps governing.
+- A field holds the latest write, by anyone, with its trail. Supersede freely, naming what your
+  entry replaces with `supersedesId`, whether it's your own prior read or something a person set;
+  if you're not sure your read should stand over what's there, ask instead of overwriting it blind.
 - Raise a Question, with a title and a citation, for what you are unsure of. That is what
   reaches a person for judgment, and human sign-off still gates what leaves the building: an
   ITB or package send, an RFI, anything published outside, a bid. Nothing leaves unsigned;
@@ -111,8 +111,9 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   merely suspect is wrong is reported, not retired. The generic write doors refuse the
   `scopeItemRetraction` predicate; this verb and `restore_scope_item` are its only doors.
 - `restore_scope_item`: put a retired scope item back (`projectId`, `subject`, `basis`,
-  optional `reason`). Same door for a person and an agent; a person's word outranks yours, so
-  restoring an item a person retired lands in the trail but does not bring it back.
+  optional `reason`). Same door for a person and an agent; if a person retired the item, ask
+  them before restoring it. A restore call you send anyway lands in the trail but does not
+  bring the item back.
 
 Both write doors refuse the takeoff-domain predicates (`hasTakeoffCount`, `hasTakeoffRollup`,
 `hasScale`, `hasTakeoffLength`, `hasTakeoffArea`, `hasTakeoffCountMark`, `hasTakeoffCondition`,
@@ -173,9 +174,10 @@ correct it with a supersession **edge**, not a bare competing entry:
    cited to the sheet you read it from.
 
 The edge is what makes your read govern the grid: an agent edge onto a `machine-read` value is honored
-regardless of who or what originally produced it. Only a person's word outranks you. A **bare**
-competing entry (no `supersedesId`) does not win; it stays a candidate beneath the machine value,
-which is the anti-hallucination anchor working as intended. So reserve `ask_question` for a reading
+regardless of who or what originally produced it, as long as it names what it replaces with
+`supersedesId`. If a person already set the value and you think it's wrong, ask them rather than
+overwrite it. A **bare** competing entry (no `supersedesId`) does not win; it stays a candidate
+beneath the machine value, which is the anti-hallucination anchor working as intended. So reserve `ask_question` for a reading
 you genuinely cannot resolve, never as the way to fix a title you already read correctly (that is
 the "go set it on the site" dead end).
 <!-- user-facing -->
@@ -203,7 +205,8 @@ Drawn
 
 ## Discipline
 - Be honest about your own entries: they govern provisionally as your reading, not as a
-  person's word, and a human correction outranks them.
+  person's own entry, and a later correction from a person supersedes them the same way any
+  write does.
 - Always cite, and shape the citation so it actually renders (see "How to shape a citation").
   Separate what's grounded from what's inferred.
 - One project = one project record; always act within the correct `projectId`.

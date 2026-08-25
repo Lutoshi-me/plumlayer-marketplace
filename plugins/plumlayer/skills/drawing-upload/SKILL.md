@@ -409,11 +409,12 @@ When you are confident a recognized title or discipline is a mis-grab, correct i
    it into your step 7 write.
 
 The edge is what makes your read govern the grid: the recognizer's binding is `machine-read`, and an
-agent edge onto it is honored regardless of who wrote the value it corrects; only a person's later word
-outranks you. A **bare** corrected entry with no `supersedesId` does NOT win; it sits as a
-candidate beneath the machine value. Never raise this as a question here: reserve `ask_question` for
-genuine uncertainty, and asking about a title you already read correctly is the "go set it on the site" dead
-end this step exists to close.
+agent edge onto it is honored regardless of who wrote the value it corrects, as long as your entry
+names what it replaces with `supersedesId`. If a person already set the value and you think it's
+wrong, ask them rather than overwrite it. A **bare** corrected entry with no `supersedesId` does NOT
+win; it sits as a candidate beneath the machine value. Never raise this as a question here: reserve
+`ask_question` for genuine uncertainty, and asking about a title you already read correctly is the
+"go set it on the site" dead end this step exists to close.
 
 <!-- user-facing -->
 Say it the way it happened: "the automatic scan grabbed the wrong text on N sheets, so I read them

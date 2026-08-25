@@ -374,8 +374,9 @@ These are gates. Write them into every read:
   never populate `amount`.
 - **No receipt, no write.** A value you cannot cite to a `fileId` and page is not recorded. If you
   believe a fact but cannot point at where you read it, it does not become an entry.
-- **Nothing you write is a person's word.** Every entry records as your reading of the document; this
-  door cannot record one as human-authored, and a human correction outranks yours on the same row.
+- **Nothing you write is a person's own entry.** Every entry records as your reading of the document;
+  this door cannot record one as human-authored. A later correction from a person on the same row
+  supersedes yours the same way any write does, naming what it replaces.
 
 ## 5. Assemble and audit confidence
 

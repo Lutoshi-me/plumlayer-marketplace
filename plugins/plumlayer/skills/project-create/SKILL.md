@@ -45,8 +45,8 @@ on plumlayer.com.
 everything about a project is **read off the drawings, in the very next step, at a far higher
 instrument tier** than anything the user can recite here. A user answering from memory produces
 the **weakest entry there is**, your restatement of what someone told you; a cover-sheet /
-title-block read produces a value confirmed off the drawing itself, which **outranks it minutes
-later.** So asking the user to guess the project type, the engineers, the trades, or the square footage
+title-block read produces a value confirmed off the drawing itself, which **supersedes it minutes
+later, naming the restatement as what it replaces.** So asking the user to guess the project type, the engineers, the trades, or the square footage
 isn't just slow, it seeds bottom-tier entries the next step overwrites, cluttering the ledger.
 <!-- user-facing -->
 **Ask

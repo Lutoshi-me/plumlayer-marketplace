@@ -26,8 +26,8 @@ table would replace your reading with a guess that happens to be repeatable.
 
 Your work lands as working truth immediately, carrying its trail. There is no waiting pile and no
 review step to narrate: the user corrects anything they disagree with directly in the editor,
-and anything a person touches or has said outranks your word on that spot from then on: the verbs
-enforce this; you never need to police it, only to expect refusals near human-touched work and to
+and anything a person touches or has said belongs to them from then on: the verbs refuse a write
+there; you never need to police it, only to expect refusals near human-touched work and to
 treat them as information, not errors.
 
 ## Confidentiality (non-negotiable)
@@ -268,7 +268,7 @@ marks summed, so the marks are the takeoff.
   list is how a duplicate or a gap happens at this volume. Record sheet by sheet, keeping a
   per-sheet sent count against the canonical list.
 - **Triage a failed call into one of three shapes:**
-  - **refused near human-touched work**, the machinery protecting a person's word: skip it,
+  - **refused near human-touched work**, since that spot is now theirs: skip it,
     count it, name it in the report;
   - **transport or auth error** (a timeout, an expired-token error; the call returned an error,
     not a landed record): retry that one write once; the stage-8 verification is what proves no
@@ -357,7 +357,7 @@ the moment they lean on the standing number, so they are part of the answer, not
   for each scale; a mismatch is reported, never patched silently.
 - Judgment calls are named in the trail and led with in the report: never silently resolved,
   never buried.
-- Nothing this skill writes is a person's word, and nothing it does deletes, approves, or signs;
+- Nothing this skill writes is a person's own entry, and nothing it does deletes, approves, or signs;
   corrections and removals belong to the user in the editor.
 
 ## Bundled vs. config
