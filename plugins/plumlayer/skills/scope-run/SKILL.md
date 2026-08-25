@@ -52,7 +52,8 @@ that relaxes any one of them reproduces a measured, named failure.
    for its content families as match-or-create context: for each thing seen, create a new item,
    update an existing one (a new citation, a note, a resolved cross-reference), or raise a Question,
    with a title and a citation. Never a parallel list, never a re-create of what exists, never
-   silent skipping of what's already listed.
+   silent skipping of what's already listed. Before raising a Question, read `list_questions`: where
+   an open one already covers the same ask, reply to it instead of asking it a second time.
 3. **The convention-line emit mandate.** A reader whose trade files carry convention lines for the
    content families it reads MUST emit them: create if absent from the live list, update if
    present. Silence is a violation, not a judgment call; a reader judging a convention line
@@ -106,7 +107,9 @@ that relaxes any one of them reproduces a measured, named failure.
 
 Also: door-owned records (Question resolutions, questions-as-answers) are created only at their own
 doors; a reader that thinks a Question should be closed says so in its report and a person acts at
-the door. Removing a scope item is different: `retire_scope_item` is the one door for that act, for a
+the door. That door is `close_question`, and you call it only when the user settles the answer in
+the session: their reason goes in `note` in their own words, and a Question you merely think looks
+answered stays open. `reopen_question` puts one back when they tell you it was closed in error. Removing a scope item is different: `retire_scope_item` is the one door for that act, for a
 person and an agent alike. Use it only for a row the user asked removed, put the user's ask in
 `basis` in their words, one item per call; a row you merely suspect is wrong goes in the report.
 

@@ -4,7 +4,8 @@ description: >
   Read, search, review, or add entries to a Plumlayer project record: the drawing set, open
   questions, RFI candidates, scope items, and takeoff data. Use when the user asks "what's in my
   project" or says "/project-record". Drives the read verbs (set_grid, rfi_candidates, search,
-  list_scope_items) and write verbs (record, record_batch, record_batch_file, ask_question).
+  list_scope_items, list_questions) and write verbs (record, record_batch, record_batch_file,
+  ask_question, close_question, reopen_question).
   Does not upload drawings (drawing-upload), build the scope list (scope-run), or place takeoff
   measurements (takeoff).
 ---
@@ -52,10 +53,14 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   governing issue, open-question count per sheet).
 - `rfi_candidates`: drafted RFI candidates with citations.
 - `search`: the raw entry ledger, every entry that's ever been written, not just what's
-  currently governing. Filter by subject / predicate / trustClass / text; paginated. Use
+  currently governing. Filter by subject / predicate / text; paginated. Use
   this to see what's actually been asserted, including entries you wrote yourself.
 - `list_scope_items`: the live scope list (name, category, description, notes, quantity per item).
   Use this to see what's already been captured before creating or updating a scope item.
+- `list_questions`: every question on the project, open ones first, each with its wording, the
+  places it cites, its replies oldest first, the trade it's homed to, and the trail of every
+  close and reopen on it. Read this before you ask, so you don't raise one that's already open,
+  and before you close one, so you close the right one.
 
 **Drawing recognition** (cloud PDF: these work against files already uploaded to the project)
 - `list_files`: list the drawing files registered to a project.
@@ -111,9 +116,19 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   merely suspect is wrong is reported, not retired. The generic write doors refuse the
   `scopeItemRetraction` predicate; this verb and `restore_scope_item` are its only doors.
 - `restore_scope_item`: put a retired scope item back (`projectId`, `subject`, `basis`,
-  optional `reason`). Same door for a person and an agent; if a person retired the item, ask
-  them before restoring it. A restore call you send anyway lands in the trail but does not
-  bring the item back.
+  optional `reason`). Same door for a person and an agent, and it takes effect whoever retired
+  the item, so if a person retired it, ask them before you put it back.
+- `close_question`: close ONE question (`projectId`, `questionId`, optional `note`,
+  `sourceInstrument`), when the user has told you it's settled. It stops showing as open and its
+  pins come off the sheets; nothing is deleted, and the ask, every reply, and your close all stay
+  in the question's trail with your name. Put their reason in `note` in their own words, or leave
+  `note` off rather than writing a reason nobody gave. A question you merely think looks answered
+  is reported or replied to, not closed. Refused if the question is already closed.
+- `reopen_question`: put a closed question back (`projectId`, `questionId`, optional `note`,
+  `sourceInstrument`), when the user says it was closed too early or has come up again. The
+  earlier close stays in the trail with the name of whoever made it. Refused if the question
+  isn't closed. The generic write doors refuse the `questionClosed` predicate; these two verbs
+  and their door on plumlayer.com are the only way to settle or unsettle a question.
 
 Both write doors refuse the takeoff-domain predicates (`hasTakeoffCount`, `hasTakeoffRollup`,
 `hasScale`, `hasTakeoffLength`, `hasTakeoffArea`, `hasTakeoffCountMark`, `hasTakeoffCondition`,
@@ -187,8 +202,8 @@ text on those sheets, so I read them and set them right."
 
 ## Typical flows
 - **"What's in my project / project record?"** → `list_projects` → pick one → `set_grid` for the
-  drawing set, `rfi_candidates` for drafted RFIs; `search` to inspect specific subjects/entries,
-  including open questions.
+  drawing set, `list_questions` for the open items, `rfi_candidates` for drafted RFIs; `search`
+  to inspect specific subjects/entries.
 - **"Scope something"** → read the relevant sheets/entries, judge, then `record`
   grounded entries (`sourceInstrument` = where it came from, plus `evidence`).
 <!-- user-facing -->
@@ -197,9 +212,10 @@ Tell the user
 <!-- /user-facing -->
 Drawn
   measurements and sheet scale are not this door's to write (see Write, above).
-- **"Find conflicts / RFIs"** → `search` for open questions, `rfi_candidates` for drafted RFIs;
-  where you spot a disagreement between sources, or something you genuinely can't resolve,
-  `ask_question` with a title and the citations it's about. Where instead you can see the
+- **"Find conflicts / RFIs"** → `list_questions` for the open items, `rfi_candidates` for drafted
+  RFIs; where you spot a disagreement between sources, or something you genuinely can't resolve,
+  `ask_question` with a title and the citations it's about, after checking `list_questions`, so
+  you reply to an open one covering the same ask rather than raising it twice. Where instead you can see the
   recognizer grabbed the wrong cell for a title or discipline, correct it with a supersession
   edge (see "Correcting a machine misread"), not a Question.
 

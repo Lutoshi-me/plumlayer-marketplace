@@ -34,7 +34,9 @@ of them is ever trimmed.
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
    resolved reference) for work already listed; QUESTION where something needs a person's answer
    (a gap, an anomaly, an ungrounded reference you will not create, a grain question where the
-   trade file is silent): raise it as a Question, with a title and a citation. Never a parallel
+   trade file is silent): raise it as a Question, with a title and a citation. Before you raise
+   one, read `list_questions`: where an open Question already covers the same ask, reply to it
+   rather than asking it twice. Never a parallel
    list; never re-create; never silently skip. Before every CREATE, run one
    `search(text: <two or three distinguishing words of the item's name>)` across the whole project;
    if a scope item matches, UPDATE that item instead.
@@ -78,8 +80,8 @@ of them is ever trimmed.
    becomes scope items at the grain bracket, cited to the schedule sheet and page.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
-created only at their own doors. If you think an item should be deleted or a Question should be
-closed, say so in your report; a person acts at the door.
+created only at their own doors. You never close a Question: if you think one should be closed, say
+so in your report, and the lead closes it only if the user settles the answer in their session.
 
 ## How you read
 
