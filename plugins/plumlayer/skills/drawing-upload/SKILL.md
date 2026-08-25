@@ -30,6 +30,22 @@ This skill runs the read cloud-first: recognition and every recorded entry come 
 your own read of the cloud-hosted pages, never from a local pass. Examples in this file are generic;
 never put a real client or project name here.
 
+This skill runs in the conversation, start to finish. No step of it is handed to a background
+agent or a subagent: there is no named agent for this work, and an improvised one cannot take the
+user's answers or report a job's state first-hand. A long recognition job is waited on here, in
+the open, with the poll loop in step 5.
+
+Run, or stop and report; never create a consent step. The user's decisions in this skill are:
+which project this delivery belongs to, its issue label, whether it is changed sheets or a full
+re-issue when the paper does not say, which files are the drawings when the packaging leaves it
+genuinely unclear, and whether to send a page and type bundle again when a prior one is on file.
+Ask each of those once, in plain words, and where you already have a reading (off a cover sheet,
+off the file list) put it forward as the answer with its source named, so the user corrects it
+rather than composes it. Everything else the skill does is its own work, recorded with its trail
+and editable afterward. Never stop to collect approval for a course you have already chosen, and
+never put your own next step to the user as a choice: if something is wrong, stop, say what is
+wrong, and hand it over; if nothing is wrong, proceed and say what you did.
+
 ## Narration to the user
 
 <!-- user-facing -->
@@ -76,8 +92,8 @@ during recognition. It is load-bearing for supersession later.
 Settle this before anything is registered: is this **changed sheets only** (a bulletin, an addendum,
 an ASI) or a **full re-issue** (a permit set, a conformed set, a re-issued CD set)? The answer
 decides how the delivery registers in step 3 and what step 10 has to report, and it is nearly always
-printed on the paper. Read the cover sheet or the bulletin header first and put your reading to the
-user to confirm; never ask cold when the document says it.
+printed on the paper. Read the cover sheet or the bulletin header first and put your reading
+forward as the answer, naming where you read it; never ask cold when the document says it.
 
 <!-- user-facing -->
 Ask it in plain words, "is this a set of changed sheets, or a full re-issue of the whole set?", and
@@ -260,12 +276,23 @@ deterministic server-side pass over that PDF. It returns immediately (it does no
 for this file+delivery is already in flight or done; poll the returned `jobId` rather than starting a
 second one. Run `recognize_sheets` once per file, never twice for the same file+delivery.
 
-Poll `recognize_sheets_status(projectId, jobId)` every ~3-5s until `state` settles:
+Poll `recognize_sheets_status(projectId, jobId)` every ~3-5s. The loop has exactly two exits, and
+both are the server's: `state` is `succeeded` or `failed`, or `state` is `stale`. Nothing else ends
+it. Not the clock (a big set can run many minutes and still be working), not a poll that looks the
+same as the last one, not a connection drop (reconnect and poll again with the same `jobId`), and
+not a second `recognize_sheets` call that answers `alreadyActive: true` (that is the same job,
+still running; keep polling it). If you stop polling for any other reason, that is your own
+decision: say so in those words, and never describe the job as hung, stuck, or dead, because you
+did not observe that. What the server says on each poll:
 
 - `queued` / `running`: still working; poll again in a few seconds.
-- `stale`: no progress for 15 minutes; re-call `recognize_sheets` on the same file/delivery to
-  self-heal (it restarts the job).
-- `failed`: read `error`, stop, and report it; don't retry blindly.
+- `stale`: the server saw no progress for 15 minutes; re-call `recognize_sheets` on the same
+  file/delivery to self-heal (it restarts the job).
+- `failed`: read `error` and report it. A retry is your call only when the error names something a
+  retry changes: a stale restart, a transient fetch. A job that failed at a server limit (a timeout
+  at the worker's ceiling) fails the same way again on the same file; do not run it again, and do
+  not put "how should I retry?" to the user. Report the error, say that the file needs a server-side
+  fix before it will recognize, and stop.
 - `succeeded`: the recognized sheet entries (`appearsOnPage`, `hasTitle`, `locatedAt`, `discipline`,
   `partOfIssue`) are **already recorded server-side.** This result never carries
   those entries and you never `record_batch` them yourself: that would double-write every sheet. Report
@@ -277,6 +304,14 @@ Poll `recognize_sheets_status(projectId, jobId)` every ~3-5s until `state` settl
 For a multi-file delivery, start and poll a separate job per file; there is no merge step and no
 `SET_TAG`: each file's recognized entries land under the shared `deliveryId` as soon as its own job
 succeeds, with no pooling step required.
+
+<!-- user-facing -->
+Whenever you tell the user where a job stands, mid-run or at the end, quote the last status
+payload you actually received and when you received it: the `state`, the progress fields it
+carried, and the time of that poll. Never a summary, never a duration you did not measure from
+two polls you hold, and never a state you inferred. "Last poll at 19:33:10, running, 140 of 209
+pages scanned" is a report; "it has been hanging for an hour" is not.
+<!-- /user-facing -->
 
 ## 6. Read the pages the pass could not name
 
@@ -556,10 +591,11 @@ disk the whole time.
    (`Division 01.pdf`, `Division 02.pdf`, ... instead of one bound manual), pass every division PDF's
    `fileId` together in the SAME call: the extraction unions across them into one section set; never
    call it once per division file. It returns `{jobId, status}` immediately.
-3. **Poll `extract_spec_toc_status(projectId, jobId)`** every ~3-5s until `state` is `succeeded` or
-   `failed`: the same queued/running/stale rhythm as `recognize_sheets_status` in step 5. On `failed`,
-   read `error`, stop, and report it; don't retry blindly. On `stale`, re-call `extract_spec_toc` on the
-   same file set to restart.
+3. **Poll `extract_spec_toc_status(projectId, jobId)`** every ~3-5s under the same loop rule as
+   step 5: the only exits are `succeeded`, `failed`, or `stale`, never the clock or your own
+   judgment. On `failed`, read `error`, report it, and retry only when the error names something a
+   retry changes. On `stale`, re-call `extract_spec_toc` on the same file set to restart. Any report
+   of where the job stands quotes the last payload received and its time.
 4.
 <!-- user-facing -->
 **Report the counts honestly, not just "N sections found."** From the succeeded job's `report`:
@@ -665,6 +701,13 @@ Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re
 
 ## Gates (non-negotiable)
 
+- **The whole skill runs in the conversation.** No step is handed to a background agent or a
+  subagent; a job is polled here until the server ends it, and every report of a job's state
+  quotes the last payload received and its time.
+- **Run, or stop and report; never create a consent step.** The user's decisions are the ones
+  named at the top of this file; everything else is the skill's own work. A failure is reported
+  with its error, retried only when the error names what a retry changes, and never put to the
+  user as a choice of retry strategy.
 - **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
   (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
   1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing

@@ -34,8 +34,8 @@ CONFIG="$HOME/.plumlayer/operator.json"
 ls -la "$CONFIG" 2>/dev/null
 ```
 
-- **If it exists:** read it, show the user the current values, and ask what to change. **Update in
-  place, never silently overwrite.** Preserve fields the user doesn't touch. If the existing file
+- **If it exists:** read it, show the user the current values, and take whatever they change.
+  **Update in place, never silently overwrite.** Preserve fields the user doesn't touch. If the existing file
   carries keys the current schema no longer defines, ignore them and drop them on rewrite; never
   error on them.
 - **If not:** run the interview fresh.
@@ -43,7 +43,10 @@ ls -la "$CONFIG" 2>/dev/null
 ## 2. The interview (user-level only)
 
 Ask conversationally, in small groups; accept "skip" for anything optional. Nothing here is
-project-specific, that's `project-setup`'s job. Keep it short.
+project-specific, that's `project-setup`'s job. Keep it short. Every question here is the user's
+own; where you already hold an answer (from an existing profile, from what they told you, from the
+context you carry), put it forward as the answer with its source named, so they correct it rather
+than compose it. Ask each thing once. Do not ask anything that is not on this list.
 
 **Identity**
 - Company / user name.
@@ -54,15 +57,17 @@ project-specific, that's `project-setup`'s job. Keep it short.
 - Default delivery method (`DBB` / `design-build` / `CM-at-risk` / …).
 - Default project type (e.g. `interior fit-out`, `ground-up`, `renovation`).
 
-## 3. Confirm and write
+## 3. Write, then say what was written
 
+Write the file as soon as the interview ends. Writing it is your own work, not a decision to put
+to the user: the file is local, theirs, and editable by re-running this skill, so there is nothing
+to approve. Never ask "sound right?", "save it as-is?", or any form of "shall I write it?".
 <!-- user-facing -->
-Summarize the profile back to the user in plain language, not raw JSON, for example: "Here's what
-I've got: Acme Construction, GC, focused on interior fit-out work in Massachusetts, defaulting to
-CM-at-risk projects. Sound right?"
+Then say what is in it, in plain language, not raw JSON, for example: "Saved: Acme Construction,
+GC, focused on interior fit-out work in Massachusetts, defaulting to CM-at-risk projects. Tell me
+if any of that is off and I'll change it."
 <!-- /user-facing -->
-Confirm each part they want
-changed, then write the file. **Do not write until they confirm.**
+Change whatever they correct and write again.
 
 ```bash
 mkdir -p "$HOME/.plumlayer"
@@ -111,3 +116,6 @@ their first project.
   into the plugin directory, the project repo, or any tracked/committed file.
 - This skill writes exactly one local file. It makes no cloud or MCP calls; it touches no project record.
 - Re-runnable: always review-and-update an existing profile rather than clobbering it.
+- Run, or stop and report; never create a consent step. The questions in step 2 are the user's,
+  asked once with a pre-filled answer where you hold one; the write in step 3 is your own work and
+  is never put to them for approval.

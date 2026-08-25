@@ -113,29 +113,54 @@ tier. Note in one line that you'll read it, then move on:
 - The **drawing-set inventory**, which issues exist and their dates (the drawing index *is* this;
   the registration and recognition in step 5 produce it).
 
+### How the ask-now questions are put
+
+Run, or stop and report; never create a consent step. The user's decisions in this skill are the
+ask-now set above and nothing else. Ask them once, conversationally, in **one short group**. Where
+you already hold an answer, put it forward as the answer with its source named (the profile, a
+document they handed you, a cover sheet you can see), so the user corrects it rather than composes
+it; a pre-filled answer is how their own context earns its keep. **Only `name` is required;
+everything else is "skip if you don't have it handy."** Everything else this skill does is its own
+work, recorded with its trail and editable on plumlayer.com: never ask whether to proceed with it,
+never ask the user to confirm a summary of what you are about to do, and never put your own next
+step to them as a choice. Do not reconcile the user's saved defaults against this project here.
+Package and trade-fit decisions belong to `scope-run`, not this step.
+
 ### Mode A: interview (the ask-now set only)
-Ask conversationally, in **one short group**, pre-filled from user defaults
-(`~/.plumlayer/operator.json`). **Only `name` is required; everything else is "skip if you don't have
-it handy."** Do **not** reconcile the user's saved defaults against this project here. Package and
-trade-fit decisions belong to `scope-run`, not this step.
+Nothing was handed over: ask the group above, pre-filled from user defaults
+(`~/.plumlayer/operator.json`), and move on.
 
 ### Mode B: read what they already have (preferred when docs exist)
-If the user points you at files, **read them locally** and pre-fill, reading a document they handed
-you is not interrogation, it's the high-value path. Good sources:
+Being started in a folder, or being pointed at one, is a hand-over: the user put you there on
+purpose, and what is in it is theirs to give. Before opening anything, list what you were handed,
+one level deep, and say what you see.
+<!-- user-facing -->
+"I see the drawing set, a spec folder, two bid tabs and a budget. I'll take the drawings and the
+specs; do you want me to read the bid tabs and the budget too, or leave them?"
+<!-- /user-facing -->
+The drawings and the project manual you take without asking: they are the job, and step 5 uploads
+them. Anything else in the folder you name and ask about once, then proceed with the answer. Never
+walk above the folder you were handed, into siblings, or into a folder you merely happen to be
+running in when the user named a different one. Never go looking: if nothing was handed over and
+the user has not said where the drawings are, ask where they are.
+
+Reading a document they handed you is not interrogation, it's the high-value path. Good sources:
 - An **ITB / invitation-to-bid** or project summary → name, type, parties, key dates.
 - A **drawing index** the architect or the transmittal supplied (a drawing list in the ITB, a
   transmittal sheet) → the set inventory + disciplines.
 - A **spec TOC** → divisions/trades in scope.
 
 ```bash
-# read the files the user names, locally, for the facts they carry; the drawings and
-# the project manual are uploaded and read in step 5, not here
+# list what the user handed over, one level deep, and say what is there before opening
+# anything; the drawings and the project manual are uploaded and read in step 5, not here
 ls -la <path/to/their/files>
 ```
 
-Extract candidate facts, **present them for confirmation** (don't trust an extraction silently), seed
-what's confirmed, and **defer the gaps to the read rather than interrogating** for them. Anything
-unclear in the source → mark `uncertain` / `conflicting`.
+Seed what a handed-over document plainly states, cited to that document (it is the entry's
+source, never a bare fact), and say what you seeded from where. Do not ask the user to confirm a
+fact the document states. Anything the source leaves unclear or that two sources disagree on is
+`uncertain` / `conflicting` and becomes a Question, never a seed. **Defer the gaps to the read
+rather than interrogating** for them.
 
 ---
 
@@ -211,6 +236,10 @@ manual's table of contents, and the reconciliation gate. Every gate in it applie
 
 - **Run it, don't restate it.** None of its steps are copied here, condensed here, or run partially
   from here. When a step in it calls for a decision, make that decision there, on its own terms.
+- **Run it here, in this conversation.** Never hand it, or any part of it, to a background agent or
+  a subagent, and never answer its questions on the user's behalf in a brief so that an agent will
+  not need them. The user stays in the loop for the whole read, and every report of a job's state
+  is first-hand.
 - **The one piece of context this skill supplies:** this is the project's first delivery. What
   follows from that is stated once, in `drawing-upload` step 1b, the file that owns the rule.
 - **Come back here** once it has emitted its closing report, and carry on at step 6.
@@ -265,8 +294,16 @@ rather than restating it from what an earlier step said:
 - **One project = one project record.** Always seed within the correct `projectId` returned by `create_project`.
 - **An existing project is read, never re-created.** Step 1's branch reports where the project
   stands and ends there; it writes nothing.
-- **The two sub-skills run in full.** `drawing-upload` and `learn-project` are run as written, never
-  restated here, never run partially, and never swapped for a shortcut through their tools.
+- **The two sub-skills run in full, in this conversation.** `drawing-upload` and `learn-project`
+  are run as written, never restated here, never run partially, never swapped for a shortcut
+  through their tools, and never handed to a background agent.
+- **Run, or stop and report; never create a consent step.** The user's decisions are the ask-now
+  set in step 2, put once with a pre-filled answer and its source where you hold one. Nothing else
+  is put to the user as a question or a confirmation.
+- **Read what was handed over, and say so.** A folder you were started in or pointed at is listed
+  one level deep and described before anything opens; drawings and the manual are taken, anything
+  else is asked about once; never above that folder, never a search of the machine. Whatever is
+  read is the citation of what it seeds.
 - **Every count in the closing report is read back from the record**, never carried across from a
   sub-skill's own report or from memory.
 - **Data hygiene.** Project specifics may live in the cloud project record and in the user's cwd config; they
