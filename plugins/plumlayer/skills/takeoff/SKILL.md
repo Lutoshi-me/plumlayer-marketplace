@@ -5,7 +5,7 @@ description: >
   in the project record, like a person drawing them in the editor. Trigger on "take off the
   windows", "count the doors", "measure the wall", "/takeoff". Drives sheet discovery and the
   takeoff verbs (takeoff_read, takeoff_condition, takeoff_record, render_page, get_page_text).
-  Does not upload drawings (drawing-upload), create the project (project-create), run scope
+  Does not upload drawings (drawing-upload), create the project (project-setup), run scope
   stages (scope-run), or read sub proposals (bid-intake).
 ---
 
@@ -46,7 +46,7 @@ One run of this skill produces **one condition** (or a small named set of them, 
 genuinely spans kinds, a count plus a linear measure) with its marks, on the sheets the request
 names. It does **not**:
 
-- upload or register drawings (`drawing-upload`) or create the project (`project-create`);
+- upload or register drawings (`drawing-upload`) or create the project (`project-setup`);
 - run scope identification or trade derivation (`scope-run`; a takeoff is quantities, not
   scope);
 - delete, approve, or reorganize existing takeoff work: corrections to standing work belong to the

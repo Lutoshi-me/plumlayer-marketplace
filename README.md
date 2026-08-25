@@ -61,43 +61,59 @@ A hosted MCP connector to your Plumlayer project record
 (`api-production-0a7b.up.railway.app/mcp`), auto-wired on install with no manual `claude mcp add`,
 and nine skills that use it.
 
-### Getting started
+A skill is a step; what you run is a process. There are four:
 
-- **`setup`**: a one-time interview that captures your company profile and defaults, stored only
-  on your machine, so every other skill is personalized without any confidential config living in
-  the shared plugin.
-- **`project-create`**: stands up a new project record, either by interviewing you or by reading
-  documents you already have (an invitation to bid, a drawing index, a spec table of contents).
+- **New pursuit**: `project-setup` stands the whole thing up in one session, then `scope-run` builds
+  the scope list in a session of its own.
+- **New paper**: `drawing-upload`, every time a bulletin, an addendum, or a re-issued set arrives.
+- **Buyout**: `bid-intake`, once proposals come back. Invitations and outreach live on plumlayer.com
+  for now.
+- **Measure**: `takeoff`, whenever you want something counted or measured off the sheets.
 
-### Drawings
+Plus three utilities you reach for directly: `project-record`, `drawing-set-assemble`, and `setup`.
+
+### New pursuit
+
+- **`project-setup`**: runs the whole first session of a new pursuit. It creates the project record,
+  takes in the few facts only you carry (or reads them out of an invitation to bid or a project
+  summary you already have), uploads and reads in the drawing delivery and the project manual, then
+  orients on what came back. On a project that already exists it tells you where you are instead of
+  creating a second one.
+- **`learn-project`**: the orientation pass `project-setup` runs at the end of that session. It reads
+  the cover sheet, the drawing index, and the key plans, records what it found so every other skill
+  starts from a shared picture of the project, and drafts and creates the baseline trade-package
+  split off the spec table of contents, so a package already exists for every trade before
+  `scope-run` starts. It also runs on its own against a set that is already uploaded.
+- **`scope-run`**: session two, and it wants a session to itself. Reads the drawing set and builds one
+  complete, cited scope list for the whole job, checks it for gaps, then amends and tags the trade
+  packages. Draws on a bundled reference set of 44 trade packages (see below) so each split follows
+  how that trade actually bids and scopes work in the market.
+
+### New paper
 
 - **`drawing-upload`**: takes a drawing delivery in any packaging (a new set, a bulletin, an
   addendum, a permit set) and turns it into a searchable, indexed set of sheet records, no manual
-  conforming and no local spreadsheet step.
-- **`learn-project`**: a quick orientation pass over an uploaded set that reads the cover sheet,
-  the drawing index, and the key plans, then records what it found so every other skill starts from
-  a shared picture of the project instead of from scratch. It also drafts and creates the baseline
-  trade-package split off the spec table of contents, so a package already exists for every trade
-  before `scope-run` starts.
+  conforming and no local spreadsheet step. It asks first whether the delivery is changed sheets only
+  or a full re-issue, and on a full re-issue it names the sheets from the old set that are still
+  showing.
 
-### Scope and bids
+### Buyout
 
-- **`scope-run`**: reads the drawing set and builds one complete, cited scope list for the whole
-  job, checks it for gaps, then splits it into trade packages. Draws on a bundled reference set of
-  44 trade packages (see below) so each split follows how that trade actually bids and scopes work
-  in the market.
 - **`bid-intake`**: reads a trade's sub proposals and turns them into bid records against the
   matching trade package, so you can level bids side by side with the amounts, inclusions, and
   exclusions each sub actually quoted.
 
-### Takeoff
+### Measure
 
 - **`takeoff`**: turns a plain request like "count the doors on the level 2 plans" or "measure the
   retaining wall" into placed marks or measurements on the actual sheets, the same as if you had
   drawn them yourself.
 
-### Records and exports
+### Utilities
 
+- **`setup`**: a one-time interview that captures your company profile and defaults, stored only
+  on your machine, so every other skill is personalized without any confidential config living in
+  the shared plugin.
 - **`project-record`**: the general-purpose skill for reading, searching, and adding to a project
   record directly: the sheet and set grid, open questions, and scope and takeoff data.
 - **`drawing-set-assemble`**: assembles the current drawing set into fresh PDFs, one per
@@ -148,13 +164,13 @@ plugins/plumlayer/
   .codex-plugin/plugin.json         # Codex plugin manifest
   .mcp.json                         # the hosted MCP connector shared by both surfaces
   skills/
-    setup/SKILL.md
-    project-create/SKILL.md
-    drawing-upload/SKILL.md
+    project-setup/SKILL.md
     learn-project/SKILL.md
     scope-run/SKILL.md
+    drawing-upload/SKILL.md
     bid-intake/SKILL.md
     takeoff/SKILL.md
+    setup/SKILL.md
     project-record/SKILL.md
     drawing-set-assemble/SKILL.md
   trade-knowledge/                  # 44 trade reference files + MANIFEST.md, read by scope-run

@@ -213,7 +213,7 @@ amendment to that trade file, surfaced in the close-out report.
 ## 1. Preconditions
 
 1. **Project exists and is the user's intent.** `list_projects`, confirm which project with the
-   user, get its `projectId`. No project → hand off to `project-create`.
+   user, get its `projectId`. No project → hand off to `project-setup`.
 2. **Resume, if a run is already in flight.** With the `projectId` in hand and before anything else,
    read `ledger.md` from the run folder. A ledger with `phase:` lines means a run is in flight:
    resume at the phase after the last one, reading `read-plan.md` off disk and regenerating the
@@ -565,7 +565,7 @@ like you to look at, and the plan for round two. Proceed, adjust, or pause?"
 
 ## What this skill does not do
 
-- **Upload or recognize drawings** (`drawing-upload`), **create projects** (`project-create`),
+- **Upload or recognize drawings** (`drawing-upload`), **create projects** (`project-setup`),
   **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`), **draft the
   baseline package split** (Phase 1, owned by `learn-project`).
 - **Author boundary enrollments other than trade-responsibility candidates**: exclusions, general

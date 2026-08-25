@@ -5,8 +5,9 @@ description: >
   responses, coverage, and totals, each cited to its page. Use when the user hands over subcontractor
   proposals to level. Trigger on "bid intake", "read the bids", "level the proposals", "/bid-intake".
   Drives proposal upload, the two-pass blind-then-peer read, supersession for revisions, and a
-  count-verified write. Does not create the project (project-create), define the bid package (the
-  plumlayer.com flow), read drawings (drawing-upload), or sign for the user.
+  count-verified write. Does not create the project (project-setup), create the bid packages
+  (orientation drafts them, scope-run amends them), read drawings (drawing-upload), or sign for the
+  user.
 ---
 
 # Bid intake: read sub proposals into cited bid entries, cloud-first
@@ -63,9 +64,10 @@ page it came from.
 `bid-intake` does one thing: read the proposals for **one bid package** (one trade, one project) and
 record each bidder's bid entries against that package's existing scope rows. It does **not**:
 
-- create the project (`project-create`) or read drawings (`drawing-upload`);
-- define the bid package, or invite / manage bidders: that is the plumlayer.com solicitation flow;
-  this skill reads an **existing** package's rows and adds bidder responses to them;
+- create the project (`project-setup`) or read drawings (`drawing-upload`);
+- create the bid packages, or invite / manage bidders: the baseline packages are created by
+  orientation and amended by the scope run, and a person edits them on plumlayer.com; this skill
+  reads an **existing** package's rows and adds bidder responses to them;
 - create a new scope row for proposal content that matches no known row: that content lands as an
   **Additional item** on the package, the bidder's own word for an unlisted item cited to the page it came
   from, never a created `scopeItem:` subject (see the hard read rules and stage 7b);

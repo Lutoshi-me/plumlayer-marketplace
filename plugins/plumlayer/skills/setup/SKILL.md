@@ -4,9 +4,9 @@ description: >
   One-time Plumlayer user setup: capture your company and user profile and defaults once, so
   every other skill is personalized without hardcoding any confidential config into the plugin.
   Trigger on first install, "set up Plumlayer", "configure my company", "onboard me", "/setup", or
-  whenever project-create finds no user profile. Writes a single local file,
+  whenever project-setup finds no user profile. Writes a single local file,
   ~/.plumlayer/operator.json, and makes no cloud or MCP calls. Does not create a project (that is
-  project-create) or touch the project record.
+  project-setup) or touch the project record.
 ---
 
 # Plumlayer setup: your user profile (run once)
@@ -23,7 +23,7 @@ config file in your environment. Re-run it any time to review or update.
 ## When to run
 
 - **First install**, or any time you want to change your defaults.
-- **Automatically suggested** by `project-create` when it finds no user profile, since running
+- **Automatically suggested** by `project-setup` when it finds no user profile, since running
   `setup` first means you won't be re-asked your company/role/defaults on every new project.
 
 ## 1. Check for an existing profile
@@ -43,14 +43,14 @@ ls -la "$CONFIG" 2>/dev/null
 ## 2. The interview (user-level only)
 
 Ask conversationally, in small groups; accept "skip" for anything optional. Nothing here is
-project-specific, that's `project-create`'s job. Keep it short.
+project-specific, that's `project-setup`'s job. Keep it short.
 
 **Identity**
 - Company / user name.
 - Your role: `GC` / `CM` / `subcontractor` / `owner-rep` / `architect` / `other`.
 - Region (e.g. "Massachusetts / New England") and unit system (`imperial` / `metric`).
 
-**Defaults** (sensible starting points project-create can override per job)
+**Defaults** (sensible starting points project-setup can override per job)
 - Default delivery method (`DBB` / `design-build` / `CM-at-risk` / …).
 - Default project type (e.g. `interior fit-out`, `ground-up`, `renovation`).
 
@@ -69,7 +69,7 @@ mkdir -p "$HOME/.plumlayer"
 # write the confirmed JSON to "$CONFIG"
 ```
 
-Audience: agent. `operator.json` is read by `project-create` and the scope workflows to pre-fill
+Audience: agent. `operator.json` is read by `project-setup` and the scope workflows to pre-fill
 defaults; its values reach the user only through the plain-language summary in step 3 and the
 report in step 4, and whatever crosses into that summary or report becomes user-facing at the
 crossing and is translated there.
@@ -90,7 +90,7 @@ Schema (`~/.plumlayer/operator.json`):
   },
   "_meta": {
     "version": 1,
-    "note": "Local Plumlayer user profile. NEVER commit. Written by the `setup` skill; read by project-create and the scope workflows for personalized defaults."
+    "note": "Local Plumlayer user profile. NEVER commit. Written by the `setup` skill; read by project-setup and the scope workflows for personalized defaults."
   }
 }
 ```
@@ -100,8 +100,8 @@ Schema (`~/.plumlayer/operator.json`):
 <!-- user-facing -->
 Tell the user: the profile is saved at `~/.plumlayer/operator.json`; give a one-line summary of what's
 in it (company, role, delivery default, project type default) so they know exactly what they configured;
-confirm it's local-only and never committed; and that `project-create` will now reuse these defaults
-so each new project only asks for project-specific facts. Point them at `/project-create` to start
+confirm it's local-only and never committed; and that `project-setup` will now reuse these defaults
+so each new project only asks for project-specific facts. Point them at `/project-setup` to start
 their first project.
 <!-- /user-facing -->
 

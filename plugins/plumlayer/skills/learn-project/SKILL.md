@@ -43,7 +43,7 @@ the project record.
 ## 1. Preconditions
 
 1. **Project exists.** Call `list_projects` and confirm with the user which project record this orientation pass
-   is for, get its `projectId`. If there is no project yet, hand off to `project-create` first, the
+   is for, get its `projectId`. If there is no project yet, hand off to `project-setup` first, the
    same way `drawing-upload` step 1 does.
 2. **The baseline set is recognized.** Orientation reads the base set shape, it does not need revisions
    or bulletins to have landed, and spec-TOC presence is optional/best-effort, not a precondition.
@@ -61,7 +61,7 @@ the project record.
 ## 2. Read the entries (identity, seeds, sheet inventory)
 
 1. `get_project(projectId)`, the project's identity (name, description, created date).
-2. **Read the project-create seed entries verbatim, never re-create them.** For each of `projectType`,
+2. **Read the `project-setup` seed entries verbatim, never re-create them.** For each of `projectType`,
    `deliveryMethod`, `location`, `grossArea`, `floorCount`, `bidDueDate`, `tradeInScope`,
    `knownExclusion`, call `search(projectId, predicate: "<predicate>")` and read what's there. These
    feed the packet's Identity section directly; where a seed is thin or missing, orientation may add a
@@ -168,7 +168,7 @@ call:
 
 **`sourceInstrument` is per-entry, not one batch label.** For an entry grounded
 in a specific page or render, cite the specific source file/instrument name, the same convention
-`drawing-upload` and `project-create`'s Mode B (reading in existing docs) use. Reserve the label
+`drawing-upload` and `project-setup`'s Mode B (reading in existing docs) use. Reserve the label
 `learn-project-orientation`
 only for derived or absence observations with no single source page: `missingScopeFamily` and any
 set-level `setShapeObservation`. Every entry's `evidence` cites the exact page/render or query of entries
@@ -245,7 +245,7 @@ user-facing at the crossing and is translated there.
 ## 9. Report
 
 <!-- user-facing -->
-Tell the user, in plain terms (mirrors `project-create`'s closing report step):
+Tell the user, in plain terms:
 - **What was read**, identity, which of the seeded project facts were present, the sheet-inventory
   scope (disciplines covered, set_grid vs. sampled search), and the spec-TOC status.
 - **What was learned**, per checklist category, systems, MEP delivery shape, scope areas, set shape,
@@ -263,14 +263,13 @@ Tell the user, in plain terms (mirrors `project-create`'s closing report step):
 - **What a person should look at**, the entries with Questions raised, visible on plumlayer.com with the
   page each one was read from.
 
-Close by saying orientation is done: everything it made is on the project record, and the scope run
-reads the project record, so it is ready to go.
+Close by saying orientation is done and everything it made is on the project record.
 <!-- /user-facing -->
 
 ## Gates (non-negotiable)
 
 - **Cite everything.** No citation → don't emit the entry.
-- **Net-new facts only.** Never re-create a seed entry `project-create` already recorded, or a sheet /
+- **Net-new facts only.** Never re-create a seed entry `project-setup` already recorded, or a sheet /
   spec-section entry `drawing-upload` already recorded.
 - **Judgment entries are cited and raise a Question.** `mepDeliveryShape` always does; the rest raise
   one whenever the value was inferred rather than read off a label.

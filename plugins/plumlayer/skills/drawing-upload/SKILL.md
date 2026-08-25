@@ -1,12 +1,12 @@
 ---
 name: drawing-upload
 description: >
-  Upload a drawing delivery in any packaging and turn it into cited sheet records in the project
-  record. Use for a new set, bulletin, or addendum, or to read an already-uploaded set. Trigger on
-  "upload this set", "register the drawings", "drawing index", "/drawing-upload". Drives delivery
-  registration, cloud upload, sheet-number recognition, and sheet-type classification via
-  `recognize_sheets`. Does not split by discipline, produce a CSV, scope or take off sheets
-  (`scope-run` / `takeoff`), or create the project (`project-create`).
+  Upload a drawing delivery in any packaging, or a project manual on its own, and turn it into cited
+  sheet records in the project record. Use for a new set, a bulletin or addendum, a full re-issue, or
+  to read an already-uploaded set. Trigger on "upload this set", "register the drawings", "here's the
+  revised manual", "/drawing-upload". Drives delivery registration, cloud upload, recognize_sheets,
+  sheet typing, and extract_spec_toc. Does not split by discipline, produce a CSV, scope or take off
+  sheets (scope-run / takeoff), or create the project (project-setup).
 ---
 
 # Drawing upload: the foundation pass, agent-driven, cloud-first
@@ -46,13 +46,17 @@ How to say each thing as it happens:
 
 ## What this is, and the boundary
 
-`drawing-upload` does exactly one thing: take a drawing delivery and register every sheet in it as
+`drawing-upload` does one thing: take a drawing delivery and register every sheet in it as
 cited entries in the project's project record. The canonical form is entries + provenance over the
 untouched original delivery. Discipline organization, by-discipline PDFs, and page labels
 are all **projections** of that form, rendered on demand by other skills, never the foundation. So this skill does **not**: physically split files by discipline (discipline is derived
 per sheet, never from a filename); produce a CSV (the deliverable is entries in the project record: the export
 skill `drawing-set-assemble` renders artifacts from the cloud entries on request); scope, take off, or comprehend the sheets (`scope-run` / `takeoff` / `learn-project`); or create
-the project (`project-create`).
+the project (`project-setup`).
+
+The one door here that carries no drawings: a project manual arriving on its own is filed and its
+table of contents read (step 8), with no delivery registered and no sheet recognized. Step 1b names
+that leg.
 
 **Retired:** `drawing-index`, `drawing-index-bulletin`, `drawing-index-merge`: they organized before
 reading (hand-split into discipline PDFs, then parsed a master list), which commits a discipline guess
@@ -62,12 +66,54 @@ This skill reads first; a master list is corroboration only, never the bootstrap
 ## 1. Pick the project
 
 Call `list_projects` and confirm with the user which project record this delivery belongs to (a project is one
-project record); get its `projectId`. If there is no project yet, hand off to `project-create` first; this
+project record); get its `projectId`. If there is no project yet, hand off to `project-setup` first; this
 skill does not create projects. Confirm you also know the **issue label** for this delivery (e.g. a
 generic "2025-12-22 CD Set" or "Bulletin 01"): ask the user, or plan to read it off the cover sheet
 during recognition. It is load-bearing for supersession later.
 
-## 1b. Cloud-resident entry (files already in the project, nothing local)
+## 1b. What kind of delivery is this
+
+Settle this before anything is registered: is this **changed sheets only** (a bulletin, an addendum,
+an ASI) or a **full re-issue** (a permit set, a conformed set, a re-issued CD set)? The answer
+decides how the delivery registers in step 3 and what step 10 has to report, and it is nearly always
+printed on the paper. Read the cover sheet or the bulletin header first and put your reading to the
+user to confirm; never ask cold when the document says it.
+
+<!-- user-facing -->
+Ask it in plain words, "is this a set of changed sheets, or a full re-issue of the whole set?", and
+say which one you think it is and what you read that off.
+<!-- /user-facing -->
+
+**Changed sheets only** registers as `deliveryKind: "revision"` in step 3. The server combines the
+deliveries by sheet number, and for each sheet the newest delivery that carries it wins, so the set
+stays whole: a sheet this delivery doesn't carry keeps showing from the delivery that last issued
+it, which is the right outcome for a bulletin.
+
+**A full re-issue** registers as `deliveryKind: "baseline"`. Name the consequence up front, before
+the upload, rather than letting it surface as a surprise afterwards: a baseline combines the same
+way, so every sheet the prior set had that this delivery does not carry keeps showing as part of the
+set. Step 10 reads those sheets back and reports them as a finding. Nothing is retired, here or
+anywhere else in this skill.
+
+**The project's first delivery**, meaning `list_drawing_deliveries(projectId)` comes back empty: it
+is a baseline by construction. Don't put the question to the user; there is no prior set for a
+re-issue to replace. Step 10's comparison has nothing to compare against on this path, and says so
+plainly rather than reporting an empty finding.
+
+**An already-registered delivery** (the 1c branch below): its kind is already recorded. Read it off
+`list_drawing_deliveries` rather than re-asking, and check it against the cover sheet. A
+disagreement between the two is a finding for the user; don't change the registered kind to match
+your own read.
+
+**A project manual arriving on its own**, with no drawings: this is not a drawing delivery. Register
+nothing, skip steps 3 through 7, and enter at step 8, which files the manual and reads its table of
+contents. Step 9 still runs, and its drawing legs report as unchanged because no sheet changed. Say
+in the closing report that no drawings came with it.
+
+## 1c. Cloud-resident entry (files already in the project, nothing local)
+
+Step 1b's question still applies on this branch: a file with no delivery attached to it needs its
+kind settled before step 3 can register anything for it.
 
 Not every run starts from a local delivery. When the user points you at a project whose set is
 already in cloud storage (uploaded in a prior session, or they ask you to "read the uploaded set"
@@ -125,7 +171,7 @@ it is never license to skip the typing check, which does not depend on it.
 
 ## 2. Recognize the delivery's packaging
 
-Steps 2–4 are the local-delivery path; a set already in cloud storage enters at 1b above and skips
+Steps 2–4 are the local-delivery path; a set already in cloud storage enters at 1c above and skips
 them. A delivery arrives in one of four packaging classes. Recognize the class before uploading
 anything:
 
@@ -319,7 +365,7 @@ you'd correct any recognizer-set value (step 6c): never a bare re-record. A bare
 `supersedesId` set to it, cited to what you actually read. That edge is what makes your read govern.
 
 This step runs on every door this skill supports: a fresh baseline, a bulletin or revision, and the
-cloud-resident re-recognition branch (1b) all converge here before the skill reports done. If this
+cloud-resident re-recognition branch (1c) all converge here before the skill reports done. If this
 delivery, or an earlier delivery in the same project, already went through recognition but was
 never typed (from a session that predates the server-side rule pass, or one that stopped short),
 closing that gap is this run's job, not something to leave for later. A recognized sheet with no
@@ -459,15 +505,17 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    If `record_batch_file` (or any verb you expect) is missing from your tool list, reload the
    session before concluding it doesn't exist.
 
-2. **Verify the recognized portion against the report; never a full-grid read.** Compare the
-   succeeded job's `write` summary (`{written, alreadyWritten, byPredicate}`) against its
-   `report` (`sheetsGrounded` and the rest) for rough correspondence, then spot-check with a handful
-   of targeted `search(projectId, predicate: "appearsOnPage", text: "<a sheet number you saw>")`
-   calls. **Do not call `set_grid` to verify a delivery of real size**: on a set with hundreds of
-   sheet rows it returns on the order of 600 KB of JSON, large enough that you get a file redirect
-   back instead of the payload inline, a poor substitute for a targeted check that also wastes the
-   round trip. Reserve `set_grid` for a small project or a later session that genuinely needs the
-   whole grid, not this verify step.
+2. **Verify the recognized portion against the report, with a targeted check rather than the whole
+   grid.** Compare the succeeded job's `write` summary (`{written, alreadyWritten, byPredicate}`)
+   against its `report` (`sheetsGrounded` and the rest) for rough correspondence, then spot-check
+   with a handful of targeted `search(projectId, predicate: "appearsOnPage", text: "<a sheet number
+   you saw>")` calls. That spot-check is this step's verify. **What to avoid here is a bare,
+   unpaged `set_grid` call**: on a set with hundreds of sheet rows it returns on the order of 600 KB
+   of JSON, large enough that you get a file redirect back instead of the payload inline, and its
+   default first page is not the set anyway. A paged read is a different thing and is fine:
+   `set_grid(projectId, limit: 0)` for the counts, then pages with `discipline` + `limit`/`offset`,
+   which is exactly what step 10 does when it needs every row. Reach for that when you genuinely
+   need the whole grid, not to verify this write.
 3. **Verify typing coverage against the recognized count, not just pages.** Sum `sheetsGrounded`
    across every file's succeeded job for this delivery (from step 5) to get the recognized sheet
    count in scope. Compare it against the sum of the server's rule-typed count (`written.sheetTyping.
@@ -583,11 +631,43 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    is the project's own review queue, internal work: it needs no go-ahead, and the user corrects
    anything wrong on the site.
 
+## 10. Close out
+
+Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re-issue path only.
+
+1. **The full-re-issue finding.** Run this on the baseline path, and only when a prior delivery
+   existed; on the project's first delivery there is nothing to compare against (step 1b), so say
+   that instead of reporting an empty finding. Read the set back from the record:
+   `set_grid(projectId, limit: 0)` first for `count` and `disciplineCounts`, then page with
+   `discipline` + `limit`/`offset` until the rows you hold cover the count. Never a bare call: its
+   default first page is not the set. Every row carries the delivery governing it (`deliveryId`,
+   `label`, `kind`). The lingering sheets are the rows whose governing delivery is not this one:
+   sheets the prior set carried, this re-issue did not, and the server still shows as part of the
+   current set. Report `currentSetStatus` / `currentSetNotes` for any row the resolver could not
+   settle rather than folding it into the list. If the paging could not be completed, say so and say
+   how far it got; a partial list is never put up as a complete one.
+<!-- user-facing -->
+   Give the user the list with the criterion that produced it said out loud: these are the sheets
+   still showing as part of the set that came in on an earlier delivery, not on this one. Name them
+   by sheet number.
+<!-- /user-facing -->
+2. **It is a report, nothing more.** This skill does not retire, replace, or write anything about
+   those sheets, on any path.
+<!-- user-facing -->
+   Say plainly that they still show as part of the set and that nothing here changed or removed
+   them, rather than wording it so it sounds like the run acted on them.
+<!-- /user-facing -->
+3. **The handoff.**
+<!-- user-facing -->
+   Name what comes next: reading what this delivery changes in the scope list. Say plainly that it
+   is not available yet, rather than leaving the user waiting on it.
+<!-- /user-facing -->
+
 ## Gates (non-negotiable)
 
 - **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
   (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
-  1b, or a corrected re-read once a force-re-recognize path exists) never reaches its closing
+  1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing
   report while a recognized sheet in scope has had no typing attempt at all. "Unsure, so left
   untyped and counted" is a valid outcome; "never looked at" is not, on any path, including one
   where `recognize_sheets` came back already-succeeded with nothing new to write. Step 6b is where
@@ -632,6 +712,13 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
 - The reconciliation gate (step 9) is honest about its own bounds: no classified index page, a
   backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
   problems found." `reconcile_set` findings are recorded without asking, and the report says what landed.
+- **The step 10 lingering-sheet list is a complete paged read, not a first page.** It comes from
+  `set_grid(limit: 0)` followed by pages until the rows cover the count, and its criterion (the
+  sheet's governing delivery is not this delivery) is stated with the list. Paging that could not be
+  completed is reported as incomplete, never presented as the whole set.
+- **This skill never retires or supersedes a sheet the delivery did not carry.** A full re-issue
+  that drops sheets produces the step 10 finding and nothing else: no retirement, no supersession
+  edge, and no entry authored about the dropped sheets, on any path.
 
 ## Deferred (named, not skipped silently)
 
