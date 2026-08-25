@@ -41,7 +41,7 @@ If either is missing, say so and stop rather than running against a plan you inv
    can never collide on a created subject. Record each unit in the ledger before it starts: round,
    pass, unit, purpose.
 4. **Verify per unit, not per round.** When a unit reports, verify it against the record yourself,
-   within what `search` can actually filter on, which is subject (exact), predicate, trustClass, and
+   within what `search` can actually filter on, which is subject (exact), predicate (exact), and
    a `text` substring across subject, predicate, and value. There is no `sourceInstrument` filter, so
    do not pretend to one.
    - **Created items, by count.** `search(text: "scopeItem:<unit-id>-", limit: 1)` and read `count`.

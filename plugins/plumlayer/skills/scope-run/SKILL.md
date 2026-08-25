@@ -75,7 +75,7 @@ that relaxes any one of them reproduces a measured, named failure.
    counts with its own queries before the next unit of that pass starts. A reader's report that its
    batches landed is verified at both its own boundary and the runner's; neither replaces the
    other. The lead adds a third, count-only check at the check-in, bounded by what `search` can
-   actually filter on (subject, predicate, trustClass, and a `text` substring across subject,
+   actually filter on (subject, predicate, and a `text` substring across subject,
    predicate, and value; there is no `sourceInstrument` filter, so never assert one). What the lead
    takes independently is the created count per unit: `search(text: "scopeItem:<unit-id>-",
    limit: 1)`, reading `count`, a real total over the entries whose subject carries that prefix.
