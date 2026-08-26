@@ -106,6 +106,13 @@ that relaxes any one of them reproduces a measured, named failure.
 11. **The completeness check runs; what is still open is named.** The enumerate-and-audit pass
     (below) is a standing stage with a closure loop, never optional, and whatever remains open at
     the end is reported by name: never assumed closed, never zeroed by hope.
+12. **A remark about spend never trims a mandate.** Every verification in this file stands whatever
+    the user says about what the run is costing them. If they raise it, say plainly what is running
+    and where the next natural stopping point is, and stop there if they ask; never answer it by
+    doing less of the work you then report on. A verification that did not run is named as not run,
+    by name, in the ledger and out loud, in the same breath as the numbers it would have covered.
+    Never offer to trim, never put the question of whether to continue back to them in terms of
+    what it costs, and never offer resumption as a way to manage it.
 
 Also: door-owned records (Question resolutions, questions-as-answers) are created only at their own
 doors; a reader that thinks a Question should be closed says so in its report and a person acts at
@@ -141,17 +148,27 @@ All run working files live under `~/.plumlayer/runs/<project-slug>/` (slug from 
 lowercase, spaces to hyphens; fall back to the projectId). Never committed to any repo, never
 uploaded to the project except record files, never recorded as project entries. The set:
 
-- `ledger.md`: the run ledger, appended as the run proceeds: every read unit (round, pass, unit,
-  purpose), every write batch (count sent, reader-verified, runner-verified, conflicts), the list of
-  definitions kinds as they land, check-in outcomes, every deviation or repair, and the run's
-  `phase:` lines, one per phase boundary, appended by the lead. The ledger is what makes the
-  close-out report honest, and its `phase:` lines are what makes a run resumable. Audience: agent.
-- `read-plan.md`: the read plan (stage 3): passes and the read units within each, their sheets with
-  file/page references, the trade files each pass carries, round order, and what is deliberately
-  excluded. Audience: agent. What the user hears at the gate is defined in stage 3.
+- `ledger.md`: the run ledger, appended as the run proceeds, one line per entry in the fixed shapes
+  the `scope-round-runner` definition gives, plus the lead's own `pass:` and `phase:` lines.
+  Nothing else goes in the ledger: no headings, no bullets, no paragraphs, no re-telling of a
+  report. It is appended, never rewritten and never reformatted. The ledger is what makes the
+  close-out report honest, and its `phase:` lines are what makes a run resumable. Audience: agent,
+  and it feeds the close-out report, so whatever crosses into that report becomes user-facing at
+  the crossing and is translated there.
+
+  The lead's own two line shapes, which the runner never writes:
+
+  ```text
+  pass: <round> <pass or leg id> units <n> created <n> updated <n> questions <n> lead-verified <yes|no>
+  phase: <boundary name>
+  ```
+
+- `read-plan.md`: the read plan (stage 3): passes, their legs, and the read units within each, their
+  sheets with file/page references, the trade files each pass carries, round order, and what is
+  deliberately excluded. Audience: agent. What the user hears at the gate is defined in stage 3.
 - `context-packet.md`: the compiled context packet, regenerated between rounds (a projection off
   live records, never itself recorded). Audience: agent.
-- `briefs/`: one small file per pass, written by that round's runner, carrying the pass's filled
+- `briefs/`: one small file per pass, written by that pass's runner, carrying the pass's filled
   slot values: what the pass reads for, its content families, the knowledge version, the trade file
   paths it carries, and the subject prefix scheme. A reader opens its own pass file from here. The
   mandates are never in it. Audience: agent.
@@ -171,15 +188,17 @@ The run executes at three levels. Each level is a separate agent context, bounde
 
 - **The lead** is this skill, running in the user's session. It does the cheap work only:
   preconditions, context floor, the read plan, the check-ins, amending, tagging, close out. For
-  each round it starts one round runner and receives one fixed-shape summary. It never holds a
-  pass brief, a trade file, a reader's report, or a page of the set. What it keeps per round is
-  the dispatch line and the summary, nothing else.
-- **The round runner** (the plugin's `scope-round-runner` agent, one fresh instance per round)
-  owns the round: it recompiles the definitions index into the context packet, runs the round's
-  passes as read units exactly as stage 4 defines them, verifies every unit with its own queries,
-  runs the round-end overlap scan, appends the ledger, returns its summary, and ends. Its context
-  is bounded to one round. The completeness check (stage 5) runs the same way: one runner for the
-  enumeration, the accounting, and the closure loop, including any supplemental reads.
+  each pass it starts one runner and receives one fixed-shape summary; what it keeps per pass is
+  the dispatch line and, once it has taken its own counts, one `pass:` line in the ledger. It never
+  holds a pass brief, a trade file, a reader's report, or a page of the set.
+- **The pass runner** (the plugin's `scope-round-runner` agent, one fresh instance per pass or pass
+  leg) owns one pass: it writes the pass brief, runs the pass's read units exactly as stage 4
+  defines them, verifies every unit with its own queries, notes overlaps inside the pass, appends
+  the ledger in its fixed line shapes, returns its summary, and ends. Its context is bounded to one
+  pass of at most twelve units, and it never grows with the size of the round. One further instance
+  closes each round at its boundary: the cross-pass overlap scan and the definitions-index
+  recompile. The completeness check (stage 5) is bounded the same way: one instance for the
+  enumeration and the accounting, one per supplemental read leg.
 - **The reader** (the plugin's `scope-reader` agent, one fresh instance per read unit) reads one
   unit and records, as stage 4 and the pass brief define. It ends when it has reported.
 
@@ -187,12 +206,14 @@ Handoff is by file and record, never by inlined text. A dispatch at any level ca
 pointers: the project id, the round or unit id, the run folder path, and the page references.
 The reader opens its pass brief and the context packet from the run folder, and its trade files from
 the plugin's trade-knowledge directory, all by the paths it is handed; the runner opens the read
-plan and the ledger. Nothing from those files is pasted into a
-dispatch, because whatever is pasted stays in the dispatcher's context for the rest of the run.
+plan for its own pass and appends the ledger without reading it whole. Nothing from those files is
+pasted into a dispatch, because whatever is pasted stays in the dispatcher's context for the rest
+of the run.
 
 Reports travel upward in a fixed short shape, counts and named anomalies only (the shapes are
-given with the brief templates below). A runner's summary is what the lead reads at the check-in,
-verified against the record with the lead's own count queries, never relayed as-is.
+given with the brief templates below). A runner's summary is what the lead reads when that pass
+reports, verified against the record with the lead's own count queries and written down as one
+`pass:` line, never relayed as-is and never held past that line.
 
 Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
 approved; round N complete; completeness closed; packages amended; tagged; closed out. On every
@@ -304,10 +325,16 @@ sampled `search(predicate: "discipline")` reads if the grid file-redirects), the
    what the earlier recorded from the record. A row that continues across the split belongs to the
    unit that reads its first page, which reads the continuation page for that row only. List the
    units in each pass, in reading order.
+6. **Split a long pass into legs.** A pass longer than about twelve read units is divided here, at
+   plan time, into legs of at most twelve units each, lettered in reading order (`S2a`, `S2b`,
+   `S2c`). A leg is what one runner supervises. The legs of a pass run one after another, and the
+   later leg resolves what the earlier one recorded from the record, exactly as one unit does with
+   the unit before it. Splitting costs no reading time, because the units of a pass are read one at
+   a time either way. Name the legs in the read plan alongside the units each one carries.
 
-Write `read-plan.md`: the passes and the units within each (numbers plus file/page references), the
-trade files each pass carries, the order the rounds run in, and what is deliberately excluded, named
-outright rather than left silent.
+Write `read-plan.md`: the passes, their legs, and the units within each leg (numbers plus file/page
+references), the trade files each pass carries, the order the rounds run in, and what is deliberately
+excluded, named outright rather than left silent.
 <!-- user-facing -->
 Before any reading runs, tell the user, in a few plain sentences, not a table:
 
@@ -332,54 +359,68 @@ On the go-ahead, append `phase: plan approved` to the ledger. Nothing reads befo
 
 ## 4. Read the rounds
 
-The reading happens one level down. Per round, the lead does exactly this and holds nothing else:
+The reading happens one level down, one runner per pass. Per round, the lead does exactly this and
+holds nothing else:
 
-1. **Start one round runner.** Dispatch a fresh `plumlayer:scope-round-runner` with the runner
-   dispatch below: pointers only, no pass brief, no trade file, no read-plan text. Append the
-   dispatch line to the ledger. That line and the summary that comes back are the only things this
-   round leaves in the lead's context.
-2. **The runner owns the round.** It recompiles the definitions index into the context packet,
-   writes each pass's brief file, runs the passes as read units in reading order (one fresh
-   `plumlayer:scope-reader` per unit, one unit at a time within a pass, passes that do not overlap
-   running alongside each other), verifies every unit against the record with its own queries before
-   the next unit of that pass starts, notes intra-pass and round-end overlaps, and appends the
-   ledger. The per-unit loop lives in the `scope-round-runner` agent definition and the reader
-   mandates live in the `scope-reader` agent definition. Neither is restated here, and neither is
-   ever trimmed.
-3. **Read the summary and verify what you can yourself.** The runner returns one fixed-shape summary
-   (shape below). Before you say a number out loud, take the created count for each of the round's
-   units with your own `search(text: "scopeItem:<unit-id>-", limit: 1)`, reading `count`. That is
-   the third boundary of non-negotiable 6, and it is count-only: never a row list, never
-   `list_scope_items`. It reaches creates and not updates or Questions, because those land on subjects
-   that already existed and `search` has no `sourceInstrument` filter to reach them by. Say the
-   update and Question counts as the runner verified them, and the created counts as your own. A
-   mismatch stops the run and gets investigated, never papered over.
-4. **Append `phase: round N complete` to the ledger**, with the verified totals.
-5. **Check in with the user** (format below). Move to the next round only on their go-ahead, and
-   start the next round with a fresh runner.
+1. **Start one runner per pass.** For each pass in the round, and for each leg the read plan split a
+   long pass into, dispatch a fresh `plumlayer:scope-round-runner` with the runner dispatch below:
+   pointers only, no pass brief, no trade file, no read-plan text. Append that pass's dispatch line
+   to the ledger before you dispatch it, never after. Passes the read plan marks as having no
+   content overlap start together; passes that plausibly see the same work, and the legs of one
+   pass, start one after another. What a pass leaves in the lead's context is its dispatch line and
+   its summary, nothing else.
+2. **The runner owns the pass.** It writes the pass brief if it is not already on disk, runs the
+   pass's units in reading order (one fresh `plumlayer:scope-reader` per unit, one unit at a time),
+   appends each unit's dispatch line before that unit starts, verifies every unit against the record
+   with its own queries before the next unit starts, notes overlaps inside the pass, and appends the
+   ledger in its fixed line shapes. The per-unit loop lives in the `scope-round-runner` agent
+   definition and the reader mandates live in the `scope-reader` agent definition. Neither is
+   restated here, and neither is ever trimmed.
+3. **Take a pass's counts when it reports, then let its summary go.** A runner returns one
+   fixed-shape summary (shape below). Before you say a number out loud, take the created count for
+   each of that pass's units with your own `search(text: "scopeItem:<unit-id>-", limit: 1)`, reading
+   `count`. That is the third boundary of non-negotiable 6, and it is count-only: never a row list,
+   never `list_scope_items`. It reaches creates and not updates or Questions, because those land on
+   subjects that already existed and `search` has no `sourceInstrument` filter to reach them by. Say
+   the update and Question counts as the runner verified them, and the created counts as your own.
+   Append one `pass:` line to the ledger carrying that pass's verified totals, and work from that
+   line from then on rather than from the summary. A mismatch stops the run and gets investigated,
+   never papered over.
+4. **Close the round at its boundary.** When every pass of the round has reported and carries its
+   `pass:` line, dispatch one more runner with `boundary` in place of the pass id. It scans the
+   round's new items for the same work captured by two passes that ran alongside each other,
+   recompiles the definitions index into the context packet for the next round, appends its lines,
+   and ends. Then append `phase: round N complete` to the ledger with the round's verified totals.
+5. **Check in with the user** (format below), written off the round's `pass:` lines in the ledger
+   rather than off the summaries you received. Move to the next round only on their go-ahead.
 
 ## 5. The completeness check (standing, with a closure loop)
 
 The definitions layer is the checklist: every defined thing must be accounted for by the scope
-list. Run this after the placement rounds complete (and any time coverage is in doubt). It runs the
-same way a round does, one level down:
+list. Run this after the placement rounds complete (and any time coverage is in doubt). It runs one
+level down, bounded the same way a pass is:
 
-1. **Start one round runner in completeness mode.** Same runner dispatch as stage 4, with
-   `completeness` in place of the round id. It enumerates the defined things per kind, pulls the
-   scope list, accounts deterministically with a small local script it writes, classifies every
-   leftover row (accounted, plausibly-carried, not-scope, unaccounted), clusters the unaccounted
-   rows into capture gaps, defines and runs supplemental schedule-grounded passes for them through
-   the same readers, and re-runs the accounting. The loop lives in the `scope-round-runner` agent
-   definition. The validation run's first pass found 269 of 564 defined things unaccounted, closed
-   267 with one supplemental round, and named 2 still open: that loop is the designed behavior, not
-   a recovery.
-2. **Read the summary and verify what you can yourself**, the same way stage 4 step 3 does: the
+1. **Start one runner for the enumeration and the accounting.** Same runner dispatch as stage 4,
+   with `completeness-account` in place of the pass id. It enumerates the defined things per kind,
+   pulls the scope list, accounts deterministically with a small local script it writes, classifies
+   every leftover row (accounted, plausibly-carried, not-scope, unaccounted), clusters the
+   unaccounted rows into capture gaps, writes those gaps under `completeness/` as supplemental read
+   legs of at most twelve units each, and ends. The loop lives in the `scope-round-runner` agent
+   definition.
+2. **Run each supplemental leg in its own runner**, dispatched exactly as a pass leg is in stage 4,
+   with `completeness-<leg id>` in place of the pass id, its dispatch line appended first and its
+   `pass:` line appended when it reports.
+3. **Re-run the accounting in a fresh runner**, the same `completeness-account` dispatch, once every
+   supplemental leg has reported. Its summary carries the accounting before and after the
+   supplemental reads, which is where the close-out figures come from. The validation run's first
+   accounting found 269 of 564 defined things unaccounted, closed 267 with one supplemental round,
+   and named 2 still open: that loop is the designed behavior, not a recovery.
+4. **Read the summaries and verify what you can yourself**, the same way stage 4 step 3 does: the
    created counts for any supplemental units, by `search(text: "scopeItem:<unit-id>-", limit: 1)`,
-   `count` only, no row list and no `list_scope_items`. The accounting figures (enumerated,
-   accounted, plausibly carried, not scope, unaccounted, before and after the closure loop) come
-   from the runner's summary, and the still-open rows you check by name, reading back the ones the
-   runner named. Report the accounting as the runner's, the created counts as your own.
-3. **Name what is still open**, row by row, in the ledger and in the close-out report, then append
+   `count` only, no row list and no `list_scope_items`. The accounting figures come from the
+   runner's summary, and the still-open rows you check by name, reading back the ones it named.
+   Report the accounting as the runner's and the created counts as your own.
+5. **Name what is still open**, row by row, in the ledger and in the close-out report, then append
    `phase: completeness closed`. Never assumed closed, never zeroed by hope.
 
 Spec sections account differently (estimators never write CSI digit strings into scope text): a
@@ -480,13 +521,15 @@ The mandates are not in these templates. They live in the two agent definitions 
 `scope-round-runner` and `scope-reader`, where each dispatched instance reads them fresh. They are
 never trimmed there and never restated here: a run that relaxes one reproduces a measured failure.
 
-**Runner dispatch** (the lead writes this, once per round and once for the completeness pass):
+**Runner dispatch** (the lead writes this, once per pass or leg, once per round boundary, and twice
+for the completeness accounting):
 
 ```text
 subagent_type: plumlayer:scope-round-runner
-Project: <projectId>. Round: <round number, or "completeness">.
+Project: <projectId>. Round: <round number>.
+Pass: <pass or leg id, or "boundary", or "completeness-account", or "completeness-<leg id>">.
 Run folder: <path>. Read plan: <path to read-plan.md>.
-Run your round as your definition says, then return your summary.
+Run your pass as your definition says, then return your summary.
 ```
 
 **Reader dispatch** (the runner writes this, once per read unit):
@@ -520,11 +563,11 @@ The `updated subjects:` line is what lets the runner find an update back: a crea
 its `scopeItem:<unit-id>-` prefix, an update lands on a subject that already existed and nothing
 else in the report names it.
 
-**The runner's summary** comes back in this shape, and is what the lead reads at the check-in,
-after taking the round's created counts off the record itself:
+**The runner's summary** comes back in this shape, and is what the lead reads when a pass reports,
+after taking that pass's created counts off the record itself:
 
 ```text
-round: <n, or "completeness">   passes: <pass names>
+round: <n>   pass: <pass or leg id>
 units read: <unit ids, in reading order>
 per unit: <unit id> created <n> updated <n> questions <n> verified <yes/no>
 totals verified: created <n> (entry count under the unit prefixes), updated <n>, questions <n>
@@ -537,6 +580,16 @@ deviations and repairs: <one line each, or "none">
 ledger: <path>, appended through <last line written>
 ```
 
+A boundary runner returns this shape instead:
+
+```text
+round: <n>   pass: boundary
+cross-pass overlaps: <item name + the two units, one per line, or "none">
+packet: regenerated, <n> definitions across <n> kinds
+definitions kinds now: <kinds>
+ledger: <path>, appended through <last line written>
+```
+
 In completeness mode the summary carries these lines as well, which are where the close-out
 report's "what was enumerated, what closed" figures come from:
 
@@ -544,7 +597,7 @@ report's "what was enumerated, what closed" figures come from:
 enumerated: <n>
 first pass: accounted <n>, plausibly carried <n>, not scope <n>, unaccounted <n>
 after closure: accounted <n>, plausibly carried <n>, not scope <n>, unaccounted <n>
-supplemental units run: <unit ids, or "none">
+supplemental legs: <leg ids, or "none">
 still open: <one line per unaccounted row, naming it, or "none">
 spec sections bundled: <n>; TOC sections seen unbundled so far: <n>
 ```
@@ -580,7 +633,7 @@ like you to look at, and the plan for round two. Proceed, adjust, or pause?"
   product.
 - **Resolve or approve anything on the user's behalf**: door-owned acts stay at their doors.
   (Removing a scope item the user asked removed is not this: see `retire_scope_item` above.)
-- **Manage the user's session or context**: the run is bounded by its own structure. Each round and
+- **Manage the user's session or context**: the run is bounded by its own structure. Each pass and
   each read unit runs in a fresh agent that ends when it has reported, so nothing accumulates and
   there is nothing for the user to manage.
 - **Run unattended**: check-ins are load-bearing until the user has enough cold runs

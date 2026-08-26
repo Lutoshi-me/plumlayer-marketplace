@@ -43,6 +43,13 @@ Checks:
       unresolved page, a retry), and every file that mentions `ask_question` / "raise a
       Question" at all carries the boundary sentence saying a Question is about the project,
       never about a Plumlayer failure.
+  12. Ledger fixed shape: the runner definition's ledger grammar block still declares exactly
+      three line kinds and the closed `note` kind set; every shipped file instructing an append
+      to the ledger carries the prohibition sentence; and no prose-permitting cue sits near a
+      ledger mention with no prohibition cue in range.
+  13. Runner mode set: the `##` headings of agents/scope-round-runner.md match
+      EXPECTED_RUNNER_MODE_HEADINGS exactly, in both directions, so the per-pass shape cannot be
+      partly undone without failing the release.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -1373,6 +1380,238 @@ def check_question_failure_boundary(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
+# Check: the ledger's fixed line shapes
+# --------------------------------------------------------------------------- #
+#
+# The run ledger is a line-shaped log, not prose. A measured run wrote 75 KB of headings and
+# paragraphs into it and then re-read the whole file on every call, which is the accumulation this
+# shape exists to stop. The harness never sees a run's ledger, so the checkable target is the
+# shipped text that tells the agent what to write.
+#
+# Three mechanical properties, checked separately:
+#
+#   1. The grammar block in the runner definition still declares exactly three line kinds, and the
+#      `note` kind list is still the closed set. A fourth shape added or one dropped fails.
+#   2. Every shipped file that instructs appending to the ledger carries the prohibition sentence
+#      verbatim. Same mechanism as the Question/failure boundary check: one fixed phrase, matched
+#      after collapsing whitespace so a markdown line wrap does not break it.
+#   3. No prose-permitting cue ("narrate", "summarize", "in your own words") sits near a ledger
+#      mention with no prohibition cue in range. This is a regression guard against the drift shape
+#      that actually shipped, not a general proof: a definition that permits prose in wording this
+#      list does not name still passes.
+
+LEDGER_LINE_KINDS = {"dispatch", "verified", "note"}
+
+LEDGER_NOTE_KINDS = {
+    "anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet",
+}
+
+LEDGER_PROHIBITION_PHRASE = "Nothing else goes in the ledger"
+
+_LEDGER_HEADING_RE = re.compile(r"^#{2,3}\s+.*ledger line", re.IGNORECASE)
+
+_LEDGER_MENTION_RE = re.compile(r"\bledger\b", re.IGNORECASE)
+
+_LEDGER_APPEND_RE = re.compile(r"\bappend(?:s|ed|ing)?\b", re.IGNORECASE)
+
+# Wording that invites prose where a fixed line shape belongs.
+_LEDGER_PROSE_CUE_RE = re.compile(
+    r"narrat|summariz|summaris|paragraph|in prose|in your own words|write up|"
+    r"describe what|re-tell|retell|recount",
+    re.IGNORECASE,
+)
+
+# A prohibition cue in range means the sentence is stating the rule (no paragraphs, never narrate),
+# not inviting the violation. The corrected sentence necessarily uses the same vocabulary the
+# violation did, just inverted.
+_LEDGER_PROHIBITION_CUE_RE = re.compile(
+    r"\bnever\b|\bno\b|\bnot\b|\bnothing\b|\brather than\b|\binstead of\b|\bforbid",
+    re.IGNORECASE,
+)
+
+_LEDGER_PROSE_WINDOW = 3  # lines scanned on each side of a ledger mention
+
+# The sentence that pins the `note` kinds. Read from the file rather than assumed so a kind added
+# in the text without a decision here fails, and a kind removed here without the text fails too.
+_LEDGER_NOTE_KIND_SENTENCE_RE = re.compile(
+    r"on a `note` line is one of exactly these:([^.]*)\.", re.IGNORECASE
+)
+
+_INLINE_CODE_TOKEN_RE = re.compile(r"`([A-Za-z][A-Za-z0-9_-]*)`")
+
+
+def _first_fenced_block_after(lines: list[str], start: int) -> list[str] | None:
+    """Body lines of the first fenced block at or after `start`, or None if there is none."""
+    i = start
+    while i < len(lines):
+        if lines[i].lstrip().startswith("```"):
+            body: list[str] = []
+            for j in range(i + 1, len(lines)):
+                if lines[j].lstrip().startswith("```"):
+                    return body
+                body.append(lines[j])
+            return None
+        i += 1
+    return None
+
+
+def _check_ledger_grammar_block(path: Path, label: str) -> list[str]:
+    errors: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return [f"{label}: read error: {e}"]
+    lines = text.splitlines()
+
+    heading_idx = next(
+        (i for i, line in enumerate(lines) if _LEDGER_HEADING_RE.match(line)), None
+    )
+    if heading_idx is None:
+        return [f"{label}: no heading naming the ledger line shapes"]
+
+    body = _first_fenced_block_after(lines, heading_idx + 1)
+    if body is None:
+        errors.append(f"{label}: the ledger line heading is followed by no fenced block")
+    else:
+        found = {line.split()[0] for line in body if line.strip()}
+        if found != LEDGER_LINE_KINDS:
+            errors.append(
+                f"{label}: ledger line kinds are {sorted(found)}, expected "
+                f"{sorted(LEDGER_LINE_KINDS)}"
+            )
+
+    normalized = re.sub(r"\s+", " ", text)
+    m = _LEDGER_NOTE_KIND_SENTENCE_RE.search(normalized)
+    if m is None:
+        errors.append(f"{label}: no sentence naming the closed set of `note` kinds")
+    else:
+        found_kinds = set(_INLINE_CODE_TOKEN_RE.findall(m.group(1)))
+        if found_kinds != LEDGER_NOTE_KINDS:
+            errors.append(
+                f"{label}: `note` kinds are {sorted(found_kinds)}, expected "
+                f"{sorted(LEDGER_NOTE_KINDS)}"
+            )
+    return errors
+
+
+def _scan_file_for_ledger_prose(path: Path, label: str) -> list[str]:
+    hits: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return [f"{label}: read error: {e}"]
+    lines = text.splitlines()
+
+    instructs_append = False
+    for i, line in enumerate(lines):
+        if not _LEDGER_MENTION_RE.search(line):
+            continue
+        lo, hi = _paragraph_clamped_window(lines, i, _LEDGER_PROSE_WINDOW)
+        window_text = " ".join(lines[lo:hi])
+        if _LEDGER_APPEND_RE.search(window_text):
+            instructs_append = True
+        if not _LEDGER_PROSE_CUE_RE.search(window_text):
+            continue
+        if _LEDGER_PROHIBITION_CUE_RE.search(window_text):
+            continue  # states the rule; does not invite prose
+        hits.append(
+            f"{label}:{i + 1}: prose cue next to a ledger mention, with no prohibition cue in "
+            f"range: {line.strip()[:160]}"
+        )
+
+    if instructs_append:
+        normalized = re.sub(r"\s+", " ", text)
+        if LEDGER_PROHIBITION_PHRASE not in normalized:
+            hits.append(
+                f"{label}: instructs appending to the ledger but carries no "
+                f"'{LEDGER_PROHIBITION_PHRASE}' sentence"
+            )
+    return hits
+
+
+def check_ledger_fixed_shape(plugin_path: Path) -> Result:
+    name = "ledger-fixed-shape"
+    skills_dir = plugin_path / "skills"
+    agents_dir = plugin_path / "agents"
+
+    files: list[Path] = []
+    if skills_dir.is_dir():
+        files.extend(sorted(skills_dir.rglob("SKILL.md")))
+    if agents_dir.is_dir():
+        files.extend(sorted(agents_dir.rglob("*.md")))
+
+    errors: list[str] = []
+    for f in files:
+        label = f"{f.parent.name}/{f.name}" if f.name == "SKILL.md" else f.name
+        errors.extend(_scan_file_for_ledger_prose(f, label))
+
+    runner = agents_dir / "scope-round-runner.md"
+    if not runner.is_file():
+        errors.append("agents/scope-round-runner.md not found")
+    else:
+        errors.extend(_check_ledger_grammar_block(runner, runner.name))
+
+    detail = f"{len(files)} skill/agent files scanned"
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: the runner's mode set
+# --------------------------------------------------------------------------- #
+#
+# The runner supervises one pass, one round boundary, or one completeness accounting, and nothing
+# larger. Its `##` headings are what say so, so pinning the set in both directions is the cheap
+# mechanical way to catch the shape being partly undone: a `## Round mode` coming back, or
+# `## Pass mode` renamed away, fails the release.
+
+EXPECTED_RUNNER_MODE_HEADINGS = {
+    "What your dispatch gives you",
+    "Pass mode",
+    "The ledger lines",
+    "Boundary mode",
+    "Completeness mode",
+    "What you never do",
+    "Your summary",
+}
+
+
+def check_runner_mode_set(plugin_path: Path) -> Result:
+    name = "runner-mode-set"
+    runner = plugin_path / "agents" / "scope-round-runner.md"
+    if not runner.is_file():
+        return Result(name, False, detail=f"agent definition not found at {runner}")
+
+    try:
+        lines = runner.read_text(encoding="utf-8").splitlines()
+    except Exception as e:
+        return Result(name, False, detail=f"{runner.name}: read error: {e}")
+
+    fence_mask = _fenced_code_line_mask(lines)
+    found = {
+        line[3:].strip()
+        for i, line in enumerate(lines)
+        if not fence_mask[i] and line.startswith("## ")
+    }
+
+    errors: list[str] = []
+    missing = EXPECTED_RUNNER_MODE_HEADINGS - found
+    unexpected = found - EXPECTED_RUNNER_MODE_HEADINGS
+    if missing:
+        errors.append(f"expected headings missing: {sorted(missing)}")
+    if unexpected:
+        errors.append(f"unexpected headings: {sorted(unexpected)}")
+
+    detail = f"{len(found)} top-level headings in {runner.name}"
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Public entry point
 # --------------------------------------------------------------------------- #
 
@@ -1391,6 +1630,8 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_mcp_url(plugin_path),
         check_no_absolute_paths(plugin_path, marketplace_root),
         check_question_failure_boundary(plugin_path),
+        check_ledger_fixed_shape(plugin_path),
+        check_runner_mode_set(plugin_path),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

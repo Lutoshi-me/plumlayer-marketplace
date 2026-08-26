@@ -149,6 +149,19 @@ Each of these is a harness check.
    the real shipped text and flagged only proper nouns and quoted example values, never a genuine
    violation, so the narrower standalone-line version ships instead, unproven against a true
    positive.
+9. The run ledger's fixed line shapes. The scope run's ledger is a line-shaped log, not prose, and
+   the harness never sees a run's ledger, so the checkable target is the text that tells the agent
+   what to write. Three arms: the runner definition's grammar block declares exactly the three line
+   kinds and the closed `note` kind set, both compared in both directions; every skill or agent file
+   that instructs appending to the ledger carries the sentence "Nothing else goes in the ledger";
+   and no prose-permitting cue (`narrate`, `summarize`, `paragraph`, `in your own words`) sits near
+   a ledger mention with no prohibition cue in range. That last arm is a regression guard against a
+   drift that shipped, not a proof: wording it does not name still passes. Its bound is stated in
+   the harness README entry rather than left to read as a proof.
+10. The runner's mode set. The `##` headings of `agents/scope-round-runner.md` match a pinned set
+    exactly, in both directions, so the one-runner-per-pass shape cannot be partly undone (a
+    `## Round mode` coming back, a `## Pass mode` renamed away) without failing the release.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
-without adding its check is how the last drift started.
+without adding its check is how the last drift started, and a check added without its line here is
+invisible.
