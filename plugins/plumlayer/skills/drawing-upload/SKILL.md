@@ -618,7 +618,8 @@ disk the whole time.
    findings, never as a silent gap in the number you report.
 <!-- /user-facing -->
 5. **Verify.** Call `search(projectId, predicate: "inDivision")` and confirm the recorded row
-   count equals the job's `sectionsFound` plus `tocOnlyCount` exactly: completeness and
+   count equals the job's `sectionsFound` plus `tocOnlyCount` exactly (`tocOnlyCount` is 0 when
+   the report does not carry it): completeness and
    could-not-read findings ride their own predicate (`hasCompletenessStatus`) and never appear in
    this read. A mismatch stops the run and gets reported, never a guessed correction.
 
