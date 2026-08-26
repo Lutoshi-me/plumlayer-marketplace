@@ -88,6 +88,12 @@ not every project has run it yet, a set uploaded before the leg shipped, or a ma
 after the drawings and hasn't been filed and extracted, so **some projects won't have these entries
 yet**, that is a gap in what's been run for this project, not a missing capability.
 
+- **A section the table of contents lists but no page footer confirmed** is on the record too,
+  with a `hasCompletenessStatus` saying no section text was found. It anchors the split like any
+  other section (the trade is still bought), and the packet names the count of those separately
+  so the split's footing is stated: "110 sections confirmed, 12 more listed in the table of
+  contents only". An outline specification at schematic or design development is often all of the
+  second kind; that is a complete read of that manual, not a reason to skip the split.
 - **If present:** read the division spread and section count into the packet's set-shape section.
 - **If absent:** write "spec reading hasn't run for this project" in the packet's set-shape section
   and continue. Never write "expected empty today," never treat absence as the norm, and never let this

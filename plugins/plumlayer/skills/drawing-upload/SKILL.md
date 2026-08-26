@@ -602,14 +602,25 @@ disk the whole time.
    sections found, files opened vs failed (a multi-file run can succeed overall while still naming one
    corrupt division PDF in `failedFiles`: that's a finding for the user, never a silent retry
    loop), and the completeness-diff, mismatch, and could-not-read counts. **`sectionsFound` counts only
-   footer-confirmed sections** (the per-page CSI-code footer read): a section declared solely in the
-   PDF bookmark tree, with no confirming footer, does NOT add to that count; it surfaces instead through
-   the completeness findings, never as a silent gap in the number you report.
+   footer-confirmed sections** (the per-page CSI-code footer read). The reader also reads the
+   manual's own table of contents: `tocDeclaredCount` is what it lists, `tocPagesRead` the pages it
+   read, and `tocOnlyCount` the sections the table of contents names that no page footer confirmed.
+   Those are recorded as sections too, cited to the line of the table of contents they came from,
+   with a status saying no section text was found; say them as their own number ("110 confirmed,
+   12 more listed in the table of contents with no section text found"), never folded into the
+   confirmed count and never dropped. An outline specification with no footers at all, common at
+   schematic and design development, comes back as `sectionsFound` 0 with every section in
+   `tocOnlyCount`; that is a complete read of that manual, not a failure. `tocBackstop.requested`
+   true means the table of contents could not be read as a list and `tocRejectedCount` says how
+   many lines were refused: say so, and read the table of contents pages yourself with
+   `render_page` before trusting any section count. A section declared solely in the PDF bookmark
+   tree, with no confirming footer, does NOT add to any count; it surfaces through the completeness
+   findings, never as a silent gap in the number you report.
 <!-- /user-facing -->
 5. **Verify.** Call `search(projectId, predicate: "inDivision")` and confirm the recorded row
-   count matches the job's `sectionsFound` exactly: completeness and could-not-read findings ride their own
-   predicate (`hasCompletenessStatus`) and never appear in this read. A mismatch stops the run and gets
-   reported, never a guessed correction.
+   count equals the job's `sectionsFound` plus `tocOnlyCount` exactly: completeness and
+   could-not-read findings ride their own predicate (`hasCompletenessStatus`) and never appear in
+   this read. A mismatch stops the run and gets reported, never a guessed correction.
 
 **If `extract_spec_toc` / `extract_spec_toc_status` don't appear in your tool list**, the same
 session-reload rule from step 7 applies. Start a fresh session rather than
