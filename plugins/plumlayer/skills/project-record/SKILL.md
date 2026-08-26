@@ -93,10 +93,14 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   to `list_files` / `render_page` / `get_page_text` and the `drawing-upload` pipeline.
 
 **Write**
-- `record`: append one entry (`subject`, `predicate`, `value`, `sourceInstrument`,
-  optional `evidence`/`supersedesId`). Stamped as you, and it takes effect
-  immediately as provisional working truth recorded as agent-stated. `supersedesId` is the
-  correction edge: see "Correcting a machine misread" below.
+- `record`: append one entry (`subject`, `predicate`, `value`, `sourceInstrument`, `evidence`,
+  optional `supersedesId`). A scope item and a schedule definition must both be cited, on a create
+  and on an update alike: their `evidence` has to name what you read, a sheet with the 1-based page
+  you read it on, a file, or a spec section, and evidence that names none of the three is refused.
+  Work no sheet states carries `sourceInstrument` `trade-convention:<trade>@<sha>` instead, and the
+  two derived trade tags (`belongsToTrade`, `packageRole:<trade>`) need no citation. Stamped as you,
+  and it takes effect immediately as provisional working truth recorded as agent-stated.
+  `supersedesId` is the correction edge: see "Correcting a machine misread" below.
 - `ask_question`: raise ONE open item a person has to answer or resolve, with a title and the
   citations it's about (a sheet, a spec section, or a record you read). This is how a
   disagreement between sources, or a reading you genuinely cannot resolve yourself, reaches a
@@ -164,7 +168,8 @@ it like this:
 ```
 
 - `evidence` may be one entry or an array of them; both are read. What fails is an **empty**
-  `{}`, which carries no source and so cites nothing.
+  `{}`: it carries no source, so on a scope item or a definition the record refuses it outright,
+  and on any other entry it cites nothing.
 - `source` **must lead with the document reference**: a sheet number (`A-746`, `S-201.1`) or
   a spec section (`09 21 16`). That leading reference is what becomes the chip. An internal id
   like `bidPackage:proj-…`, or a prose sentence, is not a document reference and renders
@@ -173,9 +178,12 @@ it like this:
   accepted and renders, so never pad it with a filler phrase just to satisfy the format; write
   the suffix when you have something real to say about what you saw, since it becomes the
   chip's tooltip.
+- `locator.pageInPdf` is required wherever the reference is a sheet: the 1-based page you
+  actually read it on. A sheet named with no page is refused on a scope item and on a definition,
+  so there is no pageless chip to fall back to.
 - `locator.bboxPts` with `frame: "page-points-rendered"` is what makes the chip land on the
   **region** you actually read instead of the top of the sheet. Supply them whenever you know
-  where on the page you looked. Omit them and the chip still works, just sheet-level.
+  where on the page you looked. Omit them and the chip still works, at page level.
 - A `citedRegion` entry needs its **own** item in `evidence`. Putting the sheet and box only in
   the entry's `value` records the region but cites nothing, so no chip appears for it.
 

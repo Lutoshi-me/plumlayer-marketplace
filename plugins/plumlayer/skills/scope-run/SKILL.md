@@ -77,16 +77,17 @@ that relaxes any one of them reproduces a measured, named failure.
    counts with its own queries before the next unit of that pass starts. A reader's report that its
    batches landed is verified at both its own boundary and the runner's; neither replaces the
    other. The lead adds a third, count-only check at the check-in, bounded by what `search` can
-   actually filter on (subject, predicate, and a `text` substring across subject,
-   predicate, and value; there is no `sourceInstrument` filter, so never assert one). What the lead
-   takes independently is the created count per unit: `search(text: "scopeItem:<unit-id>-",
-   limit: 1)`, reading `count`, a real total over the entries whose subject carries that prefix.
+   actually filter on (subject, subject prefix, predicate, and a `text` substring across subject,
+   predicate, and value). What the lead takes independently is the created count per unit:
+   `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)`, reading `count`, which follows the
+   filter, so it is a real total over the entries whose subject starts with that prefix.
    Updates and Questions land on subjects that already existed, so no prefix finds them: they are
    verified at the reader's boundary and again at the runner's, by reading the named subjects back,
    and the lead reports them as runner-verified rather than asserting a check it did not run. The
-   lead never calls `list_scope_items` during the run: that verb returns the whole projected scope
-   list, unbounded, and pulling it is how the lead's context stops being cheap. When the record
-   grows a `sourceInstrument` filter, the lead's own check widens to the full per-unit totals.
+   lead never calls the unfiltered `list_scope_items` during the run: that verb returns the whole
+   projected scope list, and pulling it is how the lead's context stops being cheap. It belongs to
+   the completeness accounting and to nothing else. When the record grows a `sourceInstrument`
+   filter, the lead's own check widens to the full per-unit totals.
 7. **The grain bracket.** A scope item is the unit a subcontractor would include / exclude / price
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are the derive stage's output,
@@ -386,10 +387,11 @@ holds nothing else:
    restated here, and neither is ever trimmed.
 3. **Take a pass's counts when it reports, then let its summary go.** A runner returns one
    fixed-shape summary (shape below). Before you say a number out loud, take the created count for
-   each of that pass's units with your own `search(text: "scopeItem:<unit-id>-", limit: 1)`, reading
-   `count`. That is the third boundary of non-negotiable 6, and it is count-only: never a row list,
-   never `list_scope_items`. It reaches creates and not updates or Questions, because those land on
-   subjects that already existed and `search` has no `sourceInstrument` filter to reach them by. Say
+   each of that pass's units with your own `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)`,
+   reading `count`. That is the third boundary of non-negotiable 6, and it is count-only: never a
+   row list, never the unfiltered `list_scope_items`. It reaches creates and not updates or
+   Questions, because those land on subjects that already existed and `search` has no
+   `sourceInstrument` filter to reach them by. Say
    the update and Question counts as the runner verified them, and the created counts as your own.
    Append one `pass:` line to the ledger carrying that pass's verified totals, and work from that
    line from then on rather than from the summary. A mismatch stops the run and gets investigated,
@@ -424,9 +426,10 @@ level down, bounded the same way a pass is:
    accounting found 269 of 564 defined things unaccounted, closed 267 with one supplemental round,
    and named 2 still open: that loop is the designed behavior, not a recovery.
 4. **Read the summaries and verify what you can yourself**, the same way stage 4 step 3 does: the
-   created counts for any supplemental units, by `search(text: "scopeItem:<unit-id>-", limit: 1)`,
-   `count` only, no row list and no `list_scope_items`. The accounting figures come from the
-   runner's summary, and the still-open rows you check by name, reading back the ones it named.
+   created counts for any supplemental units, by
+   `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)`, `count` only, no row list and no
+   unfiltered `list_scope_items`. The accounting figures come from the runner's summary, and the
+   still-open rows you check by name, reading back the ones it named.
    Report the accounting as the runner's and the created counts as your own.
 5. **Name what is still open**, row by row, in the ledger and in the close-out report, then append
    `phase: completeness closed`. Never assumed closed, never zeroed by hope.

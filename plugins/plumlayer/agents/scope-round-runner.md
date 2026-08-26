@@ -76,13 +76,12 @@ splits it. Nothing is lost by stopping there, because nothing has run.
    the pass knowledge path. Paste nothing from those files into it. The unit id is the unit's
    run-prefix, so concurrent readers can never collide on a created subject.
 3. **Verify per unit, before the next unit starts.** Verify what the unit reports against the record
-   yourself, within what `search` can actually filter on, which is subject (exact), predicate
-   (exact), and a `text` substring across subject, predicate, and value. There is no
-   `sourceInstrument` filter, so do not pretend to one.
-   - **Created items, by count.** `search(text: "scopeItem:<unit-id>-", limit: 1)` and read `count`.
-     That is a real total over the entries the unit's subject prefix matches, taken independently of
-     what the reader told you. Record it as an entry count under that prefix, which is what it is,
-     not as an item count.
+   yourself, within what `search` can actually filter on, which is subject (exact), subject prefix,
+   predicate (exact), and a `text` substring across subject, predicate, and value.
+   - **Created items, by count.** `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)` and read
+     `count`, which follows the filter. That is a real total over the entries whose subject starts
+     with the unit's prefix, taken independently of what the reader told you. Record it as an entry
+     count under that prefix, which is what it is, not as an item count.
    - **Updated and Questioned items, by subject.** These carry pre-existing subjects, so no prefix
      finds them. Read back the subjects the reader named in its `updated subjects:` and Question
      lines, `search(subject: "<subject>")` each, and confirm the update landed. Anything the reader

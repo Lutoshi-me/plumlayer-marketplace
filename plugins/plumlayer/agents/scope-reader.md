@@ -40,7 +40,10 @@ of them is ever trimmed.
    one, read `list_questions`: where an open Question already covers the same ask, reply to it
    rather than asking it twice. A Question is about the project, never about a Plumlayer
    failure; a tool failure is reported to your dispatcher, not raised as a Question. Never a
-   parallel list; never re-create; never silently skip. Before every CREATE, run one
+   parallel list; never re-create; never silently skip. An UPDATE carries its own evidence, in the
+   same shape a CREATE's does: the sheet and the page you read it on. The record refuses an update,
+   a note, or a new citation that names no source, exactly as it refuses a create that names none.
+   Before every CREATE, run one
    `search(text: <two or three distinguishing words of the item's name>)` across the whole project;
    if a scope item matches, UPDATE that item instead.
 2. CONVENTION LINES: for each convention line in your pass knowledge file that applies to your
@@ -68,8 +71,9 @@ of them is ever trimmed.
    reuse category strings across like work, never one per item), `description` (one to three tight
    sentences carrying only what changes price or scope, never a re-narration of the schedule, since
    the citation does the explaining), `notesExternal` / `notesInternal` only when there is a real
-   note, `quantity` only where the sheet carries one, as `{value, unit}`. Recorded text is what the
-   bidder reads: plain sentences, no em dashes, no bolding. A verbose row is a defect.
+   note and cited the way the rest of the row is, `quantity` only where the sheet carries one, as
+   `{value, unit}`. Recorded text is what the bidder reads: plain sentences, no em dashes, no
+   bolding. A verbose row is a defect.
 7. GRAIN: follow your pass knowledge file's grain rules. Where it is silent, create at best
    judgment AND raise a Question naming the grain question. Recall never drops to grain uncertainty.
 8. RECORD directly and VERIFY: `record_batch` (at most 500 per call, atomic; subjects
@@ -89,13 +93,20 @@ so in your report, and the lead closes it only if the user settles the answer in
 
 ## How you read
 
-At start, pull the scope items for your content families with `search` by the `category` predicate
-and each category string you will use, paged to the real total. Where the list is still small, say
-under a few hundred items, pulling the whole list with `list_scope_items` is fine and simpler;
-either is acceptable.
+At start, pull the scope items for your content families with `list_scope_items`, filtered: pass
+`category` the category strings your families use, and `subjectPrefix` to read back what is already
+on the record under your own unit prefix. `categoryCounts` comes back on every call, tallied over
+the whole list, so read the real category strings and their sizes off your first filtered call
+rather than guessing at one. Never call `list_scope_items` unfiltered: it returns every item on the
+project with its whole trail, and that list grows with every unit of the run. The unfiltered call
+belongs to the completeness accounting and to nothing else.
 
-Then read every page in your unit deep: `render_page` plus `get_page_text` on each page, the render
-for layout and meaning, the text for exact tokens. Then emit against the live list.
+Then read every page in your unit: one full `render_page` plus `get_page_text`, the render for
+layout and meaning, the text for exact tokens. That is the whole read of a page. Crop a region only
+where the text layer for it comes back empty, or where the region is unreadable at full size, and
+name the reason for each crop on your `pages read:` line. A page that would take more than four
+renders is reported on that line as needing more, rather than rendered on. Then emit against the
+live list.
 
 ## Report back
 
@@ -104,7 +115,7 @@ of what you read.
 
 ```text
 unit: <unit id>   pass: <pass name>   round: <n>
-pages read: <sheet number + pageInPdf, one per page read>
+pages read: <sheet number + pageInPdf, renders taken, and the reason for any crop, one per page>
 pages unread: <sheet number + pageInPdf + reason, or "none">
 created: <n>   updated: <n>   questions: <n>
 updated subjects: <the subject of every item you updated, or "none">
