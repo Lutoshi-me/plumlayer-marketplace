@@ -279,6 +279,8 @@ Close by saying orientation is done and everything it made is on the project rec
   spec-section entry `drawing-upload` already recorded.
 - **Judgment entries are cited and raise a Question.** `mepDeliveryShape` always does; the rest raise
   one whenever the value was inferred rather than read off a label.
+- **A Question is about the project, never about a Plumlayer failure.** A render or read that
+  fails is reported in the conversation, not raised as a Question.
 - **Say it is your reading.** These entries become the project's working context immediately, so an
   inferred value that reads as a documented one is the failure to avoid.
 - **Orientation, not comprehension.** Respect the ≤6 render budget, if the set is too large for it to

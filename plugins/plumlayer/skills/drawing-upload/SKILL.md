@@ -292,7 +292,9 @@ did not observe that. What the server says on each poll:
   retry changes: a stale restart, a transient fetch. A job that failed at a server limit (a timeout
   at the worker's ceiling) fails the same way again on the same file; do not run it again, and do
   not put "how should I retry?" to the user. Report the error, say that the file needs a server-side
-  fix before it will recognize, and stop.
+  fix before it will recognize, and stop. A failed job is reported in the conversation, never
+  written into the project as a Question: a Question is about the project, never about a
+  Plumlayer failure.
 - `succeeded`: the recognized sheet entries (`appearsOnPage`, `hasTitle`, `locatedAt`, `discipline`,
   `partOfIssue`) are **already recorded server-side.** This result never carries
   those entries and you never `record_batch` them yourself: that would double-write every sheet. Report
@@ -561,8 +563,9 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    actually reach every sheet in scope: go back and close it before this run reports done, the same
    way a count mismatch in point 1 stops the run rather than getting waved through.
 
-Raise any pages still unresolved or flagged image-only pages as questions with `ask_question`, and
-report the plain untyped count: a person resolves them, not something this skill resolves itself.
+Report any pages still unresolved or flagged image-only, by page number, in the conversation
+rather than raising them as Questions on the project record, and report the plain untyped
+count: a person resolves them, not something this skill resolves itself.
 <!-- user-facing -->
 Report: the
 project and delivery; the recognition run's counts (pages scanned, sheets recognized, how many were
@@ -719,7 +722,9 @@ Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re
 - **Run, or stop and report; never create a consent step.** The user's decisions are the ones
   named at the top of this file; everything else is the skill's own work. A failure is reported
   with its error, retried only when the error names what a retry changes, and never put to the
-  user as a choice of retry strategy.
+  user as a choice of retry strategy. A failure is reported in the conversation, never written
+  into the project as a Question: a Question is about the project, never about a Plumlayer
+  failure.
 - **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
   (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
   1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing

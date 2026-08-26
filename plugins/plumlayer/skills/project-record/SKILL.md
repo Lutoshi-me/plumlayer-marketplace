@@ -100,7 +100,13 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
 - `ask_question`: raise ONE open item a person has to answer or resolve, with a title and the
   citations it's about (a sheet, a spec section, or a record you read). This is how a
   disagreement between sources, or a reading you genuinely cannot resolve yourself, reaches a
-  person's judgment. `supersedesId` revises your own prior wording.
+  person's judgment. `supersedesId` revises your own prior wording. A Question is about the
+  project, never about a Plumlayer failure. The drawings, the specs, the scope, who carries
+  what, a conflict between sources, something missing, a project decision, or a value on the
+  record you cannot resolve from what you read belongs in a Question; a job that failed or
+  timed out, a verb that refused a write, a server limit, a retry decision, confusion about how
+  to run a workflow, or a report that something now works belongs in the conversation and in
+  the skill's own failure path, never here.
 - `record_batch`: append an array of entries in one atomic call (`projectId` + `entries`
   array). Atomic: a bad entry rejects the whole batch and names the index. Prefer this over
   repeated `record` calls for bulk writes (e.g. upload or scope writes). Each call
@@ -220,6 +226,8 @@ Drawn
   edge (see "Correcting a machine misread"), not a Question.
 
 ## Discipline
+- A Question is about the project, never about a Plumlayer failure; a failed job, a refused
+  write, or any other tool problem is reported in the conversation, not raised here.
 - Be honest about your own entries: they govern provisionally as your reading, not as a
   person's own entry, and a later correction from a person supersedes them the same way any
   write does.

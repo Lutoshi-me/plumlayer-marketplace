@@ -36,8 +36,9 @@ of them is ever trimmed.
    (a gap, an anomaly, an ungrounded reference you will not create, a grain question where the
    trade file is silent): raise it as a Question, with a title and a citation. Before you raise
    one, read `list_questions`: where an open Question already covers the same ask, reply to it
-   rather than asking it twice. Never a parallel
-   list; never re-create; never silently skip. Before every CREATE, run one
+   rather than asking it twice. A Question is about the project, never about a Plumlayer
+   failure; a tool failure is reported to your dispatcher, not raised as a Question. Never a
+   parallel list; never re-create; never silently skip. Before every CREATE, run one
    `search(text: <two or three distinguishing words of the item's name>)` across the whole project;
    if a scope item matches, UPDATE that item instead.
 2. CONVENTION LINES: for each convention line in your trade files that applies to your content

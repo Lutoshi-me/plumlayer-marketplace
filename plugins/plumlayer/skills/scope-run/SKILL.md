@@ -53,7 +53,9 @@ that relaxes any one of them reproduces a measured, named failure.
    update an existing one (a new citation, a note, a resolved cross-reference), or raise a Question,
    with a title and a citation. Never a parallel list, never a re-create of what exists, never
    silent skipping of what's already listed. Before raising a Question, read `list_questions`: where
-   an open one already covers the same ask, reply to it instead of asking it a second time.
+   an open one already covers the same ask, reply to it instead of asking it a second time. A
+   Question is about the project, never about a Plumlayer failure; a read or write that fails is
+   reported and handled in the run's own failure path, not raised as a Question.
 3. **The convention-line emit mandate.** A reader whose trade files carry convention lines for the
    content families it reads MUST emit them: create if absent from the live list, update if
    present. Silence is a violation, not a judgment call; a reader judging a convention line

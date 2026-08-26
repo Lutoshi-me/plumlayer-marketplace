@@ -38,6 +38,11 @@ Checks:
   9. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
   10. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
       plugin.json (Claude), plugin.json (Codex), or marketplace.json.
+  11. Question/failure boundary: no shipped skill or agent file tells the agent to raise a
+      Question over a Plumlayer failure (a job that failed or timed out, an image-only or
+      unresolved page, a retry), and every file that mentions `ask_question` / "raise a
+      Question" at all carries the boundary sentence saying a Question is about the project,
+      never about a Plumlayer failure.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -1218,6 +1223,156 @@ def check_no_absolute_paths(plugin_path: Path, marketplace_root: Path) -> Result
 
 
 # --------------------------------------------------------------------------- #
+# Check — Question/failure boundary (PLU-1524)
+# --------------------------------------------------------------------------- #
+#
+# A project Question is a construction-project artifact: the user reads it as an open item
+# about the drawings, the specs, the scope, or a value the agent genuinely cannot resolve from
+# what it read. Agents were instead writing their own tooling problems into it through
+# `ask_question` -- a recognize_sheets timeout, a page the pass never resolved, a job that
+# failed -- because nothing on the page said a Question was the wrong door for that. This check
+# is the regression guard for the fix (docs/plugin-text-style.md's authoring contract does not
+# cover this; it is a doctrine boundary, not a text-style rule): no skill or agent file may tell
+# the agent to raise a Question near failure language, and every file that names `ask_question`
+# or "raise a Question" at all must carry the boundary sentence that states the rule.
+#
+# Two failure modes, checked separately:
+#
+#   1. A Question-raising phrase sitting within a small line window of failure language, with no
+#      negation/prohibition cue in that same window. This is the shape of the actual violation
+#      found in drawing-upload's own text before this issue: "Raise any pages still unresolved or
+#      flagged image-only pages as questions with `ask_question`." The window is small (3 lines
+#      either side) and the negation guard (`never`, `not raise`, `rather than`, `instead of`,
+#      "no Question") exists because the fix for that violation still has to say "unresolved" and
+#      "image-only" right next to "never raise this as a Question" -- the corrected sentence
+#      necessarily uses the same vocabulary the violation did, just inverted. A word-proximity
+#      check with no negation guard would flag the fix as hard as the bug.
+#   2. A file that mentions `ask_question` / "raise a Question" anywhere but never states the
+#      boundary rule at all. Checked against one fixed phrase so every addition made for this
+#      issue is provably present, not just plausible-sounding nearby text.
+#
+# This is intentionally narrower than "is every Question in this file actually about the
+# project" -- that judgment call belongs in review, not a regex. What is mechanical here is
+# proven mechanical: a known-bad phrase pattern, and a known-required phrase.
+
+_QUESTION_VERB_RE = re.compile(
+    r"ask_question|raise (?:it |them )?as (?:a |)questions?|raise a question|"
+    r"raised as (?:a |)questions?",
+    re.IGNORECASE,
+)
+
+# Failure/job-trouble vocabulary a Question should never sit next to. Matches the brief's own
+# list; deliberately not "failure" itself, since that is the word the boundary sentence uses to
+# NAME the rule ("never about a Plumlayer failure") and would make the negation guard load-bearing
+# for the boundary sentence's own trigger word instead of for genuine nearby failure language.
+_FAILURE_WORD_RE = re.compile(
+    r"\bfailed\b|\btimed out\b|\bimage-only\b|\bunresolved\b|\bretry\b|\bretried\b|"
+    r"\bcould not\b|\bcouldn't\b",
+    re.IGNORECASE,
+)
+
+# A prohibition cue nearby means the sentence is stating the boundary rule (the fix), not
+# inviting the violation: "never raise this as a Question", "not raised as a Question", "rather
+# than raising them as Questions", "never about a Plumlayer failure".
+_NEGATION_CUE_RE = re.compile(
+    r"\bnever\b|\bnot raise\b|\brather than\b|\binstead of\b|\bno question\b",
+    re.IGNORECASE,
+)
+
+QUESTION_BOUNDARY_PHRASE = "never about a Plumlayer failure"
+
+_QUESTION_FAILURE_WINDOW = 3  # lines scanned on each side of a Question-verb hit
+
+
+def _paragraph_clamped_window(lines: list[str], i: int, radius: int) -> tuple[int, int]:
+    """
+    Line range [lo, hi) around index i, expanded up to `radius` lines each way but stopped at
+    the nearest blank line. A blank line is where this codebase actually separates one thought
+    from the next (a new paragraph, or the boundary of a `<!-- user-facing -->` block), so an
+    unrelated "rather than" two paragraphs up should not silently clear a real violation, the
+    same way an unrelated failure word two paragraphs down should not manufacture one.
+    """
+    lo = i
+    for k in range(1, radius + 1):
+        j = i - k
+        if j < 0 or lines[j].strip() == "":
+            break
+        lo = j
+    hi = i
+    for k in range(1, radius + 1):
+        j = i + k
+        if j >= len(lines) or lines[j].strip() == "":
+            break
+        hi = j
+    return lo, hi + 1
+
+
+def _scan_file_for_question_near_failure(path: Path, label: str) -> list[str]:
+    hits: list[str] = []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except Exception as e:
+        return [f"{label}: read error: {e}"]
+
+    for i, line in enumerate(lines):
+        if not _QUESTION_VERB_RE.search(line):
+            continue
+        lo, hi = _paragraph_clamped_window(lines, i, _QUESTION_FAILURE_WINDOW)
+        window_text = " ".join(lines[lo:hi])
+        if not _FAILURE_WORD_RE.search(window_text):
+            continue
+        if _NEGATION_CUE_RE.search(window_text):
+            continue  # states the boundary rule; does not invite the violation
+        hits.append(
+            f"{label}:{i + 1}: raises a Question next to failure language, with no "
+            f"boundary sentence in range — {line.strip()[:160]}"
+        )
+    return hits
+
+
+def check_question_failure_boundary(plugin_path: Path) -> Result:
+    name = "question-never-a-failure-report"
+    skills_dir = plugin_path / "skills"
+    agents_dir = plugin_path / "agents"
+
+    files: list[Path] = []
+    if skills_dir.is_dir():
+        files.extend(sorted(skills_dir.rglob("SKILL.md")))
+    if agents_dir.is_dir():
+        files.extend(sorted(agents_dir.rglob("*.md")))
+
+    errors: list[str] = []
+    for f in files:
+        try:
+            text = f.read_text(encoding="utf-8")
+        except Exception as e:
+            errors.append(f"{f}: read error: {e}")
+            continue
+
+        # Every SKILL.md file shares the same filename, so identify it by its skill/agent
+        # directory (`project-record/SKILL.md`) rather than the bare, ambiguous basename.
+        label = f"{f.parent.name}/{f.name}" if f.name == "SKILL.md" else f.name
+
+        errors.extend(_scan_file_for_question_near_failure(f, label))
+
+        # Markdown wraps prose at the line, so the boundary phrase can legitimately span a
+        # line break (e.g. "...Plumlayer\n  failure"); collapse whitespace before matching
+        # rather than demanding it land unbroken on one source line.
+        normalized = re.sub(r"\s+", " ", text)
+        if _QUESTION_VERB_RE.search(text) and QUESTION_BOUNDARY_PHRASE not in normalized:
+            errors.append(
+                f"{label}: names ask_question / raises a Question but carries no "
+                f"'{QUESTION_BOUNDARY_PHRASE}' boundary sentence"
+            )
+
+    detail = f"{len(files)} skill/agent files scanned"
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Public entry point
 # --------------------------------------------------------------------------- #
 
@@ -1235,6 +1390,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_titlecase_labels(plugin_path, marketplace_root),
         check_mcp_url(plugin_path),
         check_no_absolute_paths(plugin_path, marketplace_root),
+        check_question_failure_boundary(plugin_path),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

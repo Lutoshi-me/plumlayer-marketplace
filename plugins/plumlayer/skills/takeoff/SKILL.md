@@ -278,7 +278,9 @@ marks summed, so the marks are the takeoff.
   own evidence; exclusions shaped by judgment are recorded with the census reconciliation. (A
   dedicated way to raise a Question on a record is coming to the verbs; until it exists, the trail and the
   report are where your unsureness lives, and it must live somewhere. Silent confidence you do
-  not have is the one dishonesty this skill cannot absorb.)
+  not have is the one dishonesty this skill cannot absorb. When that way ships, it stays about
+  the project, never about a Plumlayer failure: a failed call is triaged above and reported,
+  never turned into a Question.)
 
 ## 8. Verify by reading back
 
