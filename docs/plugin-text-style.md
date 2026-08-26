@@ -19,7 +19,9 @@ what makes the product reliable.
 
 **User-facing text** is anything a human reads: the README, the manifest descriptions, the skill
 frontmatter descriptions, and, inside a skill body, every narration template, example sentence, and
-closing report format. Machinery vocabulary is banned here.
+closing report format. Machinery vocabulary is banned here. A shipped script under `scripts/` is
+agent-facing in its comments and user-facing in what it prints, and since a run repeats a script's
+stdout and error lines back to the person watching, the whole file is held to the user-facing bar.
 
 The boundary that keeps getting missed: **a report template is user-facing text.** A skill whose
 instructions say pass and open items, and whose closing report then says "deposits" and "residue",
@@ -161,6 +163,14 @@ Each of these is a harness check.
 10. The runner's mode set. The `##` headings of `agents/scope-round-runner.md` match a pinned set
     exactly, in both directions, so the one-runner-per-pass shape cannot be partly undone (a
     `## Round mode` coming back, a `## Pass mode` renamed away) without failing the release.
+11. The pass-knowledge excerpt is verbatim. The shipped cut script is run over every trade file the
+    knowledge manifest lists, and each trade's whole scope grain rules section, plus each headed
+    structural gap list block, must come back as a contiguous byte-identical run in the excerpt.
+    Contiguity is the assertion: an every-line-is-present check passes on text that has been
+    reordered or reflowed. The knowledge version in the excerpt is compared against the one this
+    check reads out of the manifest itself, and the section 7 arm is asserted in both directions.
+    Its bound is stated in the harness README entry: four trade files carry no structural gap list
+    anywhere in the source, and the check names them rather than passing over them in silence.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

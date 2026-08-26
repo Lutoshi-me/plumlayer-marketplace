@@ -17,14 +17,16 @@ Pointers only, never pasted text. Your dispatch names:
 
 - the project id, the round number, your pass name, and your unit id;
 - your unit's pages, each with its sheet number, `fileId`, and 1-based `pageInPdf`;
-- the run folder path, the context packet path, your pass brief path, and the paths of the trade
-  files your pass carries.
+- the run folder path, the context packet path, your pass brief path, and your pass knowledge
+  path.
 
 Open those files yourself, first thing, before you read a page: the context packet (project
 identity, systems, scope areas, set shape, hazards, and the definitions index of code, kind, name,
 where defined), your pass brief (what this pass reads for, its content families, the knowledge
-version, the subject prefix scheme), and each trade file. Everything else you need is on the project
-record. If a path in your dispatch does not exist, say so and stop rather than reading blind.
+version, the subject prefix scheme), and your pass knowledge file (the scope grain rules and
+structural gap list for each trade your pass carries, verbatim, with the knowledge version).
+Everything else you need is on the project record. If a path in your dispatch does not exist, say
+so and stop rather than reading blind.
 
 ## The mandates
 
@@ -33,18 +35,19 @@ of them is ever trimmed.
 
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
    resolved reference) for work already listed; QUESTION where something needs a person's answer
-   (a gap, an anomaly, an ungrounded reference you will not create, a grain question where the
-   trade file is silent): raise it as a Question, with a title and a citation. Before you raise
+   (a gap, an anomaly, an ungrounded reference you will not create, a grain question where your
+   pass knowledge is silent): raise it as a Question, with a title and a citation. Before you raise
    one, read `list_questions`: where an open Question already covers the same ask, reply to it
    rather than asking it twice. A Question is about the project, never about a Plumlayer
    failure; a tool failure is reported to your dispatcher, not raised as a Question. Never a
    parallel list; never re-create; never silently skip. Before every CREATE, run one
    `search(text: <two or three distinguishing words of the item's name>)` across the whole project;
    if a scope item matches, UPDATE that item instead.
-2. CONVENTION LINES: for each convention line in your trade files that applies to your content
-   families, create it if absent from the live list or update it if present. Its `sourceInstrument`
-   is `trade-convention:<trade>@<knowledge-version>`, its evidence quotes the trade file's line and
-   carries the marker `basis: "trade-convention"`, and it carries NO sheet citation. If you judge a
+2. CONVENTION LINES: for each convention line in your pass knowledge file that applies to your
+   content families, create it if absent from the live list or update it if present. Its
+   `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>`, its evidence quotes the
+   trade file's line and carries the marker `basis: "trade-convention"`, and it carries NO sheet
+   citation. If you judge a
    convention line inapplicable to this project, raise a Question saying so, with your reason.
    Silence on a convention line is a violation, not a judgment call.
 3. CITATION SHAPE: every drawing-grounded record's evidence names the sheet AND carries
@@ -67,7 +70,7 @@ of them is ever trimmed.
    the citation does the explaining), `notesExternal` / `notesInternal` only when there is a real
    note, `quantity` only where the sheet carries one, as `{value, unit}`. Recorded text is what the
    bidder reads: plain sentences, no em dashes, no bolding. A verbose row is a defect.
-7. GRAIN: follow your trade files' grain sections. Where a trade file is silent, create at best
+7. GRAIN: follow your pass knowledge file's grain rules. Where it is silent, create at best
    judgment AND raise a Question naming the grain question. Recall never drops to grain uncertainty.
 8. RECORD directly and VERIFY: `record_batch` (at most 500 per call, atomic; subjects
    `scopeItem:<unit-id>-<seq>` for new items, the item's existing subject for updates), or upload a

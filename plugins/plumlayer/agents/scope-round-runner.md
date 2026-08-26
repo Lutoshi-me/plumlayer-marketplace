@@ -32,9 +32,38 @@ splits it. Nothing is lost by stopping there, because nothing has run.
 1. **Write your pass brief** at `<run folder>/briefs/<pass-id>.md` if it is not already there (a
    later leg of the same pass finds it and uses it as it is): what the pass reads for (definitions,
    or placements), its content families, the knowledge version from the trade-knowledge manifest,
-   the paths of the trade files it carries, and the subject prefix scheme. The mandates are not in
-   this file. They live in the `scope-reader` agent definition and are never restated, trimmed, or
-   overridden here.
+   the trades it carries, and the subject prefix scheme. Then write the pass knowledge at
+   `<run folder>/briefs/<pass-id>-knowledge.md` by running the plugin's cut script, once, before the
+   first unit of the pass. It is regenerated every time, including on a later leg, because the
+   excerpt is a projection off the shipped trade files and a stale one would carry a stale version
+   pin. Never write it by hand and never rewrite a trade file into it in shorter words: the excerpt
+   is verbatim because a paraphrase would be an unrecorded rewrite of knowledge every convention
+   line cites by version. The mandates are in neither file. They live in the `scope-reader` agent
+   definition and are never restated, trimmed, or overridden here.
+
+   Run the cut with the Bash tool, single quoted. Pass the plugin's trade-knowledge directory as
+   the path you resolved to read the manifest for the version: `${CLAUDE_PLUGIN_ROOT}` is
+   interpolated in this definition but is not set inside a shell call, so the script is handed the
+   directory itself and never the variable. Use `python3`, or `python` on a seat that has only that
+   name; the `scope-run` skill's fifth precondition is where the run finds out which.
+
+   ```sh
+   python3 '<plugin root>/scripts/cut_pass_knowledge.py' \
+     --trade-knowledge '<plugin root>/trade-knowledge' \
+     --trades roofing,waterproofing,siding,windows,glazing \
+     --pass-id A2 \
+     --out '<run folder>/briefs/A2-knowledge.md'
+   ```
+
+   On a seat with no Bash tool, the same call in PowerShell, on one line, double quoted:
+
+   ```powershell
+   python "<plugin root>/scripts/cut_pass_knowledge.py" --trade-knowledge "<plugin root>/trade-knowledge" --trades roofing,waterproofing,siding --pass-id A2 --out "<run folder>/briefs/A2-knowledge.md"
+   ```
+
+   Where no Python interpreter is on the seat the script cannot run: carry the trade file paths in
+   the dispatch as before, append one `note <round> <pass> - deviation ...` line saying the cut did
+   not run, and name it in your summary's deviations line. Never invent a substitute cut.
 2. **Run your units in reading order, one at a time.** You dispatch exactly one agent type,
    `plumlayer:scope-reader`, and never any other. The parenthesized list on your `tools` line records
    that intent and does not enforce it, since a type list inside `Agent(...)` is ignored for an agent
@@ -43,9 +72,9 @@ splits it. Nothing is lost by stopping there, because nothing has run.
    end: the line is what a resume reads to know the unit was started, and a run that batched them
    reported six units as nothing-landed when their work was on the record. The dispatch carries
    project id, round, pass name, unit id, the unit's pages (sheet number, `fileId`, 1-based
-   `pageInPdf` for each), the run folder path, the context packet path, the pass brief path, and the
-   trade file paths. Paste nothing from those files into it. The unit id is the unit's run-prefix, so
-   concurrent readers can never collide on a created subject.
+   `pageInPdf` for each), the run folder path, the context packet path, the pass brief path, and
+   the pass knowledge path. Paste nothing from those files into it. The unit id is the unit's
+   run-prefix, so concurrent readers can never collide on a created subject.
 3. **Verify per unit, before the next unit starts.** Verify what the unit reports against the record
    yourself, within what `search` can actually filter on, which is subject (exact), predicate
    (exact), and a `text` substring across subject, predicate, and value. There is no

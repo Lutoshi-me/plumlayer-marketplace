@@ -56,8 +56,8 @@ that relaxes any one of them reproduces a measured, named failure.
    an open one already covers the same ask, reply to it instead of asking it a second time. A
    Question is about the project, never about a Plumlayer failure; a read or write that fails is
    reported and handled in the run's own failure path, not raised as a Question.
-3. **The convention-line emit mandate.** A reader whose trade files carry convention lines for the
-   content families it reads MUST emit them: create if absent from the live list, update if
+3. **The convention-line emit mandate.** A reader whose pass knowledge carries convention lines
+   for the content families it reads MUST emit them: create if absent from the live list, update if
    present. Silence is a violation, not a judgment call; a reader judging a convention line
    inapplicable to this project raises a Question saying so, with its reason. Convention lines never masquerade
    as sheet-cited reads: their `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>`
@@ -91,8 +91,8 @@ that relaxes any one of them reproduces a measured, named failure.
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are the derive stage's output,
    never the reader's). One item per sheet is a ceiling violation; one item per instance is a floor
-   violation. Where the trade file's grain section is silent, create at best judgment AND raise a
-   Question naming the grain question: recall never drops to grain uncertainty.
+   violation. Where the pass knowledge's grain rules are silent, create at best judgment AND raise
+   a Question naming the grain question: recall never drops to grain uncertainty.
 8. **Definitions before placements.** A pass reads only after the passes it references are already
    recorded (legends and schedules before the plans that tag them). The read plan encodes this
    order and the user approves it.
@@ -169,9 +169,11 @@ uploaded to the project except record files, never recorded as project entries. 
 - `context-packet.md`: the compiled context packet, regenerated between rounds (a projection off
   live records, never itself recorded). Audience: agent.
 - `briefs/`: one small file per pass, written by that pass's runner, carrying the pass's filled
-  slot values: what the pass reads for, its content families, the knowledge version, the trade file
-  paths it carries, and the subject prefix scheme. A reader opens its own pass file from here. The
-  mandates are never in it. Audience: agent.
+  slot values: what the pass reads for, its content families, the knowledge version, the trades it
+  carries, and the subject prefix scheme. A reader opens its own pass file from here. The mandates
+  are never in it. Audience: agent. Alongside each brief, `<pass-id>-knowledge.md`, the
+  pass knowledge: the carried trades' grain sections cut verbatim from the shipped trade files by
+  the plugin's script, with the knowledge version at the top. Audience: agent.
 - `completeness/`: the completeness pass's enumerations, accounting output, and lists of what is
   still open. Audience: agent.
 - `records/`: JSONL files for large batch writes (these do get uploaded, as the write
@@ -204,11 +206,10 @@ The run executes at three levels. Each level is a separate agent context, bounde
 
 Handoff is by file and record, never by inlined text. A dispatch at any level carries only
 pointers: the project id, the round or unit id, the run folder path, and the page references.
-The reader opens its pass brief and the context packet from the run folder, and its trade files from
-the plugin's trade-knowledge directory, all by the paths it is handed; the runner opens the read
-plan for its own pass and appends the ledger without reading it whole. Nothing from those files is
-pasted into a dispatch, because whatever is pasted stays in the dispatcher's context for the rest
-of the run.
+The reader opens its pass brief, its pass knowledge and the context packet from the run folder, all
+by the paths it is handed; the runner opens the read plan for its own pass and appends the ledger
+without reading it whole. Nothing from those files is pasted into a dispatch, because whatever is
+pasted stays in the dispatcher's context for the rest of the run.
 
 Reports travel upward in a fixed short shape, counts and named anomalies only (the shapes are
 given with the brief templates below). A runner's summary is what the lead reads when that pass
@@ -231,10 +232,11 @@ Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/`: one file per
 drawings will not say: how the trade bids, scope grain rules, exclusions and counterparties,
 furnish/install seams, convention work no sheet states. `MANIFEST.md` there records the knowledge
 version and source snapshot: read it at run start, record the version in the ledger, and cite it
-in every convention-line record (`trade-convention:<trade>@<version>`). Each pass carries the trade
-files relevant to its content families as part of its brief. Where a trade file is silent, the
-reader creates at best judgment and raises a Question (non-negotiable 7); the Question is a suggested
-amendment to that trade file, surfaced in the close-out report.
+in every convention-line record (`trade-convention:<trade>@<version>`). Each pass's runner cuts the
+trade files relevant to its content families into one pass knowledge file beside its brief,
+verbatim, and the reader reads that. Where the knowledge is silent, the reader creates at best
+judgment and raises a Question (non-negotiable 7); the Question is a suggested amendment to that
+trade file, surfaced in the close-out report.
 
 ## 1. Preconditions
 
@@ -262,7 +264,11 @@ amendment to that trade file, surfaced in the close-out report.
    the finished scope list instead.
 5. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record
    the version in the ledger. Missing → stop and report a broken plugin install rather than running
-   knowledge-blind.
+   knowledge-blind. Then probe the seat for a Python interpreter, `python3 --version` falling back
+   to `python --version`, since the pass knowledge every reader loads is cut by a script the runner
+   shells out to. Neither name present is not a stop: the run goes ahead with readers carrying whole
+   trade files, the runner writes a `note ... deviation ...` line saying the cut did not run, and
+   you say so plainly at the first check-in.
 6. **The user is present.**
 <!-- user-facing -->
 Tell them what the run will do: you read the set in rounds and build
@@ -311,7 +317,9 @@ sampled `search(predicate: "discipline")` reads if the grid file-redirects), the
 3. **Say what each pass is for.** A pass that reads legends and schedules records what the marks
    mean and the scope the schedules themselves ground (non-negotiable 9). A pass that reads plans
    records scope where it is shown. Name the trade files each pass will carry, by content family:
-   a kitchens pass carries appliances, casework, countertops, tiling, millwork, and so on.
+   a kitchens pass carries appliances, casework, countertops, tiling, millwork, and so on. A pass
+   carries at most ten trade files; a pass whose content families reach further than that is split
+   at plan time, the same way a pass longer than twelve read units is.
 4. **Group the passes into rounds**: a round is a set of passes that can run together. Passes that
    plausibly see the same scope (kitchens and unit plans, say) go in different rounds or run one
    after the other: two passes running at once on the same work create it twice. Passes with no
@@ -514,8 +522,9 @@ and what is still open are all there. When it has been given, append `phase: clo
 ## The dispatches and the report shapes
 
 Every dispatch carries pointers and nothing else. Whatever is pasted into a dispatch stays in the
-dispatcher's context for the rest of the run, so the packet, the trade files, the read plan, and the
-brief values are opened by the agent that needs them, from the paths it is handed.
+dispatcher's context for the rest of the run, so the packet, the read plan, and the brief values
+are opened by the agent that needs them, from the paths it is handed: the runner opens the trade
+files it cuts, and the reader opens its pass knowledge.
 
 The mandates are not in these templates. They live in the two agent definitions the plugin ships,
 `scope-round-runner` and `scope-reader`, where each dispatched instance reads them fresh. They are
@@ -539,7 +548,7 @@ subagent_type: plumlayer:scope-reader
 Project: <projectId>. Round: <round number>. Pass: <pass name>. Unit: <unit id>.
 Pages: <sheet number + fileId + 1-based pageInPdf, one per page>.
 Run folder: <path>. Context packet: <path>. Pass brief: <path to briefs/<pass-id>.md>.
-Trade files: <paths>.
+Pass knowledge: <path to briefs/<pass-id>-knowledge.md>.
 Read your unit as your definition says, then return your report.
 ```
 

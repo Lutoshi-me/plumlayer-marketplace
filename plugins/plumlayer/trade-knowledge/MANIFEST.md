@@ -17,10 +17,10 @@ touch the trade files don't move it.
 
 Each trade file is the self-contained, agent-facing knowledge a scope reader loads before reading
 drawings for that trade: how the trade bids and splits itself in the market, scope grain rules
-(what earns its own line vs. rides in a description), exclusions and their usual counterparties,
-furnish/install seams, convention work the drawings will not say (the lines the emit mandate
-fires on), pricing conventions as ratios, and an honest coverage statement naming what the corpus
-did and did not support.
+(what earns its own line vs. rides in a description, and the structural gap list the emit mandate
+fires on), exclusions and their usual counterparties, furnish/install seams, convention work the
+drawings will not say, pricing conventions as ratios, and an honest coverage statement naming what
+the corpus did and did not support.
 
 Trade files are living documents: a human review pass is the trust mechanism, and new corpus rounds
 amend them in place at the source, after which this copy refreshes and the knowledge version

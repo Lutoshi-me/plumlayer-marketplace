@@ -56,6 +56,7 @@ Grounding role: reads files and shells out to the claude CLI. No inference.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import re
 import subprocess
@@ -713,10 +714,11 @@ def _collect_scope_files(
     strings, retired vocabulary, bold/Title-Case). Returns
     (full_scope_files, client_only_files, warning):
 
-    - full_scope_files: every shipped-skill .md, README.md, the manifest
-      JSON files, and any trade-knowledge/ file that is NOT one of the
-      pinned corpus files (e.g. MANIFEST.md itself) — this is the plugin's
-      own prose, in its own voice, and gets the strictest scan.
+    - full_scope_files: every shipped-skill .md, every agents/ .md, every
+      scripts/ .py, README.md, the manifest JSON files, and any
+      trade-knowledge/ file that is NOT one of the pinned corpus files
+      (e.g. MANIFEST.md itself) — this is the plugin's own prose, in its
+      own voice, and gets the strictest scan.
     - client_only_files: the pinned, corpus-derived trade files (currently
       44), which get a lighter client-name-only scan elsewhere — ordinary
       trade vocabulary there (e.g. "deposit", "proposed") is real and
@@ -737,6 +739,13 @@ def _collect_scope_files(
     agents_dir = plugin_path / "agents"
     if agents_dir.is_dir():
         full_scope_files.extend(sorted(agents_dir.rglob("*.md")))
+
+    # A shipped script's own prose (its module docstring, its stdout line, its error messages) is
+    # text in the plugin's voice too, and it reaches a user when a run reports what a script said,
+    # so it joins the scan rather than sitting outside every text check.
+    scripts_dir = plugin_path / "scripts"
+    if scripts_dir.is_dir():
+        full_scope_files.extend(sorted(scripts_dir.rglob("*.py")))
 
     readme = marketplace_root / "README.md"
     if readme.exists():
@@ -1612,6 +1621,178 @@ def check_runner_mode_set(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
+# Check: the pass knowledge excerpt
+# --------------------------------------------------------------------------- #
+#
+# A reader no longer opens whole trade files: its pass runner cuts them to one pass knowledge file
+# first, and the reader reads that. The cut is only safe if nothing the reader acts on goes missing
+# in it, so this runs the shipped script over every trade file the manifest lists and asserts the
+# carried sections come back as contiguous, byte-identical runs. Contiguity is the point: an
+# every-line-is-present assertion would pass on text that had been reordered or reflowed, which is
+# the failure a verbatim cut exists to rule out.
+#
+# The extraction below is written independently of the script's own, so the two agreeing is
+# evidence rather than a tautology.
+
+PASS_KNOWLEDGE_SCRIPT = ("scripts", "cut_pass_knowledge.py")
+
+_GAP_LIST_PHRASE = "structural gap list"
+_KNOWLEDGE_VERSION_RE = re.compile(r"\*\*Knowledge version:\s*`([^`]+)`\*\*")
+
+
+def _block_from(lines: list[str], start: int, stop_prefixes: tuple[str, ...]) -> str:
+    """
+    The heading at `start` plus every line under it up to the next line starting with one of
+    `stop_prefixes`, stripped at both ends.
+    """
+    body: list[str] = []
+    for line in lines[start + 1:]:
+        if line.startswith(stop_prefixes):
+            break
+        body.append(line)
+    return "\n".join([lines[start]] + body).strip()
+
+
+def _first_line_index(lines: list[str], match) -> int | None:
+    for i, line in enumerate(lines):
+        if match(line):
+            return i
+    return None
+
+
+def _load_cut_module(script_path: Path):
+    """Import the shipped cut script in-process, so the check runs no subprocess and no model."""
+    spec = importlib.util.spec_from_file_location("cut_pass_knowledge", script_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"no import spec for {script_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
+    name = "pass-knowledge-excerpt"
+    script = plugin_path.joinpath(*PASS_KNOWLEDGE_SCRIPT)
+    if not script.is_file():
+        return Result(name, False, detail=f"cut script not found at {script}")
+
+    trade_dir = plugin_path / "trade-knowledge"
+    manifest = trade_dir / "MANIFEST.md"
+    if not manifest.is_file():
+        return Result(name, False, detail=f"trade knowledge manifest not found at {manifest}")
+
+    pinned = _pinned_trade_package_names(trade_dir)
+    if not pinned:
+        return Result(name, False, detail=f"could not parse {manifest.name}'s Trade files list")
+    trades = sorted(pinned)
+
+    try:
+        manifest_text = manifest.read_text(encoding="utf-8")
+    except Exception as e:
+        return Result(name, False, detail=f"{manifest.name}: read error: {e}")
+    version_match = _KNOWLEDGE_VERSION_RE.search(manifest_text)
+    if not version_match:
+        return Result(name, False, detail=f"no Knowledge version line in {manifest.name}")
+    version = version_match.group(1).strip()
+
+    try:
+        module = _load_cut_module(script)
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import {script.name}: {e}")
+
+    out = Path(__file__).parent / ".test-results" / "pass-knowledge-all.md"
+    try:
+        module.cut(trade_dir, trades, "harness-all-trades", out)
+        excerpt = out.read_text(encoding="utf-8")
+    except Exception as e:
+        return Result(name, False, detail=f"the cut failed over the shipped trade files: {e}")
+
+    errors: list[str] = []
+    if f"knowledge version: {version}" not in excerpt:
+        errors.append(f"the excerpt does not carry the manifest's knowledge version {version}")
+
+    gap_heading: list[str] = []
+    pricing_carried: list[str] = []
+    no_gap_list: list[str] = []
+    largest = ("", 0)
+
+    for slug in trades:
+        path = trade_dir / f"{slug}.md"
+        if not path.is_file():
+            errors.append(f"{slug}: listed in the manifest but not on disk")
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except Exception as e:
+            errors.append(f"{slug}: read error: {e}")
+            continue
+        lines = text.splitlines()
+
+        grain_idx = _first_line_index(lines, lambda line: line.startswith("## 3. "))
+        if grain_idx is None:
+            errors.append(f"{slug}: no section 3 in the trade file")
+            continue
+        grain = _block_from(lines, grain_idx, ("## ",))
+        if grain not in excerpt:
+            errors.append(f"{slug}: section 3 is not in the excerpt contiguous and byte-identical")
+        carried = len(grain)
+
+        gap_idx = _first_line_index(
+            lines, lambda line: line.startswith("### ") and _GAP_LIST_PHRASE in line.lower()
+        )
+        if gap_idx is not None:
+            gap_heading.append(slug)
+            block = _block_from(lines, gap_idx, ("##",))
+            if block not in excerpt:
+                errors.append(
+                    f"{slug}: the structural gap list block is not in the excerpt "
+                    f"contiguous and byte-identical"
+                )
+
+        pricing_idx = _first_line_index(lines, lambda line: line.startswith("## 7. "))
+        pricing = _block_from(lines, pricing_idx, ("## ",)) if pricing_idx is not None else None
+        if _GAP_LIST_PHRASE not in grain:
+            pricing_carried.append(slug)
+            if pricing is None:
+                errors.append(
+                    f"{slug}: section 3 holds no gap list and there is no section 7 to carry"
+                )
+            elif pricing not in excerpt:
+                errors.append(
+                    f"{slug}: section 7 should have been carried and is not in the excerpt"
+                )
+            else:
+                carried += len(pricing)
+        elif pricing is not None and pricing in excerpt:
+            errors.append(
+                f"{slug}: section 7 was carried where section 3 already holds the gap list"
+            )
+
+        if _GAP_LIST_PHRASE not in text:
+            no_gap_list.append(slug)
+        if carried > largest[1]:
+            largest = (slug, carried)
+
+    detail = (
+        f"{len(trades)} trade files cut into {len(excerpt.encode('utf-8')):,} bytes, "
+        f"knowledge version {version}; gap list under a heading in {len(gap_heading)}; "
+        f"section 7 carried for {len(pricing_carried)}"
+        f" ({', '.join(pricing_carried) if pricing_carried else 'none'}); "
+        f"largest single trade {largest[1]:,} bytes ({largest[0]})"
+    )
+    # An honest bound, not a pass: these trade files carry no structural gap list under any rule,
+    # so no assertion here can prove the excerpt carries one for them.
+    detail += (
+        f"; no gap list in the source under any rule for {len(no_gap_list)}"
+        f" ({', '.join(no_gap_list) if no_gap_list else 'none'})"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Public entry point
 # --------------------------------------------------------------------------- #
 
@@ -1632,6 +1813,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_question_failure_boundary(plugin_path),
         check_ledger_fixed_shape(plugin_path),
         check_runner_mode_set(plugin_path),
+        check_pass_knowledge_excerpt(plugin_path),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed
