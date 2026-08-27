@@ -248,7 +248,7 @@ Every file you upload in step 4 attaches to this one `deliveryId`.
 
 ## 4. Upload bytes
 
-For each drawing PDF you identified in step 2:
+**A single-file delivery** keeps the existing single-file verbs:
 
 1. `request_file_upload(projectId, filename)` → `{fileId, path, bucket, token, signedUrl}`. The server
    creates `fileId` and the storage path; you never supply either.
@@ -262,8 +262,34 @@ For each drawing PDF you identified in step 2:
    `fileId` returns the existing row. Rejects `not_found` (PUT didn't land), `empty`, or `oversize`
    (2 GB ceiling per file): if any of these fire, stop and report rather than retrying blindly.
 
-Repeat for every file in the delivery; each one registers to the **same** `deliveryId`. No local run
-folder, no manifest file: the project files list (`list_files`) is the record.
+**A delivery of two or more files** uses the bulk verbs instead: one signing call, one upload loop,
+one recording call, rather than one round trip per file. Above 250 files, split the batch into
+calls of at most 250:
+
+1. `request_file_uploads(projectId, filenames)` → `{count, uploads}`, one `{filename, fileId, path,
+   bucket, token, signedUrl}` per file, in the order you sent the filenames. All or nothing: a
+   failed call returns nothing and nothing was uploaded, so send it again. The server creates every
+   `fileId` and storage path; you never supply either.
+2. Write the returned `uploads` list to a local JSON file once, then PUT every file's bytes in a
+   single shell loop that reads `filename` and `signedUrl` back out of that file with `jq` or a
+   small node one-liner, so no signed URL is ever retyped by hand per file:
+   ```bash
+   jq -c '.uploads[]' uploads.json | while read -r row; do
+     filename=$(echo "$row" | jq -r '.filename')
+     url=$(echo "$row" | jq -r '.signedUrl')
+     curl -X PUT "$url" -H "Content-Type: application/pdf" --data-binary @"$LOCAL_DIR/$filename"
+   done
+   ```
+3. `register_files(projectId, files, deliveryId)`: pass every file's `{fileId, filename,
+   contentType?}` plus the same `deliveryId` from step 3, so chronology comes from the delivery, not
+   upload order. Answers per file, never all-or-nothing: `{registered, failed, counts}`.
+   `counts.registered` must equal the number of files you sent. Anything in `failed` names its
+   `fileId`, `filename`, `reason`, and `message`: re-PUT and re-register only those files, by
+   `fileId`, never the whole batch again, and never blindly. A `reason` of `not_found` (the PUT
+   didn't land) is worth that retry; any other reason is stopped and reported.
+
+Either path, no local run folder and no manifest file: the project files list (`list_files`) is the
+record.
 
 ## 5. Recognize sheets (async, start then poll)
 
@@ -583,9 +609,12 @@ contents now, before the reconciliation gate below. The gate's spec-comparison l
 run against; reconciling first always reports the spec leg as not having run, even when a manual sat on
 disk the whole time.
 
-1. **File it as a document.** Run the same upload mechanics as step 4 (`request_file_upload`, PUT the
-   bytes to `signedUrl`, then `register_file(projectId, fileId, filename, contentType, kind:
-   "document")`) for the manual PDF(s) step 2 identified. A project manual is a project record, not a
+1. **File it as a document.** Run the same upload mechanics as step 4 for the manual PDF(s) step 2
+   identified: a single manual PDF uses `request_file_upload`, PUT the bytes to `signedUrl`, then
+   `register_file(projectId, fileId, filename, contentType, kind: "document")`; two or more (a
+   folder-of-divisions manual) uses `request_file_uploads`, the same PUT loop, then
+   `register_files(projectId, files, kind: "document")`, with the same `counts.registered` check and
+   the same per-`fileId` retry on anything in `failed`. A project manual is a project record, not a
    drawing sheet, so it does not attach to a `deliveryId`. Misfiled earlier as a drawing? Fix it in
    place with `update_file(projectId, fileId, kind: "document")` rather than re-uploading:
    reclassifying away from `drawing` sweeps its stray page rows in the same call.
