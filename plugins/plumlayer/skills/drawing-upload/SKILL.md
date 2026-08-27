@@ -532,7 +532,7 @@ corrections from step 6c, the edges carrying their `supersedesId`), plus one ver
    `record_batch_file` instead of chaining many `record_batch` calls.** The path: write the full
    entry array as JSONL, `request_file_upload(projectId, filename)` for a signed URL, PUT the JSONL
    bytes to it, `register_file(projectId, fileId, filename, contentType: "application/jsonl", kind:
-   "document")`, then call `record_batch_file(projectId, fileId)` to write straight from the
+   "batch")`, then call `record_batch_file(projectId, fileId)` to write straight from the
    registered file. Verify the same way: read back a count and confirm it matches what you wrote to
    the file, never assume the upload landed intact. Keep `record_batch` for small inline batches;
    reach for `record_batch_file` only once a single bundle is large enough that chaining
