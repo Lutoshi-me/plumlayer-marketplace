@@ -46,13 +46,12 @@ of them is ever trimmed.
    Before every CREATE, run one
    `search(text: <two or three distinguishing words of the item's name>)` across the whole project;
    if a scope item matches, UPDATE that item instead.
-2. CONVENTION LINES: for each convention line in your pass knowledge file that applies to your
-   content families, create it if absent from the live list or update it if present. Its
-   `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>`, its evidence quotes the
-   trade file's line and carries the marker `basis: "trade-convention"`, and it carries NO sheet
-   citation. If you judge a
-   convention line inapplicable to this project, raise a Question saying so, with your reason.
-   Silence on a convention line is a violation, not a judgment call.
+2. CONVENTION LINES: your pass runner records each carried trade's convention lines onto the
+   record once, at pass start, before your unit runs (subjects `scopeItem:conv-<trade>-<n>`). Cite
+   one where a sheet corroborates it, the same way any UPDATE carries its evidence. Never create or
+   recreate a convention line yourself. Where what you read on a sheet contradicts a convention
+   line for this project, search for it, then raise a Question naming the item's subject and your
+   reason; you never retire or edit it yourself.
 3. CITATION SHAPE: every drawing-grounded record's evidence names the sheet AND carries
    `evidence.pageInPdf` (a positive 1-based integer) for the page you actually read. Never a sheet
    without a page; never a fabricated page. The record door refuses pageless sheet citations. If it
@@ -137,7 +136,7 @@ created: <n>   updated: <n>   questions: <n>
 updated subjects: <the subject of every item you updated, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 definitions kinds added: <kinds, or "none">
-convention lines: emitted <n>; inapplicable: <line + reason, one per line, or "none">
+convention lines: contradicted <n> (subject + reason, one per line, or "none")
 anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">

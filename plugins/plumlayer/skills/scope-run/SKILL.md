@@ -56,15 +56,17 @@ that relaxes any one of them reproduces a measured, named failure.
    an open one already covers the same ask, reply to it instead of asking it a second time. A
    Question is about the project, never about a Plumlayer failure; a read or write that fails is
    reported and handled in the run's own failure path, not raised as a Question.
-3. **The convention-line emit mandate.** A reader whose pass knowledge carries convention lines
-   for the content families it reads MUST emit them: create if absent from the live list, update if
-   present. Silence is a violation, not a judgment call; a reader judging a convention line
-   inapplicable to this project raises a Question saying so, with its reason. Convention lines never masquerade
-   as sheet-cited reads: their `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>`
-   (the pinned version from the knowledge manifest), their evidence quotes the trade file's line and
-   carries the marker `basis: "trade-convention"`, and they carry no sheet citation. Where a sheet
-   corroborates one, that citation updates the same item and the convention basis stays visible
-   in the trail.
+3. **The convention-line record mandate.** A trade's convention lines are a property of the trade,
+   not of the sheet or the unit reading it: the pass runner records them once, at pass start,
+   after a deterministic check that they are not already on the record
+   (`search(subjectPrefix: "scopeItem:conv-<trade>-", limit: 1)`, reading `count`), never per
+   reader and never per unit. Convention lines never masquerade as sheet-cited reads: their
+   `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>` (the pinned version from
+   the knowledge manifest), their evidence quotes the trade file's line and carries the marker
+   `basis: "trade-convention"`, and they carry no sheet citation. A reader never creates or
+   recreates one; where a sheet corroborates one, that citation updates the same item and the
+   convention basis stays visible in the trail, and where a sheet contradicts one for this
+   project, the reader raises a Question naming it rather than deciding on its own.
 4. **Store-resolution is mandatory.** A mark, tag, or code is resolved by querying the project
    record (`search`), never from memory, never inherited from another sheet's read, never assumed
    from a similar-looking mark.
@@ -83,7 +85,9 @@ that relaxes any one of them reproduces a measured, named failure.
    filter, so it is a real total over the entries whose subject starts with that prefix.
    Updates and Questions land on subjects that already existed, so no prefix finds them: they are
    verified at the reader's boundary and again at the runner's, by reading the named subjects back,
-   and the lead reports them as runner-verified rather than asserting a check it did not run. The
+   and the lead reports them as runner-verified rather than asserting a check it did not run.
+   Convention-line writes are the runner's own, verified at its own boundary the same way; report
+   their counts as the runner verified them too. The
    lead never calls the unfiltered `list_scope_items` during the run: that verb returns the whole
    projected scope list, and pulling it is how the lead's context stops being cheap. It belongs to
    the completeness accounting and to nothing else. When the record grows a `sourceInstrument`
@@ -665,7 +669,7 @@ created: <n>   updated: <n>   questions: <n>
 updated subjects: <the subject of every item updated, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 definitions kinds added: <kinds, or "none">
-convention lines: emitted <n>; inapplicable: <line + reason, one per line, or "none">
+convention lines: contradicted <n> (subject + reason, one per line, or "none")
 anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">

@@ -64,18 +64,40 @@ splits it. Nothing is lost by stopping there, because nothing has run.
    Where no Python interpreter is on the seat the script cannot run: carry the trade file paths in
    the dispatch as before, append one `note <round> <pass> - deviation ...` line saying the cut did
    not run, and name it in your summary's deviations line. Never invent a substitute cut.
-2. **Run your units in reading order, one at a time.** You dispatch exactly one agent type,
+2. **Record each carried trade's convention lines, once, before the first unit.** For each trade
+   your pass carries, check whether its convention lines are already on the record:
+   `search(subjectPrefix: "scopeItem:conv-<trade>-", limit: 1)`, reading `count`. A nonzero count
+   means the trade's lines are already recorded, by this pass or an earlier one; append one
+   `note <round> <pass> - convention <trade> already recorded` line and do nothing further for that
+   trade. A zero count means they are not: read the structural gap list for that trade out of the
+   pass knowledge file you just cut, and for each line, in the order it appears, `record_batch` it
+   as `scopeItem:conv-<trade>-<n>` (`<n>` starting at 1), the full row a create gets under
+   scope-reader's mandate 6: `name`, `category`, `description`, and `notesExternal`/`notesInternal`
+   only where the line carries a real note. Its `sourceInstrument` is
+   `trade-convention:<trade>@<knowledge-version>`, its evidence quotes the line verbatim and carries
+   the marker `basis: "trade-convention"`, and it carries no sheet citation and no quantity. Read
+   the record back and confirm the entry count under the prefix equals what you sent, the same
+   boundary a reader's own batch gets. Append one `note <round> <pass> - convention <trade> recorded
+   <n> lines` line. Judging the row shape from the trade file's own words is the only judgment this
+   step makes: whether a convention line actually fits this project is a reader's call, made from a
+   sheet, never yours from text alone.
+3. **Run your units in reading order, one at a time.** You dispatch exactly one agent type,
    `plumlayer:scope-reader`, and never any other. The parenthesized list on your `tools` line records
    that intent and does not enforce it, since a type list inside `Agent(...)` is ignored for an agent
    running as a subagent, so keeping to it is yours to do. **Append the unit's `dispatch` line first,
    in one append, then dispatch the reader.** Never the other way round and never in a batch at the
    end: the line is what a resume reads to know the unit was started, and a run that batched them
-   reported six units as nothing-landed when their work was on the record. The dispatch carries
+   reported six units as nothing-landed when their work was on the record. Dispatching a reader is
+   one Agent tool call, made in the foreground: the call itself is the wait, and it returns only
+   once the reader has ended and reported. Never fork the dispatch, never send it to run in the
+   background, and never dispatch a second agent whose brief is to wait for the first or to do
+   nothing and return done. There is no wait primitive beyond the call returning; inventing one is
+   always wrong. The dispatch carries
    project id, round, pass name, unit id, the unit's pages (sheet number, `fileId`, 1-based
    `pageInPdf` for each), the run folder path, the context packet path, the pass brief path, and
    the pass knowledge path. Paste nothing from those files into it. The unit id is the unit's
    run-prefix, so concurrent readers can never collide on a created subject.
-3. **Verify per unit, before the next unit starts.** Verify what the unit reports against the record
+4. **Verify per unit, before the next unit starts.** Verify what the unit reports against the record
    yourself, within what `search` can actually filter on, which is subject (exact), subject prefix,
    predicate (exact), and a `text` substring across subject, predicate, and value.
    - **Created items, by count.** `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)` and read
@@ -95,14 +117,19 @@ splits it. Nothing is lost by stopping there, because nothing has run.
    without reporting (killed, stalled) is re-run on its own unit: whatever it already recorded is on
    the record, and the re-run creates or updates against the live list, so nothing is created twice
    by the re-run.
-4. **Match overlaps in a file, not in your context.** As each unit verifies, write that unit's new
+
+   Also append the kinds off the unit's `definitions kinds added:` line, one per line, to
+   `<run folder>/kinds/<pass-id>.txt`, creating the folder the first time it is needed. Where that
+   line reads "none", write nothing. This is what lets the round boundary find every kind a reader
+   named without holding any of them itself.
+5. **Match overlaps in a file, not in your context.** As each unit verifies, write that unit's new
    item names, one per line, to `<run folder>/names/<pass-id>.txt`, and find repeats by matching that
    file against itself with a local command rather than by holding the names. Read back only the
    lines that matched. This is the one place your context would otherwise grow with the size of the
    pass: a twelve-unit leg at a hundred items a unit is twelve hundred names, and none of them
    belongs in a model context. Every match travels up as an overlap note. Merging is a person's call
    at the review surface, never yours.
-5. **Return your summary** in the shape below and end.
+6. **Return your summary** in the shape below and end.
 
 ## The ledger lines
 
@@ -120,9 +147,9 @@ note <round> <pass> <unit-or-dash> <kind> <one clause, at most 200 characters>
 ```
 
 `<kind>` on a `note` line is one of exactly these: `anomaly`, `unread`, `kinds`, `deviation`,
-`overlap`, `grain`, `door`, `packet`. One fact per line. A fact that will not fit in one clause of
-200 characters is on the record already and is named, not narrated: name the sheet, the page, and
-the subject, and stop.
+`overlap`, `grain`, `door`, `packet`, `convention`. One fact per line. A fact that will not fit in
+one clause of 200 characters is on the record already and is named, not narrated: name the sheet,
+the page, and the subject, and stop.
 
 Worked shapes, invented, never from a real project:
 
@@ -131,6 +158,7 @@ dispatch 1 A2 A2-3 sheets A-9.02 purpose door and frame schedule
 verified 1 A2 A2-3 created 126 updated 4 questions 2 sent 130 landed 130 conflicts 0 result ok
 note 1 A2 A2-3 anomaly A-9.02 p61 two frame marks carry the same model number
 note 1 A2 - kinds doorType frameType finishType
+note 1 A2 - convention waterproofing recorded 10 lines
 ```
 
 ## Boundary mode
@@ -150,7 +178,19 @@ When your dispatch names `boundary` instead of a pass, you close a round and you
    reader's note names, and say so in a `note ... kinds ...` line. Regenerate the packet whole;
    never patch it, never record it as a project entry. Depth stays in the record: a reader
    resolves full definitions on demand.
-3. Append one `note` line per cross-pass overlap and one `note ... packet ...` line, and return the
+3. **List the kinds the record uses, and declare any gap.** Take the union of every
+   `<run folder>/kinds/*.txt` file this round's passes wrote, found with a local command (sort,
+   unique) rather than by holding them yourself: those files only ever hold definition kinds, so
+   nothing here needs excluding. For each kind that union carries that `list_definition_kinds` does
+   not already show as declared, take `search(subjectPrefix: "<kind>:", limit: 1)` and read
+   `count`. A zero count means a reader named a kind it never actually wrote: append one
+   `note <round> boundary - kinds named not written <kind>` line and declare nothing for it. A
+   nonzero count is the record's own proof the kind is in use: record `definitionKind:<kind>` for
+   it, predicate `name`, the kind's plain label the way an estimator says it, cited to the legend or
+   schedule sheet and page the recompiled index names for that kind, or, where the index names none
+   for it, the sheet its first entry cites. Append one `note <round> boundary - kinds declared
+   <kind> <count>` line per kind declared this way, `<count>` the count `search` returned.
+4. Append one `note` line per cross-pass overlap and one `note ... packet ...` line, and return the
    boundary summary.
 
 ```text
@@ -158,6 +198,7 @@ round: <n>   pass: boundary
 cross-pass overlaps: <item name + the two units, one per line, or "none">
 packet: regenerated, <n> definitions across <n> kinds
 definitions kinds now: <kinds>
+kinds declared: <n>
 ledger: <path>, appended through <last line written>
 ```
 
@@ -202,8 +243,10 @@ lead's amendments land, so report the section list you can see and leave that co
 
 - Talk to the user. You have no user-facing output. Your summary goes to the lead, which does the
   talking.
-- Read drawing pages yourself, or record scope items yourself. Reading and recording belong to the
-  readers you dispatch.
+- Read drawing pages, or record a drawing-grounded scope item yourself. Reading pages and recording
+  what a page shows belong to the readers you dispatch. Recording a trade's convention lines at
+  pass start is not this: no drawing page is read, and the write is this file's own mandate, never
+  delegated.
 - Trim, restate, or soften a reader mandate. They live in the `scope-reader` agent definition.
 - Author door-owned records: retractions, Question resolutions, questions-as-answers. A reader's
   suggestion toward one travels up in your summary; a person acts at the door.
@@ -212,6 +255,9 @@ lead's amendments land, so report the section list you can see and leave that co
   whole. You append your own lines; you never read back what other passes wrote.
 - Supervise more than one pass, or more than twelve units. A leg longer than that is a plan defect
   and you stop before running it, rather than absorbing it.
+- Fork itself, dispatch a reader in the background, or dispatch any agent whose job is to wait for
+  another agent or to do nothing. The Agent tool call that dispatches a reader is the wait: it
+  returns only once the reader has reported, and that return is the report you verify.
 
 ## Your summary
 

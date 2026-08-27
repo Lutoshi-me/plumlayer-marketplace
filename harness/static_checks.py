@@ -55,6 +55,8 @@ Checks:
       computes itself, unit lines whose page references match the fixture's own sheet-to-page
       map, the balanced leg split, and a one-line refusal for each of three broken pass
       assignment files.
+  15. No shipped skill or agent file names `fork` as a subagent type, in either the
+      `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -1419,7 +1421,7 @@ def check_question_failure_boundary(plugin_path: Path) -> Result:
 LEDGER_LINE_KINDS = {"dispatch", "verified", "note"}
 
 LEDGER_NOTE_KINDS = {
-    "anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet",
+    "anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet", "convention",
 }
 
 LEDGER_PROHIBITION_PHRASE = "Nothing else goes in the ledger"
@@ -2021,6 +2023,65 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
+# Check: no shipped text names `fork` as a subagent type (PLU-1557)
+# --------------------------------------------------------------------------- #
+#
+# A pass runner invented a wait primitive by dispatching fork agents -- one told to wait for a
+# reader's completion notification, two told to do nothing and return done. The Agent tool has no
+# such type; the runner's dispatch shape is a single foreground call that already blocks until the
+# reader reports. This is the regression guard: no shipped skill or agent file may tell an agent to
+# dispatch a `fork` subagent, in either the `subagent_type:` dispatch-line shape this codebase's own
+# templates use, or a `tools: Agent(fork)` frontmatter declaration. Ordinary English uses of "fork"
+# (a forklift, a decision fork -- both real, current trade-knowledge vocabulary) are untouched: the
+# pattern only matches "fork" sitting immediately after one of those two anchors, and trade-knowledge
+# files are outside this check's file scope regardless.
+
+_FORK_SUBAGENT_RE = re.compile(
+    r'subagent_type["\':=]*\s*["\']?fork\b|Agent\(\s*fork\s*\)',
+    re.IGNORECASE,
+)
+
+
+def _scan_file_for_fork_subagent(path: Path, label: str) -> list[str]:
+    hits: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        return [f"{label}: read error: {e}"]
+    for i, line in enumerate(text.splitlines(), 1):
+        m = _FORK_SUBAGENT_RE.search(line)
+        if m:
+            hits.append(
+                f"{label}:{i}: names `fork` as a subagent type — {m.group(0)!r} in: "
+                f"{line.strip()[:160]}"
+            )
+    return hits
+
+
+def check_no_fork_subagent(plugin_path: Path) -> Result:
+    name = "no-fork-subagent-type"
+    skills_dir = plugin_path / "skills"
+    agents_dir = plugin_path / "agents"
+
+    files: list[Path] = []
+    if skills_dir.is_dir():
+        files.extend(sorted(skills_dir.rglob("SKILL.md")))
+    if agents_dir.is_dir():
+        files.extend(sorted(agents_dir.rglob("*.md")))
+
+    errors: list[str] = []
+    for f in files:
+        label = f"{f.parent.name}/{f.name}" if f.name == "SKILL.md" else f.name
+        errors.extend(_scan_file_for_fork_subagent(f, label))
+
+    detail = f"{len(files)} skill/agent files scanned"
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Public entry point
 # --------------------------------------------------------------------------- #
 
@@ -2043,6 +2104,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_runner_mode_set(plugin_path),
         check_pass_knowledge_excerpt(plugin_path),
         check_plan_inventory(plugin_path, marketplace_root),
+        check_no_fork_subagent(plugin_path),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed
