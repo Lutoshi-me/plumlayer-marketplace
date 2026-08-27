@@ -68,17 +68,29 @@ of them is ever trimmed.
    the record; resolve them from there, not from anything you remember.
 5. CAPTURE NEVER FILTERS: capture everything you see, trade-agnostic, at the grain of one row on a
    trade's scope sheet. Split by type or significant distinction, never by instance (the floor);
-   never one item per sheet and never package headers (the ceiling). Distinctions that do not earn
-   a row ride in the description and notes. Deciding what matters, what is priced, and whose trade
-   it is happens downstream, never here.
-6. THE ROW: every new item writes the full row. `name` (concise, under about ten words, the way a
-   sub would say it), `category` (required: the checklist-section grouping an estimator would use;
-   reuse category strings across like work, never one per item), `description` (one to three tight
-   sentences carrying only what changes price or scope, never a re-narration of the schedule, since
-   the citation does the explaining), `notesExternal` / `notesInternal` only when there is a real
-   note and cited the way the rest of the row is, `quantity` only where the sheet carries one, as
-   `{value, unit}`. Recorded text is what the bidder reads: plain sentences, no em dashes, no
-   bolding. A verbose row is a defect.
+   never one item per sheet and never package headers (the ceiling). A distinction that does not
+   earn a row is on the sheet the row cites; it is not written into the row. Deciding what matters,
+   what is priced, and whose trade it is happens downstream, never here.
+6. THE ROW: every new item writes the row the way it reads on a scope sheet, and the citation
+   carries the detail. `name` (required: what is done, to what, where, under about twelve words,
+   the way a sub would say it; a mark or tag belongs here when it is how the sub finds the work,
+   "Grab bar TA-07, 42 inch"), `category` (required: the section heading on the checklist an
+   estimator would use; reuse category strings across like work, never one per item),
+   `description` (optional, zero to three sentences: only what a bidder must know to price the
+   line that the name and citation do not already say, such as the product or method the drawings
+   call for, the extent or limits, a rated or special condition; a simple item has none),
+   `notesExternal` (optional, one sentence: an instruction to the bidder about the line, what is
+   by others, what to break out, what to confirm, what is an alternate), `notesInternal`
+   (optional, one sentence: a watch item for the estimator, an open Question, a conflict between
+   sheets, an assumption to check; never a citation audit or a correction of your own earlier
+   write, which is a Question instead), `quantity` only where the sheet carries one, as
+   `{value, unit}`. Never transcribe a schedule, a detail, bar sizes, or connector parts into any
+   field, and never narrate the set sheet by sheet: when an item's scope is a schedule, the row is
+   the schedule's name and its citation, not its contents ("Wood shear walls per schedule, 16
+   types", cited to the schedule sheet). Recorded text is what the bidder reads: plain sentences,
+   no em dashes, no bolding. The door refuses text over its bound (`name` 80 characters,
+   `category` 60, `description` 400, `notesExternal` and `notesInternal` 300 each); a row shaped
+   by this rule never comes near them. A verbose row is a defect.
 7. GRAIN: follow your pass knowledge file's grain rules. Where it is silent, create at best
    judgment AND raise a Question naming the grain question. Recall never drops to grain uncertainty.
 8. RECORD directly and VERIFY: `record_batch` (at most 500 per call, atomic; subjects
@@ -118,15 +130,25 @@ At start, pull the scope items for your content families with `list_scope_items`
 `category` the category strings your families use, and `subjectPrefix` to read back what is already
 on the record under your own unit prefix. `categoryCounts` comes back on every call, tallied over
 the whole list, so read the real category strings and their sizes off your first filtered call
-rather than guessing at one. Never call `list_scope_items` unfiltered: it returns every item on the
-project with its whole trail, and that list grows with every unit of the run. The unfiltered call
-belongs to the completeness accounting and to nothing else.
+rather than guessing at one. Rows come back compact: the item's id, name, description, category,
+notes, quantity, trades, and the sheets it cites, without the trail. Pass `full: true` only when you
+need a specific item's records, and filter that call down to the items you need. A call returns at
+most 100 rows (`limit` up to 500); when `truncated` is true, call again with `offset: nextOffset`
+until it is absent, and count what you read against `matched`, the size of the filtered list. Never call `list_scope_items`
+unfiltered: it returns every item on the project, and that list grows with every unit of the run.
+The unfiltered call belongs to the completeness accounting and to nothing else.
 
 Then read every page in your unit: one full `render_page` plus `get_page_text`, the render for
 layout and meaning, the text for exact tokens. A page with no text layer comes back read by OCR
 instead: `textSource` says `ocr`, the spans are whole lines with page coordinates, and a line
 crossing a tile edge can arrive as two reads of its halves, both kept. Treat those spans as the
-page's text. That is the whole read of a page. Crop a region only where the text came back
+page's text. A call returns the first 1500 spans of the page; when `truncated` is true and
+`nextOffset` is present, call again with `offset: nextOffset` until it is absent, so a dense sheet
+is read in a few bounded calls rather than one that spills. `regionSpanCount` is how many spans the
+whole read holds, and `workerCapped` means the page itself held more than the 5000 the server keeps.
+When you are already cropping, pass `region: [x0, y0, x1, y1]` in the same PDF points as the span
+boxes to get only the spans inside that rectangle. That is the whole read of a page. Crop a region
+only where the text came back
 `bounded` (the read did not cover the whole page; calling again reads it again), where
 `textSource` is `none`, or where a region is unreadable at full size, and name the reason for each
 crop on your `pages read:` line. A page that would take more than four renders is reported on that

@@ -55,8 +55,11 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
 - `search`: the raw entry ledger, every entry that's ever been written, not just what's
   currently governing. Filter by subject / predicate / text; paginated. Use
   this to see what's actually been asserted, including entries you wrote yourself.
-- `list_scope_items`: the live scope list (name, category, description, notes, quantity per item).
-  Use this to see what's already been captured before creating or updating a scope item.
+- `list_scope_items`: the live scope list (name, category, description, notes, quantity per item),
+  100 rows a page by default; `categoryCounts` tallies the whole list, so filter by `category` or
+  `subjectPrefix` and page with `offset: nextOffset` while `truncated` is true. `full: true` adds
+  each item's records. Use this to see what's already been captured before creating or updating a
+  scope item.
 - `list_questions`: every question on the project, open ones first, each with its wording, the
   places it cites, its replies oldest first, the trade it's homed to, and the trail of every
   close and reopen on it. Read this before you ask, so you don't raise one that's already open,
@@ -75,7 +78,9 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   you to read and judge; it never carries the recognized entries themselves.
 - `render_page`: render a single page of a registered PDF to an image so you can read it.
 - `get_page_text`: extract the text layer from a registered PDF page (deterministic; use
-  alongside `render_page`: text for tokens, render for layout/meaning).
+  alongside `render_page`: text for tokens, render for layout/meaning). Returns 1500 spans a
+  call; page with `offset: nextOffset` while `truncated` is true, or pass `region` in PDF points
+  to read one area.
 
 **Delivery** (group uploaded files into a source package)
 - `list_drawing_deliveries`: list a project's registered drawing deliveries (baseline sets and

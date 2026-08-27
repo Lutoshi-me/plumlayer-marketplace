@@ -119,8 +119,8 @@ splits it. Nothing is lost by stopping there, because nothing has run.
      finds them. Read back the subjects the reader named in its `updated subjects:` and Question
      lines, `search(subject: "<subject>")` each, and confirm the update landed. Anything the reader
      named that you cannot find back is a mismatch.
-   - Never a row list of the whole project, and never `list_scope_items`, which returns the whole
-     projected scope list, unbounded.
+   - Never a row list of the whole project, and never `list_scope_items`, which walks the whole
+     projected scope list.
 
    Append the unit's `verified` line. The reader's own verification and yours are two separate
    boundaries and neither replaces the other. Start the next unit only when this unit's counts
@@ -232,9 +232,11 @@ When your dispatch names `completeness-account`, you enumerate and account, and 
    into a file under `<run folder>/completeness/`. The per-kind page totals must sum to the verb's
    counts; a kind in the ledger's `kinds` notes that the verb does not list is a gap to report,
    never a kind to skip.
-2. Pull the scope list with `list_scope_items`: names, descriptions, notes per item. This is the one
-   place in the run that verb belongs, because the accounting needs every item's text and nothing
-   narrower would do.
+2. Pull the scope list with `list_scope_items`: names, descriptions, notes per item, which the
+   compact rows carry. Walk it in pages: `limit: 500`, then `offset: nextOffset` while `truncated`
+   is true, and stop only when the rows you hold equal `total`. Never `full: true` here; the trail
+   is not part of the accounting. This is the one place in the run that verb belongs unfiltered,
+   because the accounting needs every item's text and nothing narrower would do.
 3. Account deterministically: write and run a small local script that does a word-boundary token
    reference of each defined code against scope-item text (name, description, notes; evidence
    snippets excluded). Kind-collisions and codes of two characters or fewer divert to an uncertain

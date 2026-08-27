@@ -187,9 +187,12 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
    from another project or from memory.
 2. **Census with coordinates.** `get_page_text` gives every text span with its box in PDF points:
    the same coordinate frame the records use. Collect the candidate tokens and their positions.
-   Expect a full-size sheet's census not to fit in your context (a thousand-plus spans is
-   normal): the result spills to a local file, and the working pattern is to filter and tally it
-   with a small script, not to read it. The census is your completeness backstop: it is how you
+   A full-size sheet holds more spans than one call returns (a thousand-plus is normal): a call
+   carries at most 1500, `truncated` true with `nextOffset` means there are more, and you call
+   again with `offset: nextOffset` until it is absent. `regionSpanCount` is the whole census size,
+   so you know when you hold all of it. Pass `region: [x0, y0, x1, y1]` in PDF points to census
+   one area of the sheet. Write the pages to a local file and filter and tally them with a small
+   script rather than reading spans one by one. The census is your completeness backstop: it is how you
    know there are 47 candidate tokens, so a count of 41 means six were judged out, not missed.
    A page without a text layer is read by OCR and `textSource` says so; spans are empty only when
    `textSource` is `none`. When `textSource` is `none`, the census is unavailable, your count comes

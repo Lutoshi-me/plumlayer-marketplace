@@ -91,7 +91,7 @@ that relaxes any one of them reproduces a measured, named failure.
    and the lead reports them as runner-verified rather than asserting a check it did not run.
    Convention-line writes are the runner's own, verified at its own boundary the same way; report
    their counts as the runner verified them too. The
-   lead never calls the unfiltered `list_scope_items` during the run: that verb returns the whole
+   lead never calls the unfiltered `list_scope_items` during the run: that verb walks the whole
    projected scope list, and pulling it is how the lead's context stops being cheap. It belongs to
    the completeness accounting and to nothing else. When the record grows a `sourceInstrument`
    filter, the lead's own check widens to the full per-unit totals.
@@ -134,21 +134,31 @@ person and an agent alike. Use it only for a row the user asked removed, put the
 
 A newly created scope item is a full row, not a name. Every new item writes:
 
-- **name**: the concise line the sub reads: aim under ten words, the way a sub would say it, no code
-  dump ("Interior metal-stud partitions", not a recitation of every type mark).
-- **category** (required): the intrinsic work grouping an estimator would use as a checklist
-  section ("Metal Stud Partitions", "Unit Casework", "Sealants & Firestopping"). Group like work
-  under the same category string; never invent a fresh category per item. The review surface
-  groups by this: an uncategorized list renders as a wall.
-- **description**: one to three tight sentences carrying only what changes price or scope.
-  Never a re-narration of the schedule: the citation points at the sheet, and the doctrine is
-  cite, don't rewrite: rewriting is the telephone game the grounding exists to prevent.
-- **notesExternal / notesInternal**: only when there is a real note (a bidder-facing caveat; an
-  internal watch item). Most items carry neither.
+- **name** (required): the line as it reads on a scope sheet: what is done, to what, where, under
+  about twelve words, the way a sub would say it ("Repoint brick masonry at facade", "Install
+  lintels above CMU openings"; not a recitation of every type mark). A mark or tag belongs here
+  when it is how the sub finds the work.
+- **category** (required): the section heading on the checklist an estimator would use ("Metal
+  Stud Partitions", "Unit Casework", "Sealants & Firestopping"). Group like work under the same
+  category string; never invent a fresh category per item. The review surface groups by this: an
+  uncategorized list renders as a wall.
+- **description** (optional, zero to three sentences): only what a bidder must know to price the
+  line that the name and citation do not already say: the product or method the drawings call
+  for, the extent or limits, a rated or special condition. A simple item has none. The citation
+  points at the sheet, and the doctrine is cite, don't rewrite: never transcribe the schedule,
+  the detail, or the bar sizes into the row, and when the scope is a schedule the row is the
+  schedule's name and its citation, not its contents.
+- **notesExternal** (optional, one sentence): an instruction to the bidder about the line: what is
+  by others, what to break out, what to confirm, what is an alternate.
+- **notesInternal** (optional, one sentence): a watch item for the estimator: an open Question, a
+  conflict between sheets, an assumption to check. Never a citation audit or a correction of an
+  earlier write; that is a Question.
 - **quantity**: only where the sheet itself carries one, as `{value, unit}`.
 
-Recorded text is what the bidder reads: plain sentences, no em dashes, no bolding. A verbose row
-is a defect, not diligence.
+Recorded text is what the bidder reads: plain sentences, no em dashes, no bolding, never a
+sheet-by-sheet narration. The door refuses text over its bound (`name` 80 characters, `category`
+60, `description` 400, `notesExternal` and `notesInternal` 300 each); a row shaped by these rules
+never comes near them. A verbose row is a defect, not diligence.
 
 ## Run artifacts and the ledger
 
