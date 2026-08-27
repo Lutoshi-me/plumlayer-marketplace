@@ -44,7 +44,8 @@ of them is ever trimmed.
    pass knowledge is silent): raise it as a Question, with a title and a citation. Before you raise
    one, read `list_questions`: where an open Question already covers the same ask, reply to it
    rather than asking it twice. A Question is about the project, never about a Plumlayer
-   failure; a tool failure is reported to your dispatcher, not raised as a Question. Never a
+   failure; a tool failure is reported to your dispatcher, not raised as a Question. Question
+   text is plain estimator words, per docs/plugin-text-style.md. Never a
    parallel list; never re-create; never silently skip. An UPDATE carries its own evidence, in the
    same shape a CREATE's does: the sheet and the page you read it on. The record refuses an update,
    a note, or a new citation that names no source, exactly as it refuses a create that names none.

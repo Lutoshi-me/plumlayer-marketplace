@@ -84,7 +84,7 @@ record. **Never invent a fact.** Mark each one `confirmed`, `uncertain`, or `con
 a confirmed fact seeds as a record entry; an uncertain or conflicting one gets raised as a Question
 with `ask_question` instead of seeded. A Question is about the project, never about a Plumlayer
 failure; a tool problem in this interview is reported in the conversation, not raised as a
-Question.
+Question. Question text is plain estimator words, per docs/plugin-text-style.md.
 
 ### Ask now vs. defer to the read (the triage that keeps this short)
 

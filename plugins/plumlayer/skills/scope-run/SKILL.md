@@ -17,7 +17,7 @@ The production scope run: it builds the project's context floor, reads the set i
 by reference dependency, produces one grounded, cited, trade-agnostic scope list, audits it with
 the completeness pass, then amends and tags the trade packages, all on the hosted project record,
 with the user reviewing at every check-in. Orientation is the `learn-project` skill, which this
-skill runs first when orientation hasn't happened yet; orientation also drafts and creates the
+skill dispatches first when orientation hasn't happened yet; orientation also drafts and creates the
 baseline package split off the spec table of contents (Phase 1), so a package already exists for
 every trade before this skill's expensive read starts. This skill amends that split with what the
 scope read surfaces (Phase 2) and tags. The shape, in the estimator's own order:
@@ -55,7 +55,8 @@ that relaxes any one of them reproduces a measured, named failure.
    silent skipping of what's already listed. Before raising a Question, read `list_questions`: where
    an open one already covers the same ask, reply to it instead of asking it a second time. A
    Question is about the project, never about a Plumlayer failure; a read or write that fails is
-   reported and handled in the run's own failure path, not raised as a Question.
+   reported and handled in the run's own failure path, not raised as a Question. Question text is
+   plain estimator words, per docs/plugin-text-style.md.
 3. **The convention-line record mandate.** A trade's convention lines are a property of the trade,
    not of the sheet or the unit reading it: the pass runner records them once, at pass start,
    after a deterministic check that they are not already on the record
@@ -278,6 +279,11 @@ trade file, surfaced in the close-out report.
    against the record; the live-list mandate (non-negotiable 2) is what keeps a re-read from
    creating what is already there. Resumption is crash and multi-day hygiene, nothing else: never
    offer it to the user as a way to manage anything, and never raise it at a check-in.
+   Where the run folder predates the current shape, no `definitions/` directory, or the context
+   packet still carries definition entries instead of the kinds list, dispatch one boundary runner
+   for the completed round before dispatching the next one: pointers only, `boundary` in place of
+   the pass id, so the packet and the definitions files come up to the current shape. Append its
+   lines to the ledger, then continue.
 3. **Drawings are recognized.** `list_drawing_deliveries(projectId)`: no deliveries → stop
    plainly, hand off to `drawing-upload`. Spot-check recognition actually recorded:
    `search(projectId, predicate: "appearsOnPage", limit: 1)`: zero rows → hand off to
@@ -315,27 +321,40 @@ Tell them what the run will do: you read the set in rounds and build
 
 Run these in order; each is read-or-run, never re-created (net-new facts only, everywhere).
 
-1. **The reconciliation gate, read.** Call `reconcile_set(projectId)` report-only (never pass
-   `record`, never pass a `deliveryId`: the bare call is the orientation check). Fold what it
-   reports into the context packet. Check `.ran` flags before citing any drift number: a check
-   that did not run is named as not-run, never folded in as "found nothing". Genuine document
-   inconsistencies it surfaces are design-team question material, not blockers; pages the
-   extraction missed are noted for the record.
-2. **Orientation.** If the project has no orientation facts yet (`search(projectId, predicate:
-   "structuralSystem", limit: 1)` and siblings empty), run the `learn-project` skill now, in full.
-   If orientation exists, read its entries fresh instead of re-running it. **Also re-run
-   `learn-project`** when the project has spec sections (`inDivision` entries present) but no
-   packages on it yet (`solicitation_list_packages(projectId)` empty): orientation owns the
-   baseline split, and a spec book with no packages means it hasn't drafted one yet.
+1. **Decide whether orientation needs to run.** `search(projectId, predicate: "structuralSystem",
+   limit: 1)` and siblings: empty means the project has no orientation facts yet. Also run
+   orientation when the project has spec sections (`inDivision` entries present) but no packages on
+   it yet (`solicitation_list_packages(projectId)` empty): orientation owns the baseline split, and
+   a spec book with no packages means it hasn't drafted one yet.
+2. **Orientation runs one level down.** Where step 1 finds orientation needs to run, dispatch one
+   fresh general agent with the orientation dispatch below, the way a pass is dispatched to a
+   runner: pointers only, no seed facts, no inventory rows, no spec-section text. It runs the
+   `learn-project` skill exactly as written (its own reconciliation-gate read and its own packet are
+   unchanged), additionally writes the reconciliation report it read to disk, and returns one
+   fixed-shape line. Read back only that line: sheets seen, index findings, spec sections, packages
+   drafted, questions raised, the packet path, and the reconciliation report path. Never open the
+   packet or the reconciliation report yourself, and never relay the dispatched agent's own
+   user-facing report text.
+<!-- user-facing -->
+   Tell the user what orientation found, in a few plain sentences, in your own words off that line:
+   roughly what was learned, how many questions it raised for their judgment, the package split it
+   drafted, and where the packet landed. Say it as what happened, not as a question.
+<!-- /user-facing -->
+   Where step 1 finds orientation already exists, skip the dispatch: read its entries fresh instead,
+   and call `reconcile_set(projectId)` report-only yourself (never pass `record`, never pass a
+   `deliveryId`: the bare call is the orientation check), checking `.ran` flags before citing any
+   drift number, a check that did not run is named as not-run, never folded in as "found nothing".
 3. **Compile the context packet** (`context-packet.md`): identity and seed facts; systems; scope
    areas; set shape (disciplines, deliveries, spec-TOC status); hazards; the open anomalies a
-   reader must know (the reconciliation gate's genuine document inconsistencies); and the kinds
-   list (empty before the first round; recompiled after every round from `list_definition_kinds`,
-   one line per kind giving its name, plain label, count, and the sheet it is defined on, no
-   definition entries). The packet is the orientation every reader loads whole, bounded regardless
-   of how many definitions exist; the definitions themselves live one file per kind under
-   `definitions/`, written by the boundary runner from the same recompile. The packet is a
-   projection: regenerate whole, never patch, never record it.
+   reader must know (the reconciliation gate's genuine document inconsistencies: read directly when
+   step 2 took the skip path, or the count plus the reconciliation report's path for a reader to
+   open on demand when step 2 dispatched orientation); and the kinds list (empty before the first
+   round; recompiled after every round from `list_definition_kinds`, one line per kind giving its
+   name, plain label, count, and the sheet it is defined on, no definition entries). The packet is
+   the orientation every reader loads whole, bounded regardless of how many definitions exist; the
+   definitions themselves live one file per kind under `definitions/`, written by the boundary
+   runner from the same recompile. The packet is a projection: regenerate whole, never patch, never
+   record it.
 
 ## 3. The read plan, user-approved
 
@@ -653,6 +672,25 @@ files it cuts, and the reader opens its pass knowledge.
 The mandates are not in these templates. They live in the two agent definitions the plugin ships,
 `scope-round-runner` and `scope-reader`, where each dispatched instance reads them fresh. They are
 never trimmed there and never restated here: a run that relaxes one reproduces a measured failure.
+
+**Orientation dispatch** (the lead writes this, once, only when context floor step 2 finds
+orientation needs to run):
+
+```text
+Project: <projectId>. Run folder: <path>.
+Run the `learn-project` skill for this project, in full, exactly as it is written. When it is
+done, write the reconciliation report you read in its own reconciliation step to
+<run folder>/reconciliation-report.md, the findings in full. Then return your summary and end.
+```
+
+**The orientation summary** comes back in this shape, and is all the lead reads: counts and paths,
+never the packet or the reconciliation report themselves.
+
+```text
+sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>
+packet: <path>
+reconciliation report: <path>
+```
 
 **Runner dispatch** (the lead writes this, once per pass or leg, once per round boundary, and twice
 for the completeness accounting):

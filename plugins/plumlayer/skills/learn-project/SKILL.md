@@ -172,6 +172,22 @@ call:
 | `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC") | **always raises a Question**, an absence entry is defeasible |
 | `hazardFlag` | free text (e.g. "occupied renovation, coordinate around active tenants") | raise a Question when inferred from context rather than stated outright |
 
+**Question text is plain estimator words, not the table above.** Whichever column above triggers
+the raise, what actually lands in `ask_question`'s title and body states what was seen and what
+needs deciding, in a sentence a person on the job site would write. It never names a predicate, an
+internal step, a field, or another question by its internal name, and it carries no em dash
+(docs/plugin-text-style.md states the same rule for every other piece of user-facing text).
+
+Good: "The electrical drawings show a full design, stamped and dimensioned, but no electrical spec
+section confirms it. Is this trade full design or design-build?"
+
+Bad:
+```text
+mepDeliveryShape classified as full-design for Division 26 — no Division 26 spec section
+was footer-confirmed in the spec-section index (see the related missingScopeFamily
+question). Please confirm this delivery-shape classification.
+```
+
 **`sourceInstrument` is per-entry, not one batch label.** For an entry grounded
 in a specific page or render, cite the specific source file/instrument name, the same convention
 `drawing-upload` and `project-setup`'s Mode B (reading in existing docs) use. Reserve the label

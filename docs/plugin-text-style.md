@@ -50,6 +50,16 @@ it governs is unmarked, so every skill marks it explicitly:
   exact tokens; a span the markers miss is ungoverned. When in doubt, over-mark: the expensive
   failure is marking too little.
 
+### Question text on the record
+
+A Question an agent raises with `ask_question` is not shipped plugin text, but the user reads it on
+the site exactly like any other user-facing string, so it answers to the same rules as everything
+else in this contract. Question text is plain estimator words: no em dashes, no internal names (a
+predicate, an internal step, a field, or another Question's own internal name), no bold for
+emphasis, one vocabulary the same as section 3 requires. The worked rule and an example live in
+`learn-project`'s judgment-entry table; every other skill or agent file that tells an agent to raise
+a Question points at that rule instead of restating it.
+
 ## 2. The frontmatter description contract
 
 The description does two jobs at once. A human reads it in a listing; the model reads it to decide
@@ -179,6 +189,12 @@ Each of these is a harness check.
     run that reports nothing fails. Its bound is stated in the harness README entry and in the
     check's own detail line: the fixture is invented, so this proves the script's arithmetic
     and its refusals, not how a real grid file's fields arrive.
+13. Question-text plain-words pointer. Every shipped skill or agent file that names `ask_question`
+    or tells the agent to raise a Question carries the fixed phrase "Question text is plain
+    estimator words", either stating the rule in full (`learn-project`'s judgment-entry table, and
+    this file's own Question text on the record section) or pointing at it. This cannot judge
+    whether a given Question actually reads in plain words, only that the instruction carries the
+    rule or a pointer to it; that judgment stays in review.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

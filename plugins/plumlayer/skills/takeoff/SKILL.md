@@ -281,7 +281,8 @@ marks summed, so the marks are the takeoff.
   report are where your unsureness lives, and it must live somewhere. Silent confidence you do
   not have is the one dishonesty this skill cannot absorb. When that way ships, it stays about
   the project, never about a Plumlayer failure: a failed call is triaged above and reported,
-  never turned into a Question.)
+  never turned into a Question. Question text is plain estimator words, per
+  docs/plugin-text-style.md.)
 
 ## 8. Verify by reading back
 

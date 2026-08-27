@@ -59,6 +59,10 @@ Checks:
       pass on its own.
   15. No shipped skill or agent file names `fork` as a subagent type, in either the
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
+  16. Every shipped skill or agent file that names `ask_question` or tells the agent to raise a
+      Question carries the fixed phrase "Question text is plain estimator words", either stating
+      the rule in full or pointing at it (docs/plugin-text-style.md §1, `learn-project`'s
+      judgment-entry table).
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -1400,6 +1404,63 @@ def check_question_failure_boundary(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
+# Check — Question plain-words pointer (PLU-1526)
+# --------------------------------------------------------------------------- #
+#
+# A Question an agent raises reaches the user as project text, read on the site exactly like any
+# other user-facing string, but nothing checked that its wording actually read that way: an agent
+# was writing its own judgment-entry predicate names (`mepDeliveryShape`, `missingScopeFamily`) and
+# an em dash straight into a Question's text. docs/plugin-text-style.md now states the rule once,
+# in full, and every other file that tells an agent to raise a Question points at that rule rather
+# than repeating it. This check is the mechanical half of that, the same shape as the
+# Question/failure boundary check above: it cannot judge whether a given Question actually reads in
+# plain estimator words (that stays in review), only that every instruction telling an agent to
+# raise one carries the fixed pointer phrase.
+
+QUESTION_PLAIN_WORDS_PHRASE = "Question text is plain estimator words"
+
+
+def check_question_plain_words_pointer(plugin_path: Path) -> Result:
+    name = "question-plain-words-pointer"
+    skills_dir = plugin_path / "skills"
+    agents_dir = plugin_path / "agents"
+
+    files: list[Path] = []
+    if skills_dir.is_dir():
+        files.extend(sorted(skills_dir.rglob("SKILL.md")))
+    if agents_dir.is_dir():
+        files.extend(sorted(agents_dir.rglob("*.md")))
+
+    errors: list[str] = []
+    for f in files:
+        try:
+            text = f.read_text(encoding="utf-8")
+        except Exception as e:
+            errors.append(f"{f}: read error: {e}")
+            continue
+
+        label = f"{f.parent.name}/{f.name}" if f.name == "SKILL.md" else f.name
+
+        if not _QUESTION_VERB_RE.search(text):
+            continue
+
+        # Markdown wraps prose at the line, so the phrase can legitimately span a line break;
+        # collapse whitespace before matching rather than demanding it land unbroken on one line.
+        normalized = re.sub(r"\s+", " ", text)
+        if QUESTION_PLAIN_WORDS_PHRASE not in normalized:
+            errors.append(
+                f"{label}: names ask_question / raises a Question but carries no "
+                f"'{QUESTION_PLAIN_WORDS_PHRASE}' rule or pointer"
+            )
+
+    detail = f"{len(files)} skill/agent files scanned"
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Check: the ledger's fixed line shapes
 # --------------------------------------------------------------------------- #
 #
@@ -2150,6 +2211,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_mcp_url(plugin_path),
         check_no_absolute_paths(plugin_path, marketplace_root),
         check_question_failure_boundary(plugin_path),
+        check_question_plain_words_pointer(plugin_path),
         check_ledger_fixed_shape(plugin_path),
         check_runner_mode_set(plugin_path),
         check_pass_knowledge_excerpt(plugin_path),

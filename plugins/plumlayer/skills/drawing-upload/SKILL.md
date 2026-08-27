@@ -724,7 +724,7 @@ Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re
   with its error, retried only when the error names what a retry changes, and never put to the
   user as a choice of retry strategy. A failure is reported in the conversation, never written
   into the project as a Question: a Question is about the project, never about a Plumlayer
-  failure.
+  failure. Question text is plain estimator words, per docs/plugin-text-style.md.
 - **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
   (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
   1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing

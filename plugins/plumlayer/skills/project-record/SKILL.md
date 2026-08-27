@@ -236,6 +236,7 @@ Drawn
 ## Discipline
 - A Question is about the project, never about a Plumlayer failure; a failed job, a refused
   write, or any other tool problem is reported in the conversation, not raised here.
+- Question text is plain estimator words, per docs/plugin-text-style.md.
 - Be honest about your own entries: they govern provisionally as your reading, not as a
   person's own entry, and a later correction from a person supersedes them the same way any
   write does.
