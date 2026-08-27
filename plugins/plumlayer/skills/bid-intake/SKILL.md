@@ -227,8 +227,9 @@ only to flag divergence, never to revise a value.
 
 For each proposal, read it against **only the scope rows (stage 3) and that one proposal**: no peer
 proposal, no other bidder's numbers in view. Use `render_page` (returns the page image inline; pass a
-normalized `region` to zoom a table or a signature block) and `get_page_text` (exact text spans;
-`hasTextLayer:false` is the honest image-only signal). Produce, for this bidder:
+normalized `region` to zoom a table or a signature block) and `get_page_text` (exact text spans; a
+page without a text layer is read by OCR and `textSource` says so, and spans are empty only when
+`textSource` is `none`). Produce, for this bidder:
 
 - **The bidder profile**: name, labor type (one of `Open Shop` / `Union` / `Prevailing Wage` /
   `Supplier`), contact, **proposal date read from the document itself**, and a revision marker if the
@@ -720,5 +721,6 @@ edits `SKILL.md`; it runs the same pipeline against new paths.
   solicitation package; `get_bid_package` needs a `bidPackageDefinition` entry for the trade. If the
   former exists but the latter does not, this skill stops and reports rather than fabricating the
   definition: confirm where the definition is expected to come from.
-- **Image-only / scanned proposals.** `hasTextLayer:false` means no vector text; read what you can from
-  the render and flag the rest honestly (no OCR dependency here; that is a separate, deferred concern).
+- **Image-only / scanned proposals.** A page without a text layer is read by OCR and `textSource`
+  says so; spans are empty only when `textSource` is `none`, and then you read what you can from the
+  render and flag the rest honestly.

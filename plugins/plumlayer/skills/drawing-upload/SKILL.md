@@ -324,8 +324,8 @@ every page in that tail yourself:
 - Use `unnamedPages[].pageNum` or `pageInPdf` (both 1-based) with `render_page` and `get_page_text`; never
   the legacy 0-based `unnamedPages[].page` field. `render_page` returns the PNG inline (pass a normalized
   `region` like `{x0:0.74, y0:0.80, x1:1.0, y1:1.0}` to zoom the title-block corner at higher DPI);
-  `get_page_text` returns exact spans with PDF-point bboxes, and `hasTextLayer:false` is the honest
-  image-only-page signal (no vector text to read).
+  `get_page_text` returns exact spans with PDF-point bboxes; a page without a text layer is read by
+  OCR and `textSource` says so, and spans are empty only when `textSource` is `none`.
 - Judge the sheet number, title, and discipline from what you actually see, and handle the two cases
   differently:
   - **A confident correction of a machine misread**: you can see the reader grabbed the wrong cell (a

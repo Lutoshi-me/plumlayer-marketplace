@@ -191,7 +191,8 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
    normal): the result spills to a local file, and the working pattern is to filter and tally it
    with a small script, not to read it. The census is your completeness backstop: it is how you
    know there are 47 candidate tokens, so a count of 41 means six were judged out, not missed.
-   `hasTextLayer: false` means an image-only sheet: the census is unavailable, your count comes
+   A page without a text layer is read by OCR and `textSource` says so; spans are empty only when
+   `textSource` is `none`. When `textSource` is `none`, the census is unavailable, your count comes
    from the render alone at whatever zoom it takes, and the report says so.
 3. **Judge every candidate against the sheet, not the token.** The same token can mark two
    different things (a window tag series and a cladding series sharing letters is a real,

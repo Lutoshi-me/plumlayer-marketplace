@@ -117,11 +117,14 @@ project with its whole trail, and that list grows with every unit of the run. Th
 belongs to the completeness accounting and to nothing else.
 
 Then read every page in your unit: one full `render_page` plus `get_page_text`, the render for
-layout and meaning, the text for exact tokens. That is the whole read of a page. Crop a region only
-where the text layer for it comes back empty, or where the region is unreadable at full size, and
-name the reason for each crop on your `pages read:` line. A page that would take more than four
-renders is reported on that line as needing more, rather than rendered on. Then emit against the
-live list.
+layout and meaning, the text for exact tokens. A page with no text layer comes back read by OCR
+instead: `textSource` says `ocr`, the spans are whole lines with page coordinates, and a line
+crossing a tile edge can arrive as two reads of its halves, both kept. Treat those spans as the
+page's text. That is the whole read of a page. Crop a region only where the text came back
+`bounded` (the read did not cover the whole page; calling again reads it again), where
+`textSource` is `none`, or where a region is unreadable at full size, and name the reason for each
+crop on your `pages read:` line. A page that would take more than four renders is reported on that
+line as needing more, rather than rendered on. Then emit against the live list.
 
 ## Report back
 
