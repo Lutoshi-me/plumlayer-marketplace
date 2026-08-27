@@ -2095,6 +2095,49 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         if not any(leg == "E1" for leg, _units in fold_legs):
             errors.append("E1 does not render its own leg after the cap-blocked fold")
 
+    # A third assignment fixture over the same grid and inventory, adding a `units` group to pass
+    # A1: A-0.01 and A-0.02 read as one unit instead of two, so the pass's unit count drops by one
+    # while every sheet it selected is still planned.
+    units_plan_path = out_dir / "read-plan-units.md"
+    code, units_bounds, err = _run_plan_script(
+        module,
+        ["expand", "--inventory", str(out_dir / "inventory.json"),
+         "--assignment", str(fixtures / "pass-assignment-units.json"), "--out", str(units_plan_path)],
+    )
+    if code != 0:
+        errors.append(f"the units-group fixture assignment was refused: {err}")
+    else:
+        if f"{expected_units - 1} units" not in units_bounds:
+            errors.append(
+                f"grouping two sheets into one unit did not drop the unit count by one: "
+                f"{units_bounds!r}"
+            )
+        try:
+            units_plan = units_plan_path.read_text(encoding="utf-8")
+        except Exception as e:
+            errors.append(f"read-plan-units.md: {e}")
+            units_plan = ""
+        grouped_line = (
+            "1. A-0.01, A-0.02, page 1, page 2: General notes and legends 1; "
+            "General notes and legends 2"
+        )
+        if grouped_line not in units_plan:
+            errors.append("the grouped unit line is not in the read plan")
+
+    # A fourth fixture names five sheets in one `units` group, one over the four-sheet cap.
+    code, _bounds, err = _run_plan_script(
+        module,
+        ["expand", "--inventory", str(out_dir / "inventory.json"),
+         "--assignment", str(fixtures / "pass-assignment-units-oversized.json"),
+         "--out", str(out_dir / "refused-units.md")],
+    )
+    if code != 1:
+        errors.append(f"a `units` group over the four-sheet cap: exited {code}, not 1")
+    elif len(err.splitlines()) != 1:
+        errors.append("a `units` group over the four-sheet cap: the refusal is not one line on stderr")
+    elif "group 1" not in err:
+        errors.append(f"the oversized-group refusal does not name the group: {err!r}")
+
     refusals = {
         "pass-assignment-double.json": "two passes claiming one sheet",
         "pass-assignment-unassigned.json": "a sheet in no pass and no exclusion",
@@ -2122,7 +2165,9 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"the {len(architectural)}-unit pass split {a_sizes} into {a_ids}, "
         f"{len(refusals)} broken assignments each refused in one line, "
         f"a one-unit pass folded into a sibling and a one-unit pass kept separate over the "
-        f"trade-file cap, both checked in the fold fixture's own output"
+        f"trade-file cap, both checked in the fold fixture's own output, "
+        f"a `units` group folding two sheets into one unit line and a five-sheet `units` group "
+        f"refused over the four-sheet cap, both checked in their own fixtures' output"
     )
     # An honest bound, not a pass: the fixture is invented and small, so this proves the script's
     # arithmetic and its refusals, and nothing about how a real grid file's fields arrive.

@@ -17,9 +17,10 @@ Two subcommands:
              sheet number digest at the tail) and `inventory.json` (the normalized rows).
 
   expand     reads `inventory.json` and the lead's pass assignment file, and writes `read-plan.md`
-             whole: rounds, passes, legs, unit lines with page references, any pass under three
-             units folded into a sibling or the round's largest pass and why, what is left out and
-             why, and the totals.
+             whole: rounds, passes, legs, unit lines with page references (a pass's `units` groups
+             fold several sheets into one such line, each still counted as one unit), any pass
+             under three units folded into a sibling or the round's largest pass and why, what is
+             left out and why, and the totals.
 
 Usage:
 
@@ -30,8 +31,9 @@ Exit codes:
   0  wrote the files; one bounds line on stdout naming what it read and what it wrote.
   1  a named failure, one line on stderr: a grid file that does not parse, a row total that does
      not match `--expect-count`, a sheet claimed by two passes, a sheet no pass and no exclusion
-     covers, a pattern that matches nothing, a pass carrying more than ten trade files, or a
-     malformed pass assignment file.
+     covers, a pattern that matches nothing, a pass carrying more than ten trade files, a pass's
+     `units` group naming a sheet outside that pass, naming a sheet a sibling group already
+     claimed, or naming more than four sheets, or a malformed pass assignment file.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A grid file that does not parse whole is a
@@ -56,6 +58,7 @@ ROW_FIELDS = ("discipline", "sheetNumber", "pageTitle", "sheetType", "fileId", "
 UNITS_PER_LEG = 12
 MAX_TRADE_FILES = 10
 MIN_PASS_UNITS = 3
+MAX_UNIT_SHEETS = 4
 PREFIX_GROUP_CAP = 60
 TITLES_PER_PREFIX = 3
 MAX_NAMED = 5
@@ -65,7 +68,7 @@ UNTYPED = "(untyped)"
 
 ASSIGNMENT_KEYS = {"project", "setCount", "rounds", "excluded"}
 ROUND_KEYS = {"n", "name", "note", "passes"}
-PASS_KEYS = {"id", "name", "note", "trades", "select"}
+PASS_KEYS = {"id", "name", "note", "trades", "select", "units"}
 SELECT_KEYS = {"sheets", "patterns", "discipline", "sheetTypes"}
 EXCLUSION_KEYS = {"sheets", "patterns", "discipline", "sheetTypes", "reason"}
 
@@ -506,11 +509,66 @@ def _select(rows: list[dict], spec, where: str) -> list[dict]:
     raise PlanError(f"{where}: `select` names no sheets, no patterns, and no discipline")
 
 
-def _legs(pass_id: str, units: list[dict]) -> list[tuple[str, list[dict]]]:
+def _apply_pass_units(pass_id: str, rows: list[dict], groups_spec, where: str) -> list[list[dict]]:
+    """
+    Fold the pass's own `units` groups over its selected rows. Each group is an explicit list of
+    sheet numbers, in reading order, that stay one read unit -- the multi-page-instrument case rule
+    5 describes, written by hand rather than inferred. A sheet the group names must already be in
+    this pass's own selection, and a sheet may sit in only one group. A sheet the pass selected but
+    no group names stays its own one-sheet unit. The grouped units and the leftover solo units come
+    back interleaved by each unit's earliest sheet in the pass's own (grid) order, so the pass still
+    reads front to back.
+    """
+    if not isinstance(groups_spec, list) or not groups_spec:
+        raise PlanError(f"{where}: `units` is not a non-empty list of sheet groups")
+
+    by_sheet: dict[str, list[dict]] = {}
+    for row in rows:
+        by_sheet.setdefault(row["sheetNumber"], []).append(row)
+    position = {row["unitKey"]: i for i, row in enumerate(rows)}
+
+    claimed_by: dict[str, int] = {}
+    groups: list[list[dict]] = []
+    starts: list[int] = []
+    for g_index, group in enumerate(groups_spec, 1):
+        gwhere = f"{where}: `units` group {g_index}"
+        if not isinstance(group, list) or not group or not all(isinstance(s, str) for s in group):
+            raise PlanError(f"{gwhere} is not a non-empty list of sheet numbers")
+        if len(group) > MAX_UNIT_SHEETS:
+            raise PlanError(
+                f"{gwhere} names {len(group)} sheets, over the {MAX_UNIT_SHEETS}-sheet cap"
+            )
+        member_rows: list[dict] = []
+        for number in group:
+            if number in claimed_by:
+                raise PlanError(
+                    f"{gwhere}: sheet {number} is also named in `units` group {claimed_by[number]}"
+                )
+            hits = by_sheet.get(number)
+            if not hits:
+                raise PlanError(f"{gwhere}: sheet {number} is not in pass {pass_id}")
+            claimed_by[number] = g_index
+            member_rows.extend(hits)
+        groups.append(member_rows)
+        starts.append(min(position[r["unitKey"]] for r in member_rows))
+
+    consumed = {row["unitKey"] for group in groups for row in group}
+    solo = [[row] for row in rows if row["unitKey"] not in consumed]
+    solo_starts = [position[group[0]["unitKey"]] for group in solo]
+
+    combined = sorted(
+        zip(starts + solo_starts, groups + solo), key=lambda pair: pair[0]
+    )
+    return [group for _start, group in combined]
+
+
+def _legs(pass_id: str, units: list[list[dict]]) -> list[tuple[str, list[list[dict]]]]:
     """
     A pass over twelve units is split into legs of as even a size as possible, earlier legs taking
     the remainder. Balanced and naive chunking always give the same number of legs, so balancing
-    costs nothing and keeps a runner from being started for a single unit.
+    costs nothing and keeps a runner from being started for a single unit. A unit is one entry here
+    whether it carries one sheet or a `units` group of several: grouping never changes how a pass
+    is split.
     """
     n = len(units)
     if n <= UNITS_PER_LEG:
@@ -519,7 +577,7 @@ def _legs(pass_id: str, units: list[dict]) -> list[tuple[str, list[dict]]]:
     if count > len(string.ascii_lowercase):
         raise PlanError(f"pass {pass_id} holds {n} units, more legs than single letters to name them")
     base, extra = divmod(n, count)
-    legs: list[tuple[str, list[dict]]] = []
+    legs: list[tuple[str, list[list[dict]]]] = []
     start = 0
     for index in range(count):
         size = base + (1 if index < extra else 0)
@@ -608,6 +666,23 @@ def _unit_line(number: int, row: dict, show_file: bool) -> str:
     return f"{number}. {row['sheetNumber']}, {where}: {title}"
 
 
+def _grouped_unit_line(number: int, group: list[dict], show_file: bool) -> str:
+    """
+    A `units` group is one unit that carries several sheets. One line still names it, sheets comma
+    separated and pages listed in the same reading order, so the unit stays one entry in the plan
+    even though it points at more than one page.
+    """
+    sheets = ", ".join(row["sheetNumber"] for row in group)
+    wheres = []
+    for row in group:
+        where = f"page {row['pageInPdf']}"
+        if show_file:
+            where = f"file {_text(row['fileId']) or '(no file)'}, " + where
+        wheres.append(where)
+    titles = "; ".join(_text(row["pageTitle"]) or "(no title)" for row in group)
+    return f"{number}. {sheets}, {', '.join(wheres)}: {titles}"
+
+
 def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
     data = _read_json(inventory_path, "the inventory file")
     if not isinstance(data, dict) or not isinstance(data.get("sheets"), list):
@@ -657,7 +732,12 @@ def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
                     doubles.append(f"{row['sheetNumber']} in both {held} and {pass_id}")
                 else:
                     assigned[row["unitKey"]] = pass_id
-            plan_passes.append({"obj": pass_obj, "id": pass_id, "units": units})
+            groups_spec = pass_obj.get("units")
+            if groups_spec is not None:
+                unit_groups = _apply_pass_units(pass_id, units, groups_spec, f"pass {pass_id}")
+            else:
+                unit_groups = [[row] for row in units]
+            plan_passes.append({"obj": pass_obj, "id": pass_id, "units": unit_groups})
         plan_rounds.append({"obj": round_obj, "n": round_obj.get("n", round_index), "passes": plan_passes})
 
     fold_lines = _fold_small_passes(plan_rounds)
@@ -703,6 +783,7 @@ def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
     lines.append("")
 
     total_units = 0
+    total_sheets = 0
     total_legs = 0
     total_passes = 0
 
@@ -741,8 +822,12 @@ def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
                 if pass_obj.get("note"):
                     lines.append(f"note: {pass_obj['note']}")
                 lines.append("")
-                for number, row in enumerate(leg_units, 1):
-                    lines.append(_unit_line(number, row, show_file))
+                for number, group in enumerate(leg_units, 1):
+                    if len(group) == 1:
+                        lines.append(_unit_line(number, group[0], show_file))
+                    else:
+                        lines.append(_grouped_unit_line(number, group, show_file))
+                    total_sheets += len(group)
                 lines.append("")
         lines.append(f"round {plan_round['n']} units: {round_units}")
         lines.append("")
@@ -779,7 +864,11 @@ def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
     set_count = assignment.get("setCount")
     lines.append("## Totals")
     lines.append("")
-    lines.append(f"units planned {total_units} + sheets left out {excluded_count} = {len(rows)} sheets in the inventory")
+    grouped_note = "" if total_sheets == total_units else f" (covering {total_sheets} sheets)"
+    lines.append(
+        f"units planned {total_units}{grouped_note} + sheets left out {excluded_count} = "
+        f"{len(rows)} sheets in the inventory"
+    )
     lines.append(
         f"passes {total_passes}, legs {total_legs}, rounds {len(plan_rounds)}, "
         f"{len(folded)} folded, {len(kept_over_cap)} kept separate over the trade-file cap"
@@ -798,7 +887,7 @@ def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
     payload = ("\n".join(lines) + "\n").encode("utf-8")
     _write_atomically(out, payload)
 
-    arithmetic = f"{total_units} + {excluded_count} = {len(rows)}"
+    arithmetic = f"{total_sheets} sheets + {excluded_count} left out = {len(rows)}"
     if isinstance(set_count, int):
         match = "matches" if set_count == len(rows) + unplaceable_count else "does not match"
         arithmetic += f", and the assignment's setCount {set_count} {match} the inventory"

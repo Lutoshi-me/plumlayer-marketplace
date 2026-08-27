@@ -408,8 +408,9 @@ bounds lines.
    digest at its tail. Never the sheet lines above them.
 4. **Group, sequence, and split, in your own words.** Working from the count tables and the digest,
    apply the six rules below and write `pass-assignment.json`: the rounds, their passes, each
-   pass's trade files, and how each pass selects its sheets, by discipline (optionally narrowed by
-   sheet type), by sheet number pattern, or by an explicit list. Name the exclusions with their
+   pass's trade files, how each pass selects its sheets, by discipline (optionally narrowed by
+   sheet type), by sheet number pattern, or by an explicit list, and, where rule 5's multi-page
+   instrument exception applies, that pass's `units` groups. Name the exclusions with their
    reasons. This file is where your judgment lives, and it carries no sheet titles and no page
    numbers. Its shape:
 
@@ -421,7 +422,8 @@ bounds lines.
          "passes": [
            { "id": "A1", "name": "architectural legends and schedules",
              "trades": ["dfh", "glazing", "casework"],
-             "select": { "patterns": ["A-0.*"] } },
+             "select": { "patterns": ["A-0.*"] },
+             "units": [ ["A-0.03", "A-0.04"] ] },
            { "id": "S1", "name": "structural notes and schedules",
              "trades": ["concrete", "misc-metals"],
              "select": { "discipline": "S", "sheetTypes": ["legend", "schedule"] } }
@@ -468,11 +470,15 @@ Step 4 applies these six rules.
    unit is one sheet. The exception is a multi-page instrument that cannot be understood in parts
    (a schedule continued across pages, a legend split over sheets), which stays one unit, at most
    four pages; beyond that it splits at the page break, and the later unit resolves what the
-   earlier one recorded from the record. Sheets that reference each other but are not contiguous
-   (a plan and the enlarged sheet its keynotes point at) are separate units; the later one resolves
-   what the earlier recorded from the record. A row that continues across the split belongs to the
-   unit that reads its first page, which reads the continuation page for that row only. List the
-   units in each pass, in reading order.
+   earlier one recorded from the record. Write that exception into the pass's assignment as a
+   `units` group: an explicit list of the sheet numbers, in reading order, at most four, all
+   selected by that same pass. The script expands a group into one unit carrying every sheet's page
+   reference; a sheet the pass selects but no group names still stays its own one-sheet unit.
+   Sheets that reference each other but are not contiguous (a plan and the enlarged sheet its
+   keynotes point at) are separate units; the later one resolves what the earlier recorded from the
+   record. A row that continues across the split belongs to the unit that reads its first page,
+   which reads the continuation page for that row only. List the units in each pass, in reading
+   order.
 6. **Split a long pass into legs.** A pass longer than about twelve read units is divided here, at
    plan time, into legs of at most twelve units each, lettered in reading order (`S2a`, `S2b`,
    `S2c`). A leg is what one runner supervises. The legs of a pass run one after another, and the
