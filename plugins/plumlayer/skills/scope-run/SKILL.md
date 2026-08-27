@@ -351,11 +351,15 @@ bounds lines.
    ```
 
 3. **Turn it into counts.** Run the inventory mode of the plugin's plan script, with the `count`
-   you read in step 1 as `--expect-count`:
+   you read in step 1 as `--expect-count`. Run it with the Bash tool, single quoted. Pass the
+   plugin directory as the path you resolved at precondition 5 to read the manifest for the
+   version: `${CLAUDE_PLUGIN_ROOT}` is interpolated in this skill but is not set inside a shell
+   call, so the script is handed the directory itself and never the variable. Use `python3`, or
+   `python` on a seat that has only that name.
 
    ```sh
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/plan_inventory.py" inventory \
-     --grid "<run folder>/grid" --expect-count <count> --out-dir "<run folder>"
+   python3 '<plugin root>/scripts/plan_inventory.py' inventory \
+     --grid '<run folder>/grid' --expect-count <count> --out-dir '<run folder>'
    ```
 
    It writes `inventory.md` and `inventory.json` into the run folder. A refusal here means the grid
@@ -376,10 +380,10 @@ bounds lines.
        { "n": 1, "name": "definitions", "note": "no content overlap between these passes",
          "passes": [
            { "id": "A1", "name": "architectural legends and schedules",
-             "trades": ["door-hardware", "glazing", "casework"],
+             "trades": ["dfh", "glazing", "casework"],
              "select": { "patterns": ["A-0.*"] } },
            { "id": "S1", "name": "structural notes and schedules",
-             "trades": ["concrete", "steel"],
+             "trades": ["concrete", "misc-metals"],
              "select": { "discipline": "S", "sheetTypes": ["legend", "schedule"] } }
          ] }
      ],
@@ -390,10 +394,10 @@ bounds lines.
 5. **Expand it.** Run the expand mode of the same script:
 
    ```sh
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/plan_inventory.py" expand \
-     --inventory "<run folder>/inventory.json" \
-     --assignment "<run folder>/pass-assignment.json" \
-     --out "<run folder>/read-plan.md"
+   python3 '<plugin root>/scripts/plan_inventory.py' expand \
+     --inventory '<run folder>/inventory.json' \
+     --assignment '<run folder>/pass-assignment.json' \
+     --out '<run folder>/read-plan.md'
    ```
 
    Read back only its bounds line: units, passes, legs, excluded, unassigned. A refusal is a
