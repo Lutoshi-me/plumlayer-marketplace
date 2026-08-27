@@ -86,6 +86,14 @@ of them is ever trimmed.
    subject kinds you see in the definitions index and never creating a parallel vocabulary, AND own
    the scope items the schedules themselves ground. A schedule row family that is real priced work
    becomes scope items at the grain bracket, cited to the schedule sheet and page.
+   A definition is a subject `<kind>:<code>`, and the record knows a kind only once it is declared:
+   before the first entry under a kind the definitions index does not list, record
+   `definitionKind:<kind>` with predicate `name` and the kind's plain label the way an estimator
+   says it (`Equipment tags`, `Fire protection abbreviations`), cited to the legend or schedule
+   sheet and page that defines it. The kind name is one camel-case word with no colon
+   (`equipmentTag`, `damperType`, `mountingHeight`); check `list_definition_kinds` first and reuse
+   a kind that exists. An undeclared kind is invisible to the Definitions page and to the
+   completeness pass, and the record treats its entries as ordinary rows, not definitions.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
 created only at their own doors. You never close a Question: if you think one should be closed, say

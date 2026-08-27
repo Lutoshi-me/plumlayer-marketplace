@@ -313,7 +313,8 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    baseline split, and a spec book with no packages means it hasn't drafted one yet.
 3. **Compile the context packet** (`context-packet.md`): identity and seed facts; systems; scope
    areas; set shape (disciplines, deliveries, spec-TOC status, reconciliation findings); hazards;
-   and the definitions index section (empty before the first round; recompiled after every round).
+   and the definitions index section (empty before the first round; recompiled after every round
+   from `list_definition_kinds`, one line per defined thing under each kind the record declares).
    The packet is a projection: regenerate whole, never patch, never record it.
 
 ## 3. The read plan, user-approved

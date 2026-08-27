@@ -143,9 +143,13 @@ When your dispatch names `boundary` instead of a pass, you close a round and you
    running together cannot see each other's new items.
 2. Recompile the definitions index into the context packet at `<run folder>/context-packet.md`: one
    line per defined thing, giving code, kind, a one-line name, and where it is defined, compiled
-   from the record (`search` per known kind, paged to the real total; the ledger's `kinds` notes
-   track which exist so far). Regenerate the packet whole; never patch it, never record it as a
-   project entry. Depth stays in the record: a reader resolves full definitions on demand.
+   from the record (`list_definition_kinds` for the kinds and their real counts, then `search`
+   with each kind prefix, paged to the real total). A kind the ledger's `kinds` notes name that
+   `list_definition_kinds` shows undeclared was written without its declaration: record
+   `definitionKind:<kind>` for it, `name` the kind's plain label, cited to the sheet and page the
+   reader's note names, and say so in a `note ... kinds ...` line. Regenerate the packet whole;
+   never patch it, never record it as a project entry. Depth stays in the record: a reader
+   resolves full definitions on demand.
 3. Append one `note` line per cross-pass overlap and one `note ... packet ...` line, and return the
    boundary summary.
 
@@ -161,9 +165,11 @@ ledger: <path>, appended through <last line written>
 
 When your dispatch names `completeness-account`, you enumerate and account, and you read no pages:
 
-1. Enumerate the defined things: page through the record per definitions kind (the ledger's `kinds`
-   notes; `search` with the kind prefix, compact rows, to the real total) into a file under
-   `<run folder>/completeness/`.
+1. Enumerate the defined things: `list_definition_kinds` for the kinds and their counts, then page
+   through the record per kind (`search` with the kind prefix, compact rows, to the real total)
+   into a file under `<run folder>/completeness/`. The per-kind page totals must sum to the verb's
+   counts; a kind in the ledger's `kinds` notes that the verb does not list is a gap to report,
+   never a kind to skip.
 2. Pull the scope list with `list_scope_items`: names, descriptions, notes per item. This is the one
    place in the run that verb belongs, because the accounting needs every item's text and nothing
    narrower would do.
