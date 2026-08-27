@@ -50,13 +50,20 @@ Checks:
   13. Runner mode set: the `##` headings of agents/scope-round-runner.md match
       EXPECTED_RUNNER_MODE_HEADINGS exactly, in both directions, so the per-pass shape cannot be
       partly undone without failing the release.
+  14. Plan inventory: the shipped scripts/plan_inventory.py, imported in-process and run end to
+      end over an invented fixture grid, produces counts that agree with a tally this file
+      computes itself, unit lines whose page references match the fixture's own sheet-to-page
+      map, the balanced leg split, and a one-line refusal for each of three broken pass
+      assignment files.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
 import re
 import subprocess
@@ -1793,6 +1800,227 @@ def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
+# Check: the plan inventory script
+# --------------------------------------------------------------------------- #
+#
+# The scope run's lead no longer holds a sheet row: a fetch agent puts the grid on disk and the
+# shipped plan script turns it into counts and then into the read plan's unit lines. The script is
+# the only thing standing between a grid file and a plan, so this runs it end to end over an
+# invented fixture grid and asserts its numbers against a tally this check computes itself.
+#
+# The extraction below is written independently of the script's own, so the two agreeing is
+# evidence rather than a tautology. Honest bound, stated in the detail line: the fixture is
+# invented, 30 sheets over three disciplines, sized so one pass forces a leg split. It proves the
+# script's arithmetic and its refusals, and nothing about how a real grid file's fields arrive.
+
+PLAN_INVENTORY_SCRIPT = ("scripts", "plan_inventory.py")
+
+_PLAN_LEG_RE = re.compile(r"^### (\S+?)\.\s")
+_PLAN_UNIT_RE = re.compile(r"^(\d+)\. (\S+), page (\d+): (.*)$")
+_LEFT_OUT_HEADING = "## Deliberately left out"
+
+
+def _load_script_module(script_path: Path, module_name: str):
+    """Import a shipped script in-process, so the check runs no subprocess and no model."""
+    spec = importlib.util.spec_from_file_location(module_name, script_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"no import spec for {script_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _run_plan_script(module, argv: list[str]) -> tuple[int, str, str]:
+    """Call the script's own main() and capture its exit code and both streams."""
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        code = module.main(argv)
+    return code, out.getvalue().strip(), err.getvalue().strip()
+
+
+def _plan_legs(read_plan: str) -> list[tuple[str, list[tuple[str, int]]]]:
+    """
+    The read plan's legs and their unit lines, read straight off the file: (leg id, [(sheet number,
+    page)]). Stops at the left-out section, whose entries share the unit line's shape.
+    """
+    legs: list[tuple[str, list[tuple[str, int]]]] = []
+    for line in read_plan.splitlines():
+        if line.strip() == _LEFT_OUT_HEADING:
+            break
+        heading = _PLAN_LEG_RE.match(line)
+        if heading:
+            legs.append((heading.group(1), []))
+            continue
+        unit = _PLAN_UNIT_RE.match(line)
+        if unit and legs:
+            legs[-1][1].append((unit.group(2), int(unit.group(3))))
+    return legs
+
+
+def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "plan-inventory"
+    script = plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT)
+    if not script.is_file():
+        return Result(name, False, detail=f"plan script not found at {script}")
+
+    fixtures = marketplace_root / "harness" / "fixtures"
+    grid_fixture = fixtures / "set-grid-fixture.json"
+    if not grid_fixture.is_file():
+        return Result(name, False, detail=f"grid fixture not found at {grid_fixture}")
+
+    try:
+        module = _load_script_module(script, "plan_inventory")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import {script.name}: {e}")
+
+    # The independent tally, computed here off the fixture and never off the script's output.
+    try:
+        fixture_rows = json.loads(grid_fixture.read_text(encoding="utf-8"))["sheets"]
+    except Exception as e:
+        return Result(name, False, detail=f"{grid_fixture.name}: {e}")
+
+    expected_rows = len(fixture_rows)
+    expected_by_discipline: dict[str, int] = {}
+    expected_cross: dict[str, dict[str, int]] = {}
+    page_of: dict[str, int] = {}
+    architectural: list[str] = []
+    for row in fixture_rows:
+        discipline = row.get("discipline") or "(none)"
+        sheet_type = row.get("sheetType") or "(untyped)"
+        expected_by_discipline[discipline] = expected_by_discipline.get(discipline, 0) + 1
+        expected_cross.setdefault(discipline, {})
+        expected_cross[discipline][sheet_type] = expected_cross[discipline].get(sheet_type, 0) + 1
+        page_of[row["sheetNumber"]] = row["pageInPdf"]
+        if discipline == "A":
+            architectural.append(row["sheetNumber"])
+
+    out_dir = Path(__file__).parent / ".test-results" / "plan-inventory"
+    errors: list[str] = []
+
+    code, bounds, err = _run_plan_script(
+        module,
+        ["inventory", "--grid", str(grid_fixture), "--expect-count", str(expected_rows),
+         "--out-dir", str(out_dir)],
+    )
+    if code != 0:
+        return Result(name, False, detail=f"the inventory mode refused the fixture: {err or bounds}")
+    if f"{expected_rows} rows" not in bounds:
+        errors.append(f"the inventory bounds line does not name its row count: {bounds!r}")
+
+    try:
+        written = json.loads((out_dir / "inventory.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        return Result(name, False, detail=f"inventory.json: {e}")
+
+    written_counts = written.get("counts", {})
+    if len(written.get("sheets", [])) != expected_rows:
+        errors.append(
+            f"inventory.json holds {len(written.get('sheets', []))} rows and the fixture has "
+            f"{expected_rows}"
+        )
+    if written_counts.get("byDiscipline") != expected_by_discipline:
+        errors.append(
+            f"per-discipline counts disagree with the independent tally: "
+            f"{written_counts.get('byDiscipline')} against {expected_by_discipline}"
+        )
+    if written_counts.get("byDisciplineAndSheetType") != expected_cross:
+        errors.append("the discipline-by-sheet-type cross tab disagrees with the independent tally")
+
+    off_code, _off_bounds, off_err = _run_plan_script(
+        module,
+        ["inventory", "--grid", str(grid_fixture), "--expect-count", str(expected_rows + 1),
+         "--out-dir", str(out_dir / "off-by-one")],
+    )
+    if off_code != 1:
+        errors.append(f"--expect-count off by one exited {off_code}, not 1")
+    elif len(off_err.splitlines()) != 1:
+        errors.append("the --expect-count refusal is not one line on stderr")
+
+    read_plan_path = out_dir / "read-plan.md"
+    code, expand_bounds, err = _run_plan_script(
+        module,
+        ["expand", "--inventory", str(out_dir / "inventory.json"),
+         "--assignment", str(fixtures / "pass-assignment-ok.json"), "--out", str(read_plan_path)],
+    )
+    if code != 0:
+        return Result(name, False, detail=f"the expand mode refused the fixture assignment: {err}")
+
+    left_out = [r for r in fixture_rows if (r.get("discipline") or "") == "E"]
+    expected_units = expected_rows - len(left_out)
+    if f"{expected_units} units" not in expand_bounds:
+        errors.append(f"the expand bounds line does not name its unit count: {expand_bounds!r}")
+
+    try:
+        read_plan = read_plan_path.read_text(encoding="utf-8")
+    except Exception as e:
+        return Result(name, False, detail=f"read-plan.md: {e}")
+
+    legs = _plan_legs(read_plan)
+    planned = [unit for _leg, units in legs for unit in units]
+    if len(planned) != expected_units:
+        errors.append(f"read-plan.md carries {len(planned)} unit lines, expected {expected_units}")
+
+    misplaced = [
+        f"{sheet} on page {page} where the grid says {page_of.get(sheet)}"
+        for sheet, page in planned
+        if page_of.get(sheet) != page
+    ]
+    if misplaced:
+        errors.append("unit lines cite a page the grid does not: " + "; ".join(misplaced[:5]))
+
+    seen = [sheet for sheet, _page in planned]
+    if len(seen) != len(set(seen)):
+        errors.append("a sheet appears in more than one unit line")
+
+    a_legs = [(leg, units) for leg, units in legs if leg.startswith("A1")]
+    a_ids = [leg for leg, _units in a_legs]
+    a_sizes = [len(units) for _leg, units in a_legs]
+    if a_ids != ["A1a", "A1b", "A1c"]:
+        errors.append(
+            f"the {len(architectural)}-unit pass split into legs {a_ids}, expected A1a, A1b, A1c"
+        )
+    if a_sizes != [9, 9, 9]:
+        errors.append(f"the leg sizes are {a_sizes}, expected 9, 9, 9")
+    if [sheet for _leg, units in a_legs for sheet, _page in units] != architectural:
+        errors.append("the legs do not carry the architectural sheets once each in grid order")
+
+    refusals = {
+        "pass-assignment-double.json": "two passes claiming one sheet",
+        "pass-assignment-unassigned.json": "a sheet in no pass and no exclusion",
+        "pass-assignment-eleven-trades.json": "a pass over the ten trade file cap",
+    }
+    for fixture_name, what in refusals.items():
+        path = fixtures / fixture_name
+        if not path.is_file():
+            errors.append(f"{fixture_name} is missing")
+            continue
+        code, _bounds, err = _run_plan_script(
+            module,
+            ["expand", "--inventory", str(out_dir / "inventory.json"),
+             "--assignment", str(path), "--out", str(out_dir / "refused.md")],
+        )
+        if code != 1:
+            errors.append(f"{what}: exited {code}, not 1")
+        elif len(err.splitlines()) != 1:
+            errors.append(f"{what}: the refusal is not one line on stderr")
+
+    detail = (
+        f"{expected_rows} fixture sheets over {len(expected_by_discipline)} disciplines: "
+        f"the inventory tallies checked against an independent count, "
+        f"{len(planned)} unit lines with every page checked against the grid, "
+        f"the {len(architectural)}-unit pass split {a_sizes} into {a_ids}, "
+        f"{len(refusals)} broken assignments each refused in one line"
+    )
+    # An honest bound, not a pass: the fixture is invented and small, so this proves the script's
+    # arithmetic and its refusals, and nothing about how a real grid file's fields arrive.
+    detail += "; bound: an invented fixture, not a real grid"
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Public entry point
 # --------------------------------------------------------------------------- #
 
@@ -1814,6 +2042,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_ledger_fixed_shape(plugin_path),
         check_runner_mode_set(plugin_path),
         check_pass_knowledge_excerpt(plugin_path),
+        check_plan_inventory(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

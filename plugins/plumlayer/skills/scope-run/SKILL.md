@@ -164,9 +164,20 @@ uploaded to the project except record files, never recorded as project entries. 
   phase: <boundary name>
   ```
 
+- `grid/`: the sheet grid as the fetch agent put it on disk in stage 3, one file per page, copied
+  byte for byte where the payload came back as a file. Nothing above the script reads it.
+  Audience: machine.
+- `inventory.md`: one line per sheet, then the count tables and the sheet number digest at the tail.
+  Written by the plugin's plan script off `grid/`. The lead reads the tables and the digest, never
+  the sheet lines. Audience: agent. Alongside it, `inventory.json`, the same rows normalized for the
+  script's own expand step. Audience: machine.
+- `pass-assignment.json`: the lead's grouping, sequencing, and exclusions, written by hand in stage
+  3: rounds, passes, trade files, how each pass selects its sheets, and each exclusion's reason. It
+  carries no sheet titles and no page numbers. Audience: agent.
 - `read-plan.md`: the read plan (stage 3): passes, their legs, and the read units within each, their
   sheets with file/page references, the trade files each pass carries, round order, and what is
-  deliberately excluded. Audience: agent. What the user hears at the gate is defined in stage 3.
+  deliberately excluded. Written by the plugin's plan script from `pass-assignment.json`, never by
+  hand. Audience: agent. What the user hears at the gate is defined in stage 3.
 - `context-packet.md`: the compiled context packet, regenerated between rounds (a projection off
   live records, never itself recorded). Audience: agent.
 - `briefs/`: one small file per pass, written by that pass's runner, carrying the pass's filled
@@ -269,7 +280,11 @@ trade file, surfaced in the close-out report.
    to `python --version`, since the pass knowledge every reader loads is cut by a script the runner
    shells out to. Neither name present is not a stop: the run goes ahead with readers carrying whole
    trade files, the runner writes a `note ... deviation ...` line saying the cut did not run, and
-   you say so plainly at the first check-in.
+   you say so plainly at the first check-in. No interpreter has a second consequence, in stage 3:
+   the read plan cannot be script-written either. You group from the `disciplineCounts` your
+   `limit: 0` call already gives you, without the cross-tab and the sheet number digest, and the
+   agent that fetched the grid expands your pass assignment file into `read-plan.md` itself and
+   returns one line. That deviation is noted the same way, and you still never hold a sheet row.
 6. **The user is present.**
 <!-- user-facing -->
 Tell them what the run will do: you read the set in rounds and build
@@ -304,8 +319,88 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
 ## 3. The read plan, user-approved
 
 Group the set into passes and sequence them by reference dependency. A pass is a set of sheets read
-together because they explain each other. Pull the sheet inventory (`set_grid`, falling back to
-sampled `search(predicate: "discipline")` reads if the grid file-redirects), then:
+together because they explain each other.
+
+You never read a sheet row. The grid is fetched to disk by a fresh agent, a script turns it into
+counts and, later, into this plan's unit lines, and what you read is the counts and the script's
+bounds lines.
+
+1. **Take the set's shape, and nothing else.** `set_grid(projectId, limit: 0)`. That is a
+   summary-only call: metadata and `disciplineCounts`, zero rows. Read `count` and the discipline
+   distribution off it. This is the only `set_grid` call you make in this run, at any set size.
+   Never call it for rows, never page it, and never fall back to sampled `search` reads for the
+   inventory: whatever you pull that way stays in your context for the rest of the run.
+2. **Send one agent for the grid.** Dispatch a fresh general agent, whose whole job is this and
+   which then ends, with the fetch below. It pages the grid, puts it on disk under
+   `<run folder>/grid/`, and returns one line. Read that line and nothing else.
+
+   ```text
+   Fetch the sheet grid for project <projectId> to disk. This is your whole job. Do nothing else,
+   and end when it is done.
+
+   1. Call set_grid(projectId: "<projectId>", limit: 500, offset: 0), then again at offset 500,
+      1000, and so on, until the rows you have seen cover the response's own `count`.
+   2. Where a call's result came back as a path to a file on disk, copy that file into
+      `<run folder>/grid/` with the Bash tool, named `page-000.json`, `page-001.json`, and so on
+      in call order. Copy it. Never retype it: a model retyping a grounded read is an unrecorded
+      rewrite of it.
+   3. Where a call's result came back inline instead, write the whole response object to the same
+      place yourself, as JSON, and say so in your returned line.
+   4. Return exactly one line: pages fetched, rows on disk, bytes, and copied or transcribed for
+      each page. No account of what the sheets are, no sheet numbers, no titles.
+   ```
+
+3. **Turn it into counts.** Run the inventory mode of the plugin's plan script, with the `count`
+   you read in step 1 as `--expect-count`:
+
+   ```sh
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/plan_inventory.py" inventory \
+     --grid "<run folder>/grid" --expect-count <count> --out-dir "<run folder>"
+   ```
+
+   It writes `inventory.md` and `inventory.json` into the run folder. A refusal here means the grid
+   on disk is not the whole set: send the fetch again rather than planning off a partial grid. Read
+   only its bounds line, then read from `inventory.md` only the count tables and the sheet number
+   digest at its tail. Never the sheet lines above them.
+4. **Group, sequence, and split, in your own words.** Working from the count tables and the digest,
+   apply the six rules below and write `pass-assignment.json`: the rounds, their passes, each
+   pass's trade files, and how each pass selects its sheets, by discipline (optionally narrowed by
+   sheet type), by sheet number pattern, or by an explicit list. Name the exclusions with their
+   reasons. This file is where your judgment lives, and it carries no sheet titles and no page
+   numbers. Its shape:
+
+   ```json
+   {
+     "project": "...", "setCount": 209,
+     "rounds": [
+       { "n": 1, "name": "definitions", "note": "no content overlap between these passes",
+         "passes": [
+           { "id": "A1", "name": "architectural legends and schedules",
+             "trades": ["door-hardware", "glazing", "casework"],
+             "select": { "patterns": ["A-0.*"] } },
+           { "id": "S1", "name": "structural notes and schedules",
+             "trades": ["concrete", "steel"],
+             "select": { "discipline": "S", "sheetTypes": ["legend", "schedule"] } }
+         ] }
+     ],
+     "excluded": [ { "patterns": ["L-*"], "reason": "landscape set, not scoped" } ]
+   }
+   ```
+
+5. **Expand it.** Run the expand mode of the same script:
+
+   ```sh
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/plan_inventory.py" expand \
+     --inventory "<run folder>/inventory.json" \
+     --assignment "<run folder>/pass-assignment.json" \
+     --out "<run folder>/read-plan.md"
+   ```
+
+   Read back only its bounds line: units, passes, legs, excluded, unassigned. A refusal is a
+   one-line reason and a fix to your assignment file, never a reason to write the plan by hand.
+   Never open `read-plan.md` yourself; the runners open their own pass.
+
+Step 4 applies these six rules.
 
 1. **Group by content**, not by trade and not by page order: schedule/legend families, assembly
    and partition legends, envelope assemblies, enlarged plan families (units, kitchens, baths),
@@ -341,9 +436,9 @@ sampled `search(predicate: "discipline")` reads if the grid file-redirects), the
    the unit before it. Splitting costs no reading time, because the units of a pass are read one at
    a time either way. Name the legs in the read plan alongside the units each one carries.
 
-Write `read-plan.md`: the passes, their legs, and the units within each leg (numbers plus file/page
-references), the trade files each pass carries, the order the rounds run in, and what is deliberately
-excluded, named outright rather than left silent.
+Step 5 turns that into `read-plan.md`: the passes, their legs, and the units within each leg
+(numbers plus file/page references), the trade files each pass carries, the order the rounds run in,
+and what is deliberately excluded, named outright rather than left silent.
 <!-- user-facing -->
 Before any reading runs, tell the user, in a few plain sentences, not a table:
 

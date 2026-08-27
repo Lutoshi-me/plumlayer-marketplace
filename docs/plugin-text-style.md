@@ -171,6 +171,14 @@ Each of these is a harness check.
     check reads out of the manifest itself, and the section 7 arm is asserted in both directions.
     Its bound is stated in the harness README entry: four trade files carry no structural gap list
     anywhere in the source, and the check names them rather than passing over them in silence.
+12. The plan inventory script does its arithmetic. The shipped `plan_inventory.py` is run
+    in-process over an invented fixture grid, and its counts, its unit lines' page references,
+    and its balanced leg split are compared against a tally the check computes itself off the
+    same fixture. Three deliberately broken pass assignment files must each be refused with
+    exit 1 and one line on stderr, and both modes' bounds lines must name their counts, so a
+    run that reports nothing fails. Its bound is stated in the harness README entry and in the
+    check's own detail line: the fixture is invented, so this proves the script's arithmetic
+    and its refusals, not how a real grid file's fields arrive.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

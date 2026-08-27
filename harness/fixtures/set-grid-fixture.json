@@ -1,0 +1,254 @@
+{
+  "count": 30,
+  "returned": 30,
+  "offset": 0,
+  "limit": 500,
+  "truncated": false,
+  "disciplineCounts": {
+    "A": 27,
+    "S": 2,
+    "E": 1
+  },
+  "sheets": [
+    {
+      "discipline": "A",
+      "sheetNumber": "A-0.01",
+      "pageTitle": "General notes and legends 1",
+      "sheetType": "legend",
+      "fileId": "file-0001",
+      "pageInPdf": 1
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-0.02",
+      "pageTitle": "General notes and legends 2",
+      "sheetType": "schedule",
+      "fileId": "file-0001",
+      "pageInPdf": 2
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-0.03",
+      "pageTitle": "General notes and legends 3",
+      "sheetType": "legend",
+      "fileId": "file-0001",
+      "pageInPdf": 3
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-0.04",
+      "pageTitle": "General notes and legends 4",
+      "sheetType": "schedule",
+      "fileId": "file-0001",
+      "pageInPdf": 4
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-0.05",
+      "pageTitle": "General notes and legends 5",
+      "sheetType": "legend",
+      "fileId": "file-0001",
+      "pageInPdf": 5
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-0.06",
+      "pageTitle": "General notes and legends 6",
+      "sheetType": "schedule",
+      "fileId": "file-0001",
+      "pageInPdf": 6
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-0.07",
+      "pageTitle": "General notes and legends 7",
+      "sheetType": "legend",
+      "fileId": "file-0001",
+      "pageInPdf": 7
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-0.08",
+      "pageTitle": "General notes and legends 8",
+      "sheetType": "schedule",
+      "fileId": "file-0001",
+      "pageInPdf": 8
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-0.09",
+      "pageTitle": "General notes and legends 9",
+      "sheetType": "legend",
+      "fileId": "file-0001",
+      "pageInPdf": 9
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-2.01",
+      "pageTitle": "Floor plan level 1",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 10
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-2.02",
+      "pageTitle": "Floor plan level 2",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 11
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-2.03",
+      "pageTitle": "Floor plan level 3",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 12
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-2.04",
+      "pageTitle": "Floor plan level 4",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 13
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-2.05",
+      "pageTitle": "Floor plan level 5",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 14
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-2.06",
+      "pageTitle": "Floor plan level 6",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 15
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-2.07",
+      "pageTitle": "Floor plan level 7",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 16
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-2.08",
+      "pageTitle": "Floor plan level 8",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 17
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-2.09",
+      "pageTitle": "Floor plan level 9",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 18
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-6.01",
+      "pageTitle": "Interior detail 1",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 19
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-6.02",
+      "pageTitle": "Interior detail 2",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 20
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-6.03",
+      "pageTitle": "Interior detail 3",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 21
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-6.04",
+      "pageTitle": "Interior detail 4",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 22
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-6.05",
+      "pageTitle": "Interior detail 5",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 23
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-6.06",
+      "pageTitle": "Interior detail 6",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 24
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-6.07",
+      "pageTitle": "Interior detail 7",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 25
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-6.08",
+      "pageTitle": "Interior detail 8",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 26
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-6.09",
+      "pageTitle": "Interior detail 9",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 27
+    },
+    {
+      "discipline": "S",
+      "sheetNumber": "S-1.01",
+      "pageTitle": "Structural general notes",
+      "sheetType": "schedule",
+      "fileId": "file-0001",
+      "pageInPdf": 28
+    },
+    {
+      "discipline": "S",
+      "sheetNumber": "S-1.02",
+      "pageTitle": "Foundation plan",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 29
+    },
+    {
+      "discipline": "E",
+      "sheetNumber": "E-0.01",
+      "pageTitle": "Electrical legend and abbreviations",
+      "sheetType": null,
+      "fileId": "file-0001",
+      "pageInPdf": 30
+    }
+  ]
+}
