@@ -94,6 +94,14 @@ of them is ever trimmed.
    (`equipmentTag`, `damperType`, `mountingHeight`); check `list_definition_kinds` first and reuse
    a kind that exists. An undeclared kind is invisible to the Definitions page and to the
    completeness pass, and the record treats its entries as ordinary rows, not definitions.
+   A definition is one entry per schedule column. The predicate is the column's own header,
+   lowercased with spaces removed: a header reading "Fire Rating" is `fireRating`, "Stud Size" is
+   `studSize`, "Common Name" is `commonName`. The value is that cell's text, plainly. A blank cell
+   is not written. A column the schedule does not have is never invented. Put the row's plain name,
+   or what its description column says, under `name`. Never record the whole row as one data object
+   in one field: that is refused at the door, and it makes the definition unreadable as columns.
+   The sheet and page live in the citation every entry already carries, so they get no column of
+   their own.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
 created only at their own doors. You never close a Question: if you think one should be closed, say
