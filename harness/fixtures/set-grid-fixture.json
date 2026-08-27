@@ -1,12 +1,12 @@
 {
-  "count": 30,
-  "returned": 30,
+  "count": 31,
+  "returned": 31,
   "offset": 0,
   "limit": 500,
   "truncated": false,
   "disciplineCounts": {
     "A": 27,
-    "S": 2,
+    "S": 3,
     "E": 1
   },
   "sheets": [
@@ -243,12 +243,20 @@
       "pageInPdf": 29
     },
     {
+      "discipline": "S",
+      "sheetNumber": "S-1.03",
+      "pageTitle": "Framing plan",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 30
+    },
+    {
       "discipline": "E",
       "sheetNumber": "E-0.01",
       "pageTitle": "Electrical legend and abbreviations",
       "sheetType": null,
       "fileId": "file-0001",
-      "pageInPdf": 30
+      "pageInPdf": 31
     }
   ]
 }

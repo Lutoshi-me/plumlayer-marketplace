@@ -32,7 +32,8 @@ splits it. Nothing is lost by stopping there, because nothing has run.
 1. **Write your pass brief** at `<run folder>/briefs/<pass-id>.md` if it is not already there (a
    later leg of the same pass finds it and uses it as it is): what the pass reads for (definitions,
    or placements), its content families, the knowledge version from the trade-knowledge manifest,
-   the trades it carries, and the subject prefix scheme. Then write the pass knowledge at
+   the trades it carries, the subject prefix scheme, and the kinds this pass reads, named from its
+   content families against the context packet's kinds list. Then write the pass knowledge at
    `<run folder>/briefs/<pass-id>-knowledge.md` by running the plugin's cut script, once, before the
    first unit of the pass. It is regenerated every time, including on a later leg, because the
    excerpt is a projection off the shipped trade files and a stale one would carry a stale version
@@ -92,7 +93,11 @@ splits it. Nothing is lost by stopping there, because nothing has run.
    once the reader has ended and reported. Never fork the dispatch, never send it to run in the
    background, and never dispatch a second agent whose brief is to wait for the first or to do
    nothing and return done. There is no wait primitive beyond the call returning; inventing one is
-   always wrong. The dispatch carries
+   always wrong. A reader is dispatched only with a real unit and its pages: a turn with nothing
+   left to dispatch ends by returning to your summary or moving to the next step, never by a
+   placeholder call carrying a "do nothing", "wait", or "not used" brief. If a client setting
+   appears to force a tool call every turn, name that in your deviations line rather than inventing
+   a call to satisfy it. The dispatch carries
    project id, round, pass name, unit id, the unit's pages (sheet number, `fileId`, 1-based
    `pageInPdf` for each), the run folder path, the context packet path, the pass brief path, and
    the pass knowledge path. Paste nothing from those files into it. The unit id is the unit's
@@ -101,9 +106,15 @@ splits it. Nothing is lost by stopping there, because nothing has run.
    yourself, within what `search` can actually filter on, which is subject (exact), subject prefix,
    predicate (exact), and a `text` substring across subject, predicate, and value.
    - **Created items, by count.** `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)` and read
-     `count`, which follows the filter. That is a real total over the entries whose subject starts
-     with the unit's prefix, taken independently of what the reader told you. Record it as an entry
-     count under that prefix, which is what it is, not as an item count.
+     `count`, which follows the filter, taken after the reader has ended. That is a real total over
+     the entries whose subject starts with the unit's prefix, independent of what the reader told
+     you. Record it as `created` on the `verified` line: an entry count under that prefix, which is
+     what it is, never copied from the reader's report and never an item count.
+   - **Items, from the reader.** The reader's own `created:` figure, its count of scope items, goes
+     on the `verified` line as `items`, carried as reported.
+   - **Sent and landed, from the reader.** The reader's `sent:` and `landed:` figures cover every
+     write call it made for the unit, its batch, any `cite_source`, and any individual record call,
+     not only its first batch. Carry them onto the `verified` line as reported.
    - **Updated and Questioned items, by subject.** These carry pre-existing subjects, so no prefix
      finds them. Read back the subjects the reader named in its `updated subjects:` and Question
      lines, `search(subject: "<subject>")` each, and confirm the update landed. Anything the reader
@@ -142,7 +153,7 @@ is already there, yours or anyone's.
 
 ```text
 dispatch <round> <pass> <unit> sheets <sheet numbers, comma separated> purpose <up to eight words>
-verified <round> <pass> <unit> created <n> updated <n> questions <n> sent <n> landed <n> conflicts <n> result <ok|mismatch>
+verified <round> <pass> <unit> created <n> items <n> updated <n> questions <n> sent <n> landed <n> conflicts <n> result <ok|mismatch>
 note <round> <pass> <unit-or-dash> <kind> <one clause, at most 200 characters>
 ```
 
@@ -155,7 +166,7 @@ Worked shapes, invented, never from a real project:
 
 ```text
 dispatch 1 A2 A2-3 sheets A-9.02 purpose door and frame schedule
-verified 1 A2 A2-3 created 126 updated 4 questions 2 sent 130 landed 130 conflicts 0 result ok
+verified 1 A2 A2-3 created 126 items 34 updated 4 questions 2 sent 140 landed 140 conflicts 0 result ok
 note 1 A2 A2-3 anomaly A-9.02 p61 two frame marks carry the same model number
 note 1 A2 - kinds doorType frameType finishType
 note 1 A2 - convention waterproofing recorded 10 lines
@@ -169,15 +180,24 @@ When your dispatch names `boundary` instead of a pass, you close a round and you
    other, matching the per-pass name files under `<run folder>/names/` against each other with a
    local command, never by pulling rows into your context. Convention lines especially: passes
    running together cannot see each other's new items.
-2. Recompile the definitions index into the context packet at `<run folder>/context-packet.md`: one
-   line per defined thing, giving code, kind, a one-line name, and where it is defined, compiled
-   from the record (`list_definition_kinds` for the kinds and their real counts, then `search`
-   with each kind prefix, paged to the real total). A kind the ledger's `kinds` notes name that
+2. Recompile the definitions off the record: `list_definition_kinds` for the kinds and their real
+   counts, then for each kind `search` with its prefix, paged to the real total, for every code,
+   its plain name, and where it is defined. A kind the ledger's `kinds` notes name that
    `list_definition_kinds` shows undeclared was written without its declaration: record
    `definitionKind:<kind>` for it, `name` the kind's plain label, cited to the sheet and page the
-   reader's note names, and say so in a `note ... kinds ...` line. Regenerate the packet whole;
-   never patch it, never record it as a project entry. Depth stays in the record: a reader
-   resolves full definitions on demand.
+   reader's note names, and say so in a `note ... kinds ...` line.
+
+   Write two things off that one recompile, neither ever recorded as a project entry:
+   - The kinds list in the context packet at `<run folder>/context-packet.md`: one line per kind,
+     giving the kind's name, its plain label, its count, and the sheet it is defined on. No
+     definition entries in the packet. Carry the packet's other sections (identity, systems, scope
+     areas, set shape, hazards, open anomalies) forward unchanged; only the kinds list is
+     recompiled here.
+   - One definitions file per kind at `<run folder>/definitions/<kind>.md`: one line per code,
+     giving the code, its plain name, and where it is defined.
+
+   Regenerate the packet whole; never patch it. Depth stays in the record: a reader resolves full
+   definitions on demand from the record, even where a definitions file already names the code.
 3. **List the kinds the record uses, and declare any gap.** Take the union of every
    `<run folder>/kinds/*.txt` file this round's passes wrote, found with a local command (sort,
    unique) rather than by holding them yourself: those files only ever hold definition kinds, so
@@ -187,8 +207,8 @@ When your dispatch names `boundary` instead of a pass, you close a round and you
    `note <round> boundary - kinds named not written <kind>` line and declare nothing for it. A
    nonzero count is the record's own proof the kind is in use: record `definitionKind:<kind>` for
    it, predicate `name`, the kind's plain label the way an estimator says it, cited to the legend or
-   schedule sheet and page the recompiled index names for that kind, or, where the index names none
-   for it, the sheet its first entry cites. Append one `note <round> boundary - kinds declared
+   schedule sheet and page the recompiled definitions file names for that kind, or, where the file
+   names none for it, the sheet its first entry cites. Append one `note <round> boundary - kinds declared
    <kind> <count>` line per kind declared this way, `<count>` the count `search` returned.
 4. Append one `note` line per cross-pass overlap and one `note ... packet ...` line, and return the
    boundary summary.
@@ -197,6 +217,7 @@ When your dispatch names `boundary` instead of a pass, you close a round and you
 round: <n>   pass: boundary
 cross-pass overlaps: <item name + the two units, one per line, or "none">
 packet: regenerated, <n> definitions across <n> kinds
+definitions files: <n>
 definitions kinds now: <kinds>
 kinds declared: <n>
 ledger: <path>, appended through <last line written>
@@ -258,6 +279,9 @@ lead's amendments land, so report the section list you can see and leave that co
 - Fork itself, dispatch a reader in the background, or dispatch any agent whose job is to wait for
   another agent or to do nothing. The Agent tool call that dispatches a reader is the wait: it
   returns only once the reader has reported, and that return is the report you verify.
+- Dispatch a reader with nothing real to give it. A reader is dispatched only with a unit and its
+  pages; a turn with nothing left to dispatch ends by returning to your summary or moving to the
+  next step, never by a placeholder call carrying a "do nothing", "wait", or "not used" brief.
 
 ## Your summary
 
@@ -268,8 +292,8 @@ the next pass reads it from.
 ```text
 round: <n>   pass: <pass or leg id>
 units read: <unit ids, in reading order>
-per unit: <unit id> created <n> updated <n> questions <n> verified <yes/no>
-totals verified: created <n> (entry count under the unit prefixes), updated <n>, questions <n>
+per unit: <unit id> created <n> items <n> updated <n> questions <n> verified <yes/no>
+totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n>
 conflicting rows: <id + how each resolved, or "none">
 overlap notes: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">

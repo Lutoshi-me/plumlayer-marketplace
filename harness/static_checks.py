@@ -53,8 +53,10 @@ Checks:
   14. Plan inventory: the shipped scripts/plan_inventory.py, imported in-process and run end to
       end over an invented fixture grid, produces counts that agree with a tally this file
       computes itself, unit lines whose page references match the fixture's own sheet-to-page
-      map, the balanced leg split, and a one-line refusal for each of three broken pass
-      assignment files.
+      map, the balanced leg split, a one-line refusal for each of three broken pass assignment
+      files, and, over a second assignment fixture, the fold of any pass under three units into a
+      sibling or the round's largest pass, and the one case where the trade-file cap keeps a small
+      pass on its own.
   15. No shipped skill or agent file names `fork` as a subagent type, in either the
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
 
@@ -1812,8 +1814,11 @@ def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
 #
 # The extraction below is written independently of the script's own, so the two agreeing is
 # evidence rather than a tautology. Honest bound, stated in the detail line: the fixture is
-# invented, 30 sheets over three disciplines, sized so one pass forces a leg split. It proves the
-# script's arithmetic and its refusals, and nothing about how a real grid file's fields arrive.
+# invented, 31 sheets over three disciplines, sized so one pass forces a leg split. A second,
+# separate assignment fixture (pass-assignment-fold.json) over the same grid proves the fold rule:
+# a one-unit pass with a sibling whose trade files already cover it, and a one-unit pass whose only
+# fold target is already at the trade-file cap. It proves the script's arithmetic and its refusals,
+# and nothing about how a real grid file's fields arrive.
 
 PLAN_INVENTORY_SCRIPT = ("scripts", "plan_inventory.py")
 
@@ -1986,6 +1991,49 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     if [sheet for _leg, units in a_legs for sheet, _page in units] != architectural:
         errors.append("the legs do not carry the architectural sheets once each in grid order")
 
+    # A second assignment fixture over the same grid, built to force the fold rule: a one-unit
+    # pass (A2) whose trades are already covered by a sibling (A1), and a one-unit pass (E1) whose
+    # only fold target (S1) is already at the ten-trade-file cap. Fold counts, fold narrative
+    # lines, and the unit total are all checked against what the fixture was built to produce.
+    fold_plan_path = out_dir / "read-plan-fold.md"
+    code, fold_bounds, err = _run_plan_script(
+        module,
+        ["expand", "--inventory", str(out_dir / "inventory.json"),
+         "--assignment", str(fixtures / "pass-assignment-fold.json"), "--out", str(fold_plan_path)],
+    )
+    if code != 0:
+        errors.append(f"the fold fixture assignment was refused: {err}")
+    else:
+        if "1 folded" not in fold_bounds:
+            errors.append(f"the fold bounds line does not name 1 folded: {fold_bounds!r}")
+        if "1 kept separate" not in fold_bounds:
+            errors.append(f"the fold bounds line does not name 1 kept separate: {fold_bounds!r}")
+        if f"{expected_rows} units" not in fold_bounds:
+            errors.append(f"the fold fixture bounds line does not name all {expected_rows} sheets planned: {fold_bounds!r}")
+        try:
+            fold_plan = fold_plan_path.read_text(encoding="utf-8")
+        except Exception as e:
+            errors.append(f"read-plan-fold.md: {e}")
+            fold_plan = ""
+        if "pass A2 (1 unit) folded into A1: A1's trade files already cover A2's" not in fold_plan:
+            errors.append("the fold-into-sibling line is not in the read plan")
+        if (
+            "pass E1 (1 unit) kept separate: folding into S1 would carry its trade files to 11, "
+            "over the cap of 10" not in fold_plan
+        ):
+            errors.append("the fold-blocked-by-cap line is not in the read plan")
+        # A1 takes A2's one unit as trailing units, so its sheet count grows from 18 to 19 and it
+        # still carries every sheet A1's own patterns picked, once each, in grid order.
+        fold_legs = _plan_legs(fold_plan)
+        a1_units = [unit for leg, units in fold_legs if leg.startswith("A1") for unit in units]
+        if len(a1_units) != 19:
+            errors.append(f"A1 carries {len(a1_units)} units after the fold, expected 19")
+        if [sheet for sheet, _page in a1_units][-1] != "A-6.01":
+            errors.append("A2's folded-in sheet is not the trailing unit on A1")
+        # E1 stays its own pass (the fold was blocked), so it still renders its own leg.
+        if not any(leg == "E1" for leg, _units in fold_legs):
+            errors.append("E1 does not render its own leg after the cap-blocked fold")
+
     refusals = {
         "pass-assignment-double.json": "two passes claiming one sheet",
         "pass-assignment-unassigned.json": "a sheet in no pass and no exclusion",
@@ -2011,7 +2059,9 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"the inventory tallies checked against an independent count, "
         f"{len(planned)} unit lines with every page checked against the grid, "
         f"the {len(architectural)}-unit pass split {a_sizes} into {a_ids}, "
-        f"{len(refusals)} broken assignments each refused in one line"
+        f"{len(refusals)} broken assignments each refused in one line, "
+        f"a one-unit pass folded into a sibling and a one-unit pass kept separate over the "
+        f"trade-file cap, both checked in the fold fixture's own output"
     )
     # An honest bound, not a pass: the fixture is invented and small, so this proves the script's
     # arithmetic and its refusals, and nothing about how a real grid file's fields arrive.

@@ -82,7 +82,9 @@ that relaxes any one of them reproduces a measured, named failure.
    actually filter on (subject, subject prefix, predicate, and a `text` substring across subject,
    predicate, and value). What the lead takes independently is the created count per unit:
    `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)`, reading `count`, which follows the
-   filter, so it is a real total over the entries whose subject starts with that prefix.
+   filter, so it is a real total over the entries whose subject starts with that prefix. That count
+   is never copied from a reader's report; the reader's own item count travels separately, as
+   `items` on the runner's `verified` ledger line.
    Updates and Questions land on subjects that already existed, so no prefix finds them: they are
    verified at the reader's boundary and again at the runner's, by reading the named subjects back,
    and the lead reports them as runner-verified rather than asserting a check it did not run.
@@ -179,17 +181,27 @@ uploaded to the project except record files, never recorded as project entries. 
   3: rounds, passes, trade files, how each pass selects its sheets, and each exclusion's reason. It
   carries no sheet titles and no page numbers. Audience: agent.
 - `read-plan.md`: the read plan (stage 3): passes, their legs, and the read units within each, their
-  sheets with file/page references, the trade files each pass carries, round order, and what is
+  sheets with file/page references, the trade files each pass carries, round order, any pass under
+  three units the script folded into a sibling or the round's largest pass and why, and what is
   deliberately excluded. Written by the plugin's plan script from `pass-assignment.json`, never by
   hand. Audience: agent. What the user hears at the gate is defined in stage 3.
-- `context-packet.md`: the compiled context packet, regenerated between rounds (a projection off
-  live records, never itself recorded). Audience: agent.
+- `context-packet.md`: the orientation packet every reader loads whole, regenerated between rounds
+  (a projection off live records, never itself recorded): identity, systems, scope areas, set
+  shape, hazards, the open anomalies a reader must know, and the kinds list, one line per kind
+  giving its name, plain label, count, and the sheet it is defined on. No definition entries in
+  it, and it does not grow with the number of definitions. Audience: agent.
+- `definitions/`: one file per kind, `<kind>.md`, one line per code giving the code, its plain
+  name, and where it is defined, written by the boundary runner from the same recompile that
+  produces the kinds list. A reader opens the file for each kind its pass brief names, plus any
+  kind it meets on a sheet that the packet's kinds list carries and its brief did not name.
+  Audience: agent.
 - `briefs/`: one small file per pass, written by that pass's runner, carrying the pass's filled
   slot values: what the pass reads for, its content families, the knowledge version, the trades it
-  carries, and the subject prefix scheme. A reader opens its own pass file from here. The mandates
-  are never in it. Audience: agent. Alongside each brief, `<pass-id>-knowledge.md`, the
-  pass knowledge: the carried trades' grain sections cut verbatim from the shipped trade files by
-  the plugin's script, with the knowledge version at the top. Audience: agent.
+  carries, the subject prefix scheme, and the kinds this pass reads. A reader opens its own pass
+  file from here. The mandates are never in it. Audience: agent. Alongside each brief,
+  `<pass-id>-knowledge.md`, the pass knowledge: the carried trades' grain sections cut verbatim
+  from the shipped trade files by the plugin's script, with the knowledge version at the top.
+  Audience: agent.
 - `completeness/`: the completeness pass's enumerations, accounting output, and lists of what is
   still open. Audience: agent.
 - `records/`: JSONL files for large batch writes (these do get uploaded, as the write
@@ -214,8 +226,8 @@ The run executes at three levels. Each level is a separate agent context, bounde
   defines them, verifies every unit with its own queries, notes overlaps inside the pass, appends
   the ledger in its fixed line shapes, returns its summary, and ends. Its context is bounded to one
   pass of at most twelve units, and it never grows with the size of the round. One further instance
-  closes each round at its boundary: the cross-pass overlap scan and the definitions-index
-  recompile. The completeness check (stage 5) is bounded the same way: one instance for the
+  closes each round at its boundary: the cross-pass overlap scan and the definitions recompile.
+  The completeness check (stage 5) is bounded the same way: one instance for the
   enumeration and the accounting, one per supplemental read leg.
 - **The reader** (the plugin's `scope-reader` agent, one fresh instance per read unit) reads one
   unit and records, as stage 4 and the pass brief define. It ends when it has reported.
@@ -316,10 +328,14 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    packages on it yet (`solicitation_list_packages(projectId)` empty): orientation owns the
    baseline split, and a spec book with no packages means it hasn't drafted one yet.
 3. **Compile the context packet** (`context-packet.md`): identity and seed facts; systems; scope
-   areas; set shape (disciplines, deliveries, spec-TOC status, reconciliation findings); hazards;
-   and the definitions index section (empty before the first round; recompiled after every round
-   from `list_definition_kinds`, one line per defined thing under each kind the record declares).
-   The packet is a projection: regenerate whole, never patch, never record it.
+   areas; set shape (disciplines, deliveries, spec-TOC status); hazards; the open anomalies a
+   reader must know (the reconciliation gate's genuine document inconsistencies); and the kinds
+   list (empty before the first round; recompiled after every round from `list_definition_kinds`,
+   one line per kind giving its name, plain label, count, and the sheet it is defined on, no
+   definition entries). The packet is the orientation every reader loads whole, bounded regardless
+   of how many definitions exist; the definitions themselves live one file per kind under
+   `definitions/`, written by the boundary runner from the same recompile. The packet is a
+   projection: regenerate whole, never patch, never record it.
 
 ## 3. The read plan, user-approved
 
@@ -503,8 +519,9 @@ holds nothing else:
 4. **Close the round at its boundary.** When every pass of the round has reported and carries its
    `pass:` line, dispatch one more runner with `boundary` in place of the pass id. It scans the
    round's new items for the same work captured by two passes that ran alongside each other,
-   recompiles the definitions index into the context packet for the next round, appends its lines,
-   and ends. Then append `phase: round N complete` to the ledger with the round's verified totals.
+   recompiles the kinds list into the context packet and the per-kind definitions files for the
+   next round, appends its lines, and ends. Then append `phase: round N complete` to the ledger
+   with the round's verified totals.
 5. **Check in with the user** (format below), written off the round's `pass:` lines in the ledger
    rather than off the summaries you received. Move to the next round only on their go-ahead.
 
@@ -675,18 +692,23 @@ grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 
+`created:` is the reader's own item count, not the entries under those items. `sent:` and
+`landed:` count every write the reader made for the unit, across every call, not only its first
+batch.
+
 The `updated subjects:` line is what lets the runner find an update back: a create is findable by
 its `scopeItem:<unit-id>-` prefix, an update lands on a subject that already existed and nothing
 else in the report names it.
 
 **The runner's summary** comes back in this shape, and is what the lead reads when a pass reports,
-after taking that pass's created counts off the record itself:
+after taking that pass's created counts off the record itself: an entry count under each unit's
+prefix, never the reader's own item count, which travels separately as `items`:
 
 ```text
 round: <n>   pass: <pass or leg id>
 units read: <unit ids, in reading order>
-per unit: <unit id> created <n> updated <n> questions <n> verified <yes/no>
-totals verified: created <n> (entry count under the unit prefixes), updated <n>, questions <n>
+per unit: <unit id> created <n> items <n> updated <n> questions <n> verified <yes/no>
+totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n>
 conflicting rows: <id + how each resolved, or "none">
 overlap notes: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
@@ -702,6 +724,7 @@ A boundary runner returns this shape instead:
 round: <n>   pass: boundary
 cross-pass overlaps: <item name + the two units, one per line, or "none">
 packet: regenerated, <n> definitions across <n> kinds
+definitions files: <n>
 definitions kinds now: <kinds>
 ledger: <path>, appended through <last line written>
 ```

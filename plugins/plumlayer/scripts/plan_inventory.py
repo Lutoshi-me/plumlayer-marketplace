@@ -17,7 +17,8 @@ Two subcommands:
              sheet number digest at the tail) and `inventory.json` (the normalized rows).
 
   expand     reads `inventory.json` and the lead's pass assignment file, and writes `read-plan.md`
-             whole: rounds, passes, legs, unit lines with page references, what is left out and
+             whole: rounds, passes, legs, unit lines with page references, any pass under three
+             units folded into a sibling or the round's largest pass and why, what is left out and
              why, and the totals.
 
 Usage:
@@ -54,6 +55,7 @@ ROW_FIELDS = ("discipline", "sheetNumber", "pageTitle", "sheetType", "fileId", "
 
 UNITS_PER_LEG = 12
 MAX_TRADE_FILES = 10
+MIN_PASS_UNITS = 3
 PREFIX_GROUP_CAP = 60
 TITLES_PER_PREFIX = 3
 MAX_NAMED = 5
@@ -526,6 +528,76 @@ def _legs(pass_id: str, units: list[dict]) -> list[tuple[str, list[dict]]]:
     return legs
 
 
+def _unit_word(n: int) -> str:
+    return "unit" if n == 1 else "units"
+
+
+def _fold_small_passes(plan_rounds: list[dict]) -> list[str]:
+    """
+    A pass under three units still pays the runner's fixed cost -- cutting the pass knowledge,
+    the convention lines, the boundary verification -- for almost no read. Fold each one into a
+    sibling pass of the same round whose trade files already cover it (same set or a superset), or,
+    where no sibling qualifies, into the round's largest other pass as trailing units, adding the
+    small pass's trade files to that pass's cut. Where that addition would carry the receiving
+    pass over the ten-trade-file cap, the small pass stays on its own and the reason is named
+    instead. A round of one pass has no fold target and is left alone.
+
+    A fold only ever reaches within the round the lead drew: the round is the unit the lead used to
+    keep content families apart, and this never crosses it looking for a bigger receiving pass.
+
+    Mutates plan_rounds in place -- a folded pass's units move onto the receiving pass (and, for
+    the largest-pass rule, its trade files too), and the folded pass drops out of its round's pass
+    list so nothing downstream renders it a second time. Returns the fold narrative, one line per
+    outcome (folded, or kept over the cap), in round then pass order.
+    """
+    narrative: list[str] = []
+    for plan_round in plan_rounds:
+        passes = plan_round["passes"]
+        kept: list[dict] = []
+        for plan_pass in passes:
+            units = plan_pass["units"]
+            if len(units) >= MIN_PASS_UNITS or len(passes) < 2:
+                kept.append(plan_pass)
+                continue
+
+            trades = set(plan_pass["obj"].get("trades", []) or [])
+            others = [p for p in passes if p is not plan_pass]
+
+            sibling = next(
+                (p for p in others if trades <= set(p["obj"].get("trades", []) or [])), None
+            )
+            if sibling is not None:
+                sibling["units"] = sibling["units"] + units
+                narrative.append(
+                    f"pass {plan_pass['id']} ({len(units)} {_unit_word(len(units))}) folded into "
+                    f"{sibling['id']}: {sibling['id']}'s trade files already cover "
+                    f"{plan_pass['id']}'s"
+                )
+                continue
+
+            largest = max(others, key=lambda p: len(p["units"]))
+            largest_trades = list(largest["obj"].get("trades", []) or [])
+            added = [t for t in plan_pass["obj"].get("trades", []) or [] if t not in largest_trades]
+            if len(largest_trades) + len(added) > MAX_TRADE_FILES:
+                kept.append(plan_pass)
+                narrative.append(
+                    f"pass {plan_pass['id']} ({len(units)} {_unit_word(len(units))}) kept "
+                    f"separate: folding into {largest['id']} would carry its trade files to "
+                    f"{len(largest_trades) + len(added)}, over the cap of {MAX_TRADE_FILES}"
+                )
+                continue
+
+            largest["obj"] = {**largest["obj"], "trades": largest_trades + added}
+            largest["units"] = largest["units"] + units
+            narrative.append(
+                f"pass {plan_pass['id']} ({len(units)} {_unit_word(len(units))}) folded into "
+                f"{largest['id']}: no sibling's trade files covered it, added "
+                f"{', '.join(added)} to {largest['id']}'s cut"
+            )
+        plan_round["passes"] = kept
+    return narrative
+
+
 def _unit_line(number: int, row: dict, show_file: bool) -> str:
     title = _text(row["pageTitle"]) or "(no title)"
     where = f"page {row['pageInPdf']}"
@@ -587,6 +659,8 @@ def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
                     assigned[row["unitKey"]] = pass_id
             plan_passes.append({"obj": pass_obj, "id": pass_id, "units": units})
         plan_rounds.append({"obj": round_obj, "n": round_obj.get("n", round_index), "passes": plan_passes})
+
+    fold_lines = _fold_small_passes(plan_rounds)
 
     if doubles:
         raise PlanError(f"a sheet is claimed by two passes: {_named(doubles)}")
@@ -673,6 +747,16 @@ def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
         lines.append(f"round {plan_round['n']} units: {round_units}")
         lines.append("")
 
+    lines.append("## Folded passes")
+    lines.append("")
+    if not fold_lines:
+        lines.append("Nothing. No pass in this plan carried fewer than three units.")
+        lines.append("")
+    else:
+        for fold_line in fold_lines:
+            lines.append(fold_line)
+        lines.append("")
+
     excluded_count = len(excluded_keys)
     lines.append("## Deliberately left out")
     lines.append("")
@@ -689,11 +773,17 @@ def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
             lines.append(_unit_line(number, row, show_file))
         lines.append("")
 
+    folded = [line for line in fold_lines if " folded into " in line]
+    kept_over_cap = [line for line in fold_lines if " kept separate" in line]
+
     set_count = assignment.get("setCount")
     lines.append("## Totals")
     lines.append("")
     lines.append(f"units planned {total_units} + sheets left out {excluded_count} = {len(rows)} sheets in the inventory")
-    lines.append(f"passes {total_passes}, legs {total_legs}, rounds {len(plan_rounds)}")
+    lines.append(
+        f"passes {total_passes}, legs {total_legs}, rounds {len(plan_rounds)}, "
+        f"{len(folded)} folded, {len(kept_over_cap)} kept separate over the trade-file cap"
+    )
     if unplaceable_count:
         lines.append(f"rows the grid could not place, and which no pass can read: {unplaceable_count}")
     if isinstance(set_count, int):
@@ -714,7 +804,8 @@ def expand(inventory_path: Path, assignment_path: Path, out: Path) -> str:
         arithmetic += f", and the assignment's setCount {set_count} {match} the inventory"
     return (
         f"wrote {out}: {total_units} units, {total_passes} passes, {total_legs} legs, "
-        f"{len(plan_rounds)} rounds, {excluded_count} sheets left out, {len(unassigned)} unassigned, "
+        f"{len(plan_rounds)} rounds, {len(folded)} folded, {len(kept_over_cap)} kept separate over "
+        f"the trade-file cap, {excluded_count} sheets left out, {len(unassigned)} unassigned, "
         f"{len(rows)} sheets in the inventory; {arithmetic}; {len(payload):,} bytes"
     )
 

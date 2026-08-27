@@ -21,12 +21,17 @@ Pointers only, never pasted text. Your dispatch names:
   path.
 
 Open those files yourself, first thing, before you read a page: the context packet (project
-identity, systems, scope areas, set shape, hazards, and the definitions index of code, kind, name,
-where defined), your pass brief (what this pass reads for, its content families, the knowledge
-version, the subject prefix scheme), and your pass knowledge file (the scope grain rules and
-structural gap list for each trade your pass carries, verbatim, with the knowledge version).
-Everything else you need is on the project record. If a path in your dispatch does not exist, say
-so and stop rather than reading blind.
+identity, systems, scope areas, set shape, hazards, the open anomalies you must know, and the
+kinds list, one line per kind giving its name, plain label, count, and the sheet it is defined on,
+carrying no definition entries), your pass brief (what this pass reads for, its content families,
+the knowledge version, the subject prefix scheme, and the kinds this pass reads), and your pass
+knowledge file (the scope grain rules and structural gap list for each trade your pass carries,
+verbatim, with the knowledge version). Open the definitions file at
+`<run folder>/definitions/<kind>.md` for each kind your brief names, and for any kind you meet on
+a sheet that the packet's kinds list carries and your brief did not name. A code still resolves
+from the record (mandate 4), never from a definitions file alone. Everything else you need is on
+the project record. If a path in your dispatch does not exist, say so and stop rather than reading
+blind.
 
 ## The mandates
 
@@ -82,11 +87,11 @@ of them is ever trimmed.
    This verification happens before you finish and is part of your report. If you cannot confirm
    your counts, report the mismatch and stop rather than reporting success.
 9. LEGENDS AND SCHEDULES PASSES ONLY: also record what the schedules define, extending the existing
-   subject kinds you see in the definitions index and never creating a parallel vocabulary, AND own
+   subject kinds you see in the packet's kinds list and never creating a parallel vocabulary, AND own
    the scope items the schedules themselves ground. A schedule row family that is real priced work
    becomes scope items at the grain bracket, cited to the schedule sheet and page.
    A definition is a subject `<kind>:<code>`, and the record knows a kind only once it is declared:
-   before the first entry under a kind the definitions index does not list, record
+   before the first entry under a kind the packet's kinds list does not carry, record
    `definitionKind:<kind>` with predicate `name` and the kind's plain label the way an estimator
    says it (`Equipment tags`, `Fire protection abbreviations`), cited to the legend or schedule
    sheet and page that defines it. The kind name is one camel-case word with no colon
@@ -144,6 +149,10 @@ anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
+
+`created:` is your own item count: how many scope items you created, not the entries under them.
+`sent:` and `landed:` count every write you made for this unit, across every call: your batch, any
+`cite_source`, and any individual record call, not only your first batch.
 
 The `updated subjects:` line is load-bearing, not bookkeeping. Your creates are findable by their
 `scopeItem:<unit-id>-` prefix, but an update lands on a subject that already existed, so nothing

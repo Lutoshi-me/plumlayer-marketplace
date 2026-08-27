@@ -1,0 +1,94 @@
+{
+  "project": "Fixture set",
+  "setCount": 31,
+  "rounds": [
+    {
+      "n": 1,
+      "name": "definitions",
+      "note": "no content overlap between these passes",
+      "passes": [
+        {
+          "id": "A1",
+          "name": "architectural notes and plans",
+          "trades": [
+            "drywall",
+            "painting",
+            "casework"
+          ],
+          "select": {
+            "patterns": [
+              "A-0.*",
+              "A-2.*"
+            ]
+          }
+        },
+        {
+          "id": "A2",
+          "name": "one interior detail",
+          "trades": [
+            "casework"
+          ],
+          "select": {
+            "sheets": [
+              "A-6.01"
+            ]
+          }
+        },
+        {
+          "id": "A3",
+          "name": "the rest of the interior details",
+          "trades": [
+            "tiling"
+          ],
+          "select": {
+            "patterns": [
+              "A-6.0[2-9]"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "name": "structural and electrical",
+      "note": "no content overlap between these passes",
+      "passes": [
+        {
+          "id": "S1",
+          "name": "structural notes and foundation",
+          "trades": [
+            "concrete",
+            "waterproofing",
+            "masonry",
+            "structural-steel",
+            "landscaping",
+            "paving",
+            "fencing",
+            "site-utilities",
+            "excavation",
+            "surveying"
+          ],
+          "select": {
+            "discipline": "S",
+            "sheetTypes": [
+              "schedule",
+              "plan"
+            ]
+          }
+        },
+        {
+          "id": "E1",
+          "name": "electrical legend",
+          "trades": [
+            "electrical"
+          ],
+          "select": {
+            "sheets": [
+              "E-0.01"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
