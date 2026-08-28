@@ -4,8 +4,8 @@ description: >
   Read, search, review, or add entries to a Plumlayer project record: the drawing set, open
   questions, RFI candidates, scope items, and takeoff data. Use when the user asks "what's in my
   project" or says "/project-record". Drives the read verbs (set_grid, rfi_candidates, search,
-  list_scope_items, list_questions) and write verbs (record, record_batch, record_batch_file,
-  ask_question, close_question, reopen_question).
+  list_scope_items, list_questions, search_set_text, set_text_status) and write verbs (record,
+  record_batch, record_batch_file, ask_question, close_question, reopen_question).
   Does not upload drawings (drawing-upload), build the scope list (scope-run), or place takeoff
   measurements (takeoff).
 ---
@@ -81,6 +81,10 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   alongside `render_page`: text for tokens, render for layout/meaning). Returns 1500 spans a
   call; page with `offset: nextOffset` while `truncated` is true, or pass `region` in PDF points
   to read one area.
+- `search_set_text`: find a mark or phrase anywhere in the project's PDFs and get back which
+  pages carry it and where; search first, then render only the pages it points at.
+- `set_text_status`: how much of the project's text has been read so far; a page nobody has read
+  yet cannot be found by `search_set_text`.
 
 **Delivery** (group uploaded files into a source package)
 - `list_drawing_deliveries`: list a project's registered drawing deliveries (baseline sets and

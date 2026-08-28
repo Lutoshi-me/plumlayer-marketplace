@@ -4,8 +4,8 @@ description: >
   Turn a plain-language takeoff request into a named condition with marks or measurements placed
   in the project record, like a person drawing them in the editor. Trigger on "take off the
   windows", "count the doors", "measure the wall", "/takeoff". Drives sheet discovery and the
-  takeoff verbs (takeoff_read, takeoff_condition, takeoff_record, render_page, get_page_text).
-  Does not upload drawings (drawing-upload), create the project (project-setup), run scope
+  takeoff verbs (takeoff_read, takeoff_condition, takeoff_record, search_set_text, render_page,
+  get_page_text). Does not upload drawings (drawing-upload), create the project (project-setup), run scope
   stages (scope-run), or read sub proposals (bid-intake).
 ---
 
@@ -134,7 +134,9 @@ records: never from filename guesses.
    subject with predicate in a `search`**: a bare subject query returns every record on the
    sheet, including enormous ones. And know the failure shape: a mistyped predicate returns
    `count: 0` silently, exactly like real absence: an empty result for a predicate you expected
-   to exist means check your spelling before concluding the data is missing.
+   to exist means check your spelling before concluding the data is missing. When the surface is
+   a tag, keynote, or spec phrase rather than a title, `search_set_text(projectId, query)` finds
+   which sheets carry it directly, before `get_page_text` or `render_page` on those sheets.
 2. Resolve each candidate's **fileId and page** from its location records: predicates
    `locatedAt` (fileId, page, source PDF, delivery) and `appearsOnPage`, with a paired
    subject+predicate query per candidate. If the project's sheets carry no type records at all

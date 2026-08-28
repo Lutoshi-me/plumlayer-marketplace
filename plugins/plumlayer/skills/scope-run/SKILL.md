@@ -383,9 +383,12 @@ that trade file, surfaced in the close-out report.
 3. **Drawings are recognized, and the corpus exists.** `list_drawing_deliveries(projectId)`: no
    deliveries → stop plainly, hand off to `drawing-upload`. Spot-check recognition actually
    recorded: `search(projectId, predicate: "appearsOnPage", limit: 1)`: zero rows → hand off to
-   `drawing-upload`. Then `search_set_text(projectId, query: "<the project's first sheet number
-   off set_grid's limit: 0 summary>", limit: 1)`: a corpus that answers nothing for a sheet number
-   the set carries has not been built, and the run stops and hands the delivery back to
+   `drawing-upload`. On a set that just landed, check `set_text_status(projectId)` first: a page
+   nobody has read yet cannot be found by `search_set_text`, so a fresh delivery still being read
+   would otherwise look like a missing corpus. Once the status shows the set read, confirm the
+   corpus itself with `search_set_text(projectId, query: "<the project's first sheet number off
+   set_grid's limit: 0 summary>", limit: 1)`: a corpus that answers nothing for a sheet number the
+   set carries has not been built, and the run stops and hands the delivery back to
    `drawing-upload` for its text read rather than reading page by page without it.
 4. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)`: spec
    sections present means the spec-TOC leg has run. Absent: ask the user whether a project manual /
