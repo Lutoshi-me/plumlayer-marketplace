@@ -66,7 +66,8 @@ of them is ever trimmed.
    if a scope item matches, on any trade, UPDATE that item instead.
 2. CONVENTION LINES: your pass runner records each carried trade's convention lines onto the
    record once, at pass start, before your unit runs (subjects `scopeItem:conv-092116-<n>`, the
-   trade's catalog code with the spaces out, since an identifier carries no spaces). Cite
+   trade's catalog code with the spaces out, since an identifier carries no spaces; the trade
+   VALUE on the row is the id verbatim). Cite
    one where a sheet corroborates it, the same way any UPDATE carries its evidence. Never create or
    recreate a convention line yourself. Where what you read on a sheet contradicts a convention
    line for this project, search for it, then raise a Question naming the item's subject and your
@@ -91,11 +92,13 @@ of them is ever trimmed.
    the sheet the row cites; it is not written into the row. Every row you write carries its trade,
    right then: `belongsToTrade`, a catalog trade id off the packages, the package that would bid
    the work; when you read for a trade, most rows are its, and the rest go to theirs. A trade is
-   the catalog code the package carries, CSI shaped, `09 21 16`, copied off
-   `solicitation_list_packages` (`directory_list_trades` browses the catalog itself). It is never
-   the name of the trade file you were given and never a word for the trade: a row written
-   `drywall` is refused. Where you cannot tell which of two or more trades owns it, write your best
-   single trade as the home and a `packageRole:<trade>` record with role `candidate` for each other
+   the catalog id copied verbatim off `solicitation_list_packages`, exactly as the package prints
+   it, spaces and all (`09 21 16`; `directory_list_trades` browses the catalog itself). It is never
+   the name of the trade file you were given and never a word for the trade, so a row written
+   `drywall` is refused, and never a respelling of the code, so `09-21-16` and `092116` are refused
+   too, with a hint naming the exact id. Where you cannot tell which of two or more trades owns it,
+   write your best single trade as the home and a `packageRole:<trade>` record with role
+   `candidate` for each other
    trade, the `<trade>` in that predicate the same catalog code, in the same batch, and keep
    moving; never hold a row back for its trade and never raise a Question for it. The door refuses
    a row with no trade and no candidate, and refuses a trade the catalog does not carry, on

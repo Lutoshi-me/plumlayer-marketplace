@@ -75,13 +75,14 @@ is lost by stopping there, because nothing has run.
    structural gap list for that trade out of the pass knowledge file you just cut, and for each
    line, in the order it appears, `record_batch`
    it as `scopeItem:conv-092116-<n>` (`<n>` starting at 1), the full row a create gets under
-   scope-reader's mandate 6: `name`, `category`, `belongsToTrade` (this trade's catalog code, CSI
-   shaped, `09 21 16`, the code the package carries and never the trade file's name, which the door
-   refuses), and `description`, `notesExternal`, `notesInternal` only where the line carries a real
-   note. The trade is that same catalog code everywhere here, in two forms: spaced in
-   `belongsToTrade`, as the packages carry it, and with the spaces out in the subject, the search
-   prefix above and the instrument, because an identifier carries no spaces and the catalog fold
-   reads either form as the same trade. Its
+   scope-reader's mandate 6: `name`, `category`, `belongsToTrade` (this trade's catalog id copied
+   verbatim, exactly as the package prints it, `09 21 16`, never the trade file's name and never a
+   respelling of the code, both of which the door refuses), and `description`, `notesExternal`,
+   `notesInternal` only where the line carries a real
+   note. The trade is that same catalog code everywhere here, in two forms: the id verbatim in
+   `belongsToTrade`, exactly as the packages print it, and with the spaces out in the subject, the
+   search prefix above and the instrument, because an identifier carries no spaces and the trade
+   value is copied verbatim. Its
    `sourceInstrument` is `trade-convention:092116@<knowledge-version>`, its evidence quotes the
    line verbatim and carries the marker `basis: "trade-convention"`, and it carries no sheet
    citation and no quantity. Read the record back and confirm the entry count under the prefix

@@ -95,10 +95,10 @@ that relaxes any one of them reproduces a measured, named failure.
    the knowledge manifest), their evidence quotes the trade file's line and carries the marker
    `basis: "trade-convention"`, they carry no sheet citation, and their trade is the trade whose
    file they came from. The trade is that trade's catalog code everywhere here and never the trade
-   file's own name, in two forms: `belongsToTrade` carries it spaced, as the packages carry it
-   (`09 21 16`), and the subject, the prefix above and the instrument carry it with the spaces out
-   (`092116`), because an identifier carries no spaces and the catalog fold reads either form as
-   the same trade. A reader never creates or recreates one; where a sheet corroborates one,
+   file's own name, in two forms: `belongsToTrade` carries the catalog id verbatim, exactly as the
+   packages print it (`09 21 16`), and the subject, the prefix above and the instrument carry it
+   with the spaces out (`092116`), because an identifier carries no spaces and the trade value is
+   copied verbatim. A reader never creates or recreates one; where a sheet corroborates one,
    that citation updates the same item and the convention basis stays visible in the trail, and
    where a sheet contradicts one for this project, the reader raises a Question naming it rather
    than deciding on its own.
@@ -184,9 +184,11 @@ A newly created scope item is a full row, not a name. Every new item writes:
   uncategorized list renders as a wall.
 - **trade** (required): the catalog trade id of the package that owns the work, read off the
   packages orientation created (`solicitation_list_packages`), recorded as `belongsToTrade`. It is
-  the catalog code the package carries, CSI shaped, `09 21 16`, never a trade file's name and never
-  a word for the trade: `drywall` is refused. Browse the codes with `directory_list_trades` where a
-  package's own `tradeCode` does not answer it. Where the work straddles packages, the best single
+  the catalog id copied verbatim, exactly as the package prints it, spaces and all (`09 21 16`).
+  Never a trade file's name and never a word for the trade, so `drywall` is refused, and never a
+  respelling of the code either, so `09-21-16` and `092116` are refused too, with a hint naming the
+  exact id. Browse the codes with `directory_list_trades` where a package's own `tradeCode` does
+  not answer it. Where the work straddles packages, the best single
   home goes here and each other candidate gets a `packageRole:<trade>` record with role `candidate`
   and a note in the shape "confirm trade responsibility: could be `<home>` or `<this trade>`"
   (internal only, never bidder-facing), written in the same batch. The `<trade>` in that predicate

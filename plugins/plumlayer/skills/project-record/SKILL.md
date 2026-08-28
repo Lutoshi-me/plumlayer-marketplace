@@ -110,10 +110,11 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   A new scope item also needs its trade, and the door refuses one without it: give it
   `belongsToTrade`, or a `packageRole:<trade>` entry for every trade that might own the work, in
   the same `record_batch` as the `name`, or before the `name` at this door, which carries one
-  entry per call. The trade is the package's catalog code, CSI shaped, `09 21 16`, read off
-  `solicitation_list_packages` or browsed with `directory_list_trades`, on `belongsToTrade` and
-  inside `packageRole:<trade>` alike: a code the catalog does not carry is refused too, so
-  `drywall` does not land.
+  entry per call. The trade is the package's catalog id copied verbatim, exactly as
+  `solicitation_list_packages` or `directory_list_trades` prints it, spaces and all (`09 21 16`),
+  on `belongsToTrade` and inside `packageRole:<trade>` alike: a code the catalog does not carry is
+  refused too, so `drywall` does not land, and neither does a respelling of a real code, so
+  `09-21-16` and `092116` are refused with a hint naming the exact id.
 - `ask_question`: raise ONE open item a person has to answer or resolve, with a title and the
   citations it's about (a sheet, a spec section, or a record you read). This is how a
   disagreement between sources, or a reading you genuinely cannot resolve yourself, reaches a
