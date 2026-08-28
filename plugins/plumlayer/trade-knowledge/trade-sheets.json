@@ -1,5 +1,5 @@
 {
-  "note": "Which sheets each trade reads, and which trades sit at a seam with each other. The trade files carry how a trade bids and splits itself; they do not carry sheet families, so this file holds them. It is read by scripts/plan_inventory.py to write the window 2 plan and by scripts/cut_pass_knowledge.py to resolve a catalog id to a trade file. Keys are catalog trade ids verbatim, spaced the way the catalog spaces them. A family names a discipline, a set of sheet numbers, or both, narrowed by sheet type; a trade whose families name no sheet in a set reads nothing in that set and is named on the plan's bounds line. Schedules are deliberately not a family: a schedule reaches a trade through definitionKinds, so a trade gets the schedules that define its own marks rather than every schedule in the set. These families are this plugin's own judgment about where a trade's work is drawn, not a reading of any project.",
+  "note": "Which sheets each trade reads, and which trades sit at a seam with each other. The trade files carry how a trade bids and splits itself; they do not carry sheet families, so this file holds them. It is read by scripts/plan_inventory.py to write the window 2 plan and by scripts/cut_pass_knowledge.py to resolve a catalog id to a trade file. Keys are catalog trade ids verbatim, spaced the way the catalog spaces them, one code per trade file. A trade file is general to its family, so a package carrying some other code resolves to the nearest broader CSI section this file does key: 04 22 13 finds 04 20 00. Codes are not added here to make that work. Where a division maps exactly one trade file, that file is keyed at the division header, since the file is general to everything in it; a division mapping several files keeps each at its own section, and a package drafted on that bare division header reaches no trade file rather than one of several picked for it. A family names a discipline, a set of sheet numbers, or both, narrowed by sheet type; a trade whose families name no sheet in a set reads nothing in that set and is named on the plan's bounds line. Schedules are deliberately not a family: a schedule reaches a trade through definitionKinds, so a trade gets the schedules that define its own marks rather than every schedule in the set. These families are this plugin's own judgment about where a trade's work is drawn, not a reading of any project.",
   "sheetTypes": [
     "schedule",
     "plan",
@@ -18,10 +18,10 @@
     "prefab-balconies": "no catalog trade fits: the catalog carries no prefabricated balcony trade, and misc metals, precast concrete and special construction each cover only part of it. Left unmapped rather than routing balcony scope into a trade that would price only part of it."
   },
   "trades": {
-    "01 74 23": {
+    "01 00 00": {
       "knowledge": "final-cleaning",
       "families": [],
-      "note": "final cleaning is drawn nowhere: it is a general conditions trade whose scope comes from the spec and the schedule, not from a sheet family.",
+      "note": "final cleaning is drawn nowhere: it is a general conditions trade whose scope comes from the spec and the schedule, not from a sheet family. Keyed at the division because it is the only trade file mapped in it, so a package drafted anywhere in division 01 reaches it; the section this file was drawn from is 01 74 23 final cleaning.",
       "definitionKinds": []
     },
     "02 41 00": {
@@ -57,16 +57,18 @@
       ],
       "definitionKinds": ["floorAssemblyType"]
     },
-    "04 20 00": {
+    "04 00 00": {
       "knowledge": "masonry",
+      "note": "keyed at the division because it is the only trade file mapped in it, so a package drafted anywhere in division 04 reaches it; the section this file was drawn from is 04 20 00 unit masonry, and 04 00 00 as a key would otherwise be a division header no package could resolve to.",
       "families": [
         {"discipline": "A", "sheetTypes": ["elevation", "section", "detail"]},
         {"discipline": "S", "sheetTypes": ["plan", "section", "detail"]}
       ],
       "definitionKinds": ["masonryType", "wallType"]
     },
-    "05 50 00": {
+    "05 00 00": {
       "knowledge": "misc-metals",
+      "note": "keyed at the division because it is the only trade file mapped in it, so a package drafted anywhere in division 05 reaches it; the section this file was drawn from is 05 50 00 metal fabrications. Structural steel as its own package is not mapped at all, and this file holds that boundary.",
       "families": [
         {"discipline": "S"},
         {"discipline": "A", "sheetTypes": ["section", "detail"]}
@@ -339,8 +341,9 @@
       ],
       "definitionKinds": []
     },
-    "32 90 00": {
+    "32 00 00": {
       "knowledge": "landscaping",
+      "note": "keyed at the division because it is the only trade file mapped in it, so a package drafted anywhere in division 32 reaches it; the section this file was drawn from is 32 90 00 planting.",
       "families": [
         {"discipline": "L"}
       ],
@@ -350,8 +353,8 @@
   "seams": [
     ["02 41 00", "02 80 00"],
     ["03 30 00", "03 54 13"],
-    ["04 20 00", "07 46 00"],
-    ["05 50 00", "06 10 00"],
+    ["04 00 00", "07 46 00"],
+    ["05 00 00", "06 10 00"],
     ["06 22 00", "12 35 30"],
     ["06 22 00", "12 36 00"],
     ["07 10 00", "07 50 00"],

@@ -54,7 +54,9 @@ Input shapes, named here so a change on the record's side surfaces as a named fi
 an empty plan:
 
   --packages  a `solicitation_list_packages` response: a `packages` array whose rows carry
-              `tradeCode`, one package per trade, and optionally `id`, `name` and `codes`.
+              `tradeCode`, one package per trade file, and optionally `id`, `name` and `codes`.
+              A `tradeCode` the map does not key resolves to the nearest broader CSI section it
+              does key, since a trade file is general to its family.
   --kinds     a `list_definitions` response or an array of its rows: each row carries `kind`, and
               carries `sheetNumber` where the record knows which sheet defines it.
   --index     a directory of `index_citations_status` pages: each page carries `openEntries`
@@ -67,9 +69,9 @@ Exit codes:
   0  wrote the files; one bounds line on stdout naming what it read and what it wrote.
   1  a named failure, one line on stderr: a file that does not parse, a row total that does not
      match `--expect-count`, a missing window input, an input row with no `tradeCode` or no `kind`,
-     two packages on one trade, an index page carrying neither array, an `--include` or `--exclude`
-     with no colon or matching no sheet, a trade map that fails its own shape checks, or an
-     inventory file this script did not write.
+     two packages resolving to one trade file, an index page carrying neither array, an
+     `--include` or `--exclude` with no colon or matching no sheet, a trade map that fails its own
+     shape checks, or an inventory file this script did not write.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A file that does not parse whole is a refusal,
@@ -86,6 +88,13 @@ import os
 import string
 import sys
 from pathlib import Path
+
+# The shared resolver sits beside this file. Running the script as a script already puts
+# that directory on the path; this makes the import work the same way when it is loaded
+# some other way, so the plan and the cut can never resolve a code differently.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import trade_code
 
 # The six grid fields the plan needs. A grid row carries about thirty; the rest are dropped here so
 # nothing downstream can quietly come to depend on a field the plan never reasoned about.
@@ -165,11 +174,7 @@ def _text(value) -> str:
 
 
 def _fold(code: str) -> str:
-    """
-    A catalog id with its spaces removed, lower cased. The catalog spaces its ids and a caller may
-    not, and this is the same fold the record's own catalog lookup uses, so the two agree.
-    """
-    return "".join(code.split()).lower()
+    return trade_code.fold(code)
 
 
 # --------------------------------------------------------------------------- #
@@ -585,15 +590,17 @@ def _load_trade_sheets(trade_knowledge: Path) -> dict:
     }
 
 
-def _trade_entry(trade_map: dict, trade_code: str) -> tuple[str, dict] | None:
-    """The map entry for a catalog id, taking the id verbatim or space stripped and lower cased."""
-    trades = trade_map["trades"]
-    if trade_code in trades:
-        return trade_code, trades[trade_code]
-    trade_id = trade_map["folded"].get(_fold(trade_code))
-    if trade_id is None:
+def _trade_entry(trade_map: dict, code: str) -> tuple[str, dict, str] | None:
+    """
+    The map entry covering a catalog code, as `(the map's key, its entry, how it was found)`, or
+    None where the map covers the code at no level. A trade file is general to its family, so a
+    code the map does not key resolves to the nearest broader section it does key.
+    """
+    found = trade_code.resolve(code, trade_map["folded"])
+    if found is None:
         return None
-    return trade_id, trades[trade_id]
+    trade_id, how = found
+    return trade_id, trade_map["trades"][trade_id], how
 
 
 # --------------------------------------------------------------------------- #
@@ -872,7 +879,7 @@ def _window_1(rows: list[dict], packages: list[dict], trade_map: dict, includes,
         if found is None or found[0] in seen_ids:
             continue
         seen_ids.add(found[0])
-        candidates.append(found)
+        candidates.append((found[0], found[1]))
 
     passes: list[dict] = []
     for discipline, group in _by_discipline(chosen):
@@ -947,13 +954,24 @@ def _window_2_selection(rows: list[dict], packages: list[dict], trade_map: dict,
 
     claimed_kinds: set[str] = set()
     selections: list[dict] = []
+    # Two packages on different codes of one family resolve to one trade file, which would compute
+    # the same sheets twice under one pass id. Which package owns that read is a call on the record,
+    # so this refuses and names both rather than planning the same pages twice.
+    trade_owner: dict[str, str] = {}
     for package in packages:
-        trade_code = package["tradeCode"]
-        found = _trade_entry(trade_map, trade_code)
+        code = package["tradeCode"]
+        named = _text(package.get("id")) or code
+        found = _trade_entry(trade_map, code)
         if found is None:
-            selections.append({"tradeCode": trade_code, "package": package, "entry": None, "units": []})
+            selections.append({"tradeCode": code, "package": package, "entry": None, "units": []})
             continue
-        trade_id, entry = found
+        trade_id, entry, how = found
+        if trade_id in trade_owner:
+            raise PlanError(
+                f"{trade_owner[trade_id]} and {named} both resolve to the trade file for "
+                f"{trade_id} ({entry['knowledge']})"
+            )
+        trade_owner[trade_id] = named
         keys: set[str] = {r["unitKey"] for r in _family_sheets(rows, entry)}
         for kind in entry.get("definitionKinds", []) or []:
             folded_kind = kind.strip().lower()
@@ -962,8 +980,9 @@ def _window_2_selection(rows: list[dict], packages: list[dict], trade_map: dict,
             keys |= located_by_kind.get(folded_kind, set())
         selections.append(
             {
-                "tradeCode": trade_code,
+                "tradeCode": code,
                 "tradeId": trade_id,
+                "resolvedBy": how,
                 "package": package,
                 "entry": entry,
                 "units": [r for r in rows if r["unitKey"] in keys],
@@ -1095,10 +1114,13 @@ def _window_2(rows: list[dict], packages: list[dict], trade_map: dict, kinds, in
     passes: list[dict] = []
     no_family: list[str] = []
     no_sheet: list[str] = []
+    by_family: list[str] = []
     for item in selection["selections"]:
         if item["entry"] is None:
             no_family.append(item["tradeCode"])
             continue
+        if item["resolvedBy"] == "family":
+            by_family.append(f"{item['tradeCode']} as {item['tradeId']}")
         if not item["units"]:
             no_sheet.append(item["tradeCode"])
             continue
@@ -1111,6 +1133,9 @@ def _window_2(rows: list[dict], packages: list[dict], trade_map: dict, kinds, in
                 # the package rather than the way the trade file is filed.
                 "name": _text(item["package"].get("name")) or knowledge,
                 "readsFor": item["tradeCode"],
+                # Named only where the two differ, so the pass says plainly that the trade file it
+                # carries is the family's, not this code's own.
+                "coveredBy": item["tradeId"] if item["resolvedBy"] == "family" else None,
                 "trades": [knowledge][:MAX_TRADE_FILES_WINDOW_2],
                 "dropped": [],
                 "units": item["units"],
@@ -1138,6 +1163,7 @@ def _window_2(rows: list[dict], packages: list[dict], trade_map: dict, kinds, in
         "unnamedKinds": selection["unnamedKinds"],
         "locationsWithoutField": selection["locationsWithoutField"],
         "seamGroupsApart": seam_groups_apart,
+        "byFamily": by_family,
         "notes": [],
     }
 
@@ -1213,6 +1239,8 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
             lines.append("")
             lines.append(f"window: {window}")
             lines.append(f"reads for: {plan_pass['readsFor']}")
+            if plan_pass.get("coveredBy"):
+                lines.append(f"trade file covers: {plan_pass['coveredBy']}")
             trades = plan_pass["trades"]
             lines.append(f"trades: {', '.join(trades) if trades else 'none'}")
             lines.append(f"units: {len(part_units)}")
@@ -1388,6 +1416,8 @@ def plan(args) -> str:
             f"packages whose families named no sheet {len(no_sheet)} "
             f"({', '.join(no_sheet) if no_sheet else 'none'}), "
             f"definition kinds no trade names {len(result['unnamedKinds'])}, "
+            f"resolved by family {len(result['byFamily'])} "
+            f"({', '.join(result['byFamily']) if result['byFamily'] else 'none'}), "
             f"seam groups not fully adjacent {len(apart)} ({apart_text})"
             f"{partial}; {tail}"
         )

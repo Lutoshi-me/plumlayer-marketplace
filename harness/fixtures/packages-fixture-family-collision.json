@@ -1,6 +1,6 @@
 {
-  "count": 9,
-  "returned": 9,
+  "count": 10,
+  "returned": 10,
   "offset": 0,
   "limit": 100,
   "truncated": false,
@@ -73,10 +73,18 @@
       "selfPerformed": false
     },
     {
-      "id": "pkg-0009",
+      "id": "pkg-0010",
       "projectId": "prj-0001",
-      "tradeCode": "133419",
-      "name": "Pre-engineered structures, phase two",
+      "tradeCode": "04 22 13",
+      "name": "Masonry, unit",
+      "status": "draft",
+      "selfPerformed": false
+    },
+    {
+      "id": "pkg-0011",
+      "projectId": "prj-0001",
+      "tradeCode": "04 21 13",
+      "name": "Masonry, brick",
       "status": "draft",
       "selfPerformed": false
     }

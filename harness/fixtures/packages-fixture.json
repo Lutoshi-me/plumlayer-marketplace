@@ -19,7 +19,7 @@
     {
       "id": "pkg-0002",
       "projectId": "prj-0001",
-      "tradeCode": "22 00 00",
+      "tradeCode": "22 11 16",
       "name": "Plumbing",
       "status": "draft",
       "selfPerformed": false
@@ -43,7 +43,7 @@
     {
       "id": "pkg-0005",
       "projectId": "prj-0001",
-      "tradeCode": "08 40 00",
+      "tradeCode": "08 44 13",
       "name": "Glazing",
       "status": "draft",
       "selfPerformed": false

@@ -74,7 +74,11 @@ Checks:
       lists and names no trade file it does not, in both directions, with a named exception list
       the only allowance; its pinned sheet type list equals the recognizer's twelve deterministic
       types; every family names a discipline or a pattern and only pinned sheet types; and every
-      seam pair names two different trades the map itself holds.
+      seam pair names two different trades the map itself holds. A trade file is general to its
+      family, so the shared resolver is checked against the shipped map on five catalog codes: a
+      child code, a code whose only mapped ancestor is its division, a code under two mapped
+      ancestors where the nearer must win, a code the map keys outright, and a division the map
+      covers at no level.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -90,6 +94,7 @@ import math
 import re
 import string
 import subprocess
+import sys
 from pathlib import Path
 
 # --------------------------------------------------------------------------- #
@@ -2009,6 +2014,70 @@ def check_trade_sheet_map(plugin_path: Path) -> Result:
             errors.append(f"seam {index} repeats a pair already listed")
         seen_pairs.add(key)
 
+    # A trade file is general to its family, so the plan resolves a package's code to the nearest
+    # broader CSI section the map keys. These are the four shapes that rule has to get right, each
+    # asserted against what the shipped map actually holds rather than against a fixture.
+    resolver_path = plugin_path.joinpath(*TRADE_CODE_SCRIPT)
+    resolved_cases = 0
+    sole_file_divisions = 0
+    if not resolver_path.is_file():
+        errors.append(f"the shared trade code resolver is not at {resolver_path}")
+    else:
+        try:
+            resolver = _load_script_module(resolver_path, "trade_code")
+        except Exception as e:
+            errors.append(f"cannot import {resolver_path.name}: {e}")
+        else:
+            folded = {resolver.fold(key): key for key in trades}
+            expected = [
+                # a child code, resolving up to the division its one trade file is keyed at
+                ("04 22 13", "04 00 00", "family"),
+                # that division header itself, which is a key rather than a code nothing covers
+                ("04 00 00", "04 00 00", "exact"),
+                # a code whose only mapped ancestor is a division header keyed that way already
+                ("26 05 19", "26 00 00", "family"),
+                # a code under two mapped ancestors: the nearer one wins, never the division
+                ("31 50 13", "31 50 00", "family"),
+                # a code the map keys outright is still exact, never resolved by family
+                ("09 21 16", "09 21 16", "exact"),
+            ]
+            for code, want_key, want_how in expected:
+                got = resolver.resolve(code, folded)
+                if got != (want_key, want_how):
+                    errors.append(
+                        f"{code} resolved to {got}, expected ({want_key!r}, {want_how!r})"
+                    )
+                else:
+                    resolved_cases += 1
+            # A trade file is keyed at the broadest code it actually covers: where a division maps
+            # exactly one file, that file sits at the division header, so a package drafted anywhere
+            # in the division reaches it. A division mapping several files keeps each at its own
+            # section, since a bare division header there would have to pick one of several.
+            by_division: dict[str, list[str]] = {}
+            for key in trades:
+                by_division.setdefault(resolver.fold(key)[:2], []).append(key)
+            for division, keys_here in sorted(by_division.items()):
+                if len(keys_here) != 1:
+                    continue
+                header = f"{division} 00 00"
+                if keys_here[0] != header:
+                    errors.append(
+                        f"division {division} maps only {keys_here[0]}, which should be keyed at "
+                        f"{header} so a package drafted anywhere in the division reaches it"
+                    )
+            sole_file_divisions = sum(1 for keys_here in by_division.values() if len(keys_here) == 1)
+
+            # A division the map holds nothing under at any level stays unresolved, so the plan
+            # names the package rather than reading it for a trade nobody chose.
+            unmapped_division = resolver.resolve("13 34 19", folded)
+            if unmapped_division is not None:
+                errors.append(
+                    f"13 34 19 resolved to {unmapped_division}, expected nothing: no trade in the "
+                    f"map covers that division"
+                )
+            else:
+                resolved_cases += 1
+
     exceptions = ", ".join(sorted(unmapped)) if unmapped else "none"
     detail = (
         f"{len(trades)} trades mapped over {len(pinned)} manifest trade files, both directions; "
@@ -2016,6 +2085,9 @@ def check_trade_sheet_map(plugin_path: Path) -> Result:
         f"{len(seams)} seam pairs, every member a mapped trade; "
         f"{len(empty_families)} trade(s) mapped with no sheet family and a reason "
         f"({', '.join(empty_families) if empty_families else 'none'}); "
+        f"{resolved_cases} of 6 catalog codes resolved to the trade file covering them, by nearest "
+        f"CSI ancestor, checked against the shipped map; every one of the {sole_file_divisions} "
+        f"divisions mapping a single trade file keyed at its division header; "
         f"named exception(s) allowed with a reason: {exceptions}"
     )
     if errors:
@@ -2044,6 +2116,7 @@ def check_trade_sheet_map(plugin_path: Path) -> Result:
 # its ordering and its refusals, and nothing about how a real record read arrives.
 
 PLAN_INVENTORY_SCRIPT = ("scripts", "plan_inventory.py")
+TRADE_CODE_SCRIPT = ("scripts", "trade_code.py")
 
 _PLAN_PASS_RE = re.compile(r"^### (\S+?)\.\s")
 _PLAN_UNIT_RE = re.compile(r"^(\d+)\. (\S+), page (\d+): (.*)$")
@@ -2061,6 +2134,15 @@ def _load_script_module(script_path: Path, module_name: str):
     seconds, so a script edited twice inside one second to the same byte length loads the earlier
     bytecode, and the harness would report on a version of the script that is no longer on disk.
     """
+    # A shipped script imports its siblings (the shared trade code resolver), and an import caches
+    # the module, so a second load in one process would reuse the copy the first load read. Dropping
+    # the scripts directory's own modules first means every load reads what is on disk now.
+    scripts_dir = script_path.resolve().parent
+    for loaded_name, loaded in list(sys.modules.items()):
+        loaded_file = getattr(loaded, "__file__", None)
+        if loaded_file and Path(loaded_file).resolve().parent == scripts_dir:
+            del sys.modules[loaded_name]
+
     module = importlib.util.module_from_spec(
         importlib.util.spec_from_loader(module_name, loader=None)
     )
@@ -2147,6 +2229,15 @@ def _check_split_arithmetic(passes: list[dict], cap: int, errors: list[str], whe
     return split
 
 
+def _pass_trade(plan_pass: dict) -> str:
+    """
+    The map key a pass reads for. Where the package's own code is not itself a key, the block names
+    the broader key covering it, and that key is the one the map declares seams on, so it is the one
+    every seam assertion has to work from.
+    """
+    return plan_pass["fields"].get("trade file covers", "") or plan_pass["fields"].get("reads for", "")
+
+
 def _trades_in_order(passes: list[dict]) -> list[str]:
     """
     The trades window 2 plans, in the order their passes run, each named once. A pass block carries
@@ -2155,9 +2246,9 @@ def _trades_in_order(passes: list[dict]) -> list[str]:
     """
     order: list[str] = []
     for plan_pass in passes:
-        reads_for = plan_pass["fields"].get("reads for", "")
-        if reads_for and (not order or order[-1] != reads_for):
-            order.append(reads_for)
+        trade_id = _pass_trade(plan_pass)
+        if trade_id and (not order or order[-1] != trade_id):
+            order.append(trade_id)
     return order
 
 
@@ -2352,14 +2443,20 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         w2_passes = _plan_passes(w2_path.read_text(encoding="utf-8"))
         w2_sheets = {sheet for p in w2_passes for sheet, _page in p["units"]}
         # One package carries a trade the map does not hold and another a trade whose families name
-        # nothing in this set. Both must be named on the bounds line by id.
-        if "13 34 19" not in w2_bounds:
-            errors.append(f"the window 2 bounds line does not name the unmapped package: {w2_bounds!r}")
-        if "32 90 00" not in w2_bounds:
-            errors.append(
-                f"the window 2 bounds line does not name the package whose families named no sheet: "
-                f"{w2_bounds!r}"
-            )
+        # nothing in this set. Both must be named on the bounds line by code, in their own field:
+        # the code alone would also match where some other field happens to mention it.
+        for fragment, what in (
+            ("packages with no sheet family mapped 1 (13 34 19)", "the unmapped package"),
+            (
+                "packages whose families named no sheet 1 (32 90 00)",
+                "the package whose families named no sheet",
+            ),
+        ):
+            if fragment not in w2_bounds:
+                errors.append(
+                    f"the window 2 bounds line does not name {what} in its own field "
+                    f"(`{fragment}`): {w2_bounds!r}"
+                )
         counted: dict[str, int] = {}
         for plan_pass in w2_passes:
             for sheet, _page in plan_pass["units"]:
@@ -2393,6 +2490,33 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         ):
             if fragment not in w2_bounds:
                 errors.append(f"the window 2 bounds line does not carry `{fragment}`: {w2_bounds!r}")
+        # A package whose code the map does not key reads for the family's trade file, and a run has
+        # to show that it did. Which packages those are is resolved here off the map, never a list
+        # written down beside the fixture that could go stale as the map is re-keyed.
+        by_family: list[str] = []
+        try:
+            resolver = _load_script_module(plugin_path.joinpath(*TRADE_CODE_SCRIPT), "trade_code")
+        except Exception as e:
+            errors.append(f"cannot import the shared resolver: {e}")
+        else:
+            folded_keys = {resolver.fold(key): key for key in trade_sheets["trades"]}
+            for row in json.loads(Path(packages).read_text(encoding="utf-8"))["packages"]:
+                code = row.get("tradeCode", "")
+                found = resolver.resolve(code, folded_keys)
+                if found is not None and found[1] == "family":
+                    by_family.append(code)
+        if len(by_family) < 2:
+            errors.append(
+                f"the packages fixture carries {len(by_family)} codes resolved by family, too few "
+                f"to prove the window 2 plan reports them"
+            )
+        if f"resolved by family {len(by_family)}" not in w2_bounds:
+            errors.append(
+                f"the window 2 bounds line does not count what it resolved by family: {w2_bounds!r}"
+            )
+        for code in by_family:
+            if code not in w2_bounds:
+                errors.append(f"the window 2 bounds line does not name {code} as resolved by family")
         w2_split = _check_split_arithmetic(w2_passes, 12, errors, "window 2")
         if w2_split == 0:
             errors.append("the window 2 fixture proves nothing about the twelve-unit split")
@@ -2426,8 +2550,8 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             declared = {
                 s.strip() for s in plan_pass["fields"].get("seam with", "").split(",") if s.strip()
             }
-            reads_for = plan_pass["fields"].get("reads for", "")
-            index_of = trade_order.index(reads_for) if reads_for in trade_order else None
+            trade_id = _pass_trade(plan_pass)
+            index_of = trade_order.index(trade_id) if trade_id in trade_order else None
             beside = set()
             if index_of is not None:
                 for i in (index_of - 1, index_of + 1):
@@ -2557,6 +2681,14 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
              "--kinds", kinds, "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
              "--out", str(out_dir / "refused.md")],
             "tradeCode",
+        ),
+        (
+            "two codes of one family on one trade file",
+            ["plan", "--window", "2", "--inventory", inventory_json,
+             "--packages", str(fixtures / "packages-fixture-family-collision.json"),
+             "--kinds", kinds, "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
+             "--out", str(out_dir / "refused.md")],
+            "04 00 00",
         ),
         (
             "two packages on one trade",

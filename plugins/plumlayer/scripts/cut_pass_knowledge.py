@@ -16,10 +16,11 @@ Sections carried, per trade:
     of section 7 instead, and a rule keyed on the phrase picks that up mechanically rather than
     dropping it silently.
 
-`--trades` takes a trade file slug or a catalog trade id, since a window 2 pass is named for the
-package's catalog id and a window 1 pass for the trade files it carries. An id is resolved to its
-slug through trade-knowledge/trade-sheets.json, space stripped and lower cased on both sides, and a
-token that is neither refuses naming both lookups tried.
+`--trades` takes a trade file slug or a catalog trade code, since a window 2 pass is named for the
+package's catalog code and a window 1 pass for the trade files it carries. A code is resolved
+through trade-knowledge/trade-sheets.json by nearest CSI ancestor, since a trade file is general
+to its family: the code itself where the map keys it, else the nearest broader section the map
+does key. A token that is neither a slug nor a covered code refuses naming both lookups tried.
 
 Usage:
 
@@ -44,6 +45,13 @@ import os
 import re
 import sys
 from pathlib import Path
+
+# The shared resolver sits beside this file. Running the script as a script already puts
+# that directory on the path; this makes the import work the same way when it is loaded
+# some other way, so the cut and the plan can never resolve a code differently.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import trade_code
 
 SECTION_GRAIN = 3
 SECTION_PRICING = 7
@@ -134,10 +142,9 @@ def _title(text: str, slug: str) -> str:
 
 def _catalog_slugs(trade_knowledge: Path) -> dict[str, str]:
     """
-    Catalog trade id to trade file slug, read off trade-sheets.json beside the manifest. A window 2
-    pass is named for the package's catalog id, so the cut has to take either that id or the slug
-    and land on the same file. Ids are space stripped and lower cased on both sides, the same fold
-    the record's own catalog lookup uses, so a caller that drops the spaces still resolves.
+    Catalog trade code to trade file slug, read off trade-sheets.json beside the manifest, keyed by
+    the folded code. A window 2 pass is named for the package's catalog code, so the cut has to
+    take either that code or the slug and land on the same file.
     """
     path = trade_knowledge / TRADE_SHEETS_FILE
     try:
@@ -187,19 +194,20 @@ def cut(trade_knowledge: Path, trades: list[str], pass_id: str, out: Path) -> st
             continue
         if catalog is None:
             catalog = _catalog_slugs(trade_knowledge)
-        slug = catalog.get("".join(token.split()).lower())
-        if slug is None:
+        found = trade_code.resolve(token, catalog)
+        if found is None:
             raise CutError(
-                f"`{token}` is not in {manifest_path.name}'s trade list and is not a trade id in "
-                f"{TRADE_SHEETS_FILE}"
+                f"`{token}` is not in {manifest_path.name}'s trade list, and neither it nor any "
+                f"broader CSI section above it is a trade in {TRADE_SHEETS_FILE}"
             )
+        slug, how = found
         if slug not in known:
             raise CutError(
                 f"{TRADE_SHEETS_FILE} maps `{token}` to `{slug}`, which is not in "
                 f"{manifest_path.name}'s trade list"
             )
         resolved.append(slug)
-        from_catalog.append(f"{token} to {slug}")
+        from_catalog.append(f"{token} to {slug}" + (" by family" if how == "family" else ""))
     slugs = _dedupe(resolved)
 
     blocks: list[str] = []
