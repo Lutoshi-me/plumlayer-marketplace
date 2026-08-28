@@ -297,7 +297,10 @@ trade file, surfaced in the close-out report.
 3. **Drawings are recognized.** `list_drawing_deliveries(projectId)`: no deliveries → stop
    plainly, hand off to `drawing-upload`. Spot-check recognition actually recorded:
    `search(projectId, predicate: "appearsOnPage", limit: 1)`: zero rows → hand off to
-   `drawing-upload`.
+   `drawing-upload`. On a set that just landed, check `set_text_status(projectId)` too, because
+   `search_set_text` is the fast way to find where a mark, keynote, tag, or spec phrase appears
+   across the set (during planning, cross-checks, and the completeness audit), and a page nobody
+   has read yet cannot be found that way.
 4. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)`: spec
    sections present means the spec-TOC leg has run. Absent: ask the user whether a project manual /
    spec book exists. If one does, run it through `drawing-upload`'s spec-book leg first (upload +

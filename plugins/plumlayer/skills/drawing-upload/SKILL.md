@@ -26,6 +26,11 @@ sheets by a rule match, and records its own output, but you still drive every jo
 the pass could not name, type the sheets the rule pass left untyped, and author every entry that
 isn't the deterministic pass's own grounded output.
 
+Independent of recognition, every PDF this skill uploads starts having its own text read the
+moment it registers; there is nothing to trigger. `set_text_status` says how much of a fresh
+upload has been read, and a `scope-run` or `takeoff` pass starting right after an upload should
+check it before leaning on `search_set_text`, since a page nobody has read yet cannot be found there.
+
 This skill runs the read cloud-first: recognition and every recorded entry come from the server or
 your own read of the cloud-hosted pages, never from a local pass. Examples in this file are generic;
 never put a real client or project name here.
