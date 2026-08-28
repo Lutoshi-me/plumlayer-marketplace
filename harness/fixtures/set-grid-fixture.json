@@ -5,82 +5,53 @@
   "limit": 500,
   "truncated": false,
   "disciplineCounts": {
-    "A": 27,
+    "G": 1,
+    "A": 23,
     "S": 3,
-    "E": 1
+    "P": 2,
+    "E": 1,
+    "": 1
   },
   "sheets": [
+    {
+      "discipline": "G",
+      "sheetNumber": "G-0.01",
+      "pageTitle": "Cover sheet and drawing index",
+      "sheetType": "cover-index",
+      "fileId": "file-0001",
+      "pageInPdf": 1
+    },
     {
       "discipline": "A",
       "sheetNumber": "A-0.01",
       "pageTitle": "General notes and legends 1",
       "sheetType": "legend",
       "fileId": "file-0001",
-      "pageInPdf": 1
-    },
-    {
-      "discipline": "A",
-      "sheetNumber": "A-0.02",
-      "pageTitle": "General notes and legends 2",
-      "sheetType": "schedule",
-      "fileId": "file-0001",
       "pageInPdf": 2
     },
     {
       "discipline": "A",
-      "sheetNumber": "A-0.03",
-      "pageTitle": "General notes and legends 3",
-      "sheetType": "legend",
+      "sheetNumber": "A-0.02",
+      "pageTitle": "Partition schedule",
+      "sheetType": "schedule",
       "fileId": "file-0001",
       "pageInPdf": 3
     },
     {
       "discipline": "A",
-      "sheetNumber": "A-0.04",
-      "pageTitle": "General notes and legends 4",
-      "sheetType": "schedule",
+      "sheetNumber": "A-0.03",
+      "pageTitle": "General notes 2",
+      "sheetType": "notes",
       "fileId": "file-0001",
       "pageInPdf": 4
     },
     {
       "discipline": "A",
-      "sheetNumber": "A-0.05",
-      "pageTitle": "General notes and legends 5",
-      "sheetType": "legend",
+      "sheetNumber": "A-0.04",
+      "pageTitle": "Window schedule",
+      "sheetType": "schedule",
       "fileId": "file-0001",
       "pageInPdf": 5
-    },
-    {
-      "discipline": "A",
-      "sheetNumber": "A-0.06",
-      "pageTitle": "General notes and legends 6",
-      "sheetType": "schedule",
-      "fileId": "file-0001",
-      "pageInPdf": 6
-    },
-    {
-      "discipline": "A",
-      "sheetNumber": "A-0.07",
-      "pageTitle": "General notes and legends 7",
-      "sheetType": "legend",
-      "fileId": "file-0001",
-      "pageInPdf": 7
-    },
-    {
-      "discipline": "A",
-      "sheetNumber": "A-0.08",
-      "pageTitle": "General notes and legends 8",
-      "sheetType": "schedule",
-      "fileId": "file-0001",
-      "pageInPdf": 8
-    },
-    {
-      "discipline": "A",
-      "sheetNumber": "A-0.09",
-      "pageTitle": "General notes and legends 9",
-      "sheetType": "legend",
-      "fileId": "file-0001",
-      "pageInPdf": 9
     },
     {
       "discipline": "A",
@@ -88,7 +59,7 @@
       "pageTitle": "Floor plan level 1",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 10
+      "pageInPdf": 6
     },
     {
       "discipline": "A",
@@ -96,7 +67,7 @@
       "pageTitle": "Floor plan level 2",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 11
+      "pageInPdf": 7
     },
     {
       "discipline": "A",
@@ -104,7 +75,7 @@
       "pageTitle": "Floor plan level 3",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 12
+      "pageInPdf": 8
     },
     {
       "discipline": "A",
@@ -112,7 +83,7 @@
       "pageTitle": "Floor plan level 4",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 13
+      "pageInPdf": 9
     },
     {
       "discipline": "A",
@@ -120,7 +91,7 @@
       "pageTitle": "Floor plan level 5",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 14
+      "pageInPdf": 10
     },
     {
       "discipline": "A",
@@ -128,7 +99,7 @@
       "pageTitle": "Floor plan level 6",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 15
+      "pageInPdf": 11
     },
     {
       "discipline": "A",
@@ -136,7 +107,7 @@
       "pageTitle": "Floor plan level 7",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 16
+      "pageInPdf": 12
     },
     {
       "discipline": "A",
@@ -144,7 +115,7 @@
       "pageTitle": "Floor plan level 8",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 17
+      "pageInPdf": 13
     },
     {
       "discipline": "A",
@@ -152,7 +123,15 @@
       "pageTitle": "Floor plan level 9",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 18
+      "pageInPdf": 14
+    },
+    {
+      "discipline": "A",
+      "sheetNumber": "A-4.01",
+      "pageTitle": "Exterior elevations",
+      "sheetType": "elevation",
+      "fileId": "file-0001",
+      "pageInPdf": 15
     },
     {
       "discipline": "A",
@@ -160,7 +139,7 @@
       "pageTitle": "Interior detail 1",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 19
+      "pageInPdf": 16
     },
     {
       "discipline": "A",
@@ -168,7 +147,7 @@
       "pageTitle": "Interior detail 2",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 20
+      "pageInPdf": 17
     },
     {
       "discipline": "A",
@@ -176,7 +155,7 @@
       "pageTitle": "Interior detail 3",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 21
+      "pageInPdf": 18
     },
     {
       "discipline": "A",
@@ -184,7 +163,7 @@
       "pageTitle": "Interior detail 4",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 22
+      "pageInPdf": 19
     },
     {
       "discipline": "A",
@@ -192,7 +171,7 @@
       "pageTitle": "Interior detail 5",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 23
+      "pageInPdf": 20
     },
     {
       "discipline": "A",
@@ -200,7 +179,7 @@
       "pageTitle": "Interior detail 6",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 24
+      "pageInPdf": 21
     },
     {
       "discipline": "A",
@@ -208,7 +187,7 @@
       "pageTitle": "Interior detail 7",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 25
+      "pageInPdf": 22
     },
     {
       "discipline": "A",
@@ -216,7 +195,7 @@
       "pageTitle": "Interior detail 8",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 26
+      "pageInPdf": 23
     },
     {
       "discipline": "A",
@@ -224,15 +203,15 @@
       "pageTitle": "Interior detail 9",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 27
+      "pageInPdf": 24
     },
     {
       "discipline": "S",
       "sheetNumber": "S-1.01",
-      "pageTitle": "Structural general notes",
+      "pageTitle": "Structural general notes and schedules",
       "sheetType": "schedule",
       "fileId": "file-0001",
-      "pageInPdf": 28
+      "pageInPdf": 25
     },
     {
       "discipline": "S",
@@ -240,7 +219,7 @@
       "pageTitle": "Foundation plan",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 29
+      "pageInPdf": 26
     },
     {
       "discipline": "S",
@@ -248,13 +227,37 @@
       "pageTitle": "Framing plan",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 30
+      "pageInPdf": 27
+    },
+    {
+      "discipline": "P",
+      "sheetNumber": "P-1.01",
+      "pageTitle": "Plumbing plan level 1",
+      "sheetType": "plan",
+      "fileId": "file-0001",
+      "pageInPdf": 28
+    },
+    {
+      "discipline": "P",
+      "sheetNumber": "P-6.01",
+      "pageTitle": "Plumbing details",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 29
     },
     {
       "discipline": "E",
       "sheetNumber": "E-0.01",
       "pageTitle": "Electrical legend and abbreviations",
       "sheetType": null,
+      "fileId": "file-0001",
+      "pageInPdf": 30
+    },
+    {
+      "discipline": null,
+      "sheetNumber": "X-9.99",
+      "pageTitle": "Symbols legend, discipline not placed",
+      "sheetType": "legend",
       "fileId": "file-0001",
       "pageInPdf": 31
     }

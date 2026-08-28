@@ -30,12 +30,12 @@ measured, real failure: follow all of them.
 
 The three windows:
 
-1. **Vocabulary.** Schedules, legends, general notes, cover and index sheets, and the spec
-   sections. Readers record what the marks mean (the definitions), the scope the schedules
-   themselves ground, and every item's trade. When the window closes, the record's citation index
-   runs: a mechanical pass that locates every defined code and every item's tag on every page of
-   the set and cites those pages onto the items and definitions. After this window every trade's
-   page is usable.
+1. **Vocabulary.** Schedules, legends, general notes, and cover and index sheets; the spec
+   sections were read at orientation. Readers record what the marks mean (the definitions), the
+   scope the schedules themselves ground, and every item's trade. When the window closes, the
+   record's citation index runs: a mechanical pass that locates every defined code and every
+   item's tag on every page of the set and cites those pages onto the items and definitions. After
+   this window every trade's page is usable.
 2. **Trades.** One pass per trade package, schedule or no schedule: the sheets that trade's
    knowledge says to read (the roofer reads the roof plan, wall sections and details; the site
    contractor reads civil; the painter reads the finish schedule and elevations), the sheets the
@@ -339,7 +339,9 @@ is never offered to the user as a way to manage cost, and the check-in never sug
 Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/`: one file per trade
 (`painting.md`, `drywall.md`, …), mined from a real subcontractor-quote corpus, carrying what the
 drawings will not say: how the trade bids, scope grain rules, exclusions and counterparties,
-furnish/install seams, convention work no sheet states, and the sheet families the trade reads.
+furnish/install seams, convention work no sheet states. Beside them, `trade-sheets.json` maps
+each catalog trade to its knowledge file and to the sheet families that trade reads, and names
+the seams between trades; the plan script reads it, and no model does.
 `MANIFEST.md` there records the knowledge version and source snapshot: read it at run start,
 record the version in the ledger, and cite it in every convention-line record
 (`trade-convention:<trade>@<version>`). Each pass's runner cuts the trade file its pass reads for
@@ -482,9 +484,9 @@ lines.
    only its bounds line, then read from `inventory.md` only the count tables and the sheet number
    digest at its tail. Never the sheet lines above them.
 4. **Write the window 1 plan.** Run the plan mode of the same script for window 1. It selects the
-   vocabulary sheets by sheet type (schedule, legend, notes, cover and index) and the spec section
-   list off the record, groups them into passes by discipline, names the trade files each pass
-   carries by discipline and content family (at most ten per pass), splits a pass over twelve
+   vocabulary sheets by sheet type (schedule, legend, notes, cover and index), groups them into
+   passes by discipline, names the trade files each pass carries off the trade map (at most ten
+   per pass), splits a pass over twelve
    units at the twelve, and names what it left out and why. Families you want read anyway, or
    left out, go in as `--include` and `--exclude` patterns with a reason each; that is where your
    judgment lives, and it carries no sheet titles and no page numbers.
@@ -629,8 +631,10 @@ On the go-ahead:
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 3 \
-     --inventory '<run folder>/inventory.json' --index '<run folder>/plan/index' \
-     --packages '<run folder>/plan/packages.json' --out '<run folder>/read-plan.md'
+     --inventory '<run folder>/inventory.json' \
+     --packages '<run folder>/plan/packages.json' --kinds '<run folder>/plan/kinds.json' \
+     --index '<run folder>/plan/index' --trade-knowledge '<plugin root>/trade-knowledge' \
+     --out '<run folder>/read-plan.md'
    ```
 
 2. **Run the passes** as stage 4 runs them, with `leftover-<pass id>` in place of the pass id, so

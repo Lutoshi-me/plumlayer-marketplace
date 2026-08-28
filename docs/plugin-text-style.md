@@ -182,13 +182,13 @@ Each of these is a harness check.
     Its bound is stated in the harness README entry: four trade files carry no structural gap list
     anywhere in the source, and the check names them rather than passing over them in silence.
 12. The plan inventory script does its arithmetic. The shipped `plan_inventory.py` is run
-    in-process over an invented fixture grid, and its counts, its unit lines' page references,
-    and its balanced leg split are compared against a tally the check computes itself off the
-    same fixture. Three deliberately broken pass assignment files must each be refused with
-    exit 1 and one line on stderr, and both modes' bounds lines must name their counts, so a
-    run that reports nothing fails. Its bound is stated in the harness README entry and in the
-    check's own detail line: the fixture is invented, so this proves the script's arithmetic
-    and its refusals, not how a real grid file's fields arrive.
+    in-process over invented grid, packages, kinds, and index fixtures, and its counts, its
+    three windows' unit lines and page references, and its balanced pass split are compared
+    against a tally the check computes itself off the same fixtures. Broken inputs must each be
+    refused with exit 1 and one line on stderr, and every window's bounds line must name its
+    counts, so a run that reports nothing fails. Its bound is stated in the harness README entry
+    and in the check's own detail line: the fixtures are invented, so this proves the script's
+    arithmetic and its refusals, not how a real grid or index file's fields arrive.
 13. Question-text plain-words pointer. Every shipped skill or agent file that names `ask_question`
     or tells the agent to raise a Question carries the fixed phrase "Question text is plain
     estimator words", either stating the rule in full (`learn-project`'s judgment-entry table, and

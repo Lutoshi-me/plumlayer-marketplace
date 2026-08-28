@@ -1,0 +1,31 @@
+{
+  "count": 4,
+  "returned": 4,
+  "offset": 0,
+  "limit": 100,
+  "truncated": false,
+  "kinds": [
+    {
+      "kind": "wallType",
+      "codes": 6,
+      "sheetNumber": "A-0.02",
+      "pageInPdf": 3
+    },
+    {
+      "kind": "windowType",
+      "codes": 4,
+      "sheetNumber": "A-0.04",
+      "pageInPdf": 5
+    },
+    {
+      "kind": "widgetType",
+      "codes": 2,
+      "sheetNumber": "A-0.03",
+      "pageInPdf": 4
+    },
+    {
+      "kind": "roomFinishType",
+      "codes": 9
+    }
+  ]
+}

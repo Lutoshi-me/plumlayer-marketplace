@@ -1,0 +1,59 @@
+{
+  "count": 6,
+  "returned": 6,
+  "offset": 0,
+  "limit": 100,
+  "truncated": false,
+  "packages": [
+    {
+      "id": "pkg-0001",
+      "projectId": "prj-0001",
+      "tradeCode": "09 21 16",
+      "name": "Drywall and framing",
+      "status": "draft",
+      "codes": [
+        "09 22 16"
+      ],
+      "selfPerformed": false
+    },
+    {
+      "id": "pkg-0002",
+      "projectId": "prj-0001",
+      "name": "Plumbing",
+      "status": "draft",
+      "selfPerformed": false
+    },
+    {
+      "id": "pkg-0003",
+      "projectId": "prj-0001",
+      "tradeCode": "09 91 00",
+      "name": "Painting",
+      "status": "draft",
+      "selfPerformed": false
+    },
+    {
+      "id": "pkg-0004",
+      "projectId": "prj-0001",
+      "tradeCode": "08 50 00",
+      "name": "Windows",
+      "status": "draft",
+      "selfPerformed": false
+    },
+    {
+      "id": "pkg-0005",
+      "projectId": "prj-0001",
+      "tradeCode": "32 90 00",
+      "name": "Landscaping",
+      "status": "draft",
+      "selfPerformed": false
+    },
+    {
+      "id": "pkg-0006",
+      "projectId": "prj-0001",
+      "tradeCode": "13 34 19",
+      "name": "Pre-engineered structures",
+      "status": "draft",
+      "selfPerformed": false
+    }
+  ]
+}

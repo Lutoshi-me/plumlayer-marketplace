@@ -1,0 +1,373 @@
+{
+  "note": "Which sheets each trade reads, and which trades sit at a seam with each other. The trade files carry how a trade bids and splits itself; they do not carry sheet families, so this file holds them. It is read by scripts/plan_inventory.py to write the window 2 plan and by scripts/cut_pass_knowledge.py to resolve a catalog id to a trade file. Keys are catalog trade ids verbatim, spaced the way the catalog spaces them. A family names a discipline, a set of sheet numbers, or both, narrowed by sheet type; a trade whose families name no sheet in a set reads nothing in that set and is named on the plan's bounds line. Schedules are deliberately not a family: a schedule reaches a trade through definitionKinds, so a trade gets the schedules that define its own marks rather than every schedule in the set. These families are this plugin's own judgment about where a trade's work is drawn, not a reading of any project.",
+  "sheetTypes": [
+    "schedule",
+    "plan",
+    "overall-plan",
+    "enlarged-plan",
+    "section",
+    "elevation",
+    "detail",
+    "RCP",
+    "schematic",
+    "legend",
+    "notes",
+    "cover-index"
+  ],
+  "unmapped": {
+    "prefab-balconies": "no catalog trade fits: the catalog carries no prefabricated balcony trade, and misc metals, precast concrete and special construction each cover only part of it. Left unmapped rather than routing balcony scope into a trade that would price only part of it."
+  },
+  "trades": {
+    "01 74 23": {
+      "knowledge": "final-cleaning",
+      "families": [],
+      "note": "final cleaning is drawn nowhere: it is a general conditions trade whose scope comes from the spec and the schedule, not from a sheet family.",
+      "definitionKinds": []
+    },
+    "02 41 00": {
+      "knowledge": "demo",
+      "families": [
+        {"discipline": "D"},
+        {"discipline": "AD"}
+      ],
+      "note": "demolition rides on its own discipline. A set that draws demolition on the architectural sheets instead carries none here, and the lead adds it with an include pattern.",
+      "definitionKinds": []
+    },
+    "02 80 00": {
+      "knowledge": "abatement",
+      "families": [
+        {"discipline": "D"},
+        {"discipline": "AD"}
+      ],
+      "note": "abatement is drawn on the demolition sheets where it is drawn at all; most of its scope is in the hazardous materials survey, which is not a drawing.",
+      "definitionKinds": []
+    },
+    "03 30 00": {
+      "knowledge": "concrete",
+      "families": [
+        {"discipline": "S"}
+      ],
+      "definitionKinds": ["concreteMixType", "footingType"]
+    },
+    "03 54 13": {
+      "knowledge": "gypsum-underlayment",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["plan", "overall-plan"]},
+        {"discipline": "S", "sheetTypes": ["plan", "detail"]}
+      ],
+      "definitionKinds": ["floorAssemblyType"]
+    },
+    "04 20 00": {
+      "knowledge": "masonry",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["elevation", "section", "detail"]},
+        {"discipline": "S", "sheetTypes": ["plan", "section", "detail"]}
+      ],
+      "definitionKinds": ["masonryType", "wallType"]
+    },
+    "05 50 00": {
+      "knowledge": "misc-metals",
+      "families": [
+        {"discipline": "S"},
+        {"discipline": "A", "sheetTypes": ["section", "detail"]}
+      ],
+      "definitionKinds": ["railingType", "stairType"]
+    },
+    "06 10 00": {
+      "knowledge": "rough-carpentry",
+      "families": [
+        {"discipline": "S"},
+        {"discipline": "A", "sheetTypes": ["section", "detail"]}
+      ],
+      "definitionKinds": ["wallType", "floorAssemblyType"]
+    },
+    "06 20 00": {
+      "knowledge": "finish-carpentry",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "elevation", "detail"]},
+        {"discipline": "I"}
+      ],
+      "definitionKinds": ["trimType"]
+    },
+    "06 22 00": {
+      "knowledge": "millwork",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "elevation", "detail"]},
+        {"discipline": "I"}
+      ],
+      "definitionKinds": ["millworkType", "caseworkType"]
+    },
+    "07 10 00": {
+      "knowledge": "waterproofing",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["section", "detail"]},
+        {"discipline": "S", "sheetTypes": ["detail"]}
+      ],
+      "definitionKinds": ["assemblyType"]
+    },
+    "07 21 00": {
+      "knowledge": "insulation",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["section", "detail"]}
+      ],
+      "definitionKinds": ["assemblyType", "wallType"]
+    },
+    "07 46 00": {
+      "knowledge": "siding",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["elevation", "section", "detail"]}
+      ],
+      "definitionKinds": ["exteriorFinishType"]
+    },
+    "07 50 00": {
+      "knowledge": "roofing",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["plan", "section", "detail"]}
+      ],
+      "definitionKinds": ["roofType", "assemblyType"]
+    },
+    "07 81 00": {
+      "knowledge": "fireproofing",
+      "families": [
+        {"discipline": "S"},
+        {"discipline": "A", "sheetTypes": ["detail"]}
+      ],
+      "definitionKinds": ["ratedAssemblyType"]
+    },
+    "08 10 00": {
+      "knowledge": "dfh",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["plan", "overall-plan", "enlarged-plan", "detail"]}
+      ],
+      "definitionKinds": ["doorType", "frameType", "hardwareType"]
+    },
+    "08 33 00": {
+      "knowledge": "overhead-coiling-doors",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["plan", "elevation", "detail"]}
+      ],
+      "definitionKinds": ["doorType"]
+    },
+    "08 34 00": {
+      "knowledge": "smoke-curtains",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["section", "detail"]},
+        {"discipline": "LS"}
+      ],
+      "note": "a partial fit: the catalog id is the elevator door smoke containment section, and this trade also covers smoke curtains that are not at an elevator. The wider scope reaches the pass through the sheet families, not through the id.",
+      "definitionKinds": []
+    },
+    "08 40 00": {
+      "knowledge": "glazing",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["elevation", "section", "detail"]}
+      ],
+      "definitionKinds": ["curtainWallType", "storefrontType", "glazingType"]
+    },
+    "08 50 00": {
+      "knowledge": "windows",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["elevation", "section", "detail"]}
+      ],
+      "definitionKinds": ["windowType"]
+    },
+    "09 21 16": {
+      "knowledge": "drywall",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["plan", "overall-plan", "enlarged-plan", "section", "detail"]}
+      ],
+      "definitionKinds": ["wallType", "partitionType", "ratedAssemblyType"]
+    },
+    "09 30 00": {
+      "knowledge": "tiling",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "elevation", "detail"]},
+        {"discipline": "I"}
+      ],
+      "definitionKinds": ["tileType", "roomFinishType"]
+    },
+    "09 51 00": {
+      "knowledge": "acoustic-ceilings",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["RCP", "detail"]},
+        {"discipline": "I", "sheetTypes": ["RCP"]}
+      ],
+      "definitionKinds": ["ceilingType"]
+    },
+    "09 60 00": {
+      "knowledge": "flooring",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["plan", "enlarged-plan"]},
+        {"discipline": "I"}
+      ],
+      "definitionKinds": ["floorFinishType", "roomFinishType"]
+    },
+    "09 91 00": {
+      "knowledge": "painting",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["elevation"]},
+        {"discipline": "I"}
+      ],
+      "definitionKinds": ["roomFinishType", "paintType"]
+    },
+    "10 00 00": {
+      "knowledge": "specialties",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "elevation", "detail"]}
+      ],
+      "definitionKinds": ["accessoryType"]
+    },
+    "10 14 00": {
+      "knowledge": "signage",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["plan", "elevation"]},
+        {"discipline": "LS"}
+      ],
+      "definitionKinds": ["signType"]
+    },
+    "10 28 19": {
+      "knowledge": "shower-doors",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "elevation", "detail"]}
+      ],
+      "definitionKinds": ["showerDoorType"]
+    },
+    "11 24 29": {
+      "knowledge": "roof-anchors-fall-protection",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["plan", "detail"]}
+      ],
+      "definitionKinds": []
+    },
+    "11 31 00": {
+      "knowledge": "appliances",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan"]},
+        {"discipline": "I"}
+      ],
+      "definitionKinds": ["applianceType"]
+    },
+    "12 20 00": {
+      "knowledge": "window-treatments",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "elevation"]},
+        {"discipline": "I"}
+      ],
+      "definitionKinds": ["windowTreatmentType", "windowType"]
+    },
+    "12 35 30": {
+      "knowledge": "casework",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "elevation", "detail"]},
+        {"discipline": "I"}
+      ],
+      "definitionKinds": ["caseworkType"]
+    },
+    "12 36 00": {
+      "knowledge": "countertops",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "elevation", "detail"]},
+        {"discipline": "I"}
+      ],
+      "definitionKinds": ["countertopType", "caseworkType"]
+    },
+    "14 20 00": {
+      "knowledge": "elevators",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "section", "detail"]}
+      ],
+      "definitionKinds": ["elevatorType"]
+    },
+    "14 91 82": {
+      "knowledge": "trash-chutes",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["enlarged-plan", "section", "detail"]}
+      ],
+      "definitionKinds": []
+    },
+    "21 00 00": {
+      "knowledge": "fire-protection",
+      "families": [
+        {"discipline": "FP"}
+      ],
+      "definitionKinds": ["sprinklerHeadType"]
+    },
+    "22 00 00": {
+      "knowledge": "plumbing",
+      "families": [
+        {"discipline": "P"}
+      ],
+      "definitionKinds": ["plumbingFixtureType"]
+    },
+    "23 00 00": {
+      "knowledge": "hvac",
+      "families": [
+        {"discipline": "M"},
+        {"discipline": "H"}
+      ],
+      "definitionKinds": ["mechanicalEquipmentType", "diffuserType"]
+    },
+    "26 00 00": {
+      "knowledge": "electrical",
+      "families": [
+        {"discipline": "E"}
+      ],
+      "definitionKinds": ["lightingFixtureType", "panelType", "deviceType"]
+    },
+    "27 00 00": {
+      "knowledge": "low-voltage",
+      "families": [
+        {"discipline": "T"},
+        {"discipline": "AV"},
+        {"discipline": "DATA"}
+      ],
+      "note": "security and fire alarm are separate catalog sections. Where the project buys them with the low voltage package, they ride as extra sections on that package rather than as a second trade here.",
+      "definitionKinds": ["deviceType"]
+    },
+    "31 00 00": {
+      "knowledge": "earthwork",
+      "families": [
+        {"discipline": "C"}
+      ],
+      "definitionKinds": []
+    },
+    "31 50 00": {
+      "knowledge": "soe",
+      "families": [
+        {"discipline": "C"},
+        {"discipline": "S", "sheetTypes": ["plan", "section", "detail"]}
+      ],
+      "definitionKinds": []
+    },
+    "32 90 00": {
+      "knowledge": "landscaping",
+      "families": [
+        {"discipline": "L"}
+      ],
+      "definitionKinds": ["plantType"]
+    }
+  },
+  "seams": [
+    ["02 41 00", "02 80 00"],
+    ["03 30 00", "03 54 13"],
+    ["04 20 00", "07 46 00"],
+    ["05 50 00", "06 10 00"],
+    ["06 22 00", "12 35 30"],
+    ["06 22 00", "12 36 00"],
+    ["07 10 00", "07 50 00"],
+    ["07 21 00", "09 21 16"],
+    ["07 46 00", "07 50 00"],
+    ["07 81 00", "09 21 16"],
+    ["08 10 00", "08 33 00"],
+    ["08 40 00", "08 50 00"],
+    ["09 21 16", "09 51 00"],
+    ["09 21 16", "09 91 00"],
+    ["09 30 00", "09 60 00"],
+    ["10 00 00", "10 28 19"],
+    ["12 20 00", "08 50 00"],
+    ["21 00 00", "22 00 00"],
+    ["23 00 00", "26 00 00"],
+    ["26 00 00", "27 00 00"],
+    ["31 00 00", "31 50 00"]
+  ]
+}
