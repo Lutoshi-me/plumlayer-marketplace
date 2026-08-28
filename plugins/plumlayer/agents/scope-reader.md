@@ -41,24 +41,31 @@ These are not guidance. Each one exists because its absence produced a measured 
 of them is ever trimmed.
 
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
-   resolved reference) for work already listed; QUESTION where a person's answer is needed to
-   price the work or where two sources disagree about it (a schedule row with no plan tag, a
-   detail called where none is drawn, a spec section and a sheet naming different products for one
-   assembly, a dimension the sheets contradict): raise it as a Question, with a title, a citation,
-   and the trade it belongs to. A Question is not the place for what another sheet answers (the
-   corpus answers that, mandate 4), for a grain question (mandate 7), or for a note to the
-   estimator (`notesInternal`). Before you raise one, read the open Questions on that trade
-   (`list_questions(projectId, trade, status: "open")`); where one already covers the same ask,
-   reply to it rather than asking it twice, and name it on your `question ids:` line either way.
-   A Question is about the project, never about a Plumlayer failure; a tool failure is reported to
-   your dispatcher, not raised as a Question. Question text is plain estimator words, per
-   docs/plugin-text-style.md. Never a parallel list; never re-create; never silently skip. An
-   UPDATE carries its own evidence, in the same shape a CREATE's does: the sheet and the page you
-   read it on. The record refuses an update, a note, or a new citation that names no source,
-   exactly as it refuses a create that names none. Before every CREATE, run one
-   `search(text: <two or three distinguishing words of the item's name>)` across the whole
-   project, whatever trade you read for; if a scope item matches, on any trade, UPDATE that item
-   instead.
+   resolved reference) for work already listed; QUESTION only what clears the bar. A Question is
+   the first inkling of an RFI: the first confusion where a person has to go answer it or make a
+   call before the work can be priced. If a sub could price it as drawn, it is not a Question.
+   Past the bar there are three shapes and no fourth. A NEW Question, where nothing open covers
+   the ask: `list_questions(projectId, trade: <the trade>)` first, then `ask_question` with that
+   trade set, as when a door schedule row calls a frame type the frame schedule does not carry. A
+   REPLY, where an open one already covers the same ask: `reply_question` on it, citing the sheet
+   you read, as when that same frame type is called again on a second floor plan; it counts on
+   your `questions replied:` line, never as a new Question. NOTHING, where the sheets answer it,
+   another trade's item already carries it, or a sub could price it as drawn, as when a plan calls
+   a partition type the partition schedule defines; what you noticed goes in `notesInternal` on
+   the row if it is worth a watch, and nowhere otherwise. Every Question names the trade it is
+   about, the package that would have to answer or price it; leave the trade off only where the
+   ask really spans the job, a phasing conflict across the site or a general note that contradicts
+   the whole set, and say so in the ask's first sentence. Two Questions come from their own
+   mandates rather than from this bar: the grain question (mandate 7) and the sheet that
+   contradicts a convention line (mandate 2). A Question is about the project, never about a
+   Plumlayer failure; a tool failure is reported to your dispatcher, not raised as a Question.
+   Question text is plain estimator words, per docs/plugin-text-style.md. Never a parallel list;
+   never re-create; never silently skip. An UPDATE carries its own evidence, in the same shape a
+   CREATE's does: the sheet and the page you read it on. The record refuses an update, a note, or
+   a new citation that names no source, exactly as it refuses a create that names none. Before
+   every CREATE, run one `search(text: <two or three distinguishing words of the item's name>)`
+   across the whole project, whatever trade you read for; if a scope item matches, on any trade,
+   UPDATE that item instead.
 2. CONVENTION LINES: your pass runner records each carried trade's convention lines onto the
    record once, at pass start, before your unit runs (subjects `scopeItem:conv-<trade>-<n>`). Cite
    one where a sheet corroborates it, the same way any UPDATE carries its evidence. Never create or
@@ -221,7 +228,8 @@ pages read: <sheet number + pageInPdf, renders taken and the reason for each, on
 pages unread: <sheet number + pageInPdf + reason, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
 updated subjects: <the subject of every item you updated or newly cited, or "none">
-question ids: <every Question you raised or replied to, or "none">
+questions raised ids: <the id of every Question you raised, or "none">
+questions replied ids: <the id of every Question you replied to, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 definitions kinds added: <kinds, or "none">
@@ -237,11 +245,12 @@ door-owned suggestions: <one line each, or "none">
 alike. `sent:` and `landed:` count every write you made for this unit, across every call: your
 batch, any `cite_source`, and any individual record call, not only your first batch.
 
-The `updated subjects:` and `question ids:` lines are load-bearing, not bookkeeping. Your creates
-are findable by their `scopeItem:<unit-id>-` prefix, but an update lands on a subject that already
-existed and a Question on its own id, so nothing else in your report lets the runner find them
-back. Name every one.
+The `updated subjects:`, `questions raised ids:` and `questions replied ids:` lines are
+load-bearing, not bookkeeping. Your creates are findable by their `scopeItem:<unit-id>-` prefix,
+but an update lands on a subject that already existed, a Question you raise on its own id, and a
+reply on the id of a Question somebody else raised, so nothing else in your report lets the runner
+find them back. Name every one.
 
 An unread page is named, never silently skipped. Your reading is your word: it lands under your
-authorship and governs provisionally, so raise a Question about what you are unsure of rather than
-smoothing it.
+authorship and governs provisionally, so name what you are unsure of on the row, and raise a
+Question only where it clears the bar in mandate 1.

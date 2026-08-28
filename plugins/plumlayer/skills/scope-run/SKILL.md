@@ -76,15 +76,16 @@ that relaxes any one of them reproduces a measured, named failure.
 2. **Create / update / question against the live list.** Every reader holds the current scope list
    for its trade or content families as match-or-create context: for each thing seen, create a new
    item, update an existing one (a new citation, a note, a resolved cross-reference), or raise a
-   Question, with a title and a citation. Never a parallel list, never a re-create of what exists,
-   never silent skipping of what's already listed. Before every create, one `search` on the
-   item's distinguishing words across the whole project, whatever trade the match is on: work
-   another trade's pass already captured is updated, never created again. Before raising a
-   Question, read the open Questions on the item's trade (`list_questions`, filtered); where an
-   open one already covers the same ask, reply to it instead of asking it a second time. A
-   Question is about the project, never about a Plumlayer failure; a read or write that fails is
-   reported and handled in the run's own failure path, not raised as a Question. Question text is
-   plain estimator words, per docs/plugin-text-style.md.
+   Question, with a title and a citation. A Question is what clears the bar in the reader's
+   mandate 1, the first inkling of an RFI, never something a sub could price as drawn. Never a
+   parallel list, never a re-create of what exists, never silent skipping of what's already
+   listed. Before every create, one `search` on the item's distinguishing words across the whole
+   project, whatever trade the match is on: work another trade's pass already captured is updated,
+   never created again. Before raising a Question, read the open Questions on the item's trade
+   (`list_questions`, filtered); where an open one already covers the same ask, reply to it
+   instead of asking it a second time. A Question is about the project, never about a Plumlayer
+   failure; a read or write that fails is reported and handled in the run's own failure path, not
+   raised as a Question. Question text is plain estimator words, per docs/plugin-text-style.md.
 3. **The convention-line record mandate.** A trade's convention lines are a property of the trade,
    not of the sheet or the unit reading it: the pass runner records them once, at pass start,
    after a deterministic check that they are not already on the record
@@ -248,7 +249,7 @@ any repo, never uploaded to the project except record files, never recorded as p
   The lead's own two line shapes, which the runner never writes:
 
   ```text
-  pass: <window> <pass id> units <n> created <n> updated <n> questions <n> lead-verified <yes|no>
+  pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> lead-verified <yes|no>
   phase: <boundary name>
   ```
 
@@ -786,7 +787,8 @@ pages read: <sheet number + pageInPdf, renders taken and the reason for each, on
 pages unread: <sheet number + pageInPdf + reason, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
 updated subjects: <the subject of every item updated or newly cited, or "none">
-question ids: <every Question raised or replied to, or "none">
+questions raised ids: <the id of every Question raised, or "none">
+questions replied ids: <the id of every Question replied to, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 definitions kinds added: <kinds, or "none">
@@ -802,9 +804,10 @@ every pre-existing item the reader wrote anything onto, a note, a value, or a ci
 `sent:` and `landed:` count every write the reader made for the unit, across every call, not only
 its first batch.
 
-The `updated subjects:` and `question ids:` lines are what let the runner find those writes back:
-a create is findable by its `scopeItem:<unit-id>-` prefix, an update or a Question lands on a
-subject that already existed or a fresh Question id, and nothing else in the report names them.
+The `updated subjects:`, `questions raised ids:` and `questions replied ids:` lines are what let
+the runner find those writes back: a create is findable by its `scopeItem:<unit-id>-` prefix, an
+update lands on a subject that already existed, a raise on a fresh Question id and a reply on the
+id of a Question somebody else raised, and nothing else in the report names them.
 
 **The runner's summary** comes back in this shape, and is what the lead reads when a pass reports,
 after taking that pass's created counts off the record itself: an entry count under each unit's
@@ -813,8 +816,8 @@ prefix, never the reader's own item count, which travels separately as `items`:
 ```text
 window: <n>   pass: <pass id>
 units read: <unit ids, in reading order>
-per unit: <unit id> created <n> items <n> updated <n> questions <n> verified <yes/no>
-totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n>
+per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> verified <yes/no>
+totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n> replied <n>
 trades: <trade id + item count, one per trade; candidates <n>>
 conflicting rows: <id + how each resolved, or "none">
 overlap notes: <item name + the two units, one per line, or "none">

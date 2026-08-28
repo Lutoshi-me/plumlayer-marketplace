@@ -1431,6 +1431,93 @@ def check_question_failure_boundary(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
+# Check — the Question RFI bar
+# --------------------------------------------------------------------------- #
+#
+# A reader was raising a Question for every uncertainty it met, because the text told it to: the
+# closing line of its own report shape said to raise one "rather than smoothing it". The result was
+# a Question for anything a sub could have priced as drawn, which buries the handful a person
+# actually has to answer. The bar is now stated once, in scope-reader's mandate 1, in fixed words.
+#
+# Two mechanical arms, the same shape as the two checks above:
+#
+#   1. scope-reader.md carries the bar in its fixed wording. Two phrases, both required, so the
+#      rule is provably present rather than plausible-sounding nearby text.
+#   2. No shipped skill or agent file carries a retired raise-for-everything phrase next to the
+#      word Question. Matched on one line: the phrases are short and the collocation is what makes
+#      them a directive, and "rather than guessing at one" about a category string (which the same
+#      file legitimately carries) is not about Questions at all.
+#
+# What this cannot judge, and does not try to: whether a Question an agent actually raises clears
+# the bar. That stays in review.
+
+QUESTION_RFI_BAR_PHRASES = (
+    "first inkling of an RFI",
+    "If a sub could price it as drawn, it is not a Question",
+)
+
+# Wording retired with the bar: it told the reader to raise a Question wherever it was unsure,
+# which is the failure mode the bar exists to stop.
+_QUESTION_RAISE_FOR_EVERYTHING_RE = re.compile(
+    r"rather than smoothing it|rather than guessing", re.IGNORECASE
+)
+
+_QUESTION_WORD_RE = re.compile(r"\bquestions?\b", re.IGNORECASE)
+
+
+def check_question_rfi_bar(plugin_path: Path) -> Result:
+    name = "question-rfi-bar"
+    skills_dir = plugin_path / "skills"
+    agents_dir = plugin_path / "agents"
+
+    files: list[Path] = []
+    if skills_dir.is_dir():
+        files.extend(sorted(skills_dir.rglob("SKILL.md")))
+    if agents_dir.is_dir():
+        files.extend(sorted(agents_dir.rglob("*.md")))
+
+    errors: list[str] = []
+
+    reader = agents_dir / "scope-reader.md"
+    if not reader.is_file():
+        errors.append(f"reader definition not found at {reader}")
+    else:
+        try:
+            # Markdown wraps prose at the line, so a required phrase can legitimately span a
+            # line break; collapse whitespace before matching rather than demanding one line.
+            normalized = re.sub(r"\s+", " ", reader.read_text(encoding="utf-8"))
+        except Exception as e:
+            normalized = ""
+            errors.append(f"{reader.name}: read error: {e}")
+        for phrase in QUESTION_RFI_BAR_PHRASES:
+            if phrase and phrase not in normalized:
+                errors.append(f"{reader.name}: carries no '{phrase}' bar sentence")
+
+    for f in files:
+        try:
+            lines = f.read_text(encoding="utf-8").splitlines()
+        except Exception as e:
+            errors.append(f"{f}: read error: {e}")
+            continue
+
+        label = f"{f.parent.name}/{f.name}" if f.name == "SKILL.md" else f.name
+
+        for i, line in enumerate(lines):
+            m = _QUESTION_RAISE_FOR_EVERYTHING_RE.search(line)
+            if m and _QUESTION_WORD_RE.search(line):
+                errors.append(
+                    f"{label}:{i + 1}: retired raise-for-everything wording '{m.group(0)}' "
+                    f"next to Question — {line.strip()[:160]}"
+                )
+
+    detail = f"{len(files)} skill/agent files scanned, {len(QUESTION_RFI_BAR_PHRASES)} bar phrases required"
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Check — Question plain-words pointer (PLU-1526)
 # --------------------------------------------------------------------------- #
 #
@@ -2860,6 +2947,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_mcp_url(plugin_path),
         check_no_absolute_paths(plugin_path, marketplace_root),
         check_question_failure_boundary(plugin_path),
+        check_question_rfi_bar(plugin_path),
         check_question_plain_words_pointer(plugin_path),
         check_ledger_fixed_shape(plugin_path),
         check_runner_mode_set(plugin_path),

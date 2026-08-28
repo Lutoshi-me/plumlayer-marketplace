@@ -122,7 +122,12 @@ is lost by stopping there, because nothing has run.
      that the result does not carry is a mismatch. A new citation on a pre-existing item counts as
      an update and is found back the same way.
    - **Questions, by id.** One `search(subject: "<question id>")` per id on the reader's
-     `question ids:` line, and nothing wider. An id you cannot find back is a mismatch.
+     `questions raised ids:` line and one per id on its `questions replied ids:` line, and nothing
+     wider. An id you cannot find back is a mismatch. A replied id must also carry a
+     `questionReply` entry in that same result: a reply lands as an entry on the question's own
+     subject, so the one call proves both that the id is real and that a reply stands on it. The
+     reader's `questions raised:` and `questions replied:` counts go on the `verified` line as
+     `questions` and `replied`.
    - **Trades.** A created subject with no trade and no candidate in the `verify_unit` result is a
      mismatch: the door should have refused it, and a row without a trade never stays on the
      record unnamed.
@@ -158,7 +163,7 @@ is already there, yours or anyone's, and you never read the file.
 
 ```text
 dispatch <window> <pass> <unit> sheets <sheet numbers, comma separated> purpose <up to eight words>
-verified <window> <pass> <unit> created <n> items <n> updated <n> questions <n> sent <n> landed <n> conflicts <n> result <ok|mismatch>
+verified <window> <pass> <unit> created <n> items <n> updated <n> questions <n> replied <n> sent <n> landed <n> conflicts <n> result <ok|mismatch>
 note <window> <pass> <unit-or-dash> <kind> <one clause, at most 200 characters>
 ```
 
@@ -171,7 +176,7 @@ Worked shapes, invented, never from a real project:
 
 ```text
 dispatch 1 A2 A2-3 sheets A-9.02 purpose door and frame schedule
-verified 1 A2 A2-3 created 126 items 34 updated 4 questions 2 sent 140 landed 140 conflicts 0 result ok
+verified 1 A2 A2-3 created 126 items 34 updated 4 questions 2 replied 1 sent 140 landed 140 conflicts 0 result ok
 note 1 A2 A2-3 anomaly A-9.02 p61 two frame marks carry the same model number
 note 1 A2 - kinds doorType frameType finishType
 note 2 roofing - convention roofing recorded 10 lines
@@ -262,8 +267,8 @@ you learned is in the record and the ledger, which is where the next pass reads 
 ```text
 window: <n>   pass: <pass id>
 units read: <unit ids, in reading order>
-per unit: <unit id> created <n> items <n> updated <n> questions <n> verified <yes/no>
-totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n>
+per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> verified <yes/no>
+totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n> replied <n>
 trades: <trade id + item count, one per trade; candidates <n>>
 conflicting rows: <id + how each resolved, or "none">
 overlap notes: <item name + the two units, one per line, or "none">
