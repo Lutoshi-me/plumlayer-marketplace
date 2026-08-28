@@ -5,13 +5,13 @@
   },
   "metadata": {
     "description": "The Plumlayer plugin for Claude Code, connecting to your Plumlayer project record and precon workflow skills for drawings, scope, and bids.",
-    "version": "0.64.0"
+    "version": "0.64.1"
   },
   "plugins": [
     {
       "name": "plumlayer",
       "description": "Connect your agent to your Plumlayer project record and the precon skills that work it: upload and index drawing sets, build one cited scope list for the job and split it into trade packages, level sub bids, and place takeoffs. Everything recorded carries its author, the time, and the sheet it came from.",
-      "version": "0.64.0",
+      "version": "0.64.1",
       "author": {
         "name": "Plumlayer"
       },
