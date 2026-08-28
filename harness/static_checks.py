@@ -59,11 +59,11 @@ Checks:
       planned either adjacent or named on the bounds line as a group no order can satisfy (checked
       over the fixture and again over all of the shipped map's pairs), no pass claiming a seam its
       own order contradicts, a window 3 that is exactly the inventory minus window 2's own unit
-      lines, an index with no located codes reported as a partial input rather than a
-      clean number, and a one-line refusal naming what is missing for each of eight broken
-      invocations. The shipped scripts are compiled from source here rather than imported through
-      the loader, so a script edited twice inside one second to the same byte length can never be
-      checked as its earlier bytecode.
+      lines, every partial input named on the bounds line rather than folded into a clean number,
+      and a one-line refusal naming what is missing for each of eleven broken invocations. The
+      shipped scripts are compiled from source here rather than imported through the loader, so a
+      script edited twice inside one second to the same byte length can never be checked as its
+      earlier bytecode.
   15. No shipped skill or agent file names `fork` as a subagent type, in either the
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
   16. Every shipped skill or agent file that names `ask_question` or tells the agent to raise a
@@ -2390,7 +2390,16 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     # The independent tally, computed here off the fixtures and never off the script's output.
     try:
         fixture_rows = json.loads(grid_fixture.read_text(encoding="utf-8"))["sheets"]
-        index_page = json.loads((fixtures / "index-fixture" / "page-000.json").read_text(encoding="utf-8"))
+        # The index pages are one leftover kind each, the shape index_citations_leftover returns,
+        # plus the located-code page the script also accepts. Both are read here the way the script
+        # reads them, so the tally below is this file's own and never the script's output.
+        index_pages = [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in sorted((fixtures / "index-fixture").iterdir())
+            if path.is_file()
+        ]
+        leftover_rows = [row for page in index_pages for row in page.get("rows", [])]
+        location_rows = [row for page in index_pages for row in page.get("locations", [])]
         trade_sheets = json.loads(
             (trade_knowledge / "trade-sheets.json").read_text(encoding="utf-8")
         )
@@ -2412,6 +2421,8 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
 
     out_dir = Path(__file__).parent / ".test-results" / "plan-inventory"
     errors: list[str] = []
+    # The partial-input notes window 2 asserts, filled in below and named in the detail line.
+    fragments: list[str] = []
 
     code, bounds, err = _run_plan_script(
         module,
@@ -2557,23 +2568,38 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append("the window 2 fixture proves nothing about overlap: no sheet is read twice")
         if f"sheets no trade reads {expected_rows - len(w2_sheets)}" not in w2_bounds:
             errors.append(f"the window 2 bounds line's unread count is not the inventory minus what it planned")
-        # Two partial-input notes the fixtures are built to trip: a kinds row carrying a kind and no
-        # defining sheet, and an index location row naming no kind. Both must reach the bounds line,
-        # or a run would report a clean number over an input it could only partly use.
-        kinds_without_sheet = sum(
-            1 for row in json.loads(Path(kinds).read_text(encoding="utf-8"))["kinds"]
-            if not row.get("sheetNumber")
+        # Four partial-input notes the fixtures are built to trip: a code row carrying a kind and no
+        # defining sheet, a kind whose code rows fall short of the count the record gave for it, an
+        # index location row naming no kind, and a leftover kind whose rows fall short of its own
+        # total. Each must reach the bounds line, or a run would report a clean number over an input
+        # it could only partly use.
+        kinds_documents = json.loads(Path(kinds).read_text(encoding="utf-8"))
+        code_rows = [row for doc in kinds_documents for row in doc.get("codes", [])]
+        codes_without_sheet = sum(1 for row in code_rows if not row.get("sheetNumber"))
+        kinds_short = sorted(
+            f"{doc['codes'][0]['kind']} {len(doc['codes'])} of {doc['count']}"
+            for doc in kinds_documents
+            if doc.get("codes") and len(doc["codes"]) < doc.get("count", 0)
         )
         locations_without_field = sum(
-            1 for row in index_page["locations"]
+            1 for row in location_rows
             if not row.get("kind") or not row.get("sheetNumber")
         )
-        if kinds_without_sheet == 0 or locations_without_field == 0:
-            errors.append("the fixtures no longer trip both partial-input notes")
-        for fragment in (
-            f"definition kinds with no defining sheet {kinds_without_sheet}",
+        leftover_short = sorted(
+            f"{page['kind']} {len(page['rows'])} of {page['total']}"
+            for page in index_pages
+            if page.get("rows") is not None and len(page["rows"]) < page.get("total", 0)
+        )
+        if codes_without_sheet == 0 or locations_without_field == 0 or not leftover_short:
+            errors.append("the fixtures no longer trip every partial-input note")
+        fragments += [
+            f"definition codes with no defining sheet {codes_without_sheet}",
             f"index locations naming no kind or no sheet {locations_without_field}",
-        ):
+            "leftover kinds short of their own total: " + ", ".join(leftover_short),
+        ]
+        if kinds_short:
+            fragments.append("definition kinds short of their own count: " + ", ".join(kinds_short))
+        for fragment in fragments:
             if fragment not in w2_bounds:
                 errors.append(f"the window 2 bounds line does not carry `{fragment}`: {w2_bounds!r}")
         # A package whose code the map does not key reads for the family's trade file, and a run has
@@ -2681,9 +2707,9 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             if fragment not in w3_bounds:
                 errors.append(f"the window 3 bounds line does not name `{fragment}`: {w3_bounds!r}")
         open_on_leftover = sum(
-            1 for row in index_page["openEntries"] if row.get("sheetNumber") in expected_w3
+            1 for row in leftover_rows if row.get("sheet") in expected_w3
         )
-        total_open = len(index_page["openEntries"])
+        total_open = len(leftover_rows)
         if f"open entries {open_on_leftover} of {total_open}" not in w3_bounds:
             errors.append(
                 f"the window 3 bounds line does not carry {open_on_leftover} of {total_open} open "
@@ -2799,6 +2825,13 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             "locations",
         ),
         (
+            "a leftover page read off a pass that has not finished",
+            ["plan", "--window", "3", "--inventory", inventory_json, "--packages", packages,
+             "--kinds", kinds, "--index", str(fixtures / "index-fixture-not-succeeded"),
+             "--trade-knowledge", str(trade_knowledge), "--out", str(out_dir / "refused.md")],
+            "not succeeded",
+        ),
+        (
             "window 2 with no --kinds",
             ["plan", "--window", "2", "--inventory", inventory_json, "--packages", packages,
              "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
@@ -2853,15 +2886,15 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"balanced split computed here, two seam groups (a pair and a three-trade chain) each "
         f"contiguous with no pass claiming a seam its own order contradicts, the same seam property "
         f"checked over all {len(seam_pairs)} pairs of the shipped map with one pass per mapped "
-        f"trade, both partial-input notes asserted by their text, window 3 checked to be exactly "
-        f"the inventory minus window 2's own unit lines, an index with no located codes reported as "
-        f"a partial input, "
+        f"trade, {len(fragments)} partial-input notes asserted by their text, window 3 checked to be "
+        f"exactly the inventory minus window 2's own unit lines, an index with no located codes "
+        f"reported as a partial input, "
         f"{len(refusals)} broken invocations each refused in one line naming what is missing"
     )
-    # An honest bound, not a pass: the fixtures are invented, and the kinds and index fixtures are
-    # shaped against verbs that do not exist yet, so this proves the script's arithmetic, its
-    # ordering and its refusals, and nothing about how a real record read arrives.
-    detail += "; bound: invented fixtures, not a real grid, and no real kinds or index read"
+    # An honest bound, not a pass: the fixtures are invented and small. They carry the field names
+    # the shipped verbs return, so a rename on the record's side would fail here, but nothing about
+    # a real grid, a real definitions read or a real leftover read is proved by them.
+    detail += "; bound: invented fixtures, not a real grid, definitions read or leftover read"
     if errors:
         detail += " | " + "; ".join(errors)
 

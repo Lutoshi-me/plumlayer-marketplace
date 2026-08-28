@@ -57,21 +57,25 @@ an empty plan:
               `tradeCode`, one package per trade file, and optionally `id`, `name` and `codes`.
               A `tradeCode` the map does not key resolves to the nearest broader CSI section it
               does key, since a trade file is general to its family.
-  --kinds     a `list_definitions` response or an array of its rows: each row carries `kind`, and
-              carries `sheetNumber` where the record knows which sheet defines it.
-  --index     a directory of `index_citations_status` pages: each page carries `openEntries`
-              (rows with `sheetNumber`), or `locations` (rows with `kind` and `sheetNumber`), or
-              both. A page carrying neither is a refusal. Where no page carries `locations` at all,
-              that input did not run, and the bounds line says so rather than reporting a clean
-              number.
+  --kinds     the record's definitions on disk, one file or a directory of them: a
+              `list_definition_kinds` response (a `kinds` array), a `list_definitions` response for
+              one kind (a `codes` array), an array of either, or an array of bare rows. Every row
+              carries `kind`; a `codes` row carries `code`, and `sheetNumber` where the record knows
+              which sheet defines it.
+  --index     a directory of `index_citations_leftover` pages: each page carries `kind`, `state`,
+              `total` and `rows` (the rows of the kinds that name a sheet carry it as `sheet`), or
+              `locations` (rows with `kind` and `sheetNumber`), or both. A page carrying neither is
+              a refusal, and so is a page read off a pass that has not finished. No shipped read
+              returns `locations`, so where no page carries it that input did not run, and the
+              bounds line says so rather than reporting a clean number.
 
 Exit codes:
   0  wrote the files; one bounds line on stdout naming what it read and what it wrote.
   1  a named failure, one line on stderr: a file that does not parse, a row total that does not
      match `--expect-count`, a missing window input, an input row with no `tradeCode` or no `kind`,
-     two packages resolving to one trade file, an index page carrying neither array, an
-     `--include` or `--exclude` with no colon or matching no sheet, a trade map that fails its own
-     shape checks, or an inventory file this script did not write.
+     two packages resolving to one trade file, an index page carrying neither array or read off a
+     pass that has not finished, an `--include` or `--exclude` with no colon or matching no sheet, a
+     trade map that fails its own shape checks, or an inventory file this script did not write.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A file that does not parse whole is a refusal,
@@ -681,40 +685,103 @@ def _read_packages(path: Path) -> list[dict]:
     return packages
 
 
-def _read_kinds(path: Path) -> tuple[list[dict], int]:
+def _definition_documents(path: Path) -> list[tuple[Path, object]]:
     """
-    The record's definition kinds, byte copied to disk. Every row must carry a `kind`; a row that
-    carries one and no `sheetNumber` names no defining sheet, which is counted and reported rather
-    than guessed at.
+    The definition responses on disk: one file, or a directory holding one file per response, which
+    is how a paged read reaches disk without a model merging its pages into one.
     """
-    data = _read_json(path, "the definition kinds file")
-    if isinstance(data, dict):
-        rows = data.get("kinds")
-        if rows is None:
-            rows = data.get("definitions")
-    else:
-        rows = data
-    if not isinstance(rows, list):
-        raise PlanError(f"{path} carries no `kinds` array")
-    kinds: list[dict] = []
+    if path.is_dir():
+        files = sorted(p for p in path.iterdir() if p.is_file())
+        if not files:
+            raise PlanError(f"no definition pages in {path}")
+        return [(p, _read_json(p, "a definitions page")) for p in files]
+    return [(path, _read_json(path, "the definitions file"))]
+
+
+def _read_kinds(path: Path) -> tuple[list[dict], int, list[str]]:
+    """
+    The record's definitions, byte copied to disk: a `list_definition_kinds` response, whose `kinds`
+    array names the kinds the project keeps, and one `list_definitions` response per kind, whose
+    `codes` array carries one row per code with the sheet that defines it. A document is one
+    response, an array of responses, or an array of bare rows.
+
+    Every row must carry a `kind`. A code row carrying no `sheetNumber` names no defining sheet,
+    which is counted and reported rather than guessed at, and a kind whose rows on disk fall short
+    of the `count` the record gave for it is named: a plan off half a schedule reads fewer sheets
+    and would otherwise say nothing about it.
+    """
+    rows: list[dict] = []
     without_sheet = 0
-    for index, row in enumerate(rows, 1):
+    seen_by_kind: dict[str, int] = {}
+    count_by_kind: dict[str, int] = {}
+
+    def take_row(where: str, index: int, row: object) -> None:
+        nonlocal without_sheet
         if not isinstance(row, dict):
-            raise PlanError(f"{path}: row {index} is not an object")
+            raise PlanError(f"{where}: row {index} is not an object")
         kind = row.get("kind")
         if not isinstance(kind, str) or not kind.strip():
-            raise PlanError(f"{path}: row {index} carries no `kind`")
-        if not _text(row.get("sheetNumber")):
-            without_sheet += 1
-        kinds.append(row)
-    return kinds, without_sheet
+            raise PlanError(f"{where}: row {index} carries no `kind`")
+        # A code row is the only row that can name a defining sheet: a `kinds` row names a kind, and
+        # no sheet defines a kind.
+        if _text(row.get("code")):
+            seen_by_kind[kind.strip()] = seen_by_kind.get(kind.strip(), 0) + 1
+            if not _text(row.get("sheetNumber")):
+                without_sheet += 1
+        rows.append(row)
+
+    def take_document(where: str, doc: object) -> None:
+        if isinstance(doc, list):
+            for index, item in enumerate(doc, 1):
+                if isinstance(item, dict) and ("codes" in item or "kinds" in item):
+                    take_document(f"{where}: response {index}", item)
+                else:
+                    take_row(where, index, item)
+            return
+        if not isinstance(doc, dict):
+            raise PlanError(f"{where} is not a definitions response")
+        codes = doc.get("codes")
+        kinds = doc.get("kinds")
+        if codes is None and kinds is None:
+            raise PlanError(f"{where} carries neither a `codes` array nor a `kinds` array")
+        for field, value in (("codes", codes), ("kinds", kinds)):
+            if value is None:
+                continue
+            if not isinstance(value, list):
+                raise PlanError(f"{where}: `{field}` is not an array")
+            first = len(rows)
+            for index, row in enumerate(value, 1):
+                take_row(where, index, row)
+            if field == "codes" and isinstance(doc.get("count"), int) and len(rows) > first:
+                named = _text(rows[first].get("kind")).strip()
+                count_by_kind[named] = max(count_by_kind.get(named, 0), doc["count"])
+
+    for source, doc in _definition_documents(path):
+        take_document(str(source), doc)
+
+    short = [
+        f"{kind} {seen_by_kind.get(kind, 0)} of {total}"
+        for kind, total in sorted(count_by_kind.items())
+        if seen_by_kind.get(kind, 0) < total
+    ]
+    return rows, without_sheet, short
 
 
 def _read_index(index_dir: Path) -> dict:
     """
-    What the citation index left open, and where it located each code, byte copied to disk one page
-    per file. A page carrying neither array is a refusal naming both fields tried, so a shape change
-    on the record's side surfaces here rather than as an empty leftover window.
+    What the citation index left open, byte copied to disk one page per file. An
+    `index_citations_leftover` page carries the leftover `kind`, the `state` of the pass it was read
+    from, that kind's true `total`, and its `rows`; the rows of the kinds that name a sheet carry it
+    as `sheet`. A pass that has not finished reads zero for every kind, which is not the same as
+    finding none, so a page whose state is not `succeeded` is a refusal rather than a clean zero.
+
+    `locations` is the other array a page here may carry: where the index placed each code it cited,
+    one row per code with its `kind` and `sheetNumber`. No shipped read returns that, so where no
+    page carries it the bounds line says the input did not run rather than reporting a clean number
+    over half an input.
+
+    A page carrying neither array is a refusal naming both fields tried, so a shape change on the
+    record's side surfaces here rather than as an empty leftover window.
     """
     if not index_dir.is_dir():
         raise PlanError(f"no index directory at {index_dir}")
@@ -725,6 +792,8 @@ def _read_index(index_dir: Path) -> dict:
     open_by_sheet: dict[str, int] = {}
     open_total = 0
     open_without_sheet = 0
+    rows_by_kind: dict[str, int] = {}
+    total_by_kind: dict[str, int] = {}
     locations: list[dict] = []
     locations_seen = False
 
@@ -732,20 +801,30 @@ def _read_index(index_dir: Path) -> dict:
         page = _read_json(path, "an index page")
         if not isinstance(page, dict):
             raise PlanError(f"{path} is not an index page object")
-        entries = page.get("openEntries")
+        entries = page.get("rows")
         located = page.get("locations")
         if entries is None and located is None:
-            raise PlanError(
-                f"{path} carries neither an `openEntries` array nor a `locations` array"
-            )
+            raise PlanError(f"{path} carries neither a `rows` array nor a `locations` array")
         if entries is not None:
             if not isinstance(entries, list):
-                raise PlanError(f"{path}: `openEntries` is not an array")
+                raise PlanError(f"{path}: `rows` is not an array")
+            kind = _text(page.get("kind")).strip()
+            if not kind:
+                raise PlanError(f"{path} carries `rows` and no `kind`")
+            state = _text(page.get("state")).strip()
+            if state != "succeeded":
+                raise PlanError(
+                    f"{path}: the pass it was read from is {state or 'unnamed'}, not succeeded, and "
+                    f"a pass that has not finished reads zero for every kind"
+                )
+            if isinstance(page.get("total"), int):
+                total_by_kind[kind] = max(total_by_kind.get(kind, 0), page["total"])
             for row in entries:
                 if not isinstance(row, dict):
-                    raise PlanError(f"{path}: an `openEntries` row is not an object")
+                    raise PlanError(f"{path}: a `rows` row is not an object")
                 open_total += 1
-                sheet = _text(row.get("sheetNumber"))
+                rows_by_kind[kind] = rows_by_kind.get(kind, 0) + 1
+                sheet = _text(row.get("sheet"))
                 if not sheet:
                     open_without_sheet += 1
                     continue
@@ -759,10 +838,19 @@ def _read_index(index_dir: Path) -> dict:
                     raise PlanError(f"{path}: a `locations` row is not an object")
                 locations.append(row)
 
+    # Either the pass kept only the first rows of that kind, or the fetch did not page the kind out.
+    # Which of the two it was is not a call this script can make, so it names the shortfall.
+    short = [
+        f"{kind} {rows_by_kind.get(kind, 0)} of {total}"
+        for kind, total in sorted(total_by_kind.items())
+        if rows_by_kind.get(kind, 0) < total
+    ]
+
     return {
         "openBySheet": open_by_sheet,
         "openTotal": open_total,
         "openWithoutSheet": open_without_sheet,
+        "openShortKinds": short,
         "locations": locations,
         "locationsPresent": locations_seen,
         "pages": len(files),
@@ -1369,14 +1457,20 @@ def plan(args) -> str:
         excludes = [_split_pattern_argument(raw, "--exclude") for raw in (args.exclude or [])]
         result = _window_1(rows, packages, trade_map, includes, excludes)
     else:
-        kinds, kinds_without_sheet = _read_kinds(args.kinds)
+        kinds, kinds_without_sheet, kinds_short = _read_kinds(args.kinds)
         index = _read_index(args.index)
         if not index["locationsPresent"]:
             notes.append("index locations not present")
         if kinds_without_sheet:
-            notes.append(f"definition kinds with no defining sheet {kinds_without_sheet}")
+            notes.append(f"definition codes with no defining sheet {kinds_without_sheet}")
+        if kinds_short:
+            notes.append("definition kinds short of their own count: " + ", ".join(kinds_short))
         if index["openWithoutSheet"]:
             notes.append(f"open entries naming no sheet {index['openWithoutSheet']}")
+        if index["openShortKinds"]:
+            notes.append(
+                "leftover kinds short of their own total: " + ", ".join(index["openShortKinds"])
+            )
         if window == 2:
             result = _window_2(rows, packages, trade_map, kinds, index)
             if result["locationsWithoutField"]:
@@ -1450,8 +1544,8 @@ def main(argv: list[str] | None = None) -> int:
     win.add_argument("--window", required=True, type=int, choices=(1, 2, 3), help="which window to plan")
     win.add_argument("--inventory", required=True, type=Path, help="inventory.json from the inventory mode")
     win.add_argument("--packages", type=Path, help="the solicitation_list_packages response on disk")
-    win.add_argument("--kinds", type=Path, help="the record's definition kinds on disk")
-    win.add_argument("--index", type=Path, help="the directory holding the citation index pages")
+    win.add_argument("--kinds", type=Path, help="the record's definitions on disk, one file or a directory of pages")
+    win.add_argument("--index", type=Path, help="the directory holding the citation index leftover pages")
     win.add_argument("--trade-knowledge", type=Path, help="the plugin's trade-knowledge directory")
     win.add_argument(
         "--include", action="append", metavar="PATTERN:REASON",

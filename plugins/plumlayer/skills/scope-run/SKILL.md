@@ -89,12 +89,16 @@ that relaxes any one of them reproduces a measured, named failure.
 3. **The convention-line record mandate.** A trade's convention lines are a property of the trade,
    not of the sheet or the unit reading it: the pass runner records them once, at pass start,
    after a deterministic check that they are not already on the record
-   (`search(subjectPrefix: "scopeItem:conv-<trade>-", limit: 1)`, reading `count`), never per
+   (`search(subjectPrefix: "scopeItem:conv-092116-", limit: 1)`, reading `count`), never per
    reader and never per unit. Convention lines never masquerade as sheet-cited reads: their
-   `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>` (the pinned version from
+   `sourceInstrument` is `trade-convention:092116@<knowledge-version>` (the pinned version from
    the knowledge manifest), their evidence quotes the trade file's line and carries the marker
    `basis: "trade-convention"`, they carry no sheet citation, and their trade is the trade whose
-   file they came from. A reader never creates or recreates one; where a sheet corroborates one,
+   file they came from. The trade is that trade's catalog code everywhere here and never the trade
+   file's own name, in two forms: `belongsToTrade` carries it spaced, as the packages carry it
+   (`09 21 16`), and the subject, the prefix above and the instrument carry it with the spaces out
+   (`092116`), because an identifier carries no spaces and the catalog fold reads either form as
+   the same trade. A reader never creates or recreates one; where a sheet corroborates one,
    that citation updates the same item and the convention basis stays visible in the trail, and
    where a sheet contradicts one for this project, the reader raises a Question naming it rather
    than deciding on its own.
@@ -108,8 +112,11 @@ that relaxes any one of them reproduces a measured, named failure.
    created, and moves on; a wrong trade is moved later by a person or a later read, never held
    back. Where the reader cannot tell which of two or more trades owns the work, it names its best
    single trade as the home and tags every other candidate, and keeps moving. The record door
-   refuses a new scope item with no trade and no candidate. Whether an item is an exclusion, a
-   general requirement, or an alternate is still a person's call at the package surface.
+   refuses a new scope item with no trade and no candidate, and refuses a trade the catalog does
+   not carry, on `belongsToTrade` and inside `packageRole:<trade>` alike. `record_batch` is atomic
+   and order free, so the trade rides in the same batch as the name; `record` carries one entry, so
+   there the trade entry is written first. Whether an item is an exclusion, a general requirement,
+   or an alternate is still a person's call at the package surface.
 6. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
    the record back and confirms the count that landed equals the count sent, and checks any
    conflicting rows individually, before it ends. The pass runner separately re-verifies the same
@@ -176,11 +183,14 @@ A newly created scope item is a full row, not a name. Every new item writes:
   category string; never invent a fresh category per item. The review surface groups by this: an
   uncategorized list renders as a wall.
 - **trade** (required): the catalog trade id of the package that owns the work, read off the
-  packages orientation created (`solicitation_list_packages`), recorded as `belongsToTrade`.
-  Where the work straddles packages, the best single home goes here and each other candidate gets
-  a `packageRole:<trade>` record with role `candidate` and a note in the shape "confirm trade
-  responsibility: could be `<home>` or `<this trade>`" (internal only, never bidder-facing),
-  written in the same batch.
+  packages orientation created (`solicitation_list_packages`), recorded as `belongsToTrade`. It is
+  the catalog code the package carries, CSI shaped, `09 21 16`, never a trade file's name and never
+  a word for the trade: `drywall` is refused. Browse the codes with `directory_list_trades` where a
+  package's own `tradeCode` does not answer it. Where the work straddles packages, the best single
+  home goes here and each other candidate gets a `packageRole:<trade>` record with role `candidate`
+  and a note in the shape "confirm trade responsibility: could be `<home>` or `<this trade>`"
+  (internal only, never bidder-facing), written in the same batch. The `<trade>` in that predicate
+  is the same catalog code, and the door reads it there too.
 - **description** (optional, zero to three sentences): only what a bidder must know to price the
   line that the name and citation do not already say: the product or method the drawings call
   for, the extent or limits, a rated or special condition. A simple item has none. The citation
@@ -257,9 +267,10 @@ any repo, never uploaded to the project except record files, never recorded as p
   the plan script's counts off it. The lead reads the count tables and the sheet number digest,
   never a sheet line. Audience: machine, and the tables for the lead.
 - `plan/`: the plan script's other inputs, each a byte-for-byte copy of a verb's response paged to
-  disk by a fresh agent, never retyped and never read by a model: `kinds.json`
-  (`list_definitions`, every kind), `packages.json` (`solicitation_list_packages`), and `index/`
-  (what `index_citations_status` left open). Audience: machine.
+  disk by a fresh agent, never retyped and never read by a model: `kinds/` (one file per response,
+  `list_definition_kinds` for the kinds and `list_definitions` for each kind's codes),
+  `packages.json` (`solicitation_list_packages`), and `index/` (one file per response,
+  `index_citations_leftover`, what the index left open, one kind at a time). Audience: machine.
 - `read-plan.md`: the read plan, one per window, written by the plan script, never by hand: the
   passes, the units within each with their sheets, files and pages, the trade each pass reads for,
   and what is deliberately excluded. Audience: agent; a runner opens its own pass only.
@@ -345,7 +356,8 @@ each catalog trade to its knowledge file and to the sheet families that trade re
 the seams between trades; the plan script reads it, and no model does.
 `MANIFEST.md` there records the knowledge version and source snapshot: read it at run start,
 record the version in the ledger, and cite it in every convention-line record
-(`trade-convention:<trade>@<version>`). Each pass's runner cuts the trade file its pass reads for
+(`trade-convention:092116@<version>`, the trade's catalog code with the spaces out). Each pass's
+runner cuts the trade file its pass reads for
 (in window 1, the files its content families touch, at most ten) into one knowledge file beside
 its brief, verbatim, and the reader reads that. Where the knowledge is silent, the reader creates
 at best judgment and raises a Question (non-negotiable 7); the Question is a suggested amendment to
@@ -555,8 +567,9 @@ nothing else:
    its `pass:` line, dispatch one more runner with `boundary` in place of the pass id. It scans the
    window's new items for the same work captured by two passes that ran alongside each other,
    declares any kind a reader named and did not declare, copies the record's definitions
-   (`list_definitions`, every kind) to `<run folder>/plan/kinds.json` for the plan script, and
-   ends. Then append `phase: window 1 complete` to the ledger with the window's verified totals,
+   (`list_definition_kinds`, then `list_definitions` paged for each kind) to
+   `<run folder>/plan/kinds/` for the plan script, one file per response, and ends. Then append
+   `phase: window 1 complete` to the ledger with the window's verified totals,
    and go straight to stage 5: the index runs before the check-in, so the trade pages the user
    opens at the check-in already carry every sheet.
 
@@ -569,14 +582,22 @@ Between windows 1 and 2, again after window 3, and never skipped:
    and onto the items that resolve to it, as the record's own text match. It writes citations only,
    never a value; an item that already cites a page is not cited there again; a match on a code of
    two characters or fewer is left open rather than cited.
-2. **Wait for it.** Poll `index_citations_status(projectId)` until it reports done, waiting
-   between polls rather than polling back to back. Its status carries codes matched, citations
-   written, and the counts of what it left open. Read the counts; never the pages.
-3. **Put what it left open on disk.** Dispatch a fresh general agent whose whole job is to page the
-   index's open report (`index_citations_status` with `limit` and `offset`, the way the grid was
-   fetched) into `<run folder>/plan/index/`, copied never retyped, and return one line: pages
-   fetched, entries on disk. That file is what the plan script and the leftover runners read; you
-   never do.
+2. **Wait for it.** Poll `index_citations_status(projectId)` until its `state` is `succeeded` or
+   `failed`, waiting between polls rather than polling back to back. On `succeeded` its `report`
+   carries `codesTotal`, `codesMatched`, `citationsWritten` and the rest of the run's counts, and
+   `leftoverCounts` carries the true count per kind of what it could not cite, with
+   `truncatedKinds` naming the kinds whose rows were cut for size. Read the counts; never the
+   pages. `queued` and `stale` are both safe to wait through.
+3. **Put what it left open on disk.** Dispatch a fresh general agent whose whole job is to page
+   what the index left open into `<run folder>/plan/index/`, copied never retyped, and return one
+   line: pages fetched, rows on disk. It calls `index_citations_leftover(projectId, kind, offset,
+   limit)` once per kind that `leftoverCounts` shows above zero, paging each kind until a response
+   comes back with no rows, and writes each response to its own file the way the grid was fetched.
+   A kind the pass cut for size has fewer rows to page through than its `total`, which stays the
+   true count either way, so the end of the rows is what stops the paging. The kinds are
+   `unmatchedTag`, `codeNoLocation`, `codeTooShort`, `fragmentUnresolvable`, `pageNotASheet`,
+   `codeOverCap`, `hitNotDrawable` and `overRunCap`. Those files are what the plan script and the
+   leftover runners read; you never do.
 4. Append `phase: index built` to the ledger with the counts off the status, then check in
    (format below).
 
@@ -593,16 +614,19 @@ On the go-ahead:
 1. **Write the window 2 plan.** Run the plan script for window 2. For every package in
    `plan/packages.json` it writes one pass, reading for that trade: the sheet families that
    trade's knowledge file names, selected off the inventory by discipline and sheet type; the
-   sheets the index found that trade's items' codes on; and the schedules whose kinds resolve to
-   it. A pass over twelve sheets splits at the twelve into lettered passes of the same trade. It
-   orders the passes so that two trades the knowledge files name as a seam run one after the
-   other, and names what no trade reads. Read back only its bounds line: trades, passes, sheets
-   read for more than one trade, sheets no trade reads.
+   schedules whose kinds resolve to it; and the sheets the index located that trade's codes on
+   where that input is on disk. A pass over twelve sheets splits at the twelve into lettered passes
+   of the same trade. It orders the passes so that two trades the knowledge files name as a seam
+   run one after the other, and names what no trade reads. Read back only its bounds line: trades,
+   passes, sheets read for more than one trade, sheets no trade reads, and any partial input it was
+   given. `index locations not present` is one of those and is expected today: the index reports
+   what it left open, not where it placed what it cited, so a trade's sheets come from its families
+   and its schedules. Say it in the ledger rather than reading past it.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 2 \
      --inventory '<run folder>/inventory.json' \
-     --packages '<run folder>/plan/packages.json' --kinds '<run folder>/plan/kinds.json' \
+     --packages '<run folder>/plan/packages.json' --kinds '<run folder>/plan/kinds' \
      --index '<run folder>/plan/index' --trade-knowledge '<plugin root>/trade-knowledge' \
      --out '<run folder>/read-plan.md'
    ```
@@ -629,15 +653,16 @@ On the go-ahead:
 
 1. **Write the window 3 plan.** Run the plan script for window 3. It writes the sheets no window 2
    pass read, grouped by discipline into passes of at most twelve, each sheet carrying the open
-   entries the index left on it (a tag matched to no code, a code found nowhere, a floor whose
-   tags differ from a sibling's), and names what it left out. Read back only its bounds line:
-   sheets, passes, open entries. A bounds line of zero sheets and zero open entries means the
-   window has nothing to read: append `phase: window 3 complete` and go on.
+   entries the index left on it (a tag on the sheet matching no code on the record, a code the read
+   returned in pieces, a code found on the sheet with no box to point at, a citation the pass had
+   ready when it reached its ceiling for one run), and names what it left out. Read back only its
+   bounds line: sheets, passes, open entries. A bounds line of zero sheets and zero open entries
+   means the window has nothing to read: append `phase: window 3 complete` and go on.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 3 \
      --inventory '<run folder>/inventory.json' \
-     --packages '<run folder>/plan/packages.json' --kinds '<run folder>/plan/kinds.json' \
+     --packages '<run folder>/plan/packages.json' --kinds '<run folder>/plan/kinds' \
      --index '<run folder>/plan/index' --trade-knowledge '<plugin root>/trade-knowledge' \
      --out '<run folder>/read-plan.md'
    ```

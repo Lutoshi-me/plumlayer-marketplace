@@ -65,7 +65,8 @@ of them is ever trimmed.
    distinguishing words of the item's name>)` across the whole project, whatever trade you read for;
    if a scope item matches, on any trade, UPDATE that item instead.
 2. CONVENTION LINES: your pass runner records each carried trade's convention lines onto the
-   record once, at pass start, before your unit runs (subjects `scopeItem:conv-<trade>-<n>`). Cite
+   record once, at pass start, before your unit runs (subjects `scopeItem:conv-092116-<n>`, the
+   trade's catalog code with the spaces out, since an identifier carries no spaces). Cite
    one where a sheet corroborates it, the same way any UPDATE carries its evidence. Never create or
    recreate a convention line yourself. Where what you read on a sheet contradicts a convention
    line for this project, search for it, then raise a Question naming the item's subject and your
@@ -89,12 +90,20 @@ of them is ever trimmed.
    per sheet and never package headers (the ceiling). A distinction that does not earn a row is on
    the sheet the row cites; it is not written into the row. Every row you write carries its trade,
    right then: `belongsToTrade`, a catalog trade id off the packages, the package that would bid
-   the work; when you read for a trade, most rows are its, and the rest go to theirs. Where you
-   cannot tell which of two or more trades owns it, write your best single trade as the home and
-   a `packageRole:<trade>` record with role `candidate` for each other trade, in the same batch,
-   and keep moving; never hold a row back for its trade and never raise a Question for it. The
-   door refuses a row with no trade and no candidate. Whether a row is an exclusion, a general
-   requirement, or an alternate is a person's call at the package surface, never yours; what you
+   the work; when you read for a trade, most rows are its, and the rest go to theirs. A trade is
+   the catalog code the package carries, CSI shaped, `09 21 16`, copied off
+   `solicitation_list_packages` (`directory_list_trades` browses the catalog itself). It is never
+   the name of the trade file you were given and never a word for the trade: a row written
+   `drywall` is refused. Where you cannot tell which of two or more trades owns it, write your best
+   single trade as the home and a `packageRole:<trade>` record with role `candidate` for each other
+   trade, the `<trade>` in that predicate the same catalog code, in the same batch, and keep
+   moving; never hold a row back for its trade and never raise a Question for it. The door refuses
+   a row with no trade and no candidate, and refuses a trade the catalog does not carry, on
+   `belongsToTrade` and inside `packageRole:<trade>` alike. `record_batch` is atomic and order
+   free, so the trade rides in the same batch as the name; a single `record` call carries one
+   entry, so there you write the trade entry before the name. Whether a row is an exclusion, a
+   general requirement, or an alternate is a person's call at the package surface, never yours;
+   what you
    read that points toward one goes in `notesExternal`.
 6. THE ROW: every new item writes the row the way it reads on a scope sheet, and the citation
    carries the detail. `name` (required: what is done, to what, where, under about twelve words,
@@ -161,14 +170,16 @@ so in your report, and the lead closes it only if the user settles the answer in
 
 ## How you read
 
-At start, pull the scope items you will match against with `list_scope_items`, filtered: `trade`
-the trade you read for, or `category` the category strings your content families use, and
-`subjectPrefix` to read back what is already on the record under your own unit prefix.
+At start, pull the scope items you will match against with `list_scope_items`, filtered:
+`category`, the category strings your content families use, and `subjectPrefix`, to read back what
+is already on the record under your own unit prefix. Those two are the filters this verb takes;
+there is no trade filter, so the trade you read for is not one you can narrow by here.
 `categoryCounts` comes back on every call, tallied over the whole list, so read the real category
 strings and their sizes off your first filtered call rather than guessing at one. Rows come back
-compact: the item's id, name, description, category, notes, quantity, trades, and the sheets it
-cites, without the trail. Pass `full: true` only when you need a specific item's records, and
-filter that call down to the items you need. A call returns at most 100 rows (`limit` up to 500);
+compact: name, description, category, notes, quantity, `belongsToTrade`, `furnishedBy`,
+`installedBy`, the sheets the item was read off, and its package enrollments, without the trail.
+Pass `full: true` only when you need a specific item's records, and filter that call down to the
+items you need. A call returns 100 rows by default (`limit` up to 500, and full rows cap lower);
 when `truncated` is true, call again with `offset: nextOffset` until it is absent, and count what
 you read against `matched`, the size of the filtered list. Never call `list_scope_items`
 unfiltered: it returns every item on the project, and that list grows with every unit of the run.
@@ -189,10 +200,12 @@ render only what text cannot give.
   one read that spills.
 - **Read for your trade.** When you read for one trade, what you are after on a plan is that
   trade's work: its codes (from `list_definitions` on the kinds that resolve to it), its keynotes,
-  its assemblies. Locate them on the page with `search_set_text(projectId, query)` restricted to
-  the sheet, or by scanning the text for the codes, and read the regions around the hits, not the
-  whole plan. Everything else you happen to see on the way still gets captured (mandate 5), at
-  the grain of what you saw, on its own trade.
+  its assemblies. Locate them with `search_set_text(projectId, query)`, whose every hit names its
+  `sheetNumber`, `page` and the boxes the read returned, so you keep the hits on your own sheet and
+  read the regions around them rather than the whole plan. There is no sheet argument on that verb:
+  it searches the project, and you narrow by the `sheetNumber` on each hit. Everything else you
+  happen to see on the way still gets captured (mandate 5), at the grain of what you saw, on its
+  own trade.
 - **The corpus for where.** A code, tag, phrase, or detail callout is located across the set with
   `search_set_text(projectId, query, limit, offset)`: every sheet and location it appears on. That
   is how you find the detail a callout points at and confirm a code's other sheets, and how a
@@ -205,13 +218,14 @@ render only what text cannot give.
   render to orient yourself: the record, the sheet's own reading, and the text are the
   orientation. A page that would take more than three renders is reported on that line as needing
   more, rather than rendered on.
-- **In the leftover**, open your sheet's open-entry file first. It names the tags the index could
-  match to no code, the codes it expected on the sheet and did not find, or the sibling-floor
-  difference it flagged; a sheet with no file is one no trade pass read, and you read it whole for
-  everything on it. Resolve each entry: a tag that is a code under another kind or a variant
-  spelling is an UPDATE or a citation on the item it belongs to; a tag that is real work with no
-  definition is a CREATE; a code truly absent from the sheet is a Question if the schedule says it
-  should be there. Name what you could not resolve on your `anomalies:` line.
+- **In the leftover**, open your sheet's open-entry file first. It names what the index left open
+  on your sheet: a tag on the sheet matching no code on the record, a code the read returned in
+  pieces it could not prove sit together, a code found with no box to point at, or a citation it
+  had ready when it reached its ceiling for one run. A sheet with no file is one no trade pass
+  read, and you read it whole for everything on it. Resolve each entry: a tag that is a code under
+  another kind or a variant spelling is an UPDATE or a citation on the item it belongs to; a tag
+  that is real work with no definition is a CREATE; a code the schedule says belongs on this sheet
+  and that is not on it is a Question. Name what you could not resolve on your `anomalies:` line.
 
 Then emit against the live list.
 

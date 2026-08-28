@@ -102,10 +102,18 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   optional `supersedesId`). A scope item and a schedule definition must both be cited, on a create
   and on an update alike: their `evidence` has to name what you read, a sheet with the 1-based page
   you read it on, a file, or a spec section, and evidence that names none of the three is refused.
-  Work no sheet states carries `sourceInstrument` `trade-convention:<trade>@<sha>` instead, and the
+  Work no sheet states carries `sourceInstrument` `trade-convention:092116@<sha>` instead, and the
   two derived trade tags (`belongsToTrade`, `packageRole:<trade>`) need no citation. Stamped as you,
   and it takes effect immediately as provisional working truth recorded as agent-stated.
   `supersedesId` is the correction edge: see "Correcting a machine misread" below.
+
+  A new scope item also needs its trade, and the door refuses one without it: give it
+  `belongsToTrade`, or a `packageRole:<trade>` entry for every trade that might own the work, in
+  the same `record_batch` as the `name`, or before the `name` at this door, which carries one
+  entry per call. The trade is the package's catalog code, CSI shaped, `09 21 16`, read off
+  `solicitation_list_packages` or browsed with `directory_list_trades`, on `belongsToTrade` and
+  inside `packageRole:<trade>` alike: a code the catalog does not carry is refused too, so
+  `drywall` does not land.
 - `ask_question`: raise ONE open item a person has to answer or resolve, with a title and the
   citations it's about (a sheet, a spec section, or a record you read). This is how a
   disagreement between sources, or a reading you genuinely cannot resolve yourself, reaches a

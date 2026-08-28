@@ -68,15 +68,21 @@ is lost by stopping there, because nothing has run.
    not run, and name it in your summary's deviations line. Never invent a substitute cut.
 2. **Record each carried trade's convention lines, once, before the first unit.** For each trade
    your pass carries, check whether its convention lines are already on the record:
-   `search(subjectPrefix: "scopeItem:conv-<trade>-", limit: 1)`, reading `count`. A nonzero count
+   `search(subjectPrefix: "scopeItem:conv-092116-", limit: 1)`, reading `count`. A nonzero count
    means the trade's lines are already recorded, by this pass or an earlier one; append one
-   `note <window> <pass> - convention <trade> already recorded` line and do nothing further for
-   that trade. A zero count means they are not: read the structural gap list for that trade out of
-   the pass knowledge file you just cut, and for each line, in the order it appears, `record_batch`
-   it as `scopeItem:conv-<trade>-<n>` (`<n>` starting at 1), the full row a create gets under
-   scope-reader's mandate 6: `name`, `category`, `belongsToTrade` (this trade's catalog id), and
-   `description`, `notesExternal`, `notesInternal` only where the line carries a real note. Its
-   `sourceInstrument` is `trade-convention:<trade>@<knowledge-version>`, its evidence quotes the
+   `note <window> <pass> - convention <trade> already recorded` line, `<trade>` the spaced catalog
+   code, and do nothing further for that trade. A zero count means they are not: read the
+   structural gap list for that trade out of the pass knowledge file you just cut, and for each
+   line, in the order it appears, `record_batch`
+   it as `scopeItem:conv-092116-<n>` (`<n>` starting at 1), the full row a create gets under
+   scope-reader's mandate 6: `name`, `category`, `belongsToTrade` (this trade's catalog code, CSI
+   shaped, `09 21 16`, the code the package carries and never the trade file's name, which the door
+   refuses), and `description`, `notesExternal`, `notesInternal` only where the line carries a real
+   note. The trade is that same catalog code everywhere here, in two forms: spaced in
+   `belongsToTrade`, as the packages carry it, and with the spaces out in the subject, the search
+   prefix above and the instrument, because an identifier carries no spaces and the catalog fold
+   reads either form as the same trade. Its
+   `sourceInstrument` is `trade-convention:092116@<knowledge-version>`, its evidence quotes the
    line verbatim and carries the marker `basis: "trade-convention"`, and it carries no sheet
    citation and no quantity. Read the record back and confirm the entry count under the prefix
    equals what you sent, the same boundary a reader's own batch gets. Append one
@@ -107,9 +113,12 @@ is lost by stopping there, because nothing has run.
    the unit's run-prefix, so concurrent readers can never collide on a created subject.
 4. **Verify per unit, in one turn, before the next unit starts.** Take the reader's report and
    make one call: `verify_unit(projectId, subjectPrefix: "scopeItem:<unit-id>-", sheets: [<the
-   unit's sheet numbers>])`. It returns the entry count and distinct subject count under the
-   prefix, the subjects created under it with their trades, and for each sheet the subjects whose
-   citations name it, with its own truncation counts.
+   unit's sheet numbers>])`, at most 20 sheets in one call. It returns `entryCount` and
+   `subjectCount` under the prefix, `subjects`, every distinct subject under it with its
+   `belongsToTrade` and its `candidateTrades` (`subjectsTruncated` says when there are more than
+   the call carries), and `sheets`, one row per sheet you asked about carrying the `subjects` whose
+   citations name it, its own `truncated`, and `droppedUnmatched`, the rows that named the sheet in
+   passing and were left out rather than attributed to it.
    - **Created, by count.** The entry count under the prefix goes on the `verified` line as
      `created`: an entry count, never copied from the reader's report and never an item count.
    - **Items, from the reader.** The reader's own `created:` figure, its count of scope items, goes
@@ -179,7 +188,7 @@ dispatch 1 A2 A2-3 sheets A-9.02 purpose door and frame schedule
 verified 1 A2 A2-3 created 126 items 34 updated 4 questions 2 replied 1 sent 140 landed 140 conflicts 0 result ok
 note 1 A2 A2-3 anomaly A-9.02 p61 two frame marks carry the same model number
 note 1 A2 - kinds doorType frameType finishType
-note 2 roofing - convention roofing recorded 10 lines
+note 2 roofing - convention 07 50 00 recorded 10 lines
 dispatch 2 roofing roofing-4 sheets A-1.30 purpose roof plan for roofing
 ```
 
@@ -203,11 +212,13 @@ When your dispatch names `boundary` instead of a pass, you close a window and yo
    or schedule sheet and page its first entry cites. Append one
    `note <window> boundary - kinds declared <kind> <count>` line per kind declared this way.
 3. **Copy the definitions for the plan script.** `list_definition_kinds`, then for each kind
-   `list_definitions(projectId, kind, limit, offset)` paged to the kind's real total, and put the
-   responses on disk at `<run folder>/plan/kinds.json`, copied byte for byte the way the grid was
-   fetched, never retyped: it is a machine file the plan script reads to know each kind's defining
-   sheet and codes, and no reader ever opens it, because a reader asks the record. A kind whose
-   read did not complete is named in your summary as a mismatch; the lead stops the run there.
+   `list_definitions(projectId, kind, limit, offset)` paged until the `codes` rows you have seen
+   cover that kind's `count`, and put every response on disk under `<run folder>/plan/kinds/`, one
+   file per response, copied byte for byte the way the grid was fetched, never retyped and never
+   merged: they are machine files the plan script reads to know each kind's codes and the sheet
+   each code was defined on, and no reader ever opens them, because a reader asks the record. A
+   kind whose read did not complete is named in your summary as a mismatch; the lead stops the run
+   there.
 4. Append one `note` line per cross-pass overlap and one `note ... packet ...` line naming the
    copy, write the boundary summary to `<run folder>/reports/boundary-<window>.md`, return it, and
    end.
@@ -225,14 +236,15 @@ ledger: <path>, appended through <last line written>
 When your dispatch names `leftover-<pass id>`, you are a pass runner over a window 3 pass: pass
 mode, unchanged, with two additions.
 
-- Each unit's dispatch names the unit's open-entry file: the entries under `<run folder>/plan/index/`
-  for that sheet, split out by a local command into `<run folder>/plan/index/<unit-id>.json` (the
-  tags the index could match to no code, the codes it expected on that sheet and did not find,
-  the sibling-floor difference it flagged). Split with a command; never read the index report
-  yourself and never paste an entry into the dispatch. A sheet the plan lists with no open
+- Each unit's dispatch names the unit's open-entry file: the rows under `<run folder>/plan/index/`
+  whose `sheet` is that sheet, split out by a local command into
+  `<run folder>/plan/index/<unit-id>.json` (a tag on the sheet matching no code on the record, a
+  code the read returned in pieces, a code found with no box to point at, a citation the pass had
+  ready when it reached its ceiling for one run). Split with a command; never read what the index
+  left open yourself and never paste a row into the dispatch. A sheet the plan lists with no open
   entries, one no trade pass read, is dispatched with no open-entry file and read as a sheet.
-- The `purpose` on the unit's `dispatch` line names why the sheet is read: `open tags`, `missing
-  codes`, `floor differs`, or `no trade read it`.
+- The `purpose` on the unit's `dispatch` line names why the sheet is read: `open tags`, `code in
+  pieces`, `code with no box`, `past the ceiling`, or `no trade read it`.
 
 ## What you never do
 
