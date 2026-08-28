@@ -1653,7 +1653,7 @@ EXPECTED_RUNNER_MODE_HEADINGS = {
     "Pass mode",
     "The ledger lines",
     "Boundary mode",
-    "Completeness mode",
+    "Remainder mode",
     "What you never do",
     "Your summary",
 }
