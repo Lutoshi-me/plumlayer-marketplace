@@ -2,11 +2,11 @@
 name: learn-project
 description: >
   A cheap orientation pass over an already-uploaded drawing set: reads seed facts and sheet
-  inventory, takes a handful of bounded renders (cover, index, key plans), records cited
-  project-level facts into a run-context packet, and drafts and creates the baseline trade-package
-  split off the spec table of contents. Trigger on "learn the project", "orient on this set",
-  "orientation pass", "/learn-project". Drives search, set_grid, render_page, get_page_text,
-  record_batch, directory_list_trades, solicitation_list_packages, solicitation_create_package.
+  inventory, takes a few bounded renders (cover, index, key plans), records cited facts, writes the
+  project description, and drafts and creates the baseline trade-package split off the spec table of
+  contents. Trigger on "learn the project", "orient on this set", "orientation pass",
+  "/learn-project". Drives search, set_grid, render_page, get_page_text, record_batch,
+  update_project, directory_list_trades, solicitation_list_packages, solicitation_create_package.
   Does not upload drawings or run scope-run.
 ---
 
@@ -237,7 +237,30 @@ amendments, stays in `scope-run`.
    redo it." No approval is collected.
 <!-- /user-facing -->
 
-## 8. Compile the run-context packet
+## 8. Write the project description
+
+`get_project`'s `description` field answers "what is this job?" for someone opening the project
+cold. This is the first pass with enough of a read on the set to write one, so it writes it here,
+once, after the entries above are recorded and before the report.
+
+1. **Leave a person's description alone.** Re-check the `description` read in step 2.
+   `get_project` exposes no trail for this field, no author, no write time, so a Learn run cannot
+   tell its own past write from a person's edit. Treat any non-empty description as a person's:
+   leave it as is and say so in the report. Only an empty description gets written below.
+2. **Write what the job is.** What the building is, what work is being done, for whom, where, and
+   whatever makes this job different from a typical one, in plain estimator prose. Every statement
+   traces to something read this run, a render, a page, a seed entry, or an entry recorded in step
+   6; a genuine differentiator you would otherwise infer instead of read gets raised as a Question
+   the same way any other orientation judgment is, not folded into the description unconfirmed.
+3. **Leave out what already has a field.** Total SF, floor count, bid due date, status, structural
+   or envelope system, and any sheet or spec bookkeeping already live as their own entries;
+   restating them here duplicates the record instead of orienting a reader. Leave out narration of
+   how the set was read too, this is what the job is, not how it was learned.
+4. **No length target.** As long as the job needs and no longer.
+5. Call `update_project(projectId, description: "<text>")`. This is the only field on the project
+   row this skill ever writes.
+
+## 9. Compile the run-context packet
 
 A projection compiled fresh from the entries read in step 2 and recorded in step 6, **never itself
 recorded as an entry, never stored as truth.** Sections, in order:
@@ -260,11 +283,11 @@ Write it to `~/.plumlayer/runs/<project-slug>/learn-project-packet.md` (the same
 the `scope-run` skill uses), derive `<project-slug>` from the project name (lowercase, spaces to
 hyphens) or fall back to the `projectId` if the name doesn't produce a clean slug. Never write it
 into a repo, and never record it as an entry. Regenerate it in full the next time this skill runs for the project, it is a projection,
-not a document to patch. Audience: agent. Its path is handed to the user at run end (step 9) and
+not a document to patch. Audience: agent. Its path is handed to the user at run end (step 10) and
 its content orients later readers; whatever crosses from it into user-facing text becomes
 user-facing at the crossing and is translated there.
 
-## 9. Report
+## 10. Report
 
 <!-- user-facing -->
 Tell the user, in plain terms:
@@ -280,6 +303,8 @@ Tell the user, in plain terms:
 - **The package split**, packages created, packages already present on the project, any package
   named "no catalog trade, not created," TOC sections deliberately unbundled, or the "spec reading
   hasn't run for this project" note when no spec sections exist.
+- **The description**, whether you wrote one or found a person's already in place and left it, say
+  which.
 - **Where the packet landed**, the full path.
 - **The placeholder note**, the definitions-as-context section is a stub, not yet designed.
 - **What a person should look at**, the entries with Questions raised, visible on plumlayer.com with the
@@ -310,6 +335,8 @@ Close by saying orientation is done and everything it made is on the project rec
   sections on the project means no packages, and the report says so plainly.
 - **Packages are match-or-create; a re-run never duplicates one.** Read `solicitation_list_packages`
   first and skip any catalog trade id already represented on the project.
+- **Status is a person's categorization; no skill sets it.** Orientation's only write to the
+  project row is `description`, and only when a person hadn't already written one.
 
 ## Deferred (named, not skipped silently)
 
