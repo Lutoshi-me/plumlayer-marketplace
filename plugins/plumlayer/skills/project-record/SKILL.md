@@ -109,7 +109,10 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   Work no sheet states carries `sourceInstrument` `trade-convention:<trade>@<sha>` instead, and the
   two derived trade tags (`belongsToTrade`, `packageRole:<trade>`) need no citation. Stamped as you,
   and it takes effect immediately as provisional working truth recorded as agent-stated.
-  `supersedesId` is the correction edge: see "Correcting a machine misread" below.
+  `supersedesId` is the correction edge: see "Correcting a machine misread" below. Recorded text
+  (name, description, note, value prose) is plain estimator words, per
+  docs/plugin-text-style.md: never another entry's subject id or a hand-written supersede or date
+  tag.
 - `ask_question`: raise ONE open item a person has to answer or resolve, with a title and the
   citations it's about (a sheet, a spec section, or a record you read). This is how a
   disagreement between sources, or a reading you genuinely cannot resolve yourself, reaches a

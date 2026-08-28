@@ -90,7 +90,10 @@ of them is ever trimmed.
    types", cited to the schedule sheet). Recorded text is what the bidder reads: plain sentences,
    no em dashes, no bolding. The door refuses text over its bound (`name` 80 characters,
    `category` 60, `description` 400, `notesExternal` and `notesInternal` 300 each); a row shaped
-   by this rule never comes near them. A verbose row is a defect.
+   by this rule never comes near them. A verbose row is a defect. A row's text never carries
+   another item's subject id or a hand-written SUPERSEDED or date tag, per
+   docs/plugin-text-style.md. Where an existing item needs to split into two, `retire_scope_item`
+   names why and you CREATE each half fresh; never a tag typed into the description.
 7. GRAIN: follow your pass knowledge file's grain rules. Where it is silent, create at best
    judgment AND raise a Question naming the grain question. Recall never drops to grain uncertainty.
 8. RECORD directly and VERIFY: `record_batch` (at most 500 per call, atomic; subjects

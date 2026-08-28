@@ -372,7 +372,8 @@ These are gates. Write them into every read:
 
   **Additional items aggregate under the same rule.** Two proposal lines may fold into one item only
   when they are complementary components of the same unlisted thing; say in the item's note which
-  lines were folded and where they sit.
+  lines were folded and where they sit, in the estimator's own words, never by another row's
+  subject id.
 - **An ambiguous token never becomes a hard number.** `OSV` / `TV` / `?` set the `ambiguity` axis; they
   never populate `amount`.
 - **No receipt, no write.** A value you cannot cite to a `fileId` and page is not recorded. If you
@@ -584,7 +585,9 @@ do not: tax treatment, whether alternates combine, which building or scope the f
 write an explanation of how the record is stored. A summary-level alternate still belongs in
 `bidSummary.allowances_alternates`, the parallel bucket that is never folded into a total; the
 `alternate` field is the same idea at item and response level, and it likewise never moves any total
-until someone accepts it.
+until someone accepts it. Where one price covers more than one scope row, name the other row's
+line in the note the way an estimator would (its short name), never by its `scopeItem:` subject;
+the subject id is for the write layer, not the bidder-facing text.
 
 **Verify by reading back, not by counting your own calls, and read back BOUNDED.**
 
