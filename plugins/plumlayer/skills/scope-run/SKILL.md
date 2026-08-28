@@ -2,11 +2,11 @@
 name: scope-run
 description: >
   Read a Plumlayer project's drawing set into one grounded, cited scope list, every item on its
-  trade, in three windows: vocabulary, topics, remainder. Trigger on "scope this set",
-  "/scope-run". Attended: the user approves the read plan and reviews at every check-in.
-  Drives the project record's read and write verbs and the citation index. Does not upload
-  drawings (drawing-upload), orient from scratch or draft the baseline package split
-  (learn-project), read sub proposals (bid-intake), or place takeoff measurements (takeoff).
+  trade, in three windows: the vocabulary, then one pass per trade package, then what is left.
+  Trigger on "scope this set", "/scope-run". Attended: the user approves the read plan and reviews
+  at every check-in. Drives the project record's read and write verbs and the citation index.
+  Does not upload drawings (drawing-upload), orient from scratch or draft the baseline package
+  split (learn-project), read sub proposals (bid-intake), or place takeoff measurements (takeoff).
 ---
 
 # Scope run
@@ -14,8 +14,8 @@ description: >
 ## What this is
 
 The production scope run: it reads the set in three windows, each of which leaves the project
-record whole at its own depth, and the user reviews at the end of every window. Orientation is
-the `learn-project` skill, which this skill dispatches first when orientation hasn't happened yet;
+record whole at its own depth, and the user reviews at every check-in. Orientation is the
+`learn-project` skill, which this skill dispatches first when orientation hasn't happened yet;
 orientation also drafts and creates the baseline package split off the spec table of contents, so
 a package exists for every trade before the first sheet is read, and readers name trades from that
 split. The shape, in the estimator's own order:
@@ -34,19 +34,21 @@ The three windows:
    sections. Readers record what the marks mean (the definitions), the scope the schedules
    themselves ground, and every item's trade. When the window closes, the record's citation index
    runs: a mechanical pass that locates every defined code and every item's tag on every page of
-   the set and cites those pages onto the items and definitions. After this window the trade pages
-   are usable.
-2. **Topics.** One reader per subject: a schedule and its kind, the sheets the index found its
-   codes on, and the details those sheets reference, with one or two trades' knowledge. This is
-   the refinement read: quantities where the sheets carry them, splits the vocabulary read was too
-   coarse for, and the Questions that clear the bar for an RFI.
-3. **Remainder.** Sheet reads only for what neither window reached: general notes, code plans,
-   sections and elevations, and the pages the index left open (tags it could match to no code,
-   codes it found nowhere, a floor whose tags differ from its sibling's). Completeness is a check
-   of the record against the index, not a stage of its own.
+   the set and cites those pages onto the items and definitions. After this window every trade's
+   page is usable.
+2. **Trades.** One pass per trade package, schedule or no schedule: the sheets that trade's
+   knowledge says to read (the roofer reads the roof plan, wall sections and details; the site
+   contractor reads civil; the painter reads the finish schedule and elevations), the sheets the
+   index found that trade's codes on, and the schedules that resolve to it, read for that trade
+   with that trade's knowledge alone. This is where the scope is, and it is the bulk of the run:
+   quantities where the sheets carry them, the splits the vocabulary read was too coarse for, the
+   Questions that clear the bar for an RFI. A trade's page is finished when its pass is.
+3. **The leftover.** A printed list, not an open question: the pages no trade pass named, and the
+   tags the index could match to no code. Read by discipline, and whatever is still open at the
+   end is reported by name.
 
-A run can stop at the end of any window and resume later with nothing lost, because each window
-leaves the record whole at its depth.
+A run can stop at the end of any window, and inside window 2 at any package boundary, and resume
+later with nothing lost.
 
 **This run is attended.** The user approves the read plan before any reading and reviews at every
 check-in. Never read past a check-in without the user's go-ahead. The package split is not a gate:
@@ -56,7 +58,9 @@ is a change on the site or a tool call.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
 untraced.** Everything a reader records is its own reading, cited, carrying its authorship trail;
-it becomes working truth the moment it lands; anything a person changes wins.
+it becomes working truth the moment it lands; anything a person changes wins. The project record
+is what every agent in the run reads from and writes to: definitions, sheet readings, orientation
+facts, open Questions. No agent keeps its own copy of what the record already holds.
 
 ## The non-negotiables
 
@@ -70,15 +74,17 @@ that relaxes any one of them reproduces a measured, named failure.
    index wrote is the index's own, in the trail as a text match; a reader cites what the index did
    not already cite and never re-cites a page the item already carries.
 2. **Create / update / question against the live list.** Every reader holds the current scope list
-   for its topic or content families as match-or-create context: for each thing seen, create a new
+   for its trade or content families as match-or-create context: for each thing seen, create a new
    item, update an existing one (a new citation, a note, a resolved cross-reference), or raise a
    Question, with a title and a citation. Never a parallel list, never a re-create of what exists,
-   never silent skipping of what's already listed. Before raising a Question, read the open
-   Questions on the item's trade (`list_questions`, filtered); where an open one already covers the
-   same ask, reply to it instead of asking it a second time. A Question is about the project, never
-   about a Plumlayer failure; a read or write that fails is reported and handled in the run's own
-   failure path, not raised as a Question. Question text is plain estimator words, per
-   docs/plugin-text-style.md.
+   never silent skipping of what's already listed. Before every create, one `search` on the
+   item's distinguishing words across the whole project, whatever trade the match is on: work
+   another trade's pass already captured is updated, never created again. Before raising a
+   Question, read the open Questions on the item's trade (`list_questions`, filtered); where an
+   open one already covers the same ask, reply to it instead of asking it a second time. A
+   Question is about the project, never about a Plumlayer failure; a read or write that fails is
+   reported and handled in the run's own failure path, not raised as a Question. Question text is
+   plain estimator words, per docs/plugin-text-style.md.
 3. **The convention-line record mandate.** A trade's convention lines are a property of the trade,
    not of the sheet or the unit reading it: the pass runner records them once, at pass start,
    after a deterministic check that they are not already on the record
@@ -92,17 +98,17 @@ that relaxes any one of them reproduces a measured, named failure.
    where a sheet contradicts one for this project, the reader raises a Question naming it rather
    than deciding on its own.
 4. **Store-resolution is mandatory.** A mark, tag, or code is resolved by querying the project
-   record (`search`), never from memory, never inherited from another sheet's read, never assumed
-   from a similar-looking mark. Where a code appears in the set is a question for the corpus
-   (`search_set_text`), never for memory either.
+   record (`search`, `list_definitions`), never from memory, never inherited from another sheet's
+   read, never assumed from a similar-looking mark. Where a code appears in the set is a question
+   for the corpus (`search_set_text`), never for memory either.
 5. **Capture everything; name the trade as you write.** Capture is complete: everything seen goes
-   into the one shared list, whatever trade it belongs to. The reader that writes the row sets its
-   trade right then, from the packages orientation created, and moves on; a wrong trade is moved
-   later by a person or a later read, never held back. Where the reader cannot tell which of two
-   or more trades owns the work, it names its best single trade as the home and tags every other
-   candidate, and keeps moving. The record door refuses a new scope item with no trade and no
-   candidate. Whether an item is an exclusion, a general requirement, or an alternate is still a
-   person's call at the package surface.
+   into the one shared list, whatever trade it belongs to, even in a pass reading for one trade.
+   The reader that writes the row sets its trade right then, from the packages orientation
+   created, and moves on; a wrong trade is moved later by a person or a later read, never held
+   back. Where the reader cannot tell which of two or more trades owns the work, it names its best
+   single trade as the home and tags every other candidate, and keeps moving. The record door
+   refuses a new scope item with no trade and no candidate. Whether an item is an exclusion, a
+   general requirement, or an alternate is still a person's call at the package surface.
 6. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
    the record back and confirms the count that landed equals the count sent, and checks any
    conflicting rows individually, before it ends. The pass runner separately re-verifies the same
@@ -122,9 +128,11 @@ that relaxes any one of them reproduces a measured, named failure.
    item per sheet is a ceiling violation; one item per instance is a floor violation. Where the
    pass knowledge's grain rules are silent, create at best judgment AND raise a Question naming the
    grain question: recall never drops to grain uncertainty.
-8. **Vocabulary before topics before the remainder.** A topic reads only after the vocabulary that
-   defines it is recorded and indexed; the remainder reads only after the topics. The read plan
-   encodes this order and the user approves it.
+8. **Vocabulary, then the trades, then the leftover.** A trade pass reads only after the
+   vocabulary is recorded and indexed; the leftover reads only after the trades. Two trades with
+   a known seam between them (drywall and painting, plumbing and fire protection, concrete and
+   waterproofing) run one after the other, never together. The read plan encodes this order and
+   the user approves it.
 9. **The vocabulary window covers the scope the schedules themselves ground.** The passes reading
    legends and schedules record what a mark means, and they also own the scope items the
    schedules ground, on their trades.
@@ -134,16 +142,16 @@ that relaxes any one of them reproduces a measured, named failure.
     already chosen, and never offer a recommended yes: if something is genuinely wrong, stop, say
     what is wrong, and hand it over; if nothing is wrong, proceed and say what you did.
 11. **The index runs, and what it left open is read or named.** The citation index is a standing
-    step between the first two windows, never optional; the remainder window reads what it left
-    open, and whatever is still open at the end is reported by name: never assumed closed, never
-    zeroed by hope.
+    step between the first two windows and again after the third, never optional; the leftover
+    window reads what it left open, and whatever is still open at the end is reported by name:
+    never assumed closed, never zeroed by hope.
 12. **A remark about spend never trims a mandate.** Every verification in this file stands whatever
     the user says about what the run is costing them. If they raise it, say plainly what is running
-    and that the next natural stopping point is the end of the current window, and stop there if
-    they ask; never answer it by doing less of the work you then report on. A verification that did
-    not run is named as not run, by name, in the ledger and out loud, in the same breath as the
-    numbers it would have covered. Never offer to trim, and never put the question of whether to
-    continue back to them in terms of what it costs.
+    and that the next natural stopping point is the end of the current package or window, and stop
+    there if they ask; never answer it by doing less of the work you then report on. A
+    verification that did not run is named as not run, by name, in the ledger and out loud, in the
+    same breath as the numbers it would have covered. Never offer to trim, and never put the
+    question of whether to continue back to them in terms of what it costs.
 
 Also: door-owned records (Question resolutions, questions-as-answers) are created only at their own
 doors; a reader that thinks a Question should be closed says so in its report and a person acts at
@@ -167,11 +175,11 @@ A newly created scope item is a full row, not a name. Every new item writes:
   category string; never invent a fresh category per item. The review surface groups by this: an
   uncategorized list renders as a wall.
 - **trade** (required): the catalog trade id of the package that owns the work, read off the
-  packages orientation created (`solicitation_list_packages`, or the trade list the pass brief
-  carries), recorded as `belongsToTrade`. Where the work straddles packages, the best single home
-  goes here and each other candidate gets a `packageRole:<trade>` record with role `candidate`
-  and a note in the shape "confirm trade responsibility: could be `<home>` or `<this trade>`"
-  (internal only, never bidder-facing), written in the same batch.
+  packages orientation created (`solicitation_list_packages`), recorded as `belongsToTrade`.
+  Where the work straddles packages, the best single home goes here and each other candidate gets
+  a `packageRole:<trade>` record with role `candidate` and a note in the shape "confirm trade
+  responsibility: could be `<home>` or `<this trade>`" (internal only, never bidder-facing),
+  written in the same batch.
 - **description** (optional, zero to three sentences): only what a bidder must know to price the
   line that the name and citation do not already say: the product or method the drawings call
   for, the extent or limits, a rated or special condition. A simple item has none. The citation
@@ -203,11 +211,30 @@ estimator (that is `notesInternal`). Every Question names its trade, the same wa
 it sits on that trade's page; a Question about the set as a whole names no trade and sits on the
 project.
 
-## Run artifacts and the ledger
+## What the record holds, and what stays on disk
 
-All run working files live under `~/.plumlayer/runs/<project-slug>/` (slug from the project name,
-lowercase, spaces to hyphens; fall back to the projectId). Never committed to any repo, never
-uploaded to the project except record files, never recorded as project entries. The set:
+Everything an agent in this run needs to know about the project is on the project record, and is
+read from there by the agent that needs it, when it needs it:
+
+- the orientation facts (identity, systems, scope areas, hazards): `get_project` and `search` on
+  their predicates;
+- the packages and their catalog trades: `solicitation_list_packages`;
+- the definitions: `list_definition_kinds` for the kinds, `list_definitions(kind)` for the codes
+  under one, `search(subject: "<kind>:<code>")` for one code's full definition;
+- what a sheet is, which legend its tags resolve to, and what it references: the sheet's own
+  reading, written once by the first reader that reads it (`sheet:<sheet number>`);
+- where a code or phrase appears in the set: `search_set_text`, over the corpus every page was
+  read into at upload;
+- the open Questions on a trade: `list_questions`, filtered;
+- the sheet inventory: `set_grid`, taken once to disk for the plan script and never held.
+
+No packet, no definitions files, no per-run copy of any of it: a reader that wants to know what a
+door type is asks the record, and a second reader on the same sheet finds the first one's reading
+there.
+
+The run folder, `~/.plumlayer/runs/<project-slug>/` (slug from the project name, lowercase, spaces
+to hyphens; fall back to the projectId), holds only the run's own bookkeeping. Never committed to
+any repo, never uploaded to the project except record files, never recorded as project entries:
 
 - `ledger.md`: the run ledger, appended as the run proceeds, one line per entry in the fixed shapes
   the `scope-round-runner` definition gives, plus the lead's own `pass:` and `phase:` lines.
@@ -221,51 +248,29 @@ uploaded to the project except record files, never recorded as project entries. 
   The lead's own two line shapes, which the runner never writes:
 
   ```text
-  pass: <window> <pass or topic-pass id> units <n> created <n> updated <n> questions <n> lead-verified <yes|no>
+  pass: <window> <pass id> units <n> created <n> updated <n> questions <n> lead-verified <yes|no>
   phase: <boundary name>
   ```
 
-- `grid/`: the sheet grid as the fetch agent put it on disk in stage 3, one file per page, copied
-  byte for byte where the payload came back as a file. Nothing above the script reads it.
-  Audience: machine.
-- `inventory.md`: one line per sheet, then the count tables and the sheet number digest at the tail.
-  Written by the plugin's plan script off `grid/`. The lead reads the tables and the digest, never
-  the sheet lines. Audience: agent. Alongside it, `inventory.json`, the same rows normalized for the
-  script's own plan step. Audience: machine.
-- `kinds/`: one file per pass, the kinds each unit's reader declared, appended by the pass runner,
-  and `kinds/index.json`, the per-kind read the boundary runner pipes to the plan script.
-  Audience: machine.
-- `index/`: the citation index's report, paged to disk by the runner that reads it after the
-  index has run: what it left open, by page and by code. Audience: machine, read by the plan
-  script and by the remainder runner.
-- `read-plan.md`: the read plan (stage 3 for window 1; regenerated by the plan script before
-  windows 2 and 3): the passes of the window, the units within each (a sheet with its file and
-  page in window 1 and the remainder; a topic with its defining sheet, its indexed sheets, and its
-  referenced details in window 2), the trade files each pass or topic carries, and what is
-  deliberately excluded. Written by the plugin's plan script, never by hand. Audience: agent. What
-  the user hears at the gate is defined in stage 3.
-- `context-packet.md`: the orientation packet every reader loads whole, regenerated at every
-  window boundary (a projection off live records, never itself recorded): identity, systems,
-  scope areas, set shape, hazards, the open anomalies a reader must know, the trade list (each
-  package's catalog trade id and plain name, off `solicitation_list_packages`), and the kinds
-  list, one line per kind giving its name, plain label, count, and the sheet it is defined on. No
-  definition entries in it, and it does not grow with the number of definitions. Audience: agent.
-- `definitions/`: one file per kind, `<kind>.md`, one line per code giving the code, its plain
-  name, and where it is defined, written by the boundary runner from `list_definitions`, one call
-  per kind, paged to the real total. A reader opens the file for each kind its brief names, plus
-  any kind it meets on a sheet that the packet's kinds list carries and its brief did not name.
-  Audience: agent.
+- `grid/`, `inventory.md`, `inventory.json`: the sheet grid as the fetch agent put it on disk, and
+  the plan script's counts off it. The lead reads the count tables and the sheet number digest,
+  never a sheet line. Audience: machine, and the tables for the lead.
+- `plan/`: the plan script's other inputs, each a byte-for-byte copy of a verb's response paged to
+  disk by a fresh agent, never retyped and never read by a model: `kinds.json`
+  (`list_definitions`, every kind), `packages.json` (`solicitation_list_packages`), and `index/`
+  (what `index_citations_status` left open). Audience: machine.
+- `read-plan.md`: the read plan, one per window, written by the plan script, never by hand: the
+  passes, the units within each with their sheets, files and pages, the trade each pass reads for,
+  and what is deliberately excluded. Audience: agent; a runner opens its own pass only.
 - `briefs/`: one small file per pass, written by that pass's runner, carrying the pass's filled
-  slot values: what the pass reads for, its content families or topics, the knowledge version, the
-  trades it carries, the subject prefix scheme, and the kinds this pass reads. A reader opens its
-  own pass file from here. The mandates are never in it. Audience: agent. Alongside each brief,
-  `<pass-id>-knowledge.md`, the pass knowledge: the carried trades' grain sections cut verbatim
-  from the shipped trade files by the plugin's script, with the knowledge version at the top; in
-  window 2 one per topic, `<topic-id>-knowledge.md`, since each topic carries its own one or two
-  trades. Audience: agent.
-- `reports/`: one file per read unit, `<unit-id>.md`, the reader's own report in its fixed shape,
-  written by the reader before it returns. The runner reads it from here when a dispatch returns
-  without the report in hand. Audience: agent.
+  slot values (what the pass reads for, its trade or content families, the knowledge version, the
+  subject prefix scheme), and beside it `<pass-id>-knowledge.md`, the pass knowledge: the carried
+  trade's grain sections cut verbatim from the shipped trade files by the plugin's script. The
+  knowledge is plugin-shipped, not project knowledge, which is why it is the one thing a reader
+  reads from disk. The mandates are never in it. Audience: agent.
+- `reports/`: one file per read unit and per pass, the report in its fixed shape, written by the
+  reader or runner before it returns, so a dispatch that returns without the report in hand loses
+  nothing. Audience: agent.
 - `names/`: one file per pass, the new item names each unit created, one per line, matched
   against themselves and each other with a local command for overlaps. Audience: machine.
 - `records/`: JSONL files for large batch writes (these do get uploaded, as the write
@@ -281,27 +286,27 @@ the read plan and each check-in, and no prompt ever mentions sessions, compactio
 The run executes at three levels. Each level is a separate agent context, bounded by construction:
 
 - **The lead** is this skill, running in the user's session. It does the cheap work only:
-  preconditions, context floor, the read plan, starting the index and waiting on its status, the
+  preconditions, orientation, the read plan, starting the index and waiting on its status, the
   check-ins, amending, close out. For each pass it starts one runner and receives one fixed-shape
   summary; what it keeps per pass is the dispatch line and, once it has taken its own counts, one
   `pass:` line in the ledger. It never holds a pass brief, a trade file, a reader's report, the
   sheet grid, the index report, or a page of the set.
 - **The pass runner** (the plugin's `scope-round-runner` agent, one fresh instance per pass) owns
-  one pass: it writes the pass brief, runs the pass's read units exactly as the window's stage
-  defines them, verifies every unit with one `verify_unit` call, notes overlaps inside the pass,
-  appends the ledger in its fixed line shapes, returns its summary, and ends. Its context is
-  bounded to one pass of at most twelve units, and it never grows with the size of the window.
-  One further instance closes each window at its boundary: the cross-pass overlap scan, the
-  definitions rebuild, and the packet. In window 3 one instance per pass reads the index's open
-  pages and the unread sheet families the plan names for it.
+  one pass: it writes the pass brief, cuts the pass knowledge, records the trade's convention
+  lines, runs the pass's read units exactly as the window's stage defines them, verifies every
+  unit with one `verify_unit` call, notes overlaps inside the pass, appends the ledger in its
+  fixed line shapes, returns its summary, and ends. Its context is bounded to one pass of at most
+  twelve units, and it never grows with the size of the window. One further instance closes each
+  window at its boundary: the cross-pass overlap scan, the declaration of any kind a reader named
+  and did not declare, and the copies of the record the next window's plan script reads.
 - **The reader** (the plugin's `scope-reader` agent, one fresh instance per read unit) reads one
-  unit, a sheet or a topic, over the corpus, and records, as the window's stage and the pass brief
-  define. It writes its report to `reports/` and ends.
+  sheet, for the vocabulary, for one trade, or for the leftover, over the corpus, and records, as
+  the window's stage and the pass brief define. It writes its report to `reports/` and ends.
 
 Handoff is by file and record, never by inlined text. A dispatch at any level carries only
-pointers: the project id, the window, the pass or unit id, the run folder path, and the page or
-topic references. The reader opens its pass brief, its knowledge file and the context packet from
-the run folder, all by the paths it is handed; the runner opens the read plan for its own pass and
+pointers: the project id, the window, the pass or unit id, the run folder path, and the page
+references. The reader opens its pass brief and knowledge file from the run folder by the paths it
+is handed and everything else from the record; the runner opens the read plan for its own pass and
 appends the ledger without reading it. Nothing from those files is pasted into a dispatch, because
 whatever is pasted stays in the dispatcher's context for the rest of the run.
 
@@ -320,44 +325,44 @@ reports, verified against the record with the lead's own count queries and writt
 
 Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
 approved; window 1 complete; index built; window 2 complete; window 3 complete; packages amended;
-closed out. On every start this skill reads the ledger's `phase:` lines first, with a local filter,
-never the file: a run in flight resumes at the phase after the last line, with the read plan read
-off disk and the packet regenerated from the record. A missing run folder for a project that
-already carries scope items is named plainly and the run re-plans against the record; the live-list
-mandate (non-negotiable 2) keeps a re-read from creating what is already there. Resumption is how
-a run continues after a stop at a window boundary, and crash and multi-day hygiene. It is never
-offered to the user as a way to manage cost, and the check-in never suggests it.
+closed out. Inside window 2 the `pass:` lines are the boundaries: one per package. On every start
+this skill reads the ledger's `phase:` and `pass:` lines first, with a local filter, never the
+file: a run in flight resumes at the phase after the last line, or at the next package of window 2
+not yet carrying a `pass:` line, with the read plan read off disk. A missing run folder for a
+project that already carries scope items is named plainly and the run re-plans against the record;
+the live-list mandate (non-negotiable 2) keeps a re-read from creating what is already there.
+Resumption is how a run continues after a stop at a boundary, and crash and multi-day hygiene. It
+is never offered to the user as a way to manage cost, and the check-in never suggests it.
 
 ## The trade knowledge base
 
 Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/`: one file per trade
 (`painting.md`, `drywall.md`, …), mined from a real subcontractor-quote corpus, carrying what the
 drawings will not say: how the trade bids, scope grain rules, exclusions and counterparties,
-furnish/install seams, convention work no sheet states. `MANIFEST.md` there records the knowledge
-version and source snapshot: read it at run start, record the version in the ledger, and cite it
-in every convention-line record (`trade-convention:<trade>@<version>`). Each pass's runner cuts the
-trade files relevant to its content families, or its topic's one or two trades, into one knowledge
-file beside its brief, verbatim, and the reader reads that. Where the knowledge is silent, the
-reader creates at best judgment and raises a Question (non-negotiable 7); the Question is a
-suggested amendment to that trade file, surfaced in the close-out report.
+furnish/install seams, convention work no sheet states, and the sheet families the trade reads.
+`MANIFEST.md` there records the knowledge version and source snapshot: read it at run start,
+record the version in the ledger, and cite it in every convention-line record
+(`trade-convention:<trade>@<version>`). Each pass's runner cuts the trade file its pass reads for
+(in window 1, the files its content families touch, at most ten) into one knowledge file beside
+its brief, verbatim, and the reader reads that. Where the knowledge is silent, the reader creates
+at best judgment and raises a Question (non-negotiable 7); the Question is a suggested amendment to
+that trade file, surfaced in the close-out report.
 
 ## 1. Preconditions
 
 1. **Project exists and is the user's intent.** `list_projects`, confirm which project with the
    user, get its `projectId`. No project → hand off to `project-setup`.
 2. **Resume, if a run is already in flight.** With the `projectId` in hand and before anything else,
-   read the `phase:` lines of `ledger.md` from the run folder with a local filter on the line
-   prefix; never open the file whole. A `phase:` line means a run is in flight: resume at the phase
-   after the last one, reading `read-plan.md` off disk and regenerating the context packet from the
-   record rather than re-planning or re-reading what is already recorded. A project that already
-   carries scope items but has no run folder is named plainly and re-planned against the record;
-   the live-list mandate (non-negotiable 2) is what keeps a re-read from creating what is already
-   there. Where the run folder has no `definitions/` directory, or the context packet still
-   carries definition entries instead of the kinds list, or the last `phase:` line is `window 1
-   complete` with no `index built` after it, the first dispatch is a boundary runner, pointers
-   only, `boundary` in place of the pass id, and then the index step (stage 5) runs; only then does
-   the next window start. A run is never resumed past a boundary that did not run. Never offer
-   resumption to the user as a way to manage anything, and never raise it at a check-in.
+   read the `phase:` and `pass:` lines of `ledger.md` from the run folder with a local filter on
+   the line prefix; never open the file whole. A `phase:` line means a run is in flight: resume at
+   the phase after the last one, or at the next window 2 package with no `pass:` line, reading
+   `read-plan.md` off disk rather than re-planning or re-reading what is already recorded. A
+   project that already carries scope items but has no run folder is named plainly and re-planned
+   against the record; the live-list mandate (non-negotiable 2) is what keeps a re-read from
+   creating what is already there. Where the last `phase:` line is `window 1 complete` with no
+   `index built` after it, the index step (stage 5) runs first. A run is never resumed past a
+   boundary that did not run. Never offer resumption to the user as a way to manage anything, and
+   never raise it at a check-in.
 3. **Drawings are recognized, and the corpus exists.** `list_drawing_deliveries(projectId)`: no
    deliveries → stop plainly, hand off to `drawing-upload`. Spot-check recognition actually
    recorded: `search(projectId, predicate: "appearsOnPage", limit: 1)`: zero rows → hand off to
@@ -382,15 +387,16 @@ suggested amendment to that trade file, surfaced in the close-out report.
 6. **The user is present.**
 <!-- user-facing -->
 Tell them what the run will do: you read the set in three windows, the schedules and legends
-   first, then one subject at a time across the whole set, then whatever is left, and you stop for
-   a check-in after each one; after the first window every trade's page already has its items.
-   They can stop or change course at any check-in. Give a rough sense of how long this set will
-   take from its size, and confirm they are staying for the check-ins.
+   first, then one trade at a time across the whole set, then whatever is left, and you stop for
+   a check-in after the first window and every few trades after that; after the first window every
+   trade's page already has its items. They can stop or change course at any check-in. Give a
+   rough sense of how long this set will take from its size, and confirm they are staying for the
+   check-ins.
 <!-- /user-facing -->
    Where it can, the run starts from a clean conversation, but it never raises sessions,
    compaction, context, or usage with the user, at run start or at any point after it.
 
-## 2. Context floor
+## 2. Orientation
 
 Run these in order; each is read-or-run, never re-created (net-new facts only, everywhere).
 
@@ -403,45 +409,32 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
 2. **Orientation runs one level down.** Where step 1 finds orientation needs to run, dispatch one
    fresh general agent with the orientation dispatch below, the way a pass is dispatched to a
    runner: pointers only, no seed facts, no inventory rows, no spec-section text. It runs the
-   `learn-project` skill exactly as written (its own reconciliation-gate read and its own packet are
-   unchanged), additionally writes the reconciliation report it read to disk, and returns one
-   fixed-shape line. Read back only that line: sheets seen, index findings, spec sections, packages
-   drafted, questions raised, the packet path, and the reconciliation report path. Never open the
-   packet or the reconciliation report yourself, and never relay the dispatched agent's own
-   user-facing report text.
+   `learn-project` skill exactly as written and returns one fixed-shape line. Read back only that
+   line: sheets seen, index findings, spec sections, packages drafted, questions raised. Never
+   relay the dispatched agent's own user-facing report text. What orientation learned is on the
+   record, which is where every reader reads it.
 <!-- user-facing -->
    Tell the user what orientation found, in a few plain sentences, in your own words off that line:
-   roughly what was learned, how many questions it raised for their judgment, the package split it
-   drafted, and where the packet landed. Say it as what happened, not as a question.
+   roughly what was learned, how many questions it raised for their judgment, and the package
+   split it drafted. Say it as what happened, not as a question.
 <!-- /user-facing -->
-   Where step 1 finds orientation already exists, skip the dispatch: read its entries fresh instead,
-   and call `reconcile_set(projectId)` report-only yourself (never pass `record`, never pass a
+   Where step 1 finds orientation already exists, skip the dispatch and call
+   `reconcile_set(projectId)` report-only yourself (never pass `record`, never pass a
    `deliveryId`: the bare call is the orientation check), checking `.ran` flags before citing any
    drift number, a check that did not run is named as not-run, never folded in as "found nothing".
 3. **The packages are catalog-resolved.** `solicitation_list_packages(projectId)`: every package
    carries a catalog `tradeCode`. A package with none is resolved now (`directory_list_trades`,
    exact `code` first then `query` by name or alias, the id recorded verbatim) or named "no catalog
    trade" in the ledger; readers may only choose trades the catalog knows, since the door checks
-   them.
-4. **Compile the context packet** (`context-packet.md`): identity and seed facts; systems; scope
-   areas; set shape (disciplines, deliveries, spec-TOC status); hazards; the open anomalies a
-   reader must know (the reconciliation gate's genuine document inconsistencies: read directly when
-   step 2 took the skip path, or the count plus the reconciliation report's path for a reader to
-   open on demand when step 2 dispatched orientation); the trade list, one line per package giving
-   its catalog trade id and plain name; and the kinds list (empty before window 1; rebuilt at
-   every window boundary from `list_definition_kinds`, one line per kind giving its name, plain
-   label, count, and the sheet it is defined on, no definition entries). The packet is the
-   orientation every reader loads whole, bounded regardless of how many definitions exist; the
-   definitions themselves live one file per kind under `definitions/`, written by the boundary
-   runner from `list_definitions`. The packet is a projection: regenerate whole, never patch, never
-   record it.
+   them. Then send one fresh agent to copy that response to `<run folder>/plan/packages.json`,
+   byte for byte, returning one line; the plan script reads it from there, and you never hold it.
 
 ## 3. The read plan, user-approved
 
 The plan for window 1 is written here and approved once; the plans for windows 2 and 3 are written
 by the same script at each boundary from what the record then holds, and the check-in before each
-window is where the user sees them. A pass is a set of read units read together because they
-explain each other; in window 1 a unit is a sheet, in window 2 a topic, in window 3 a sheet again.
+window is where the user sees them. A pass is a set of read units read together for one purpose;
+a read unit is one sheet.
 
 You never read a sheet row. The grid is fetched to disk by a fresh agent, a script turns it into
 counts and into the plan's unit lines, and what you read is the counts and the script's bounds
@@ -492,15 +485,15 @@ lines.
    vocabulary sheets by sheet type (schedule, legend, notes, cover and index) and the spec section
    list off the record, groups them into passes by discipline, names the trade files each pass
    carries by discipline and content family (at most ten per pass), splits a pass over twelve
-   units at the twelve, and names what it left out and why. Excluded families you want read
-   anyway, or families you want left out, go in as `--include` and `--exclude` patterns with a
-   reason each; that is where your judgment lives, and it carries no sheet titles and no page
-   numbers.
+   units at the twelve, and names what it left out and why. Families you want read anyway, or
+   left out, go in as `--include` and `--exclude` patterns with a reason each; that is where your
+   judgment lives, and it carries no sheet titles and no page numbers.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 1 \
      --inventory '<run folder>/inventory.json' \
-     --trades '<run folder>/context-packet.md' \
+     --packages '<run folder>/plan/packages.json' \
+     --trade-knowledge '<plugin root>/trade-knowledge' \
      --out '<run folder>/read-plan.md'
    ```
 
@@ -511,7 +504,7 @@ lines.
 <!-- user-facing -->
 Before any reading runs, tell the user, in a few plain sentences, not a table:
 
-- The order: schedules and legends first, by discipline, then one subject at a time across the
+- The order: schedules and legends first, by discipline, then one trade at a time across the
   set, then what is left, in one sentence. No reasons; they know why schedules come before plans.
 - What is deliberately left out, by sheet family or number. Say it plainly: anything here will not
   be scoped.
@@ -558,16 +551,15 @@ nothing else:
 4. **Close the window at its boundary.** When every pass of the window has reported and carries
    its `pass:` line, dispatch one more runner with `boundary` in place of the pass id. It scans the
    window's new items for the same work captured by two passes that ran alongside each other,
-   declares any kind a reader named and did not declare, rebuilds the kinds list in the context
-   packet and the per-kind definitions files from `list_definitions`, every kind, every time, and
-   ends. A boundary summary whose `definitions files` count is lower than its kinds count is a
-   mismatch that stops the run. Then append `phase: window 1 complete` to the ledger with the
-   window's verified totals, and go straight to stage 5: the index runs before the check-in, so
-   the trade pages the user opens at the check-in already carry every sheet.
+   declares any kind a reader named and did not declare, copies the record's definitions
+   (`list_definitions`, every kind) to `<run folder>/plan/kinds.json` for the plan script, and
+   ends. Then append `phase: window 1 complete` to the ledger with the window's verified totals,
+   and go straight to stage 5: the index runs before the check-in, so the trade pages the user
+   opens at the check-in already carry every sheet.
 
 ## 5. The citation index
 
-Between windows 1 and 2, and never skipped:
+Between windows 1 and 2, again after window 3, and never skipped:
 
 1. **Start it.** `index_citations(projectId)`. It walks the corpus for every definition code and
    every item's tag or mark on the record and cites every page each appears on, onto the definition
@@ -579,8 +571,9 @@ Between windows 1 and 2, and never skipped:
    written, and the counts of what it left open. Read the counts; never the pages.
 3. **Put what it left open on disk.** Dispatch a fresh general agent whose whole job is to page the
    index's open report (`index_citations_status` with `limit` and `offset`, the way the grid was
-   fetched) into `<run folder>/index/`, copied never retyped, and return one line: pages fetched,
-   entries on disk. That file is what the plan script and the remainder runner read; you never do.
+   fetched) into `<run folder>/plan/index/`, copied never retyped, and return one line: pages
+   fetched, entries on disk. That file is what the plan script and the leftover runners read; you
+   never do.
 4. Append `phase: index built` to the ledger with the counts off the status, then check in
    (format below).
 
@@ -590,51 +583,58 @@ item and every definition now shows every sheet it appears on, plans included, a
 trade's page is ready to look at.
 <!-- /user-facing -->
 
-## 6. Window 2: topics
+## 6. Window 2: one pass per trade
 
 On the go-ahead:
 
-1. **Write the window 2 plan.** The boundary runner left `kinds/index.json` (the per-kind read) and
-   the index fetch left `index/`. Run the plan script for window 2; it writes one topic per
-   declared kind, each with its defining sheet, the sheets the index found its codes on, the detail
-   sheets those reference, and the one or two trade files the kind's items carry, grouped into
-   passes of at most twelve topics, with what it left out named. Read back only its bounds line:
-   topics, passes, excluded.
+1. **Write the window 2 plan.** Run the plan script for window 2. For every package in
+   `plan/packages.json` it writes one pass, reading for that trade: the sheet families that
+   trade's knowledge file names, selected off the inventory by discipline and sheet type; the
+   sheets the index found that trade's items' codes on; and the schedules whose kinds resolve to
+   it. A pass over twelve sheets splits at the twelve into lettered passes of the same trade. It
+   orders the passes so that two trades the knowledge files name as a seam run one after the
+   other, and names what no trade reads. Read back only its bounds line: trades, passes, sheets
+   read for more than one trade, sheets no trade reads.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 2 \
-     --inventory '<run folder>/inventory.json' --kinds '<run folder>/kinds/index.json' \
-     --index '<run folder>/index' --trades '<run folder>/context-packet.md' \
+     --inventory '<run folder>/inventory.json' \
+     --packages '<run folder>/plan/packages.json' --kinds '<run folder>/plan/kinds.json' \
+     --index '<run folder>/plan/index' --trade-knowledge '<plugin root>/trade-knowledge' \
      --out '<run folder>/read-plan.md'
    ```
 
 2. **Run the passes** exactly as stage 4 runs them: one runner per pass, dispatch line first, the
-   runner's `verify_unit` per topic, your own created counts per topic, one `pass:` line each. A
-   topic's unit id is its topic id, and its readers read over the corpus: the text of each sheet
-   from `search_set_text` and bounded `get_page_text`, a render only where the text cannot give
-   what is needed, with the reason named per render. Topics whose kinds share a trade start one
-   after another; the rest start together.
-3. **Close the window** with a boundary runner, as in stage 4 step 4, then append
+   runner's `verify_unit` per sheet, your own created counts per unit, one `pass:` line each, in
+   the plan's order, seam trades one after the other and the rest together. A pass's readers read
+   for one trade with that trade's knowledge, and still capture everything they see on every
+   trade (non-negotiable 5); the runner's overlap scan and the reader's search-before-create are
+   what keep two trade passes from creating the same work twice.
+3. **Check in every few trades.** After every fourth `pass:` line of the window, or sooner when
+   the plan says a seam is next, check in (format below): the trades finished, their pages ready,
+   what was raised. A pause here is at a package boundary and loses nothing.
+4. **Close the window** with a boundary runner, as in stage 4 step 4, then append
    `phase: window 2 complete` with the window's verified totals and check in.
 
-## 7. Window 3: the remainder
+## 7. Window 3: the leftover
 
 On the go-ahead:
 
-1. **Write the window 3 plan.** Run the plan script for window 3. It writes the sheets the index
-   left open (a tag matched to no code, a code found nowhere, a floor whose tags differ from a
-   sibling's), plus the general notes, code plans, sections and elevations window 1 did not read,
-   grouped by discipline into passes of at most twelve sheets, and names what it left out.
+1. **Write the window 3 plan.** Run the plan script for window 3. It writes the sheets no window 2
+   pass read, grouped by discipline into passes of at most twelve, each sheet carrying the open
+   entries the index left on it (a tag matched to no code, a code found nowhere, a floor whose
+   tags differ from a sibling's), and names what it left out. Read back only its bounds line:
+   sheets, passes, open entries. A bounds line of zero sheets and zero open entries means the
+   window has nothing to read: append `phase: window 3 complete` and go on.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 3 \
-     --inventory '<run folder>/inventory.json' --index '<run folder>/index' \
-     --trades '<run folder>/context-packet.md' --out '<run folder>/read-plan.md'
+     --inventory '<run folder>/inventory.json' --index '<run folder>/plan/index' \
+     --packages '<run folder>/plan/packages.json' --out '<run folder>/read-plan.md'
    ```
 
-2. **Run the passes** as stage 4 runs them, with `remainder-<pass id>` in place of the pass id, so
-   the runner reads its pass off the window 3 plan and gives each reader the open entries for its
-   sheet alongside the sheet itself.
+2. **Run the passes** as stage 4 runs them, with `leftover-<pass id>` in place of the pass id, so
+   the runner gives each reader the open entries for its sheet alongside the sheet itself.
 3. **Close the window** with a boundary runner, then run the index once more (stage 5, steps 1 to
    3) so the items this window created carry every sheet too, then append
    `phase: window 3 complete` with the window's verified totals and what the second index left
@@ -706,7 +706,7 @@ Report to the user, in plain words:
   to review them (the "Trade responsibility to confirm" section in each affected trade's package
   on plumlayer.com).
 - **What is still open**: what the index could match to nothing, by count, with the codes found
-  nowhere named; and the TOC sections on no package.
+  nowhere named; the sheets no trade read; and the TOC sections on no package.
 - **The package split**: the amendments made this run (created / split / collapsed / renamed,
   each with its rationale), the packages derived here from scratch only in the no-spec-book case,
   and TOC sections deliberately unbundled.
@@ -722,31 +722,27 @@ still open are all there. When it has been given, append `phase: closed out`.
 ## The dispatches and the report shapes
 
 Every dispatch carries pointers and nothing else. Whatever is pasted into a dispatch stays in the
-dispatcher's context for the rest of the run, so the packet, the read plan, and the brief values
-are opened by the agent that needs them, from the paths it is handed: the runner opens the trade
-files it cuts, and the reader opens its knowledge file.
+dispatcher's context for the rest of the run, so the read plan and the brief values are opened by
+the agent that needs them, from the paths it is handed, and the record is read by the agent that
+needs it.
 
 The mandates are not in these templates. They live in the two agent definitions the plugin ships,
 `scope-round-runner` and `scope-reader`, where each dispatched instance reads them fresh. They are
 never trimmed there and never restated here: a run that relaxes one reproduces a measured failure.
 
-**Orientation dispatch** (the lead writes this, once, only when context floor step 2 finds
-orientation needs to run):
+**Orientation dispatch** (the lead writes this, once, only when stage 2 finds orientation needs to
+run):
 
 ```text
-Project: <projectId>. Run folder: <path>.
-Run the `learn-project` skill for this project, in full, exactly as it is written. When it is
-done, write the reconciliation report you read in its own reconciliation step to
-<run folder>/reconciliation-report.md, the findings in full. Then return your summary and end.
+Project: <projectId>.
+Run the `learn-project` skill for this project, in full, exactly as it is written. Then return
+your summary and end.
 ```
 
-**The orientation summary** comes back in this shape, and is all the lead reads: counts and paths,
-never the packet or the reconciliation report themselves.
+**The orientation summary** comes back in this shape, and is all the lead reads:
 
 ```text
 sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>
-packet: <path>
-reconciliation report: <path>
 ```
 
 **Runner dispatch** (the lead writes this, once per pass, and once per window boundary):
@@ -754,7 +750,7 @@ reconciliation report: <path>
 ```text
 subagent_type: plumlayer:scope-round-runner
 Project: <projectId>. Window: <1, 2, or 3>.
-Pass: <pass id, or "remainder-<pass id>", or "boundary">.
+Pass: <pass id, or "leftover-<pass id>", or "boundary">.
 Run folder: <path>. Read plan: <path to read-plan.md>.
 Run your pass as your definition says, write your summary to <run folder>/reports/<pass id>.md,
 then return it.
@@ -765,11 +761,11 @@ then return it.
 ```text
 subagent_type: plumlayer:scope-reader
 Project: <projectId>. Window: <n>. Pass: <pass id>. Unit: <unit id>.
-Pages: <sheet number + fileId + 1-based pageInPdf, one per page; in window 2 the defining sheet
-first, then the indexed sheets, then the referenced details, each so marked>.
-Open entries: <path to the unit's open-entry file under index/, window 3 only>.
-Run folder: <path>. Context packet: <path>. Pass brief: <path to briefs/<pass-id>.md>.
-Knowledge: <path to briefs/<pass-id or topic-id>-knowledge.md>.
+Reading for: <"the vocabulary", or a catalog trade id, or "the leftover">.
+Pages: <sheet number + fileId + 1-based pageInPdf, one per page>.
+Open entries: <path to the unit's open-entry file under plan/index/, window 3 only>.
+Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>.
+Knowledge: <path to briefs/<pass-id>-knowledge.md>.
 Read your unit as your definition says, write your report to <run folder>/reports/<unit id>.md,
 then return it.
 ```
@@ -826,30 +822,27 @@ A boundary runner returns this shape instead:
 ```text
 window: <n>   pass: boundary
 cross-pass overlaps: <item name + the two units, one per line, or "none">
-packet: regenerated, <n> kinds, <n> trades
-definitions files: <n>
-definitions kinds now: <kinds>
 kinds declared: <n>
+definitions copied: <n> kinds, <n> codes
 ledger: <path>, appended through <last line written>
 ```
 
 ## The check-in (what the user sees)
 
 <!-- user-facing -->
-After each window, before the next one starts, name the window you finished and what it covered,
-then cover, in plain sentences:
+At each check-in, name the window, or the trades, you finished and what they covered, then cover,
+in plain sentences:
 
-- What you read and what landed: sheets or subjects read, items added, items updated, by trade,
-  and what you raised as Questions, by trade. Your own verified counts, never the ones reported
-  up to you.
+- What you read and what landed: sheets read, items added, items updated, by trade, and what you
+  raised as Questions, by trade. Your own verified counts, never the ones reported up to you.
 - What you would like them to look at now: document defects, items you weren't sure how finely to
   split, anomalies, each with its sheet reference, reviewable on each trade's page on
   plumlayer.com.
 - What is defined now that wasn't before, and anything the next window depends on.
 - Anything that went sideways: a count that didn't match and how you fixed it, a page you couldn't
   read, a pass that stopped. Say it plainly.
-- The plan for the next window in one sentence, what it will leave out, and the ask: proceed,
-  adjust, or pause. A pause here loses nothing; the run picks up at this window later.
+- What comes next in one sentence, what it will leave out, and the ask: proceed, adjust, or pause.
+  A pause here loses nothing; the run picks up where it stopped.
 
 For example: "I've finished the first window, the schedules and legends. Here is what landed by
 trade, what I'd like you to look at, and what the next window reads. Proceed, adjust, or pause?"
@@ -865,6 +858,7 @@ trade, what I'd like you to look at, and what the next window reads. Proceed, ad
   lines at the package surface.
 - **Tag trades after the fact.** There is no tagging stage: an item's trade is written with the
   row. An item with no trade is a door refusal, never a backlog.
+- **Keep a copy of the record on disk.** No packet, no definitions files: a reader asks the record.
 - **Score itself against a bid eval**: the acceptance harness was repo-side study machinery, not
   product.
 - **Resolve or approve anything on the user's behalf**: door-owned acts stay at their doors.
@@ -879,5 +873,6 @@ trade, what I'd like you to look at, and what the next window reads. Proceed, ad
 ## What this skill never runs
 
 Do not restore or run per-trade fan-out / reconcile-by-overlap machinery as a scope path, and never
-present it as current. Do not restore rounds, legs, folds, or the completeness accounting as
-stages; the index and the remainder window are what replaced them.
+present it as current: a trade pass writes onto the one shared list against the live record, and
+nothing is reconciled afterward. Do not restore rounds, legs, folds, or the completeness accounting
+as stages; the index and the leftover window are what replaced them.

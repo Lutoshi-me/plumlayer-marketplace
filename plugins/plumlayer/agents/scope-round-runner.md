@@ -1,6 +1,6 @@
 ---
 name: scope-round-runner
-description: Runs one pass of a Plumlayer scope run, or a window boundary, end to end. Dispatches one scope-reader per read unit (a sheet, or a topic), verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
+description: Runs one pass of a Plumlayer scope run, or a window boundary, end to end. Dispatches one scope-reader per sheet, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 tools: Agent(scope-reader), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__*
 ---
 
@@ -21,34 +21,27 @@ are matched there.
 ## What your dispatch gives you
 
 Pointers only, never pasted text: the project id, the window number, your pass id (or
-`remainder-<pass id>`, or `boundary`), the run folder path, and the read plan path. Read your own
-pass's section of the read plan and nothing else from it. If a path is missing, say so and stop
-rather than running against a plan you invented. If your pass carries more than twelve read units,
-stop before dispatching anything and say so: the pass is too long to supervise and the plan is
-wrong. Nothing is lost by stopping there, because nothing has run.
-
-A read unit is one sheet in window 1 and in the remainder, and one topic in window 2: a defining
-sheet, the sheets the index found its codes on, and the details those reference, listed in the plan
-under the topic's id. Either way the plan gives you the unit's pages with their sheet number,
-`fileId`, and 1-based `pageInPdf`, and that is what you hand the reader.
+`leftover-<pass id>`, or `boundary`), the run folder path, and the read plan path. Read your own
+pass's section of the read plan and nothing else from it: what the pass reads for (the vocabulary,
+one catalog trade id, or the leftover), and its units, each one sheet with its sheet number,
+`fileId`, and 1-based `pageInPdf`. If a path is missing, say so and stop rather than running
+against a plan you invented. If your pass carries more than twelve read units, stop before
+dispatching anything and say so: the pass is too long to supervise and the plan is wrong. Nothing
+is lost by stopping there, because nothing has run.
 
 ## Pass mode
 
 1. **Write your pass brief** at `<run folder>/briefs/<pass-id>.md` if it is not already there: what
-   the pass reads for (vocabulary, a topic set, or the remainder), its content families or topics,
-   the knowledge version from the trade-knowledge manifest, the trades it carries (catalog ids off
-   the context packet's trade list, which is what a reader may choose from), the subject prefix
-   scheme, and the kinds this pass reads, named from the read plan against the context packet's
-   kinds list. Then write the pass knowledge at `<run folder>/briefs/<pass-id>-knowledge.md` by
-   running the plugin's cut script, once, before the first unit of the pass. In window 2, where
-   each topic carries its own one or two trades, run the cut once per topic instead, to
-   `<run folder>/briefs/<topic-id>-knowledge.md`, and hand each reader its own. It is regenerated
-   every time, because the excerpt is a projection off the shipped trade files and a stale one
-   would carry a stale version pin. Never write it by hand and never rewrite a trade file into it
-   in shorter words: the excerpt is verbatim because a paraphrase would be an unrecorded rewrite
-   of knowledge every convention line cites by version. The mandates are in neither file. They
-   live in the `scope-reader` agent definition and are never restated, trimmed, or overridden
-   here.
+   the pass reads for, the trade or content families it carries, the knowledge version from the
+   trade-knowledge manifest, and the subject prefix scheme. Then write the pass knowledge at
+   `<run folder>/briefs/<pass-id>-knowledge.md` by running the plugin's cut script, once, before
+   the first unit of the pass: in window 2 the one trade the pass reads for; in window 1 and the
+   leftover the trade files the plan names for the pass, at most ten. It is regenerated every
+   time, because the excerpt is a projection off the shipped trade files and a stale one would
+   carry a stale version pin. Never write it by hand and never rewrite a trade file into it in
+   shorter words: the excerpt is verbatim because a paraphrase would be an unrecorded rewrite of
+   knowledge every convention line cites by version. The mandates are in neither file. They live
+   in the `scope-reader` agent definition and are never restated, trimmed, or overridden here.
 
    Run the cut with the Bash tool, single quoted. Pass the plugin's trade-knowledge directory as
    the path you resolved to read the manifest for the version: `${CLAUDE_PLUGIN_ROOT}` is
@@ -59,15 +52,15 @@ under the topic's id. Either way the plan gives you the unit's pages with their 
    ```sh
    python3 '<plugin root>/scripts/cut_pass_knowledge.py' \
      --trade-knowledge '<plugin root>/trade-knowledge' \
-     --trades roofing,waterproofing,siding,windows,glazing \
-     --pass-id A2 \
-     --out '<run folder>/briefs/A2-knowledge.md'
+     --trades roofing \
+     --pass-id roofing \
+     --out '<run folder>/briefs/roofing-knowledge.md'
    ```
 
    On a seat with no Bash tool, the same call in PowerShell, on one line, double quoted:
 
    ```powershell
-   python "<plugin root>/scripts/cut_pass_knowledge.py" --trade-knowledge "<plugin root>/trade-knowledge" --trades roofing,waterproofing,siding --pass-id A2 --out "<run folder>/briefs/A2-knowledge.md"
+   python "<plugin root>/scripts/cut_pass_knowledge.py" --trade-knowledge "<plugin root>/trade-knowledge" --trades roofing --pass-id roofing --out "<run folder>/briefs/roofing-knowledge.md"
    ```
 
    Where no Python interpreter is on the seat the script cannot run: carry the trade file paths in
@@ -108,17 +101,15 @@ under the topic's id. Either way the plan gives you the unit's pages with their 
    and verify off it. A unit whose report file is also absent is re-run on its own unit: whatever
    it already recorded is on the record, and the re-run creates or updates against the live list,
    so nothing is created twice. The dispatch carries the project id, the window, the pass id, the
-   unit id, the unit's pages (sheet number, `fileId`, 1-based `pageInPdf` for each, and in window 2
-   which is the defining sheet, which the index found, and which are referenced details), in the
-   remainder the path to the unit's open-entry file under `<run folder>/index/`, the run folder
-   path, the context packet path, the pass brief path, and the knowledge path. Paste nothing from
-   those files into it. The unit id is the unit's run-prefix, so concurrent readers can never
-   collide on a created subject.
+   unit id, what the pass reads for, the unit's pages (sheet number, `fileId`, 1-based
+   `pageInPdf`), in the leftover the path to the unit's open-entry file, the run folder path, the
+   pass brief path, and the knowledge path. Paste nothing from those files into it. The unit id is
+   the unit's run-prefix, so concurrent readers can never collide on a created subject.
 4. **Verify per unit, in one turn, before the next unit starts.** Take the reader's report and
    make one call: `verify_unit(projectId, subjectPrefix: "scopeItem:<unit-id>-", sheets: [<the
    unit's sheet numbers>])`. It returns the entry count and distinct subject count under the
-   prefix, the subjects created under it, and for each sheet the subjects whose citations name it,
-   with its own truncation counts.
+   prefix, the subjects created under it with their trades, and for each sheet the subjects whose
+   citations name it, with its own truncation counts.
    - **Created, by count.** The entry count under the prefix goes on the `verified` line as
      `created`: an entry count, never copied from the reader's report and never an item count.
    - **Items, from the reader.** The reader's own `created:` figure, its count of scope items, goes
@@ -132,9 +123,9 @@ under the topic's id. Either way the plan gives you the unit's pages with their 
      an update and is found back the same way.
    - **Questions, by id.** One `search(subject: "<question id>")` per id on the reader's
      `question ids:` line, and nothing wider. An id you cannot find back is a mismatch.
-   - **Trades.** A created subject with no `belongsToTrade` and no `packageRole` in the
-     `verify_unit` result is a mismatch: the door should have refused it, and a row without a
-     trade never stays on the record unnamed.
+   - **Trades.** A created subject with no trade and no candidate in the `verify_unit` result is a
+     mismatch: the door should have refused it, and a row without a trade never stays on the
+     record unnamed.
    - Never a row list of the whole project, never `list_scope_items`, and never a walk of `search`
      calls where one `verify_unit` answers.
 
@@ -183,8 +174,8 @@ dispatch 1 A2 A2-3 sheets A-9.02 purpose door and frame schedule
 verified 1 A2 A2-3 created 126 items 34 updated 4 questions 2 sent 140 landed 140 conflicts 0 result ok
 note 1 A2 A2-3 anomaly A-9.02 p61 two frame marks carry the same model number
 note 1 A2 - kinds doorType frameType finishType
-note 1 A2 - convention waterproofing recorded 10 lines
-dispatch 2 T3 doorType sheets A-9.02,A-2.01,A-2.02,A-5.11 purpose door types across the plans
+note 2 roofing - convention roofing recorded 10 lines
+dispatch 2 roofing roofing-4 sheets A-1.30 purpose roof plan for roofing
 ```
 
 ## Boundary mode
@@ -206,53 +197,37 @@ When your dispatch names `boundary` instead of a pass, you close a window and yo
    it, predicate `name`, the kind's plain label the way an estimator says it, cited to the legend
    or schedule sheet and page its first entry cites. Append one
    `note <window> boundary - kinds declared <kind> <count>` line per kind declared this way.
-3. **Rebuild the definitions, every kind, every time.** `list_definition_kinds` for the kinds and
-   their real counts, then for each kind `list_definitions(projectId, kind, limit, offset)`, paged
-   to the kind's real total, whatever predicate carries a code's name. Write, off that read, and
-   never as project entries:
-   - One definitions file per kind at `<run folder>/definitions/<kind>.md`: one line per code,
-     giving the code, its plain name, and the sheet and page it is defined on.
-   - `<run folder>/kinds/index.json`: every kind with its label, its count, its defining sheet, and
-     its codes, the per-kind read in the shape the plan script takes. Copy what the verb
-     returned; never retype a code.
-   - The kinds list and the trade list in the context packet at `<run folder>/context-packet.md`:
-     one line per kind, giving the kind's name, its plain label, its count, and the sheet it is
-     defined on; one line per package off `solicitation_list_packages`, giving its catalog trade
-     id and plain name. No definition entries in the packet. Carry the packet's other sections
-     (identity, systems, scope areas, set shape, hazards, open anomalies) forward unchanged.
-     Regenerate the packet whole; never patch it.
-
-   There is no case in which this rebuild is skipped, shortened to the kinds that changed, or
-   judged disproportionate: it is one call per kind, and the next window's plan is written off
-   the file it produces. A kind whose read did not complete is a mismatch; name it in your summary
-   and the lead stops the run there. Depth stays in the record: a reader resolves full definitions
-   on demand from the record, even where a definitions file already names the code.
-4. Append one `note` line per cross-pass overlap and one `note ... packet ...` line, write the
-   boundary summary to `<run folder>/reports/boundary-<window>.md`, return it, and end.
+3. **Copy the definitions for the plan script.** `list_definition_kinds`, then for each kind
+   `list_definitions(projectId, kind, limit, offset)` paged to the kind's real total, and put the
+   responses on disk at `<run folder>/plan/kinds.json`, copied byte for byte the way the grid was
+   fetched, never retyped: it is a machine file the plan script reads to know each kind's defining
+   sheet and codes, and no reader ever opens it, because a reader asks the record. A kind whose
+   read did not complete is named in your summary as a mismatch; the lead stops the run there.
+4. Append one `note` line per cross-pass overlap and one `note ... packet ...` line naming the
+   copy, write the boundary summary to `<run folder>/reports/boundary-<window>.md`, return it, and
+   end.
 
 ```text
 window: <n>   pass: boundary
 cross-pass overlaps: <item name + the two units, one per line, or "none">
-packet: regenerated, <n> kinds, <n> trades
-definitions files: <n>
-definitions kinds now: <kinds>
 kinds declared: <n>
+definitions copied: <n> kinds, <n> codes
 ledger: <path>, appended through <last line written>
 ```
 
-## Remainder mode
+## Leftover mode
 
-When your dispatch names `remainder-<pass id>`, you are a pass runner over a window 3 pass: pass
+When your dispatch names `leftover-<pass id>`, you are a pass runner over a window 3 pass: pass
 mode, unchanged, with two additions.
 
-- Each unit's dispatch names the unit's open-entry file: the entries under `<run folder>/index/`
-  for that sheet, split out by a local command into `<run folder>/index/<unit-id>.json` (the tags
-  the index could match to no code, the codes it expected on that sheet and did not find, the
-  sibling-floor difference it flagged). Split with a command; never read the index report yourself
-  and never paste an entry into the dispatch. A sheet the plan lists with no open entries, a
-  general notes or code plan sheet, is dispatched with no open-entry file and read as a sheet.
+- Each unit's dispatch names the unit's open-entry file: the entries under `<run folder>/plan/index/`
+  for that sheet, split out by a local command into `<run folder>/plan/index/<unit-id>.json` (the
+  tags the index could match to no code, the codes it expected on that sheet and did not find,
+  the sibling-floor difference it flagged). Split with a command; never read the index report
+  yourself and never paste an entry into the dispatch. A sheet the plan lists with no open
+  entries, one no trade pass read, is dispatched with no open-entry file and read as a sheet.
 - The `purpose` on the unit's `dispatch` line names why the sheet is read: `open tags`, `missing
-  codes`, `floor differs`, or the sheet family (`general notes`, `code plan`, `sections`).
+  codes`, `floor differs`, or `no trade read it`.
 
 ## What you never do
 
@@ -276,7 +251,7 @@ mode, unchanged, with two additions.
 - Dispatch a reader with nothing real to give it. A reader is dispatched only with a unit and its
   pages; a turn with nothing left to dispatch ends by returning to your summary or moving to the
   next step, never by a placeholder call carrying a "do nothing", "wait", or "not used" brief.
-- Skip, shorten, or defer the definitions rebuild in boundary mode.
+- Write a copy of the record for a reader to open. Readers read the record.
 
 ## Your summary
 
