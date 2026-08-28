@@ -41,31 +41,29 @@ These are not guidance. Each one exists because its absence produced a measured 
 of them is ever trimmed.
 
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
-   resolved reference) for work already listed; QUESTION only what clears the bar. A Question is
-   the first inkling of an RFI: the first confusion where a person has to go answer it or make a
-   call before the work can be priced. If a sub could price it as drawn, it is not a Question.
-   Past the bar there are three shapes and no fourth. A NEW Question, where nothing open covers
-   the ask: `list_questions(projectId, trade: <the trade>)` first, then `ask_question` with that
-   trade set, as when a door schedule row calls a frame type the frame schedule does not carry. A
-   REPLY, where an open one already covers the same ask: `reply_question` on it, citing the sheet
-   you read, as when that same frame type is called again on a second floor plan; it counts on
-   your `questions replied:` line, never as a new Question. NOTHING, where the sheets answer it,
-   another trade's item already carries it, or a sub could price it as drawn, as when a plan calls
-   a partition type the partition schedule defines; what you noticed goes in `notesInternal` on
-   the row if it is worth a watch, and nowhere otherwise. Every Question names the trade it is
-   about, the package that would have to answer or price it; leave the trade off only where the
-   ask really spans the job, a phasing conflict across the site or a general note that contradicts
-   the whole set, and say so in the ask's first sentence. Two Questions come from their own
-   mandates rather than from this bar: the grain question (mandate 7) and the sheet that
-   contradicts a convention line (mandate 2). A Question is about the project, never about a
-   Plumlayer failure; a tool failure is reported to your dispatcher, not raised as a Question.
-   Question text is plain estimator words, per docs/plugin-text-style.md. Never a parallel list;
-   never re-create; never silently skip. An UPDATE carries its own evidence, in the same shape a
-   CREATE's does: the sheet and the page you read it on. The record refuses an update, a note, or
-   a new citation that names no source, exactly as it refuses a create that names none. Before
-   every CREATE, run one `search(text: <two or three distinguishing words of the item's name>)`
-   across the whole project, whatever trade you read for; if a scope item matches, on any trade,
-   UPDATE that item instead.
+   resolved reference) for work already listed; QUESTION only what clears the bar. A Question is the
+   first inkling of an RFI: the first confusion where a person has to go answer it or make a call
+   before the work can be priced. Past the bar there are three shapes and no fourth. A NEW Question,
+   where nothing open covers the ask: `list_questions(projectId, trade: <the trade>)` first, then
+   `ask_question` with that trade set, as when a door schedule row calls a frame type the frame
+   schedule does not carry. A REPLY, where an open one already covers the same ask: `reply_question`
+   on it, citing the sheet you read, as when that same frame type is called again on a second floor
+   plan; it counts on your `questions replied:` line, never as a new Question. NOTHING, where the
+   sheets answer it or another trade's item already carries it, as when a plan calls a partition
+   type the partition schedule defines; what you noticed goes in `notesInternal` on the row if it is
+   worth a watch, and nowhere otherwise. Every Question names the trade it is about, the package
+   that would have to answer or price it; leave the trade off only where the ask really spans the
+   job, a phasing conflict across the site or a general note that contradicts the whole set, and say
+   so in the ask's first sentence. Two Questions come from their own mandates rather than from this
+   bar: the grain question (mandate 7) and the sheet that contradicts a convention line (mandate 2).
+   A Question is about the project, never about a Plumlayer failure; a tool failure is reported to
+   your dispatcher, not raised as a Question. Question text is plain estimator words, per
+   docs/plugin-text-style.md. Never a parallel list; never re-create; never silently skip. An UPDATE
+   carries its own evidence, in the same shape a CREATE's does: the sheet and the page you read it
+   on. The record refuses an update, a note, or a new citation that names no source, exactly as it
+   refuses a create that names none. Before every CREATE, run one `search(text: <two or three
+   distinguishing words of the item's name>)` across the whole project, whatever trade you read for;
+   if a scope item matches, on any trade, UPDATE that item instead.
 2. CONVENTION LINES: your pass runner records each carried trade's convention lines onto the
    record once, at pass start, before your unit runs (subjects `scopeItem:conv-<trade>-<n>`). Cite
    one where a sheet corroborates it, the same way any UPDATE carries its evidence. Never create or

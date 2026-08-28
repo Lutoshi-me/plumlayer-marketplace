@@ -1453,7 +1453,6 @@ def check_question_failure_boundary(plugin_path: Path) -> Result:
 
 QUESTION_RFI_BAR_PHRASES = (
     "first inkling of an RFI",
-    "If a sub could price it as drawn, it is not a Question",
 )
 
 # Wording retired with the bar: it told the reader to raise a Question wherever it was unsure,
