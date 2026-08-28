@@ -55,11 +55,15 @@ Checks:
       itself, unit lines whose page references match the fixture's own sheet-to-page map, a
       window 1 selection matching an independent tally of the vocabulary sheet types plus the
       include and minus the exclude, window 2's overlap and unread counts matching its own unit
-      lines, the balanced split of a pass over twelve units, a seam pair's passes adjacent with
-      the moved pass naming the seam, a window 3 that is exactly the inventory minus window 2's
-      own unit lines, an index with no located codes reported as a partial input rather than a
+      lines, the balanced split of a pass over twelve units, every declared seam among the trades
+      planned either adjacent or named on the bounds line as a group no order can satisfy (checked
+      over the fixture and again over all of the shipped map's pairs), no pass claiming a seam its
+      own order contradicts, a window 3 that is exactly the inventory minus window 2's own unit
+      lines, an index with no located codes reported as a partial input rather than a
       clean number, and a one-line refusal naming what is missing for each of eight broken
-      invocations.
+      invocations. The shipped scripts are compiled from source here rather than imported through
+      the loader, so a script edited twice inside one second to the same byte length can never be
+      checked as its earlier bytecode.
   15. No shipped skill or agent file names `fork` as a subagent type, in either the
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
   16. Every shipped skill or agent file that names `ask_question` or tells the agent to raise a
@@ -1752,12 +1756,7 @@ def _first_line_index(lines: list[str], match) -> int | None:
 
 def _load_cut_module(script_path: Path):
     """Import the shipped cut script in-process, so the check runs no subprocess and no model."""
-    spec = importlib.util.spec_from_file_location("cut_pass_knowledge", script_path)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"no import spec for {script_path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return _load_script_module(script_path, "cut_pass_knowledge")
 
 
 def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
@@ -2056,12 +2055,17 @@ _VOCABULARY_SHEET_TYPES = {"schedule", "legend", "notes", "cover-index"}
 
 
 def _load_script_module(script_path: Path, module_name: str):
-    """Import a shipped script in-process, so the check runs no subprocess and no model."""
-    spec = importlib.util.spec_from_file_location(module_name, script_path)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"no import spec for {script_path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    """
+    Import a shipped script in-process, so the check runs no subprocess and no model. The source is
+    compiled here rather than imported through the loader: a .pyc records the source mtime in whole
+    seconds, so a script edited twice inside one second to the same byte length loads the earlier
+    bytecode, and the harness would report on a version of the script that is no longer on disk.
+    """
+    module = importlib.util.module_from_spec(
+        importlib.util.spec_from_loader(module_name, loader=None)
+    )
+    module.__file__ = str(script_path)
+    exec(compile(script_path.read_text(encoding="utf-8"), str(script_path), "exec"), module.__dict__)
     return module
 
 
@@ -2143,6 +2147,51 @@ def _check_split_arithmetic(passes: list[dict], cap: int, errors: list[str], whe
     return split
 
 
+def _trades_in_order(passes: list[dict]) -> list[str]:
+    """
+    The trades window 2 plans, in the order their passes run, each named once. A pass block carries
+    the catalog id verbatim on its `reads for` line, and a pass split into parts repeats it on every
+    part, so the runs are collapsed here: seam adjacency is a property of the trade, not of a part.
+    """
+    order: list[str] = []
+    for plan_pass in passes:
+        reads_for = plan_pass["fields"].get("reads for", "")
+        if reads_for and (not order or order[-1] != reads_for):
+            order.append(reads_for)
+    return order
+
+
+def _contiguous_runs(trade_order: list[str]) -> dict[str, int]:
+    """How many separate places each trade occupies. More than one means its passes are not together."""
+    runs: dict[str, int] = {}
+    for trade_id in trade_order:
+        runs[trade_id] = runs.get(trade_id, 0) + 1
+    return runs
+
+
+def _seam_order_errors(
+    trade_order: list[str], seam_pairs: list[tuple[str, str]], bounds: str, where: str
+) -> list[str]:
+    """
+    Every seam pair whose two trades are both planned must either sit side by side, or have its group
+    named on the bounds line as one no order can fully satisfy. Silently dropping a declared seam is
+    the failure this exists to catch: the runner's overlap scan only fires when the two run together.
+    """
+    errors: list[str] = []
+    position = {trade_id: i for i, trade_id in enumerate(trade_order)}
+    for first, second in seam_pairs:
+        if first not in position or second not in position:
+            continue
+        if abs(position[first] - position[second]) == 1:
+            continue
+        if first in bounds and second in bounds:
+            continue
+        errors.append(
+            f"{where}: the seam {first} with {second} is neither adjacent nor named on the bounds line"
+        )
+    return errors
+
+
 def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "plan-inventory"
     script = plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT)
@@ -2165,6 +2214,10 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     try:
         fixture_rows = json.loads(grid_fixture.read_text(encoding="utf-8"))["sheets"]
         index_page = json.loads((fixtures / "index-fixture" / "page-000.json").read_text(encoding="utf-8"))
+        trade_sheets = json.loads(
+            (trade_knowledge / "trade-sheets.json").read_text(encoding="utf-8")
+        )
+        seam_pairs = [(pair[0], pair[1]) for pair in trade_sheets["seams"]]
     except Exception as e:
         return Result(name, False, detail=f"fixture: {e}")
 
@@ -2298,8 +2351,8 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     else:
         w2_passes = _plan_passes(w2_path.read_text(encoding="utf-8"))
         w2_sheets = {sheet for p in w2_passes for sheet, _page in p["units"]}
-        # The fixture's sixth package carries a trade the map does not hold, and its fifth a trade
-        # whose families name nothing in this set. Both must be named on the bounds line by id.
+        # One package carries a trade the map does not hold and another a trade whose families name
+        # nothing in this set. Both must be named on the bounds line by id.
         if "13 34 19" not in w2_bounds:
             errors.append(f"the window 2 bounds line does not name the unmapped package: {w2_bounds!r}")
         if "32 90 00" not in w2_bounds:
@@ -2321,24 +2374,71 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append("the window 2 fixture proves nothing about overlap: no sheet is read twice")
         if f"sheets no trade reads {expected_rows - len(w2_sheets)}" not in w2_bounds:
             errors.append(f"the window 2 bounds line's unread count is not the inventory minus what it planned")
+        # Two partial-input notes the fixtures are built to trip: a kinds row carrying a kind and no
+        # defining sheet, and an index location row naming no kind. Both must reach the bounds line,
+        # or a run would report a clean number over an input it could only partly use.
+        kinds_without_sheet = sum(
+            1 for row in json.loads(Path(kinds).read_text(encoding="utf-8"))["kinds"]
+            if not row.get("sheetNumber")
+        )
+        locations_without_field = sum(
+            1 for row in index_page["locations"]
+            if not row.get("kind") or not row.get("sheetNumber")
+        )
+        if kinds_without_sheet == 0 or locations_without_field == 0:
+            errors.append("the fixtures no longer trip both partial-input notes")
+        for fragment in (
+            f"definition kinds with no defining sheet {kinds_without_sheet}",
+            f"index locations naming no kind or no sheet {locations_without_field}",
+        ):
+            if fragment not in w2_bounds:
+                errors.append(f"the window 2 bounds line does not carry `{fragment}`: {w2_bounds!r}")
         w2_split = _check_split_arithmetic(w2_passes, 12, errors, "window 2")
         if w2_split == 0:
             errors.append("the window 2 fixture proves nothing about the twelve-unit split")
-        # The map names 09 21 16 and 09 91 00 as a seam, and the packages file puts another package
-        # between them, so the later trade's pass must have been moved to sit right after the
-        # earlier trade's last pass.
-        ids = [p["id"] for p in w2_passes]
-        drywall_at = [i for i, pid in enumerate(ids) if pid.startswith("drywall")]
-        painting_at = [i for i, pid in enumerate(ids) if pid.startswith("painting")]
-        if not drywall_at or not painting_at:
-            errors.append(f"the window 2 seam pair is not both in the plan: {ids}")
-        elif painting_at[0] != drywall_at[-1] + 1:
-            errors.append(f"the seam pair's passes are not adjacent in window 2's order: {ids}")
-        elif w2_passes[painting_at[0]]["fields"].get("seam with") != "09 21 16":
+        # The packages file names two seam groups and splits both: a pair (09 21 16 with 09 91 00)
+        # with another package between them, and a three-trade chain (08 40 00, 08 50 00, 12 20 00,
+        # where 08 50 00 seams with both of the others) with a package inside it. Every declared seam
+        # among the trades planned here must come back adjacent, or its group must be named on the
+        # bounds line; the three-trade chain is the shape a pairwise move cannot get right.
+        trade_order = _trades_in_order(w2_passes)
+        for trade_id, runs in _contiguous_runs(trade_order).items():
+            if runs > 1:
+                errors.append(f"window 2 splits trade {trade_id} across {runs} places in its order")
+        if trade_order.count("08 40 00") and trade_order.count("12 20 00"):
+            chain = sorted(trade_order.index(t) for t in ("08 40 00", "08 50 00", "12 20 00"))
+            if chain != list(range(chain[0], chain[0] + 3)):
+                errors.append(
+                    f"the three-trade seam chain is not contiguous in window 2's order: {trade_order}"
+                )
+        else:
+            errors.append("the window 2 fixture proves nothing about a trade in two seams")
+        # The seam assertions say nothing at all if the map and the packages between them declare no
+        # seam over the trades planned here, so the fixture's own reach is asserted before them.
+        live_seams = [(a, b) for a, b in seam_pairs if a in trade_order and b in trade_order]
+        if len(live_seams) < 3:
             errors.append(
-                f"the moved pass does not name the seam it was moved for: "
-                f"{w2_passes[painting_at[0]]['fields']}"
+                f"the window 2 fixture exercises {len(live_seams)} declared seams, too few to prove "
+                f"a pair and a three-trade chain"
             )
+        errors.extend(_seam_order_errors(trade_order, seam_pairs, w2_bounds, "window 2"))
+        for plan_pass in w2_passes:
+            declared = {
+                s.strip() for s in plan_pass["fields"].get("seam with", "").split(",") if s.strip()
+            }
+            reads_for = plan_pass["fields"].get("reads for", "")
+            index_of = trade_order.index(reads_for) if reads_for in trade_order else None
+            beside = set()
+            if index_of is not None:
+                for i in (index_of - 1, index_of + 1):
+                    if 0 <= i < len(trade_order):
+                        beside.add(trade_order[i])
+            stranded = declared - beside
+            if stranded:
+                errors.append(
+                    f"pass {plan_pass['id']} claims a seam with {sorted(stranded)}, which its own "
+                    f"order does not put next to it"
+                )
 
     # ------------------------------------------------------------------ #
     # Window 3: the leftover, checked against window 2's own unit lines
@@ -2394,6 +2494,43 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         errors.append("unit lines cite a page the grid does not: " + "; ".join(misplaced[:5]))
 
     # ------------------------------------------------------------------ #
+    # The ordering over the shipped map itself, not just over the fixture
+    # ------------------------------------------------------------------ #
+    #
+    # The fixture holds two seam groups. The shipped map holds twenty one seam pairs over the whole
+    # catalog, and a project that buys a package for every mapped trade meets all of them at once.
+    # This runs the ordering over exactly that case, one pass per mapped trade, and asserts the same
+    # property the fixture asserts: every declared pair is adjacent, or its group came back named.
+    map_passes = [
+        {"tradeId": trade_id, "id": entry["knowledge"], "units": []}
+        for trade_id, entry in trade_sheets["trades"].items()
+    ]
+    try:
+        apart_groups = module._order_by_seams(map_passes, {
+            "trades": trade_sheets["trades"],
+            "seams": seam_pairs,
+        })
+    except Exception as e:
+        errors.append(f"the ordering raised over the shipped map: {e}")
+    else:
+        map_order = [plan_pass["tradeId"] for plan_pass in map_passes]
+        if sorted(map_order) != sorted(trade_sheets["trades"]):
+            errors.append("the ordering over the shipped map lost or repeated a trade")
+        named = " ".join(" ".join(group) for group in apart_groups)
+        errors.extend(_seam_order_errors(map_order, seam_pairs, named, "the shipped map"))
+        for plan_pass in map_passes:
+            declared = {
+                s.strip() for s in str(plan_pass.get("seamWith", "")).split(",") if s.strip()
+            }
+            at = map_order.index(plan_pass["tradeId"])
+            beside = {map_order[i] for i in (at - 1, at + 1) if 0 <= i < len(map_order)}
+            if declared - beside:
+                errors.append(
+                    f"over the shipped map, {plan_pass['tradeId']} claims a seam with "
+                    f"{sorted(declared - beside)} that its own order does not put next to it"
+                )
+
+    # ------------------------------------------------------------------ #
     # An index that ran without its located-code half says so, never a clean number
     # ------------------------------------------------------------------ #
     code, partial_bounds, err = _run_plan_script(
@@ -2420,6 +2557,14 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
              "--kinds", kinds, "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
              "--out", str(out_dir / "refused.md")],
             "tradeCode",
+        ),
+        (
+            "two packages on one trade",
+            ["plan", "--window", "2", "--inventory", inventory_json,
+             "--packages", str(fixtures / "packages-fixture-duplicate-trade.json"),
+             "--kinds", kinds, "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
+             "--out", str(out_dir / "refused.md")],
+            "pkg-0009",
         ),
         (
             "a kinds row with no kind",
@@ -2487,9 +2632,12 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"window 1's selection and its bounds counts checked against an independent tally, "
         f"window 2's overlap and unread counts checked against its own unit lines, "
         f"{w2_split} pass split at the twelve-unit cap with ids and sizes checked against a "
-        f"balanced split computed here, the seam pair's passes adjacent and the moved pass naming "
-        f"the seam, window 3 checked to be exactly the inventory minus window 2's own unit lines, "
-        f"an index with no located codes reported as a partial input, "
+        f"balanced split computed here, two seam groups (a pair and a three-trade chain) each "
+        f"contiguous with no pass claiming a seam its own order contradicts, the same seam property "
+        f"checked over all {len(seam_pairs)} pairs of the shipped map with one pass per mapped "
+        f"trade, both partial-input notes asserted by their text, window 3 checked to be exactly "
+        f"the inventory minus window 2's own unit lines, an index with no located codes reported as "
+        f"a partial input, "
         f"{len(refusals)} broken invocations each refused in one line naming what is missing"
     )
     # An honest bound, not a pass: the fixtures are invented, and the kinds and index fixtures are

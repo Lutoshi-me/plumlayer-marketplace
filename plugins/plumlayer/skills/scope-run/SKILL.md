@@ -608,7 +608,11 @@ On the go-ahead:
 
 2. **Run the passes** exactly as stage 4 runs them: one runner per pass, dispatch line first, the
    runner's `verify_unit` per sheet, your own created counts per unit, one `pass:` line each, in
-   the plan's order, seam trades one after the other and the rest together. A pass's readers read
+   the plan's order. The plan marks each seam group (trades whose work meets at a boundary,
+   drywall with painting, insulation, fireproofing and ceilings, say); the passes of one group
+   run one after the other, never two at once, and passes in no group may run together. A pass
+   labelled as not next to one of its seam partners is still in that group and still runs
+   serially with it. A pass's readers read
    for one trade with that trade's knowledge, and still capture everything they see on every
    trade (non-negotiable 5); the runner's overlap scan and the reader's search-before-create are
    what keep two trade passes from creating the same work twice.

@@ -29,7 +29,9 @@ The three windows, and what each selects:
      `--include` names and minus what `--exclude` names, grouped into passes by discipline.
   2  one pass per package in `--packages`, reading for that package's trade: the sheets that
      trade's families name, the sheets that define a kind the trade claims, and the sheets the
-     index located that trade's codes on.
+     index located that trade's codes on. Trades the map names as seams run as one contiguous
+     group, so the runner's overlap scan sees them one after the other; a group whose seams admit
+     no such order is named on the bounds line rather than half honored.
   3  the leftover: every sheet no window 2 pass reads, grouped by discipline, each carrying a count
      of the entries the index left open on it. It recomputes window 2's selection from the same
      inputs rather than parsing window 2's plan file, so it needs the same inputs window 2 needs.
@@ -52,7 +54,7 @@ Input shapes, named here so a change on the record's side surfaces as a named fi
 an empty plan:
 
   --packages  a `solicitation_list_packages` response: a `packages` array whose rows carry
-              `tradeCode`, and optionally `name` and `codes`.
+              `tradeCode`, one package per trade, and optionally `id`, `name` and `codes`.
   --kinds     a `list_definitions` response or an array of its rows: each row carries `kind`, and
               carries `sheetNumber` where the record knows which sheet defines it.
   --index     a directory of `index_citations_status` pages: each page carries `openEntries`
@@ -65,9 +67,9 @@ Exit codes:
   0  wrote the files; one bounds line on stdout naming what it read and what it wrote.
   1  a named failure, one line on stderr: a file that does not parse, a row total that does not
      match `--expect-count`, a missing window input, an input row with no `tradeCode` or no `kind`,
-     an index page carrying neither array, an `--include` or `--exclude` with no colon or matching
-     no sheet, a trade map that fails its own shape checks, or an inventory file this script did
-     not write.
+     two packages on one trade, an index page carrying neither array, an `--include` or `--exclude`
+     with no colon or matching no sheet, a trade map that fails its own shape checks, or an
+     inventory file this script did not write.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A file that does not parse whole is a refusal,
@@ -649,12 +651,23 @@ def _read_packages(path: Path) -> list[dict]:
     if not isinstance(rows, list):
         raise PlanError(f"{path} carries no `packages` array")
     packages: list[dict] = []
+    # Two packages on one trade would compute the same sheets twice, under one pass id, and read the
+    # same pages twice. Which of the two owns the read is the lead's call on the record, not a call
+    # this script can make, so it refuses and names both rather than picking one.
+    seen_codes: dict[str, str] = {}
     for index, row in enumerate(rows, 1):
         if not isinstance(row, dict):
             raise PlanError(f"{path}: package {index} is not an object")
         trade_code = row.get("tradeCode")
         if not isinstance(trade_code, str) or not trade_code.strip():
             raise PlanError(f"{path}: package {index} carries no `tradeCode`")
+        named = _text(row.get("id")) or f"package {index}"
+        folded_code = _fold(trade_code)
+        if folded_code in seen_codes:
+            raise PlanError(
+                f"{path}: {seen_codes[folded_code]} and {named} both carry trade {trade_code.strip()}"
+            )
+        seen_codes[folded_code] = named
         packages.append(row)
     if not packages:
         raise PlanError(f"{path} carries no packages")
@@ -964,24 +977,116 @@ def _window_2_selection(rows: list[dict], packages: list[dict], trade_map: dict,
     }
 
 
-def _apply_seams(passes: list[dict], trade_map: dict) -> None:
+def _seam_neighbours(passes: list[dict], trade_map: dict) -> dict[str, list[str]]:
     """
-    Move the later trade's passes to sit immediately after the earlier trade's last pass, one seam
-    pair at a time in the map's own file order, so the result is the same on every run. The moved
-    pass carries the seam on its own block, which is what the lead reads to run the two one after
-    another rather than alongside each other.
+    The seam graph over the trades that actually have a pass, each trade's partners in the map's own
+    file order. A seam whose other member the project bought no package for is not a seam this run
+    can honor and drops out here.
     """
+    present = {plan_pass["tradeId"] for plan_pass in passes}
+    neighbours: dict[str, list[str]] = {trade_id: [] for trade_id in present}
     for first, second in trade_map["seams"]:
-        first_at = [i for i, p in enumerate(passes) if p.get("tradeId") == first]
-        second_at = [i for i, p in enumerate(passes) if p.get("tradeId") == second]
-        if not first_at or not second_at:
+        if first in present and second in present:
+            neighbours[first].append(second)
+            neighbours[second].append(first)
+    return neighbours
+
+
+def _seam_group_order(members: list[str], neighbours: dict[str, list[str]], rank) -> tuple[list[str], bool]:
+    """
+    One seam group's trades in the order their passes run, and whether that order puts every declared
+    pair in the group side by side. A group whose seams form a simple chain is walked end to end, so
+    every pair is adjacent. A group where one trade seams with three others, or whose seams close a
+    loop, has no such order at all: no line can put every pair side by side, so it falls back to the
+    map's own file order and the caller names it rather than presenting a broken chain as a good one.
+    """
+    if len(members) == 1:
+        return members, True
+
+    degrees = {member: len(neighbours[member]) for member in members}
+    edges = sum(degrees.values()) // 2
+    is_chain = max(degrees.values()) <= 2 and edges == len(members) - 1
+    if not is_chain:
+        return sorted(members, key=rank), False
+
+    start = min((m for m in members if degrees[m] == 1), key=rank)
+    walk = [start]
+    seen = {start}
+    while len(walk) < len(members):
+        nxt = next(n for n in neighbours[walk[-1]] if n not in seen)
+        walk.append(nxt)
+        seen.add(nxt)
+    return walk, True
+
+
+def _order_by_seams(passes: list[dict], trade_map: dict) -> list[list[str]]:
+    """
+    Reorder the passes so every seam group runs as one contiguous block, and label each pass with the
+    seams it actually ends up next to. A seam exists so the runner's overlap scan catches the same
+    work captured twice by two trades that draw the same area, and that only fires when the two run
+    one after the other, so the grouping is the whole point rather than a nicety.
+
+    Groups are laid out where their first pass already sat, and everything in no group keeps its
+    package order, so the plan stays as close to the order the packages were bought in as the seams
+    allow. Mutates `passes` in place and returns the trades of every group whose declared seams could
+    not all be made adjacent.
+    """
+    neighbours = _seam_neighbours(passes, trade_map)
+    rank = {trade_id: i for i, trade_id in enumerate(trade_map["trades"])}
+
+    def rank_of(trade_id: str) -> int:
+        return rank.get(trade_id, len(rank))
+
+    by_trade = {plan_pass["tradeId"]: plan_pass for plan_pass in passes}
+
+    groups: dict[str, list[str]] = {}
+    group_of: dict[str, str] = {}
+    for plan_pass in passes:
+        trade_id = plan_pass["tradeId"]
+        if trade_id in group_of:
             continue
-        moving = [passes[i] for i in second_at]
-        for plan_pass in moving:
-            plan_pass["seamWith"] = first
-        remaining = [p for i, p in enumerate(passes) if i not in set(second_at)]
-        anchor = max(i for i, p in enumerate(remaining) if p.get("tradeId") == first)
-        passes[:] = remaining[: anchor + 1] + moving + remaining[anchor + 1:]
+        members: list[str] = []
+        pending = [trade_id]
+        while pending:
+            current = pending.pop()
+            if current in group_of:
+                continue
+            group_of[current] = trade_id
+            members.append(current)
+            pending.extend(n for n in neighbours[current] if n not in group_of)
+        groups[trade_id] = members
+
+    ordered: list[dict] = []
+    emitted: set[str] = set()
+    not_adjacent: list[list[str]] = []
+    for plan_pass in passes:
+        key = group_of[plan_pass["tradeId"]]
+        if key in emitted:
+            continue
+        emitted.add(key)
+        walk, whole = _seam_group_order(groups[key], neighbours, rank_of)
+        ordered.extend(by_trade[trade_id] for trade_id in walk)
+        if not whole:
+            not_adjacent.append(walk)
+
+    position = {plan_pass["tradeId"]: i for i, plan_pass in enumerate(ordered)}
+    for plan_pass in ordered:
+        trade_id = plan_pass["tradeId"]
+        beside = {
+            ordered[i]["tradeId"]
+            for i in (position[trade_id] - 1, position[trade_id] + 1)
+            if 0 <= i < len(ordered)
+        }
+        partners = neighbours[trade_id]
+        adjacent = [p for p in partners if p in beside]
+        apart = [p for p in partners if p not in beside]
+        if adjacent:
+            plan_pass["seamWith"] = ", ".join(adjacent)
+        if apart:
+            plan_pass["seamApart"] = ", ".join(apart)
+
+    passes[:] = ordered
+    return not_adjacent
 
 
 def _window_2(rows: list[dict], packages: list[dict], trade_map: dict, kinds, index) -> dict:
@@ -1011,7 +1116,7 @@ def _window_2(rows: list[dict], packages: list[dict], trade_map: dict, kinds, in
                 "units": item["units"],
             }
         )
-    _apply_seams(passes, trade_map)
+    seam_groups_apart = _order_by_seams(passes, trade_map)
 
     counted: dict[str, int] = {}
     for plan_pass in passes:
@@ -1032,6 +1137,7 @@ def _window_2(rows: list[dict], packages: list[dict], trade_map: dict, kinds, in
         "unread": unread,
         "unnamedKinds": selection["unnamedKinds"],
         "locationsWithoutField": selection["locationsWithoutField"],
+        "seamGroupsApart": seam_groups_apart,
         "notes": [],
     }
 
@@ -1112,6 +1218,10 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
             lines.append(f"units: {len(part_units)}")
             if plan_pass.get("seamWith"):
                 lines.append(f"seam with: {plan_pass['seamWith']}")
+            if plan_pass.get("seamApart"):
+                # A seam this pass does not sit next to, named on the pass rather than dropped: the
+                # overlap scan will not catch what these two trades both captured.
+                lines.append(f"seam not next to this pass: {plan_pass['seamApart']}")
             if plan_pass.get("openEntries") is not None:
                 lines.append(
                     "open entries: "
@@ -1179,6 +1289,11 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
         if plan["unnamedKinds"]:
             lines.append(
                 "definition kinds no trade in the map names: " + ", ".join(plan["unnamedKinds"])
+            )
+        for group in plan["seamGroupsApart"]:
+            lines.append(
+                "seam group not fully adjacent, so no order runs every pair one after the other: "
+                + ", ".join(group)
             )
     if window == 3:
         lines.append(
@@ -1262,6 +1377,8 @@ def plan(args) -> str:
     if window == 2:
         no_family = result["noFamily"]
         no_sheet = result["noSheet"]
+        apart = result["seamGroupsApart"]
+        apart_text = "; ".join(", ".join(group) for group in apart) if apart else "none"
         return (
             f"wrote {args.out}: window 2, trades {len(packages)}, passes {total_passes}, "
             f"sheets read for more than one trade {result['readTwice']}, "
@@ -1270,7 +1387,8 @@ def plan(args) -> str:
             f"({', '.join(no_family) if no_family else 'none'}), "
             f"packages whose families named no sheet {len(no_sheet)} "
             f"({', '.join(no_sheet) if no_sheet else 'none'}), "
-            f"definition kinds no trade names {len(result['unnamedKinds'])}"
+            f"definition kinds no trade names {len(result['unnamedKinds'])}, "
+            f"seam groups not fully adjacent {len(apart)} ({apart_text})"
             f"{partial}; {tail}"
         )
     return (

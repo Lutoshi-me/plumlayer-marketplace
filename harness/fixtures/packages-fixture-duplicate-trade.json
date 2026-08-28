@@ -1,6 +1,6 @@
 {
-  "count": 8,
-  "returned": 8,
+  "count": 9,
+  "returned": 9,
   "offset": 0,
   "limit": 100,
   "truncated": false,
@@ -19,6 +19,7 @@
     {
       "id": "pkg-0002",
       "projectId": "prj-0001",
+      "tradeCode": "22 00 00",
       "name": "Plumbing",
       "status": "draft",
       "selfPerformed": false
@@ -68,6 +69,14 @@
       "projectId": "prj-0001",
       "tradeCode": "13 34 19",
       "name": "Pre-engineered structures",
+      "status": "draft",
+      "selfPerformed": false
+    },
+    {
+      "id": "pkg-0009",
+      "projectId": "prj-0001",
+      "tradeCode": "092116",
+      "name": "Drywall, phase two",
       "status": "draft",
       "selfPerformed": false
     }

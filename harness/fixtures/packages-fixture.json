@@ -1,6 +1,6 @@
 {
-  "count": 6,
-  "returned": 6,
+  "count": 8,
+  "returned": 8,
   "offset": 0,
   "limit": 100,
   "truncated": false,
@@ -11,10 +11,10 @@
       "tradeCode": "09 21 16",
       "name": "Drywall and framing",
       "status": "draft",
+      "selfPerformed": false,
       "codes": [
         "09 22 16"
-      ],
-      "selfPerformed": false
+      ]
     },
     {
       "id": "pkg-0002",
@@ -43,13 +43,29 @@
     {
       "id": "pkg-0005",
       "projectId": "prj-0001",
+      "tradeCode": "08 40 00",
+      "name": "Glazing",
+      "status": "draft",
+      "selfPerformed": false
+    },
+    {
+      "id": "pkg-0006",
+      "projectId": "prj-0001",
       "tradeCode": "32 90 00",
       "name": "Landscaping",
       "status": "draft",
       "selfPerformed": false
     },
     {
-      "id": "pkg-0006",
+      "id": "pkg-0007",
+      "projectId": "prj-0001",
+      "tradeCode": "12 20 00",
+      "name": "Window treatments",
+      "status": "draft",
+      "selfPerformed": false
+    },
+    {
+      "id": "pkg-0008",
       "projectId": "prj-0001",
       "tradeCode": "13 34 19",
       "name": "Pre-engineered structures",
