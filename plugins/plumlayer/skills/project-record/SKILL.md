@@ -109,7 +109,10 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   Work no sheet states carries `sourceInstrument` `trade-convention:092116@<sha>` instead, and the
   two derived trade tags (`belongsToTrade`, `packageRole:<trade>`) need no citation. Stamped as you,
   and it takes effect immediately as provisional working truth recorded as agent-stated.
-  `supersedesId` is the correction edge: see "Correcting a machine misread" below.
+  `supersedesId` is the correction edge: see "Correcting a machine misread" below. Recorded text
+  (name, description, note, value prose) is plain estimator words, per
+  docs/plugin-text-style.md: never another entry's subject id or a hand-written supersede or date
+  tag.
 
   A new scope item also needs its trade, and the door refuses one without it: give it
   `belongsToTrade`, or a `packageRole:<trade>` entry for every trade that might own the work, in

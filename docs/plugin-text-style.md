@@ -60,6 +60,19 @@ emphasis, one vocabulary the same as section 3 requires. The worked rule and an 
 `learn-project`'s judgment-entry table; every other skill or agent file that tells an agent to raise
 a Question points at that rule instead of restating it.
 
+### Record text never carries another entry's name
+
+Any field a person or a bidder reads on the record, a scope item's name, category, description,
+notesExternal, or notesInternal, a bid response or additional item's note or description, answers
+to the same rule as Question text: plain estimator words, no internal id, no hand-written
+supersede or date tag standing in for the trail. Where one entry replaces another, that is
+`supersedesId` on the write, or `retire_scope_item` plus a fresh create for a scope item, never a
+tag typed into the text itself. Where one entry needs to point at another for the reader, name it
+the way an estimator would, "the wall tile line above," never by its subject id. Every skill or
+agent file that writes one of these fields points at this rule instead of restating it. The record
+refuses text that carries a record id or such a tag, so a write that does this fails rather than
+lands.
+
 ## 2. The frontmatter description contract
 
 The description does two jobs at once. A human reads it in a listing; the model reads it to decide

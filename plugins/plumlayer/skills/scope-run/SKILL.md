@@ -206,6 +206,10 @@ A newly created scope item is a full row, not a name. Every new item writes:
   earlier write; that is a Question.
 - **quantity**: only where the sheet itself carries one, as `{value, unit}`.
 
+A row's text never carries another item's subject id or a hand-written SUPERSEDED or date tag,
+per docs/plugin-text-style.md. Splitting one item into two is `retire_scope_item` naming why, plus
+a fresh CREATE for each half, never a tag written into the description.
+
 Recorded text is what the bidder reads: plain sentences, no em dashes, no bolding, never a
 sheet-by-sheet narration. The door refuses text over its bound (`name` 80 characters, `category`
 60, `description` 400, `notesExternal` and `notesInternal` 300 each); a row shaped by these rules
