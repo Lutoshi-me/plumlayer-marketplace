@@ -63,6 +63,8 @@ How to say each thing as it happens:
 - "reading the spec book's table of contents" (step 8, while the extraction job is running)
 - "N sections found" (step 8, on job success)
 - "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
+- "N sheets were sitting in Other because their numbers didn't say which discipline they belong
+  to; I read the pages and sorted K of them, and J need you" (step 6d)
 <!-- /user-facing -->
 
 ## What this is, and the boundary
@@ -395,8 +397,9 @@ evidence block cites the render or text span you actually read; never a fabricat
 
 **Discipline convention:** derive strictly from the sheet number's own leading letter run, matching the
 server's `disciplineFromSheetNumber` logic (all letters before the first digit/dash, uppercased);
-never a full NCS discipline name. Do not add client-side compensation for prefixes the server can't
-classify; that gap is a known limitation, not this skill's problem to solve.
+never a full NCS discipline name. A prefix outside the standard designator set, or no readable
+prefix at all, is not left as-is: step 6d below reads the page itself and places the sheet on a
+standard code.
 
 **Gate:** every page in that tail ends up judged (a full entry bundle) or flagged (image-only or genuinely
 unreadable); never silently dropped. State how many you read, corrected, and flagged.
@@ -535,6 +538,60 @@ Say it the way it happened: "the automatic scan grabbed the wrong text on N shee
 and set them right".
 <!-- /user-facing -->
 
+## 6d. Sort the sheets the prefix could not place
+
+The discipline convention above derives strictly from the sheet number's own leading letter run.
+Most sheets carry one of the standard designators; some don't, either because the number uses a
+prefix the recognizer was never taught (`FT-1`, `TT-1`, `EX-G`, `OS-1`, a whole civil PDF numbered
+its own way) or because no letter run reads at all. Those land in the record with that raw prefix,
+or `Unknown`, and the web sheet browser groups every one of them into an Other bucket. This step
+reads those sheets and places each on a standard discipline code, the same move as 6c: the number
+told the recognizer what it could, and you finish the read from the page.
+
+1. **Find them.** `set_grid(projectId, limit: 0)` and read `disciplineCounts`. Every key that
+   isn't one of the standard designators (`A, AD, C, G, D, S, M, MD, H, HD, P, PD, E, ED, FP, FPD,
+   FA, LS, L, LA, I, ID, T, AV, VT, EL, FS, DATA`) and isn't `Pages` is a leftover code, plus the
+   key `Unknown` when it appears. That's the set the web sheet browser itself names as a
+   discipline group; anything outside it lands in Other, which is exactly the sheets this step is
+   for. Page each one with `set_grid(projectId, discipline: "<code>")`.
+<!-- user-facing -->
+   State the count: this many sheets are sitting in Other because their number doesn't say which
+   discipline they belong to.
+<!-- /user-facing -->
+2. **Read each sheet from the page, never from the PDF file name or folder.** `render_page` the
+   title-block corner and/or `get_page_text` the page (`fileId` + `pageInPdf` off the row).
+   Evidence that settles a discipline, strongest first: a discipline caption printed in the title
+   block itself (e.g. "CIVIL"); the sheet's own title and content (a turning plan, an overall site
+   plan, a site improvements plan are civil); the cover sheet's index, listing the sheet under a
+   discipline heading, read via `render_page` or `get_page_text` on the index page and cited to
+   it. The value you write is always a standard discipline code (`C` for civil, `L` for landscape,
+   and so on), never a full discipline name and never the raw prefix you started from: that's what
+   puts the sheet in with its real peers in the browser.
+3. **Write it.** `search(projectId, subject: "sheet:<n>", predicate: "discipline")` for the live
+   entry's id, then `record` with predicate `discipline`, `supersedesId` set to that id,
+   `sourceInstrument: "drawing-delivery:<deliveryId>"` and `versionScope: "<issue label>"` (both
+   off the row: this tag is mandatory, a write without it is ignored by the grid and can blank the
+   field), and evidence naming what you read: `{"source": "<fileId>/page/<pageInPdf>", "method":
+   "agent-vision-read", "snippet": "<the words you read>", "locator": {"frame": "pdf-points",
+   "bboxPts": [...]}}` when the read came off a text span you can box, `locator: null` when it came
+   off a rendered crop you judged by eye. Pool this into the step 7 batch write alongside 6, 6b,
+   and 6c's entries; it is the same write, not a second one.
+4. **Not settled: no write, no guess.** When neither the title block, the sheet's own content, nor
+   the index says which discipline the sheet belongs to, leave `discipline` alone and raise it:
+   `ask_question(projectId, text: "<the ask in plain words>", sourceInstrument: "drawing-upload",
+   versionScope: "<issue label>", sources: [{"type": "sheet", "sheet": "sheet:<n>"}])`, e.g. "Sheet
+   OS-1 has no discipline caption on the page or in the index; which discipline does it belong
+   to?". One question per sheet: this is a set of individual toss-ups, not one disagreement with
+   many sources.
+
+**Gate:** every leftover sheet this step finds ends the step either recorded with a citation or
+raised as a question, never left sitting in Other with nothing done about it. State the counts:
+found, sorted, asked.
+<!-- user-facing -->
+"N sheets were sitting in Other because their numbers didn't say which discipline they belong to;
+I read the pages and sorted K of them, and J need you."
+<!-- /user-facing -->
+
 ## 7. Record the pages and types, then verify
 
 **The recognized portion needs no write call from you.** `recognize_sheets` already wrote it
@@ -542,8 +599,9 @@ server-side once its job succeeded (step 5), and re-running `recognize_sheets` o
 file+delivery is safe by construction: the concurrency guard returns the existing job, and the
 write itself is idempotent (`alreadyWritten: true` on a poll means a prior run already wrote this
 delivery's sheet entries, no duplicate was written). You still make exactly one write of your own
-(pooling the step 6 bundle, the sheetType entries from step 6b, and any mis-bind
-corrections from step 6c, the edges carrying their `supersedesId`), plus one verification pass:
+(pooling the step 6 bundle, the sheetType entries from step 6b, any mis-bind
+corrections from step 6c, and any discipline corrections from step 6d, the edges carrying their
+`supersedesId`), plus one verification pass:
 
 1. **Record the page + type bundle.** Before recording, check whether you've already recorded
    these pages or types for this delivery in a prior run of this skill (e.g. `search(projectId,
@@ -770,7 +828,10 @@ Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re
 - Every entry's evidence is grounded **cloud-side**: a succeeded `recognize_sheets` job (recorded by
   the server) or a `render_page`/`get_page_text` read you just made. A local read (step 2) may inform
   the packaging report; it never grounds an entry.
-- Discipline is derived from the sheet's own number prefix, never a filename or folder.
+- Discipline is derived from the sheet's own number prefix, never a filename or folder. When that
+  prefix isn't one of the standard designators, or reads as nothing at all, 6d reads the page
+  itself to place it, still never a filename or folder guess, and never left sitting as the raw
+  prefix or `Unknown`.
 - Every page the pass could not name is judged or flagged, never silently dropped; image-only pages
   are named, not guessed.
 - `sheetType` typing splits across two authors: the server's deterministic rule pass types with a
@@ -821,8 +882,6 @@ Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re
 - **Scale auto-detect at intake.** Not built into this skill yet.
 - **Master-list reconciliation as corroboration only.** A full diff against an architect drawing list
   (to surface RFI-worthy discrepancies) is a corroboration layer, never the bootstrap for this skill.
-- **Discipline-uncertainty compensation.** The server's prefix-based discipline derivation has a known
-  gap for unusual prefixes; this skill does not add client-side heuristics to cover it.
 - **Backfill typing for sets recognized before the server-side rule pass.** Server-side typing now
   runs at recognition for every door, including the web-only upload door (a website-only upload has
   no agent in the loop, but the rule pass runs regardless). What remains deferred is typing the
