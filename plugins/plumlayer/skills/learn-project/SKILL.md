@@ -55,7 +55,7 @@ the project record.
    1)`, zero rows means recognition hasn't actually recorded anything yet; stop and hand off to
    `drawing-upload` rather than orienting on an empty set.
 3. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record the
-   version for use in step 7's package rationale. Missing means a broken plugin install: stop and
+   version for use in step 8's package rationale. Missing means a broken plugin install: stop and
    report rather than drafting a package split knowledge-blind.
 
 ## 2. Read the entries (identity, seeds, sheet inventory)
@@ -78,7 +78,7 @@ the project record.
 ## 3. Read the spec-section index, if present
 
 Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects, **paging through
-every result to the real total** rather than a sample: this is the anchor step 7's package split
+every result to the real total** rather than a sample: this is the anchor step 8's package split
 drafts from, and a partial read under-declares the job the same way a silent TOC does. When spec
 reading has run for a project, these entries are real and cited, `hasTitle`, `locatedAt`, `inDivision`,
 and `partOfIssue` on each section (verified on at least one live project). Extraction now ships as
@@ -199,7 +199,28 @@ that produced it, never a fabricated locator.
 Call `record_batch` once with the full array. **Verify:** the returned `count` must equal the number of
 entries sent; a mismatch stops the run and gets reported, never a guessed correction.
 
-## 7. Draft the baseline package split and create the packages
+## 7. Fill the structure value, only when the drawings state it
+
+The project row carries one structure value that both the Structure type line and the massing
+diagram are drawn from: buildings, each a stack of bands listed ground floor first going up, each
+band a floor count and one of concrete, steel, wood, or lgmf, plus an optional podium shared under
+every building.
+
+Fill it only when the set states both halves outright: the structural system labeled on the S
+sheets, and the floor counts readable on the plans or elevations. Partly stated is not stated. If
+the system is labeled but the floor count is not, or the count is there and the system is inferred
+from what the details look like, leave the value alone.
+
+There is nothing to ask about here and this step raises no Question: an unfilled structure value is
+a blank a person fills in a moment from Edit info, not a disagreement between sources.
+
+When both halves are stated, call `update_project(projectId, structureDiagram: {...})`, and name in
+the report the sheet that grounded each half.
+
+The `structuralSystem` entries from step 6 are not replaced by this. They stay as the cited
+evidence; this step reads them and writes the one structured value the surfaces draw from.
+
+## 8. Draft the baseline package split and create the packages
 
 Phase 1 of package derivation: the cheap, high-value baseline split, drafted here so a package
 already exists for every trade before the expensive scope read starts. Phase 2, the scope-driven
@@ -237,7 +258,7 @@ amendments, stays in `scope-run`.
    redo it." No approval is collected.
 <!-- /user-facing -->
 
-## 8. Write the project description
+## 9. Write the project description
 
 `get_project`'s `description` field answers "what is this job?" for someone opening the project
 cold. This is the first pass with enough of a read on the set to write one, so it writes it here,
@@ -257,10 +278,10 @@ once, after the entries above are recorded and before the report.
    restating them here duplicates the record instead of orienting a reader. Leave out narration of
    how the set was read too, this is what the job is, not how it was learned.
 4. **No length target.** As long as the job needs and no longer.
-5. Call `update_project(projectId, description: "<text>")`. This is the only field on the project
-   row this skill ever writes.
+5. Call `update_project(projectId, description: "<text>")`. The description and the structure value
+   from step 7 are the only fields on the project row this skill ever writes.
 
-## 9. Compile the run-context packet
+## 10. Compile the run-context packet
 
 A projection compiled fresh from the entries read in step 2 and recorded in step 6, **never itself
 recorded as an entry, never stored as truth.** Sections, in order:
@@ -273,8 +294,8 @@ recorded as an entry, never stored as truth.** Sections, in order:
    yet" note from step 3), and the reconciliation-gate status (its report counts, or "hasn't run yet"
    from step 4).
 5. **Hazards**, the `hazardFlag` entries.
-6. **Packages**, the packages on the project after step 7: name, catalog trade id, primary section,
-   bundled sections, per package, or the "spec reading hasn't run for this project" note when step 7
+6. **Packages**, the packages on the project after step 8: name, catalog trade id, primary section,
+   bundled sections, per package, or the "spec reading hasn't run for this project" note when step 8
    created none.
 7. `[PLACEHOLDER, definitions-as-context envelope]`, a clearly marked final section; this
    skill does not design that envelope, it only reserves the slot.
@@ -283,11 +304,11 @@ Write it to `~/.plumlayer/runs/<project-slug>/learn-project-packet.md` (the same
 the `scope-run` skill uses), derive `<project-slug>` from the project name (lowercase, spaces to
 hyphens) or fall back to the `projectId` if the name doesn't produce a clean slug. Never write it
 into a repo, and never record it as an entry. Regenerate it in full the next time this skill runs for the project, it is a projection,
-not a document to patch. Audience: agent. Its path is handed to the user at run end (step 10) and
+not a document to patch. Audience: agent. Its path is handed to the user at run end (step 11) and
 its content orients later readers; whatever crosses from it into user-facing text becomes
 user-facing at the crossing and is translated there.
 
-## 10. Report
+## 11. Report
 
 <!-- user-facing -->
 Tell the user, in plain terms:
@@ -303,6 +324,8 @@ Tell the user, in plain terms:
 - **The package split**, packages created, packages already present on the project, any package
   named "no catalog trade, not created," TOC sections deliberately unbundled, or the "spec reading
   hasn't run for this project" note when no spec sections exist.
+- **The structure**, the sheet that grounded the system and the sheet that grounded the floor
+  counts when you filled it, or that you left it blank and which half the set does not state.
 - **The description**, whether you wrote one or found a person's already in place and left it, say
   which.
 - **Where the packet landed**, the full path.
