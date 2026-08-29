@@ -55,11 +55,13 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
 - `search`: the raw entry ledger, every entry that's ever been written, not just what's
   currently governing. Filter by subject / predicate / text; paginated. Use
   this to see what's actually been asserted, including entries you wrote yourself.
-- `list_scope_items`: the live scope list (name, category, description, notes, quantity per item),
-  100 rows a page by default; `categoryCounts` tallies the whole list, so filter by `category` or
-  `subjectPrefix` and page with `offset: nextOffset` while `truncated` is true. `full: true` adds
-  each item's records. Use this to see what's already been captured before creating or updating a
-  scope item.
+- `list_scope_items`: the live scope list (name, category, description, notes, quantity per item,
+  the distinct sheets it was read off, and its citation count), 30 rows a page by default;
+  `categoryCounts` tallies the whole list, so filter by `category` or `subjectPrefix`. `limit` up
+  to 500 is accepted but a large one can outrun what a call carries, so page with `offset:
+  nextOffset` while `truncated` is true rather than asking for it all at once. `full: true` adds
+  each item's records, including the page and file behind each citation. Use this to see what's
+  already been captured before creating or updating a scope item.
 - `list_questions`: every question on the project, open ones first, each with its wording, the
   places it cites, its replies oldest first, the trade it's homed to, and the trail of every
   close and reopen on it. Read this before you ask, so you don't raise one that's already open,
@@ -78,8 +80,10 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   you to read and judge; it never carries the recognized entries themselves.
 - `render_page`: render a single page of a registered PDF to an image so you can read it.
 - `get_page_text`: extract the text layer from a registered PDF page (deterministic; use
-  alongside `render_page`: text for tokens, render for layout/meaning). Returns 1500 spans a
-  call; page with `offset: nextOffset` while `truncated` is true, or pass `region` in PDF points
+  alongside `render_page`: text for tokens, render for layout/meaning). Each span is an array
+  `[text, x0, y0, x1, y1]`, the word then its box in PDF points. A bare call returns as many spans
+  as fit one answer, bounded by size rather than a fixed count, so a dense sheet walks in a few
+  calls; page with `offset: nextOffset` while `truncated` is true, or pass `region` in PDF points
   to read one area.
 - `search_set_text`: find a mark or phrase anywhere in the project's PDFs and get back which
   pages carry it and where; search first, then render only the pages it points at.

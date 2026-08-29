@@ -187,10 +187,13 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
    learn how *this* set marks the item: tag shapes, series letters, where tags sit relative to the
    thing they mark. If a legend sheet exists in the set, read it. Never import tag conventions
    from another project or from memory.
-2. **Census with coordinates.** `get_page_text` gives every text span with its box in PDF points:
-   the same coordinate frame the records use. Collect the candidate tokens and their positions.
-   A full-size sheet holds more spans than one call returns (a thousand-plus is normal): a call
-   carries at most 1500, `truncated` true with `nextOffset` means there are more, and you call
+2. **Census with coordinates.** `get_page_text` gives every text span as `[text, x0, y0, x1, y1]`,
+   the word then its box in PDF points: the same coordinate frame the records use. Collect the
+   candidate tokens and their positions.
+   A full-size sheet holds more spans than one call returns (a thousand-plus is normal): a bare
+   call carries as many spans as fit one answer, bounded by a size budget rather than a fixed
+   count, so a dense E-size sheet walks in a handful of calls. `truncated` true with `nextOffset`
+   means there are more, and you call
    again with `offset: nextOffset` until it is absent. `regionSpanCount` is the whole census size,
    so you know when you hold all of it. Pass `region: [x0, y0, x1, y1]` in PDF points to census
    one area of the sheet. Write the pages to a local file and filter and tally them with a small

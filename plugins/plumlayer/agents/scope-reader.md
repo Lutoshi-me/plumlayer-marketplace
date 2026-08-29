@@ -185,9 +185,10 @@ strings and their sizes off your first filtered call rather than guessing at one
 compact: name, description, category, notes, quantity, `belongsToTrade`, `furnishedBy`,
 `installedBy`, the sheets the item was read off, and its package enrollments, without the trail.
 Pass `full: true` only when you need a specific item's records, and filter that call down to the
-items you need. A call returns 100 rows by default (`limit` up to 500, and full rows cap lower);
-when `truncated` is true, call again with `offset: nextOffset` until it is absent, and count what
-you read against `matched`, the size of the filtered list. Never call `list_scope_items`
+items you need. A call returns 30 rows by default; `limit` up to 500 is accepted, but a large
+explicit limit can outrun what the call carries, so page with `offset: nextOffset` instead (full
+rows cap lower). When `truncated` is true, call again with `offset: nextOffset` until it is absent,
+and count what you read against `matched`, the size of the filtered list. Never call `list_scope_items`
 unfiltered: it returns every item on the project, and that list grows with every unit of the run.
 
 The set's text is already on the record, every page, with coordinates. Read text from there, and
@@ -198,9 +199,11 @@ render only what text cannot give.
   not re-derive it.
 - **Text next.** `get_page_text(fileId, pageInPdf)`. A page with no text layer comes back read by
   OCR: `textSource` says `ocr`, the spans are whole lines with page coordinates, and a line
-  crossing a tile edge can arrive as two reads of its halves, both kept. Treat those spans as the
-  page's text. A call returns the first spans of the page bounded; when `truncated` is true and
-  `nextOffset` is present, call again with `offset: nextOffset` until it is absent. When you are
+  crossing a tile edge can arrive as two reads of its halves, both kept. Each span is an array
+  `[text, x0, y0, x1, y1]`, the word then its box in PDF points. Treat those spans as the page's
+  text. A bare call returns as many spans as fit one answer, bounded by size rather than by a fixed
+  count, so a dense sheet walks in a few calls: when `truncated` is true and `nextOffset` is
+  present, call again with `offset: nextOffset` until it is absent. When you are
   after one region, pass `region: [x0, y0, x1, y1]` in the same PDF points as the span boxes to
   get only the spans inside that rectangle, and read a dense sheet as a few regions rather than as
   one read that spills.
