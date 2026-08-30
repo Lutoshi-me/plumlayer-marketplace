@@ -300,6 +300,45 @@ nothing structurally in common, and the shape tells you the kind of company befo
 Fourteen distinct enumeration grains appeared across one set of twenty-two documents, and on a single
 project's ten documents no two bidders answered in the same shape.
 
+### What the filing tells you, before the document is open
+
+How a bid is logged carries information about what it covers, independent of anything the bid says
+about itself, because logging one bid under several trades is how an estimator records that it spans
+several packages. The same document appears in two places on purpose.
+
+The signal is strong enough to act on. Of the documents logged under both a structural steel trade
+and a miscellaneous metals or metal fabrications trade, every one that is a bid on this package
+carries both halves: most as two named sums in one letter, one as a single undivided package price
+on a small job. Not one frame-only proposal is logged that way, and the frame-only bidders are the
+larger half of the market. The only cross-logged documents that do not carry both halves are two
+material supply quotes from suppliers belonging to another trade entirely, a joist and deck
+manufacturer and a reinforcing steel supplier, and neither is a bid on this package at all. So the
+rule reads in both directions: a bid logged under both trades covers both, and a bid logged under
+one covers one.
+
+The same practice marks the other seam in this trade. One erection-only quote is logged under a
+structural steel trade and a structural steel erection trade at once, which is the same record being
+made about the fabrication and erection boundary rather than the miscellaneous metals one. Wherever
+a bid crosses a package line, expect to find it filed on both sides of the line.
+
+Two cautions on reading filings, both of which look like the signal and are not:
+
+- Ordinary variation in how a trade is written is not a package span. One bid logged under two
+  spellings of the same steel trade carries no information at all. Read what the two trades are, not
+  that there are two.
+- Company identity is softer than the filing suggests. The same bid gets logged more than once, and
+  bidders are logged under different names: one operation in this trade appears under at least three
+  company names across four projects, one of them at an identical address under a different name,
+  and another appears under two legal names and two countries' addresses. A bid invitation may name
+  one company three ways in a single field, at an address that does not match the signature block on
+  the quote it returned. Which legal entity is bidding is sometimes not resolvable from the file.
+
+The consequence for leveling is direct and it runs against the reassuring direction. A package that
+looks well covered may have fewer independent bidders behind it than the ranking rows suggest,
+because one operation can occupy several rows under several names, and because one document logged
+twice can be counted twice. Establish how many operations are bidding, not how many rows exist,
+before reading a spread as evidence of competition.
+
 The shapes actually seen:
 
 - The bidder-minted mark takeoff. Every scope item gets its own mark, a quantity, a unit, a finish,
@@ -1163,6 +1202,12 @@ about seven to about two. That is a property of the pool against a maturing set,
 bidder obeys: one bidder's own tonnage fell nearly a tenth between rounds while its price rose more
 than forty percent.
 
+A wide pool is not necessarily a deep one. Ranking rows count filings and company names, and this
+trade supplies more of both than it supplies independent bidders: one operation can occupy several
+rows under several names, one document logged under two trades can be counted twice, and one
+company's two offices can each file legitimately. Count operations before treating a row count as
+evidence that the package was competitively covered, and treat any bidder count as an upper bound.
+
 A ratio above about three to one on a division 05 leveling row is not a price finding. Check first
 whether an install-only or erection-only number, a non-offer, a narrow specialist, a stale prior-round
 carry or a combined printed total is sitting in the column. Removing one such column has repeatedly
@@ -1211,6 +1256,12 @@ distinction in section 4 and the bidder-kind finding in section 1 testable, and 
 limit on how far the frequencies here generalize: where this file says a bidder does something, it is
 sometimes the same bidder observed across several jobs rather than the market.
 
+Those company counts are themselves upper bounds, for the reason section 2 gives. Two operations are
+known to appear under more than one name here, accounting for at least five ranking identities
+between them, and they were caught only because someone compared addresses. Nobody has checked the
+rest, so the true number of distinct operations behind these records is lower than the number of
+company names in them, by an unknown amount.
+
 Building types covered: new-construction multifamily over a steel and concrete podium with wood
 framing above, which is the majority and the calibration case; a mixed-use redevelopment containing a
 music venue; a theatre restoration; an occupied office building converting to residential; two historic
@@ -1223,6 +1274,10 @@ What this file cannot yet claim:
 - It is one regional market, through one general contractor, with one estimating team's workbook
   templates. Every leveling observation is that team's practice. Nothing here is tested against
   another market or another buyer.
+- The filing rule in section 2 is that one buyer's logging convention, confirmed against what the
+  documents actually contain and not yet seen anywhere else. Where a different buyer files, confirm
+  the convention holds before reading a second trade token as a package span, because a buyer who
+  files by folder rather than by judgment will produce the same pattern for a different reason.
 - There is almost no buyout evidence. No signed subcontract, no schedule of values and no change
   order history is in the corpus, so nothing here shows which exclusions survived negotiation, which
   plugs were right, or whether the beam-penetration counts and the furnish-only installation gaps
