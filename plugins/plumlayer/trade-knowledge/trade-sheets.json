@@ -66,9 +66,18 @@
       ],
       "definitionKinds": ["masonryType", "wallType"]
     },
-    "05 00 00": {
+    "05 12 00": {
+      "knowledge": "structural-steel",
+      "note": "the frame: fabrication and erection, with deck and joists riding inside the package in this market. Keyed at its own section rather than the division, because division 05 now maps two trade files. Steel decking at 05 31 00 and steel erectors at 05 60 00 are deliberately not keyed: a package drafted on either reaches no trade file and is named on the plan's bounds line, which is honest, where routing it to one of two files would be a guess. The boundary with misc metals runs by framing type rather than by item, so the same item can belong here at the steel-framed levels and to misc metals at the wood-framed levels above.",
+      "families": [
+        {"discipline": "S"},
+        {"discipline": "A", "sheetTypes": ["section", "detail"]}
+      ],
+      "definitionKinds": ["columnType", "beamType", "deckType"]
+    },
+    "05 50 00": {
       "knowledge": "misc-metals",
-      "note": "keyed at the division because it is the only trade file mapped in it, so a package drafted anywhere in division 05 reaches it; the section this file was drawn from is 05 50 00 metal fabrications. Structural steel as its own package is not mapped at all, and this file holds that boundary.",
+      "note": "metal fabrications, the section this file was drawn from. Re-keyed here from the bare division when structural steel earned its own file: a division mapping several files keeps each at its own section, so a package drafted on 05 00 00 alone now reaches no trade file rather than one of two picked for it. A single combined metals package is common in this market and reaches only one of the two files, which is why the two are declared a seam below.",
       "families": [
         {"discipline": "S"},
         {"discipline": "A", "sheetTypes": ["section", "detail"]}
@@ -354,7 +363,9 @@
     ["02 41 00", "02 80 00"],
     ["03 30 00", "03 54 13"],
     ["04 00 00", "07 46 00"],
-    ["05 00 00", "06 10 00"],
+    ["05 12 00", "05 50 00"],
+    ["05 12 00", "06 10 00"],
+    ["05 50 00", "06 10 00"],
     ["06 22 00", "12 35 30"],
     ["06 22 00", "12 36 00"],
     ["07 10 00", "07 50 00"],

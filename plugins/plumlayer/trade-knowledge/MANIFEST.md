@@ -1,17 +1,22 @@
 # Trade knowledge base: manifest
 
-**Knowledge version: `83be34d`**. This is the version string every convention-line record cites
-(`sourceInstrument: "trade-convention:<trade>@83be34d"`, per the `scope-run` skill's convention-line
+**Knowledge version: `a63e8a77`**. This is the version string every convention-line record cites
+(`sourceInstrument: "trade-convention:<trade>@a63e8a77"`, per the `scope-run` skill's convention-line
 mandate). This pin changes only when the trade files themselves change; plugin releases that don't
 touch the trade files don't move it.
 
-- Trade files: 44 (one per trade; the file list below).
+- Trade files: 45 (one per trade; the file list below).
 - Source: distilled from a real subcontractor-quote corpus (proposals and matching estimator
   leveling workbooks across multiple multifamily projects in one regional market), scrubbed of all
   identifying data: no company, person, or project names, no addresses, no dollar figures (cost
   signal rides as ratios and multiples). Confidentiality-reviewed before first shipping.
-- Content-defining source snapshot: commit `83be34d` of the source corpus repository.
+- Content-defining source snapshot: commit `a63e8a77` of the source corpus repository.
 - Copied into this plugin.
+
+Forty-four of these files were mined from one corpus of four projects. `structural-steel` is the
+first mined from a much larger one, about twenty projects and thirty-four pricing rounds, by several
+readers over separate cohorts rather than one reader over a trade. Its coverage section says what
+that buys and what it does not, and the two files' coverage statements are not comparable.
 
 ## What a trade file carries
 
@@ -33,10 +38,10 @@ earthwork, electrical, elevators, final-cleaning, finish-carpentry, fire-protect
 flooring, glazing, gypsum-underlayment, hvac, insulation, landscaping, low-voltage, masonry,
 millwork, misc-metals, overhead-coiling-doors, painting, plumbing, prefab-balconies,
 roof-anchors-fall-protection, roofing, rough-carpentry, shower-doors, siding, signage,
-smoke-curtains, soe, specialties, tiling, trash-chutes, waterproofing, window-treatments, windows
+smoke-curtains, soe, specialties, structural-steel, tiling, trash-chutes, waterproofing,
+window-treatments, windows
 
 Not yet mapped (no or near-no corpus): utilities as a standalone package, jobsite requirements /
 Division 01, pools and water features, fireplaces, site furnishings, EV charging as a package,
-tower crane / hoisting, structural steel as its own package (misc-metals holds the boundary).
-A reader hitting one of these trades creates at best judgment where no trade file covers it, and
-raises the grain question, per the `scope-run` skill's mandates.
+tower crane / hoisting. A reader hitting one of these trades creates at best judgment where no trade
+file covers it, and raises the grain question, per the `scope-run` skill's mandates.
