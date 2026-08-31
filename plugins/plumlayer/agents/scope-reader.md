@@ -227,6 +227,15 @@ render only what text cannot give.
   render to orient yourself: the record, the sheet's own reading, and the text are the
   orientation. A page that would take more than three renders is reported on that line as needing
   more, rather than rendered on.
+- **A whole sheet that must be read visually is one tiled call, not a crop walk.** When the page
+  has no usable text layer, or the work you are after is in the linework across the sheet, call
+  `render_page` with `tiles: {maxPx: 2000, dpi: 120}`: one call returns a small orientation
+  overview plus a grid of tiles that covers the whole page with no gap, each tile carrying its own
+  `clipPt` and `pxPerPt` so text spans overlay per tile with the same formula. On an E-size sheet
+  that is about 9 tiles and costs roughly what 8 hand-picked crops cost, in one turn instead of
+  eight, with nothing skipped. 120 is the default; when a dense region resists reading at 120,
+  call again at `dpi: 150` before falling back to region crops. A tiled call counts as one render
+  on your `pages read:` line, named `tiled@120` or `tiled@150`.
 - **In the leftover**, open your sheet's open-entry file first. It names what the index left open
   on your sheet: a tag on the sheet matching no code on the record, a code the read returned in
   pieces it could not prove sit together, a code found with no box to point at, or a citation it
