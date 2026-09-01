@@ -110,8 +110,10 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   optional `supersedesId`). A scope item and a schedule definition must both be cited, on a create
   and on an update alike: their `evidence` has to name what you read, a sheet with the 1-based page
   you read it on, a file, or a spec section, and evidence that names none of the three is refused.
-  Work no sheet states carries `sourceInstrument` `trade-convention:092116@<sha>` instead, and the
-  two derived trade tags (`belongsToTrade`, `packageRole:<trade>`) need no citation. Stamped as you,
+  Work no sheet states carries `sourceInstrument` `trade-convention:092116@<knowledge-version>`
+  instead, with evidence that quotes the trade file's line and carries the marker
+  `basis: "trade-convention"`; the door refuses a convention instrument whose evidence lacks the
+  marker. The two derived trade tags (`belongsToTrade`, `packageRole:<trade>`) need no citation. Stamped as you,
   and it takes effect immediately as provisional working truth recorded as agent-stated.
   `supersedesId` is the correction edge: see "Correcting a machine misread" below. Recorded text
   (name, description, note, value prose) is plain estimator words, per
