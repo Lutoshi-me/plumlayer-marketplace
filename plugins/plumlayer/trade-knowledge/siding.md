@@ -272,6 +272,25 @@ assembly tags and the partition sheet has ten, the three unnamed tags are a scop
 an inclusion to assume. This trade makes that check possible in a way most trades do not, because
 bidders name their tags. Use it.
 
+### The structural gap list
+
+These are the items the market systematically will not carry, that an estimator adds to every number
+before comparing. A scope list naming all of them is doing the plugging in advance.
+
+1. Synthetic stucco.
+2. Structural expansion joints at firewalls.
+3. Penetration blocks.
+4. The mockup.
+5. Backer rod and caulking.
+6. Painted break metal frames at openings.
+7. Exterior screens and fences.
+8. The field finishing of any unfinished cladding material.
+9. Hoisting and access.
+
+Add to that list the four items that are not plugs but questions the leveling cannot answer for
+itself: girt thermal performance, insulation thickness, cladding finish state, and air barrier
+ownership.
+
 ---
 
 ## 4. Typical exclusions and qualifications
@@ -697,14 +716,7 @@ not reliably above or below the market: on one project it was the highest number
 every real bid, and on two others it was the lowest.
 
 An estimator does not compare base bids. It compares base bid plus adjustments, where adjustments are
-plugs added to every bidder to cover what the market systematically will not carry. The plugs seen
-across projects are synthetic stucco, structural expansion joints at firewalls, penetration blocks,
-the mockup, backer rod and caulking, painted break metal frames at openings, exterior screens and
-fences, the field finishing of any unfinished cladding material, and hoisting and access. Those nine
-items are, in effect, the trade's structural gap list, and a scope line set that names all nine
-explicitly is doing the estimator's plugging for it. Add to that list the four items that are not
-plugs but questions the leveling cannot answer for itself: girt thermal performance, insulation
-thickness, cladding finish state, and air barrier ownership.
+plugs added to every bidder to cover what the market systematically will not carry.
 
 ---
 

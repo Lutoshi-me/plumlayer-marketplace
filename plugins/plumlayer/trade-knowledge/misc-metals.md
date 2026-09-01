@@ -42,13 +42,33 @@ project decision, not a market fact, and getting it wrong makes the whole compar
 Collapse attractors, meaning scope that the market pulls into this package even though it sits in
 another division or another spec section:
 
-- Structural steel on a renovation. When the structural work is reinforcement of an existing frame
-  rather than a new frame, fabricators bid both halves in one number, in two labelled sections. On
-  such a project the estimator's sheet carries the annotation "in misc or structural?" against a
-  dozen rows, and different bidders answer differently. On new construction with a real steel frame,
-  the split holds and the two packages stay apart.
-- Relieving angles, shelf angles, loose lintels and masonry support brackets. Always priced in this
-  package, almost never installed by it.
+- Structural steel. The two packages arrive together far more often than the leveling tabs suggest,
+  and whether they do is a property of the bidder rather than of the building. Local fabricators
+  with their own metals department carry both halves in one letter, as two named sums, on new
+  construction and on renovation alike; out-of-market tonnage fabricators exclude this package by
+  name on every job. Both kinds bid the same projects, so one solicitation routinely draws both
+  answers, and the mix is a property of the bid list. Two things follow. The packages are bought
+  apart and bid together, so a combined proposal has to be split by hand per bidder, and a combined
+  printed total read as either half is wrong in both directions. And where the structural work is
+  reinforcement and infill of an existing frame rather than a new frame, the structural package can
+  disappear entirely: on such a project there may be no structural steel tab, no structural steel
+  folder and no structural steel bidders, with the whole structural content sitting as a handful of
+  rows inside this package, priced per member and per day rather than per ton. On such a sheet the
+  estimator's own annotation "in misc or structural?" appears against a dozen rows and different
+  bidders answer differently. The one thing that reliably moves a combined shop off this package is
+  the character of the work: where it is ordinary building metal the combined shop carries it, and
+  where it is ornamental, the same shop bids the frame alone and routes the ornamental work to a
+  specialist by name.
+- Relieving angles, shelf angles, loose lintels and masonry support brackets. Usually priced in this
+  package and almost never installed by it, but the routing follows the framing type rather than the
+  item type: the same angle belongs to structural steel at the steel-framed levels and to this
+  package at the wood-framed levels, which is the rule a mature scope sheet writes out and every
+  fabricator's sheet-range exclusion implies. So expect exceptions in both directions. Relieving
+  angles sit inside the tonnage on some projects, are quoted per linear foot on others and appear as
+  a galvanized line item on a third, all for one item. A loose lintel row is answered yes by one
+  bidder and no by another in the same pool, and one bidder assumes bond beam lintels at every
+  masonry opening and provides no steel lintels at all. Give each of them its own scope row with its
+  framing type stated, and do not assume the answer from the item name.
 - Embed plates, embed angles, leveling plates, anchor bolts and shear wall plates. Always furnished
   here.
 - Site and landscape metal: bollards, tree guards at tree pits, catenary light posts, fencing,
@@ -492,10 +512,11 @@ on the scope sheet and the seam disappears as a problem.
 
 ### The seams that recur
 
-- Relieving angles, shelf angles and loose lintels. Furnished by metals, installed by the mason,
-  essentially always. Supplied in maximum lengths, hardware excluded, and where the metals contractor
-  does install them it is riding the mason's staging on the mason's schedule. Where a thermal break
-  bracket is specified, the bracket comes from a specialty manufacturer, the angle may come from that
+- Relieving angles, shelf angles and loose lintels. Furnished by a fabricator, from whichever
+  package the framing type puts the angle in, and installed by the mason, essentially always.
+  Supplied in maximum lengths, hardware excluded, and where the metals contractor does install them
+  it is riding the mason's staging on the mason's schedule. Where a thermal break bracket is
+  specified, the bracket comes from a specialty manufacturer, the angle may come from that
   manufacturer or from a local fabricator depending on the condition, the anchorage and screws come
   from others, and the installation is the mason's. Four parties in one detail.
 - Embeds, anchor bolts and leveling plates. Furnished by metals, set by the concrete trade, laid out

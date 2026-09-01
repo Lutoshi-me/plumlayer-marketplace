@@ -249,6 +249,28 @@ not decided against it, and its total will look attractive for exactly that reas
 on the set and absent from a proposal is a gap to price, never an inclusion to assume, and the
 proposal's own itemized structure makes that detectable: if the family has no page, it has no price.
 
+### The structural gap list
+
+These are the items the market systematically will not carry, that an estimator adds to every number
+before comparing. A scope list naming all of them is doing the plugging in advance.
+
+- Installation, wherever the bidder is furnish-only.
+- Backing and blocking behind accessories, grab bars and surrounds.
+- Fasteners on furnish-only lines.
+- Setting of trimless recessed fire extinguisher cabinets, and the drywall wrap the details omit.
+- Illuminated mirrors, wherever they have been routed.
+- Wall protection, whichever of the three products is on the set.
+- Corner guards, which are specified and routinely have no plotted locations.
+- Closet and wire shelving, wherever the finish carpentry boundary falls.
+- Free standing package room shelving and delivery vestibule lockers, which appear on amenity
+  schedules and are carried by nobody.
+- Pet spa equipment connection.
+- Shower pan setting.
+- Postal parcel ratio correction, and mailbox door numbering.
+- Attic stock.
+- Expansion joint cover assemblies, where present.
+- Extra mobilizations under phased turnover.
+
 ---
 
 ## 4. Typical exclusions and qualifications
@@ -583,32 +605,9 @@ base bids; it compares base bid plus adjustments. On one project the adjustments
 bidder ran larger than every base bid on the sheet, so the leveling was plug-dominated and the base
 bids were nearly decorative. Adjustments here are per-bidder rather than uniform, because what each
 bidder is missing differs, and at least one adjustment has been negative, applying a bidder's own
-published install deduct in reverse.
-
-The structural gap list, meaning the scope no bidder carries that the general contractor must add to
-every number before comparing:
-
-- Installation, wherever the bidder is furnish-only.
-- Backing and blocking behind accessories, grab bars and surrounds.
-- Fasteners on furnish-only lines.
-- Setting of trimless recessed fire extinguisher cabinets, and the drywall wrap the details omit.
-- Illuminated mirrors, wherever they have been routed.
-- Wall protection, whichever of the three products is on the set.
-- Corner guards, which are specified and routinely have no plotted locations.
-- Closet and wire shelving, wherever the finish carpentry boundary falls.
-- Free standing package room shelving and delivery vestibule lockers, which appear on amenity
-  schedules and are carried by nobody.
-- Pet spa equipment connection.
-- Shower pan setting.
-- Postal parcel ratio correction, and mailbox door numbering.
-- Attic stock.
-- Expansion joint cover assemblies, where present.
-- Extra mobilizations under phased turnover.
-
-Fifteen items, and a scope line set that names all fifteen explicitly is doing the estimator's plugging
-for it. On the smallest project seen the plugs were most of the in-house budget for the
-division, because with almost no bidders the budget is a plug list by construction. On the largest they
-exceeded every base bid.
+published install deduct in reverse. On the smallest project seen the plugs were most of the in-house
+budget for the division, because with almost no bidders the budget is a plug list by construction. On
+the largest they exceeded every base bid.
 
 ---
 

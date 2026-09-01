@@ -341,7 +341,7 @@ before reading a spread as evidence of competition.
 
 The shapes actually seen:
 
-- The bidder-minted mark takeoff. Every scope item gets its own mark, a quantity, a unit, a finish,
+- The bidder-created mark takeoff. Every scope item gets its own mark, a quantity, a unit, a finish,
   structural and architectural sheet references, member sizes written out, separate supply and
   install columns and per-mark notes on what is by others. The deepest ran to roughly forty marks
   with landing areas and per-line assumptions beneath each. This is a takeoff presented as a

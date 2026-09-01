@@ -713,3 +713,6 @@ Open gaps, to be closed by later corpus rounds:
   mapped only from this side.
 - The corpus has not shown a project without a podium or metal-framed portion, so the pure wood-frame
   and pure concrete cases are both only partially evidenced.
+
+This file carries no structural gap list. The first corpus round did not draw one out for this
+trade; a later round writes it where the corpus supports one.

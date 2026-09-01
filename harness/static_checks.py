@@ -1822,6 +1822,7 @@ def check_runner_mode_set(plugin_path: Path) -> Result:
 PASS_KNOWLEDGE_SCRIPT = ("scripts", "cut_pass_knowledge.py")
 
 _GAP_LIST_PHRASE = "structural gap list"
+_NO_GAP_LIST_SENTENCE = "This file carries no structural gap list"
 _KNOWLEDGE_VERSION_RE = re.compile(r"\*\*Knowledge version:\s*`([^`]+)`\*\*")
 
 
@@ -1892,8 +1893,7 @@ def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
         errors.append(f"the excerpt does not carry the manifest's knowledge version {version}")
 
     gap_heading: list[str] = []
-    pricing_carried: list[str] = []
-    no_gap_list: list[str] = []
+    declared_none: list[str] = []
     largest = ("", 0)
 
     for slug in trades:
@@ -1917,54 +1917,47 @@ def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
             errors.append(f"{slug}: section 3 is not in the excerpt contiguous and byte-identical")
         carried = len(grain)
 
+        # A trade file either carries its gap list under a heading in section 3, where the cut
+        # puts it in the reader's hands, or says in section 8 that it has none. Neither is a file
+        # whose gap list the reader will never see.
+        grain_lines = grain.splitlines()
         gap_idx = _first_line_index(
-            lines, lambda line: line.startswith("### ") and _GAP_LIST_PHRASE in line.lower()
+            grain_lines, lambda line: line.startswith("### ") and _GAP_LIST_PHRASE in line.lower()
         )
         if gap_idx is not None:
             gap_heading.append(slug)
-            block = _block_from(lines, gap_idx, ("##",))
+            block = _block_from(grain_lines, gap_idx, ("##",))
             if block not in excerpt:
                 errors.append(
                     f"{slug}: the structural gap list block is not in the excerpt "
                     f"contiguous and byte-identical"
                 )
-
-        pricing_idx = _first_line_index(lines, lambda line: line.startswith("## 7. "))
-        pricing = _block_from(lines, pricing_idx, ("## ",)) if pricing_idx is not None else None
-        if _GAP_LIST_PHRASE not in grain:
-            pricing_carried.append(slug)
-            if pricing is None:
-                errors.append(
-                    f"{slug}: section 3 holds no gap list and there is no section 7 to carry"
-                )
-            elif pricing not in excerpt:
-                errors.append(
-                    f"{slug}: section 7 should have been carried and is not in the excerpt"
-                )
-            else:
-                carried += len(pricing)
-        elif pricing is not None and pricing in excerpt:
-            errors.append(
-                f"{slug}: section 7 was carried where section 3 already holds the gap list"
+        else:
+            coverage_idx = _first_line_index(lines, lambda line: line.startswith("## 8. "))
+            coverage = (
+                _block_from(lines, coverage_idx, ("## ",)) if coverage_idx is not None else ""
             )
+            if _NO_GAP_LIST_SENTENCE in coverage:
+                declared_none.append(slug)
+            else:
+                errors.append(
+                    f"{slug}: no structural gap list heading in section 3 and no "
+                    f"`{_NO_GAP_LIST_SENTENCE}` in section 8"
+                )
 
-        if _GAP_LIST_PHRASE not in text:
-            no_gap_list.append(slug)
         if carried > largest[1]:
             largest = (slug, carried)
 
     detail = (
         f"{len(trades)} trade files cut into {len(excerpt.encode('utf-8')):,} bytes, "
-        f"knowledge version {version}; gap list under a heading in {len(gap_heading)}; "
-        f"section 7 carried for {len(pricing_carried)}"
-        f" ({', '.join(pricing_carried) if pricing_carried else 'none'}); "
-        f"largest single trade {largest[1]:,} bytes ({largest[0]})"
+        f"knowledge version {version}; gap list under a heading in section 3 for "
+        f"{len(gap_heading)}; largest single trade {largest[1]:,} bytes ({largest[0]})"
     )
-    # An honest bound, not a pass: these trade files carry no structural gap list under any rule,
+    # An honest bound, not a pass: these trade files say in section 8 that they have no gap list,
     # so no assertion here can prove the excerpt carries one for them.
     detail += (
-        f"; no gap list in the source under any rule for {len(no_gap_list)}"
-        f" ({', '.join(no_gap_list) if no_gap_list else 'none'})"
+        f"; declaring no gap list in section 8: {len(declared_none)}"
+        f" ({', '.join(declared_none) if declared_none else 'none'})"
     )
     if errors:
         detail += " | " + "; ".join(errors)

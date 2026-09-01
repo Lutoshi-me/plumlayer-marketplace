@@ -870,3 +870,6 @@ Open gaps, to be closed by later corpus rounds:
   one where the earthwork was bought in packages rather than as one number.
 - The corpus has not shown a project where a diversion or reuse target was enforced on the exported
   material, so who owns that reporting is unknown.
+
+This file carries no structural gap list. The first corpus round did not draw one out for this
+trade; a later round writes it where the corpus supports one.

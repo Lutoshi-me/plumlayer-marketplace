@@ -86,7 +86,7 @@ Plus three utilities you reach for directly: `project-record`, `drawing-set-asse
   `scope-run` starts. It also runs on its own against a set that is already uploaded.
 - **`scope-run`**: session two, and it wants a session to itself. Reads the drawing set and builds one
   complete, cited scope list for the whole job, checks it for gaps, then amends and tags the trade
-  packages. Draws on a bundled reference set of 44 trade packages (see below) so each split follows
+  packages. Draws on a bundled reference set of 45 trade packages (see below) so each split follows
   how that trade actually bids and scopes work in the market.
 
 ### New paper
@@ -121,7 +121,7 @@ Plus three utilities you reach for directly: `project-record`, `drawing-set-asse
 
 ### Trade reference set
 
-The plugin also ships `trade-knowledge/`, a set of 44 trade reference files plus a manifest, read by
+The plugin also ships `trade-knowledge/`, a set of 45 trade reference files plus a manifest, read by
 `scope-run` when it splits the job's scope list into packages. Each entry covers how that trade
 bids and scopes work in the market, distilled and scrubbed of any identifying project or company
 data.
@@ -173,5 +173,5 @@ plugins/plumlayer/
     setup/SKILL.md
     project-record/SKILL.md
     drawing-set-assemble/SKILL.md
-  trade-knowledge/                  # 44 trade reference files + MANIFEST.md, read by scope-run
+  trade-knowledge/                  # 45 trade reference files + MANIFEST.md, read by scope-run
 ```

@@ -844,3 +844,6 @@ Open gaps, to be closed by later corpus rounds:
   are outside what these records support, and abatement deserves its own file.
 - No project in the corpus had contaminated soil, storage tanks or a licensed site professional
   actually engaged, so those exclusions are recorded without a counterparty ever being observed.
+
+This file carries no structural gap list. The first corpus round did not draw one out for this
+trade; a later round writes it where the corpus supports one.

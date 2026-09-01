@@ -737,3 +737,6 @@ Open gaps, to be closed by later corpus rounds:
 - The corpus has not shown abatement in an operating facility that stays fully occupied throughout,
   where phased containment and after-hours work would dominate. The one occupied case was a single
   tenant area carved out of the scope.
+
+This file carries no structural gap list. The first corpus round did not draw one out for this
+trade; a later round writes it where the corpus supports one.

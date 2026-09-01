@@ -294,6 +294,21 @@ forty-five things and not the item you are asking about, that is closer to an in
 usually is. The reverse also holds: an item nobody mentions at all, on either list, is almost
 certainly unpriced by everybody.
 
+### The structural gap list
+
+These are the items the market systematically will not carry, that an estimator adds to every number
+before comparing. A scope list naming all of them is doing the plugging in advance.
+
+1. Installation wherever the bidder is supply only.
+2. Sales tax wherever it was excluded.
+3. All work at existing to remain openings, which on a renovation is the largest single addition and
+   is carried both as a hardware value and as an hourly allowance for field work.
+4. Sliding and barn door leaves.
+5. Hardware at aluminum openings.
+6. Automatic operator installation.
+7. Hollow metal frame setting.
+8. A per-opening allowance for reusing existing doors and frames.
+
 ---
 
 ## 4. Typical exclusions and qualifications
@@ -680,14 +695,6 @@ it individually failed to carry, most often installation, sales tax, a missing p
 scope block priced by another bidder and carried across at that other value. That last mechanism,
 carrying one bidder's price for an item into every other bidder's total, is the workhorse of leveling
 in this trade and it appears on every sheet.
-
-The plugs that recur across projects are: installation wherever the bidder is supply only; sales tax
-wherever it was excluded; all work at existing to remain openings, which on a renovation is the
-largest single addition and is carried both as a hardware value and as an hourly allowance for field
-work; sliding and barn door leaves; hardware at aluminum openings; automatic operator installation;
-hollow metal frame setting; and a per-opening allowance for reusing existing doors and frames. Those
-eight are, in effect, this trade's structural gap list, and a scope line set that names all eight
-explicitly is doing the estimator's plugging for it.
 
 ---
 

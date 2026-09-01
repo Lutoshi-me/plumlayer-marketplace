@@ -275,7 +275,10 @@ usual here: a line can be included, excluded, or listed at no value, and a no-va
 included to anyone skimming. Heat trace shows up as a dash on a schedule of values on at least one
 proposal precisely because it went to another trade.
 
-The trade's structural gap list, meaning the plugs an estimator adds to every bidder before comparing:
+### The structural gap list
+
+These are the items the market systematically will not carry, that an estimator adds to every number
+before comparing. A scope list naming all of them is doing the plugging in advance.
 
 1. Heat trace, in some combination of cable, installation and insulation.
 2. Submeter furnishing, and meter programming where it exists.
@@ -289,8 +292,6 @@ The trade's structural gap list, meaning the plugs an estimator adds to every bi
 10. Temporary plumbing systems.
 11. Shower pans and waterproofing below showers.
 12. Bathroom accessory installation.
-
-A scope line set that names all twelve explicitly is doing the estimator's plugging for it.
 
 ---
 

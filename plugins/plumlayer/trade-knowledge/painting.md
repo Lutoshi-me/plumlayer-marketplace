@@ -195,6 +195,21 @@ others exclude, and a given proposal says nothing about it, that silence is a sc
 not an inclusion to assume. A minority of proposals are silent on wallcovering entirely while it
 exists on the set.
 
+### The structural gap list
+
+These are the items the market systematically will not carry, that an estimator adds to every number
+before comparing. A scope list naming all of them is doing the plugging in advance.
+
+1. Go-backs and punch.
+2. Caulking and sealants.
+3. Exterior painting.
+4. Garage painting and striping.
+5. Sealed concrete at back of house.
+6. Epoxy floors.
+7. FRP panels.
+8. Exposed piping.
+9. Specialty metallic paint at miscellaneous locations.
+
 ---
 
 ## 4. Typical exclusions and qualifications
@@ -462,11 +477,7 @@ expensive.
 
 One more pricing convention worth knowing: an estimator does not compare base bids. It compares base
 bid plus adjustments, where adjustments are plugs added to every bidder to cover what the market
-systematically will not carry. The plugs to expect are go-backs and punch, caulking and sealants,
-exterior painting, garage painting and striping, sealed concrete at back of house, epoxy floors, FRP
-panels, exposed piping, and specialty metallic paint at miscellaneous locations. Those nine items are,
-in effect, the trade's structural gap list, and a scope line set that names all nine explicitly is
-doing the estimator's plugging for it.
+systematically will not carry.
 
 ---
 

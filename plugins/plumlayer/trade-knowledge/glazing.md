@@ -272,6 +272,25 @@ to surface, not an inclusion to assume. In this trade that is not a marginal cas
 case, and it is why glazing numbers on one project can differ by a factor of six without any of them
 being wrong.
 
+### The structural gap list
+
+These are the items the market systematically will not carry, that an estimator adds to every number
+before comparing. A scope list naming all of them is doing the plugging in advance.
+
+1. Installation labor against supply-only bids.
+2. Entrance hardware where the schedule did not exist at bid time.
+3. Automatic operators.
+4. Glazing at hollow metal doors and frames.
+5. Unit bathroom mirrors.
+6. Glazing into wood-framed partitions where a bidder excluded it.
+7. Shower enclosures being moved in or out of the package.
+8. The perimeter joint and the barrier behind it.
+9. Blocking.
+10. Delegated design and the engineer's stamp.
+11. Testing.
+12. The two-year warranty uplift.
+13. Bond.
+
 ---
 
 ## 4. Typical exclusions and qualifications
@@ -732,14 +751,7 @@ the estimator knows it, which is why the adjustment column does more work here t
 finish trade.
 
 An estimator does not compare base bids. It compares base bid plus adjustments, where the adjustments
-are plugs added to every bidder to cover what the market systematically will not carry. The plugs to
-expect in this trade are: installation labor against supply-only bids, entrance hardware where the
-schedule did not exist at bid time, automatic operators, glazing at hollow metal doors and frames,
-unit bathroom mirrors, glazing into wood-framed partitions where a bidder excluded it, shower
-enclosures being moved in or out of the package, the perimeter joint and the barrier behind it,
-blocking, delegated design and the engineer's stamp, testing, the two-year warranty uplift, and bond.
-Those fourteen items are in effect the trade's structural gap list, and a scope line set that names
-all fourteen explicitly is doing the estimator's plugging for it.
+are plugs added to every bidder to cover what the market systematically will not carry.
 
 A last note on estimator plug rates, because they are worth knowing as a sanity band even though they
 are not market prices. The estimator's own budget rate for exterior storefront ran about a third
