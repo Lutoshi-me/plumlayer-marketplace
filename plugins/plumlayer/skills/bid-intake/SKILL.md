@@ -234,6 +234,20 @@ page without a text layer is read by OCR and `textSource` says so, and spans are
 - **The bidder profile**: name, labor type (one of `Open Shop` / `Union` / `Prevailing Wage` /
   `Supplier`), contact, **proposal date read from the document itself**, and a revision marker if the
   document carries one (R1 / R2 / "Revised"). Never use upload time for the date.
+
+  **The contact is read into its parts.** The signature block, the letterhead, or the cover email
+  names a person: read their name, title, phone, and email into `contactPerson`, each part the
+  proposal's own text, each omitted when the document does not carry it. `contactPerson` requires the
+  person's name: a contact with no name (a bare email address, a phone number with no name) is the
+  `contact` string instead, written verbatim with `contactPerson` left off. Never split a line to
+  manufacture a part, and never carry a part over from another proposal. `contact` is the verbatim
+  fallback, and nothing downstream ever reads inside it.
+
+  **Name the directory contact only when you are certain who it is.** When you placed this bidder on
+  an invited company (stage 3 step 2) and `solicitation_list_invitations` names the recipient contact
+  on that invitation (its `contactId`), put that id in `contactPerson.directoryContactId`. That case
+  and no other. A contact id you settled by matching a name puts a real proposal against the wrong
+  person's record; leave the field off and let the name on the proposal stand by itself.
 - **Per-row responses**: for each scope row the proposal **addresses**, the response along the three
   axes plus amount and note, per the response value shape (stage 7):
   - **inclusion**: `base` (in the base bid), `adder` (a priced add), or `excluded` (not carried).
@@ -407,6 +421,10 @@ not from a guess:
   `receipt.id`). Rows the revised proposal now does not address get **no re-assertion**: their prior
   entry simply lapses (silence lapses; you do not carry a stale prior forward). Also supersede the
   bidder's profile, coverage, and summary entries (see the head-id note below).
+
+  A superseding bidder profile replaces the whole profile, not just the fields that changed. Re-read
+  the revision's own signature block and write every field you can still read from it. A field you
+  leave off is a field the estimator loses.
 - **A "clarification" / "delta" / an addendum letter naming specific items → surgical.** The document
   changes only the rows it names. Record new entries only for those named rows, each with
   `supersedesId` set to that row's current head entry id; everything else the bidder previously said is
@@ -449,15 +467,18 @@ rejected by `.strict()`, enums are exact):
 
 ```json
 // bidder profile  (predicate: "bidderProfile", subject: the party subject)
-{"subject": "party:acme-drywall", "predicate": "bidderProfile",
+{"subject": "party:<companyId>", "predicate": "bidderProfile",
  "value": {"name": "Acme Drywall", "laborType": "Open Shop",
-           "contact": "j@acme.example", "proposalDate": "2026-03-14", "revision": "R2"},
+           "contactPerson": {"name": "Jane Ruiz", "title": "Estimator",
+                             "phone": "(617) 555-0142", "email": "j@acme.example",
+                             "directoryContactId": "con-<contactId>"},
+           "proposalDate": "2026-03-14", "revision": "R2"},
  "sourceInstrument": "bid-intake-skill",
  "evidence": {"instrument": "bid-intake-skill", "method": "agent-vision-read", "confidence": 0.9,
    "rationale": "cover letter header, dated + signed", "fileId": "<fileId>", "page": 1}}
 
 // per-row response  (predicate: "bidResponse")
-{"subject": "bidResponse:party:acme-drywall:bidPackage:<projectId>:09 29 00:scopeItem:<id>",
+{"subject": "bidResponse:party:<companyId>:bidPackage:<projectId>:09 29 00:scopeItem:<id>",
  "predicate": "bidResponse",
  "value": {"inclusion": "adder", "routing": "self", "amount": 4200,
            "note": "add for level 5 finish"},
@@ -466,7 +487,7 @@ rejected by `.strict()`, enums are exact):
    "rationale": "line item 3, priced add", "fileId": "<fileId>", "page": 2}}
 
 // coverage  (predicate: "bidCoverage")  — proposalFileId is the registered file id
-{"subject": "bidCoverage:party:acme-drywall:bidPackage:<projectId>:09 29 00",
+{"subject": "bidCoverage:party:<companyId>:bidPackage:<projectId>:09 29 00",
  "predicate": "bidCoverage",
  "value": {"basis": "partial", "label": "Framing only",
            "coveredItems": ["scopeItem:<id-a>", "scopeItem:<id-b>"], "proposalFileId": "<fileId>"},
@@ -475,7 +496,7 @@ rejected by `.strict()`, enums are exact):
    "rationale": "scope statement, page 1", "fileId": "<fileId>", "page": 1}}
 
 // summary totals  (predicate: "bidSummary")  — parallel buckets, never summed by you
-{"subject": "bidSummary:party:acme-drywall:bidPackage:<projectId>:09 29 00",
+{"subject": "bidSummary:party:<companyId>:bidPackage:<projectId>:09 29 00",
  "predicate": "bidSummary",
  "value": {"base_bid": 128000,
            "allowances_alternates": 6000, "total_adj_bid": 134000},
@@ -492,6 +513,10 @@ Value rules that the schema enforces, honor them at authoring time:
 - Optional fields are **omitted** when absent, never set to `null`. Every optional field in the bid
   schemas is `.optional()`, not `.nullable()`: an explicit `null` is rejected, not treated as "none."
   Omission is the only correct encoding of "not stated."
+- `contactPerson` is the person the proposal names, in parts, each part the document's own text and
+  each part omitted when the document does not carry it. Its `name` is required, so a contact you
+  cannot read a person's name from goes to the flat `contact` string instead. Never write both for
+  one reading.
 - `sourceInstrument` equals `evidence.instrument` (the builder sets it from there).
 - `evidence.page` requires `evidence.fileId`: a page pointer with no file is rejected.
 - For a **surgical or wholesale supersession**, add `"supersedesId": "<current head entry id>"` to the
