@@ -14,9 +14,7 @@
     "notes",
     "cover-index"
   ],
-  "unmapped": {
-    "prefab-balconies": "no catalog trade fits: the catalog carries no prefabricated balcony trade, and misc metals, precast concrete and special construction each cover only part of it. Left unmapped rather than routing balcony scope into a trade that would price only part of it."
-  },
+  "unmapped": {},
   "trades": {
     "01 00 00": {
       "knowledge": "final-cleaning",
@@ -74,6 +72,15 @@
         {"discipline": "A", "sheetTypes": ["section", "detail"]}
       ],
       "definitionKinds": ["columnType", "beamType", "deckType"]
+    },
+    "05 58 00": {
+      "knowledge": "prefab-balconies",
+      "note": "formed metal fabrications, the catalog row that carries prefabricated balconies. The manufacturers sell the system and the install, so it is its own package with its own bidders; the knife plates, ledgers and blocking it lands on belong to misc metals and rough carpentry, which is why it sits in a seam with metal fabrications.",
+      "families": [
+        {"discipline": "A", "sheetTypes": ["elevation", "section", "detail"]},
+        {"discipline": "S", "sheetTypes": ["plan", "detail"]}
+      ],
+      "definitionKinds": []
     },
     "05 50 00": {
       "knowledge": "misc-metals",
@@ -364,6 +371,7 @@
     ["03 30 00", "03 54 13"],
     ["04 00 00", "07 46 00"],
     ["05 12 00", "05 50 00"],
+    ["05 50 00", "05 58 00"],
     ["05 12 00", "06 10 00"],
     ["05 50 00", "06 10 00"],
     ["06 22 00", "12 35 30"],
