@@ -1,7 +1,7 @@
 # Trade knowledge base: manifest
 
-**Knowledge version: `6cc73340`**. This is the version string every convention-line record cites
-(`sourceInstrument: "trade-convention:<trade>@6cc73340"`, per the `scope-run` skill's convention-line
+**Knowledge version: `641b3380`**. This is the version string every convention-line record cites
+(`sourceInstrument: "trade-convention:<trade>@641b3380"`, per the `scope-run` skill's convention-line
 mandate). This pin changes only when the trade files themselves change; plugin releases that don't
 touch the trade files don't move it.
 
@@ -10,7 +10,7 @@ touch the trade files don't move it.
   leveling workbooks across multiple multifamily projects in one regional market), scrubbed of all
   identifying data: no company, person, or project names, no addresses, no dollar figures (cost
   signal rides as ratios and multiples). Confidentiality-reviewed before first shipping.
-- Content-defining source snapshot: commit `6cc73340` of the source corpus repository.
+- Content-defining source snapshot: commit `641b3380` of the source corpus repository.
 - Copied into this plugin.
 
 Forty-three of these files were mined from one corpus of four projects. `structural-steel` was the

@@ -18,8 +18,8 @@ proposals say so: bidders cite 092900 gypsum board, 092116 non-structural metal 
 092120 shaft wall assemblies, 054000 cold-formed metal framing, 061000 or 061050 rough carpentry for
 blocking, 061600 sheathing, 072100 thermal insulation, 078443 joint firestopping, 079219 acoustical
 joint sealants, 079513 interior expansion joint covers, 081113 hollow metal doors and frames for
-install labor, 066400 FRP paneling, and 095100 acoustical ceiling tile. One estimator's own drywall
-sheet lists fourteen specification sections across six divisions, air barriers and penetration
+install labor, 066400 FRP paneling, and 095100 acoustical ceiling tile. An estimator's own drywall
+sheet can list fourteen specification sections across six divisions, air barriers and penetration
 firestopping and corner guards among them. An estimator files it under a 09 21 code, but the exact
 code drifts between 09 2100, 09 2110 and 09 2116 from project to project, and it drifts inside one
 office and inside one project: the same estimator codes one job three ways across a precon sheet, a
@@ -54,32 +54,31 @@ packaging facts in the trade and they rank ahead of insulation, because the fram
 a factor of two where insulation moves it by a fraction. Where the framing cannot leave, which is
 most jobs, insulation is the larger fact. Section 7 ranks the drivers the same way.
 
-- The split is decided per round, not per project. One project bought the load-bearing framing as its
-  own package in one round and back inside drywall in the next round eighteen months later, with no
-  framing package at all the second time. A scope list that assumes the framing is always in this
-  package will produce a sheet nobody in that pool can answer.
+- Never assume the framing is in this package. A scope list that assumes it will produce a sheet
+  nobody in that pool can answer.
 - Which scope leaves depends on which supplier is bought, not on the framing material. An estimator
   comparing competing systems tabulates them on exactly these axes: whether the system carries window
   installation, the exterior walls, the non-bearing partitions, the stair shafts, the elevator
   shafts, the sheathing, the stairs, the floor deck, the deck topping and the balconies. The answers
-  differ system by system. One carries exterior walls, non-bearing partitions, sheathing and stairs;
-  one carries exterior walls and neither the partitions nor the shafts; one carries the deck and
-  nothing else.
+  differ system by system: some carry the exterior walls, the non-bearing partitions, the sheathing
+  and the stairs; some carry the exterior walls and neither the partitions nor the shafts; some carry
+  the deck and nothing else.
 - The system pre-decides this package's assembly. A supplier publishes the requirements its product
   imposes on other packages, and three of them land in drywall: resilient channel required at every
   floor and ceiling assembly to hold the listed ratings, a heavier channel grade required at all
   demising and corridor walls, and ceilings required to be a named board type. It also claims
   savings in drywall's own scope, no plumb or level furring at gypsum walls and no dropped soffits.
-  An estimator's own three-way scenario model carries the identical drywall line under every regime
-  and then adds three named adjustments under the light gauge regimes: a credit for deleting one
-  board layer at the exterior walls, an add for resilient channel at corridors, and an add for
+  An estimator modelling the regimes side by side carries the identical drywall line under every one
+  of them and then adds three named adjustments under the light gauge regimes: a credit for deleting
+  one board layer at the exterior walls, an add for resilient channel at corridors, and an add for
   isolation clips and an added board layer at demising. Net, about a twentieth of the drywall number,
   decided in another package. A drywall scope list written without knowing the framing regime is
   written against the wrong assembly.
-- The choice is close to cost-neutral at the project level and enormous at the package level. In that
-  same model the whole-project trade subtotal moves by well under a hundredth between regimes, while
-  the two divisions carrying the frame move by roughly two and a half times and roughly three and a
-  half times in opposite directions. You cannot infer the framing regime from a project budget.
+- The choice can be close to cost-neutral at the project level and enormous at the package level. In
+  such a model the whole-project trade subtotal moves by well under a hundredth between regimes,
+  while the two divisions carrying the frame move by roughly two and a half times and roughly three
+  and a half times in opposite directions. You cannot infer the framing regime from a project
+  budget.
 
 The counterparty changes with the regime. Under wood it is a framing carpenter. Under light gauge it
 is a system supplier, an erector, and often a deck manufacturer standing behind the supplier, with
@@ -104,22 +103,30 @@ insulation as a separable block against its own drywall number, the block runs f
 twenty-eighth to about three fifths. Most breakouts sit between about a fifteenth and a fifth. The
 share is larger where the bidder also carries mineral wool and a vapor retarder, and larger again on
 a large podium with a deep insulation schedule, where six independent breakouts on one bid list
-cluster nearer a half. It falls to about a twentieth on office core and shell and on conversions of
-existing buildings, because the exterior walls already exist and little cavity insulation sits inside
-the block at all. On one project two bidders differ by more than two to one on the same wall types.
-No breakout seen reaches a doubling.
+cluster nearer a half. It
+falls to about a twentieth on office core and shell and on conversions of existing buildings, because
+the exterior walls already exist and little cavity insulation sits inside the block at all. Two
+bidders pricing the same wall types can differ by more than two to one. No breakout seen reaches a
+doubling.
 
 Two cautions on that number. An estimator's plug for a bidder that omitted the block runs higher than
 any bidder's own breakout, up to about four sevenths of the bid it is applied to, and two valuations
-of one block on one bid list can differ by two fifths. And insulation is the most rate-dispersed
-material in the assembly: across seven named insulation products on one bidder's own rate card the
-rates span nearly two to one among themselves and about eighteen to one against the cheapest board
-rate. That dispersion is the mechanism behind the ratio's spread.
+of one block can differ by two fifths. And insulation is the most rate-dispersed material in the
+assembly: across seven named insulation products on a bidder's own rate card the rates span nearly
+two to one among themselves and about eighteen to one against the cheapest board rate. That
+dispersion is the mechanism behind the ratio's spread.
 
 The block is also detaching. On the newest work thermal insulation is its own package with its own
 bid list, entering the drywall ranking only as an other-subcontractor plug, and a buyout sheet asks
 on four separate rows whether the batt, the acoustic fiberglass, the spray-applied and a
 concrete-faced panel belong to this trade or to that one.
+
+A single proposal often prices several of these together, either as separate lines under one number
+or as one line naming all of them: metal framing, insulation, acoustical ceilings and drywall
+together, or light gauge framing, insulation, blocking and drywall together. That is why one
+document gets filed under three trade tokens at once, and why a leveling sheet's scope rows are
+sometimes just that bidder's own breakout. Read the whole document before deciding which package it
+is for.
 
 ### Collapse attractors
 
@@ -141,7 +148,7 @@ section.
   on conversions some bidders carry the doors and hardware too.
 - Access panel installation, material by others, usually with a per-panel price and an allowance
   count rather than a schedule. Not reliably kept: some bidders exclude access panels and any device
-  penetrating any wall outright, and one carries them at zero pending a schedule.
+  penetrating any wall outright, and some carry them at zero pending a schedule.
 - Firestopping and acoustical sealant, bounded to the tops and bottoms of the assemblies the bidder
   built. Penetrations by other trades are excluded from every base bid seen.
 - Shaft wall assemblies, including shaftliner, C-T studs and J-runners. Carried by nearly every bidder
@@ -185,8 +192,9 @@ Scope that leaves this package even when it looks like drywall.
   office core and shell most bidders carry the tile inside the drywall number, on a theatre both
   bidders carry a named acoustical ceiling system in the base, and on a healthcare renovation a
   bidder carries tile at a stated material rate and a stated labor rate. On those building types the
-  boundary is drawn by an answer to a request for information rather than by convention, and one such
-  answer routed integrated ceiling assemblies out of the ceilings package. Section 5 covers the seam.
+  boundary is drawn by an answer to a request for information rather than by convention, and such an
+  answer has routed integrated ceiling assemblies out of the ceilings package. Section 5 covers the
+  seam.
 - Wood framing of every kind. On a wood-framed or podium building the structural framing belongs to
   the framing carpenter.
 - Masonry interior partitions and CMU shaft construction.
@@ -236,9 +244,9 @@ Grain, not number count, is what distinguishes proposals here. Seven distinct sh
 - The returned scope sheet. The general contractor's own scope form handed back with a Yes, No or
   dollar figure against every row, sometimes with the price written by hand in the margin and no
   proposal letter at all, and sometimes as numbered questions issued and answered by email rather
-  than as a form. A pipeline that only reads letterhead proposals will drop real bids, including, on
-  one project, the second-highest bid on the board. But on most projects no returned sheet exists at
-  all, and the bidders' answers live only as cells in the estimator's own workbook.
+  than as a form. A pipeline that only reads letterhead proposals will drop real bids, and has once
+  dropped the second-highest bid on the board. But on most projects no returned sheet exists at all,
+  and the bidders' answers live only as cells in the estimator's own workbook.
 
 Two document classes ride behind any of those shapes and are easy to miss. The takeoff or estimating
 workbook annex: a bidder's own priced workbook, a set of color-classified markups over the
@@ -369,9 +377,9 @@ Revision habits. The governing fact is whether a new set arrived.
   off by one; both rounds of a pair can carry the same date and the same proposal number; a bidder's
   labels can restart between rounds so a later round's R0 carries the earlier round's R1 figures; a
   revision label can have been written by the general contractor's own filing clerk inside the
-  document; and one page of a proposal can carry a different date from the next. On one project five
-  offers from one bidder share one letterhead date and one cited basis, so neither instrument orders
-  the ladder and only the scope narrative and the numbers do.
+  document; and one page of a proposal can carry a different date from the next. A whole ladder of
+  offers from one bidder can share one letterhead date and one cited basis, so neither instrument
+  orders it and only the scope narrative and the numbers do.
 
 Diff round over round on six axes, never on the total: the exclusion list, the scope sentences, the
 inclusion list, the unit column, the commercial-terms sentence, and any disclosed labor-hour block. A
@@ -393,19 +401,20 @@ and it describes that instrument.
 
 The leveling sheet the estimator actually ranks on is a different document and it is usually much
 thinner. Counted the same way, in substantive rows, it runs from zero to about a hundred and fifty,
-and more often than not it runs under fifty. One carries no scope definition at all: its
-qualification block still reads write qualifications here and its exclusion block still reads write
-exclusions here, above a three-column ranking. Sheet depth tracks how far into buyout the round is
-and how much time the estimator had, and at bid stage in current practice it is falling. Treat the
-row target as a specification for what a sheet should ask, not as a description of what sheets do.
+and more often than not it runs under fifty. A sheet can carry no scope definition at all, with its
+qualification block still reading write qualifications here and its exclusion block still reading
+write exclusions here, above a three-column ranking. Sheet depth tracks how far into buyout the
+round is and how much time the estimator had, and at bid stage in current practice it is falling.
+Treat the row target as a specification for what a sheet should ask, not as a description of what
+sheets do.
 
-The sheet changes between issues in both directions, and the change is the signal. It grows through
-leveling and is pruned at buyout, roughly doubling into the first buyout pass and falling back at the
-second, and it resets when a project is rebid. Those buyout figures are the sheet's own total row
-count rather than a count of substantive rows, which is why they run past the substantive ceiling
-above: on one project the same sheet goes from about a hundred and twenty rows at bid stage to more
-than two hundred and sixty at first buyout and under a hundred and eighty at the second, while its
-bidder pool falls from fifteen columns to three. Elsewhere it grew about a sixth over seven months,
+The sheet changes between issues in both directions, and the change is the signal. It can grow
+through leveling and be pruned at buyout, roughly doubling into a first buyout pass and falling back
+at the second, and it resets when a project is rebid. Those buyout figures are the sheet's own total
+row count rather than a count of substantive rows, which is why they run past the substantive ceiling
+above: from about a hundred and twenty rows at bid stage to more than two hundred and sixty at first
+buyout and under a hundred and eighty at the second, while the bidder pool falls from fifteen columns
+to three. Elsewhere it grew about a sixth over seven months,
 and every added row was a gap an earlier answer exposed: lites inside doors, a heated plenum at the
 garage ceiling, an insulation board at one detail, impact resistant board at corners, painting of
 patch work. It also shrinks: two wall-extent
@@ -414,13 +423,13 @@ reduced from a priced plug to the words "with painter" with the money gone and n
 routing; and a whole row set held stable while every answer, note and plug from the previous round is
 dropped and one decided answer regresses to an open question. Where a sheet gains rows inside one
 solicitation, every row after the insertion renumbers, so row numbers are not comparable between two
-bidders on one project and a diff of omitted row numbers silently compares the wrong rows.
+bidders on the same project and a diff of omitted row numbers silently compares the wrong rows.
 
-A thin sheet is a warning and not the diagnosis. The failure is the unentered plug. One sheet with
-every row this section asks for records in its own cells that one bidder excludes insulation and that
-another bidder's insulation content is worth a fifth of its total, and still enters zero adjustment
-against all six bidders. Another sheet, one of the thinnest seen, carries a single large
-adjustment and produces the tightest spread. Rows are necessary and not sufficient.
+A thin sheet is a warning and not the diagnosis. The failure is the unentered plug. A sheet can carry
+every row this section asks for, record in its own cells that one bidder excludes insulation and that
+another bidder's insulation content is worth a fifth of its total, and still enter zero adjustment
+against every column, while one of the thinnest sheets seen carries a single large adjustment and
+produces a tight spread. Rows are necessary and not sufficient.
 
 ### The partition-type question
 
@@ -434,22 +443,21 @@ cell. The narrative form writes "all interior LGMF walls according to wall types
 form names 092116 and stops. The one place a wall type earns its own row in those proposals is where
 a specific detail is contested.
 
-The enumeration half is wrong. Several unrelated bidders enumerate the schedule exhaustively and
-unprompted, and some of them price it that way. One prices twenty-five named wall types and six named
-ceiling types individually, each with its own measured area, board layer count, insulation product
-and thickness, waste factor, labor crew rate and material rate per component, and was ranked first of
-six on normalized cost. One prices twenty-one wall marks and four ceiling marks the same way behind a
-two-line letter. One writes twelve framing lines each naming its partition marks with stud depth,
-gauge and spacing, then lists twenty-four marks that receive sheathing. Others measure by mark and
-price a lump: a component takeoff enumerating every mark with runners, studs, board in sheets, batt,
-bridging and sealant beneath it; seventy pages of measured takeoff by mark and unit type; sixteen
-pages of on-screen takeoff over the architect's own sheets.
+The enumeration half is wrong. Unrelated bidders enumerate the schedule exhaustively and unprompted,
+and some price it that way. Some price every named wall type and ceiling type individually, each with
+its own measured area, board layer count, insulation product and thickness, waste factor, labor crew
+rate and material rate per component, and such a bidder can rank first on normalized cost. Some do
+the same behind a two-line letter. Some write a framing line per group of partition marks with stud
+depth, gauge and spacing, then list the marks that receive sheathing. Others measure by mark and
+price a lump, with the enumeration arriving as an annex: a component takeoff carrying runners, studs,
+board in sheets, batt, bridging and sealant under every mark; a measured takeoff by mark and unit
+type running to dozens of pages; on-screen takeoff exports laid over the architect's own sheets.
 
 The variable is the bidder's own estimating system, not the project and not the building type. System
 output forms enumerate and letterhead narratives point at the schedule, both shapes are in the market
-at once, and the estimator sees whichever the bidder's software prints. The same bidder that
-enumerated twenty-five wall types on one project wrote a four-line narrative with no quantities on
-two others. So:
+at once, and the estimator sees whichever the bidder's software prints. It is a bidder trait and not
+a market shift: the same bidder that enumerated every wall type once wrote a four-line narrative
+with no quantities on its next two proposals. So:
 
 - A sheet asking for a price per partition type is answerable by a minority and unanswerable by most
   of a bid list, which is why the schedule still collapses for pricing.
@@ -459,8 +467,8 @@ two others. So:
   the only place the framing boundary becomes readable line by line, and the answer is not constant
   within a wall family: in one such takeoff some marks carry board, insulation, vapor barrier,
   resilient channel and tape with no studs at all, meaning the framing is someone else's; some carry
-  metal stud with top and bottom track alongside the board; and one carries wood studs and double
-  wood plates at the same linear foot rate the bidder uses for metal.
+  metal stud with top and bottom track alongside the board; and some carry wood studs and double wood
+  plates at the same linear foot rate the bidder uses for metal.
 
 It remains true that what varies bidder to bidder is rarely which partition types are included. It is
 whether the framing of that family is in this package at all, whether the framing is theirs or the
@@ -564,7 +572,7 @@ Give each of these its own line.
   definition of a row that must exist.
 - Mock-ups, split by kind: an interior in-place mock-up, an apartment unit mock-up named as the
   instrument that establishes the acceptable level of finish, a visual exterior mock-up, and an
-  exterior performance mock-up. One proposal carries the first three and excludes the fourth, three
+  exterior performance mock-up. A proposal can carry the first three and exclude the fourth, some
   bidders exclude mock-ups by name, and the obligation is sometimes in the owner's clarifications
   exhibit rather than in the drywall documents.
 - Exterior and roof-level work, on any building with a metal-framed portion: balconies, canopies,
@@ -573,16 +581,17 @@ Give each of these its own line.
 - The existing-conditions block on renovation and conversion work: patching and repair of existing,
   furring and boarding the far side of existing-to-remain construction, wrapping existing plaster
   columns and beams, topping off existing walls and columns, infilling existing shafts, and prep of
-  existing surfaces to receive new finishes. On one project a single alternate for wrapping existing
-  beams was worth more than a third of the base bid and on another about a seventh with its plywood
-  leg adding a fourteenth on top, so this block is not a detail. Section 3's gap list carries the rest
+  existing surfaces to receive new finishes. A single alternate for wrapping existing beams has been
+  worth more than a third of a base bid, and about a seventh elsewhere with its plywood leg adding a
+  fourteenth on top, so this block is not a detail. Section 3's gap list carries the rest
   of it.
 - Hoisting, staging, loading and cleanup, as its own block, and specifically whether the labor doing
   the loading and cleanup is union and who supplies it.
 - Patching and go-backs, with an explicit stated basis, per section 6.
-- The bidder's assumed stud deflection limit, varied by what the wall receives. One bidder states the
-  loosest limit for paint, tighter for tile and tightest for stone. It decides what stud a bidder
-  buys, it is invisible in any total, and no other proposal states it.
+- The bidder's assumed stud deflection limit, varied by what the wall receives: the loosest limit for
+  paint, tighter for tile, tightest for stone. It decides what stud a bidder buys and it is invisible
+  in any total. Rare, and stated by at least one bidder while every competitor is silent, which is
+  the case for asking the whole list.
 
 ### What collapses
 
@@ -617,11 +626,11 @@ Applied to drywall, the test fires hardest on ownership rather than on geometry:
 section 5, on the insulation block, and on the counted installs. It fires weakly on partition
 geometry, which is why the type schedule collapses for pricing.
 
-The fourth outcome, carried in part, is real and the three-outcome form misses it. One bidder carries
-one coat of tape at penetrations in rated and sound walls and excludes the sealant, so the
-penetration is neither included nor excluded but split by operation. One carries the framing for cove
-and perimeter lighting with the lighting excluded. One carries a recessed television niche for
-framing and blocking only. A partial answer must name the operation boundary, not the geometry.
+The fourth outcome, carried in part, is real and the three-outcome form misses it. Some carry one
+coat of tape at penetrations in rated and sound walls and exclude the sealant, so the penetration is
+neither included nor excluded but split by operation. Some carry the framing for cove and perimeter
+lighting with the lighting excluded. Some carry a recessed television niche for framing and blocking
+only. A partial answer must name the operation boundary, not the geometry.
 
 The test also tells you when silence is a finding. Insulation is the clearest case. A proposal that
 says nothing about insulation on a project whose wall types carry it is not including it, and a
@@ -641,7 +650,7 @@ Standing, on any building type:
 
 - Firestopping, sealing and acoustical sealing of MEP penetrations. Excluded from every base bid
   seen, on every project, by every bidder. The most reliable gap in the trade, and it is no longer
-  unpriceable: two competitors on one project carry it as a named priced alternate within about five
+  unpriceable: competitors on one bid list carry it as a named priced alternate within about five
   percent of each other, at roughly one to one and a half percent of a drywall base, and it can be
   bought back rather than plugged.
 - Interior non-load-bearing partition framing. Which package builds it is unresolved at leveling on
@@ -649,7 +658,7 @@ Standing, on any building type:
   instruction to ask. See section 5.
 - The insulation block, by material and by location. The largest plug and the only one most sheets
   enter. Note the direction runs both ways: subtracting what a broad bidder carried is the same
-  arithmetic as adding what a narrow bidder omitted, and one estimator normalizes downward across a
+  arithmetic as adding what a narrow bidder omitted, and estimators do normalize downward across a
   whole sheet.
 - Counted installs at a rate: hollow metal frames, access panels flanged and taped-in, fire
   extinguisher cabinets. No schedule exists at bid time, so the bidder authors a count and the
@@ -679,24 +688,27 @@ Standing, on any building type:
   the laborer steward in the same document.
 - The commercial adders: bond, general liability where there is no owner-controlled program, warranty
   term, sales tax, tariffs, and the project portal fee.
-- Workforce and diversity participation goals, where a stated goal is a bid condition. One bidder
-  prices a fifty percent participation goal at about four percent of its base.
+- Workforce and diversity participation goals, where a stated goal is a bid condition. A stated
+  participation goal can be priced at about four percent of base.
 
 On a conversion or any building with existing fabric to meet, add:
 
-- Tin ceilings and the surface-mounted furring for them. Answered No by every bidder on one project,
-  with the estimator plugging an allowance per building level onto every column.
+- Tin ceilings and the surface-mounted furring for them. On the conversion that carries them they
+  are excluded by every bidder that names them, and the estimator plugs an allowance per building
+  level onto every column. They are not always a gap: elsewhere they arrive priced, as an add
+  alternate at two named ceiling marks with a flat trim at the perimeter. Ask before assuming
+  either.
 - Existing plaster and lath, and patching of existing surfaces.
-- The fire rating of an existing terra cotta ceiling system. The general contractor carries a
-  separate allowance for it, above the trade rather than inside it.
+- The fire rating of an existing terra cotta ceiling system, which the general contractor may end up
+  carrying as a separate allowance above the trade rather than inside it.
 - Topping off existing walls and columns.
 - Furring to existing exterior walls, column enclosures, wrapping existing beams, and infill where
   construction was removed.
 - Frame installation in concrete and masonry walls, excluded by name and materially large on an
   existing concrete-framed building.
 - Seismic anchorage into existing masonry, with new blocking to match existing joist depth and pull
-  tests of drilled and epoxied anchors. This lands in the drywall tab on one project while the
-  structural package excludes the same two details by name, at a different count. It is a documented
+  tests of drilled and epoxied anchors. This can land in the drywall tab while the structural package
+  excludes the same two details by name, at a different count. It is a documented
   reassignment rather than a gap and therefore a live double-count risk.
 
 Every item in that block is either excluded by every bidder that names it or carried by exactly one,
@@ -707,8 +719,8 @@ On a building framed in load-bearing light gauge or prefabricated panels, add:
 - Blocking and drywall nailers inside supplied panels, excluded by every panel supplier by name and
   assigned by one of them to the drywall contractor, while every drywall bidder bounds its blocking
   to what is shown.
-- Extra studs where board spacing needs them. One supplier states in writing that it will not
-  guarantee stud locations suit board spacing.
+- Extra studs where board spacing needs them. At least one supplier states in writing that it does
+  not guarantee stud locations suit board spacing.
 - Backer rod and caulking between panels, and the panel-to-panel joint itself, excluded by every
   supplier and claimed by nobody.
 - Sheathing joint and penetration treatment, staggered joints between floors and panels, patching
@@ -737,22 +749,23 @@ no other package carries it, the exclusion is a gap.
 | Doors and hardware installation, with hollow metal frame install usually kept (most bidders) | Door and hardware installer, or a priced alternate back to this bidder. On conversions a minority carry the doors and hardware too |
 | Acoustical ceiling tile and associated clips and trims (commonly on multifamily, rarely elsewhere) | Ceilings contractor, and see section 5 |
 | Spray foam, blown, rigid and fire-retardant insulation (commonly, even by bidders carrying batt) | Insulation specialist, or unassigned. Rigid comes back where it sits behind board |
-| Air and vapor barrier work, waterproofing, exterior Z-girts and rainscreen support (commonly) | Envelope contractor. One bidder draws the boundary as outbound of a named layer rather than as a product list, which is sharper and testable |
+| Air and vapor barrier work, waterproofing, exterior Z-girts and rainscreen support (commonly) | Envelope contractor. Some draw the boundary as outbound of a named layer rather than as a product list, which is sharper and testable |
 | Putty pads at electrical boxes (commonly) | Electrician, or unassigned, and easy to lose |
-| Proprietary firestop track at head of wall, with slotted deflection track qualified instead (some bidders) | Nobody. This is a product deviation disguised as an exclusion, and one bidder excludes all firestop track outright |
+| Proprietary firestop track at head of wall, with slotted deflection track qualified instead (some bidders) | Nobody. This is a product deviation disguised as an exclusion, and a minority exclude all firestop track outright |
 | Access panel material, install kept (most bidders) | Mechanical or plumbing supplier. A minority exclude the installation as well |
 | Corner guards, wall protection and Division 10 specialties (about half) | Specialties contractor, or unassigned |
 | FRP and fabric or acoustic wall panels (about half, while the other half carry them; on some bid lists excluded by every bidder) | Contested with painting and specialties, a recurring double-count, and on some projects unassigned |
 | Patching and repair of existing walls, and prep of existing surfaces (commonly, on renovation) | Unassigned, and a real gap on any renovation or conversion |
 | Furring and board on the far side of existing-to-remain construction (some bidders) | Unassigned |
 | Masonry and CMU partitions and associated firestopping (some bidders) | Mason |
+| Sound and fireproofing, and spray-applied fireproofing with its patching and repair (commonly, and a standing line in several printed blocks) | Fireproofing specialist, or unassigned. Distinct from the head-and-base firestopping this trade does carry, and easy to lose because the two read alike |
 | Gypsum floor underlayment and gypcrete (commonly) | Underlayment contractor, who bids it as its own trade |
 | Engineering, stamped shop drawings and delegated design for cold-formed framing (about half; the other half include it) | Specialty engineer, and a real cost either way |
-| Dumpster, disposal and trash chute (excluded by every bidder seen; debris is brought to a central location or to a GC dumpster) | General contractor. One bidder also excludes walking trash down stairs |
+| Dumpster, disposal and trash chute (excluded by every bidder seen; debris is brought to a central location or to a GC dumpster) | General contractor. Walking trash down stairs is excluded by name too |
 | Permits, fees, police details, temporary heat, power, light, water and toilets (excluded by every bidder seen) | General contractor. Printed on the form, house terms, and carries no project information |
 | Bond, unless requested (most bidders) | Priced as an alternate, and see the rate note below |
 | Sales tax (a minority exclude it while most include it; on some bid lists nobody excludes it) | A silent and material difference at leveling where it is live |
-| Off hours, overtime, weekend and out-of-sequence work (commonly) | General contractor. One bidder reverses it and includes premium time in the base to meet the schedule |
+| Off hours, overtime, weekend and out-of-sequence work (commonly) | General contractor. Reversed once, with premium time included in the base to meet the schedule |
 | Snow removal above a stated depth (a printed house term on several bidders' forms) | General contractor |
 | Post-installed expansion anchors, with powder-actuated fasteners used instead (some bidders) | A deviation, not a gap |
 | Steel decking, misc metals and connection angles (some bidders, on renovation) | Misc metals contractor. On a panelised job a drywall bidder can carry the composite deck instead |
@@ -778,29 +791,29 @@ share proposal forms, terms and exclusion wording down to the perimeter clearanc
 snow-depth line, the seven-day material validity, the retainage term and an identical alternate title
 for the same plug, and their prices for that plug land within about five percent of each other. Two
 unrelated bidders in a structural pool carry a word-for-word identical non-obligation sentence with
-only the company name changed. One bidder quotes the identical blended change-order hourly rate on
-two projects two years apart, unescalated. Read boilerplate for the trade map, not for the project.
+only the company name changed. A blended change-order hourly rate can arrive identical on two
+projects two years apart, unescalated. Read boilerplate for the trade map, not for the project.
 
-Boilerplate can imitate project signal, and this is the trap. One bidder's hoisting exclusion names
-the three specific floors a forklift can reach, and the identical parenthetical naming the same three
-floors appears on its proposal for an unrelated building of a different height. A reader who treats a
-specific floor list as evidence that the bidder walked the site will be wrong. On the same form the
-labor-zone field does change between projects, so one field on one page carries project signal and
-its neighbor does not.
+Boilerplate can imitate project signal, and this is the trap. A hoisting exclusion can name the three
+specific floors a forklift can reach and then carry the identical parenthetical, naming the same
+three floors, onto an unrelated building of a different height. A reader who treats a specific floor
+list as evidence that the bidder walked the site will be wrong. On the same form the labor-zone field
+does change between projects, so one field on one page carries project signal and its neighbor does
+not.
 
-Boilerplate also contradicts itself, and it does so identically across projects. One bidder's
-inclusion bullet claims sealants and firestopping at the tops of walls and at penetrations while its
-own exclusion block carries no sealants at drywall and no fire proofing, on four unrelated projects,
-in the same words, against competitors who all exclude penetrations. That is a boilerplate
-contradiction, not a project read, and it is a contested reading to route upstream rather than an
-inclusion to level. The same bidder's blocking bullet answers the same question oppositely on its two
-projects.
+Boilerplate also contradicts itself, and it does so identically across projects. An inclusion bullet
+claiming sealants and firestopping at the tops of walls and at penetrations can sit above an
+exclusion block carrying no sealants at drywall and no fireproofing, in the same words on four
+unrelated projects, against competitors who all exclude penetrations. That is a boilerplate
+contradiction rather than a project read, and it is a contested reading to route upstream rather than
+an inclusion to level. The same bidder's blocking bullet can answer the same question oppositely on
+its two projects.
 
 Two shapes that look like an alias and are not. A company that renames itself between two rounds of
 one project, estimate number and scope otherwise unchanged, which any name-keyed ranking reads as two
-bidders. And two bids on one project from two different companies a round apart, signed by the same
-estimator and carrying the same numbered qualification and exclusion structure, the same phrasing and
-the same spelling errors, because the estimator changed firms between rounds and took the template.
+bidders. And two bids a round apart from two different companies, signed by the same estimator and
+carrying the same numbered qualification and exclusion structure, the same phrasing and the same
+spelling errors, because the estimator changed firms between rounds and took the template.
 Leveling those two as independent market opinions is wrong.
 
 What is project signal, because it is written for this set and appears nowhere else in that bidder's
@@ -826,8 +839,8 @@ other proposals:
   drawings, or because it appears in no finish schedule at all. When a bidder refuses to price rather
   than guessing, that is a documents problem to fix, not a bidder to penalize. Each of those is a
   pre-written request for information.
-- A scope line that discloses its own ambiguity while carrying the work. One bidder carries the
-  corridors and writes in the same line that the assembly is not clear. That is priced work and an
+- A scope line that discloses its own ambiguity while carrying the work, as in carrying the corridors
+  and writing in the same line that the assembly is not clear. That is priced work and an
   open question at once, and it is RFI-grade.
 - Any exclusion naming a condition unique to the project: an operating tenancy, a historic element, a
   podium level, a second building.
@@ -840,16 +853,16 @@ order. Treat each as a constraint the scope must either honor or price around.
 - Labor type, stated as union, open shop, prevailing wage, or a named mix by operation. Among the
   largest drivers in the trade, and see sections 6 and 7.
 - A geographic labor zone and a residential versus commercial rate classification, stated on the face
-  of the proposal. Bidders on one project can state different zone numbers for the same town, and
-  both zones are rate-setting.
+  of the proposal. Two bidders can state different zone numbers for the same town, and both zones are
+  rate-setting.
 - A continuous schedule without demobilization or remobilization, sometimes with the start and
-  substantial completion months named. Phasing a job that was priced continuous is a change, and one
-  bidder writes phasing into its exclusions outright.
+  substantial completion months named. Phasing a job that was priced continuous is a change, and
+  phasing gets written into an exclusion list outright.
 - Site access for material handling: a stated perimeter clearance in feet for forklift and boom lift
   with the price subject to change if it is not provided, a dedicated hoist, a loading dock, or an
   open window on each floor to load full-height board through. Every bidder assumes one of these and
-  several make it explicit. One loads through a window removed and replaced by others, which is a
-  cost nobody else names.
+  several make it explicit. At least one loads through a window removed and replaced by others, which
+  is a cost nobody else names.
 - A delivery window, in one case between four and seven in the morning, for full-height stud and
   ten-foot board.
 - Sequencing conditions written as scope: fire taping above ceilings completed before the mechanical
@@ -861,8 +874,8 @@ order. Treat each as a constraint the scope must either honor or price around.
   projects state it. It is a gate on another package's delivery, and violating it converts framing
   into rework.
 - Level of finish defaults, as set out in section 3. These are the bidder's interpretation of the
-  specification and they vary. One bidder defines Level 4 against a named industry finish standard
-  and states that no skim coat is included at Level 4.
+  specification and they vary. Level 4 gets defined against a named industry finish standard, with
+  the bidder stating that no skim coat is included at that level.
 - Joint compound type. Qualifying ready-mix or all-purpose compound in place of the specified
   setting-type compound is a market habit rather than a one-bidder note, seen from several bidders
   across projects. It reads as a minor note and it is a specification deviation.
@@ -882,8 +895,8 @@ order. Treat each as a constraint the scope must either honor or price around.
 - Whether itemized line prices are commitments. A common disclaimer says line prices are for
   reference only and are void if the whole scope is not awarded, which means the breakout you are
   leveling on is not a unit price.
-- Bonding capacity as an eliminating gate. One bidder discloses a single-project bonding limit below
-  its own base bid, with a total bonded aggregate under twice it, and offers to raise capacity if the
+- Bonding capacity as an eliminating gate. A bidder can disclose a single-project bonding limit below
+  its own base bid, with a total bonded aggregate under twice it, and offer to raise capacity if the
   project is split into phase-based contracts. No leveling sheet has a row for it.
 - A discount conditional on a multi-trade award across several packages, which makes any
   single-package ranking conditional in a way a qualification cannot express.
@@ -900,10 +913,10 @@ order. Treat each as a constraint the scope must either honor or price around.
 - Bond rates. Most bid lists cluster between about one percent and one and a half percent of
   contract, and one bid list spans about four to one from well under one percent to two and a half,
   with a verbal quote elsewhere at three to four. What actually defeats a single plugged rate is not
-  the market range but that the rate moves with contract size inside one bidder's own pricing: one
-  bidder quotes about one percent on the larger building and about one and four tenths on the smaller
-  in one document. Carry each bidder's stated rate.
-- The standard of acceptance for taping. One scope sheet requires the drywall contractor to correct
+  the market range but that the rate moves with contract size inside a single bidder's own pricing,
+  at about one percent on a larger building and about one and four tenths on a smaller one in the
+  same document. Carry each bidder's stated rate.
+- The standard of acceptance for taping. A scope sheet can require the drywall contractor to correct
   work and taping until approved by the painter, which puts the acceptance test in another trade's
   hands rather than in a finish level.
 
@@ -927,28 +940,29 @@ carpenter framed is excluded.
 Three separate things get collapsed into the idea that the drawings do not draw the line, and they
 need different handling.
 
-- Where the drawings do address it, the disciplines can disagree. One bidder writes that the
-  architectural drawings show all first-floor units as podium units while the structural drawings
-  show the majority of those units within the wood frame, and states that its delineation is taken
-  from the structural drawings. A second writes that the interior wood-framed walls are determined by
-  the architectural wall types and the bearing walls shown on the structural narrative plans. A third
-  reads the regime off the set and states it floor by floor. Which discipline a bidder trusts decides
+- Where the drawings do address it, the disciplines can disagree, and bidders say which side they
+  took. The architectural drawings show all first-floor units as podium units while the structural
+  drawings show the majority of those units within the wood frame, and a bidder will state that its
+  delineation is taken from the structural set. Others write that the interior wood-framed walls are
+  determined by the architectural wall types and the bearing walls by the structural narrative plans,
+  or read the regime off the set and state it floor by floor. Which discipline a bidder trusts decides
   what package it priced. That is a documents conflict to route upstream, not a leveling judgment,
   and it is the highest-value thing a drywall read can find on a podium building.
 - Where the drawings are silent about ownership rather than about construction, the line follows the
-  buyout rather than the construction. One bidder confirmed in writing that the non-bearing metal
-  partitions would simply move into its rough framing proposal if the drywall package went elsewhere.
-  Another carried the wood-framed-area non-bearing partitions as wood inside its drywall package. A
-  third had the general contractor instruct that the base price include metal in lieu of wood. The
-  same company can hold both sides of the seam in two proposals filed under one trade token.
+  buyout rather than the construction. Bidders confirm in writing that the non-bearing metal
+  partitions would simply move into their rough framing proposal if the drywall package went
+  elsewhere; carry the wood-framed-area non-bearing partitions as wood inside a drywall package; or
+  are instructed by the general contractor that the base price is to include metal in lieu of wood.
+  The same company can hold both sides of the seam in two proposals filed under one trade token.
 - Where the structure is light gauge, the counterparty is not a carpenter at all. See section 1.
 
 Non-load-bearing interior partitions are the contested zone and both trades bid them. What the market
 does not have is a settled price for that, and the received idea that it does is wrong. Where the
 alternate names one tightly defined wall class, two bidders can land within about three percent of
-each other. Where the question is asked open, four bidders answer four ways: one includes it and
-discloses a material and labor split, two exclude it and price adds that differ from each other by
-about two and a half times, and a fourth prices its base assuming those walls are wood and by others.
+each other. Where the question is asked open, a bid list of four answers it four ways: some include
+it and disclose a material and labor split, some exclude it and price adds that differ from each
+other by about two and a half times, and some price the base assuming those walls are wood and by
+others.
 Four bidders answering one clearly defined top-floor descope alternate still spread about two and a
 half to one. Those are four different packages under one name, and the spread is a definition failure
 rather than a market price.
@@ -961,14 +975,14 @@ sheet usually carries: it covers unit interior partitions and wood-framed shaft 
 walls meaning demising and corridor walls are outside it, and all blocking associated with the
 non-load-bearing walls is inside the same breakout.
 
-The estimator asserts an assignment and the bidders do not follow it. On one framing package's own
-sheet the notes read "assume by drywall" and "not in contract, by the drywall subcontractor" while
-the drywall sheet in the same workbook leaves the same question open, and it is still open on that
-project's next round two years later. On another the sheet row carries six different answers from six
-bidders: two explicit instructions to ask, one phone confirmation, one cross-package inference from
-the same bidder's own carpentry quote, one estimator valuation, and one bidder simply assuming wood.
-Under a light gauge regime an estimator's own model carries a stated fraction of the non-bearing
-walls, about a third, because the system takes the rest. Get this decided before you level anything.
+The estimator asserts an assignment and the bidders do not follow it. A framing package's own sheet
+carries notes reading "assume by drywall" and "not in contract, by the drywall subcontractor" while
+the drywall sheet in the same workbook leaves the same question open, and it can still be open on the
+next round two years later. A single sheet row can carry six different answers from six bidders: two
+explicit instructions to ask, a phone confirmation, a cross-package inference from the same bidder's
+own carpentry quote, an estimator valuation, and a bidder simply assuming wood. Under a light gauge
+regime an estimator's model carries a stated fraction of the non-bearing walls, about a third,
+because the system takes the rest. Get this decided before you level anything.
 The base bid of a bidder who assumed wood framing and the base bid of one who assumed metal are not
 the same package.
 
@@ -989,9 +1003,9 @@ Painting's boundary with drywall is contested in both directions, and it can col
 - Painting of patch work. At least one drywall bidder prices not only the patching but the painting
   of its own patch work, at roughly half its patching rate. That work is also inside the painter's
   scope on the same project, so it can be bought twice.
-- The seam can collapse. One base bid carries one coat of a named primer and sealer on all smooth
-  walls, then sanded. One estimate carries interior painting as a second priced line. One drywall
-  proposal prices painting at more than a third of a building's total. That is not a seam, it is a
+- The seam can collapse. A base bid can carry one coat of a named primer and sealer on all smooth
+  walls, then sanded; an estimate can carry interior painting as a second priced line; and a drywall
+  proposal can price painting at more than a third of a building's total. That is not a seam, it is a
   package boundary that moved, and any sheet that ranks it against drywall-only bids ranks two
   different scopes.
 - Level 5 at wall covering locations. This is a drywall row on every issued sheet, and it is the
@@ -1000,20 +1014,20 @@ Painting's boundary with drywall is contested in both directions, and it can col
 - Wallcovering termination trims, fry reglets, outside corner trims and inside corner trims. The
   painting side records these as excluded by the painter and belonging to drywall, installed before
   the wallcovering. From this side they are excluded by name and detail number in one round and
-  priced as a trim alternate in the next, and on one project excluded by the drywall bidder outright,
+  priced as a trim alternate in the next, and sometimes excluded by the drywall bidder outright,
   which leaves them assigned to nobody. Put them on their own line.
 - FRP, textile, felt and acoustic panels. The painting side records the estimator assigning these to
   drywall. From this side, some drywall bidders carry FRP by manufacturer and product code in the
-  base, one carries acoustic panels in named rooms, and others exclude wall protection and fabric
+  base, some carry acoustic panels in named rooms, and others exclude wall protection and fabric
   panels wholesale, while a printed exclusion block can exclude FRP on one page while the pricing
   table carries it on another. On some bid lists every bidder excludes it and the estimator's own
   cell is a question mark.
 - A cross-package deletion can delete drywall scope with no drywall adjustment. A painting-sheet
   deduct removing the wall covering also removes the reason the Level 5 finish and the wallcovering
   trims exist, and no drywall column moves.
-- Acceptance. One scope sheet makes the drywall contractor correct its taping until the painter
+- Acceptance. A scope sheet can make the drywall contractor correct its taping until the painter
   approves it, which is the only place in either trade where the seam is written as an acceptance
-  test rather than a scope split.
+  test rather than a scope split. Rare, and worth asking for by name.
 
 ### Acoustical ceilings
 
@@ -1051,29 +1065,37 @@ drywall rather than as a delta from the ceiling package, so level it as two sepa
   drywall, nearly always, and usually bounded to metal-framed walls. The bound varies: by substrate,
   excluded at concrete and masonry openings; by floor, first floor only; by corridor only. Doors and
   hardware are excluded by most and offered back as a counted alternate by some, and on conversions
-  carried outright by a minority. Frame grouting or stuffing is excluded by name. Split jamb interior
-  unit frames go to another trade, and unit entry knock-down frames can go to finish carpentry.
+  carried outright by a minority. Frame grouting or stuffing is excluded by name. One bidder states
+  the underlying rule outright, on two of its own proposals: the material of the frame, not the leaf,
+  decides it, so doors are carried where they sit in hollow metal frames and excluded where they sit
+  in wood, with the wood frames and their doors going to finish carpentry along with unit entry
+  knock-down frames. Only that one bidder writes it down, so treat it as a reading to confirm rather
+  than as the market's rule, and note what it implies if it holds: the drywall contractor hangs the
+  hollow metal openings on a job where finish carpentry hangs every other door in the building.
+  Estimators do not treat the boundary as settled either way. The door and hardware install row
+  carries a question about its counterparty on three separate sheets, once as a cell asking whether
+  the trim on hollow metal frames is the finish carpenter's.
 - Access panels. Material by others, install by drywall, and the price depends on type: taped-in
   panels cost more than flanged and are quoted as an upcharge per panel, running about half again to
   about twice the flanged rate. Bidders carry allowance counts because no schedule exists at bid
   time, and the estimator carries its own count and rate. Two independent counts of the same panels
   is normal and three occurs, with the outlier about a quarter below the other two.
 - MEP penetration firestopping. Excluded from every base bid seen. Drywall seals the head and base of
-  the walls it built and stops, and one bidder answers the row with the words "head and base only,
-  penetrations by others", which is the whole seam in six words. Whether anyone else picked it up is
-  a question worth asking on every project, and on one project the general contractor's own answer to
-  the owner assigns it to the mechanical, electrical and plumbing trades. It is now purchasable as a
-  named alternate on both sides, as an add for all wire and pipe penetrations or as a deduct against
-  a base that carries top-of-wall and slab-edge firestop. One bidder splits it by operation, taping
+  the walls it built and stops, and the row comes back answered "head and base only, penetrations by
+  others", which is the whole seam in six words. Whether anyone else picked it up is a question worth
+  asking on every project, and it has been answered once in a general contractor's own reply to an
+  owner, which assigned it to the mechanical, electrical and plumbing trades. It is now purchasable
+  as a named alternate on both sides, as an add for all wire and pipe penetrations or as a deduct
+  against a base that carries top-of-wall and slab-edge firestop. Some split it by operation, taping
   the penetration and excluding the sealant.
 - Insulation. It splits four ways in practice: batt and mineral wool with drywall; spray and blown to
   a specialty applicator, though a minority carry closed-cell and spray-applied foam inside the
   drywall base; rigid and thermal-break insulation with the envelope, except where the rigid sits
   behind board and then it goes with the board; and stud-pack, jamb and header insulation
   factory-installed by a panel supplier. Structural thermal break is excluded by everyone. A bidder
-  can carry batt in the base and exclude all other insulation in the same document, and one splits it
-  inside a single bid by carrying wall insulation and excluding all ceiling insulation. On one job the
-  same spray foam scope sits in three places at once: a drywall base, a specialist's own tab, and a
+  can carry batt in the base and exclude all other insulation in the same document, and some split it
+  inside a single bid by carrying wall insulation and excluding all ceiling insulation. The same spray
+  foam scope can sit in three places at once: a drywall base, a specialist's own tab, and a
   separate applicator's bid.
 - The vapor retarder splits by side of the assembly rather than by trade: the interior side carried,
   the exterior side excluded, in one document. A smart vapor retarder under the interior board at
@@ -1091,16 +1113,18 @@ drywall rather than as a delta from the ceiling package, so level it as two sepa
   composite floor deck and pour stop.
 - Masonry. CMU partitions and elevator shafts are excluded by drywall and belong to the mason, and
   furring at masonry walls is a drywall row that at least one bidder offered to delete as a deduct.
-- Tile. Taping at tile substrates is excluded by name by one bidder and assigned to the tile
-  installer. No scope sheet asks who tapes them.
-- Plaster and ornamental restoration, on a historic building. The dominant contested seam there. One
-  bidder carries plaster walls at a named wall type inside its drywall bid, one excludes all plaster,
-  plaster patching, repair and restoration and all patching, and one bids plaster and plaster systems
-  as its own numbered proposal. Both drywall bidders also exclude the glass-fiber-reinforced
-  ornamental work and the estimator asks for a deduct alternate to compare it against the finish
-  carpentry package, so it is an open gap with a named alternative counterparty and no bidder.
-- Acoustical sealant that must be done before or during wood framing leaves the drywall package by
-  name, which splits the sealant scope on a sequence boundary rather than a location one.
+- Tile. Taping at tile substrates gets excluded by name and assigned to the tile installer. No scope
+  sheet asks who tapes them.
+- Plaster and ornamental restoration, on a historic building. The dominant contested seam there, and
+  it is answered three ways on one bid list: plaster walls at a named wall type carried inside a
+  drywall bid, all plaster and plaster patching and repair and restoration excluded outright, and
+  plaster and plaster systems bid as their own numbered proposal. The glass-fiber-reinforced
+  ornamental work is excluded by the drywall bidders and the estimator asks for a deduct alternate to
+  compare it against the finish carpentry package, so it is an open gap with a named alternative
+  counterparty and no bidder.
+- Acoustical sealant that must be done before or during wood framing can leave the drywall package
+  by name, which splits the sealant scope on a sequence boundary rather than a location one. Rare,
+  and it is worth asking because the split is by sequence rather than by location.
 - Labor jurisdiction over material handling. Not a scope seam but priced like one, and it appears on
   no drawing. The instruments vary: two priced union adds, one for cleanup only and one for cleanup
   and off-loading, differing from each other by about seventy percent to about a factor of two; two
@@ -1110,8 +1134,8 @@ drywall rather than as a delta from the ceiling package, so level it as two sepa
   scales with access difficulty rather than contract size, from about a seventieth of a large
   downtown conversion to about a tenth or an eighth of a package elsewhere, and the larger add can be
   several times and up to about nine times the same bid list's penetration firestop alternate. A
-  detail that decides who is even paying: on one project the loading laborers are supplied by the
-  board supplier, not by the drywall subcontractor. A union grant can appear as a negative line
+  detail that decides who is even paying: the loading laborers can be supplied by the board supplier
+  rather than by the drywall subcontractor. A union grant can appear as a negative line
   between a proposal's total and its final total.
 - Corner guards, fire extinguisher cabinets and expansion joint covers. Install-only, material by
   others, and carried by some bidders and excluded by others.
@@ -1133,8 +1157,8 @@ What drywall contractors actually price from, in descending order of what they c
 2. The reflected ceiling plans and the ceiling assembly details. The second document, and the source
    of the long tail of ceiling rows in section 3. Bidders cite individual detail numbers here more
    than anywhere else in the set. Where there are none, the responses are not comparable at any
-   price: one bidder excludes every unit drop ceiling and soffit by name for that reason and another
-   reconstructs the whole ceiling scope from a horizontal assemblies sheet, mark by mark, level by
+   price: some exclude every unit drop ceiling and soffit by name for that reason, and some
+   reconstruct the whole ceiling scope from a horizontal assemblies sheet, mark by mark, level by
    level, room by room.
 3. The interior assembly details and the fire rating sheets, for rating continuity, drywall lids and
    fire tops at the head of non-bearing walls, and rating maintenance behind recessed items. Whether
@@ -1142,8 +1166,8 @@ What drywall contractors actually price from, in descending order of what they c
    resolved in writing by one bidder as a numbered qualification and addressed by no competitor.
 4. The structural drawings, which are first-class wherever the framing regime is in play and not only
    on a podium. They and the architectural set can disagree about which floors are wood and which are
-   not, and a bidder will say which one it followed. Structural bidders price off the structural
-   framing plans and off their own marked-up versions of them.
+   not, and bidders say which one they followed. Structural bidders price off the structural framing
+   plans and off their own marked-up versions of them.
 5. Unit plans and the unit count, for repetition and for the per-unit rates that patching and
    go-backs are quoted in. The unit count itself is contested: bidders and general contractors
    disagree about it and one general contractor's own workbook uses a count that differs from the
@@ -1166,11 +1190,11 @@ What drywall contractors actually price from, in descending order of what they c
 They do not price from a room-by-room takeoff. Measured takeoffs exist and are more available than
 they look, but the normal pricing method is wall family plus area plus assembly plus judgment.
 
-A drawing set can also be unreadable in monochrome. One architect's title block warns that the
-legibility of performance criteria and detailing scope requires the drawings be viewed or printed in
-color, and suppliers define their own package boundaries by color-coded markups whose legend colors
-are near-identical. A monochrome print of either the contract set or a bidder's own scope drawing
-loses the package boundary.
+A drawing set can also be unreadable in monochrome. At least one architect's title block warns that
+the legibility of performance criteria and detailing scope requires the drawings be viewed or printed
+in color, and suppliers define their own package boundaries by color-coded markups whose legend
+colors are near-identical. A monochrome print of either the contract set or a bidder's own scope
+drawing loses the package boundary.
 
 Not deducible from any drawing, and each of them moves the number:
 
@@ -1178,28 +1202,29 @@ Not deducible from any drawing, and each of them moves the number:
   can leave the package this is the largest single variable, worth a factor of two on a bid.
 - Labor basis. Among the largest single drivers, and the leveling sheets track it on every bidder,
   but it does not order the ranking and it must never be assumed to. Union bidders occupy both ends
-  of a fifteen-column sheet; an open-shop bidder sits third of six above two union bidders; on one
-  project the two union bidders rank last and on another the lowest bidder is union with two open
-  shop bidders above it. On one project there is no overlap at all, three open shop below four union
-  with a step of about a third between them, and that is a correct reading of that bid list and not a
-  rule. The premium is real and, by one estimator's own cross-trade analysis, about a quarter for
-  this trade, near the bottom of a range running to about two thirds across the other trades on the
-  same tab. Scope completeness swamps it.
+  of a fifteen-column sheet; an open-shop bidder sits third of six above two union bidders; the two
+  union bidders on a list rank last, and on the next list the lowest bidder is union with two open
+  shop bidders above it. Where there is no overlap at all, three open shop below four union with a
+  step of about a third between them, that is a correct reading of that bid list and not a rule. The
+  premium is real and, by an estimator's own cross-trade analysis, about a quarter for this trade,
+  near the bottom of a range running to about two thirds across the other trades on the same tab.
+  Scope completeness swamps it.
 - The operation-by-operation labor mix, which is the reason the direction does not hold. The package
   is several labor markets at once, and a bidder can price layout, stud install, blocking, pre-rock
   and hanging at union rates while pricing fire taping, finish taping, patching and insulation open
-  shop, and beat a pure open-shop bidder. This is documented, not inferred: one cost breakdown labels
-  eleven operations individually, five at union rates and four at open shop, with the two ceiling
-  operations union and patching and insulation open shop; another splits by craft and classification
-  at once, carpenters and tapers at residential union rates and laborers at commercial rates; another
-  states union carpentry wages, a union wood-frame taper rate and open shop laborers in one sentence.
+  shop, and beat a pure open-shop bidder. This is documented, not inferred. Cost breakdowns label
+  eleven operations individually, some at union rates and some at open shop, with the ceiling
+  operations union and patching and insulation open shop; split by craft and classification at once,
+  carpenters and tapers at residential union rates and laborers at commercial rates; or state union
+  carpentry wages, a union wood-frame taper rate and open shop laborers in one sentence.
   Moving tapers alone from union to open shop is worth nearly nine percent of a whole package. A
   leveling field with one labor value per bidder cannot represent any of it, every sheet has exactly
-  one such field, and the values in it are demonstrably wrong: the same bidder's identical
-  three-market sentence is recorded as open shop on one project and union on another by the same
-  office; a bidder that states no labor type at all is recorded as union on one project and open shop
-  on another; and one bidder's two complete base bids, one of them explicitly non-union, are both
-  recorded as union in the same cell.
+  one such field, and the values in it are demonstrably wrong: a single bidder's identical
+  three-market sentence gets recorded as open shop once and union the next time by the same office; a
+  bidder that states no labor type at all gets recorded as union once and open shop the next; and
+  two
+  complete base bids from one document, one of them explicitly non-union, both get recorded as union
+  in the same cell.
 - The rate classification, commercial versus residential, and the geographic labor zone. What the
   multiplier is applied to decides its size. On a bare labor rate for the same two operations it runs
   on the order of two thirds, applied as one flat multiplier across operations rather than as an
@@ -1207,15 +1232,16 @@ Not deducible from any drawing, and each of them moves the number:
   a seventh, because material does not change classification. On totals it does not reliably show at
   all: two bidders carrying opposite classifications land within about half a percent of each other.
 - Prevailing wage applicability, and any project workforce or residency requirements. Do not assume
-  its direction either: on one project the general contractor asks for a union residential carpenter
-  rate and for deducts to prevailing wage for tapers and laborers, which makes prevailing wage the
-  cheaper basis there, and a bidder that moved carpenters from prevailing wage up to a union rate cut
-  its total by about a sixth in the same revision.
+  its direction either. It has run the other way once: a general contractor asked for a union
+  residential carpenter rate and for deducts to prevailing wage for tapers and laborers, which made
+  prevailing wage the cheaper basis on that job, and on the same job a bidder that moved carpenters
+  from prevailing wage up to a union rate cut its total by about a sixth in one revision.
 - The labor basis of the solicitation itself, which is a live negotiation and not a property of the
-  drawings or the bidders. On one project the general contractor is union-signatory and is petitioning
-  the union for relief on the drywall and ceilings packages on the grounds of the project size and of
-  being the only signatory firm bidding, so which bidders are eligible is open while bids are being
-  taken. On another the general contractor solicits at the residential rate, a bidder replies that it
+  drawings or the bidders. Seen twice, from opposite ends. A union-signatory general contractor
+  petitioned the union for relief on the drywall and ceilings packages on the grounds of the project
+  size and of being the only signatory firm bidding, so which bidders were eligible stayed open while
+  bids were being taken. Elsewhere a general contractor solicited at the residential rate, a bidder
+  replied that it
   doubts that rate is achievable, and the estimator tells a colleague not to let that bidder spend
   much time on the bid.
 - Whether an owner-controlled insurance program is in place. Bidders quote general liability as a
@@ -1232,23 +1258,23 @@ Not deducible from any drawing, and each of them moves the number:
   value while a competitor applies tax to its whole subtotal.
 - Steel material escalation and the validity period of the price. Material validity in this trade
   runs as short as seven days, and supplier increase letters travel with the proposals.
-- Lead time, which is not only a fabricate-to-order trade's axis. One bidder warns of long lead times
-  for many gypsum products and for mineral wool.
+- Lead time, which is not only a fabricate-to-order trade's axis. Bidders warn of long lead times for
+  many gypsum products and for mineral wool.
 - Hoisting, staging and material handling: whether there is a hoist, a dock, a crane, an open window
   on each floor, a perimeter clear enough for a boom lift, and whether the drywall contractor or the
   general contractor is providing it. A tower crane supplied by the general contractor in place of a
-  bidder's mobile crane is worth a deduct of about three percent of the drywall package and three to
-  four weeks of schedule, stated in writing. Also whether the laborers doing it are union and who
-  supplies them.
+  bidder's mobile crane has been worth a deduct of about three percent of the drywall package and
+  three to four weeks of schedule, stated in writing. Also whether the laborers doing it are union
+  and who supplies them.
 - Schedule continuity and phasing. Bids are priced on a continuous schedule and demobilization is a
-  change. One bidder prices the whole package by phase, which is the only way phasing becomes visible
+  change. Pricing the whole package by phase is rare and it is the only way phasing becomes visible
   before it becomes a claim.
 - Deck heights, on renovation and conversion. Whether an existing building's floor-to-deck dimensions
   match the assumption is worth a lot in stud and board. Publishing the assumption is becoming less
-  rare: two bidders now do it on existing buildings, and on office work one bidder states a deck
-  height on all three of its scopes as routine practice.
-- The condition of what the demolition contractor leaves. One bidder assumes clean and straight
-  edges, which is not a given.
+  rare: bidders now publish it on existing buildings, and on office work at least one states a deck
+  height on every one of its scopes as routine practice.
+- The condition of what the demolition contractor leaves. Bidders assume clean and straight edges,
+  which is not a given.
 - Whether patching and go-backs are expected of this trade, and on what basis.
 - Compliance, which on current work is priced scope and a bid-list filter rather than paperwork. A
   city residents jobs policy with stated workforce hour goals for residents, minority workers and
@@ -1294,8 +1320,8 @@ it.
 Set-stage behavior. At schematic and design development, bidders openly price around missing
 information and say so: the framing is a basis-of-design carry pending delegated design, the installs
 are carried at zero because no schedule exists, the blocking split is flagged as to be confirmed with
-the general contractor, and one bidder tells the estimator outright to inflate its rates for a
-schematic estimate. Treat those as honest rather than as gaps in the bid. By permit, construction-
+the general contractor, and at least one bidder told the estimator outright to inflate its rates for
+a schematic estimate. Treat those as honest rather than as gaps in the bid. By permit, construction-
 document and conformed sets the same bidders switch to citing wall-type ranges, detail numbers and
 counted quantities.
 
@@ -1307,9 +1333,9 @@ set on the project; a bidder calling the design development set a permit set in 
 while citing the right date both times; a cited basis four weeks later than the set's own issue date;
 a proposal citing a plan set dated after the proposal itself; a date written in day-month order so it
 reads as a different month than a competitor's citation of the same set; and a bidder's own form
-leaving every basis field blank so the only dated basis is in the covering emails. On one project four
-dates are in circulation for what everyone calls one construction-document set, and the estimator's
-own buyout sheet cites the drawings and the specifications three days apart. Read the date off the
+leaving every basis field blank so the only dated basis is in the covering emails. Four dates can be
+in circulation for what everyone calls one construction-document set, with the estimator's own buyout
+sheet citing the drawings and the specifications three days apart. Read the date off the
 document, treat the set-stage label as a claim, and where a cited basis is contradicted inside the
 same file, let the correcting correspondence govern. Where two documents cite one basis and are days
 apart, the cited basis orders nothing and only the letterhead date and the filename do.
@@ -1364,15 +1390,15 @@ That last point is worth stating plainly, and it is worse than a matter of judgm
 single leveling currency in this trade, and the denominator is not stable inside one office, inside
 one project, inside one workbook, or inside one sheet. The choice does follow the building loosely:
 office conversions normalize on gross square feet, historic conversions and wood-framed podiums on
-residential units. Beyond that it moves. One project carries four different areas across its
-workbooks, two of them differing by about a quarter, so one bidder's rate per square foot in one
-round is not comparable to the same bidder's rate in the next round of the same project. One workbook
-normalizes the drywall tab per gross square foot and the thermal insulation tab beside it per
-residential unit. One tab changes denominator mid-leveling and two tabs of one workbook end on two
-different denominators, so rates are not comparable between two halves of one trade family on one
-project. Two copies of one sheet carrying the same date, the same bidders and the same bids use gross
-areas differing by about a seventh, and the copy whose filename says it is the memorialized one is not
-the one that matches the working file. And a three-phase total gets normalized on the gross square
+residential units. Beyond that it moves. A single project can carry four different areas across its
+workbooks, two of them differing by about a quarter, so a bidder's rate per square foot in one round
+is not comparable to its own rate in the next round of the same project. A workbook can normalize the
+drywall tab per gross square foot and the thermal insulation tab beside it per residential unit. A
+tab can change denominator mid-leveling, and two tabs of one workbook can end on two different
+denominators, so rates are not comparable between two halves of one trade family. Two copies of one
+sheet carrying the same date, the same bidders and the same bids can use gross areas differing by
+about a seventh, with the copy whose filename says it is the memorialized one not the one that
+matches the working file. And a three-phase total gets normalized on the gross square
 feet of one phase. Name the denominator's quantity source, check it against the workbook's own project
 data, and never carry a rate across rounds without checking that the divisor did not move.
 
@@ -1383,10 +1409,10 @@ Cost drivers, ranked by how much movement they cause:
 2. Whether insulation is inside the package. The largest adjustment wherever the framing cannot
    leave the package, which is most jobs, and the one most sheets actually enter.
 3. Labor basis and the operation-by-operation mix of union, open-shop and prevailing-wage crews. On
-   one conversion the estimator's single adjustment for full union carpenters, tapers and laborers is
-   about two thirds of the low bidder's base bid and is not about scope at all, and one estimator
-   maintains two complete leveling workbooks for one project identical in every scope cell and every
-   bid, differing only in the labor regime, about one and three quarters apart.
+   a conversion the single adjustment for full union carpenters, tapers and laborers can be about two
+   thirds of the low bidder's base bid and be about no scope at all. At least once an estimator has
+   gone further, keeping two complete leveling workbooks side by side, identical in every scope cell
+   and every bid and differing only in the labor regime, about one and three quarters apart.
 4. The rate classification and zone, commercial versus residential, on the affected operations.
 5. Whether the non-load-bearing interior partitions are framed by this trade, by the carpenter, or by
    a panel supplier.
@@ -1401,10 +1427,10 @@ Cost drivers, ranked by how much movement they cause:
    and on a panelised job the choice is made in another package.
 9. On renovation and conversion, the extent of existing construction to wrap, patch, furr, top off or
    infill. A single existing-conditions alternate can exceed a third of a base bid.
-10. Phase character, which sets the labor rate independently of the assembly. One bidder's wall crew
-    rate on temporary-wall and renovation phases is about two and two thirds its new-build rate, and
-    its ceiling crew rate likewise, which is why small enabling and temporary phases price out at
-    multiples of their square footage.
+10. Phase character, which sets the labor rate independently of the assembly. A wall crew rate on
+    temporary-wall and renovation phases can be about two and two thirds the same bidder's new-build
+    rate, and its ceiling crew rate likewise, which is why small enabling and temporary phases price
+    out at multiples of their square footage.
 11. Exterior cold-formed framing extent, and whether delegated design and stamped calculations are in
     or out.
 12. Steel material pricing and escalation exposure.
@@ -1415,15 +1441,16 @@ Cost drivers, ranked by how much movement they cause:
 17. Bond, warranty term, insurance basis, tax treatment, portal fees and workforce participation.
 
 What a full rate card shows, from the few proposals that publish one. Tape and finish is a small
-fraction of the assembly: its material rate is about a twelfth of the board material rate on one card
-and its combined rate about a quarter of the board rate and under a tenth of the labor rate on the
-same square foot on another. The two crew labor rates differ by nearly half between walls and
+fraction of the assembly: its material rate runs about a twelfth of the board material rate, and its
+combined rate about a quarter of the board rate and under a tenth of the labor rate on the same
+square foot. The two crew labor rates differ by nearly half between walls and
 ceilings. Metal stud and top and bottom track can price per linear foot at exactly the rate the same
 bidder uses for wood studs and plates. A uniform waste factor of about five percent is applied to
 every material row, and a combined markup for overhead, profit, tax and insurance is applied to
-direct cost at the bottom. An estimator's own plugs run the same way and give a square-foot ladder:
+direct cost at the bottom. An estimator's own plugs can run the same way and give a square-foot
+ladder:
 podium-level board, framing and insulation at roughly twice the rate of wood-framed-level board and
-insulation on the same project, and non-bearing framing at wood levels at roughly a third of the
+insulation on the same building, and non-bearing framing at wood levels at roughly a third of the
 board-and-insulation rate over the identical area. Three rates, one building, one trade.
 
 On dispersion, and no dollar values are given here. Within-project normalized spreads run from about
@@ -1431,51 +1458,53 @@ one and a fifth to about four times, and bidder counts of real companies run fro
 Neither figure means much on its own, and four cautions matter more than the range.
 
 - Ranking rows overstate the pool badly. Fifteen rows can cover seven companies, eleven rows six
-  companies, and twenty rows can carry eighteen that read no bid. One company can hold three columns,
-  two of them same-date and a few hundred apart at the total; revision labels can be inverted so the
-  later number carries the earlier label; a misfiled duplicate under a second trade token can become
-  a column of its own under a misspelling of the company name; and a ranked column can have no
-  document anywhere in the bid folder, which is the mirror of a priced offer no ranking ever saw.
-  Priced offers that no ranking ever saw are also real, and one of them would have ranked first below
-  the selected bidder.
-- A bimodal field is a definition failure, not a competitive result. On the widest spread in the
-  corpus the field splits into a low band and a band more than twice as high with nothing between
-  them, and the gap tracks whether insulation and full framing are in the number and whether the
-  labor is union. That is several scopes wearing one name. Route it to scope definition, do not
-  compare it.
+  companies, and twenty rows can carry eighteen that read no bid. A single company can hold three
+  columns, two of them same-date and a few hundred apart at the total; revision labels can be
+  inverted so the later number carries the earlier label; a misfiled duplicate under a second trade
+  token can become a column of its own under a misspelling of the company name; and a ranked column
+  can have no document anywhere in the bid folder. Its mirror is real too, a priced offer sitting in
+  the folder that no ranking ever saw, and such an offer has ranked first below the selected
+  bidder.
+- A bimodal field is a definition failure, not a competitive result. At the widest spreads the field
+  splits into a low band and a band more than twice as high with nothing between them, and the gap
+  tracks whether insulation and full framing are in the number and whether the labor is union. That
+  is several scopes wearing one name. Route it to scope definition, do not compare it.
 - A wide spread can be a packaging artefact the breakouts dissolve. Three suppliers' printed totals
-  spread by about a third; once the structural steel one of them silently carried is broken out, two
-  of the three sit within half a percent of each other. Interpret a spread with its cause in both
-  directions.
+  can spread by about a third and, once the structural steel one of them silently carried is broken
+  out, two of the three sit within half a percent of each other. Interpret a spread with its cause
+  in both directions.
 - A tight spread proves nothing about scope. The tightest spreads seen sit on the densest,
   most citation-heavy scope sheets, which is scope definition compressing spread. But they also sit
   on the thinnest sheet over the largest package, and on a sheet carrying three unanswered questions
   in the estimator's own cells and two bidders answering one numbered alternate with opposite signs.
-  Four of six bidders on one project sit within about a seventh of each other while one of them has
-  painting inside its number. Convergence is also selective: two bidders agree within a few percent
-  on all five residential buildings of one project and diverge by two to four times on the clubhouses
-  and the garages, because repetitive work converges and one-off amenity work does not.
+  Most of a bid list can sit within about a seventh of each other while one of them has painting
+  inside its number. Convergence is also selective: two bidders can agree within a few percent on
+  every repeating residential building of a project and diverge by two to four times on the
+  clubhouses and the garages, because repetitive work converges and one-off amenity work does not.
 
 The estimator does not compare base bids. It compares base bid plus adjustments, where adjustments
 are entered per bidder to cover what that bidder left out or carried extra. Where the adjustment is
-entered it decides the order, without exception: a single plug on one row moves a bidder from first
-to third and changes the selection; one bidder's identical stated price occupies three ranking rows
-with three different adjustments spanning about one and seven tenths and moving it from fifth to
-ninth of eleven; the base-bid low bidder is not the adjusted low bidder; and on a buyout sheet the
-selected bidder's base bid is the lowest of three and its adjusted total the highest.
+entered it decides the order, without exception. A single plug on one row moves a bidder from first
+to third and changes the selection. A bidder's identical stated price can occupy three ranking rows
+with three different adjustments, spanning about one and seven tenths and moving it from fifth to
+ninth of eleven. The base-bid low bidder is routinely not the adjusted low bidder, and on a buyout
+sheet the selected bidder's base bid can be the lowest of three with its adjusted total the
+highest.
 
 But adjustment is not the practice, only the right practice. Most leveling sheets enter adjustments
 on a minority of their columns, several enter none at all and rank the field on raw
 base bids while their own scope cells carry question marks, and several enter exactly one plug class
 ever: insulation. Everything else in section 3's gap list is entered on no sheet in some whole
-practices. The insulation plug itself is applied inconsistently: correctly to every column at each
-bidder's own stated value on one sheet, entered against one bidder from an outside package's bid
-while a second bidder's own stated value more than twice that plug is written into the same row and
-never added on another, known and valued and never applied across two rounds on a third, and at a
-figure reconciling to neither of a bidder's two stated breakouts nor their sum on a fourth. The
-direction also runs both ways: on one project the adjustments are mostly subtractions, stripping
-insulation out of the broad bidders rather than plugging it into the narrow ones, which is the same
-arithmetic and the opposite instruction. Read section 3's gap list as a specification for what a
+practices. The insulation plug itself is applied inconsistently, and the four shapes are worth
+knowing because three of them are errors: applied correctly to every column at each bidder's own
+stated value; entered against one bidder from an outside package's bid while a second bidder's own
+stated value, more than twice that plug, is written into the same row and never added; known and
+valued and never applied at all, across two rounds; and entered at a figure reconciling to neither of
+a bidder's two stated breakouts nor their sum, with no note. The direction also runs both ways: on
+one sheet the adjustments are mostly subtractions, stripping insulation out of the broad bidders
+rather than plugging it into the narrow ones, which is the same arithmetic and the opposite
+instruction, so a scope list built only to plug in advance is built the wrong way round for that
+estimator. Read section 3's gap list as a specification for what a
 sheet should ask, because the scope engine's value is highest exactly where the estimator has none.
 
 Selection is decided by scope completeness rather than by price, in both directions. The low column
@@ -1483,11 +1512,11 @@ is selected roughly as often as not. Where it is passed over it is passed over f
 scope: a one-sentence scope statement with no exclusion list, a reconstructed verbal with no document
 at all. Where it is taken it can be the shortest and least specific proposal in the pool, which is
 what happens on a sheet that does not read scope. A general contractor's own budget carried in the
-ranking is not a reliable anchor either: it sits about two fifths below the low bid on one project,
-within one percent of it on another, about a tenth above it on a third, above six of eleven ranking
-rows on a fourth, and on one project it is a schematic-stage figure carried unchanged through two
-later rounds seven months apart, where it is the lowest column and the selected bidder the highest.
-Sometimes it carries no number at all while occupying two of a sheet's three selection slots.
+ranking is not a reliable anchor either. It lands about two fifths below the low bid, within one
+percent of it, about a tenth above it, and above six of eleven ranking rows, on four different jobs.
+It can be a schematic-stage figure carried unchanged through two later rounds seven months apart,
+where it ends as the lowest column with the selected bidder the highest. And it sometimes carries no
+number at all while occupying two of a sheet's three selection slots.
 
 Finally, read the printed total against the breakout in both directions. It can roll alternates and
 siblings in. An estimating system can add a deduct alternate to the base and print the sum, so a
