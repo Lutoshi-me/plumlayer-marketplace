@@ -136,15 +136,72 @@ Nothing was handed over: ask the group above, pre-filled from user defaults
 Being started in a folder, or being pointed at one, is a hand-over: the user put you there on
 purpose, and what is in it is theirs to give. Before opening anything, list what you were handed,
 one level deep, and say what you see.
+
+Check whether the folder already holds `CLAUDE.md` or `AGENTS.md`, and check
+`~/.plumlayer/operator.json` for `instructions.scaffold == "declined"`. If either is true, the
+instructions offer below is off: offer nothing, write nothing, say nothing about it.
+
+Otherwise, fold one more offer into this same ask, so it stays one question group, not a second
+consent step: the folder has no standing instructions telling an agent how to work in it, a short
+starter file means you behave the same way here from the first prompt of every future session and
+never reorganize project files on your own, and the file carries no project specifics, so writing
+it into a git repo is safe.
 <!-- user-facing -->
 "I see the drawing set, a spec folder, two bid tabs and a budget. I'll take the drawings and the
-specs; do you want me to read the bid tabs and the budget too, or leave them?"
+specs; do you want me to read the bid tabs and the budget too, or leave them? Also, this folder has
+no instructions file telling an agent how to work here, so I stay consistent from the start and
+never reorganize your project files on my own. Want me to write a short starter file for that?"
 <!-- /user-facing -->
 The drawings and the project manual you take without asking: they are the job, and step 5 uploads
 them. Anything else in the folder you name and ask about once, then proceed with the answer. Never
 walk above the folder you were handed, into siblings, or into a folder you merely happen to be
 running in when the user named a different one. Never go looking: if nothing was handed over and
 the user has not said where the drawings are, ask where they are.
+
+**If they accept the starter file,** write the scaffold below, verbatim, to whichever file the
+client actually running this session reads: `CLAUDE.md` for Claude Code, `AGENTS.md` for Codex.
+Write exactly one of the two, never both.
+<!-- user-facing -->
+Say in one line what was written and where, and that it is theirs to edit.
+<!-- /user-facing -->
+
+```
+# Project instructions
+
+This folder is the working directory for a construction project.
+
+## Project files
+
+Project drawings, specifications, addenda, estimates, bids, correspondence,
+and other records may be stored in this directory and its subdirectories.
+Use the actual project documents as the source for project-specific facts.
+Do not infer contractual requirements, scope, pricing, or document precedence
+from these instructions.
+
+## Plumlayer
+
+This project may be connected to Plumlayer.
+Use the Plumlayer tools when they provide structured project information or
+construction-specific capabilities that are more appropriate than manually
+processing files.
+When citing drawings, specifications, or other project records, preserve the
+source reference whenever possible.
+
+## Working behavior
+
+Inspect available project context before asking the user to provide information
+that may already exist in this workspace or in Plumlayer.
+Do not modify, delete, rename, or reorganize project files unless the user
+explicitly requests it.
+```
+
+**If they decline,** merge `{"instructions": {"scaffold": "declined"}}` into
+`~/.plumlayer/operator.json`, preserving every other field already there. If the file doesn't
+exist yet, don't create it for this alone; the offer is simply made again next time, and `setup`
+explains the field.
+<!-- user-facing -->
+Say in one line that you won't offer it again, and that `/setup` can turn the offer back on.
+<!-- /user-facing -->
 
 Reading a document they handed you is not interrogation, it's the high-value path. Good sources:
 - An **ITB / invitation-to-bid** or project summary → name, type, parties, key dates.
@@ -308,5 +365,8 @@ rather than restating it from what an earlier step said:
   read is the citation of what it seeds.
 - **Every count in the closing report is read back from the record**, never carried across from a
   sub-skill's own report or from memory.
+- **The instructions offer never overwrites.** Never write `CLAUDE.md` or `AGENTS.md` over one that
+  already exists, never write either file without the user's yes, and write only the one file that
+  matches the client running the session.
 - **Data hygiene.** Project specifics may live in the cloud project record and in the user's cwd config; they
   must never be written to a tracked/committed plugin or repo file.
