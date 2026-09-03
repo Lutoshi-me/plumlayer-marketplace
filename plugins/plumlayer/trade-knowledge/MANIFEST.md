@@ -1,7 +1,7 @@
 # Trade knowledge base: manifest
 
-**Knowledge version: `f09d21fb`**. This is the version string every convention-line record cites
-(`sourceInstrument: "trade-convention:<trade>@f09d21fb"`, per the `scope-run` skill's convention-line
+**Knowledge version: `be7c367a`**. This is the version string every convention-line record cites
+(`sourceInstrument: "trade-convention:<trade>@be7c367a"`, per the `scope-run` skill's convention-line
 mandate). This pin changes only when the shipped files themselves change; plugin releases that
 don't touch them don't move it.
 
@@ -10,7 +10,7 @@ don't touch them don't move it.
   leveling workbooks across multiple multifamily projects in one regional market), scrubbed of all
   identifying data: no company, person, or project names, no addresses, no dollar figures (cost
   signal rides as ratios and multiples). Confidentiality-reviewed before first shipping.
-- Content-defining source snapshot: commit `f09d21fb` of the source corpus repository.
+- Content-defining source snapshot: commit `be7c367a` of the source corpus repository.
 - Copied into this plugin.
 
 What each hints file rests on is stated on its own last line, the coverage line, which says how
@@ -48,7 +48,9 @@ roof-anchors-fall-protection, roofing, rough-carpentry, shower-doors, siding, si
 smoke-curtains, soe, specialties, structural-steel, tiling, trash-chutes, waterproofing,
 window-treatments, windows
 
-Not yet mapped (no or near-no corpus): utilities as a standalone package, jobsite requirements /
-Division 01, pools and water features, fireplaces, site furnishings, EV charging as a package,
-tower crane / hoisting. A reader hitting one of these trades creates at best judgment where no
-hints file covers it, and raises the grain question, per the `scope-run` skill's mandates.
+Not yet mapped (no or near-no corpus): utilities as a standalone package, load-bearing light
+gauge framing and prefabricated wall panels, firestopping as its own package, fire alarm as its
+own package, jobsite requirements / Division 01, pools and water features, fireplaces, site
+furnishings, EV charging as a package, tower crane / hoisting. A reader hitting one of these
+trades creates at best judgment where no hints file covers it, and raises the grain question, per
+the `scope-run` skill's mandates.
