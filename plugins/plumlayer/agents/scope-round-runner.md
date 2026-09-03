@@ -36,12 +36,13 @@ is lost by stopping there, because nothing has run.
    trade-knowledge manifest, and the subject prefix scheme. Then write the pass knowledge at
    `<run folder>/briefs/<pass-id>-knowledge.md` by running the plugin's cut script, once, before
    the first unit of the pass: in window 2 the one trade the pass reads for; in window 1 and the
-   leftover the trade files the plan names for the pass, at most ten. It is regenerated every
-   time, because the excerpt is a projection off the shipped trade files and a stale one would
-   carry a stale version pin. Never write it by hand and never rewrite a trade file into it in
-   shorter words: the excerpt is verbatim because a paraphrase would be an unrecorded rewrite of
-   knowledge every convention line cites by version. The mandates are in neither file. They live
-   in the `scope-reader` agent definition and are never restated, trimmed, or overridden here.
+   leftover the trades the plan names for the pass, at most ten. It carries each of those trades'
+   hints files, whole. It is regenerated every time, because the excerpt is a projection off the
+   shipped hints files and a stale one would carry a stale version pin. Never write it by hand and
+   never rewrite a hints file into it in shorter words: the excerpt is verbatim because a
+   paraphrase would be an unrecorded rewrite of knowledge every convention line cites by version.
+   The mandates are in neither file. They live in the `scope-reader` agent definition and are
+   never restated, trimmed, or overridden here.
 
    Run the cut with the Bash tool, single quoted. Pass the plugin's trade-knowledge directory as
    the path you resolved to read the manifest for the version: `${CLAUDE_PLUGIN_ROOT}` is
@@ -63,33 +64,38 @@ is lost by stopping there, because nothing has run.
    python "<plugin root>/scripts/cut_pass_knowledge.py" --trade-knowledge "<plugin root>/trade-knowledge" --trades roofing --pass-id roofing --out "<run folder>/briefs/roofing-knowledge.md"
    ```
 
-   Where no Python interpreter is on the seat the script cannot run: carry the trade file paths in
+   Where no Python interpreter is on the seat the script cannot run: carry the hints file paths in
    the dispatch instead, append one `note <window> <pass> - deviation ...` line saying the cut did
-   not run, and name it in your summary's deviations line. Never invent a substitute cut.
+   not run, and name it in your summary's deviations line. Never invent a substitute cut. The cut
+   prints one line per carried trade naming the slug it resolved, which is the slug step 2 builds
+   its conventions path from.
 2. **Record each carried trade's convention lines, once, before the first unit.** For each trade
    your pass carries, check whether its convention lines are already on the record:
    `search(subjectPrefix: "scopeItem:conv-092116-", limit: 1)`, reading `count`. A nonzero count
    means the trade's lines are already recorded, by this pass or an earlier one; append one
    `note <window> <pass> - convention <trade> already recorded` line, `<trade>` the spaced catalog
-   code, and do nothing further for that trade. A zero count means they are not: read the
-   structural gap list for that trade out of the pass knowledge file you just cut, and for each
-   line, in the order it appears, `record_batch`
+   code, and do nothing further for that trade. A zero count means they are not: open
+   `<plugin root>/trade-knowledge/conventions/<slug>.md`, where `<slug>` is the slug the cut script
+   printed for that trade, and take its table. The pass knowledge file carries hints and nothing
+   else; it is not where the rows come from. For each table row, in table order, `record_batch`
    it as `scopeItem:conv-092116-<n>` (`<n>` starting at 1), the full row a create gets under
-   scope-reader's mandate 6: `name`, `category`, `belongsToTrade` (this trade's catalog id copied
-   verbatim, exactly as the package prints it, `09 21 16`, never the trade file's name and never a
-   respelling of the code, both of which the door refuses), and `description`, `notesExternal`,
-   `notesInternal` only where the line carries a real
-   note. The trade is that same catalog code everywhere here, in two forms: the id verbatim in
+   scope-reader's mandate 6, built cell for cell: `name` is the name cell verbatim, `category` is
+   the category cell verbatim, `notesExternal` is the note to bidder cell verbatim, `notesInternal`
+   is the applies when cell only where it is not `any`, and there is no `description`.
+   `belongsToTrade` is this trade's catalog id copied verbatim, exactly as the package prints it,
+   `09 21 16`, never the trade's slug and never a respelling of the code, both of which the door
+   refuses. The trade is that same catalog code everywhere here, in two forms: the id verbatim in
    `belongsToTrade`, exactly as the packages print it, and with the spaces out in the subject, the
    search prefix above and the instrument, because an identifier carries no spaces and the trade
    value is copied verbatim. Its
    `sourceInstrument` is `trade-convention:092116@<knowledge-version>`, its evidence quotes the
-   line verbatim and carries the marker `basis: "trade-convention"`, and it carries no sheet
+   row verbatim and carries the marker `basis: "trade-convention"`, and it carries no sheet
    citation and no quantity. Read the record back and confirm the entry count under the prefix
    equals what you sent, the same boundary a reader's own batch gets. Append one
-   `note <window> <pass> - convention <trade> recorded <n> lines` line. Judging the row shape from
-   the trade file's own words is the only judgment this step makes: whether a convention line
-   actually fits this project is a reader's call, made from a sheet, never yours from text alone.
+   `note <window> <pass> - convention <trade> recorded <n> lines` line. A trade whose table carries
+   no rows records nothing and appends that same line reading `recorded 0 lines`. This step makes
+   no judgment at all: the record is the table row. Whether a convention line actually fits this
+   project is a reader's call, made from a sheet, never yours from text alone.
 3. **Run your units in reading order, one at a time.** You dispatch exactly one agent type,
    `plumlayer:scope-reader`, and never any other. The parenthesized list on your `tools` line
    records that intent and does not enforce it, since a type list inside `Agent(...)` is ignored

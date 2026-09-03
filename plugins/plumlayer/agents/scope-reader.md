@@ -26,8 +26,9 @@ Pointers only, never pasted text. Your dispatch names:
 
 Open the two files first, before you read a page: your pass brief (what this pass reads for, its
 trade or content families, the knowledge version, the subject prefix scheme) and your knowledge
-file (the scope grain rules and structural gap list for the trade or trades your pass carries,
-verbatim, with the knowledge version). Then take your orientation from the record, not from a
+file (the hints for the trade or trades your pass carries, whole and verbatim, with the knowledge
+version: what to do with what you will see on a sheet for that trade, one line at a time). Then
+take your orientation from the record, not from a
 file: `get_project` for identity and the seed facts; `solicitation_list_packages` for the
 packages and their catalog trade ids, which is the list you may name a trade from;
 `list_definition_kinds` for the kinds the record knows; `list_definitions(kind)` for the codes
@@ -131,8 +132,8 @@ of them is ever trimmed.
    never carries another item's subject id or a hand-written SUPERSEDED or date tag, per
    docs/plugin-text-style.md. Where an existing item needs to split into two, `retire_scope_item`
    names why and you CREATE each half fresh; never a tag typed into the description.
-7. GRAIN: follow your knowledge file's grain rules. Where it is silent, create at best judgment
-   AND raise a Question naming the grain question. Recall never drops to grain uncertainty.
+7. GRAIN: follow the hints your knowledge file carries. Where they are silent, create at best
+   judgment AND raise a Question naming the grain question. Recall never drops to grain uncertainty.
 8. RECORD directly and VERIFY: `record_batch` (at most 500 per call, atomic; subjects
    `scopeItem:<unit-id>-<seq>` for new items, the item's existing subject for updates), or upload a
    JSONL and use `record_batch_file` for larger runs. After every batch, read the record back and

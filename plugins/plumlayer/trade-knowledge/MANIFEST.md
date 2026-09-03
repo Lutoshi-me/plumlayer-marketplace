@@ -2,10 +2,10 @@
 
 **Knowledge version: `f09d21fb`**. This is the version string every convention-line record cites
 (`sourceInstrument: "trade-convention:<trade>@f09d21fb"`, per the `scope-run` skill's convention-line
-mandate). This pin changes only when the trade files themselves change; plugin releases that don't
-touch the trade files don't move it.
+mandate). This pin changes only when the shipped files themselves change; plugin releases that
+don't touch them don't move it.
 
-- Trade files: 45 (one per trade; the file list below).
+- Trades: 45, each with a hints file and a convention table (the trade list below).
 - Source: distilled from a real subcontractor-quote corpus (proposals and matching estimator
   leveling workbooks across multiple multifamily projects in one regional market), scrubbed of all
   identifying data: no company, person, or project names, no addresses, no dollar figures (cost
@@ -13,26 +13,30 @@ touch the trade files don't move it.
 - Content-defining source snapshot: commit `f09d21fb` of the source corpus repository.
 - Copied into this plugin.
 
-Forty-two of these files were mined from one corpus of four projects. `structural-steel` was the
-first mined from a much larger one, about twenty projects and thirty-four pricing rounds, by several
-readers over separate cohorts rather than one reader over a trade; `drywall` is the first amended in
-place the same way, from twenty-five projects and forty-one pricing rounds, and `painting` the
-second, from twenty-two projects and thirty-two pricing rounds. Each of those three coverage
-sections says what that buys and what it does not, and their coverage statements are not comparable
-with the other forty-two.
+What each hints file rests on is stated on its own last line, the coverage line, which says how
+many projects it was written from and whether it has been mined again since. The evidence base is
+not the same for every trade and the coverage lines are not comparable with each other, so read
+the one for the trade in hand rather than a figure for the set.
 
-## What a trade file carries
+## What the two files carry
 
-Each trade file is the self-contained, agent-facing knowledge a scope reader loads before reading
-drawings for that trade: how the trade bids and splits itself in the market, scope grain rules
-(what earns its own line vs. rides in a description, and the structural gap list the emit mandate
-fires on), exclusions and their usual counterparties, furnish/install seams, convention work the
-drawings will not say, pricing conventions as ratios, and an honest coverage statement naming what
-the corpus did and did not support.
+`hints/<trade>.md` is what a scope reader loads before it reads a sheet for that trade: a title
+line, then one instruction per line about something it will actually see, then the coverage line.
+Which package owns the work at a seam and the named cases where the reader tags two, and the few
+places this trade's rows split or collapse differently from the general grain. Nothing else earns
+a line. Each file is at most twenty hint lines and 2,400 characters, and the cut script refuses one
+over either bound rather than trimming it. A window 1 pass carries up to ten of these.
 
-Trade files are living documents: a human review pass is the trust mechanism, and new corpus rounds
-amend them in place at the source, after which this copy refreshes and the knowledge version
-moves to the new content-defining snapshot.
+`conventions/<trade>.md` is a title line and one table with four columns: `name` (what is done, to
+what, where, the way a sub says it, under eighty characters), `category` (the section heading an
+estimator's checklist would use), `note to bidder` (one sentence, which goes to `notesExternal`),
+and `applies when` (`any`, or a short condition, which goes to `notesInternal` as a watch item
+where it is not `any`). The pass runner records every row once per pass; a reader never opens the
+file. A trade with no convention rows carries the title line and an empty table.
+
+Both are living documents: a human review pass is the trust mechanism, and new corpus rounds amend
+them in place at the source, after which this copy refreshes and the knowledge version moves to the
+new content-defining snapshot.
 
 ## Trade files
 
@@ -46,5 +50,5 @@ window-treatments, windows
 
 Not yet mapped (no or near-no corpus): utilities as a standalone package, jobsite requirements /
 Division 01, pools and water features, fireplaces, site furnishings, EV charging as a package,
-tower crane / hoisting. A reader hitting one of these trades creates at best judgment where no trade
-file covers it, and raises the grain question, per the `scope-run` skill's mandates.
+tower crane / hoisting. A reader hitting one of these trades creates at best judgment where no
+hints file covers it, and raises the grain question, per the `scope-run` skill's mandates.

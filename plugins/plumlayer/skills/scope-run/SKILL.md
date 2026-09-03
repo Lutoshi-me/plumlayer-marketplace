@@ -134,7 +134,7 @@ that relaxes any one of them reproduces a measured, named failure.
    as one thing (the floor: split by type / significant distinction, never by instance) and at most
    one row on a trade's scope sheet (the ceiling: package headers are never the reader's). One
    item per sheet is a ceiling violation; one item per instance is a floor violation. Where the
-   pass knowledge's grain rules are silent, create at best judgment AND raise a Question naming the
+   pass knowledge's hints are silent, create at best judgment AND raise a Question naming the
    grain question: recall never drops to grain uncertainty.
 8. **Vocabulary, then the trades, then the leftover.** A trade pass reads only after the
    vocabulary is recorded and indexed; the leftover reads only after the trades. Two trades with
@@ -283,9 +283,9 @@ any repo, never uploaded to the project except record files, never recorded as p
 - `briefs/`: one small file per pass, written by that pass's runner, carrying the pass's filled
   slot values (what the pass reads for, its trade or content families, the knowledge version, the
   subject prefix scheme), and beside it `<pass-id>-knowledge.md`, the pass knowledge: the carried
-  trade's grain sections cut verbatim from the shipped trade files by the plugin's script. The
-  knowledge is plugin-shipped, not project knowledge, which is why it is the one thing a reader
-  reads from disk. The mandates are never in it. Audience: agent.
+  trades' hints files, whole and verbatim, cut from the shipped hints directory by the plugin's
+  script. The knowledge is plugin-shipped, not project knowledge, which is why it is the one thing
+  a reader reads from disk. The mandates are never in it. Audience: agent.
 - `reports/`: one file per read unit and per pass, the report in its fixed shape, written by the
   reader or runner before it returns, so a dispatch that returns without the report in hand loses
   nothing. Audience: agent.
@@ -354,20 +354,28 @@ is never offered to the user as a way to manage cost, and the check-in never sug
 
 ## The trade knowledge base
 
-Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/`: one file per trade
-(`painting.md`, `drywall.md`, …), mined from a real subcontractor-quote corpus, carrying what the
-drawings will not say: how the trade bids, scope grain rules, exclusions and counterparties,
-furnish/install seams, convention work no sheet states. Beside them, `trade-sheets.json` maps
-each catalog trade to its knowledge file and to the sheet families that trade reads, and names
-the seams between trades; the plan script reads it, and no model does.
-`MANIFEST.md` there records the knowledge version and source snapshot: read it at run start,
-record the version in the ledger, and cite it in every convention-line record
+Ships with this plugin at `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/`, mined from a real
+subcontractor-quote corpus, in two directories:
+
+- `hints/`, one file per trade (`painting.md`, `drywall.md`, …): what a reader loads before it
+  reads a sheet for that trade, a handful of one-line instructions about what it will actually
+  see. Which package owns the work at a seam, and the few places this trade's rows split or
+  collapse differently from the general grain.
+- `conventions/`, one file per trade: the trade's convention rows, the work no sheet states that
+  an estimator adds to every number before comparing, each written as the row it becomes on the
+  record. The pass runner records them once per pass, straight from the table; the reader never
+  opens them.
+
+Beside the two, `trade-sheets.json` maps each catalog trade to its knowledge and to the sheet
+families that trade reads, and names the seams between trades; the plan script reads it, and no
+model does. `MANIFEST.md` there records the knowledge version and source snapshot: read it at run
+start, record the version in the ledger, and cite it in every convention-line record
 (`trade-convention:092116@<version>`, the trade's catalog code with the spaces out). Each pass's
-runner cuts the trade file its pass reads for
-(in window 1, the files its content families touch, at most ten) into one knowledge file beside
-its brief, verbatim, and the reader reads that. Where the knowledge is silent, the reader creates
-at best judgment and raises a Question (non-negotiable 7); the Question is a suggested amendment to
-that trade file, surfaced in the close-out report.
+runner cuts the hints files its pass carries (in window 1, the trades its content families touch,
+at most ten) into one knowledge file beside its brief, whole and verbatim, and the reader reads
+that. Where the hints are silent, the reader creates at best judgment and raises a Question
+(non-negotiable 7); the Question is a suggested amendment to that trade's hints file, surfaced in
+the close-out report.
 
 ## 1. Preconditions
 
@@ -404,7 +412,9 @@ that trade file, surfaced in the close-out report.
    finished scope list instead.
 5. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record
    the version in the ledger. Missing → stop and report a broken plugin install rather than running
-   knowledge-blind. Then probe the seat for a Python interpreter, `python3 --version` falling back
+   knowledge-blind. A `trade-knowledge/` with no `hints/` or no `conventions/` directory beside the
+   manifest is the same broken install and the same stop, said now rather than discovered at the
+   first pass. Then probe the seat for a Python interpreter, `python3 --version` falling back
    to `python --version`: the pass knowledge every reader loads and the read plan of every window
    are both written by scripts. Neither name present is a stop for this run: say so plainly and
    hand over, since a plan written by hand has been the measured failure every time.
