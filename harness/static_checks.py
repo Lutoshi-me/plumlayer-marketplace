@@ -1809,46 +1809,133 @@ def check_runner_mode_set(plugin_path: Path) -> Result:
 # Check: the pass knowledge excerpt
 # --------------------------------------------------------------------------- #
 #
-# A reader no longer opens whole trade files: its pass runner cuts them to one pass knowledge file
-# first, and the reader reads that. The cut is only safe if nothing the reader acts on goes missing
-# in it, so this runs the shipped script over every trade file the manifest lists and asserts the
-# carried sections come back as contiguous, byte-identical runs. Contiguity is the point: an
-# every-line-is-present assertion would pass on text that had been reordered or reflowed, which is
-# the failure a verbatim cut exists to rule out.
+# A reader opens no shipped file itself: its pass runner cuts the hints of every trade the pass
+# carries into one pass knowledge file, and the reader reads that. The cut is only safe if nothing
+# the reader acts on goes missing in it, so this runs the shipped script over every trade the
+# manifest lists and asserts each hints file comes back as a contiguous, byte-identical run.
+# Contiguity is the point: an every-line-is-present assertion would pass on text that had been
+# reordered or reflowed, which is the failure a verbatim cut exists to rule out.
 #
-# The extraction below is written independently of the script's own, so the two agreeing is
-# evidence rather than a tautology.
+# The two budgets are recomputed here rather than trusted from the script, so a drift between the
+# source repo's Node gate and this Python one is a release failure and not a silent disagreement.
+#
+# The join the runner depends on is asserted too: the runner opens conventions/<slug>.md for a slug
+# the cut printed, and the cut is the only place a catalog code becomes a slug, so a pass named by
+# code and a conventions file that is not there would otherwise meet for the first time mid-pass.
 
 PASS_KNOWLEDGE_SCRIPT = ("scripts", "cut_pass_knowledge.py")
 
-_GAP_LIST_PHRASE = "structural gap list"
-_NO_GAP_LIST_SENTENCE = "This file carries no structural gap list"
 _KNOWLEDGE_VERSION_RE = re.compile(r"\*\*Knowledge version:\s*`([^`]+)`\*\*")
 
-
-def _block_from(lines: list[str], start: int, stop_prefixes: tuple[str, ...]) -> str:
-    """
-    The heading at `start` plus every line under it up to the next line starting with one of
-    `stop_prefixes`, stripped at both ends.
-    """
-    body: list[str] = []
-    for line in lines[start + 1:]:
-        if line.startswith(stop_prefixes):
-            break
-        body.append(line)
-    return "\n".join([lines[start]] + body).strip()
-
-
-def _first_line_index(lines: list[str], match) -> int | None:
-    for i, line in enumerate(lines):
-        if match(line):
-            return i
-    return None
+# The same two numbers the source repo's exit check applies, restated here rather than imported
+# from the script under test.
+_HINT_LINE_BUDGET = 20
+_HINT_CHARACTER_BUDGET = 2400
+_CONVENTION_COLUMNS = ["name", "category", "note to bidder", "applies when"]
+_CONVENTION_NAME_LIMIT = 80
 
 
 def _load_cut_module(script_path: Path):
     """Import the shipped cut script in-process, so the check runs no subprocess and no model."""
     return _load_script_module(script_path, "cut_pass_knowledge")
+
+
+def _content_lines(text: str) -> list[str]:
+    """The file's lines less the one empty element a trailing newline leaves behind."""
+    lines = text.split("\n")
+    if len(lines) > 1 and lines[-1] == "":
+        lines.pop()
+    return lines
+
+
+def _hints_errors(slug: str, text: str) -> list[str]:
+    """
+    The shipped hints file's shape and its two budgets, computed here. The shape is a title, a
+    blank, one hint per line, a blank, then the coverage line last.
+    """
+    errors: list[str] = []
+    lines = _content_lines(text)
+    if not lines or not lines[0].startswith("# "):
+        errors.append(f"hints/{slug}.md: line 1 is not a title")
+    if len(lines) < 5:
+        errors.append(f"hints/{slug}.md: {len(lines)} lines, too few for the shape")
+        return errors
+    blanks = [i + 1 for i, line in enumerate(lines) if line.strip() == ""]
+    if blanks != [2, len(lines) - 1]:
+        errors.append(f"hints/{slug}.md: blank lines at {blanks or 'none'}, expected [2, {len(lines) - 1}]")
+    if not lines[-1].startswith("coverage:"):
+        errors.append(f"hints/{slug}.md: the last line is not the coverage line")
+    hint_lines = len(lines) - 4
+    if hint_lines > _HINT_LINE_BUDGET:
+        errors.append(f"hints/{slug}.md: {hint_lines} hint lines, over the budget of {_HINT_LINE_BUDGET}")
+    if len(text) > _HINT_CHARACTER_BUDGET:
+        errors.append(f"hints/{slug}.md: {len(text)} characters, over the budget of {_HINT_CHARACTER_BUDGET}")
+    return errors
+
+
+def _table_cells(line: str) -> list[str]:
+    body = line.strip()
+    if body.startswith("|"):
+        body = body[1:]
+    if body.endswith("|"):
+        body = body[:-1]
+    return [cell.strip() for cell in body.split("|")]
+
+
+def _conventions_errors(slug: str, text: str) -> list[str]:
+    """A title line, one table with the four columns in order, and no name cell over the bound."""
+    errors: list[str] = []
+    lines = _content_lines(text)
+    if not lines or not lines[0].startswith("# "):
+        errors.append(f"conventions/{slug}.md: line 1 is not a title")
+    numbered = [(i + 2, line) for i, line in enumerate(lines[1:])]
+    non_blank = [(n, line) for n, line in numbered if line.strip()]
+    rows = [(n, line) for n, line in non_blank if line.strip().startswith("|")]
+    strays = [n for n, line in non_blank if not line.strip().startswith("|")]
+    if strays:
+        errors.append(f"conventions/{slug}.md: line(s) {strays} are neither the title, a row nor blank")
+    if not rows:
+        errors.append(f"conventions/{slug}.md: no table")
+        return errors
+    if any(rows[i][0] != rows[i - 1][0] + 1 for i in range(1, len(rows))):
+        errors.append(f"conventions/{slug}.md: the table rows are not contiguous, so there is more than one table")
+    header = [cell.lower() for cell in _table_cells(rows[0][1])]
+    if header != _CONVENTION_COLUMNS:
+        errors.append(f"conventions/{slug}.md: header is {header}, expected {_CONVENTION_COLUMNS}")
+    for number, line in rows[2:]:
+        cells = _table_cells(line)
+        if len(cells) != len(_CONVENTION_COLUMNS):
+            errors.append(f"conventions/{slug}.md: line {number} has {len(cells)} cells, expected 4")
+        elif len(cells[0]) > _CONVENTION_NAME_LIMIT:
+            errors.append(
+                f"conventions/{slug}.md: line {number} names {len(cells[0])} characters, "
+                f"over the bound of {_CONVENTION_NAME_LIMIT}"
+            )
+    return errors
+
+
+def _write_cut_fixture(root: Path, slug: str, hints: str | None, conventions: str | None) -> Path:
+    """
+    A throwaway trade-knowledge tree holding one trade, for driving the cut's named refusals. The
+    files are rewritten every run and the absent ones removed, so a previous run's tree cannot
+    make a refusal case pass by leaving a file behind.
+    """
+    trade_dir = root / slug
+    (trade_dir / "hints").mkdir(parents=True, exist_ok=True)
+    (trade_dir / "conventions").mkdir(parents=True, exist_ok=True)
+    (trade_dir / "MANIFEST.md").write_text(
+        f"# Manifest\n\n**Knowledge version: `fixture01`**.\n\n## Trade files\n\n{slug}\n",
+        encoding="utf-8",
+    )
+    (trade_dir / "trade-sheets.json").write_text('{"trades": {}}\n', encoding="utf-8")
+    hints_path = trade_dir / "hints" / f"{slug}.md"
+    conventions_path = trade_dir / "conventions" / f"{slug}.md"
+    for path, content in ((hints_path, hints), (conventions_path, conventions)):
+        if content is None:
+            path.unlink(missing_ok=True)
+        else:
+            path.write_text(content, encoding="utf-8")
+    return trade_dir
 
 
 def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
@@ -1881,84 +1968,158 @@ def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
     except Exception as e:
         return Result(name, False, detail=f"cannot import {script.name}: {e}")
 
-    out = Path(__file__).parent / ".test-results" / "pass-knowledge-all.md"
-    try:
-        module.cut(trade_dir, trades, "harness-all-trades", out)
-        excerpt = out.read_text(encoding="utf-8")
-    except Exception as e:
-        return Result(name, False, detail=f"the cut failed over the shipped trade files: {e}")
-
     errors: list[str] = []
-    if f"knowledge version: {version}" not in excerpt:
-        errors.append(f"the excerpt does not carry the manifest's knowledge version {version}")
+    results_dir = Path(__file__).parent / ".test-results"
 
-    gap_heading: list[str] = []
-    declared_none: list[str] = []
+    # ------------------------------------------------------------------ #
+    # Every manifest trade ships both files, and both hold their shape
+    # ------------------------------------------------------------------ #
+    hints_text: dict[str, str] = {}
+    missing: list[str] = []
     largest = ("", 0)
-
     for slug in trades:
-        path = trade_dir / f"{slug}.md"
-        if not path.is_file():
-            errors.append(f"{slug}: listed in the manifest but not on disk")
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except Exception as e:
-            errors.append(f"{slug}: read error: {e}")
-            continue
-        lines = text.splitlines()
-
-        grain_idx = _first_line_index(lines, lambda line: line.startswith("## 3. "))
-        if grain_idx is None:
-            errors.append(f"{slug}: no section 3 in the trade file")
-            continue
-        grain = _block_from(lines, grain_idx, ("## ",))
-        if grain not in excerpt:
-            errors.append(f"{slug}: section 3 is not in the excerpt contiguous and byte-identical")
-        carried = len(grain)
-
-        # A trade file either carries its gap list under a heading in section 3, where the cut
-        # puts it in the reader's hands, or says in section 8 that it has none. Neither is a file
-        # whose gap list the reader will never see.
-        grain_lines = grain.splitlines()
-        gap_idx = _first_line_index(
-            grain_lines, lambda line: line.startswith("### ") and _GAP_LIST_PHRASE in line.lower()
-        )
-        if gap_idx is not None:
-            gap_heading.append(slug)
-            block = _block_from(grain_lines, gap_idx, ("##",))
-            if block not in excerpt:
-                errors.append(
-                    f"{slug}: the structural gap list block is not in the excerpt "
-                    f"contiguous and byte-identical"
-                )
+        hints_path = trade_dir / "hints" / f"{slug}.md"
+        conventions_path = trade_dir / "conventions" / f"{slug}.md"
+        if not hints_path.is_file():
+            missing.append(f"hints/{slug}.md")
         else:
-            coverage_idx = _first_line_index(lines, lambda line: line.startswith("## 8. "))
-            coverage = (
-                _block_from(lines, coverage_idx, ("## ",)) if coverage_idx is not None else ""
-            )
-            if _NO_GAP_LIST_SENTENCE in coverage:
-                declared_none.append(slug)
+            try:
+                text = hints_path.read_text(encoding="utf-8")
+            except Exception as e:
+                errors.append(f"hints/{slug}.md: read error: {e}")
             else:
-                errors.append(
-                    f"{slug}: no structural gap list heading in section 3 and no "
-                    f"`{_NO_GAP_LIST_SENTENCE}` in section 8"
-                )
+                hints_text[slug] = text
+                errors.extend(_hints_errors(slug, text))
+                if len(text) > largest[1]:
+                    largest = (slug, len(text))
+        if not conventions_path.is_file():
+            missing.append(f"conventions/{slug}.md")
+        else:
+            try:
+                errors.extend(_conventions_errors(slug, conventions_path.read_text(encoding="utf-8")))
+            except Exception as e:
+                errors.append(f"conventions/{slug}.md: read error: {e}")
+    if missing:
+        shown = ", ".join(missing[:8]) + (", ..." if len(missing) > 8 else "")
+        errors.append(f"{len(missing)} file(s) the manifest lists are not on disk: {shown}")
 
-        if carried > largest[1]:
-            largest = (slug, carried)
+    # ------------------------------------------------------------------ #
+    # The cut carries each hints file whole, contiguous and byte-identical
+    # ------------------------------------------------------------------ #
+    excerpt = ""
+    if not missing:
+        out = results_dir / "pass-knowledge-all.md"
+        try:
+            module.cut(trade_dir, trades, "harness-all-trades", out)
+            excerpt = out.read_text(encoding="utf-8")
+        except Exception as e:
+            errors.append(f"the cut failed over the shipped hints files: {e}")
+        else:
+            if f"knowledge version: {version}" not in excerpt:
+                errors.append(f"the excerpt does not carry the manifest's knowledge version {version}")
+            for slug, text in hints_text.items():
+                if text.rstrip("\n") not in excerpt:
+                    errors.append(f"{slug}: the hints file is not in the excerpt contiguous and byte-identical")
+
+    # ------------------------------------------------------------------ #
+    # The join: every slug the cut prints for a catalog code has a table
+    # ------------------------------------------------------------------ #
+    #
+    # The runner builds the conventions path out of the slug this report names, and a window 2 pass
+    # names its trade by catalog code, so the codes are what the join has to be proved over.
+    joined = 0
+    try:
+        sheet_trades = json.loads((trade_dir / "trade-sheets.json").read_text(encoding="utf-8"))["trades"]
+    except Exception as e:
+        errors.append(f"trade-sheets.json: {e}")
+        sheet_trades = {}
+    codes = sorted(code for code, entry in sheet_trades.items() if isinstance(entry, dict) and entry.get("knowledge"))
+    if codes and not missing:
+        try:
+            report = module.cut(
+                trade_dir, codes, "harness-all-codes", results_dir / "pass-knowledge-codes.md"
+            )
+        except Exception as e:
+            errors.append(f"the cut failed over every mapped catalog code: {e}")
+        else:
+            carried = [line for line in report.splitlines() if line and not line.startswith("wrote ")]
+            if not carried:
+                errors.append("the cut reported no carried trade for any catalog code")
+            for line in carried:
+                slug = line.split()[0]
+                if not (trade_dir / "conventions" / f"{slug}.md").is_file():
+                    errors.append(f"the cut named `{slug}` for a code and conventions/{slug}.md is not on disk")
+                else:
+                    joined += 1
+
+    # ------------------------------------------------------------------ #
+    # Refusals, each exiting 1 with one line on stderr
+    # ------------------------------------------------------------------ #
+    fixture_root = results_dir / "cut-refusals"
+    good_hints = "# Fixture\n\nA hint about what the sheet shows.\n\ncoverage: invented.\n"
+    good_table = "# Fixture\n\n| name | category | note to bidder | applies when |\n| --- | --- | --- | --- |\n"
+    refusals: list[tuple[str, Path, str, str]] = [
+        (
+            "a hints file over the line budget",
+            _write_cut_fixture(
+                fixture_root,
+                "overlines",
+                "# Fixture\n\n"
+                + "\n".join(f"Hint {i}." for i in range(_HINT_LINE_BUDGET + 1))
+                + "\n\ncoverage: invented.\n",
+                good_table,
+            ),
+            "overlines",
+            "hint lines",
+        ),
+        (
+            "a hints file over the character budget",
+            _write_cut_fixture(
+                fixture_root,
+                "overchars",
+                "# Fixture\n\n" + "x" * (_HINT_CHARACTER_BUDGET + 1) + "\n\ncoverage: invented.\n",
+                good_table,
+            ),
+            "overchars",
+            "characters",
+        ),
+        (
+            "a manifest trade with no hints file",
+            _write_cut_fixture(fixture_root, "nohints", None, good_table),
+            "nohints",
+            "hints",
+        ),
+        (
+            "a manifest trade with no conventions file",
+            _write_cut_fixture(fixture_root, "noconventions", good_hints, None),
+            "noconventions",
+            "conventions",
+        ),
+    ]
+    for what, fixture_dir, slug, must_name in refusals:
+        code, _bounds, err = _run_plan_script(
+            module,
+            ["--trade-knowledge", str(fixture_dir), "--trades", slug, "--pass-id", "refused",
+             "--out", str(results_dir / "cut-refusals" / "refused.md")],
+        )
+        if code != 1:
+            errors.append(f"{what}: exited {code}, not 1")
+        elif len(err.splitlines()) != 1:
+            errors.append(f"{what}: the refusal is not one line on stderr")
+        elif must_name not in err:
+            errors.append(f"{what}: the refusal does not name {must_name}: {err!r}")
 
     detail = (
-        f"{len(trades)} trade files cut into {len(excerpt.encode('utf-8')):,} bytes, "
-        f"knowledge version {version}; gap list under a heading in section 3 for "
-        f"{len(gap_heading)}; largest single trade {largest[1]:,} bytes ({largest[0]})"
+        f"{len(trades)} manifest trades, each with a hints file and a convention table; "
+        f"{len(hints_text)} hints files cut into {len(excerpt.encode('utf-8')):,} bytes, "
+        f"knowledge version {version}; largest hints file {largest[1]:,} characters ({largest[0]}); "
+        f"both budgets and both file shapes recomputed here rather than read off the script; "
+        f"{joined} catalog code(s) resolved to a slug whose convention table is on disk; "
+        f"{len(refusals)} broken invocations each refused in one line naming what is wrong"
     )
-    # An honest bound, not a pass: these trade files say in section 8 that they have no gap list,
-    # so no assertion here can prove the excerpt carries one for them.
-    detail += (
-        f"; declaring no gap list in section 8: {len(declared_none)}"
-        f" ({', '.join(declared_none) if declared_none else 'none'})"
-    )
+    # An honest bound, not a pass: the shape checks prove the files are the shape the reader and
+    # the runner parse, and nothing here can judge whether a hint earns its line.
+    detail += "; bound: shape and budget only, never whether a hint or a row is the right one"
     if errors:
         detail += " | " + "; ".join(errors)
 
