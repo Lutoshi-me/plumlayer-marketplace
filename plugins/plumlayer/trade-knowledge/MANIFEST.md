@@ -1,7 +1,7 @@
 # Trade knowledge base: manifest
 
-**Knowledge version: `641b3380`**. This is the version string every convention-line record cites
-(`sourceInstrument: "trade-convention:<trade>@641b3380"`, per the `scope-run` skill's convention-line
+**Knowledge version: `f09d21fb`**. This is the version string every convention-line record cites
+(`sourceInstrument: "trade-convention:<trade>@f09d21fb"`, per the `scope-run` skill's convention-line
 mandate). This pin changes only when the trade files themselves change; plugin releases that don't
 touch the trade files don't move it.
 
@@ -10,15 +10,16 @@ touch the trade files don't move it.
   leveling workbooks across multiple multifamily projects in one regional market), scrubbed of all
   identifying data: no company, person, or project names, no addresses, no dollar figures (cost
   signal rides as ratios and multiples). Confidentiality-reviewed before first shipping.
-- Content-defining source snapshot: commit `641b3380` of the source corpus repository.
+- Content-defining source snapshot: commit `f09d21fb` of the source corpus repository.
 - Copied into this plugin.
 
-Forty-three of these files were mined from one corpus of four projects. `structural-steel` was the
+Forty-two of these files were mined from one corpus of four projects. `structural-steel` was the
 first mined from a much larger one, about twenty projects and thirty-four pricing rounds, by several
-readers over separate cohorts rather than one reader over a trade, and `drywall` is the first amended
-in place the same way, from twenty-five projects and forty-one pricing rounds. Each of those two
-coverage sections says what that buys and what it does not, and their coverage statements are not
-comparable with the other forty-three.
+readers over separate cohorts rather than one reader over a trade; `drywall` is the first amended in
+place the same way, from twenty-five projects and forty-one pricing rounds, and `painting` the
+second, from twenty-two projects and thirty-two pricing rounds. Each of those three coverage
+sections says what that buys and what it does not, and their coverage statements are not comparable
+with the other forty-two.
 
 ## What a trade file carries
 
