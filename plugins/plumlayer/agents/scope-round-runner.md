@@ -77,7 +77,14 @@ is lost by stopping there, because nothing has run.
    code, and do nothing further for that trade. A zero count means they are not: open
    `<plugin root>/trade-knowledge/conventions/<slug>.md`, where `<slug>` is the slug the cut script
    printed for that trade, and take its table. The pass knowledge file carries hints and nothing
-   else; it is not where the rows come from. For each table row, in table order, `record_batch`
+   else; it is not where the rows come from. The four columns are name, category, note to bidder,
+   applies when, in that order. A cell is what sits between its two pipes with the leading and
+   trailing spaces taken off and nothing else changed, which is how the scripts that gate the file
+   read it. A row that does not carry four cells is not a row to guess at and not a row to skip
+   quietly: stop that trade, record nothing for it, append one
+   `note <window> <pass> - deviation convention <trade> row <n> carries <k> cells` line, and name
+   the file and the row in your summary's deviations line. For each table row, in table order,
+   `record_batch`
    it as `scopeItem:conv-092116-<n>` (`<n>` starting at 1), the full row a create gets under
    scope-reader's mandate 6, built cell for cell: `name` is the name cell verbatim, `category` is
    the category cell verbatim, `notesExternal` is the note to bidder cell verbatim, `notesInternal`

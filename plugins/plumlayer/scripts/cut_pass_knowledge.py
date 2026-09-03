@@ -29,7 +29,7 @@ Usage:
 
 Exit codes:
   0  wrote the file; one line per carried trade naming its slug, its hints file, its two counts and
-     how the token resolved, then one bounds line naming what it wrote.
+     every token that resolved to it, then one bounds line naming what it wrote.
   1  a named failure, one line on stderr: the manifest is unreadable or carries no knowledge
      version or no trade list; a token is neither a slug in the manifest's list nor a trade id in
      the sheet family map; a hints file is missing; a conventions file is missing; a hints file is
@@ -183,7 +183,10 @@ def cut(trade_knowledge: Path, trades: list[str], pass_id: str, out: Path) -> st
     # already a slug, so a seat with no map still cuts every pass named by slug.
     catalog: dict[str, str] | None = None
     resolved: list[str] = []
-    how_resolved: dict[str, str] = {}
+    # Every code that landed on a slug, not only the last one. Two codes of one family resolve to
+    # the same trade, and a line naming one of them would report that the other was never asked
+    # for, which is the thing a person reads this line to check.
+    how_resolved: dict[str, list[str]] = {}
     for token in _dedupe(trades):
         if token in known:
             resolved.append(token)
@@ -203,7 +206,9 @@ def cut(trade_knowledge: Path, trades: list[str], pass_id: str, out: Path) -> st
                 f"{manifest_path.name}'s trade list"
             )
         resolved.append(slug)
-        how_resolved[slug] = f"from {token}" + (" by family" if how == "family" else "")
+        how_resolved.setdefault(slug, []).append(
+            f"from {token}" + (" by family" if how == "family" else "")
+        )
     slugs = _dedupe(resolved)
 
     blocks: list[str] = []
@@ -239,10 +244,10 @@ def cut(trade_knowledge: Path, trades: list[str], pass_id: str, out: Path) -> st
             )
 
         blocks.append(text.rstrip("\n"))
-        note = how_resolved.get(slug)
+        notes = how_resolved.get(slug)
         carried.append(
             f"{slug}  {HINTS_DIR}/{slug}.md  {lines} hint lines, {characters:,} characters"
-            + (f"  ({note})" if note else "")
+            + (f"  ({'; '.join(notes)})" if notes else "")
         )
 
     header = (

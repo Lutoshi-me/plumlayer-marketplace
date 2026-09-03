@@ -1914,11 +1914,18 @@ def _conventions_errors(slug: str, text: str) -> list[str]:
     return errors
 
 
-def _write_cut_fixture(root: Path, slug: str, hints: str | None, conventions: str | None) -> Path:
+def _write_cut_fixture(
+    root: Path,
+    slug: str,
+    hints: str | None,
+    conventions: str | None,
+    sheets: dict | None = None,
+) -> Path:
     """
-    A throwaway trade-knowledge tree holding one trade, for driving the cut's named refusals. The
-    files are rewritten every run and the absent ones removed, so a previous run's tree cannot
-    make a refusal case pass by leaving a file behind.
+    A throwaway trade-knowledge tree holding one trade, for driving the cut's named refusals and
+    the resolution cases the shipped map cannot show, since it keys one code per trade. The files
+    are rewritten every run and the absent ones removed, so a previous run's tree cannot make a
+    refusal case pass by leaving a file behind.
     """
     trade_dir = root / slug
     (trade_dir / "hints").mkdir(parents=True, exist_ok=True)
@@ -1927,7 +1934,9 @@ def _write_cut_fixture(root: Path, slug: str, hints: str | None, conventions: st
         f"# Manifest\n\n**Knowledge version: `fixture01`**.\n\n## Trade files\n\n{slug}\n",
         encoding="utf-8",
     )
-    (trade_dir / "trade-sheets.json").write_text('{"trades": {}}\n', encoding="utf-8")
+    (trade_dir / "trade-sheets.json").write_text(
+        json.dumps(sheets if sheets is not None else {"trades": {}}) + "\n", encoding="utf-8"
+    )
     hints_path = trade_dir / "hints" / f"{slug}.md"
     conventions_path = trade_dir / "conventions" / f"{slug}.md"
     for path, content in ((hints_path, hints), (conventions_path, conventions)):
@@ -2052,12 +2061,47 @@ def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
                 else:
                     joined += 1
 
-    # ------------------------------------------------------------------ #
-    # Refusals, each exiting 1 with one line on stderr
-    # ------------------------------------------------------------------ #
     fixture_root = results_dir / "cut-refusals"
     good_hints = "# Fixture\n\nA hint about what the sheet shows.\n\ncoverage: invented.\n"
     good_table = "# Fixture\n\n| name | category | note to bidder | applies when |\n| --- | --- | --- | --- |\n"
+
+    # ------------------------------------------------------------------ #
+    # Two codes of one family, one trade: the line names both
+    # ------------------------------------------------------------------ #
+    #
+    # A person reads the per-trade line to check what the pass was asked for, so a code that
+    # resolved and went unreported is a code they would believe was never asked for. The shipped
+    # map keys one code per trade and cannot show this, so it takes a fixture map.
+    two_code_dir = _write_cut_fixture(
+        fixture_root,
+        "twocodes",
+        good_hints,
+        good_table,
+        sheets={"trades": {"04 20 00": {"knowledge": "twocodes"}}},
+    )
+    try:
+        two_code_report = module.cut(
+            two_code_dir, ["04 22 13", "04 20 00"], "harness-two-codes",
+            results_dir / "cut-refusals" / "two-codes.md",
+        )
+    except Exception as e:
+        errors.append(f"the cut refused two codes of one family: {e}")
+    else:
+        carried_lines = [ln for ln in two_code_report.splitlines() if ln and not ln.startswith("wrote ")]
+        if len(carried_lines) != 1:
+            errors.append(
+                f"two codes of one trade produced {len(carried_lines)} carried lines, not 1: {carried_lines!r}"
+            )
+        elif "04 22 13" not in carried_lines[0] or "04 20 00" not in carried_lines[0]:
+            errors.append(
+                f"the carried line does not name both codes that resolved to the trade: {carried_lines[0]!r}"
+            )
+        elif "by family" not in carried_lines[0]:
+            errors.append(f"the carried line does not say the narrower code resolved by family: {carried_lines[0]!r}")
+
+    # ------------------------------------------------------------------ #
+    # Refusals, each exiting 1 with one line on stderr
+    # ------------------------------------------------------------------ #
     refusals: list[tuple[str, Path, str, str]] = [
         (
             "a hints file over the line budget",
@@ -2115,6 +2159,7 @@ def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
         f"knowledge version {version}; largest hints file {largest[1]:,} characters ({largest[0]}); "
         f"both budgets and both file shapes recomputed here rather than read off the script; "
         f"{joined} catalog code(s) resolved to a slug whose convention table is on disk; "
+        f"two codes of one family reported on one line naming both; "
         f"{len(refusals)} broken invocations each refused in one line naming what is wrong"
     )
     # An honest bound, not a pass: the shape checks prove the files are the shape the reader and
