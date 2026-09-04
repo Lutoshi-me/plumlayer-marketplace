@@ -54,9 +54,6 @@ the project record.
    If a delivery exists, spot-check with a small `search(projectId, predicate: "appearsOnPage", limit:
    1)`, zero rows means recognition hasn't actually recorded anything yet; stop and hand off to
    `drawing-upload` rather than orienting on an empty set.
-3. **Trade knowledge present.** Read `${CLAUDE_PLUGIN_ROOT}/trade-knowledge/MANIFEST.md`; record the
-   version for use in step 8's package rationale. Missing means a broken plugin install: stop and
-   report rather than drafting a package split knowledge-blind.
 
 ## 2. Read the entries (identity, seeds, sheet inventory)
 
@@ -235,12 +232,13 @@ amendments, stays in `scope-run`.
    (the remedy is to upload the project manual through `drawing-upload`'s spec-book leg and re-run
    this skill); if the project genuinely has no spec book, the scope run derives the packages from
    the finished scope list instead. No question asked, no branch beyond this sentence.
-3. **Draft the split** from the spec TOC (step 3) plus the trade knowledge base's market
-   conventions: which sections bundle into which package, which get carved out, a primary CSI
-   section per package. Probe the usually-present families the TOC is silent on (site/civil, SOE,
-   landscaping/exterior improvements, thin design-build MEP divisions), the same probe that already
-   produces `missingScopeFamily` entries (step 6): a silent family becomes a `missingScopeFamily`
-   entry AND, where the trade knowledge says the trade is usually present, a package.
+3. **Draft the split** from the spec TOC (step 3), by how subcontractors actually split
+   themselves in this market: which sections bundle into which package, which get carved out, a
+   primary CSI section per package. Probe the usually-present families the TOC is silent on
+   (site/civil, SOE, landscaping/exterior improvements, thin design-build MEP divisions), the same
+   probe that already produces `missingScopeFamily` entries (step 6): a silent family becomes a
+   `missingScopeFamily` entry AND, where a job of this kind would normally carry the trade, a
+   package.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be

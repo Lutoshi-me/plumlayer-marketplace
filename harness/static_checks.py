@@ -12,7 +12,8 @@ Checks:
      style (`description: >`), and at most DESC_MAX_CHARS characters.
   4b. Agents: every agents/*.md has frontmatter that actually parses as YAML
      and a non-empty `name` and `description`; the shipped agent set matches
-     EXPECTED_AGENTS exactly, in both directions; and no agent declares a
+     EXPECTED_AGENTS exactly, in both directions (`scope-reader`,
+     `scope-reviewer`, `scope-round-runner`); and no agent declares a
      frontmatter field the runtime ignores for plugin-shipped agents
      (`hooks`, `mcpServers`, `permissionMode`). Checks 3 and 4b both validate
      the frontmatter block with PyYAML when it is importable, falling back to
@@ -20,10 +21,9 @@ Checks:
   5. No banned string in shipped text: client-name denylist, `PLU-\\d+`,
      internal vault filenames, `MOSOT`, em dash, middle dot. Em dash and
      middle dot are exempt inside fenced code blocks and inline code spans
-     (data, not prose); every other pattern applies to code too. Only the
-     pinned trade-knowledge/ corpus files (read from MANIFEST.md's own
-     Trade files list) get the client-name-only scan; MANIFEST.md itself and
-     any other file in that directory get the full scan by default.
+     (data, not prose); every other pattern applies to code too. Every
+     shipped file takes the same scan: there is no lenient population and no
+     exemption list.
   6. Retired vocabulary regression guard: a curated list of names retired by
      the D6 vocabulary sweep (commit 8096333 and follow-ups) must not creep
      back in. Whole-file terms (e.g. `residue`, `roster`, `operator` as the
@@ -49,36 +49,29 @@ Checks:
       ledger mention with no prohibition cue in range.
   13. Runner mode set: the `##` headings of agents/scope-round-runner.md match
       EXPECTED_RUNNER_MODE_HEADINGS exactly, in both directions, so the per-pass shape cannot be
-      partly undone without failing the release.
+      partly undone without failing the release. The set is pass, review and
+      boundary; a `Leftover mode` coming back fails here.
   14. Plan inventory: the shipped scripts/plan_inventory.py, imported in-process and run end to
       end over invented fixtures, produces counts that agree with a tally this file computes
       itself, unit lines whose page references match the fixture's own sheet-to-page map, a
       window 1 selection matching an independent tally of the vocabulary sheet types plus the
-      include and minus the exclude, window 2's overlap and unread counts matching its own unit
-      lines, the balanced split of a pass over twelve units, every declared seam among the trades
-      planned either adjacent or named on the bounds line as a group no order can satisfy (checked
-      over the fixture and again over all of the shipped map's pairs), no pass claiming a seam its
-      own order contradicts, a window 3 that is exactly the inventory minus window 2's own unit
-      lines, every partial input named on the bounds line rather than folded into a clean number,
-      and a one-line refusal naming what is missing for each of eleven broken invocations. The
-      shipped scripts are compiled from source here rather than imported through the loader, so a
-      script edited twice inside one second to the same byte length can never be checked as its
-      earlier bytecode.
+      include and minus the exclude with a window-1.json matching it key for key, a window 2 that
+      is an exact partition of the inventory minus both of window 1's lists, in the pinned sheet
+      type order and with the balanced split of a pass over twelve units, both shipped sheet type
+      constants pinned here and neither naming a type the recognizer does not produce, one
+      window 3 review per package over two packages fixtures in package order with two packages
+      on one trade both planning and planned one after the other, every window 3 unit id a legal
+      verify_unit subject prefix stem with none a prefix of another, and a one-line refusal naming
+      what is wrong for each of eleven broken invocations, two grid rows folding to one unit key
+      and a window 1 file naming a key as both selected and excluded among them. The shipped script is compiled from source here rather than
+      imported through the loader, so a script edited twice inside one second to the same byte
+      length can never be checked as its earlier bytecode.
   15. No shipped skill or agent file names `fork` as a subagent type, in either the
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
   16. Every shipped skill or agent file that names `ask_question` or tells the agent to raise a
       Question carries the fixed phrase "Question text is plain estimator words", either stating
       the rule in full or pointing at it (docs/plugin-text-style.md §1, `learn-project`'s
       judgment-entry table).
-  17. Trade sheet map: trade-knowledge/trade-sheets.json covers every trade file the manifest
-      lists and names no trade file it does not, in both directions, with a named exception list
-      the only allowance; its pinned sheet type list equals the recognizer's twelve deterministic
-      types; every family names a discipline or a pattern and only pinned sheet types; and every
-      seam pair names two different trades the map itself holds. A trade file is general to its
-      family, so the shared resolver is checked against the shipped map on five catalog codes: a
-      child code, a code whose only mapped ancestor is its division, a code under two mapped
-      ancestors where the nearer must win, a code the map keys outright, and a division the map
-      covers at no level.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -116,11 +109,13 @@ EXPECTED_SKILLS = {
     "takeoff",
 }
 
-# The agent definitions the plugin ships under agents/. Both are dispatched by
-# the scope run: the lead starts one round runner per round, and the runner
-# starts one reader per read unit.
+# The agent definitions the plugin ships under agents/. All three are dispatched
+# by the scope run: the lead starts one runner per pass, and that runner starts
+# one reader per sheet in windows 1 and 2, or one reviewer per package in
+# window 3.
 EXPECTED_AGENTS = {
     "scope-reader",
+    "scope-reviewer",
     "scope-round-runner",
 }
 
@@ -610,7 +605,7 @@ def check_description_contract(plugin_path: Path) -> Result:
 _INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
 
 
-def _build_banned_patterns(client_names_only: bool) -> list[tuple[str, re.Pattern, bool]]:
+def _build_banned_patterns() -> list[tuple[str, re.Pattern, bool]]:
     """Return (label, pattern, code_exempt) triples. code_exempt marks the two
     patterns (em dash, middle dot) that are data, not prose, inside fenced
     code blocks and inline code spans — docs/plugin-text-style.md §4. Every
@@ -620,9 +615,6 @@ def _build_banned_patterns(client_names_only: bool) -> list[tuple[str, re.Patter
         (f"client name '{n}'", re.compile(re.escape(n), re.IGNORECASE), False)
         for n in BANNED_CLIENT_NAMES
     ]
-    if client_names_only:
-        return patterns
-
     patterns.append(("internal ticket ID", re.compile(r"PLU-\d+"), False))
     for fname in BANNED_VAULT_FILENAMES:
         patterns.append((f"internal vault filename '{fname}'", re.compile(re.escape(fname)), False))
@@ -654,7 +646,7 @@ def _mask_inline_code(line: str) -> str:
     return _INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), line)
 
 
-def _scan_file_for_banned(path: Path, client_names_only: bool) -> list[str]:
+def _scan_file_for_banned(path: Path) -> list[str]:
     hits: list[str] = []
     try:
         text = path.read_text(encoding="utf-8")
@@ -663,7 +655,7 @@ def _scan_file_for_banned(path: Path, client_names_only: bool) -> list[str]:
 
     lines = text.splitlines()
     fence_mask = _fenced_code_line_mask(lines)
-    patterns = _build_banned_patterns(client_names_only)
+    patterns = _build_banned_patterns()
 
     for i, line in enumerate(lines, 1):
         in_fence = fence_mask[i - 1]
@@ -682,86 +674,14 @@ def _scan_file_for_banned(path: Path, client_names_only: bool) -> list[str]:
     return hits
 
 
-def _pinned_trade_package_names(trade_knowledge_dir: Path) -> set[str] | None:
-    """
-    The pinned, corpus-derived trade files (currently 44) are deliberately
-    out of scope for style and get the client-name-only scan. Everything else
-    in trade-knowledge/ — MANIFEST.md, and any future hand-authored file
-    dropped in beside the trade files — is ordinary shipped prose in the
-    plugin's own voice and must get the full scan by default.
-
-    Rather than hardcoding the file list (or hardcoding "MANIFEST.md" as a
-    one-off exception, which would leave the same hole for the next
-    hand-authored file), this reads the trade file names from MANIFEST.md's
-    own "## Trade files" section — that list is already the authoritative
-    record of what the pinned corpus contains, and a corpus update that adds
-    or drops a trade updates this scope automatically as long as the
-    manifest itself stays accurate. A file whose stem isn't in that list
-    defaults to the full scan, covered by default rather than by someone
-    remembering to list it.
-
-    Returns None if MANIFEST.md or its Trade files list can't be parsed — the
-    caller must then fail safe (treat every file as full scope) rather than
-    guess which files are pinned.
-    """
-    manifest_path = trade_knowledge_dir / "MANIFEST.md"
-    if not manifest_path.exists():
-        return None
-    try:
-        lines = manifest_path.read_text(encoding="utf-8").splitlines()
-    except Exception:
-        return None
-
-    heading_idx = None
-    for i, line in enumerate(lines):
-        if line.strip() == "## Trade files":
-            heading_idx = i
-            break
-    if heading_idx is None:
-        return None
-
-    # The trade files are a comma-separated prose list starting right after
-    # the heading (skipping the blank line that follows it) and ending at
-    # the next blank line or heading.
-    entry_lines: list[str] = []
-    started = False
-    for line in lines[heading_idx + 1:]:
-        if line.strip() == "":
-            if started:
-                break
-            continue
-        if line.startswith("#"):
-            break
-        entry_lines.append(line.strip())
-        started = True
-    if not entry_lines:
-        return None
-
-    names = {n.strip() for n in " ".join(entry_lines).split(",") if n.strip()}
-    return names if names else None
-
-
-def _collect_scope_files(
-    plugin_path: Path, marketplace_root: Path
-) -> tuple[list[Path], list[Path], str | None]:
+def _collect_scope_files(plugin_path: Path, marketplace_root: Path) -> list[Path]:
     """
     Shared file-scope collection for every text-content check (banned
-    strings, retired vocabulary, bold/Title-Case). Returns
-    (full_scope_files, client_only_files, warning):
-
-    - full_scope_files: every shipped-skill .md, every agents/ .md, every
-      scripts/ .py, README.md, the manifest JSON files, and any
-      trade-knowledge/ file that is NOT one of the pinned corpus files
-      (e.g. MANIFEST.md itself) — this is the plugin's own prose, in its
-      own voice, and gets the strictest scan.
-    - client_only_files: the pinned, corpus-derived trade files (currently
-      44), which get a lighter client-name-only scan elsewhere — ordinary
-      trade vocabulary there (e.g. "deposit", "proposed") is real and
-      expected, not a style violation.
-    - warning: set when trade-knowledge/MANIFEST.md's own Trade files list
-      couldn't be parsed, in which case every trade-knowledge file was
-      folded into full_scope_files as the fail-safe default (never silently
-      guessed into the lenient scan).
+    strings, retired vocabulary, bold/Title-Case): every shipped-skill .md,
+    every agents/ .md, every scripts/ .py, README.md and the manifest JSON
+    files. Every one of them is the plugin's own prose, in its own voice, and
+    every one takes the same scan. There is no lenient population: a file the
+    plugin ships is a file the plugin is answerable for.
     """
     full_scope_files: list[Path] = []
     skills_dir = plugin_path / "skills"
@@ -794,53 +714,19 @@ def _collect_scope_files(
     ]
     full_scope_files.extend(f for f in manifest_files if f.exists())
 
-    # The trade to sheet family map is hand-authored prose in the plugin's own voice (its `note`
-    # fields reach a run's output), and the .md glob below never reaches a .json, so it is named
-    # here rather than left outside every text check.
-    trade_sheets = plugin_path / "trade-knowledge" / "trade-sheets.json"
-    if trade_sheets.exists():
-        full_scope_files.append(trade_sheets)
-
-    client_only_files: list[Path] = []
-    trade_knowledge_dir = plugin_path / "trade-knowledge"
-    pinned_names: set[str] | None = None
-    warning: str | None = None
-    if trade_knowledge_dir.is_dir():
-        pinned_names = _pinned_trade_package_names(trade_knowledge_dir)
-        for f in sorted(trade_knowledge_dir.rglob("*.md")):
-            # Fail safe: if the pinned trade files list couldn't be parsed,
-            # every trade-knowledge file goes to the full scan rather than
-            # being guessed into the lenient one.
-            if pinned_names is not None and f.stem in pinned_names:
-                client_only_files.append(f)
-            else:
-                full_scope_files.append(f)
-        if pinned_names is None:
-            warning = (
-                "could not parse trade-knowledge/MANIFEST.md's Trade files list, "
-                "so every trade-knowledge file was scanned at full strictness as a safe default"
-            )
-
-    return full_scope_files, client_only_files, warning
+    return full_scope_files
 
 
 def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "banned-strings"
 
-    full_scope_files, client_only_files, warning = _collect_scope_files(plugin_path, marketplace_root)
+    full_scope_files = _collect_scope_files(plugin_path, marketplace_root)
 
     hits: list[str] = []
     for f in full_scope_files:
-        hits.extend(_scan_file_for_banned(f, client_names_only=False))
-    for f in client_only_files:
-        hits.extend(_scan_file_for_banned(f, client_names_only=True))
+        hits.extend(_scan_file_for_banned(f))
 
-    detail = (
-        f"{len(full_scope_files)} files under full banned-set scan, "
-        f"{len(client_only_files)} pinned trade files under client-name-only scan"
-    )
-    if warning:
-        detail += f" | WARNING: {warning}"
+    detail = f"{len(full_scope_files)} files under the banned-set scan"
     if hits:
         detail += " | " + "; ".join(hits)
 
@@ -866,9 +752,7 @@ def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
 #
 #   - RETIRED_WHOLE_FILE_TERMS never appear anywhere in a full-scope file
 #     (the same `full_scope_files` set `check_banned_strings` already scans —
-#     shipped skills, README, manifests; NOT the pinned trade-knowledge
-#     corpus, where ordinary English collides with several of these names —
-#     see the false-positive notes below).
+#     shipped skills, agent definitions, shipped scripts, README, manifests).
 #   - RETIRED_SCOPED_TERMS are legitimate agent-facing machinery vocabulary
 #     everywhere else in a skill file; they are banned only where the file
 #     itself declares the text user-facing: inside a
@@ -940,7 +824,7 @@ RETIRED_WHOLE_FILE_TERMS: list[tuple[str, re.Pattern, bool]] = [
     ("'schedule entries' (renamed to 'schedule rows')", re.compile(r"\bschedule entries\b", re.IGNORECASE), False),
     ("'proposed' as the retired trust-class posture (renamed to 'recorded')", re.compile(r"\bproposed\b", re.IGNORECASE), False),
     ("'deposit' (renamed to 'record' as a verb)", re.compile(r"\bdeposit(?:s|ing|ed)?\b", re.IGNORECASE), False),
-    ("'trade-packages' (directory renamed to 'trade-knowledge')", re.compile(r"\btrade-packages\b", re.IGNORECASE), False),
+    ("'trade-packages' (a retired directory name)", re.compile(r"\btrade-packages\b", re.IGNORECASE), False),
     # Token cost vocabulary retired (cost is measured outside the plugin, from
     # harness transcripts, never narrated by a skill; PLU-1345).
     (
@@ -1074,7 +958,7 @@ def _scan_file_for_retired_scoped(path: Path) -> list[str]:
 
 def check_retired_vocabulary(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "retired-vocabulary"
-    full_scope_files, _client_only_files, warning = _collect_scope_files(plugin_path, marketplace_root)
+    full_scope_files = _collect_scope_files(plugin_path, marketplace_root)
 
     hits: list[str] = []
     for f in full_scope_files:
@@ -1082,8 +966,6 @@ def check_retired_vocabulary(plugin_path: Path, marketplace_root: Path) -> Resul
         hits.extend(_scan_file_for_retired_scoped(f))
 
     detail = f"{len(full_scope_files)} files scanned for retired vocabulary"
-    if warning:
-        detail += f" | WARNING: {warning}"
     if hits:
         detail += " | " + "; ".join(hits)
 
@@ -1147,7 +1029,7 @@ def _scan_file_for_bold_emphasis(path: Path) -> list[str]:
 
 def check_bold_emphasis(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "bold-emphasis"
-    full_scope_files, _client_only_files, _warning = _collect_scope_files(plugin_path, marketplace_root)
+    full_scope_files = _collect_scope_files(plugin_path, marketplace_root)
 
     hits: list[str] = []
     for f in full_scope_files:
@@ -1211,7 +1093,7 @@ def _scan_file_for_titlecase_labels(path: Path) -> list[str]:
 
 def check_titlecase_labels(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "titlecase-labels (advisory, never fails)"
-    full_scope_files, _client_only_files, _warning = _collect_scope_files(plugin_path, marketplace_root)
+    full_scope_files = _collect_scope_files(plugin_path, marketplace_root)
 
     hits: list[str] = []
     for f in full_scope_files:
@@ -1597,7 +1479,7 @@ def check_question_plain_words_pointer(plugin_path: Path) -> Result:
 LEDGER_LINE_KINDS = {"dispatch", "verified", "note"}
 
 LEDGER_NOTE_KINDS = {
-    "anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet", "convention",
+    "anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet",
 }
 
 LEDGER_PROHIBITION_PHRASE = "Nothing else goes in the ledger"
@@ -1756,17 +1638,17 @@ def check_ledger_fixed_shape(plugin_path: Path) -> Result:
 # Check: the runner's mode set
 # --------------------------------------------------------------------------- #
 #
-# The runner supervises one pass, one round boundary, or one completeness accounting, and nothing
-# larger. Its `##` headings are what say so, so pinning the set in both directions is the cheap
-# mechanical way to catch the shape being partly undone: a `## Round mode` coming back, or
-# `## Pass mode` renamed away, fails the release.
+# The runner supervises one pass, one review, or one window boundary,
+# and nothing larger. Its `##` headings are what say so, so pinning the set in both directions is
+# the cheap mechanical way to catch the shape being partly undone: a `## Round mode` or a
+# `## Leftover mode` coming back, or `## Pass mode` renamed away, fails the release.
 
 EXPECTED_RUNNER_MODE_HEADINGS = {
     "What your dispatch gives you",
     "Pass mode",
     "The ledger lines",
     "Boundary mode",
-    "Leftover mode",
+    "Review mode",
     "What you never do",
     "Your summary",
 }
@@ -1806,582 +1688,6 @@ def check_runner_mode_set(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# Check: the pass knowledge excerpt
-# --------------------------------------------------------------------------- #
-#
-# A reader opens no shipped file itself: its pass runner cuts the hints of every trade the pass
-# carries into one pass knowledge file, and the reader reads that. The cut is only safe if nothing
-# the reader acts on goes missing in it, so this runs the shipped script over every trade the
-# manifest lists and asserts each hints file comes back as a contiguous, byte-identical run.
-# Contiguity is the point: an every-line-is-present assertion would pass on text that had been
-# reordered or reflowed, which is the failure a verbatim cut exists to rule out.
-#
-# The two budgets are recomputed here rather than trusted from the script, so a drift between the
-# source repo's Node gate and this Python one is a release failure and not a silent disagreement.
-#
-# The join the runner depends on is asserted too: the runner opens conventions/<slug>.md for a slug
-# the cut printed, and the cut is the only place a catalog code becomes a slug, so a pass named by
-# code and a conventions file that is not there would otherwise meet for the first time mid-pass.
-
-PASS_KNOWLEDGE_SCRIPT = ("scripts", "cut_pass_knowledge.py")
-
-_KNOWLEDGE_VERSION_RE = re.compile(r"\*\*Knowledge version:\s*`([^`]+)`\*\*")
-
-# The same two numbers the source repo's exit check applies, restated here rather than imported
-# from the script under test.
-_HINT_LINE_BUDGET = 20
-_HINT_CHARACTER_BUDGET = 2400
-_CONVENTION_COLUMNS = ["name", "category", "note to bidder", "applies when"]
-_CONVENTION_NAME_LIMIT = 80
-
-
-def _load_cut_module(script_path: Path):
-    """Import the shipped cut script in-process, so the check runs no subprocess and no model."""
-    return _load_script_module(script_path, "cut_pass_knowledge")
-
-
-def _content_lines(text: str) -> list[str]:
-    """The file's lines less the one empty element a trailing newline leaves behind."""
-    lines = text.split("\n")
-    if len(lines) > 1 and lines[-1] == "":
-        lines.pop()
-    return lines
-
-
-def _hints_errors(slug: str, text: str) -> list[str]:
-    """
-    The shipped hints file's shape and its two budgets, computed here. The shape is a title, a
-    blank, one hint per line, a blank, then the coverage line last.
-    """
-    errors: list[str] = []
-    lines = _content_lines(text)
-    if not lines or not lines[0].startswith("# "):
-        errors.append(f"hints/{slug}.md: line 1 is not a title")
-    if len(lines) < 5:
-        errors.append(f"hints/{slug}.md: {len(lines)} lines, too few for the shape")
-        return errors
-    blanks = [i + 1 for i, line in enumerate(lines) if line.strip() == ""]
-    if blanks != [2, len(lines) - 1]:
-        errors.append(f"hints/{slug}.md: blank lines at {blanks or 'none'}, expected [2, {len(lines) - 1}]")
-    if not lines[-1].startswith("coverage:"):
-        errors.append(f"hints/{slug}.md: the last line is not the coverage line")
-    hint_lines = len(lines) - 4
-    if hint_lines > _HINT_LINE_BUDGET:
-        errors.append(f"hints/{slug}.md: {hint_lines} hint lines, over the budget of {_HINT_LINE_BUDGET}")
-    if len(text) > _HINT_CHARACTER_BUDGET:
-        errors.append(f"hints/{slug}.md: {len(text)} characters, over the budget of {_HINT_CHARACTER_BUDGET}")
-    return errors
-
-
-def _table_cells(line: str) -> list[str]:
-    body = line.strip()
-    if body.startswith("|"):
-        body = body[1:]
-    if body.endswith("|"):
-        body = body[:-1]
-    return [cell.strip() for cell in body.split("|")]
-
-
-def _conventions_errors(slug: str, text: str) -> list[str]:
-    """A title line, one table with the four columns in order, and no name cell over the bound."""
-    errors: list[str] = []
-    lines = _content_lines(text)
-    if not lines or not lines[0].startswith("# "):
-        errors.append(f"conventions/{slug}.md: line 1 is not a title")
-    numbered = [(i + 2, line) for i, line in enumerate(lines[1:])]
-    non_blank = [(n, line) for n, line in numbered if line.strip()]
-    rows = [(n, line) for n, line in non_blank if line.strip().startswith("|")]
-    strays = [n for n, line in non_blank if not line.strip().startswith("|")]
-    if strays:
-        errors.append(f"conventions/{slug}.md: line(s) {strays} are neither the title, a row nor blank")
-    if not rows:
-        errors.append(f"conventions/{slug}.md: no table")
-        return errors
-    if any(rows[i][0] != rows[i - 1][0] + 1 for i in range(1, len(rows))):
-        errors.append(f"conventions/{slug}.md: the table rows are not contiguous, so there is more than one table")
-    header = [cell.lower() for cell in _table_cells(rows[0][1])]
-    if header != _CONVENTION_COLUMNS:
-        errors.append(f"conventions/{slug}.md: header is {header}, expected {_CONVENTION_COLUMNS}")
-    for number, line in rows[2:]:
-        cells = _table_cells(line)
-        if len(cells) != len(_CONVENTION_COLUMNS):
-            errors.append(f"conventions/{slug}.md: line {number} has {len(cells)} cells, expected 4")
-        elif len(cells[0]) > _CONVENTION_NAME_LIMIT:
-            errors.append(
-                f"conventions/{slug}.md: line {number} names {len(cells[0])} characters, "
-                f"over the bound of {_CONVENTION_NAME_LIMIT}"
-            )
-    return errors
-
-
-def _write_cut_fixture(
-    root: Path,
-    slug: str,
-    hints: str | None,
-    conventions: str | None,
-    sheets: dict | None = None,
-) -> Path:
-    """
-    A throwaway trade-knowledge tree holding one trade, for driving the cut's named refusals and
-    the resolution cases the shipped map cannot show, since it keys one code per trade. The files
-    are rewritten every run and the absent ones removed, so a previous run's tree cannot make a
-    refusal case pass by leaving a file behind.
-    """
-    trade_dir = root / slug
-    (trade_dir / "hints").mkdir(parents=True, exist_ok=True)
-    (trade_dir / "conventions").mkdir(parents=True, exist_ok=True)
-    (trade_dir / "MANIFEST.md").write_text(
-        f"# Manifest\n\n**Knowledge version: `fixture01`**.\n\n## Trade files\n\n{slug}\n",
-        encoding="utf-8",
-    )
-    (trade_dir / "trade-sheets.json").write_text(
-        json.dumps(sheets if sheets is not None else {"trades": {}}) + "\n", encoding="utf-8"
-    )
-    hints_path = trade_dir / "hints" / f"{slug}.md"
-    conventions_path = trade_dir / "conventions" / f"{slug}.md"
-    for path, content in ((hints_path, hints), (conventions_path, conventions)):
-        if content is None:
-            path.unlink(missing_ok=True)
-        else:
-            path.write_text(content, encoding="utf-8")
-    return trade_dir
-
-
-def check_pass_knowledge_excerpt(plugin_path: Path) -> Result:
-    name = "pass-knowledge-excerpt"
-    script = plugin_path.joinpath(*PASS_KNOWLEDGE_SCRIPT)
-    if not script.is_file():
-        return Result(name, False, detail=f"cut script not found at {script}")
-
-    trade_dir = plugin_path / "trade-knowledge"
-    manifest = trade_dir / "MANIFEST.md"
-    if not manifest.is_file():
-        return Result(name, False, detail=f"trade knowledge manifest not found at {manifest}")
-
-    pinned = _pinned_trade_package_names(trade_dir)
-    if not pinned:
-        return Result(name, False, detail=f"could not parse {manifest.name}'s Trade files list")
-    trades = sorted(pinned)
-
-    try:
-        manifest_text = manifest.read_text(encoding="utf-8")
-    except Exception as e:
-        return Result(name, False, detail=f"{manifest.name}: read error: {e}")
-    version_match = _KNOWLEDGE_VERSION_RE.search(manifest_text)
-    if not version_match:
-        return Result(name, False, detail=f"no Knowledge version line in {manifest.name}")
-    version = version_match.group(1).strip()
-
-    try:
-        module = _load_cut_module(script)
-    except Exception as e:
-        return Result(name, False, detail=f"cannot import {script.name}: {e}")
-
-    errors: list[str] = []
-    results_dir = Path(__file__).parent / ".test-results"
-
-    # ------------------------------------------------------------------ #
-    # Every manifest trade ships both files, and both hold their shape
-    # ------------------------------------------------------------------ #
-    hints_text: dict[str, str] = {}
-    missing: list[str] = []
-    largest = ("", 0)
-    for slug in trades:
-        hints_path = trade_dir / "hints" / f"{slug}.md"
-        conventions_path = trade_dir / "conventions" / f"{slug}.md"
-        if not hints_path.is_file():
-            missing.append(f"hints/{slug}.md")
-        else:
-            try:
-                text = hints_path.read_text(encoding="utf-8")
-            except Exception as e:
-                errors.append(f"hints/{slug}.md: read error: {e}")
-            else:
-                hints_text[slug] = text
-                errors.extend(_hints_errors(slug, text))
-                if len(text) > largest[1]:
-                    largest = (slug, len(text))
-        if not conventions_path.is_file():
-            missing.append(f"conventions/{slug}.md")
-        else:
-            try:
-                errors.extend(_conventions_errors(slug, conventions_path.read_text(encoding="utf-8")))
-            except Exception as e:
-                errors.append(f"conventions/{slug}.md: read error: {e}")
-    if missing:
-        shown = ", ".join(missing[:8]) + (", ..." if len(missing) > 8 else "")
-        errors.append(f"{len(missing)} file(s) the manifest lists are not on disk: {shown}")
-
-    # ------------------------------------------------------------------ #
-    # The cut carries each hints file whole, contiguous and byte-identical
-    # ------------------------------------------------------------------ #
-    excerpt = ""
-    if not missing:
-        out = results_dir / "pass-knowledge-all.md"
-        try:
-            module.cut(trade_dir, trades, "harness-all-trades", out)
-            excerpt = out.read_text(encoding="utf-8")
-        except Exception as e:
-            errors.append(f"the cut failed over the shipped hints files: {e}")
-        else:
-            if f"knowledge version: {version}" not in excerpt:
-                errors.append(f"the excerpt does not carry the manifest's knowledge version {version}")
-            for slug, text in hints_text.items():
-                if text.rstrip("\n") not in excerpt:
-                    errors.append(f"{slug}: the hints file is not in the excerpt contiguous and byte-identical")
-
-    # ------------------------------------------------------------------ #
-    # The join: every slug the cut prints for a catalog code has a table
-    # ------------------------------------------------------------------ #
-    #
-    # The runner builds the conventions path out of the slug this report names, and a window 2 pass
-    # names its trade by catalog code, so the codes are what the join has to be proved over.
-    joined = 0
-    try:
-        sheet_trades = json.loads((trade_dir / "trade-sheets.json").read_text(encoding="utf-8"))["trades"]
-    except Exception as e:
-        errors.append(f"trade-sheets.json: {e}")
-        sheet_trades = {}
-    codes = sorted(code for code, entry in sheet_trades.items() if isinstance(entry, dict) and entry.get("knowledge"))
-    if codes and not missing:
-        try:
-            report = module.cut(
-                trade_dir, codes, "harness-all-codes", results_dir / "pass-knowledge-codes.md"
-            )
-        except Exception as e:
-            errors.append(f"the cut failed over every mapped catalog code: {e}")
-        else:
-            carried = [line for line in report.splitlines() if line and not line.startswith("wrote ")]
-            if not carried:
-                errors.append("the cut reported no carried trade for any catalog code")
-            for line in carried:
-                slug = line.split()[0]
-                if not (trade_dir / "conventions" / f"{slug}.md").is_file():
-                    errors.append(f"the cut named `{slug}` for a code and conventions/{slug}.md is not on disk")
-                else:
-                    joined += 1
-
-    fixture_root = results_dir / "cut-refusals"
-    good_hints = "# Fixture\n\nA hint about what the sheet shows.\n\ncoverage: invented.\n"
-    good_table = "# Fixture\n\n| name | category | note to bidder | applies when |\n| --- | --- | --- | --- |\n"
-
-    # ------------------------------------------------------------------ #
-    # Two codes of one family, one trade: the line names both
-    # ------------------------------------------------------------------ #
-    #
-    # A person reads the per-trade line to check what the pass was asked for, so a code that
-    # resolved and went unreported is a code they would believe was never asked for. The shipped
-    # map keys one code per trade and cannot show this, so it takes a fixture map.
-    two_code_dir = _write_cut_fixture(
-        fixture_root,
-        "twocodes",
-        good_hints,
-        good_table,
-        sheets={"trades": {"04 20 00": {"knowledge": "twocodes"}}},
-    )
-    try:
-        two_code_report = module.cut(
-            two_code_dir, ["04 22 13", "04 20 00"], "harness-two-codes",
-            results_dir / "cut-refusals" / "two-codes.md",
-        )
-    except Exception as e:
-        errors.append(f"the cut refused two codes of one family: {e}")
-    else:
-        carried_lines = [ln for ln in two_code_report.splitlines() if ln and not ln.startswith("wrote ")]
-        if len(carried_lines) != 1:
-            errors.append(
-                f"two codes of one trade produced {len(carried_lines)} carried lines, not 1: {carried_lines!r}"
-            )
-        elif "04 22 13" not in carried_lines[0] or "04 20 00" not in carried_lines[0]:
-            errors.append(
-                f"the carried line does not name both codes that resolved to the trade: {carried_lines[0]!r}"
-            )
-        elif "by family" not in carried_lines[0]:
-            errors.append(f"the carried line does not say the narrower code resolved by family: {carried_lines[0]!r}")
-
-    # ------------------------------------------------------------------ #
-    # Refusals, each exiting 1 with one line on stderr
-    # ------------------------------------------------------------------ #
-    refusals: list[tuple[str, Path, str, str]] = [
-        (
-            "a hints file over the line budget",
-            _write_cut_fixture(
-                fixture_root,
-                "overlines",
-                "# Fixture\n\n"
-                + "\n".join(f"Hint {i}." for i in range(_HINT_LINE_BUDGET + 1))
-                + "\n\ncoverage: invented.\n",
-                good_table,
-            ),
-            "overlines",
-            "hint lines",
-        ),
-        (
-            "a hints file over the character budget",
-            _write_cut_fixture(
-                fixture_root,
-                "overchars",
-                "# Fixture\n\n" + "x" * (_HINT_CHARACTER_BUDGET + 1) + "\n\ncoverage: invented.\n",
-                good_table,
-            ),
-            "overchars",
-            "characters",
-        ),
-        (
-            "a manifest trade with no hints file",
-            _write_cut_fixture(fixture_root, "nohints", None, good_table),
-            "nohints",
-            "hints",
-        ),
-        (
-            "a manifest trade with no conventions file",
-            _write_cut_fixture(fixture_root, "noconventions", good_hints, None),
-            "noconventions",
-            "conventions",
-        ),
-    ]
-    for what, fixture_dir, slug, must_name in refusals:
-        code, _bounds, err = _run_plan_script(
-            module,
-            ["--trade-knowledge", str(fixture_dir), "--trades", slug, "--pass-id", "refused",
-             "--out", str(results_dir / "cut-refusals" / "refused.md")],
-        )
-        if code != 1:
-            errors.append(f"{what}: exited {code}, not 1")
-        elif len(err.splitlines()) != 1:
-            errors.append(f"{what}: the refusal is not one line on stderr")
-        elif must_name not in err:
-            errors.append(f"{what}: the refusal does not name {must_name}: {err!r}")
-
-    detail = (
-        f"{len(trades)} manifest trades, each with a hints file and a convention table; "
-        f"{len(hints_text)} hints files cut into {len(excerpt.encode('utf-8')):,} bytes, "
-        f"knowledge version {version}; largest hints file {largest[1]:,} characters ({largest[0]}); "
-        f"both budgets and both file shapes recomputed here rather than read off the script; "
-        f"{joined} catalog code(s) resolved to a slug whose convention table is on disk; "
-        f"two codes of one family reported on one line naming both; "
-        f"{len(refusals)} broken invocations each refused in one line naming what is wrong"
-    )
-    # An honest bound, not a pass: the shape checks prove the files are the shape the reader and
-    # the runner parse, and nothing here can judge whether a hint earns its line.
-    detail += "; bound: shape and budget only, never whether a hint or a row is the right one"
-    if errors:
-        detail += " | " + "; ".join(errors)
-
-    return Result(name, passed=len(errors) == 0, detail=detail)
-
-
-# --------------------------------------------------------------------------- #
-# Check: the trade to sheet family map
-# --------------------------------------------------------------------------- #
-#
-# The trade files say how a trade bids and splits itself; they carry no sheet families, so the
-# window 2 plan reads them out of trade-knowledge/trade-sheets.json instead. That file is the only
-# thing deciding which sheets a trade's pass opens, so this checks it against the two records it has
-# to agree with: the manifest's own trade file list, in both directions, and the recognizer's sheet
-# type vocabulary.
-
-TRADE_SHEETS_FILE = ("trade-knowledge", "trade-sheets.json")
-
-# The recognizer's deterministic sheet types: SHEET_TYPES in the api's sheet-type-classifier.ts,
-# less `other`, which that classifier never returns (an unplaceable sheet types null instead).
-# Copied here by hand because the api is a different repo; a family naming anything else would
-# select nothing on a real set instead of failing here.
-RECOGNIZER_SHEET_TYPES = {
-    "schedule", "plan", "overall-plan", "enlarged-plan", "section", "elevation",
-    "detail", "RCP", "schematic", "legend", "notes", "cover-index",
-}
-
-
-def check_trade_sheet_map(plugin_path: Path) -> Result:
-    name = "trade-sheet-map"
-    path = plugin_path.joinpath(*TRADE_SHEETS_FILE)
-    if not path.is_file():
-        return Result(name, False, detail=f"trade sheet map not found at {path}")
-
-    trade_dir = plugin_path / "trade-knowledge"
-    pinned = _pinned_trade_package_names(trade_dir)
-    if not pinned:
-        return Result(name, False, detail="could not parse MANIFEST.md's Trade files list")
-
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except Exception as e:
-        return Result(name, False, detail=f"{path.name}: {e}")
-
-    errors: list[str] = []
-
-    declared_types = data.get("sheetTypes")
-    if not isinstance(declared_types, list):
-        return Result(name, False, detail=f"{path.name} carries no `sheetTypes` list")
-    if set(declared_types) != RECOGNIZER_SHEET_TYPES:
-        errors.append(
-            f"the pinned `sheetTypes` list is not the recognizer's twelve: extra "
-            f"{sorted(set(declared_types) - RECOGNIZER_SHEET_TYPES)}, missing "
-            f"{sorted(RECOGNIZER_SHEET_TYPES - set(declared_types))}"
-        )
-
-    trades = data.get("trades")
-    if not isinstance(trades, dict) or not trades:
-        return Result(name, False, detail=f"{path.name} carries no `trades` object")
-
-    unmapped = data.get("unmapped", {})
-    if not isinstance(unmapped, dict):
-        return Result(name, False, detail=f"{path.name}: `unmapped` is not an object")
-
-    mapped: dict[str, str] = {}
-    empty_families: list[str] = []
-    for trade_id, entry in trades.items():
-        if not isinstance(entry, dict):
-            errors.append(f"trade {trade_id} is not an object")
-            continue
-        knowledge = entry.get("knowledge")
-        if not isinstance(knowledge, str) or knowledge not in pinned:
-            errors.append(f"trade {trade_id}: `knowledge` {knowledge!r} is not a manifest trade file")
-        elif knowledge in mapped:
-            errors.append(f"trade files {mapped[knowledge]} and {trade_id} both claim {knowledge}")
-        else:
-            mapped[knowledge] = trade_id
-        families = entry.get("families")
-        if not isinstance(families, list):
-            errors.append(f"trade {trade_id}: `families` is not a list")
-            continue
-        if not families:
-            if not entry.get("note"):
-                errors.append(f"trade {trade_id}: `families` is empty and no `note` says why")
-            empty_families.append(trade_id)
-        for index, family in enumerate(families, 1):
-            if not isinstance(family, dict):
-                errors.append(f"trade {trade_id} family {index} is not an object")
-                continue
-            if "discipline" not in family and "patterns" not in family:
-                errors.append(f"trade {trade_id} family {index} names neither a discipline nor patterns")
-            for sheet_type in family.get("sheetTypes", []) or []:
-                if sheet_type not in RECOGNIZER_SHEET_TYPES:
-                    errors.append(
-                        f"trade {trade_id} family {index}: sheet type {sheet_type!r} is not one the "
-                        f"recognizer produces"
-                    )
-
-    for slug, reason in unmapped.items():
-        if slug not in pinned:
-            errors.append(f"`unmapped` names {slug}, which is not a manifest trade file")
-        if slug in mapped:
-            errors.append(f"{slug} is both mapped to {mapped[slug]} and named in `unmapped`")
-        if not isinstance(reason, str) or not reason.strip():
-            errors.append(f"`unmapped` entry {slug} carries no reason")
-
-    uncovered = sorted(pinned - set(mapped) - set(unmapped))
-    if uncovered:
-        errors.append(
-            f"{len(uncovered)} manifest trade file(s) have no map entry and no named exception: "
-            f"{', '.join(uncovered)}"
-        )
-
-    seams = data.get("seams", [])
-    if not isinstance(seams, list):
-        errors.append("`seams` is not a list")
-        seams = []
-    seen_pairs: set[frozenset] = set()
-    for index, pair in enumerate(seams, 1):
-        if not isinstance(pair, list) or len(pair) != 2:
-            errors.append(f"seam {index} is not a pair")
-            continue
-        first, second = pair
-        if first == second:
-            errors.append(f"seam {index} names {first} twice")
-            continue
-        for member in pair:
-            if member not in trades:
-                errors.append(f"seam {index} names {member}, which is not a `trades` key")
-        key = frozenset(pair)
-        if key in seen_pairs:
-            errors.append(f"seam {index} repeats a pair already listed")
-        seen_pairs.add(key)
-
-    # A trade file is general to its family, so the plan resolves a package's code to the nearest
-    # broader CSI section the map keys. These are the four shapes that rule has to get right, each
-    # asserted against what the shipped map actually holds rather than against a fixture.
-    resolver_path = plugin_path.joinpath(*TRADE_CODE_SCRIPT)
-    resolved_cases = 0
-    sole_file_divisions = 0
-    if not resolver_path.is_file():
-        errors.append(f"the shared trade code resolver is not at {resolver_path}")
-    else:
-        try:
-            resolver = _load_script_module(resolver_path, "trade_code")
-        except Exception as e:
-            errors.append(f"cannot import {resolver_path.name}: {e}")
-        else:
-            folded = {resolver.fold(key): key for key in trades}
-            expected = [
-                # a child code, resolving up to the division its one trade file is keyed at
-                ("04 22 13", "04 00 00", "family"),
-                # that division header itself, which is a key rather than a code nothing covers
-                ("04 00 00", "04 00 00", "exact"),
-                # a code whose only mapped ancestor is a division header keyed that way already
-                ("26 05 19", "26 00 00", "family"),
-                # a code under two mapped ancestors: the nearer one wins, never the division
-                ("31 50 13", "31 50 00", "family"),
-                # a code the map keys outright is still exact, never resolved by family
-                ("09 21 16", "09 21 16", "exact"),
-            ]
-            for code, want_key, want_how in expected:
-                got = resolver.resolve(code, folded)
-                if got != (want_key, want_how):
-                    errors.append(
-                        f"{code} resolved to {got}, expected ({want_key!r}, {want_how!r})"
-                    )
-                else:
-                    resolved_cases += 1
-            # A trade file is keyed at the broadest code it actually covers: where a division maps
-            # exactly one file, that file sits at the division header, so a package drafted anywhere
-            # in the division reaches it. A division mapping several files keeps each at its own
-            # section, since a bare division header there would have to pick one of several.
-            by_division: dict[str, list[str]] = {}
-            for key in trades:
-                by_division.setdefault(resolver.fold(key)[:2], []).append(key)
-            for division, keys_here in sorted(by_division.items()):
-                if len(keys_here) != 1:
-                    continue
-                header = f"{division} 00 00"
-                if keys_here[0] != header:
-                    errors.append(
-                        f"division {division} maps only {keys_here[0]}, which should be keyed at "
-                        f"{header} so a package drafted anywhere in the division reaches it"
-                    )
-            sole_file_divisions = sum(1 for keys_here in by_division.values() if len(keys_here) == 1)
-
-            # A division the map holds nothing under at any level stays unresolved, so the plan
-            # names the package rather than reading it for a trade nobody chose.
-            unmapped_division = resolver.resolve("13 34 19", folded)
-            if unmapped_division is not None:
-                errors.append(
-                    f"13 34 19 resolved to {unmapped_division}, expected nothing: no trade in the "
-                    f"map covers that division"
-                )
-            else:
-                resolved_cases += 1
-
-    exceptions = ", ".join(sorted(unmapped)) if unmapped else "none"
-    detail = (
-        f"{len(trades)} trades mapped over {len(pinned)} manifest trade files, both directions; "
-        f"{len(declared_types)} sheet types pinned and equal to the recognizer's set; "
-        f"{len(seams)} seam pairs, every member a mapped trade; "
-        f"{len(empty_families)} trade(s) mapped with no sheet family and a reason "
-        f"({', '.join(empty_families) if empty_families else 'none'}); "
-        f"{resolved_cases} of 6 catalog codes resolved to the trade file covering them, by nearest "
-        f"CSI ancestor, checked against the shipped map; every one of the {sole_file_divisions} "
-        f"divisions mapping a single trade file keyed at its division header; "
-        f"named exception(s) allowed with a reason: {exceptions}"
-    )
-    if errors:
-        detail += " | " + "; ".join(errors)
-
-    return Result(name, passed=len(errors) == 0, detail=detail)
-
-
-# --------------------------------------------------------------------------- #
 # Check: the plan inventory script
 # --------------------------------------------------------------------------- #
 #
@@ -2391,25 +1697,54 @@ def check_trade_sheet_map(plugin_path: Path) -> Result:
 # fixtures and asserts its numbers against a tally this check computes itself.
 #
 # The extraction below is written independently of the script's own, so the two agreeing is
-# evidence rather than a tautology. Window 3 is checked hardest that way: the script recomputes
-# window 2's selection from the same inputs and never parses window 2's plan file, and this check
-# does the opposite, reading window 2's own unit lines and asserting window 3 holds exactly the
-# inventory minus them.
+# evidence rather than a tautology. Window 2 is checked hardest that way: it has to be an exact
+# partition of the inventory minus the window 1 file the script itself wrote, in the discipline and
+# sheet type order this check recomputes off the fixture grid, split at twelve.
 #
-# Honest bound, stated in the detail line: the fixtures are invented, and the kinds and index
-# fixtures are shaped against verbs that do not exist yet, so this proves the script's arithmetic,
-# its ordering and its refusals, and nothing about how a real record read arrives.
+# The join this check exists for: the plan writes a window 3 unit id, a reviewer records its rows
+# under `scopeItem:<unit id>-<seq>`, and the runner verifies that review by prefix. The three would
+# otherwise meet for the first time mid-run, so every id the script writes is asserted here to be a
+# legal subject prefix stem and never a prefix of another one.
+#
+# Honest bound, stated in the detail line: the fixtures are invented and small, so this proves the
+# script's arithmetic, its ordering and its refusals, and nothing about how a real record read
+# arrives.
 
 PLAN_INVENTORY_SCRIPT = ("scripts", "plan_inventory.py")
-TRADE_CODE_SCRIPT = ("scripts", "trade_code.py")
 
 _PLAN_PASS_RE = re.compile(r"^### (\S+?)\.\s")
 _PLAN_UNIT_RE = re.compile(r"^(\d+)\. (\S+), page (\d+): (.*)$")
+_PLAN_REVIEW_RE = re.compile(r"^(\d+)\. (rev-\S+): (.*)$")
 _PLAN_FIELD_RE = re.compile(r"^([a-z][a-z ]*): (.*)$")
 _LEFT_OUT_HEADING = "## Deliberately left out"
 
-# The four recognizer types window 1 selects. Named here independently of the script's own list.
-_VOCABULARY_SHEET_TYPES = {"schedule", "legend", "notes", "cover-index"}
+# The recognizer's deterministic sheet types: SHEET_TYPES in the api's sheet-type-classifier.ts,
+# less `other`, which that classifier never returns (an unplaceable sheet types null instead).
+# Copied here by hand because the api is a different repo; a constant naming anything else would
+# select nothing on a real set instead of failing here.
+RECOGNIZER_SHEET_TYPES = {
+    "schedule", "plan", "overall-plan", "enlarged-plan", "section", "elevation",
+    "detail", "RCP", "schematic", "legend", "notes", "cover-index",
+}
+
+# The two names the plan script declares for its own placement of a row the recognizer did not
+# type. They are the script's own vocabulary rather than a claim about what the recognizer returns,
+# so the assertion below allows them beside the recognizer's list rather than against it.
+_PLACEMENT_SHEET_TYPES = {"other", "untyped"}
+
+# The script's two sheet type constants, pinned here so a change to either fails the release. The
+# window 1 four are a set. The window 2 ten are an order, and that order decides which sheet gets
+# to create a row and which gets to update it, so it is pinned in full and in sequence.
+_VOCABULARY_SHEET_TYPES = ["schedule", "legend", "notes", "cover-index"]
+_WINDOW_2_SHEET_TYPE_ORDER = [
+    "section", "detail", "elevation", "RCP", "enlarged-plan",
+    "plan", "overall-plan", "schematic", "other", "untyped",
+]
+
+# A window 3 unit id becomes a `verify_unit` subject prefix with `scopeItem:` in front and `-`
+# behind, so it may carry nothing a subject cannot.
+_UNIT_ID_RE = re.compile(r"^rev-[0-9A-Za-z]+-[0-9]+$")
+_SUBJECT_PREFIX_RE = re.compile(r"^scopeItem:[0-9A-Za-z._-]+-$")
 
 
 def _load_script_module(script_path: Path, module_name: str):
@@ -2419,9 +1754,8 @@ def _load_script_module(script_path: Path, module_name: str):
     seconds, so a script edited twice inside one second to the same byte length loads the earlier
     bytecode, and the harness would report on a version of the script that is no longer on disk.
     """
-    # A shipped script imports its siblings (the shared trade code resolver), and an import caches
-    # the module, so a second load in one process would reuse the copy the first load read. Dropping
-    # the scripts directory's own modules first means every load reads what is on disk now.
+    # Dropping the scripts directory's own modules first means every load reads what is on disk now,
+    # rather than a copy an earlier load in this process cached.
     scripts_dir = script_path.resolve().parent
     for loaded_name, loaded in list(sys.modules.items()):
         loaded_file = getattr(loaded, "__file__", None)
@@ -2444,11 +1778,16 @@ def _run_plan_script(module, argv: list[str]) -> tuple[int, str, str]:
     return code, out.getvalue().strip(), err.getvalue().strip()
 
 
+def _fold_code(code: str) -> str:
+    """The catalog fold, written here rather than imported, so the two agreeing is evidence."""
+    return "".join(code.split()).lower()
+
+
 def _plan_passes(read_plan: str) -> list[dict]:
     """
     The read plan's passes, read straight off the file: the pass id, the `key: value` lines of its
-    block, and its unit lines as (sheet number, page). Stops at the left-out section, whose entries
-    share the unit line's shape.
+    block, its sheet unit lines as (sheet number, page), and its review unit lines as (unit id,
+    name). Stops at the left-out section, whose entries share the sheet unit line's shape.
     """
     passes: list[dict] = []
     for line in read_plan.splitlines():
@@ -2456,13 +1795,17 @@ def _plan_passes(read_plan: str) -> list[dict]:
             break
         heading = _PLAN_PASS_RE.match(line)
         if heading:
-            passes.append({"id": heading.group(1), "fields": {}, "units": []})
+            passes.append({"id": heading.group(1), "fields": {}, "units": [], "reviews": []})
             continue
         if not passes:
             continue
         unit = _PLAN_UNIT_RE.match(line)
         if unit:
             passes[-1]["units"].append((unit.group(2), int(unit.group(3))))
+            continue
+        review = _PLAN_REVIEW_RE.match(line)
+        if review:
+            passes[-1]["reviews"].append((review.group(2), review.group(3)))
             continue
         field = _PLAN_FIELD_RE.match(line)
         if field:
@@ -2514,60 +1857,6 @@ def _check_split_arithmetic(passes: list[dict], cap: int, errors: list[str], whe
     return split
 
 
-def _pass_trade(plan_pass: dict) -> str:
-    """
-    The map key a pass reads for. Where the package's own code is not itself a key, the block names
-    the broader key covering it, and that key is the one the map declares seams on, so it is the one
-    every seam assertion has to work from.
-    """
-    return plan_pass["fields"].get("trade file covers", "") or plan_pass["fields"].get("reads for", "")
-
-
-def _trades_in_order(passes: list[dict]) -> list[str]:
-    """
-    The trades window 2 plans, in the order their passes run, each named once. A pass block carries
-    the catalog id verbatim on its `reads for` line, and a pass split into parts repeats it on every
-    part, so the runs are collapsed here: seam adjacency is a property of the trade, not of a part.
-    """
-    order: list[str] = []
-    for plan_pass in passes:
-        trade_id = _pass_trade(plan_pass)
-        if trade_id and (not order or order[-1] != trade_id):
-            order.append(trade_id)
-    return order
-
-
-def _contiguous_runs(trade_order: list[str]) -> dict[str, int]:
-    """How many separate places each trade occupies. More than one means its passes are not together."""
-    runs: dict[str, int] = {}
-    for trade_id in trade_order:
-        runs[trade_id] = runs.get(trade_id, 0) + 1
-    return runs
-
-
-def _seam_order_errors(
-    trade_order: list[str], seam_pairs: list[tuple[str, str]], bounds: str, where: str
-) -> list[str]:
-    """
-    Every seam pair whose two trades are both planned must either sit side by side, or have its group
-    named on the bounds line as one no order can fully satisfy. Silently dropping a declared seam is
-    the failure this exists to catch: the runner's overlap scan only fires when the two run together.
-    """
-    errors: list[str] = []
-    position = {trade_id: i for i, trade_id in enumerate(trade_order)}
-    for first, second in seam_pairs:
-        if first not in position or second not in position:
-            continue
-        if abs(position[first] - position[second]) == 1:
-            continue
-        if first in bounds and second in bounds:
-            continue
-        errors.append(
-            f"{where}: the seam {first} with {second} is neither adjacent nor named on the bounds line"
-        )
-    return errors
-
-
 def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "plan-inventory"
     script = plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT)
@@ -2577,9 +1866,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     fixtures = marketplace_root / "harness" / "fixtures"
     grid_fixture = fixtures / "set-grid-fixture.json"
     if not grid_fixture.is_file():
-        return Result(name, False, detail=f"grid fixture not found at {grid_fixture}")
-
-    trade_knowledge = plugin_path / "trade-knowledge"
+        return Result(name, False, detail=f"fixture not found at {grid_fixture}")
 
     try:
         module = _load_script_module(script, "plan_inventory")
@@ -2589,20 +1876,6 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     # The independent tally, computed here off the fixtures and never off the script's output.
     try:
         fixture_rows = json.loads(grid_fixture.read_text(encoding="utf-8"))["sheets"]
-        # The index pages are one leftover kind each, the shape index_citations_leftover returns,
-        # plus the located-code page the script also accepts. Both are read here the way the script
-        # reads them, so the tally below is this file's own and never the script's output.
-        index_pages = [
-            json.loads(path.read_text(encoding="utf-8"))
-            for path in sorted((fixtures / "index-fixture").iterdir())
-            if path.is_file()
-        ]
-        leftover_rows = [row for page in index_pages for row in page.get("rows", [])]
-        location_rows = [row for page in index_pages for row in page.get("locations", [])]
-        trade_sheets = json.loads(
-            (trade_knowledge / "trade-sheets.json").read_text(encoding="utf-8")
-        )
-        seam_pairs = [(pair[0], pair[1]) for pair in trade_sheets["seams"]]
     except Exception as e:
         return Result(name, False, detail=f"fixture: {e}")
 
@@ -2610,6 +1883,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     expected_by_discipline: dict[str, int] = {}
     expected_cross: dict[str, dict[str, int]] = {}
     page_of: dict[str, int] = {}
+    key_of: dict[str, str] = {}
     for row in fixture_rows:
         discipline = row.get("discipline") or "(none)"
         sheet_type = row.get("sheetType") or "(untyped)"
@@ -2617,12 +1891,49 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         expected_cross.setdefault(discipline, {})
         expected_cross[discipline][sheet_type] = expected_cross[discipline].get(sheet_type, 0) + 1
         page_of[row["sheetNumber"]] = row["pageInPdf"]
+        key_of[row["sheetNumber"]] = (
+            f"{row['sheetNumber']}@{row.get('fileId') or ''}#{row['pageInPdf']}"
+        )
 
     out_dir = Path(__file__).parent / ".test-results" / "plan-inventory"
     errors: list[str] = []
-    # The partial-input notes window 2 asserts, filled in below and named in the detail line.
-    fragments: list[str] = []
 
+    # ------------------------------------------------------------------ #
+    # The two shipped sheet type constants
+    # ------------------------------------------------------------------ #
+    #
+    # The one assertion the retired trade sheet map check carried that still has a subject: no
+    # shipped constant may name a sheet type the recognizer does not produce, or the window it
+    # drives would select nothing on a real set instead of failing here.
+    shipped_types = list(getattr(module, "VOCABULARY_SHEET_TYPES", ())) + list(
+        getattr(module, "WINDOW_2_SHEET_TYPE_ORDER", ())
+    )
+    if list(getattr(module, "VOCABULARY_SHEET_TYPES", ())) != _VOCABULARY_SHEET_TYPES:
+        errors.append(
+            f"the script's window 1 sheet types are "
+            f"{list(getattr(module, 'VOCABULARY_SHEET_TYPES', ()))}, pinned here as "
+            f"{_VOCABULARY_SHEET_TYPES}"
+        )
+    if list(getattr(module, "WINDOW_2_SHEET_TYPE_ORDER", ())) != _WINDOW_2_SHEET_TYPE_ORDER:
+        errors.append(
+            f"the script's window 2 reading order is "
+            f"{list(getattr(module, 'WINDOW_2_SHEET_TYPE_ORDER', ()))}, pinned here as "
+            f"{_WINDOW_2_SHEET_TYPE_ORDER}"
+        )
+    strangers = sorted(
+        {t for t in shipped_types if t not in RECOGNIZER_SHEET_TYPES and t not in _PLACEMENT_SHEET_TYPES}
+    )
+    if strangers:
+        errors.append(
+            f"the script's sheet type constants name {strangers}, which is neither a type the "
+            f"recognizer produces nor one of the script's own placement names"
+        )
+    if len(set(shipped_types)) != len(shipped_types):
+        errors.append("a sheet type is named in both of the script's two type constants")
+
+    # ------------------------------------------------------------------ #
+    # inventory
+    # ------------------------------------------------------------------ #
     code, bounds, err = _run_plan_script(
         module,
         ["inventory", "--grid", str(grid_fixture), "--expect-count", str(expected_rows),
@@ -2651,6 +1962,11 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         )
     if written_counts.get("byDisciplineAndSheetType") != expected_cross:
         errors.append("the discipline-by-sheet-type cross tab disagrees with the independent tally")
+    # The unit key window 1 writes and window 2 subtracts is built here from the grid's own fields,
+    # so a change to how the script spells one fails the window 2 partition below rather than
+    # quietly agreeing with itself.
+    if {r["unitKey"] for r in written.get("sheets", [])} != set(key_of.values()):
+        errors.append("inventory.json's unit keys are not sheet number, file id and page")
 
     off_code, _off_bounds, off_err = _run_plan_script(
         module,
@@ -2663,9 +1979,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         errors.append("the --expect-count refusal is not one line on stderr")
 
     inventory_json = str(out_dir / "inventory.json")
-    packages = str(fixtures / "packages-fixture.json")
-    kinds = str(fixtures / "kinds-fixture.json")
-    index_dir = str(fixtures / "index-fixture")
+    window_1_json = out_dir / "plan" / "window-1.json"
 
     # ------------------------------------------------------------------ #
     # Window 1: the vocabulary, plus one include and one exclude
@@ -2673,15 +1987,17 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     include_pattern = "A-4.*"
     exclude_pattern = "S-1.01"
     w1_path = out_dir / "read-plan-w1.md"
+    window_1_json.unlink(missing_ok=True)
     code, w1_bounds, err = _run_plan_script(
         module,
-        ["plan", "--window", "1", "--inventory", inventory_json, "--packages", packages,
-         "--trade-knowledge", str(trade_knowledge),
+        ["plan", "--window", "1", "--inventory", inventory_json,
          "--include", f"{include_pattern}:the elevations carry the window and finish marks",
          "--exclude", f"{exclude_pattern}:structural notes carry no scope this run reads",
          "--out", str(w1_path)],
     )
     w1_passes: list[dict] = []
+    expected_w1: set[str] = set()
+    excluded: set[str] = set()
     if code != 0:
         errors.append(f"window 1 refused the fixtures: {err}")
     else:
@@ -2720,350 +2036,385 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append("a sheet appears in more than one window 1 unit line")
         _check_split_arithmetic(w1_passes, 12, errors, "window 1")
 
+        # The file window 2 subtracts, and the reason it exists: window 2 provably reads what
+        # window 1 left rather than recomputing window 1's own selection from its arguments.
+        if str(window_1_json) not in w1_bounds:
+            errors.append(f"the window 1 bounds line does not name the file it wrote: {w1_bounds!r}")
+        try:
+            window_1_file = json.loads(window_1_json.read_text(encoding="utf-8"))
+        except Exception as e:
+            errors.append(f"window-1.json: {e}")
+            window_1_file = {"selected": [], "excluded": []}
+        if window_1_file.get("window") != 1:
+            errors.append("window-1.json does not say which window wrote it")
+        if set(window_1_file.get("selected", [])) != {key_of[s] for s in expected_w1}:
+            errors.append("window-1.json's selected keys are not the sheets window 1 planned")
+        if set(window_1_file.get("excluded", [])) != {key_of[s] for s in excluded}:
+            errors.append("window-1.json's excluded keys are not the sheets the pattern left out")
+
     # ------------------------------------------------------------------ #
-    # Window 2: one pass per package
+    # Window 2: every remaining sheet, once, in the fixed sheet type order
     # ------------------------------------------------------------------ #
+    #
+    # The expectation is built here from the grid and from window 1's own file: the inventory minus
+    # both of window 1's lists, grouped by discipline in inventory order, sorted inside a discipline
+    # by the pinned type order with inventory order kept inside a type, split at twelve. An excluded
+    # sheet stays out: the lead left it out with a reason, and reading it here would overrule that.
     w2_path = out_dir / "read-plan-w2.md"
     code, w2_bounds, err = _run_plan_script(
         module,
-        ["plan", "--window", "2", "--inventory", inventory_json, "--packages", packages,
-         "--kinds", kinds, "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
-         "--out", str(w2_path)],
+        ["plan", "--window", "2", "--inventory", inventory_json,
+         "--window-1", str(window_1_json), "--out", str(w2_path)],
     )
     w2_passes: list[dict] = []
-    w2_sheets: set[str] = set()
+    expected_w2_order: list[tuple[str, list[str]]] = []
     w2_split = 0
     if code != 0:
         errors.append(f"window 2 refused the fixtures: {err}")
     else:
-        w2_passes = _plan_passes(w2_path.read_text(encoding="utf-8"))
-        w2_sheets = {sheet for p in w2_passes for sheet, _page in p["units"]}
-        # One package carries a trade the map does not hold and another a trade whose families name
-        # nothing in this set. Both must be named on the bounds line by code, in their own field:
-        # the code alone would also match where some other field happens to mention it.
-        for fragment, what in (
-            ("packages with no sheet family mapped 1 (13 34 19)", "the unmapped package"),
-            (
-                "packages whose families named no sheet 1 (32 90 00)",
-                "the package whose families named no sheet",
-            ),
+        left = [
+            r for r in fixture_rows
+            if r["sheetNumber"] not in expected_w1 and r["sheetNumber"] not in excluded
+        ]
+        rank = {t: i for i, t in enumerate(_WINDOW_2_SHEET_TYPE_ORDER)}
+        groups: dict[str, list[dict]] = {}
+        group_order: list[str] = []
+        for row in left:
+            discipline = row.get("discipline") or "(none)"
+            if discipline not in groups:
+                groups[discipline] = []
+                group_order.append(discipline)
+            groups[discipline].append(row)
+        for discipline in group_order:
+            ordered = sorted(
+                groups[discipline],
+                key=lambda r: rank.get(r.get("sheetType") or "untyped", len(rank)),
+            )
+            stem = ("NONE" if discipline == "(none)" else discipline) + "2"
+            expected_w2_order.append((stem, [r["sheetNumber"] for r in ordered]))
+
+        by_type: dict[str, int] = {}
+        for row in left:
+            by_type[row.get("sheetType") or "untyped"] = (
+                by_type.get(row.get("sheetType") or "untyped", 0) + 1
+            )
+        for fragment in (
+            f"sheets {len(left)}",
+            f"disciplines {len(group_order)}",
+            f"every sheet once (units {len(left)} equals distinct sheets {len(left)})",
+            f"sheets window 1 selected {len(expected_w1)}",
+            f"sheets window 1 left out {len(excluded)}",
+            f"sheets in the inventory {expected_rows}",
+            f"sheets typed other or untyped "
+            f"{by_type.get('other', 0) + by_type.get('untyped', 0)}",
         ):
             if fragment not in w2_bounds:
+                errors.append(f"the window 2 bounds line does not name `{fragment}`: {w2_bounds!r}")
+        for sheet_type, count in by_type.items():
+            if f"{sheet_type} {count}" not in w2_bounds:
                 errors.append(
-                    f"the window 2 bounds line does not name {what} in its own field "
-                    f"(`{fragment}`): {w2_bounds!r}"
+                    f"the window 2 bounds line does not count `{sheet_type} {count}`: {w2_bounds!r}"
                 )
-        counted: dict[str, int] = {}
+        # Window 1 said how many sheets it does not read, and window 2 has to be exactly those.
+        if f"unassigned {len(left)}" not in w1_bounds:
+            errors.append(
+                f"window 1's unassigned count is not window 2's sheet count ({len(left)}): "
+                f"{w1_bounds!r}"
+            )
+
+        w2_passes = _plan_passes(w2_path.read_text(encoding="utf-8"))
+        planned: list[tuple[str, list[str]]] = []
         for plan_pass in w2_passes:
-            for sheet, _page in plan_pass["units"]:
-                counted[sheet] = counted.get(sheet, 0) + 1
-        read_twice = sum(1 for n in counted.values() if n > 1)
-        if f"sheets read for more than one trade {read_twice}" not in w2_bounds:
+            stem = plan_pass["id"]
+            if len(stem) > 1 and stem[-1] in string.ascii_lowercase:
+                stem = stem[:-1]
+            if not planned or planned[-1][0] != stem:
+                planned.append((stem, []))
+            planned[-1][1].extend(sheet for sheet, _page in plan_pass["units"])
+        if planned != expected_w2_order:
             errors.append(
-                f"the window 2 bounds line's overlap count disagrees with the plan's own unit lines "
-                f"({read_twice}): {w2_bounds!r}"
+                f"window 2 is not the inventory minus window 1, by discipline and in the sheet "
+                f"type order: planned {planned}, expected {expected_w2_order}"
             )
-        if read_twice == 0:
-            errors.append("the window 2 fixture proves nothing about overlap: no sheet is read twice")
-        if f"sheets no trade reads {expected_rows - len(w2_sheets)}" not in w2_bounds:
-            errors.append(f"the window 2 bounds line's unread count is not the inventory minus what it planned")
-        # Four partial-input notes the fixtures are built to trip: a code row carrying a kind and no
-        # defining sheet, a kind whose code rows fall short of the count the record gave for it, an
-        # index location row naming no kind, and a leftover kind whose rows fall short of its own
-        # total. Each must reach the bounds line, or a run would report a clean number over an input
-        # it could only partly use.
-        kinds_documents = json.loads(Path(kinds).read_text(encoding="utf-8"))
-        code_rows = [row for doc in kinds_documents for row in doc.get("codes", [])]
-        codes_without_sheet = sum(1 for row in code_rows if not row.get("sheetNumber"))
-        kinds_short = sorted(
-            f"{doc['codes'][0]['kind']} {len(doc['codes'])} of {doc['count']}"
-            for doc in kinds_documents
-            if doc.get("codes") and len(doc["codes"]) < doc.get("count", 0)
+        reads = [sheet for _stem, sheets in planned for sheet in sheets]
+        if len(reads) != len(set(reads)):
+            errors.append("a sheet appears in more than one window 2 unit line")
+        for plan_pass in w2_passes:
+            if plan_pass["fields"].get("reads for") != "the sheet":
+                errors.append(f"window 2 pass {plan_pass['id']} does not read for the sheet")
+        # The fixture has to be able to fail these two, or neither says anything.
+        reordered = any(
+            sheets != [r["sheetNumber"] for r in fixture_rows if r["sheetNumber"] in set(sheets)]
+            for _stem, sheets in expected_w2_order
         )
-        locations_without_field = sum(
-            1 for row in location_rows
-            if not row.get("kind") or not row.get("sheetNumber")
-        )
-        leftover_short = sorted(
-            f"{page['kind']} {len(page['rows'])} of {page['total']}"
-            for page in index_pages
-            if page.get("rows") is not None and len(page["rows"]) < page.get("total", 0)
-        )
-        if codes_without_sheet == 0 or locations_without_field == 0 or not leftover_short:
-            errors.append("the fixtures no longer trip every partial-input note")
-        fragments += [
-            f"definition codes with no defining sheet {codes_without_sheet}",
-            f"index locations naming no kind or no sheet {locations_without_field}",
-            "leftover kinds short of their own total: " + ", ".join(leftover_short),
-        ]
-        if kinds_short:
-            fragments.append("definition kinds short of their own count: " + ", ".join(kinds_short))
-        for fragment in fragments:
-            if fragment not in w2_bounds:
-                errors.append(f"the window 2 bounds line does not carry `{fragment}`: {w2_bounds!r}")
-        # A package whose code the map does not key reads for the family's trade file, and a run has
-        # to show that it did. Which packages those are is resolved here off the map, never a list
-        # written down beside the fixture that could go stale as the map is re-keyed.
-        by_family: list[str] = []
-        try:
-            resolver = _load_script_module(plugin_path.joinpath(*TRADE_CODE_SCRIPT), "trade_code")
-        except Exception as e:
-            errors.append(f"cannot import the shared resolver: {e}")
-        else:
-            folded_keys = {resolver.fold(key): key for key in trade_sheets["trades"]}
-            for row in json.loads(Path(packages).read_text(encoding="utf-8"))["packages"]:
-                code = row.get("tradeCode", "")
-                found = resolver.resolve(code, folded_keys)
-                if found is not None and found[1] == "family":
-                    by_family.append(code)
-        if len(by_family) < 2:
-            errors.append(
-                f"the packages fixture carries {len(by_family)} codes resolved by family, too few "
-                f"to prove the window 2 plan reports them"
-            )
-        if f"resolved by family {len(by_family)}" not in w2_bounds:
-            errors.append(
-                f"the window 2 bounds line does not count what it resolved by family: {w2_bounds!r}"
-            )
-        for code in by_family:
-            if code not in w2_bounds:
-                errors.append(f"the window 2 bounds line does not name {code} as resolved by family")
+        if not reordered:
+            errors.append("the window 2 fixture proves nothing about the sheet type order")
         w2_split = _check_split_arithmetic(w2_passes, 12, errors, "window 2")
         if w2_split == 0:
             errors.append("the window 2 fixture proves nothing about the twelve-unit split")
-        # The packages file names two seam groups and splits both: a pair (09 21 16 with 09 91 00)
-        # with another package between them, and a three-trade chain (08 40 00, 08 50 00, 12 20 00,
-        # where 08 50 00 seams with both of the others) with a package inside it. Every declared seam
-        # among the trades planned here must come back adjacent, or its group must be named on the
-        # bounds line; the three-trade chain is the shape a pairwise move cannot get right.
-        trade_order = _trades_in_order(w2_passes)
-        for trade_id, runs in _contiguous_runs(trade_order).items():
-            if runs > 1:
-                errors.append(f"window 2 splits trade {trade_id} across {runs} places in its order")
-        if trade_order.count("08 40 00") and trade_order.count("12 20 00"):
-            chain = sorted(trade_order.index(t) for t in ("08 40 00", "08 50 00", "12 20 00"))
-            if chain != list(range(chain[0], chain[0] + 3)):
-                errors.append(
-                    f"the three-trade seam chain is not contiguous in window 2's order: {trade_order}"
-                )
-        else:
-            errors.append("the window 2 fixture proves nothing about a trade in two seams")
-        # The seam assertions say nothing at all if the map and the packages between them declare no
-        # seam over the trades planned here, so the fixture's own reach is asserted before them.
-        live_seams = [(a, b) for a, b in seam_pairs if a in trade_order and b in trade_order]
-        if len(live_seams) < 3:
-            errors.append(
-                f"the window 2 fixture exercises {len(live_seams)} declared seams, too few to prove "
-                f"a pair and a three-trade chain"
-            )
-        errors.extend(_seam_order_errors(trade_order, seam_pairs, w2_bounds, "window 2"))
-        for plan_pass in w2_passes:
-            declared = {
-                s.strip() for s in plan_pass["fields"].get("seam with", "").split(",") if s.strip()
-            }
-            trade_id = _pass_trade(plan_pass)
-            index_of = trade_order.index(trade_id) if trade_id in trade_order else None
-            beside = set()
-            if index_of is not None:
-                for i in (index_of - 1, index_of + 1):
-                    if 0 <= i < len(trade_order):
-                        beside.add(trade_order[i])
-            stranded = declared - beside
-            if stranded:
-                errors.append(
-                    f"pass {plan_pass['id']} claims a seam with {sorted(stranded)}, which its own "
-                    f"order does not put next to it"
-                )
 
     # ------------------------------------------------------------------ #
-    # Window 3: the leftover, checked against window 2's own unit lines
+    # Window 3: one review per package
     # ------------------------------------------------------------------ #
-    w3_path = out_dir / "read-plan-w3.md"
-    code, w3_bounds, err = _run_plan_script(
-        module,
-        ["plan", "--window", "3", "--inventory", inventory_json, "--packages", packages,
-         "--kinds", kinds, "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
-         "--out", str(w3_path)],
-    )
-    w3_passes: list[dict] = []
-    if code != 0:
-        errors.append(f"window 3 refused the fixtures: {err}")
-    else:
-        w3_passes = _plan_passes(w3_path.read_text(encoding="utf-8"))
-        w3_sheets = [sheet for p in w3_passes for sheet, _page in p["units"]]
-        expected_w3 = {r["sheetNumber"] for r in fixture_rows} - w2_sheets
-        if set(w3_sheets) != expected_w3:
-            errors.append(
-                f"window 3 is not the inventory minus what window 2 read: planned "
-                f"{sorted(set(w3_sheets))}, expected {sorted(expected_w3)}"
-            )
-        if len(w3_sheets) != len(set(w3_sheets)):
-            errors.append("a sheet appears in more than one window 3 unit line")
-        expected_w3_disciplines = {
-            (r.get("discipline") or "(none)") for r in fixture_rows if r["sheetNumber"] in expected_w3
-        }
-        for fragment in (f"sheets {len(expected_w3)}", f"passes {len(expected_w3_disciplines)}"):
-            if fragment not in w3_bounds:
-                errors.append(f"the window 3 bounds line does not name `{fragment}`: {w3_bounds!r}")
-        open_on_leftover = sum(
-            1 for row in leftover_rows if row.get("sheet") in expected_w3
+    def window_3_over(label: str, packages_path: Path, out_name: str) -> tuple[list[dict], str]:
+        """Run window 3 over one packages fixture and assert everything the plan file says."""
+        path = out_dir / out_name
+        run_code, run_bounds, run_err = _run_plan_script(
+            module,
+            ["plan", "--window", "3", "--packages", str(packages_path), "--out", str(path)],
         )
-        total_open = len(leftover_rows)
-        if f"open entries {open_on_leftover} of {total_open}" not in w3_bounds:
-            errors.append(
-                f"the window 3 bounds line does not carry {open_on_leftover} of {total_open} open "
-                f"entries: {w3_bounds!r}"
+        if run_code != 0:
+            errors.append(f"window 3 refused {label}: {run_err}")
+            return [], ""
+        rows = json.loads(packages_path.read_text(encoding="utf-8"))["packages"]
+
+        ordinals: dict[str, int] = {}
+        expected: list[dict] = []
+        for row in rows:
+            code_text = row["tradeCode"].strip()
+            key = _fold_code(code_text)
+            ordinals[key] = ordinals.get(key, 0) + 1
+            expected.append(
+                {
+                    "id": f"rev-{''.join(code_text.split())}-{ordinals[key]}",
+                    "key": key,
+                    "code": code_text,
+                    "name": row.get("name") or code_text,
+                    "package": row.get("id") or "(no id)",
+                    "codes": ", ".join(row.get("codes") or []) or "none",
+                }
             )
-        _check_split_arithmetic(w3_passes, 12, errors, "window 3")
+        per_trade = {key: count for key, count in ordinals.items()}
+        shared = [r for r in expected if per_trade[r["key"]] > 1]
+
+        passes = _plan_passes(path.read_text(encoding="utf-8"))
+        if len(passes) != len(rows):
+            errors.append(f"{label}: window 3 planned {len(passes)} passes over {len(rows)} packages")
+        if any(len(p["reviews"]) != 1 or p["units"] for p in passes):
+            errors.append(f"{label}: a window 3 pass does not carry exactly one review and no sheet")
+        by_id = {r["id"]: r for r in expected}
+        planned_ids = [p["reviews"][0][0] for p in passes if p["reviews"]]
+        if sorted(planned_ids) != sorted(by_id):
+            errors.append(
+                f"{label}: window 3 planned unit ids {sorted(planned_ids)}, expected {sorted(by_id)}"
+            )
+        for plan_pass in passes:
+            if not plan_pass["reviews"]:
+                continue
+            unit_id, unit_name = plan_pass["reviews"][0]
+            want = by_id.get(unit_id)
+            if want is None:
+                continue
+            if plan_pass["id"] != unit_id:
+                errors.append(f"{label}: pass {plan_pass['id']} carries the unit id {unit_id}")
+            for field, value in (
+                ("reads for", want["code"]),
+                ("package", want["package"]),
+                ("codes", want["codes"]),
+            ):
+                if plan_pass["fields"].get(field) != value:
+                    errors.append(
+                        f"{label}: review {unit_id} carries `{field}: "
+                        f"{plan_pass['fields'].get(field)}`, expected {value!r}"
+                    )
+            if unit_name != want["name"]:
+                errors.append(f"{label}: review {unit_id} is named {unit_name!r}, expected {want['name']!r}")
+
+        for fragment in (
+            f"packages {len(rows)}",
+            f"reviews {len(expected)}",
+            f"trades {len(per_trade)}",
+            f"packages sharing a trade: {len(shared)}",
+        ):
+            if fragment not in run_bounds:
+                errors.append(f"{label}: the bounds line does not name `{fragment}`: {run_bounds!r}")
+        # The fixtures name few enough that the script's five-name cap cannot bite.
+        for review in shared:
+            if review["code"] not in run_bounds:
+                errors.append(
+                    f"{label}: the bounds line does not name {review['code']} as sharing a trade"
+                )
+
+        # Two packages on one trade run one after the other, so the runner's overlap scan sees them.
+        positions: dict[str, list[int]] = {}
+        for index, unit_id in enumerate(planned_ids):
+            positions.setdefault(by_id[unit_id]["key"] if unit_id in by_id else unit_id, []).append(index)
+        for key, at in positions.items():
+            if at != list(range(at[0], at[0] + len(at))):
+                errors.append(f"{label}: the packages on trade {key} are not planned one after the other")
+
+        # Reviews run in package order, grouped by folded trade code in first-seen order. That is
+        # the whole of the ordering rule, so it is computed here off the fixture rather than read
+        # back off the plan the script wrote.
+        first_seen: list[str] = []
+        for review in expected:
+            if review["key"] not in first_seen:
+                first_seen.append(review["key"])
+        expected_order = [r["id"] for key in first_seen for r in expected if r["key"] == key]
+        if planned_ids != expected_order:
+            errors.append(
+                f"{label}: window 3 planned {planned_ids}, expected package order grouped by "
+                f"trade: {expected_order}"
+            )
+        return passes, run_bounds
+
+    ordinary_packages = fixtures / "packages-fixture.json"
+    shared_packages = fixtures / "packages-fixture-duplicate-trade.json"
+    w3_passes, w3_bounds = window_3_over("window 3", ordinary_packages, "read-plan-w3.md")
+    shared_passes, shared_bounds = window_3_over(
+        "window 3 over two packages on one trade", shared_packages, "read-plan-w3-shared.md"
+    )
+
+    # The fixtures have to reach the cases they exist for, or the assertions above say nothing.
+    if w3_passes and "packages sharing a trade: 0" not in w3_bounds:
+        errors.append(
+            "the ordinary window 3 fixture puts two packages on one trade, so it no longer "
+            "proves the plain one-package-per-trade case"
+        )
+    if shared_bounds and "packages sharing a trade: 2" not in shared_bounds:
+        errors.append(
+            f"the shared-trade fixture does not put two packages on one trade: {shared_bounds!r}"
+        )
 
     # ------------------------------------------------------------------ #
-    # Every unit line's page reference, checked against the fixture grid
+    # The join: a unit id is a verify_unit subject prefix stem
     # ------------------------------------------------------------------ #
-    planned = [unit for p in w1_passes + w2_passes + w3_passes for unit in p["units"]]
+    #
+    # The plan writes the id and the reviewer records `scopeItem:<unit id>-<seq>` under it, which the
+    # runner then verifies with one `verify_unit(subjectPrefix: ...)` call. A prefix that is also the
+    # prefix of another review's would count that review's rows as this one's.
+    unit_ids = [p["reviews"][0][0] for p in shared_passes if p["reviews"]]
+    prefixes = [f"scopeItem:{unit_id}-" for unit_id in unit_ids]
+    for unit_id, prefix in zip(unit_ids, prefixes):
+        if not _UNIT_ID_RE.match(unit_id):
+            errors.append(f"the unit id {unit_id!r} is not `rev-<packed catalog code>-<ordinal>`")
+        if not _SUBJECT_PREFIX_RE.match(prefix):
+            errors.append(f"the subject prefix {prefix!r} is not a legal verify_unit prefix stem")
+    for one in prefixes:
+        for other in prefixes:
+            if one is not other and other.startswith(one):
+                errors.append(f"the subject prefix {one!r} is a prefix of {other!r}")
+    if len(set(unit_ids)) != len(unit_ids):
+        errors.append("two window 3 reviews carry one unit id")
+    if not any(unit_id.endswith("-2") for unit_id in unit_ids):
+        errors.append("the join test never sees a second review on one trade, which is the case it exists for")
+
+    # ------------------------------------------------------------------ #
+    # Every sheet unit line's page reference, checked against the fixture grid
+    # ------------------------------------------------------------------ #
+    sheet_units = [unit for p in w1_passes + w2_passes for unit in p["units"]]
     misplaced = [
         f"{sheet} on page {page} where the grid says {page_of.get(sheet)}"
-        for sheet, page in planned
+        for sheet, page in sheet_units
         if page_of.get(sheet) != page
     ]
     if misplaced:
         errors.append("unit lines cite a page the grid does not: " + "; ".join(misplaced[:5]))
 
     # ------------------------------------------------------------------ #
-    # The ordering over the shipped map itself, not just over the fixture
-    # ------------------------------------------------------------------ #
-    #
-    # The fixture holds two seam groups. The shipped map holds twenty one seam pairs over the whole
-    # catalog, and a project that buys a package for every mapped trade meets all of them at once.
-    # This runs the ordering over exactly that case, one pass per mapped trade, and asserts the same
-    # property the fixture asserts: every declared pair is adjacent, or its group came back named.
-    map_passes = [
-        {"tradeId": trade_id, "id": entry["knowledge"], "units": []}
-        for trade_id, entry in trade_sheets["trades"].items()
-    ]
-    try:
-        apart_groups = module._order_by_seams(map_passes, {
-            "trades": trade_sheets["trades"],
-            "seams": seam_pairs,
-        })
-    except Exception as e:
-        errors.append(f"the ordering raised over the shipped map: {e}")
-    else:
-        map_order = [plan_pass["tradeId"] for plan_pass in map_passes]
-        if sorted(map_order) != sorted(trade_sheets["trades"]):
-            errors.append("the ordering over the shipped map lost or repeated a trade")
-        named = " ".join(" ".join(group) for group in apart_groups)
-        errors.extend(_seam_order_errors(map_order, seam_pairs, named, "the shipped map"))
-        for plan_pass in map_passes:
-            declared = {
-                s.strip() for s in str(plan_pass.get("seamWith", "")).split(",") if s.strip()
-            }
-            at = map_order.index(plan_pass["tradeId"])
-            beside = {map_order[i] for i in (at - 1, at + 1) if 0 <= i < len(map_order)}
-            if declared - beside:
-                errors.append(
-                    f"over the shipped map, {plan_pass['tradeId']} claims a seam with "
-                    f"{sorted(declared - beside)} that its own order does not put next to it"
-                )
-
-    # ------------------------------------------------------------------ #
-    # An index that ran without its located-code half says so, never a clean number
-    # ------------------------------------------------------------------ #
-    code, partial_bounds, err = _run_plan_script(
-        module,
-        ["plan", "--window", "2", "--inventory", inventory_json, "--packages", packages,
-         "--kinds", kinds, "--index", str(fixtures / "index-fixture-no-locations"),
-         "--trade-knowledge", str(trade_knowledge), "--out", str(out_dir / "read-plan-w2-partial.md")],
-    )
-    if code != 0:
-        errors.append(f"window 2 refused an index with no located codes: {err}")
-    elif "index locations not present" not in partial_bounds:
-        errors.append(
-            f"window 2 over an index with no located codes reported a clean number: {partial_bounds!r}"
-        )
-
-    # ------------------------------------------------------------------ #
     # Refusals, each exiting 1 with one line on stderr
     # ------------------------------------------------------------------ #
+    broken = out_dir / "broken"
+    broken.mkdir(parents=True, exist_ok=True)
+    (broken / "window-1-stranger.json").write_text(
+        json.dumps({"window": 1, "selected": ["Z-9.99@file-0001#99"], "excluded": []}) + "\n",
+        encoding="utf-8",
+    )
+    # A key in both lists still leaves window 2 a correct partition, so nothing downstream would
+    # catch it; what it corrupts is the count the bounds line says out loud.
+    a_real_key = sorted(key_of.values())[0]
+    (broken / "window-1-both-lists.json").write_text(
+        json.dumps({"window": 1, "selected": [a_real_key], "excluded": [a_real_key]}) + "\n",
+        encoding="utf-8",
+    )
+    # Two grid rows folding to one unit key. The delimiters are `@` and `#`, so a sheet number
+    # carrying an `@` and an empty file id reach the same string as the reverse. Window 2 would drop
+    # both rows, and its partition check could not see it, because neither reaches the remainder for
+    # the count to disagree on.
+    (broken / "colliding-grid.json").write_text(
+        json.dumps(
+            {
+                "count": 2,
+                "offset": 0,
+                "sheets": [
+                    {"discipline": "A", "sheetNumber": "A@1", "sheetType": "plan",
+                     "pageTitle": "One of the two", "fileId": "", "pageInPdf": 2},
+                    {"discipline": "A", "sheetNumber": "A", "sheetType": "plan",
+                     "pageTitle": "The other", "fileId": "1@", "pageInPdf": 2},
+                ],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    refused = str(out_dir / "refused.md")
+    packages = str(ordinary_packages)
     refusals: list[tuple[str, list[str], str]] = [
         (
             "a package row with no tradeCode",
-            ["plan", "--window", "2", "--inventory", inventory_json,
-             "--packages", str(fixtures / "packages-fixture-no-trade-code.json"),
-             "--kinds", kinds, "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
-             "--out", str(out_dir / "refused.md")],
+            ["plan", "--window", "3", "--packages", str(fixtures / "packages-fixture-no-trade-code.json"),
+             "--out", refused],
             "tradeCode",
         ),
         (
-            "two codes of one family on one trade file",
-            ["plan", "--window", "2", "--inventory", inventory_json,
-             "--packages", str(fixtures / "packages-fixture-family-collision.json"),
-             "--kinds", kinds, "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
-             "--out", str(out_dir / "refused.md")],
-            "04 00 00",
+            "window 2 with no --window-1",
+            ["plan", "--window", "2", "--inventory", inventory_json, "--out", refused],
+            "--window-1",
         ),
         (
-            "two packages on one trade",
-            ["plan", "--window", "2", "--inventory", inventory_json,
-             "--packages", str(fixtures / "packages-fixture-duplicate-trade.json"),
-             "--kinds", kinds, "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
-             "--out", str(out_dir / "refused.md")],
-            "pkg-0009",
-        ),
-        (
-            "a kinds row with no kind",
-            ["plan", "--window", "2", "--inventory", inventory_json, "--packages", packages,
-             "--kinds", str(fixtures / "kinds-fixture-no-kind.json"), "--index", index_dir,
-             "--trade-knowledge", str(trade_knowledge), "--out", str(out_dir / "refused.md")],
-            "kind",
-        ),
-        (
-            "an index page carrying neither array",
-            ["plan", "--window", "2", "--inventory", inventory_json, "--packages", packages,
-             "--kinds", kinds, "--index", str(fixtures / "index-fixture-broken"),
-             "--trade-knowledge", str(trade_knowledge), "--out", str(out_dir / "refused.md")],
-            "locations",
-        ),
-        (
-            "a leftover page read off a pass that has not finished",
-            ["plan", "--window", "3", "--inventory", inventory_json, "--packages", packages,
-             "--kinds", kinds, "--index", str(fixtures / "index-fixture-not-succeeded"),
-             "--trade-knowledge", str(trade_knowledge), "--out", str(out_dir / "refused.md")],
-            "not succeeded",
-        ),
-        (
-            "window 2 with no --kinds",
-            ["plan", "--window", "2", "--inventory", inventory_json, "--packages", packages,
-             "--index", index_dir, "--trade-knowledge", str(trade_knowledge),
-             "--out", str(out_dir / "refused.md")],
-            "--kinds",
-        ),
-        (
-            "window 3 with no --index",
-            ["plan", "--window", "3", "--inventory", inventory_json, "--packages", packages,
-             "--kinds", kinds, "--trade-knowledge", str(trade_knowledge),
-             "--out", str(out_dir / "refused.md")],
-            "--index",
-        ),
-        (
-            "window 1 with no --packages",
-            ["plan", "--window", "1", "--inventory", inventory_json,
-             "--trade-knowledge", str(trade_knowledge), "--out", str(out_dir / "refused.md")],
+            "window 2 given --packages",
+            ["plan", "--window", "2", "--inventory", inventory_json, "--window-1", str(window_1_json),
+             "--packages", packages, "--out", refused],
             "--packages",
         ),
         (
+            "window 3 given --inventory",
+            ["plan", "--window", "3", "--inventory", inventory_json, "--packages", packages,
+             "--out", refused],
+            "--inventory",
+        ),
+        (
+            "window 1 given --kinds",
+            ["plan", "--window", "1", "--inventory", inventory_json,
+             "--kinds", inventory_json, "--out", refused],
+            "--kinds",
+        ),
+        (
+            "window 1 given --index",
+            ["plan", "--window", "1", "--inventory", inventory_json,
+             "--index", str(out_dir), "--out", refused],
+            "--index",
+        ),
+        (
+            "a window 1 file naming a unit key the inventory does not hold",
+            ["plan", "--window", "2", "--inventory", inventory_json,
+             "--window-1", str(broken / "window-1-stranger.json"), "--out", refused],
+            "does not hold",
+        ),
+        (
             "an include pattern matching no sheet",
-            ["plan", "--window", "1", "--inventory", inventory_json, "--packages", packages,
-             "--trade-knowledge", str(trade_knowledge),
-             "--include", "Z-9.*:a family that is not in this set",
-             "--out", str(out_dir / "refused.md")],
+            ["plan", "--window", "1", "--inventory", inventory_json,
+             "--include", "Z-9.*:a family that is not in this set", "--out", refused],
             "Z-9.*",
         ),
         (
             "an include with no colon",
-            ["plan", "--window", "1", "--inventory", inventory_json, "--packages", packages,
-             "--trade-knowledge", str(trade_knowledge), "--include", "A-4.01",
-             "--out", str(out_dir / "refused.md")],
+            ["plan", "--window", "1", "--inventory", inventory_json, "--include", "A-4.01",
+             "--out", refused],
             "reason",
+        ),
+        (
+            "a window 1 file naming a key as both selected and excluded",
+            ["plan", "--window", "2", "--inventory", inventory_json,
+             "--window-1", str(broken / "window-1-both-lists.json"), "--out", refused],
+            "both selected and excluded",
+        ),
+        (
+            "a grid whose rows fold to one unit key",
+            ["inventory", "--grid", str(broken / "colliding-grid.json"), "--expect-count", "2",
+             "--out-dir", str(out_dir / "colliding")],
+            "colliding unit key",
         ),
     ]
     for what, argv, must_name in refusals:
@@ -3077,23 +2428,22 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
 
     detail = (
         f"{expected_rows} fixture sheets over {len(expected_by_discipline)} disciplines: "
-        f"the inventory tallies checked against an independent count, "
-        f"{len(planned)} unit lines over three windows with every page checked against the grid, "
-        f"window 1's selection and its bounds counts checked against an independent tally, "
-        f"window 2's overlap and unread counts checked against its own unit lines, "
-        f"{w2_split} pass split at the twelve-unit cap with ids and sizes checked against a "
-        f"balanced split computed here, two seam groups (a pair and a three-trade chain) each "
-        f"contiguous with no pass claiming a seam its own order contradicts, the same seam property "
-        f"checked over all {len(seam_pairs)} pairs of the shipped map with one pass per mapped "
-        f"trade, {len(fragments)} partial-input notes asserted by their text, window 3 checked to be "
-        f"exactly the inventory minus window 2's own unit lines, an index with no located codes "
-        f"reported as a partial input, "
-        f"{len(refusals)} broken invocations each refused in one line naming what is missing"
+        f"the inventory tallies and unit keys checked against an independent count, "
+        f"{len(sheet_units)} sheet unit lines over two windows with every page checked against the "
+        f"grid, window 1's selection and its bounds counts checked against an independent tally and "
+        f"its window-1.json checked key for key, window 2 checked to be an exact partition of the "
+        f"inventory minus both of window 1's lists in the pinned sheet type order with {w2_split} "
+        f"pass split at the twelve-unit cap, both sheet type constants pinned here and neither "
+        f"naming a type the recognizer does not produce, one review per package over two packages "
+        f"fixtures, in package order, with two packages on "
+        f"one trade both planning and planned one after the other, {len(unit_ids)} unit ids checked "
+        f"to be legal verify_unit prefix stems with none a prefix of another, "
+        f"{len(refusals)} broken invocations each refused in one line naming what is wrong"
     )
     # An honest bound, not a pass: the fixtures are invented and small. They carry the field names
     # the shipped verbs return, so a rename on the record's side would fail here, but nothing about
-    # a real grid, a real definitions read or a real leftover read is proved by them.
-    detail += "; bound: invented fixtures, not a real grid, definitions read or leftover read"
+    # a real grid or a real packages read is proved by them.
+    detail += "; bound: invented fixtures, not a real grid or a real packages read"
     if errors:
         detail += " | " + "; ".join(errors)
 
@@ -3110,9 +2460,8 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
 # reader reports. This is the regression guard: no shipped skill or agent file may tell an agent to
 # dispatch a `fork` subagent, in either the `subagent_type:` dispatch-line shape this codebase's own
 # templates use, or a `tools: Agent(fork)` frontmatter declaration. Ordinary English uses of "fork"
-# (a forklift, a decision fork -- both real, current trade-knowledge vocabulary) are untouched: the
-# pattern only matches "fork" sitting immediately after one of those two anchors, and trade-knowledge
-# files are outside this check's file scope regardless.
+# (a forklift, a decision fork) are untouched: the pattern only matches "fork" sitting immediately
+# after one of those two anchors.
 
 _FORK_SUBAGENT_RE = re.compile(
     r'subagent_type["\':=]*\s*["\']?fork\b|Agent\(\s*fork\s*\)',
@@ -3182,8 +2531,6 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_question_plain_words_pointer(plugin_path),
         check_ledger_fixed_shape(plugin_path),
         check_runner_mode_set(plugin_path),
-        check_pass_knowledge_excerpt(plugin_path),
-        check_trade_sheet_map(plugin_path),
         check_plan_inventory(plugin_path, marketplace_root),
         check_no_fork_subagent(plugin_path),
     ]

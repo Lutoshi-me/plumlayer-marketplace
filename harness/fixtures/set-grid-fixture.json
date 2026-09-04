@@ -1,6 +1,6 @@
 {
-  "count": 31,
-  "returned": 31,
+  "count": 39,
+  "returned": 39,
   "offset": 0,
   "limit": 500,
   "truncated": false,
@@ -10,7 +10,8 @@
     "S": 3,
     "P": 2,
     "E": 1,
-    "": 1
+    "": 1,
+    "C": 8
   },
   "sheets": [
     {
@@ -260,6 +261,70 @@
       "sheetType": "legend",
       "fileId": "file-0001",
       "pageInPdf": 31
+    },
+    {
+      "discipline": "C",
+      "sheetNumber": "C-1.01",
+      "pageTitle": "Overall site plan",
+      "sheetType": "overall-plan",
+      "fileId": "file-0001",
+      "pageInPdf": 32
+    },
+    {
+      "discipline": "C",
+      "sheetNumber": "C-1.02",
+      "pageTitle": "Survey control diagram",
+      "sheetType": "other",
+      "fileId": "file-0001",
+      "pageInPdf": 33
+    },
+    {
+      "discipline": "C",
+      "sheetNumber": "C-1.03",
+      "pageTitle": "Canopy reflected ceiling plan",
+      "sheetType": "RCP",
+      "fileId": "file-0001",
+      "pageInPdf": 34
+    },
+    {
+      "discipline": "C",
+      "sheetNumber": "C-1.04",
+      "pageTitle": "Site sections",
+      "sheetType": "section",
+      "fileId": "file-0001",
+      "pageInPdf": 35
+    },
+    {
+      "discipline": "C",
+      "sheetNumber": "C-1.05",
+      "pageTitle": "Storm riser schematic",
+      "sheetType": "schematic",
+      "fileId": "file-0001",
+      "pageInPdf": 36
+    },
+    {
+      "discipline": "C",
+      "sheetNumber": "C-1.06",
+      "pageTitle": "Enlarged plan at the plaza",
+      "sheetType": "enlarged-plan",
+      "fileId": "file-0001",
+      "pageInPdf": 37
+    },
+    {
+      "discipline": "C",
+      "sheetNumber": "C-1.07",
+      "pageTitle": "Retaining wall sections",
+      "sheetType": "section",
+      "fileId": "file-0001",
+      "pageInPdf": 38
+    },
+    {
+      "discipline": "C",
+      "sheetNumber": "C-1.08",
+      "pageTitle": "Site wall elevations",
+      "sheetType": "elevation",
+      "fileId": "file-0001",
+      "pageInPdf": 39
     }
   ]
 }

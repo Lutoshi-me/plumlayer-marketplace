@@ -160,9 +160,8 @@ Each of these is a harness check.
      `grain`, `trust class`) is legitimate agent-facing machinery vocabulary everywhere else in a
      skill, and is banned only inside a `<!-- user-facing -->` span or an `Audience: user` artifact
      clause — the places the file itself has already declared the text user-facing.
-   The pinned trade-knowledge/ corpus files are out of scope for this check entirely: ordinary
-   English collides with several of these names there (a subcontractor's payment "deposit", a
-   "proposed" product substitution), and that collision is real trade vocabulary, not drift.
+   Every shipped file takes the same scan. There is no lenient population and no exemption list:
+   a shipped file is the plugin's own prose, in the plugin's own voice, and a hit in one is drift.
 7. Bold used for emphasis on a short, high-precision denylist of ordinary words (`not`, `never`,
    `only`, `must`, `no`, `exactly`, and similar) when the bold span is not immediately followed by a
    colon (the `**Label**:` convention that marks a genuine label). This is deliberately narrower than
@@ -185,24 +184,25 @@ Each of these is a harness check.
    the harness README entry rather than left to read as a proof.
 10. The runner's mode set. The `##` headings of `agents/scope-round-runner.md` match a pinned set
     exactly, in both directions, so the one-runner-per-pass shape cannot be partly undone (a
-    `## Round mode` coming back, a `## Pass mode` renamed away) without failing the release.
-11. The pass-knowledge excerpt is verbatim. The shipped cut script is run over every trade file the
-    knowledge manifest lists, and each trade's whole scope grain rules section, plus each headed
-    structural gap list block, must come back as a contiguous byte-identical run in the excerpt.
-    Contiguity is the assertion: an every-line-is-present check passes on text that has been
-    reordered or reflowed. The knowledge version in the excerpt is compared against the one this
-    check reads out of the manifest itself, and the section 7 arm is asserted in both directions.
-    Its bound is stated in the harness README entry: four trade files carry no structural gap list
-    anywhere in the source, and the check names them rather than passing over them in silence.
-12. The plan inventory script does its arithmetic. The shipped `plan_inventory.py` is run
-    in-process over invented grid, packages, kinds, and index fixtures, and its counts, its
-    three windows' unit lines and page references, and its balanced pass split are compared
-    against a tally the check computes itself off the same fixtures. Broken inputs must each be
+    `## Round mode` or a `## Leftover mode` coming back, a `## Pass mode` renamed away) without
+    failing the release. The set is pass, review and boundary, plus the four headings
+    that are not modes.
+11. The plan inventory script does its arithmetic. The shipped `plan_inventory.py` is run
+    in-process over an invented grid and two packages fixtures, and its counts, its
+    three windows' unit lines and page references, its pinned reading order, its balanced pass
+    split and its window 3 unit ids are compared against a tally the check computes itself off the
+    same fixtures. Window 2 has to come out an exact partition of the inventory minus the window 1
+    file the script itself wrote, and every window 3 unit id has to be a legal `verify_unit`
+    subject prefix stem with none a prefix of another, which is the join the plan and the reviewer
+    would otherwise first meet on mid-run. Broken inputs must each be
     refused with exit 1 and one line on stderr, and every window's bounds line must name its
-    counts, so a run that reports nothing fails. Its bound is stated in the harness README entry
+    counts, so a run that reports nothing fails. Those refusals cover the two ways a sheet could
+    otherwise go missing or be miscounted with nothing said about it: two grid rows folding to one
+    unit key, which window 2 would subtract as one and drop as two, and a window 1 file naming a key
+    as both selected and left out. Its bound is stated in the harness README entry
     and in the check's own detail line: the fixtures are invented, so this proves the script's
-    arithmetic and its refusals, not how a real grid or index file's fields arrive.
-13. Question-text plain-words pointer. Every shipped skill or agent file that names `ask_question`
+    arithmetic, its ordering and its refusals, not how a real grid or packages read arrives.
+12. Question-text plain-words pointer. Every shipped skill or agent file that names `ask_question`
     or tells the agent to raise a Question carries the fixed phrase "Question text is plain
     estimator words", either stating the rule in full (`learn-project`'s judgment-entry table, and
     this file's own Question text on the record section) or pointing at it. This cannot judge

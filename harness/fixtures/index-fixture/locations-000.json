@@ -1,7 +1,0 @@
-{
-  "locations": [
-    { "kind": "wallType", "code": "W1", "sheetNumber": "S-1.02" },
-    { "kind": "windowType", "code": "A", "sheetNumber": "S-1.03" },
-    { "code": "Z9", "sheetNumber": "A-2.01" }
-  ]
-}

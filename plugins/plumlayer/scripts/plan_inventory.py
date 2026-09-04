@@ -7,10 +7,8 @@ once to turn the grid files into counts it can read, and once per window to writ
 read plan off the record's own copies on disk.
 
 The script copies field values, counts them, and refuses. It never infers a discipline, never
-guesses a page number, and never reads meaning off a title: which sheets a trade reads comes from
-the shipped trade-knowledge/trade-sheets.json map, which schedules reach a trade comes from that
-map's definition kinds, and what a trade's codes were located on comes from the citation index. A
-kind, a package or a code this script cannot place is named in the output, never assigned.
+guesses a page number, and never reads meaning off a title. Which sheets a window reads is decided
+by the inventory alone; which packages a run reviews is decided by the packages file alone.
 
 Two subcommands:
 
@@ -18,64 +16,54 @@ Two subcommands:
              itself, and writes `inventory.md` (one line per sheet, then the count tables and the
              sheet number digest at the tail) and `inventory.json` (the normalized rows).
 
-  plan       reads `inventory.json` plus the window's inputs and writes `read-plan.md` whole: the
-             window's passes, the unit lines with their page references, what each pass reads for
-             and which trade files it carries, what is deliberately left out, what nothing reads,
-             and the totals.
+  plan       reads the window's inputs and writes `read-plan.md` whole: the window's passes, the
+             unit lines with their page references, what each pass reads for, what is deliberately
+             left out, and the totals.
 
 The three windows, and what each selects:
 
   1  the vocabulary: every sheet whose type is schedule, legend, notes or cover-index, plus what
-     `--include` names and minus what `--exclude` names, grouped into passes by discipline.
-  2  one pass per package in `--packages`, reading for that package's trade: the sheets that
-     trade's families name, the sheets that define a kind the trade claims, and the sheets the
-     index located that trade's codes on. Trades the map names as seams run as one contiguous
-     group, so the runner's overlap scan sees them one after the other; a group whose seams admit
-     no such order is named on the bounds line rather than half honored.
-  3  the leftover: every sheet no window 2 pass reads, grouped by discipline, each carrying a count
-     of the entries the index left open on it. It recomputes window 2's selection from the same
-     inputs rather than parsing window 2's plan file, so it needs the same inputs window 2 needs.
+     `--include` names and minus what `--exclude` names, grouped into passes by discipline. It also
+     writes `plan/window-1.json` in the run folder the `--out` path sits in, holding the unit keys
+     it selected and the unit keys it left out, so window 2 subtracts this window rather than
+     recomputing it from arguments it might not be given identically.
+  2  every sheet once: every inventory row `plan/window-1.json` does not already name, grouped by
+     discipline in inventory order and sorted inside a discipline by sheet type, composition ahead
+     of extent. The selection is a partition of what window 1 left, so the bounds line states the
+     units planned against the distinct sheets they touch, and refuses where the two differ.
+  3  one review per package: one pass per row of the packages file, in package order, with the
+     packages of one trade kept together. It reads no sheets, so it takes no inventory.
 
 Usage:
 
     python plan_inventory.py inventory --grid <dir or file> --expect-count 209 --out-dir <dir>
 
-    python plan_inventory.py plan --window 1 --inventory <path> --packages <path>
-        --trade-knowledge <dir> [--include <pattern>:<reason>] [--exclude <pattern>:<reason>]
-        --out <path>
+    python plan_inventory.py plan --window 1 --inventory <path>
+        [--include <pattern>:<reason>] [--exclude <pattern>:<reason>] --out <path>
 
-    python plan_inventory.py plan --window 2 --inventory <path> --packages <path>
-        --kinds <path> --index <dir> --trade-knowledge <dir> --out <path>
+    python plan_inventory.py plan --window 2 --inventory <path> --window-1 <path> --out <path>
 
-    python plan_inventory.py plan --window 3 --inventory <path> --packages <path>
-        --kinds <path> --index <dir> --trade-knowledge <dir> --out <path>
+    python plan_inventory.py plan --window 3 --packages <path> --out <path>
 
 Input shapes, named here so a change on the record's side surfaces as a named field rather than as
 an empty plan:
 
   --packages  a `solicitation_list_packages` response: a `packages` array whose rows carry
-              `tradeCode`, one package per trade file, and optionally `id`, `name` and `codes`.
-              A `tradeCode` the map does not key resolves to the nearest broader CSI section it
-              does key, since a trade file is general to its family.
-  --kinds     the record's definitions on disk, one file or a directory of them: a
-              `list_definition_kinds` response (a `kinds` array), a `list_definitions` response for
-              one kind (a `codes` array), an array of either, or an array of bare rows. Every row
-              carries `kind`; a `codes` row carries `code`, and `sheetNumber` where the record knows
-              which sheet defines it.
-  --index     a directory of `index_citations_leftover` pages: each page carries `kind`, `state`,
-              `total` and `rows` (the rows of the kinds that name a sheet carry it as `sheet`), or
-              `locations` (rows with `kind` and `sheetNumber`), or both. A page carrying neither is
-              a refusal, and so is a page read off a pass that has not finished. No shipped read
-              returns `locations`, so where no page carries it that input did not run, and the
-              bounds line says so rather than reporting a clean number.
+              `tradeCode`, and optionally `id`, `name` and `codes`. Two packages carrying one trade
+              is ordinary here: both plan a review, and the plan places them one after the
+              other.
+  --window-1  the file window 1 wrote: `selected` and `excluded`, both arrays of inventory unit
+              keys. A key the inventory does not hold is a refusal, since a file from some other
+              run would leave a sheet unread with nothing said about it.
 
 Exit codes:
   0  wrote the files; one bounds line on stdout naming what it read and what it wrote.
   1  a named failure, one line on stderr: a file that does not parse, a row total that does not
-     match `--expect-count`, a missing window input, an input row with no `tradeCode` or no `kind`,
-     two packages resolving to one trade file, an index page carrying neither array or read off a
-     pass that has not finished, an `--include` or `--exclude` with no colon or matching no sheet, a
-     trade map that fails its own shape checks, or an inventory file this script did not write.
+     match `--expect-count`, two rows folding to one unit key, a missing window input, an argument
+     some other window takes, an input row with no `tradeCode`, a window 1 file naming a unit key
+     the inventory does not hold or naming one as both selected and excluded, an `--include` or
+     `--exclude` with no colon or matching no sheet, an inventory file this script did not write,
+     or a window 2 selection that is not a partition of what window 1 left.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A file that does not parse whole is a refusal,
@@ -93,13 +81,6 @@ import string
 import sys
 from pathlib import Path
 
-# The shared resolver sits beside this file. Running the script as a script already puts
-# that directory on the path; this makes the import work the same way when it is loaded
-# some other way, so the plan and the cut can never resolve a code differently.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-import trade_code
-
 # The six grid fields the plan needs. A grid row carries about thirty; the rest are dropped here so
 # nothing downstream can quietly come to depend on a field the plan never reasoned about.
 ROW_FIELDS = ("discipline", "sheetNumber", "pageTitle", "sheetType", "fileId", "pageInPdf")
@@ -107,10 +88,6 @@ ROW_FIELDS = ("discipline", "sheetNumber", "pageTitle", "sheetType", "fileId", "
 # The `scope-round-runner` stops a pass above twelve units, so a plan that emits a bigger pass is a
 # plan defect rather than a big pass.
 UNITS_PER_PASS = 12
-# The cut script carries at most ten trade files into one pass knowledge file.
-MAX_TRADE_FILES_WINDOW_1 = 10
-# A window 2 pass reads for exactly one trade, with that trade's knowledge alone.
-MAX_TRADE_FILES_WINDOW_2 = 1
 
 PREFIX_GROUP_CAP = 60
 TITLES_PER_PREFIX = 3
@@ -123,12 +100,26 @@ UNTYPED = "(untyped)"
 # the list is exact rather than a family of near names.
 VOCABULARY_SHEET_TYPES = ("schedule", "legend", "notes", "cover-index")
 
-TRADE_SHEETS_FILE = "trade-sheets.json"
+# The name this script gives a row the recognizer left untyped, so the type order can place it.
+UNTYPED_SHEET_TYPE = "untyped"
 
-TRADE_SHEETS_KEYS = {"note", "sheetTypes", "unmapped", "trades", "seams"}
-TRADE_ENTRY_KEYS = {"knowledge", "families", "definitionKinds", "note"}
-FAMILY_KEYS = {"discipline", "sheetTypes", "patterns"}
+# Window 2 reads every remaining sheet once, and inside a discipline it reads in this order:
+# composition before extent. A section or a detail shows what an assembly is made of, which is the
+# row a subcontractor prices; a plan shows where it occurs. The first reader to see a piece of work
+# creates its row and every later reader updates it, so the sheet that should create is the one
+# that writes the better row. `other` and untyped go last: neither says what it holds, so neither
+# is a sheet to create the vocabulary of the set from.
+#
+# This is a constant, never a setting a user picks and never a model's judgment.
+WINDOW_2_SHEET_TYPE_ORDER = (
+    "section", "detail", "elevation", "RCP", "enlarged-plan",
+    "plan", "overall-plan", "schematic", "other", UNTYPED_SHEET_TYPE,
+)
+_WINDOW_2_TYPE_RANK = {name: index for index, name in enumerate(WINDOW_2_SHEET_TYPE_ORDER)}
+
 SELECT_KEYS = {"discipline", "sheetTypes", "patterns"}
+
+WINDOW_1_FILE = ("plan", "window-1.json")
 
 
 class PlanError(Exception):
@@ -178,7 +169,25 @@ def _text(value) -> str:
 
 
 def _fold(code: str) -> str:
-    return trade_code.fold(code)
+    """
+    A trade code with its spaces removed, lower cased. The catalog spaces its ids and a package
+    row may space them differently, and this is the same fold the record's own catalog lookup uses,
+    so the two agree.
+    """
+    return "".join(code.split()).lower()
+
+
+def _pack(code: str) -> str:
+    """A trade code with its spaces out, its own casing kept. This is what a unit id carries."""
+    return "".join(code.split())
+
+
+def _require_keys(obj, allowed: set[str], where: str) -> None:
+    if not isinstance(obj, dict):
+        raise PlanError(f"{where} is not an object")
+    unknown = sorted(set(obj) - allowed)
+    if unknown:
+        raise PlanError(f"{where} carries unknown key(s): {', '.join(unknown)}")
 
 
 # --------------------------------------------------------------------------- #
@@ -225,6 +234,40 @@ def _order_pages(pages: list) -> tuple[list, str]:
     return sorted(pages, key=lambda p: p[0].name), "grid file name, since not every page carried an `offset`"
 
 
+def _check_unit_keys(rows: list[dict], where: str) -> None:
+    """
+    Every window subtracts and selects by the unit key string, not by the three fields it is built
+    from, so two rows that fold to one key are one row from there on. Window 1 puts the shared key
+    in its `selected` list, and window 2's `key not in window_1_keys` filter then drops BOTH rows,
+    including the one window 1 never selected. Its partition check cannot see it either, because
+    neither row ever reaches the remainder for the count to disagree on. So the collision is refused
+    here, before any window subtracts or selects, and both rows are named: a sheet that vanishes
+    with nothing said about it is the failure this script exists to prevent.
+
+    A collision needs a `@` or a `#` inside a sheet number or a file id, which is why nothing has
+    hit it. Both are opaque strings from upstream and neither is validated anywhere, which is why
+    the assumption is checked rather than trusted.
+    """
+    first: dict[str, str] = {}
+    collisions: list[str] = []
+    for row in rows:
+        key = _text(row.get("unitKey"))
+        described = (
+            f"sheet {_text(row.get('sheetNumber')) or '(none)'}, "
+            f"file {_text(row.get('fileId')) or '(none)'}, "
+            f"page {_text(row.get('pageInPdf')) or '(none)'}"
+        )
+        if key in first:
+            collisions.append(f"{key} is both [{first[key]}] and [{described}]")
+        else:
+            first[key] = described
+    if collisions:
+        raise PlanError(
+            f"{where} carries {len(collisions)} colliding unit key(s), so a row would be dropped "
+            f"with nothing said about it: {_named(collisions)}"
+        )
+
+
 def _normalize_rows(pages: list) -> tuple[list[dict], list[str]]:
     seen: set[tuple[str, str, str]] = set()
     rows: list[dict] = []
@@ -241,6 +284,7 @@ def _normalize_rows(pages: list) -> tuple[list[dict], list[str]]:
             seen.add(key)
             row["unitKey"] = f"{key[0]}@{key[1]}#{key[2]}"
             rows.append(row)
+    _check_unit_keys(rows, "the grid on disk")
     return rows, duplicates
 
 
@@ -495,119 +539,6 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# The trade to sheet family map
-# --------------------------------------------------------------------------- #
-
-def _require_keys(obj, allowed: set[str], where: str) -> None:
-    if not isinstance(obj, dict):
-        raise PlanError(f"{where} is not an object")
-    unknown = sorted(set(obj) - allowed)
-    if unknown:
-        raise PlanError(f"{where} carries unknown key(s): {', '.join(unknown)}")
-
-
-def _string_list(value, where: str) -> list[str]:
-    if not isinstance(value, list) or not value or not all(isinstance(v, str) for v in value):
-        raise PlanError(f"{where} is not a non-empty list of strings")
-    return value
-
-
-def _load_trade_sheets(trade_knowledge: Path) -> dict:
-    """
-    The shipped trade to sheet family map, validated whole before any selection runs. A typo in a
-    sheet type refuses here rather than selecting nothing later, which is why the file pins the
-    recognizer's own sheet type list at its top and every family is checked against it.
-    """
-    path = trade_knowledge / TRADE_SHEETS_FILE
-    data = _read_json(path, "the trade to sheet family map")
-    _require_keys(data, TRADE_SHEETS_KEYS, f"{path.name}")
-
-    types = _string_list(data.get("sheetTypes"), f"{path.name}: `sheetTypes`")
-    known_types = set(types)
-
-    trades = data.get("trades")
-    if not isinstance(trades, dict) or not trades:
-        raise PlanError(f"{path.name} carries no `trades` object")
-
-    folded: dict[str, str] = {}
-    for trade_id, entry in trades.items():
-        where = f"{path.name}: trade {trade_id}"
-        _require_keys(entry, TRADE_ENTRY_KEYS, where)
-        knowledge = entry.get("knowledge")
-        if not isinstance(knowledge, str) or not knowledge:
-            raise PlanError(f"{where}: `knowledge` is not a non-empty string")
-        families = entry.get("families")
-        if not isinstance(families, list):
-            raise PlanError(f"{where}: `families` is not a list")
-        if not families and not entry.get("note"):
-            raise PlanError(f"{where}: `families` is empty and no `note` says why")
-        for index, family in enumerate(families, 1):
-            fwhere = f"{where}: family {index}"
-            _require_keys(family, FAMILY_KEYS, fwhere)
-            if "discipline" not in family and "patterns" not in family:
-                raise PlanError(f"{fwhere} names neither `discipline` nor `patterns`")
-            if "discipline" in family and not isinstance(family["discipline"], str):
-                raise PlanError(f"{fwhere}: `discipline` is not a string")
-            if "patterns" in family:
-                _string_list(family["patterns"], f"{fwhere}: `patterns`")
-            for sheet_type in family.get("sheetTypes", []) or []:
-                if sheet_type not in known_types:
-                    raise PlanError(
-                        f"{fwhere}: `sheetTypes` names {sheet_type}, which is not in "
-                        f"{path.name}'s own `sheetTypes` list"
-                    )
-        kinds = entry.get("definitionKinds", [])
-        if not isinstance(kinds, list) or not all(isinstance(k, str) for k in kinds):
-            raise PlanError(f"{where}: `definitionKinds` is not a list of strings")
-        key = _fold(trade_id)
-        if key in folded:
-            raise PlanError(f"{path.name}: trade {trade_id} and {folded[key]} fold to one id")
-        folded[key] = trade_id
-
-    seams = data.get("seams", []) or []
-    if not isinstance(seams, list):
-        raise PlanError(f"{path.name}: `seams` is not a list")
-    for index, pair in enumerate(seams, 1):
-        where = f"{path.name}: seam {index}"
-        if not isinstance(pair, list) or len(pair) != 2 or not all(isinstance(p, str) for p in pair):
-            raise PlanError(f"{where} is not a pair of trade ids")
-        if pair[0] == pair[1]:
-            raise PlanError(f"{where} names {pair[0]} twice")
-        for member in pair:
-            if member not in trades:
-                raise PlanError(f"{where} names {member}, which is not a key of `trades`")
-
-    unmapped = data.get("unmapped", {}) or {}
-    if not isinstance(unmapped, dict):
-        raise PlanError(f"{path.name}: `unmapped` is not an object")
-    for slug, reason in unmapped.items():
-        if not isinstance(reason, str) or not reason:
-            raise PlanError(f"{path.name}: `unmapped` entry {slug} carries no reason")
-
-    return {
-        "path": path,
-        "sheetTypes": types,
-        "trades": trades,
-        "folded": folded,
-        "seams": [tuple(pair) for pair in seams],
-        "unmapped": unmapped,
-    }
-
-
-def _trade_entry(trade_map: dict, code: str) -> tuple[str, dict, str] | None:
-    """
-    The map entry covering a catalog code, as `(the map's key, its entry, how it was found)`, or
-    None where the map covers the code at no level. A trade file is general to its family, so a
-    code the map does not key resolves to the nearest broader section it does key.
-    """
-    found = trade_code.resolve(code, trade_map["folded"])
-    if found is None:
-        return None
-    trade_id, how = found
-    return trade_id, trade_map["trades"][trade_id], how
-
-
-# --------------------------------------------------------------------------- #
 # Selection
 # --------------------------------------------------------------------------- #
 
@@ -617,8 +548,7 @@ def _select(rows: list[dict], spec: dict) -> list[dict]:
     both, narrowed by sheet type. Every named criterion must hold, so a spec naming a discipline and
     a sheet type selects that discipline's sheets of that type and nothing else. Returns the matching
     rows in inventory order. A spec that matches nothing returns an empty list; whether that is a
-    refusal is the caller's judgment, since a shipped family naming no sheet in this set is ordinary
-    and a lead's own pattern naming no sheet is a typo.
+    refusal is the caller's judgment, since a lead's own pattern naming no sheet is a typo.
     """
     _require_keys(spec, SELECT_KEYS, "a selection")
     discipline = spec.get("discipline")
@@ -639,14 +569,6 @@ def _select(rows: list[dict], spec: dict) -> list[dict]:
     return picked
 
 
-def _family_sheets(rows: list[dict], entry: dict) -> list[dict]:
-    """Every sheet any of the trade's families names, once each, in inventory order."""
-    chosen: set[str] = set()
-    for family in entry.get("families", []) or []:
-        chosen.update(r["unitKey"] for r in _select(rows, family))
-    return [r for r in rows if r["unitKey"] in chosen]
-
-
 # --------------------------------------------------------------------------- #
 # The window inputs
 # --------------------------------------------------------------------------- #
@@ -654,207 +576,76 @@ def _family_sheets(rows: list[dict], entry: dict) -> list[dict]:
 def _read_packages(path: Path) -> list[dict]:
     """
     The `solicitation_list_packages` response, byte copied to disk. Every package row must carry a
-    `tradeCode`: a package with no trade is a package this script cannot plan a read for, and
-    guessing one from its name would be reading meaning off a title.
+    `tradeCode`: a package with no trade has no unit id for its review to record under, and guessing
+    one from its name would be reading meaning off a title.
+
+    Two packages carrying one trade is ordinary and plans two reviews. Nothing about a package
+    collides any more: a review computes no sheet list, so there is nothing for two of them to
+    compute twice.
     """
     data = _read_json(path, "the packages file")
     rows = data.get("packages") if isinstance(data, dict) else data
     if not isinstance(rows, list):
         raise PlanError(f"{path} carries no `packages` array")
     packages: list[dict] = []
-    # Two packages on one trade would compute the same sheets twice, under one pass id, and read the
-    # same pages twice. Which of the two owns the read is the lead's call on the record, not a call
-    # this script can make, so it refuses and names both rather than picking one.
-    seen_codes: dict[str, str] = {}
     for index, row in enumerate(rows, 1):
         if not isinstance(row, dict):
             raise PlanError(f"{path}: package {index} is not an object")
         trade_code = row.get("tradeCode")
         if not isinstance(trade_code, str) or not trade_code.strip():
             raise PlanError(f"{path}: package {index} carries no `tradeCode`")
-        named = _text(row.get("id")) or f"package {index}"
-        folded_code = _fold(trade_code)
-        if folded_code in seen_codes:
-            raise PlanError(
-                f"{path}: {seen_codes[folded_code]} and {named} both carry trade {trade_code.strip()}"
-            )
-        seen_codes[folded_code] = named
+        codes = row.get("codes")
+        # The review carries the package's codes verbatim. A `codes` field that is not a list of
+        # strings is a shape change on the record's side, named here rather than rendered as none.
+        if codes is not None and (
+            not isinstance(codes, list) or not all(isinstance(c, str) for c in codes)
+        ):
+            raise PlanError(f"{path}: package {index} carries a `codes` that is not a list of strings")
         packages.append(row)
     if not packages:
         raise PlanError(f"{path} carries no packages")
     return packages
 
 
-def _definition_documents(path: Path) -> list[tuple[Path, object]]:
+def _read_window_1(path: Path, rows: list[dict]) -> tuple[set[str], int, int]:
     """
-    The definition responses on disk: one file, or a directory holding one file per response, which
-    is how a paged read reaches disk without a model merging its pages into one.
+    The file window 1 wrote: the unit keys it selected and the unit keys its `--exclude` patterns
+    left out. Window 2 subtracts both. An excluded sheet was left out by the lead with a reason
+    recorded, and reading it in window 2 would override that judgment with nothing said about it.
+
+    A key the inventory does not hold is a refusal rather than a key skipped: a window 1 file from
+    some other run would silently leave a sheet of this one unread.
     """
-    if path.is_dir():
-        files = sorted(p for p in path.iterdir() if p.is_file())
-        if not files:
-            raise PlanError(f"no definition pages in {path}")
-        return [(p, _read_json(p, "a definitions page")) for p in files]
-    return [(path, _read_json(path, "the definitions file"))]
+    data = _read_json(path, "the window 1 file")
+    if not isinstance(data, dict) or data.get("window") != 1:
+        raise PlanError(f"{path} is not a window 1 file written by this script")
+    lists: dict[str, list[str]] = {}
+    for field in ("selected", "excluded"):
+        value = data.get(field)
+        if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+            raise PlanError(f"{path}: `{field}` is not a list of unit keys")
+        lists[field] = value
 
+    # The two lists are a partition of what window 1 saw, and window 2 only ever reads their union,
+    # so a key in both would leave the bounds line reporting a sheet as both selected and left out
+    # with nothing catching it. The partition would still be right; the count said out loud would
+    # not be.
+    both = sorted(set(lists["selected"]) & set(lists["excluded"]))
+    if both:
+        raise PlanError(
+            f"{path} names {len(both)} unit key(s) as both selected and excluded "
+            f"({_named(both)}); the two lists are a partition of what window 1 saw"
+        )
 
-def _read_kinds(path: Path) -> tuple[list[dict], int, list[str]]:
-    """
-    The record's definitions, byte copied to disk: a `list_definition_kinds` response, whose `kinds`
-    array names the kinds the project keeps, and one `list_definitions` response per kind, whose
-    `codes` array carries one row per code with the sheet that defines it. A document is one
-    response, an array of responses, or an array of bare rows.
-
-    Every row must carry a `kind`. A code row carrying no `sheetNumber` names no defining sheet,
-    which is counted and reported rather than guessed at, and a kind whose rows on disk fall short
-    of the `count` the record gave for it is named: a plan off half a schedule reads fewer sheets
-    and would otherwise say nothing about it.
-    """
-    rows: list[dict] = []
-    without_sheet = 0
-    seen_by_kind: dict[str, int] = {}
-    count_by_kind: dict[str, int] = {}
-
-    def take_row(where: str, index: int, row: object) -> None:
-        nonlocal without_sheet
-        if not isinstance(row, dict):
-            raise PlanError(f"{where}: row {index} is not an object")
-        kind = row.get("kind")
-        if not isinstance(kind, str) or not kind.strip():
-            raise PlanError(f"{where}: row {index} carries no `kind`")
-        # A code row is the only row that can name a defining sheet: a `kinds` row names a kind, and
-        # no sheet defines a kind.
-        if _text(row.get("code")):
-            seen_by_kind[kind.strip()] = seen_by_kind.get(kind.strip(), 0) + 1
-            if not _text(row.get("sheetNumber")):
-                without_sheet += 1
-        rows.append(row)
-
-    def take_document(where: str, doc: object) -> None:
-        if isinstance(doc, list):
-            for index, item in enumerate(doc, 1):
-                if isinstance(item, dict) and ("codes" in item or "kinds" in item):
-                    take_document(f"{where}: response {index}", item)
-                else:
-                    take_row(where, index, item)
-            return
-        if not isinstance(doc, dict):
-            raise PlanError(f"{where} is not a definitions response")
-        codes = doc.get("codes")
-        kinds = doc.get("kinds")
-        if codes is None and kinds is None:
-            raise PlanError(f"{where} carries neither a `codes` array nor a `kinds` array")
-        for field, value in (("codes", codes), ("kinds", kinds)):
-            if value is None:
-                continue
-            if not isinstance(value, list):
-                raise PlanError(f"{where}: `{field}` is not an array")
-            first = len(rows)
-            for index, row in enumerate(value, 1):
-                take_row(where, index, row)
-            if field == "codes" and isinstance(doc.get("count"), int) and len(rows) > first:
-                named = _text(rows[first].get("kind")).strip()
-                count_by_kind[named] = max(count_by_kind.get(named, 0), doc["count"])
-
-    for source, doc in _definition_documents(path):
-        take_document(str(source), doc)
-
-    short = [
-        f"{kind} {seen_by_kind.get(kind, 0)} of {total}"
-        for kind, total in sorted(count_by_kind.items())
-        if seen_by_kind.get(kind, 0) < total
-    ]
-    return rows, without_sheet, short
-
-
-def _read_index(index_dir: Path) -> dict:
-    """
-    What the citation index left open, byte copied to disk one page per file. An
-    `index_citations_leftover` page carries the leftover `kind`, the `state` of the pass it was read
-    from, that kind's true `total`, and its `rows`; the rows of the kinds that name a sheet carry it
-    as `sheet`. A pass that has not finished reads zero for every kind, which is not the same as
-    finding none, so a page whose state is not `succeeded` is a refusal rather than a clean zero.
-
-    `locations` is the other array a page here may carry: where the index placed each code it cited,
-    one row per code with its `kind` and `sheetNumber`. No shipped read returns that, so where no
-    page carries it the bounds line says the input did not run rather than reporting a clean number
-    over half an input.
-
-    A page carrying neither array is a refusal naming both fields tried, so a shape change on the
-    record's side surfaces here rather than as an empty leftover window.
-    """
-    if not index_dir.is_dir():
-        raise PlanError(f"no index directory at {index_dir}")
-    files = sorted(p for p in index_dir.iterdir() if p.is_file())
-    if not files:
-        raise PlanError(f"no index pages in {index_dir}")
-
-    open_by_sheet: dict[str, int] = {}
-    open_total = 0
-    open_without_sheet = 0
-    rows_by_kind: dict[str, int] = {}
-    total_by_kind: dict[str, int] = {}
-    locations: list[dict] = []
-    locations_seen = False
-
-    for path in files:
-        page = _read_json(path, "an index page")
-        if not isinstance(page, dict):
-            raise PlanError(f"{path} is not an index page object")
-        entries = page.get("rows")
-        located = page.get("locations")
-        if entries is None and located is None:
-            raise PlanError(f"{path} carries neither a `rows` array nor a `locations` array")
-        if entries is not None:
-            if not isinstance(entries, list):
-                raise PlanError(f"{path}: `rows` is not an array")
-            kind = _text(page.get("kind")).strip()
-            if not kind:
-                raise PlanError(f"{path} carries `rows` and no `kind`")
-            state = _text(page.get("state")).strip()
-            if state != "succeeded":
-                raise PlanError(
-                    f"{path}: the pass it was read from is {state or 'unnamed'}, not succeeded, and "
-                    f"a pass that has not finished reads zero for every kind"
-                )
-            if isinstance(page.get("total"), int):
-                total_by_kind[kind] = max(total_by_kind.get(kind, 0), page["total"])
-            for row in entries:
-                if not isinstance(row, dict):
-                    raise PlanError(f"{path}: a `rows` row is not an object")
-                open_total += 1
-                rows_by_kind[kind] = rows_by_kind.get(kind, 0) + 1
-                sheet = _text(row.get("sheet"))
-                if not sheet:
-                    open_without_sheet += 1
-                    continue
-                open_by_sheet[sheet] = open_by_sheet.get(sheet, 0) + 1
-        if located is not None:
-            locations_seen = True
-            if not isinstance(located, list):
-                raise PlanError(f"{path}: `locations` is not an array")
-            for row in located:
-                if not isinstance(row, dict):
-                    raise PlanError(f"{path}: a `locations` row is not an object")
-                locations.append(row)
-
-    # Either the pass kept only the first rows of that kind, or the fetch did not page the kind out.
-    # Which of the two it was is not a call this script can make, so it names the shortfall.
-    short = [
-        f"{kind} {rows_by_kind.get(kind, 0)} of {total}"
-        for kind, total in sorted(total_by_kind.items())
-        if rows_by_kind.get(kind, 0) < total
-    ]
-
-    return {
-        "openBySheet": open_by_sheet,
-        "openTotal": open_total,
-        "openWithoutSheet": open_without_sheet,
-        "openShortKinds": short,
-        "locations": locations,
-        "locationsPresent": locations_seen,
-        "pages": len(files),
-    }
+    known = {r["unitKey"] for r in rows}
+    keys = set(lists["selected"]) | set(lists["excluded"])
+    strangers = sorted(k for k in keys if k not in known)
+    if strangers:
+        raise PlanError(
+            f"{path} names {len(strangers)} unit key(s) the inventory does not hold "
+            f"({_named(strangers)}); it was written off some other inventory"
+        )
+    return keys, len(lists["selected"]), len(lists["excluded"])
 
 
 # --------------------------------------------------------------------------- #
@@ -893,6 +684,11 @@ def _unit_line(number: int, row: dict, show_file: bool) -> str:
     return f"{number}. {row['sheetNumber']}, {where}: {title}"
 
 
+def _review_line(number: int, review: dict) -> str:
+    """A window 3 unit is a review of a package, not a sheet, so it carries no page reference."""
+    return f"{number}. {review['id']}: {review['name']}"
+
+
 def _by_discipline(rows: list[dict]) -> list[tuple[str, list[dict]]]:
     """
     Rows grouped by discipline in inventory order. A row with no discipline is its own group, never
@@ -908,6 +704,22 @@ def _by_discipline(rows: list[dict]) -> list[tuple[str, list[dict]]]:
             order.append(key)
         groups[key].append(row)
     return [(key, groups[key]) for key in order]
+
+
+def _sheet_type_of(row: dict) -> str:
+    return _text(row.get("sheetType")) or UNTYPED_SHEET_TYPE
+
+
+def _by_sheet_type(rows: list[dict]) -> list[dict]:
+    """
+    One discipline's rows in the fixed sheet type order, inventory order kept inside a type. A type
+    the order does not name sorts after all of them rather than ahead of one it was never ranked
+    against; the caller names those types on the bounds line.
+    """
+    return sorted(
+        rows,
+        key=lambda row: _WINDOW_2_TYPE_RANK.get(_sheet_type_of(row), len(WINDOW_2_SHEET_TYPE_ORDER)),
+    )
 
 
 def _pass_id_for_discipline(discipline: str, window: int) -> str:
@@ -931,7 +743,7 @@ def _split_pattern_argument(raw: str, flag: str) -> tuple[str, str]:
     return pattern.strip(), reason.strip()
 
 
-def _window_1(rows: list[dict], packages: list[dict], trade_map: dict, includes, excludes) -> dict:
+def _window_1(rows: list[dict], includes, excludes) -> dict:
     selected: dict[str, dict] = {
         r["unitKey"]: r for r in rows if _text(r.get("sheetType")) in VOCABULARY_SHEET_TYPES
     }
@@ -958,35 +770,13 @@ def _window_1(rows: list[dict], packages: list[dict], trade_map: dict, includes,
 
     chosen = [r for r in rows if r["unitKey"] in selected]
 
-    # Only the trades this project actually bought a package for are candidates: a pass carrying a
-    # trade file for a trade with no package would cut knowledge nobody is reading for.
-    candidates: list[tuple[str, dict]] = []
-    seen_ids: set[str] = set()
-    for package in packages:
-        found = _trade_entry(trade_map, package["tradeCode"])
-        if found is None or found[0] in seen_ids:
-            continue
-        seen_ids.add(found[0])
-        candidates.append((found[0], found[1]))
-
     passes: list[dict] = []
     for discipline, group in _by_discipline(chosen):
-        keys = {r["unitKey"] for r in group}
-        scored: list[tuple[int, str, str]] = []
-        for trade_id, entry in candidates:
-            matched = sum(1 for r in _family_sheets(group, entry) if r["unitKey"] in keys)
-            if matched:
-                scored.append((matched, trade_id, entry["knowledge"]))
-        scored.sort(key=lambda s: (-s[0], s[1]))
-        carried = [s[2] for s in scored[:MAX_TRADE_FILES_WINDOW_1]]
-        dropped = [f"{s[2]} ({s[1]})" for s in scored[MAX_TRADE_FILES_WINDOW_1:]]
         passes.append(
             {
                 "id": _pass_id_for_discipline(discipline, 1),
                 "name": f"Vocabulary, discipline {discipline}",
                 "readsFor": "the vocabulary",
-                "trades": carried,
-                "dropped": dropped,
                 "units": group,
             }
         )
@@ -999,244 +789,49 @@ def _window_1(rows: list[dict], packages: list[dict], trade_map: dict, includes,
         "includes": include_blocks,
         "excludes": exclude_blocks,
         "excludedCount": len(excluded_keys),
+        "selectedKeys": [r["unitKey"] for r in chosen],
+        "excludedKeys": [r["unitKey"] for r in rows if r["unitKey"] in excluded_keys],
         "unassigned": unassigned,
         "notes": [],
     }
 
 
 # --------------------------------------------------------------------------- #
-# Window 2: one pass per trade
+# Window 2: every remaining sheet, once
 # --------------------------------------------------------------------------- #
 
-def _window_2_selection(rows: list[dict], packages: list[dict], trade_map: dict, kinds, index) -> dict:
-    """
-    One selection per package, in package order. Window 3 calls this too, over the same inputs, so
-    the leftover is the inventory minus what this returned rather than a second reading of the same
-    rule that could drift from it.
-    """
-    by_number: dict[str, list[dict]] = {}
-    for row in rows:
-        by_number.setdefault(_text(row.get("sheetNumber")), []).append(row)
-
-    kind_sheets: dict[str, set[str]] = {}
-    # Kinds are folded to compare and kept verbatim to report: the record's own spelling is what the
-    # lead has to go looking for when a kind reaches no trade.
-    named_kinds: dict[str, str] = {}
-    for row in kinds:
-        kind = row["kind"].strip().lower()
-        sheet = _text(row.get("sheetNumber"))
-        named_kinds.setdefault(kind, row["kind"].strip())
-        for hit in by_number.get(sheet, []):
-            kind_sheets.setdefault(kind, set()).add(hit["unitKey"])
-
-    located_by_kind: dict[str, set[str]] = {}
-    locations_without_field = 0
-    for row in index["locations"]:
-        kind = _text(row.get("kind")).strip().lower()
-        sheet = _text(row.get("sheetNumber"))
-        if not kind or not sheet:
-            locations_without_field += 1
-            continue
-        for hit in by_number.get(sheet, []):
-            located_by_kind.setdefault(kind, set()).add(hit["unitKey"])
-
-    claimed_kinds: set[str] = set()
-    selections: list[dict] = []
-    # Two packages on different codes of one family resolve to one trade file, which would compute
-    # the same sheets twice under one pass id. Which package owns that read is a call on the record,
-    # so this refuses and names both rather than planning the same pages twice.
-    trade_owner: dict[str, str] = {}
-    for package in packages:
-        code = package["tradeCode"]
-        named = _text(package.get("id")) or code
-        found = _trade_entry(trade_map, code)
-        if found is None:
-            selections.append({"tradeCode": code, "package": package, "entry": None, "units": []})
-            continue
-        trade_id, entry, how = found
-        if trade_id in trade_owner:
-            raise PlanError(
-                f"{trade_owner[trade_id]} and {named} both resolve to the trade file for "
-                f"{trade_id} ({entry['knowledge']})"
-            )
-        trade_owner[trade_id] = named
-        keys: set[str] = {r["unitKey"] for r in _family_sheets(rows, entry)}
-        for kind in entry.get("definitionKinds", []) or []:
-            folded_kind = kind.strip().lower()
-            claimed_kinds.add(folded_kind)
-            keys |= kind_sheets.get(folded_kind, set())
-            keys |= located_by_kind.get(folded_kind, set())
-        selections.append(
-            {
-                "tradeCode": code,
-                "tradeId": trade_id,
-                "resolvedBy": how,
-                "package": package,
-                "entry": entry,
-                "units": [r for r in rows if r["unitKey"] in keys],
-            }
-        )
-
-    return {
-        "selections": selections,
-        "unnamedKinds": [named_kinds[k] for k in sorted(set(named_kinds) - claimed_kinds)],
-        "locationsWithoutField": locations_without_field,
-    }
-
-
-def _seam_neighbours(passes: list[dict], trade_map: dict) -> dict[str, list[str]]:
-    """
-    The seam graph over the trades that actually have a pass, each trade's partners in the map's own
-    file order. A seam whose other member the project bought no package for is not a seam this run
-    can honor and drops out here.
-    """
-    present = {plan_pass["tradeId"] for plan_pass in passes}
-    neighbours: dict[str, list[str]] = {trade_id: [] for trade_id in present}
-    for first, second in trade_map["seams"]:
-        if first in present and second in present:
-            neighbours[first].append(second)
-            neighbours[second].append(first)
-    return neighbours
-
-
-def _seam_group_order(members: list[str], neighbours: dict[str, list[str]], rank) -> tuple[list[str], bool]:
-    """
-    One seam group's trades in the order their passes run, and whether that order puts every declared
-    pair in the group side by side. A group whose seams form a simple chain is walked end to end, so
-    every pair is adjacent. A group where one trade seams with three others, or whose seams close a
-    loop, has no such order at all: no line can put every pair side by side, so it falls back to the
-    map's own file order and the caller names it rather than presenting a broken chain as a good one.
-    """
-    if len(members) == 1:
-        return members, True
-
-    degrees = {member: len(neighbours[member]) for member in members}
-    edges = sum(degrees.values()) // 2
-    is_chain = max(degrees.values()) <= 2 and edges == len(members) - 1
-    if not is_chain:
-        return sorted(members, key=rank), False
-
-    start = min((m for m in members if degrees[m] == 1), key=rank)
-    walk = [start]
-    seen = {start}
-    while len(walk) < len(members):
-        nxt = next(n for n in neighbours[walk[-1]] if n not in seen)
-        walk.append(nxt)
-        seen.add(nxt)
-    return walk, True
-
-
-def _order_by_seams(passes: list[dict], trade_map: dict) -> list[list[str]]:
-    """
-    Reorder the passes so every seam group runs as one contiguous block, and label each pass with the
-    seams it actually ends up next to. A seam exists so the runner's overlap scan catches the same
-    work captured twice by two trades that draw the same area, and that only fires when the two run
-    one after the other, so the grouping is the whole point rather than a nicety.
-
-    Groups are laid out where their first pass already sat, and everything in no group keeps its
-    package order, so the plan stays as close to the order the packages were bought in as the seams
-    allow. Mutates `passes` in place and returns the trades of every group whose declared seams could
-    not all be made adjacent.
-    """
-    neighbours = _seam_neighbours(passes, trade_map)
-    rank = {trade_id: i for i, trade_id in enumerate(trade_map["trades"])}
-
-    def rank_of(trade_id: str) -> int:
-        return rank.get(trade_id, len(rank))
-
-    by_trade = {plan_pass["tradeId"]: plan_pass for plan_pass in passes}
-
-    groups: dict[str, list[str]] = {}
-    group_of: dict[str, str] = {}
-    for plan_pass in passes:
-        trade_id = plan_pass["tradeId"]
-        if trade_id in group_of:
-            continue
-        members: list[str] = []
-        pending = [trade_id]
-        while pending:
-            current = pending.pop()
-            if current in group_of:
-                continue
-            group_of[current] = trade_id
-            members.append(current)
-            pending.extend(n for n in neighbours[current] if n not in group_of)
-        groups[trade_id] = members
-
-    ordered: list[dict] = []
-    emitted: set[str] = set()
-    not_adjacent: list[list[str]] = []
-    for plan_pass in passes:
-        key = group_of[plan_pass["tradeId"]]
-        if key in emitted:
-            continue
-        emitted.add(key)
-        walk, whole = _seam_group_order(groups[key], neighbours, rank_of)
-        ordered.extend(by_trade[trade_id] for trade_id in walk)
-        if not whole:
-            not_adjacent.append(walk)
-
-    position = {plan_pass["tradeId"]: i for i, plan_pass in enumerate(ordered)}
-    for plan_pass in ordered:
-        trade_id = plan_pass["tradeId"]
-        beside = {
-            ordered[i]["tradeId"]
-            for i in (position[trade_id] - 1, position[trade_id] + 1)
-            if 0 <= i < len(ordered)
-        }
-        partners = neighbours[trade_id]
-        adjacent = [p for p in partners if p in beside]
-        apart = [p for p in partners if p not in beside]
-        if adjacent:
-            plan_pass["seamWith"] = ", ".join(adjacent)
-        if apart:
-            plan_pass["seamApart"] = ", ".join(apart)
-
-    passes[:] = ordered
-    return not_adjacent
-
-
-def _window_2(rows: list[dict], packages: list[dict], trade_map: dict, kinds, index) -> dict:
-    selection = _window_2_selection(rows, packages, trade_map, kinds, index)
+def _window_2(rows: list[dict], window_1_keys: set[str], selected: int, excluded: int) -> dict:
+    remaining = [r for r in rows if r["unitKey"] not in window_1_keys]
 
     passes: list[dict] = []
-    no_family: list[str] = []
-    no_sheet: list[str] = []
-    by_family: list[str] = []
-    for item in selection["selections"]:
-        if item["entry"] is None:
-            no_family.append(item["tradeCode"])
-            continue
-        if item["resolvedBy"] == "family":
-            by_family.append(f"{item['tradeCode']} as {item['tradeId']}")
-        if not item["units"]:
-            no_sheet.append(item["tradeCode"])
-            continue
-        knowledge = item["entry"]["knowledge"]
+    for discipline, group in _by_discipline(remaining):
         passes.append(
             {
-                "id": knowledge,
-                "tradeId": item["tradeId"],
-                # The package's own name where it has one, so the pass reads the way the user named
-                # the package rather than the way the trade file is filed.
-                "name": _text(item["package"].get("name")) or knowledge,
-                "readsFor": item["tradeCode"],
-                # Named only where the two differ, so the pass says plainly that the trade file it
-                # carries is the family's, not this code's own.
-                "coveredBy": item["tradeId"] if item["resolvedBy"] == "family" else None,
-                "trades": [knowledge][:MAX_TRADE_FILES_WINDOW_2],
-                "dropped": [],
-                "units": item["units"],
+                "id": _pass_id_for_discipline(discipline, 2),
+                "name": f"Every sheet, discipline {discipline}",
+                "readsFor": "the sheet",
+                "units": _by_sheet_type(group),
             }
         )
-    seam_groups_apart = _order_by_seams(passes, trade_map)
 
-    counted: dict[str, int] = {}
-    for plan_pass in passes:
-        for row in plan_pass["units"]:
-            counted[row["unitKey"]] = counted.get(row["unitKey"], 0) + 1
-    read_twice = sum(1 for n in counted.values() if n > 1)
-    unread = [r for r in rows if r["unitKey"] not in counted]
+    planned = [r["unitKey"] for plan_pass in passes for r in plan_pass["units"]]
+    distinct = len(set(planned))
+    # The selection is a partition of what window 1 left. Grouping and sorting can only reorder it,
+    # so a run where the planned units are not exactly those rows, once each, is a defect in this
+    # script rather than a set that reads twice.
+    if len(planned) != distinct or len(planned) != len(remaining):
+        raise PlanError(
+            f"window 2 planned {len(planned)} unit(s) over {distinct} distinct sheet(s) from the "
+            f"{len(remaining)} row(s) window 1 left; the selection is a partition and this run is "
+            f"a script defect"
+        )
+
+    by_type: dict[str, int] = {}
+    for row in remaining:
+        sheet_type = _sheet_type_of(row)
+        by_type[sheet_type] = by_type.get(sheet_type, 0) + 1
+    ordered_types = [t for t in WINDOW_2_SHEET_TYPE_ORDER if t in by_type]
+    unordered_types = [t for t in by_type if t not in _WINDOW_2_TYPE_RANK]
 
     return {
         "passes": passes,
@@ -1244,44 +839,86 @@ def _window_2(rows: list[dict], packages: list[dict], trade_map: dict, kinds, in
         "excludes": [],
         "excludedCount": 0,
         "unassigned": [],
-        "noFamily": no_family,
-        "noSheet": no_sheet,
-        "readTwice": read_twice,
-        "unread": unread,
-        "unnamedKinds": selection["unnamedKinds"],
-        "locationsWithoutField": selection["locationsWithoutField"],
-        "seamGroupsApart": seam_groups_apart,
-        "byFamily": by_family,
+        "units": len(planned),
+        "distinctSheets": distinct,
+        "disciplines": len(passes),
+        "byType": [(t, by_type[t]) for t in ordered_types + sorted(unordered_types)],
+        "otherOrUntyped": by_type.get("other", 0) + by_type.get(UNTYPED_SHEET_TYPE, 0),
+        "unorderedTypes": sorted(unordered_types),
+        "window1Selected": selected,
+        "window1Excluded": excluded,
         "notes": [],
     }
 
 
 # --------------------------------------------------------------------------- #
-# Window 3: the leftover
+# Window 3: one review per package
 # --------------------------------------------------------------------------- #
 
-def _window_3(rows: list[dict], packages: list[dict], trade_map: dict, kinds, index) -> dict:
-    selection = _window_2_selection(rows, packages, trade_map, kinds, index)
-    read_keys: set[str] = set()
-    for item in selection["selections"]:
-        read_keys.update(r["unitKey"] for r in item["units"])
+def _window_3(packages: list[dict]) -> dict:
+    """
+    One review per package, in package order, with the packages of one trade kept together. The
+    order is the order the packages were bought in: the first package of each trade holds that
+    trade's place, and any later package on the same trade follows it there rather than where it
+    sat in the file.
 
-    leftover = [r for r in rows if r["unitKey"] not in read_keys]
-    open_by_sheet = index["openBySheet"]
-
-    passes: list[dict] = []
-    for discipline, group in _by_discipline(leftover):
-        passes.append(
+    Two packages carrying one trade both plan, one after the other, and their unit ids differ by the
+    ordinal each carries. The runner's overlap scan sees them side by side, which is how two passes
+    over the same work are kept from doubling it.
+    """
+    ordinals: dict[str, int] = {}
+    reviews: list[dict] = []
+    for package in packages:
+        code = _text(package.get("tradeCode")).strip()
+        key = _fold(code)
+        ordinals[key] = ordinals.get(key, 0) + 1
+        reviews.append(
             {
-                "id": _pass_id_for_discipline(discipline, 3),
-                "name": f"Leftover, discipline {discipline}",
-                "readsFor": "the leftover",
-                "trades": [],
-                "dropped": [],
-                "units": group,
-                "openEntries": sum(open_by_sheet.get(_text(r["sheetNumber"]), 0) for r in group),
+                # Always numbered, even where the trade carries one package: a bare `rev-092116-`
+                # would be a prefix of `rev-092116-2-`, and the runner verifies a review by prefix.
+                "id": f"rev-{_pack(code)}-{ordinals[key]}",
+                "tradeCode": code,
+                "tradeKey": key,
+                "name": _text(package.get("name")) or code,
+                "package": package,
+                "codes": list(package.get("codes") or []),
             }
         )
+
+    # Grouped by folded trade code in first-seen order, so two packages on one trade review one
+    # after the other and everything else keeps the order the packages were bought in.
+    order: list[str] = []
+    members: dict[str, list[dict]] = {}
+    for review in reviews:
+        key = review["tradeKey"]
+        if key not in members:
+            members[key] = []
+            order.append(key)
+        members[key].append(review)
+
+    passes: list[dict] = []
+    for key in order:
+        for review in members[key]:
+            plan_pass = {
+                "id": review["id"],
+                "name": review["name"],
+                "readsFor": review["tradeCode"],
+                "units": [review],
+                "extra": [
+                    ("package", _text(review["package"].get("id")) or "(no id)"),
+                    ("codes", ", ".join(review["codes"]) if review["codes"] else "none"),
+                ],
+            }
+            passes.append(plan_pass)
+
+    shared = [r for r in reviews if len(members[r["tradeKey"]]) > 1]
+
+    def distinct_codes(rows: list[dict]) -> list[str]:
+        seen: list[str] = []
+        for row in rows:
+            if row["tradeCode"] not in seen:
+                seen.append(row["tradeCode"])
+        return seen
 
     return {
         "passes": passes,
@@ -1289,10 +926,10 @@ def _window_3(rows: list[dict], packages: list[dict], trade_map: dict, kinds, in
         "excludes": [],
         "excludedCount": 0,
         "unassigned": [],
-        "openEntries": sum(
-            open_by_sheet.get(_text(r["sheetNumber"]), 0) for r in leftover
-        ),
-        "leftover": leftover,
+        "reviews": len(reviews),
+        "trades": len(order),
+        "sharedCount": len(shared),
+        "sharedCodes": distinct_codes(shared),
         "notes": [],
     }
 
@@ -1305,9 +942,9 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
     lines: list[str] = []
     lines.append(f"# Read plan: window {window}")
     lines.append("")
-    lines.append("Written by scripts/plan_inventory.py off the inventory and this window's inputs.")
-    lines.append("The unit lines are copied from the sheet grid. Run the script again rather than")
-    lines.append("editing this file.")
+    lines.append("Written by scripts/plan_inventory.py off this window's inputs.")
+    lines.append("The unit lines are copied from the sheet grid and the packages file. Run the")
+    lines.append("script again rather than editing this file.")
     lines.append("")
     lines.append(f"## Window {window}")
     lines.append("")
@@ -1327,35 +964,14 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
             lines.append("")
             lines.append(f"window: {window}")
             lines.append(f"reads for: {plan_pass['readsFor']}")
-            if plan_pass.get("coveredBy"):
-                lines.append(f"trade file covers: {plan_pass['coveredBy']}")
-            trades = plan_pass["trades"]
-            lines.append(f"trades: {', '.join(trades) if trades else 'none'}")
+            for label, value in plan_pass.get("extra", []):
+                lines.append(f"{label}: {value}")
             lines.append(f"units: {len(part_units)}")
-            if plan_pass.get("seamWith"):
-                lines.append(f"seam with: {plan_pass['seamWith']}")
-            if plan_pass.get("seamApart"):
-                # A seam this pass does not sit next to, named on the pass rather than dropped: the
-                # overlap scan will not catch what these two trades both captured.
-                lines.append(f"seam not next to this pass: {plan_pass['seamApart']}")
-            if plan_pass.get("openEntries") is not None:
-                lines.append(
-                    "open entries: "
-                    + str(
-                        sum(
-                            plan.get("openBySheet", {}).get(_text(r["sheetNumber"]), 0)
-                            for r in part_units
-                        )
-                    )
-                )
-            if plan_pass["dropped"]:
-                lines.append(
-                    f"trades not carried, over the cap of {MAX_TRADE_FILES_WINDOW_1}: "
-                    + ", ".join(plan_pass["dropped"])
-                )
             lines.append("")
-            for number, row in enumerate(part_units, 1):
-                lines.append(_unit_line(number, row, show_file))
+            for number, unit in enumerate(part_units, 1):
+                lines.append(
+                    _review_line(number, unit) if window == 3 else _unit_line(number, unit, show_file)
+                )
             lines.append("")
 
     lines.append("## Deliberately left out")
@@ -1375,13 +991,8 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
 
     lines.append("## Nothing read for")
     lines.append("")
-    if window == 2:
-        if not plan["noFamily"] and not plan["noSheet"]:
-            lines.append("Nothing. Every package's trade is mapped and named at least one sheet.")
-        for trade_code in plan["noFamily"]:
-            lines.append(f"{trade_code}: no sheet family mapped")
-        for trade_code in plan["noSheet"]:
-            lines.append(f"{trade_code}: its sheet families named no sheet in this set")
+    if window == 3:
+        lines.append("Nothing. Every package on the project plans a review.")
     else:
         lines.append("Nothing. This window plans off the inventory, not off the packages.")
     lines.append("")
@@ -1399,21 +1010,27 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
         )
     if window == 2:
         lines.append(
-            f"sheets read for more than one trade {plan['readTwice']}, sheets no trade reads "
-            f"{len(plan['unread'])}, sheets in the inventory {len(rows)}"
+            f"every sheet once (units {plan['units']} equals distinct sheets "
+            f"{plan['distinctSheets']})"
         )
-        if plan["unnamedKinds"]:
+        lines.append(
+            f"sheets window 1 selected {plan['window1Selected']}, sheets window 1 left out "
+            f"{plan['window1Excluded']}, sheets in the inventory {len(rows)}"
+        )
+        lines.append(
+            "sheets by type: " + ", ".join(f"{name} {count}" for name, count in plan["byType"])
+        )
+        lines.append(f"sheets typed other or untyped {plan['otherOrUntyped']}")
+        if plan["unorderedTypes"]:
             lines.append(
-                "definition kinds no trade in the map names: " + ", ".join(plan["unnamedKinds"])
-            )
-        for group in plan["seamGroupsApart"]:
-            lines.append(
-                "seam group not fully adjacent, so no order runs every pair one after the other: "
-                + ", ".join(group)
+                "sheet types the reading order does not name, read after every type it does: "
+                + ", ".join(plan["unorderedTypes"])
             )
     if window == 3:
+        lines.append(f"reviews {plan['reviews']}, trades {plan['trades']}")
         lines.append(
-            f"open entries on these sheets {plan['openEntries']}, sheets in the inventory {len(rows)}"
+            f"packages sharing a trade: {plan['sharedCount']} "
+            f"({_named(plan['sharedCodes']) if plan['sharedCodes'] else 'none'})"
         )
     for note in plan["notes"]:
         lines.append(note)
@@ -1425,100 +1042,136 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
 # plan
 # --------------------------------------------------------------------------- #
 
-def _require_argument(value, flag: str, window: int):
-    if value is None:
-        raise PlanError(f"window {window} needs {flag} and it was not given")
-    return value
+# Which window each argument belongs to. An argument some other window takes is refused rather than
+# dropped quietly: dropping it would lose the caller's intent with nothing said about it.
+ALLOWED_BY_WINDOW = {
+    1: ("--inventory", "--include", "--exclude"),
+    2: ("--inventory", "--window-1"),
+    3: ("--packages",),
+}
+REQUIRED_BY_WINDOW = {
+    1: ("--inventory",),
+    2: ("--inventory", "--window-1"),
+    3: ("--packages",),
+}
+# Arguments no window takes any more, kept so the old invocation refuses in one readable line
+# instead of an argparse dump.
+RETIRED_ARGUMENTS = {
+    "--kinds": "the record's definitions reach a review through the record, not through the plan",
+    "--index": "no window plans off the citation index",
+}
+
+
+def _check_arguments(args, window: int) -> None:
+    values = {
+        "--inventory": args.inventory,
+        "--window-1": args.window_1,
+        "--packages": args.packages,
+        "--kinds": args.kinds,
+        "--index": args.index,
+        "--include": args.include,
+        "--exclude": args.exclude,
+    }
+    for flag, reason in RETIRED_ARGUMENTS.items():
+        if values[flag]:
+            raise PlanError(f"{flag} is no longer an argument of any window: {reason}")
+    allowed = ALLOWED_BY_WINDOW[window]
+    for flag, value in values.items():
+        if flag in RETIRED_ARGUMENTS or flag in allowed or not value:
+            continue
+        takes = [str(w) for w, flags in ALLOWED_BY_WINDOW.items() if flag in flags]
+        raise PlanError(
+            f"{flag} is a window {' and '.join(takes)} argument and window {window} was asked for"
+        )
+    for flag in REQUIRED_BY_WINDOW[window]:
+        if not values[flag]:
+            raise PlanError(f"window {window} needs {flag} and it was not given")
+
+
+def _read_inventory(path: Path) -> list[dict]:
+    data = _read_json(path, "the inventory file")
+    if not isinstance(data, dict) or not isinstance(data.get("sheets"), list):
+        raise PlanError(f"{path} is not an inventory file written by this script")
+    rows = data["sheets"]
+    # Checked again here, not only where the file was written: a window plans off whatever
+    # inventory.json is on disk, and a hand-edited one is still a file this script would subtract by
+    # key.
+    _check_unit_keys(rows, str(path))
+    return rows
 
 
 def plan(args) -> str:
     window = args.window
-    data = _read_json(args.inventory, "the inventory file")
-    if not isinstance(data, dict) or not isinstance(data.get("sheets"), list):
-        raise PlanError(f"{args.inventory} is not an inventory file written by this script")
-    rows = data["sheets"]
-    show_file = len({_text(r.get("fileId")) for r in rows}) > 1
+    _check_arguments(args, window)
 
-    _require_argument(args.packages, "--packages", window)
-    _require_argument(args.trade_knowledge, "--trade-knowledge", window)
-    if window != 1 and (args.include or args.exclude):
-        # Dropping them quietly would lose the lead's judgment with nothing said about it.
-        raise PlanError(f"--include and --exclude are window 1 arguments and window {window} was asked for")
-    if window in (2, 3):
-        _require_argument(args.kinds, "--kinds", window)
-        _require_argument(args.index, "--index", window)
+    rows: list[dict] = []
+    show_file = False
+    if window in (1, 2):
+        rows = _read_inventory(args.inventory)
+        show_file = len({_text(r.get("fileId")) for r in rows}) > 1
 
-    trade_map = _load_trade_sheets(args.trade_knowledge)
-    packages = _read_packages(args.packages)
-
-    notes: list[str] = []
+    window_1_path: Path | None = None
     if window == 1:
         includes = [_split_pattern_argument(raw, "--include") for raw in (args.include or [])]
         excludes = [_split_pattern_argument(raw, "--exclude") for raw in (args.exclude or [])]
-        result = _window_1(rows, packages, trade_map, includes, excludes)
+        result = _window_1(rows, includes, excludes)
+        # The run folder is the folder the plan file sits in; window 2 subtracts this file rather
+        # than recomputing window 1's selection from arguments it might not be given identically.
+        window_1_path = args.out.parent.joinpath(*WINDOW_1_FILE)
+    elif window == 2:
+        keys, selected, excluded = _read_window_1(args.window_1, rows)
+        result = _window_2(rows, keys, selected, excluded)
     else:
-        kinds, kinds_without_sheet, kinds_short = _read_kinds(args.kinds)
-        index = _read_index(args.index)
-        if not index["locationsPresent"]:
-            notes.append("index locations not present")
-        if kinds_without_sheet:
-            notes.append(f"definition codes with no defining sheet {kinds_without_sheet}")
-        if kinds_short:
-            notes.append("definition kinds short of their own count: " + ", ".join(kinds_short))
-        if index["openWithoutSheet"]:
-            notes.append(f"open entries naming no sheet {index['openWithoutSheet']}")
-        if index["openShortKinds"]:
-            notes.append(
-                "leftover kinds short of their own total: " + ", ".join(index["openShortKinds"])
-            )
-        if window == 2:
-            result = _window_2(rows, packages, trade_map, kinds, index)
-            if result["locationsWithoutField"]:
-                notes.append(
-                    f"index locations naming no kind or no sheet {result['locationsWithoutField']}"
-                )
-        else:
-            result = _window_3(rows, packages, trade_map, kinds, index)
-            result["openBySheet"] = index["openBySheet"]
-            result["indexOpenTotal"] = index["openTotal"]
+        packages = _read_packages(args.packages)
+        result = _window_3(packages)
+        result["packages"] = len(packages)
 
-    result["notes"] = notes
     body, total_units, total_passes = _render(window, result, rows, show_file)
     payload = body.encode("utf-8")
     _write_atomically(args.out, payload)
 
-    tail = f"{len(payload):,} bytes"
-    partial = ("; " + "; ".join(notes)) if notes else ""
-
+    written = len(payload)
     if window == 1:
+        window_1_payload = (
+            json.dumps(
+                {
+                    "window": 1,
+                    "selected": result["selectedKeys"],
+                    "excluded": result["excludedKeys"],
+                },
+                indent=2,
+            )
+            + "\n"
+        ).encode("utf-8")
+        _write_atomically(window_1_path, window_1_payload)
+        written += len(window_1_payload)
         return (
-            f"wrote {args.out}: window 1, units {total_units}, passes {total_passes}, "
-            f"excluded {result['excludedCount']}, unassigned {len(result['unassigned'])}"
-            f"{partial}; {tail}"
+            f"wrote {args.out} and {window_1_path}: window 1, units {total_units}, passes "
+            f"{total_passes}, excluded {result['excludedCount']}, unassigned "
+            f"{len(result['unassigned'])}; {written:,} bytes"
         )
+
     if window == 2:
-        no_family = result["noFamily"]
-        no_sheet = result["noSheet"]
-        apart = result["seamGroupsApart"]
-        apart_text = "; ".join(", ".join(group) for group in apart) if apart else "none"
-        return (
-            f"wrote {args.out}: window 2, trades {len(packages)}, passes {total_passes}, "
-            f"sheets read for more than one trade {result['readTwice']}, "
-            f"sheets no trade reads {len(result['unread'])}, "
-            f"packages with no sheet family mapped {len(no_family)} "
-            f"({', '.join(no_family) if no_family else 'none'}), "
-            f"packages whose families named no sheet {len(no_sheet)} "
-            f"({', '.join(no_sheet) if no_sheet else 'none'}), "
-            f"definition kinds no trade names {len(result['unnamedKinds'])}, "
-            f"resolved by family {len(result['byFamily'])} "
-            f"({', '.join(result['byFamily']) if result['byFamily'] else 'none'}), "
-            f"seam groups not fully adjacent {len(apart)} ({apart_text})"
-            f"{partial}; {tail}"
+        by_type = ", ".join(f"{name} {count}" for name, count in result["byType"])
+        unordered = (
+            "; sheet types the reading order does not name: " + ", ".join(result["unorderedTypes"])
+            if result["unorderedTypes"]
+            else ""
         )
+        return (
+            f"wrote {args.out}: window 2, sheets {total_units}, passes {total_passes}, "
+            f"disciplines {result['disciplines']}, every sheet once (units {result['units']} "
+            f"equals distinct sheets {result['distinctSheets']}), sheets window 1 selected "
+            f"{result['window1Selected']}, sheets window 1 left out {result['window1Excluded']}, "
+            f"sheets in the inventory {len(rows)}, sheets by type {by_type}, sheets typed other or "
+            f"untyped {result['otherOrUntyped']}{unordered}; {written:,} bytes"
+        )
+
     return (
-        f"wrote {args.out}: window 3, sheets {total_units}, passes {total_passes}, "
-        f"open entries {result['openEntries']} of {result['indexOpenTotal']} in the index"
-        f"{partial}; {tail}"
+        f"wrote {args.out}: window 3, packages {result['packages']}, reviews {result['reviews']}, "
+        f"passes {total_passes}, trades {result['trades']}, "
+        f"packages sharing a trade: {result['sharedCount']} "
+        f"({_named(result['sharedCodes']) if result['sharedCodes'] else 'none'}); {written:,} bytes"
     )
 
 
@@ -1542,11 +1195,14 @@ def main(argv: list[str] | None = None) -> int:
 
     win = sub.add_parser("plan", help="write one window's read plan")
     win.add_argument("--window", required=True, type=int, choices=(1, 2, 3), help="which window to plan")
-    win.add_argument("--inventory", required=True, type=Path, help="inventory.json from the inventory mode")
-    win.add_argument("--packages", type=Path, help="the solicitation_list_packages response on disk")
-    win.add_argument("--kinds", type=Path, help="the record's definitions on disk, one file or a directory of pages")
-    win.add_argument("--index", type=Path, help="the directory holding the citation index leftover pages")
-    win.add_argument("--trade-knowledge", type=Path, help="the plugin's trade-knowledge directory")
+    win.add_argument("--inventory", type=Path, help="windows 1 and 2: inventory.json from the inventory mode")
+    win.add_argument(
+        "--window-1", type=Path,
+        help="window 2 only: plan/window-1.json, the unit keys window 1 selected and left out",
+    )
+    win.add_argument("--packages", type=Path, help="window 3 only: the solicitation_list_packages response on disk")
+    win.add_argument("--kinds", type=Path, help=argparse.SUPPRESS)
+    win.add_argument("--index", type=Path, help=argparse.SUPPRESS)
     win.add_argument(
         "--include", action="append", metavar="PATTERN:REASON",
         help="window 1 only: a sheet number pattern to read anyway, and why; repeatable",

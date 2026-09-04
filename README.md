@@ -119,13 +119,6 @@ Plus three utilities you reach for directly: `project-record`, `drawing-set-asse
 - **`drawing-set-assemble`**: assembles the current drawing set into fresh PDFs, one per
   discipline plus an optional combined PDF.
 
-### Trade reference set
-
-The plugin also ships `trade-knowledge/`, a set of 45 trade reference files plus a manifest, read by
-`scope-run` when it splits the job's scope list into packages. Each entry covers how that trade
-bids and scopes work in the market, distilled and scrubbed of any identifying project or company
-data.
-
 ## Updating
 
 ### Claude Code
@@ -173,5 +166,4 @@ plugins/plumlayer/
     setup/SKILL.md
     project-record/SKILL.md
     drawing-set-assemble/SKILL.md
-  trade-knowledge/                  # 45 trade reference files + MANIFEST.md, read by scope-run
 ```
