@@ -249,7 +249,7 @@ page without a text layer is read by OCR and `textSource` says so, and spans are
   and no other. A contact id you settled by matching a name puts a real proposal against the wrong
   person's record; leave the field off and let the name on the proposal stand by itself.
 - **Per-row responses**: for each scope row the proposal **addresses**, the response along the three
-  axes plus amount and note, per the response value shape (stage 7):
+  axes plus amount, note, and substitution, per the response value shape (stage 7):
   - **inclusion**: `base` (in the base bid), `adder` (a priced add), or `excluded` (not carried).
   - **routing**: `self` / `by-others` / `NIC`, when the proposal says who carries it. Distinguishes a
     true exclusion from a scope-gap the bidder routes elsewhere. Omit when it is plain base scope.
@@ -257,10 +257,16 @@ page without a text layer is read by OCR and `textSource` says so, and spans are
     when none is stated. Never derive a number the proposal does not state.
   - **ambiguity**: `OSV` / `TV` / `unclear` when the proposal prices a row ambiguously ("other scope
     value", "to verify", a bare "?"). An ambiguous token never resolves to a hard `amount`.
+  - **substitution**: the bidder's own words for a different product or method priced in place of what
+    the documents specify, verbatim, when the proposal states one. Record it on every row it touches,
+    cited to the page it came from. If the proposal names only what it offers, record only that; never
+    supply the specified side yourself.
   - **note**: whatever else the row says in free text ("included above", "option 1", a typed comment).
 - **Coverage**: did this proposal bid the whole package (`full`) or a subset (`partial`)? A `partial`
-  coverage carries a human label ("Framing only") and, when the proposal names the covered rows, the
-  explicit `coveredItems` subset (the `scopeItem:` subjects from stage 3).
+  coverage may carry a short human label ("Framing only") and, when the proposal names the covered
+  rows, the explicit `coveredItems` subset (the `scopeItem:` subjects from stage 3). The label is
+  optional and no surface renders it; a substitution that runs across the whole bid is not a coverage
+  qualification, it is the per-row rule above applied to every row it touches (see stage 4).
 - **Summary totals**: the entered lump figures the proposal states: `base_bid`, and optionally
   `adjustments`, `allowances_alternates` (a parallel bucket, never folded into the total), and
   `total_adj_bid`. These are read as entered, never summed by you from the rows.
@@ -335,7 +341,7 @@ These are gates. Write them into every read:
   credit terms, price-validity windows and escalation clauses, liquidated damages, schedule and access
   caveats, lead-time tables, insurance, bonding and warranty language, capability statements ("we can
   produce shop drawings in a week" states no inclusion and no price), and takeoff-basis caveats. Those
-  belong in the bidder's note, the coverage label, or the run report.
+  belong in the bidder's note or the run report.
 
   **Test two: is the work anchored to this project?** The named work must ALSO be either
 
@@ -390,6 +396,10 @@ These are gates. Write them into every read:
   subject id.
 - **An ambiguous token never becomes a hard number.** `OSV` / `TV` / `?` set the `ambiguity` axis; they
   never populate `amount`.
+- **A substitution stated once for the whole bid still lands on every row it touches.** A bidder who
+  substitutes across the whole package is that same reading applied to each affected row's own
+  response entry, in the bidder's own words. There is no bidder-level or package-level record for it:
+  it never becomes a coverage label, a summary note, or an Additional item.
 - **No receipt, no write.** A value you cannot cite to a `fileId` and page is not recorded. If you
   believe a fact but cannot point at where you read it, it does not become an entry.
 - **Nothing you write is a person's own entry.** Every entry records as your reading of the document;
@@ -481,12 +491,13 @@ rejected by `.strict()`, enums are exact):
 {"subject": "bidResponse:party:<companyId>:bidPackage:<projectId>:09 29 00:scopeItem:<id>",
  "predicate": "bidResponse",
  "value": {"inclusion": "adder", "routing": "self", "amount": 4200,
+           "substitution": "Kwikset 780 in lieu of the specified Schlage B60N",
            "note": "add for level 5 finish"},
  "sourceInstrument": "bid-intake-skill",
  "evidence": {"instrument": "bid-intake-skill", "method": "agent-read", "confidence": 0.8,
    "rationale": "line item 3, priced add", "fileId": "<fileId>", "page": 2}}
 
-// coverage  (predicate: "bidCoverage")  — proposalFileId is the registered file id
+// coverage  (predicate: "bidCoverage")  — proposalFileId is the registered file id, label is optional
 {"subject": "bidCoverage:party:<companyId>:bidPackage:<projectId>:09 29 00",
  "predicate": "bidCoverage",
  "value": {"basis": "partial", "label": "Framing only",
@@ -513,6 +524,8 @@ Value rules that the schema enforces, honor them at authoring time:
 - Optional fields are **omitted** when absent, never set to `null`. Every optional field in the bid
   schemas is `.optional()`, not `.nullable()`: an explicit `null` is rejected, not treated as "none."
   Omission is the only correct encoding of "not stated."
+- `substitution` is free text, 1 to 2000 characters, the bidder's own words verbatim. Like every other
+  optional bid field it is omitted when absent, never `null`.
 - `contactPerson` is the person the proposal names, in parts, each part the document's own text and
   each part omitted when the document does not carry it. Its `name` is required, so a contact you
   cannot read a person's name from goes to the flat `contact` string instead. Never write both for
@@ -588,7 +601,9 @@ record_additional_item(
 
 Shape notes that will bite otherwise: `label` is required and capped at 200 characters; the enums are
 exact and there is **no `ambiguity` axis on this door** (unlike a response, carry an ambiguous
-qualifier in the `note` instead); optional fields are **omitted** when absent, never `null`;
+qualifier in the `note` instead), and **no `substitution` field either** (an additional item answers no
+checklist row, so nothing the documents specify exists for it to depart from; a substitution belongs on
+the row response it modifies, stage 4, never here); optional fields are **omitted** when absent, never `null`;
 `trade` is the CSI code exactly as the package was created with, spaces kept and never slugged,
 the same string `get_bid_package` reads with (a different spelling creates the item on a package subject
 nothing reads, so it lands and then renders nowhere); and `evidenceFileId` is refused if missing,
@@ -648,7 +663,8 @@ The run report **is** the manifest. State, plainly:
 
 - **Per bidder:** the bidder identity you used, entry counts by type (profile / responses / coverage /
   summary), whether this was a fresh bid, a full revision, or a partial update, and what it replaced,
-  and how many rows the proposal did not address.
+  how many rows the proposal did not address, and which rows carry a substitution. Name a
+  package-wide substitution once, as a summary of the rows it touches, rather than repeating it per row.
 - **Additional items:** how many unlisted scope items you recorded per bidder, and where they now live
   (the package's Additional items section on plumlayer.com), a pointer to what landed, not a
   re-listing of it. The items carry their own descriptions and citations; restating them here would
@@ -700,6 +716,9 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - Any count restated as "confirmed" gets an explicit fresh recount against its source first; an
   echoed number is never verification.
 - An ambiguous token (`OSV` / `TV` / `?`) never resolves to a hard `amount`.
+- A substitution is recorded on every row it touches, in the bidder's own words, cited to the page.
+  It is never an ambiguity value, never an Additional item, and there is no bidder-level or
+  package-level record for a substitution that runs across the whole bid.
 - Pass two never revises a pass-one amount or inclusion toward the peers; it only flags.
 - Supersession mode is read from the document's own framing; ambiguous framing stops and asks. The
   declared mode is confirmed with the user before recording.
@@ -731,12 +750,6 @@ edits `SKILL.md`; it runs the same pipeline against new paths.
   contain. That is why the anchoring test above exists. Still open for the next run: how the weaker
   single-bidder filter behaves when there is no peer to anchor against, and whether the anchoring test
   is now too tight on a genuinely novel exclusion no peer thought to name.
-- **Where a whole-bid qualification lives.** A bid can substitute a different material against the
-  specified one across every row, the single most important leveling fact about that bidder, and it
-  is neither per-row nor unlisted. `bidCoverage` carries `basis`, `label` and `coveredItems` but
-  no note, and `bidSummary` has no note either, so it currently gets crammed into the coverage label.
-  Raised on the board; until it is settled, put it in the coverage label and lead with it in the
-  report so it is not lost.
 - **Party identity resolution: settled, see stage 3.** The bridge is the
   directory company id: an invited company's proposal files under `party:<companyId>`, which is what
   moves that company to Bid received on the coverage board. An uninvited bidder still creates
