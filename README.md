@@ -59,7 +59,7 @@ unless Claude compatibility is handled separately.
 
 A hosted MCP connector to your Plumlayer project record
 (`api-production-0a7b.up.railway.app/mcp`), auto-wired on install with no manual `claude mcp add`,
-and nine skills that use it.
+and eight skills that use it.
 
 A skill is a step; what you run is a process. There are four:
 
@@ -70,7 +70,7 @@ A skill is a step; what you run is a process. There are four:
   for now.
 - **Measure**: `takeoff`, whenever you want something counted or measured off the sheets.
 
-Plus three utilities you reach for directly: `project-record`, `drawing-set-assemble`, and `setup`.
+Plus two utilities you reach for directly: `project-record` and `setup`.
 
 ### New pursuit
 
@@ -116,8 +116,6 @@ Plus three utilities you reach for directly: `project-record`, `drawing-set-asse
   the shared plugin.
 - **`project-record`**: the general-purpose skill for reading, searching, and adding to a project
   record directly: the sheet and set grid, open questions, and scope and takeoff data.
-- **`drawing-set-assemble`**: assembles the current drawing set into fresh PDFs, one per
-  discipline plus an optional combined PDF.
 
 ## Updating
 
@@ -165,5 +163,4 @@ plugins/plumlayer/
     takeoff/SKILL.md
     setup/SKILL.md
     project-record/SKILL.md
-    drawing-set-assemble/SKILL.md
 ```

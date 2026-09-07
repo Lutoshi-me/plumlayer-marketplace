@@ -99,7 +99,6 @@ EXPECTED_MCP_URL = "https://api-production-0a7b.up.railway.app/mcp"
 
 EXPECTED_SKILLS = {
     "bid-intake",
-    "drawing-set-assemble",
     "drawing-upload",
     "learn-project",
     "project-record",
