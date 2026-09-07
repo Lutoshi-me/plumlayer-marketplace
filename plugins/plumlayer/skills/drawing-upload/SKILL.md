@@ -74,7 +74,7 @@ cited entries in the project's project record. The canonical form is entries + p
 untouched original delivery. Discipline organization, by-discipline PDFs, and page labels
 are all **projections** of that form, rendered on demand by other skills, never the foundation. So this skill does **not**: physically split files by discipline (discipline is derived
 per sheet, never from a filename); produce a CSV (the deliverable is entries in the project record;
-the app keeps discipline PDFs fresh on its own under Generated files on Documents); scope, take off, or comprehend the sheets (`scope-run` / `takeoff` / `learn-project`); or create
+the app keeps discipline PDFs fresh on its own under Assembled set on Documents); scope, take off, or comprehend the sheets (`scope-run` / `takeoff` / `learn-project`); or create
 the project (`project-setup`).
 
 The one door here that carries no drawings: a project manual arriving on its own is filed and its
