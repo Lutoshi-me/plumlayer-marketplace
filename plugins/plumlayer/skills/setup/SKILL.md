@@ -57,7 +57,7 @@ than compose it. Ask each thing once. Do not ask anything that is not on this li
 - Region (e.g. "Massachusetts / New England") and unit system (`imperial` / `metric`).
 
 **Defaults** (sensible starting points project-setup can override per job)
-- Default delivery method (`DBB` / `design-build` / `CM-at-risk` / …).
+- Default delivery method (`Design-Bid-Build` / `design-build` / `CM-at-risk` / …).
 - Default project type (e.g. `interior fit-out`, `ground-up`, `renovation`).
 
 **Instructions-file offer** (only when the existing profile has it turned off)
@@ -98,7 +98,7 @@ Schema (`~/.plumlayer/operator.json`):
     "units": "imperial | metric"
   },
   "defaults": {
-    "deliveryMethod": "<DBB | design-build | CM-at-risk | ...>",
+    "deliveryMethod": "<Design-Bid-Build | design-build | CM-at-risk | ...>",
     "projectType": "<interior fit-out | ground-up | renovation | ...>"
   },
   "instructions": {

@@ -51,6 +51,11 @@ only for what no drawing will ever carry; for the rest, say "I'll read that off 
 on.**
 <!-- /user-facing -->
 
+**One turn, start to finish.** With the drawing set and the project manual in hand, and the user able
+to answer the few ask-now questions, this skill should run start to finish in one turn. Ending the
+turn to ask something in prose is the failure mode to avoid. The stop points inside `drawing-upload`
+and `learn-project` are unchanged, and they are the only reasons to stop this session early.
+
 ---
 
 ## 1. Preflight
@@ -95,14 +100,12 @@ Question. Question text is plain estimator words, per docs/plugin-text-style.md.
   drawings are, and whether a project manual / spec book came with them. Give the one-line reason:
   the baseline package split anchors on the spec table of contents, so a manual handed over now
   saves re-running the split later. Local paths are all you need here; step 5 does the upload.
-- **Delivery method** (DBB / CM-at-risk / design-build / GMP), a contract fact often absent from the
-  drawings. Take it if known; skip if not (the ITB / contract confirms it later). Don't argue it
-  against the user default, just record what they say.
-- **How they're bidding / buying it**, the trade *packages* they intend to carry, *if* they already
-  have a commercial plan in mind. A business decision, not a drawing fact, but it firms up fast once
-  they see the set, so don't force it.
-- **Known exclusions / allowances / strategy notes** they already hold in mind.
-- **Bid due date / key dates**, only if one actually matters to them now; otherwise skip.
+- **Delivery method** (Design-Bid-Build / CM-at-risk / design-build / GMP), a contract fact often
+  absent from the drawings. Take it if known; skip if not (the ITB / contract confirms it later).
+  Don't argue it against the user default, just record what they say.
+
+Anything the user volunteers beyond this, an exclusion, a date, a strategy note, is still recorded
+per step 4, but nothing of the kind is asked for.
 
 **Defer to the read, do NOT interrogate.** Step 5 reads each of these off the set at a higher
 tier. Note in one line that you'll read it, then move on:
@@ -128,14 +131,24 @@ never ask the user to confirm a summary of what you are about to do, and never p
 step to them as a choice. Do not reconcile the user's saved defaults against this project here.
 Package and trade-fit decisions belong to `scope-run`, not this step.
 
+Put the ask-now group as a single choice question through the client's choice-question tool where
+one exists (`AskUserQuestion` in Claude Code, the equivalent in Codex): one question per fact, each
+with the held answer as the first, recommended option and its source named, plus a skip option. A
+choice question keeps the turn alive; a prose ask ends it. Where the client has no such tool, ask in
+prose with the default stated in the same shape. The starter-file offer (Mode B) is one more
+question in that same group, "yes" recommended, never a separate prose ask.
+
 ### Mode A: interview (the ask-now set only)
-Nothing was handed over: ask the group above, pre-filled from user defaults
+When the Mode B look below finds nothing: ask the group above, pre-filled from user defaults
 (`~/.plumlayer/operator.json`), and move on.
 
 ### Mode B: read what they already have (preferred when docs exist)
 Being started in a folder, or being pointed at one, is a hand-over: the user put you there on
-purpose, and what is in it is theirs to give. Before opening anything, list what you were handed,
-one level deep, and say what you see.
+purpose, and what is in it is theirs to give. When the opening message names no path, look through
+the folder the session was started in, a few levels down (three is enough), for the drawing set and
+the project manual: PDFs, a drawings or specs folder, a project manual. Never look above that
+folder, into siblings, or elsewhere on the machine, and never into a folder the user named as
+somewhere else. Say nothing about the search itself.
 
 Check whether the folder already holds `CLAUDE.md` or `AGENTS.md`, and check
 `~/.plumlayer/operator.json` for `instructions.scaffold == "declined"`. If either is true, the
@@ -147,16 +160,24 @@ starter file means you behave the same way here from the first prompt of every f
 never reorganize project files on your own, and the file carries no project specifics, so writing
 it into a git repo is safe.
 <!-- user-facing -->
-"I see the drawing set, a spec folder, two bid tabs and a budget. I'll take the drawings and the
-specs; do you want me to read the bid tabs and the budget too, or leave them? Also, this folder has
-no instructions file telling an agent how to work here, so I stay consistent from the start and
-never reorganize your project files on my own. Want me to write a short starter file for that?"
+Example choice-question content, once the drawings and manual are found: project name, pre-filled
+from the folder name or a cover sheet / ITB found with the set when one names the job, otherwise a
+short free-text entry; delivery method, with the held default as the first, recommended option and
+its source named, plus a skip option; and, in the same group, "Write a short starter file so I work
+the same way here every time?" with "yes" recommended. When the folder also holds files beyond the
+drawings and manual, bid tabs, a budget, one more entry in the same group: "Also found <files> here,
+use them too or leave them?" with "leave them" recommended.
 <!-- /user-facing -->
-The drawings and the project manual you take without asking: they are the job, and step 5 uploads
-them. Anything else in the folder you name and ask about once, then proceed with the answer. Never
-walk above the folder you were handed, into siblings, or into a folder you merely happen to be
-running in when the user named a different one. Never go looking: if nothing was handed over and
-the user has not said where the drawings are, ask where they are.
+The drawings and the project manual found are never put to the user as a question: they are named
+in the question's framing as what will be uploaded. The choice group holds the project name
+(pre-filled when a held answer exists, otherwise a short free-text entry), the delivery method, the
+starter-file offer, and, when other files exist, that one take-or-leave question. The one ask with
+no held answer, when nothing at all is found, is the exception the one-turn rule allows: a plain
+request for the drawings' path.
+
+The drawings and the project manual are the job, and step 5 uploads them. Never walk above the
+folder you were handed, into siblings, or into a folder you merely happen to be running in when the
+user named a different one.
 
 **If they accept the starter file,** write the scaffold below, verbatim, to whichever file the
 client actually running this session reads: `CLAUDE.md` for Claude Code, `AGENTS.md` for Codex.
@@ -196,11 +217,11 @@ explicitly requests it.
 ```
 
 **If they decline,** merge `{"instructions": {"scaffold": "declined"}}` into
-`~/.plumlayer/operator.json`, preserving every other field already there. If the file doesn't
-exist yet, don't create it for this alone; the offer is simply made again next time, and `setup`
-explains the field.
+`~/.plumlayer/operator.json`, preserving every other field already there. If the file doesn't exist
+yet, write it fresh, carrying only `instructions.scaffold` and `_meta` (version 2), so the next
+setup does not offer it again either.
 <!-- user-facing -->
-Say in one line that you won't offer it again, and that `/setup` can turn the offer back on.
+Say in one short line that you won't offer it again.
 <!-- /user-facing -->
 
 Reading a document they handed you is not interrogation, it's the high-value path. Good sources:
@@ -208,12 +229,6 @@ Reading a document they handed you is not interrogation, it's the high-value pat
 - A **drawing index** the architect or the transmittal supplied (a drawing list in the ITB, a
   transmittal sheet) → the set inventory + disciplines.
 - A **spec TOC** → divisions/trades in scope.
-
-```bash
-# list what the user handed over, one level deep, and say what is there before opening
-# anything; the drawings and the project manual are uploaded and read in step 5, not here
-ls -la <path/to/their/files>
-```
 
 Seed what a handed-over document plainly states, cited to that document (it is the entry's
 source, never a bare fact), and say what you seeded from where. Do not ask the user to confirm a
@@ -342,6 +357,9 @@ rather than restating it from what an earlier step said:
 
 ## Gates (non-negotiable)
 
+- **One turn, start to finish.** With the set and the manual in hand and the ask-now questions
+  answerable, run this session to completion in one turn; only the stop points inside
+  `drawing-upload` and `learn-project` end it early.
 - **Cite everything.** Every seeded entry carries `sourceInstrument` + evidence. No citation → don't
   seed it.
 - **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. Uncertain or
@@ -359,10 +377,12 @@ rather than restating it from what an earlier step said:
 - **Run, or stop and report; never create a consent step.** The user's decisions are the ask-now
   set in step 2, put once with a pre-filled answer and its source where you hold one. Nothing else
   is put to the user as a question or a confirmation.
-- **Read what was handed over, and say so.** A folder you were started in or pointed at is listed
-  one level deep and described before anything opens; drawings and the manual are taken, anything
-  else is asked about once; never above that folder, never a search of the machine. Whatever is
-  read is the citation of what it seeds.
+- **Look inside the folder you were handed, quietly.** When no path was named, look through the
+  folder the session started in, up to three levels down, for the drawing set and the project
+  manual; never above that folder, never siblings, never elsewhere on the machine, and never into a
+  folder the user named as somewhere else. Say nothing about the search itself; what is found
+  becomes the pre-filled answer in the ask-now question. Whatever is read is the citation of what it
+  seeds.
 - **Every count in the closing report is read back from the record**, never carried across from a
   sub-skill's own report or from memory.
 - **The instructions offer never overwrites.** Never write `CLAUDE.md` or `AGENTS.md` over one that
