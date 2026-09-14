@@ -113,9 +113,12 @@ comparison ran.
 
 - **If the gate has already run for this set:** read the report's counts, what matched, what
   the index lists that isn't in the set, what's in the set the index doesn't list, and whether the
-  spec comparison ran. Fold anything real into the packet: an unmatched index entry as a
-  `missingScopeFamily` or `setShapeObservation` candidate (per step 6's rules, raise a Question if inferred),
-  and an unrecognized-in-index sheet as a `setShapeObservation`. Before citing anything from
+  spec comparison ran. Read `list_questions(projectId)` as well: a gate run that recorded its
+  findings raised the design team's side as Questions on the board, each citing the index page and
+  the sheets, and those are the standing ones rather than a fresh comparison's. Fold anything real
+  into the packet: an unmatched index entry as a `missingScopeFamily` or `setShapeObservation`
+  candidate (per step 6's rules, raise a Question if inferred), and an unrecognized-in-index sheet
+  as a `setShapeObservation`. Before citing anything from
   `report.declaredLedgerDrift`, check `.ran` first, it's `false`, never a hollow zero, whenever no
   index page could be read at all, or a receiving-check run had to widen its re-read to another
   delivery's pages; a drift check that didn't run is never folded into the packet as if it found

@@ -752,10 +752,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
 **Walk the user through the report** before recording anything:
    - What matched: the overlap between the index and the set.
    - What the index lists that isn't in the set: while the delivery still holds pages nobody has
-     recognized, this sits in your own review queue (the sheet may be on one of them); once every
+     recognized, this stays with you to settle (the sheet may be on one of them); once every
      page is recognized, it becomes a question for the design team.
    - What's in the set the index doesn't list: checked first against the index page's own raw
-     text (a table-reading miss on our side lands in your review queue; a genuine absence becomes a
+     text (a table-reading miss on our side stays with you to settle; a genuine absence becomes a
      question for the design team).
    - What couldn't be read: `report.openItems.parseRejectedSample` and
      `report.openItems.unparsedPages` name the tokens and pages this run could not account for; state
@@ -769,10 +769,12 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
      as a finding of zero.
 <!-- /user-facing -->
 4. **Record the findings.** Once you have shown the report, call
-   `reconcile_set(projectId, record: true)` to record the sheet findings and the grouped questions
-   for the design team (grouped by discipline series, not one per sheet), and say what landed. This
-   is the project's own review queue, internal work: it needs no go-ahead, and the user corrects
-   anything wrong on the site.
+   `reconcile_set(projectId, record: true)` and say what landed. Two things land: the sheet findings
+   that stay with you to settle, and, for the side the design team has to answer, Questions on
+   the board, each citing the index page and the sheets it is about. Those Questions are grouped by
+   discipline series, not one per sheet, and a class spanning more than three series becomes a single
+   project-wide Question naming the series and their counts. Read them back with `list_questions`.
+   This is internal work: it needs no go-ahead, and the user corrects anything wrong on the site.
 
 ## 10. Close out
 
@@ -866,7 +868,8 @@ Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re
   `failedFiles` entry is a finding for the user, never a silent retry loop.
 - The reconciliation gate (step 9) is honest about its own bounds: no classified index page, a
   backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
-  problems found." `reconcile_set` findings are recorded without asking, and the report says what landed.
+  problems found." `reconcile_set` findings are recorded without asking, and the report says what
+  landed: sheet findings for our own queue, and Questions on the board for the design team's side.
 - **The step 10 lingering-sheet list is a complete paged read, not a first page.** It comes from
   `set_grid(limit: 0)` followed by pages until the rows cover the count, and its criterion (the
   sheet's governing delivery is not this delivery) is stated with the list. Paging that could not be

@@ -2,8 +2,8 @@
 name: project-record
 description: >
   Read, search, review, or add entries to a Plumlayer project record: the drawing set, open
-  questions, RFI candidates, scope items, and takeoff data. Use when the user asks "what's in my
-  project" or says "/project-record". Drives the read verbs (set_grid, rfi_candidates, search,
+  questions, scope items, and takeoff data. Use when the user asks "what's in my
+  project" or says "/project-record". Drives the read verbs (set_grid, search,
   list_scope_items, list_questions, search_set_text, set_text_status) and write verbs (record,
   record_batch, record_batch_file, ask_question, close_question, reopen_question).
   Does not upload drawings (drawing-upload), build the scope list (scope-run), or place takeoff
@@ -51,7 +51,6 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
 **Read**
 - `set_grid`: the sheet inventory (the drawing set as a grid: discipline, sheet number,
   governing issue, open-question count per sheet).
-- `rfi_candidates`: drafted RFI candidates with citations.
 - `search`: the raw entry ledger, every entry that's ever been written, not just what's
   currently governing. Filter by subject / predicate / text; paginated. Use
   this to see what's actually been asserted, including entries you wrote yourself.
@@ -240,8 +239,8 @@ text on those sheets, so I read them and set them right."
 
 ## Typical flows
 - **"What's in my project / project record?"** → `list_projects` → pick one → `set_grid` for the
-  drawing set, `list_questions` for the open items, `rfi_candidates` for drafted RFIs; `search`
-  to inspect specific subjects/entries.
+  drawing set, `list_questions` for the open items, including the ones the drawing-index check
+  raised; `search` to inspect specific subjects/entries.
 - **"Scope something"** → read the relevant sheets/entries, judge, then `record`
   grounded entries (`sourceInstrument` = where it came from, plus `evidence`).
 <!-- user-facing -->
@@ -250,8 +249,8 @@ Tell the user
 <!-- /user-facing -->
 Drawn
   measurements and sheet scale are not this door's to write (see Write, above).
-- **"Find conflicts / RFIs"** → `list_questions` for the open items, `rfi_candidates` for drafted
-  RFIs; where you spot a disagreement between sources, or something you genuinely can't resolve,
+- **"Find conflicts / RFIs"** → `list_questions` for the open items, the drawing-index check's
+  among them; where you spot a disagreement between sources, or something you genuinely can't resolve,
   `ask_question` with a title and the citations it's about, after checking `list_questions`, so
   you reply to an open one covering the same ask rather than raising it twice. Where instead you can see the
   recognizer grabbed the wrong cell for a title or discipline, correct it with a supersession
