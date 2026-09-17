@@ -136,7 +136,9 @@ records: never from filename guesses.
    `count: 0` silently, exactly like real absence: an empty result for a predicate you expected
    to exist means check your spelling before concluding the data is missing. When the surface is
    a tag, keynote, or spec phrase rather than a title, `search_set_text(projectId, query)` finds
-   which sheets carry it directly, before `get_page_text` or `render_page` on those sheets.
+   which sheets carry it directly, before `get_page_text` or `render_page` on those sheets. It
+   answers for the drawings by default and says so in `kind`; `kind: document` asks the project
+   manual instead.
 2. Resolve each candidate's **fileId and page** from its location records: predicates
    `locatedAt` (fileId, page, source PDF, delivery) and `appearsOnPage`, with a paired
    subject+predicate query per candidate. If the project's sheets carry no type records at all

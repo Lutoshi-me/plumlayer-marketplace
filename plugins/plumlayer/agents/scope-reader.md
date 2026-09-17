@@ -205,8 +205,9 @@ render only what text cannot give.
   what you leave on the sheet is what the run leaves. Locate a mark, tag or callout you meet with
   `search_set_text(projectId, query)`, whose every hit names its `sheetNumber`, `page` and the
   boxes the read returned, so you keep the hits on your own sheet and read the regions around them
-  rather than the whole plan. There is no sheet argument on that verb: it searches the project, and
-  you narrow by the `sheetNumber` on each hit.
+  rather than the whole plan. There is no sheet argument on that verb: it searches the drawings
+  (every answer names the `kind` it covered, and `kind: document` asks the project manual
+  instead), and you narrow by the `sheetNumber` on each hit.
 - **The corpus for where.** A code, tag, phrase, or detail callout is located across the set with
   `search_set_text(projectId, query, limit, offset)`: every sheet and location it appears on. That
   is how you find the detail a callout points at, confirm a code's other sheets, and resolve a tag

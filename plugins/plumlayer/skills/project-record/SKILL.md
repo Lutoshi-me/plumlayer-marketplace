@@ -84,8 +84,15 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   as fit one answer, bounded by size rather than a fixed count, so a dense sheet walks in a few
   calls; page with `offset: nextOffset` while `truncated` is true, or pass `region` in PDF points
   to read one area.
-- `search_set_text`: find a mark or phrase anywhere in the project's PDFs and get back which
-  pages carry it and where; search first, then render only the pages it points at.
+- `search_set_text`: find a mark or phrase in the project's files and get back which pages
+  carry it and where; search first, then render only the pages it points at. It searches one
+  kind of file at a time and every answer names which in `kind`. Left out, that is the drawings
+  on a project that holds drawings beside a manual or proposals, the one kind a project holds
+  pages of where it holds only one (a manual-only project searches its manual), and every kind
+  at once where there are several and none are drawings; `countsByKind` says how many pages of
+  each other kind carry the same text. Name it yourself with `kind: drawing`, `kind: document`
+  for the project manual and any other filed document, `kind: proposal` for the sub proposals,
+  `kind: batch` for a write file you uploaded, or `kind: all` for every page at once.
 - `set_text_status`: how much of the project's text has been read so far; a page nobody has read
   yet cannot be found by `search_set_text`.
 

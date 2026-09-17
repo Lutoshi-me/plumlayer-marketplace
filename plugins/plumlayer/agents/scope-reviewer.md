@@ -75,7 +75,10 @@ them is ever trimmed.
 3. THE QUERY BUDGET AND THE CAPS. One query string per call, no boolean, no list. Rank your
    harvested words most distinguishing first: a mark or a code, then a product or assembly name of
    several words, then the distinguishing noun of a section title, then the catalog name and its
-   aliases. Run at most forty `search_set_text` calls for one review. Drop any word under three
+   aliases. Run at most forty `search_set_text` calls for one review, every one of them with
+   `kind: drawing`: you are looking for work on the sheets, and a section title found in the
+   manual is the section you harvested it from, not work. The `document` count in an answer's
+   `countsByKind` is information, never a page to open. Drop any word under three
    characters; the verb accepts two and a two character query matches the whole set. Read the caps
    off each result and act on them rather than around them. `limit` is 25 pages by default and 100
    at most; at most 20 matches come back for one page while `hitsOnPage` carries that page's true

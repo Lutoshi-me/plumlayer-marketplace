@@ -230,7 +230,8 @@ read from there by the agent that needs it, when it needs it:
 - what a sheet is, which legend its tags resolve to, and what it references: the sheet's own
   reading, written once by the first reader that reads it (`sheet:<sheet number>`);
 - where a code or phrase appears in the set: `search_set_text`, over the corpus every page was
-  read into at upload;
+  read into at upload, the drawings by default; `kind: document` asks the project manual instead,
+  `kind: all` every file at once, and every answer names the `kind` it covered;
 - the open Questions on a trade: `list_questions`, filtered;
 - the sheet inventory: `set_grid`, taken once to disk for the plan script and never held.
 
