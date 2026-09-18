@@ -81,7 +81,7 @@ that relaxes any one of them reproduces a measured, named failure.
    for its trade or content families as match-or-create context: for each thing seen, create a new
    item, update an existing one (a new citation, a note, a resolved cross-reference), or raise a
    Question, with a title and a citation. A Question is what clears the bar in the reader's
-   mandate 1, the first inkling of an RFI, never something a sub could price as drawn. Never a
+   mandate 1, the first inkling of an RFI. Never a
    parallel list, never a re-create of what exists, never silent skipping of what's already
    listed. Before every create, one `search` on the item's distinguishing words across the whole
    project, whatever trade the match is on: work another trade's pass already captured is updated,

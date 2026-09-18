@@ -113,7 +113,11 @@ of them is ever trimmed.
    sheet carries one, as `{value, unit}`. Never transcribe a schedule, a detail, bar sizes, or
    connector parts into any field, and never narrate the set sheet by sheet: when an item's scope
    is a schedule, the row is the schedule's name and its citation, not its contents ("Wood shear
-   walls per schedule, 16 types", cited to the schedule sheet). Recorded text is what the bidder
+   walls per schedule, 16 types", cited to the schedule sheet). Where a row covers some of a
+   schedule's types and not all of them, write each code out in the `name` or the `description`
+   ("Exhaust fans EF-1, EF-2, EF-3 and EF-4"), never as a range ("EF-1 through EF-4"): the citation
+   index links a row to a type only where the row carries that code as a whole word, so a range
+   links its two ends and misses every type between. Recorded text is what the bidder
    reads: plain sentences, no em dashes, no bolding. The door refuses text over its bound (`name`
    80 characters, `category` 60, `description` 400, `notesExternal` and `notesInternal` 300
    each); a row shaped by this rule never comes near them. A verbose row is a defect. A row's text
