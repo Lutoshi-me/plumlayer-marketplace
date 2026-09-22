@@ -72,6 +72,14 @@ Checks:
       Question carries the fixed phrase "Question text is plain estimator words", either stating
       the rule in full or pointing at it (docs/plugin-text-style.md §1, `learn-project`'s
       judgment-entry table).
+  17. Agent tool surface: no agents/*.md tools line takes the whole connector as a wildcard;
+      every connector verb an agent's body names is on its tools line; every declared connector
+      verb is one of the 112 the connector registers; and the prohibition-only exception table
+      stays honest, each entry still named in that agent's text and still off its tools line.
+  18. Agent model pinned: every agents/*.md frontmatter carries a non-empty `model`, so a
+      dispatched agent does not run on whatever model the session happens to be on. Checks 17 and
+      18 each run their own helper over the agent fixtures under harness/fixtures/, so the clean
+      one is shown to pass and each broken one to refuse in one line naming what is wrong.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -2508,6 +2516,276 @@ def check_no_fork_subagent(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
+# Check: each run agent names the connector verbs it uses
+# --------------------------------------------------------------------------- #
+#
+# All three run agents declared the whole connector as one wildcard, so a sheet reader held every
+# verb the connector registers: the ones that create a project, delete a bid package, invite a sub,
+# send a question out. Naming the verbs is the containment: an agent can call what its text tells it
+# to call, and nothing else. That only holds while the two sides agree, which is what this checks.
+#
+# Four arms:
+#   1. No tools line carries the connector wildcard.
+#   2. Every connector verb an agent's body names is on that agent's tools line, so a definition
+#      cannot instruct a call the runtime would refuse.
+#   3. Every declared connector verb is one the connector registers, so a typo fails the release
+#      rather than shipping a tool that silently is not there.
+#   4. The exception table stays honest: each entry is still named in that agent's text and still
+#      absent from its tools line.
+#
+# What this cannot judge: whether a declared verb is one the agent should hold. That stays in
+# review. It proves the tools line and the text agree, and that both name real verbs.
+
+# The verbs the connector registers, a pinned copy of the api's own registrations (one
+# `server.registerTool` call each), on the LEDGER_NOTE_KINDS precedent: the harness never reaches
+# the api, so the list is stated here and a new api verb an agent names means adding it here too.
+CONNECTOR_VERBS = {
+    "add_question_source", "ask_question", "assign_sheet_packages", "cite_source",
+    "clear_quantity", "close_question", "create_drawing_delivery", "create_project",
+    "deliverable_status", "directory_add_certification", "directory_add_company",
+    "directory_add_comparable_project", "directory_add_contact", "directory_delete_company",
+    "directory_delete_contact", "directory_find_subs_for_trade", "directory_get_company",
+    "directory_list_companies", "directory_list_company_types", "directory_list_trades",
+    "directory_remove_certification", "directory_remove_comparable_project",
+    "directory_tag_trade", "directory_untag_trade", "directory_update_company",
+    "directory_update_comparable_project", "directory_update_contact", "extract_spec_toc",
+    "extract_spec_toc_status", "follow_up_question", "generate_deliverable",
+    "get_bid_package", "get_page_text", "get_project", "index_citations",
+    "index_citations_leftover", "index_citations_status", "list_definition_kinds",
+    "list_definitions", "list_drawing_deliveries", "list_email_templates", "list_files",
+    "list_invitation_flow_companies", "list_project_dates", "list_project_options",
+    "list_projects", "list_questions", "list_scope_items", "log_question_reply_received",
+    "mark_question_sent", "project_add_design_team_contact",
+    "project_remove_design_team_contact", "project_set_design_team_contact", "question_board",
+    "read_deliverables", "read_invitation_flow", "read_set_text", "recognize_sheets",
+    "recognize_sheets_status", "reconcile_index", "reconcile_set", "record",
+    "record_additional_item", "record_batch", "record_batch_file", "register_file",
+    "register_files", "register_pages", "remove_project_date", "render_page",
+    "reopen_question", "reply_question", "request_file_upload", "request_file_uploads",
+    "restore_scope_item", "restore_source", "retire_scope_item", "retract_source",
+    "rewrite_question", "search", "search_set_symbols", "search_set_symbols_status",
+    "search_set_text", "set_grid", "set_invitation_labor", "set_invitation_places",
+    "set_invitation_trades", "set_project_date", "set_question_reference",
+    "set_question_reminder", "set_question_trades", "set_text_status",
+    "solicitation_coverage", "solicitation_create_package", "solicitation_delete_package",
+    "solicitation_get_package", "solicitation_invite", "solicitation_list_invitations",
+    "solicitation_list_packages", "solicitation_log_touchpoint",
+    "solicitation_remove_invitation", "solicitation_update_invitation",
+    "solicitation_update_package", "takeoff_condition", "takeoff_read", "takeoff_record",
+    "takeoff_retract", "update_drawing_delivery", "update_file", "update_project",
+    "verify_unit", "whoami",
+}
+
+CONNECTOR_TOOL_PREFIX = "mcp__plugin_plumlayer_plumlayer__"
+
+# Verbs an agent's text names without ever calling them: in a prohibition, or in an account of
+# another agent's writes. The agent must not hold them, so the tools line leaves them off and the
+# arm that would flag the mismatch reads the reason here instead.
+TOOLS_PROHIBITION_ONLY = {
+    "scope-round-runner": {
+        # The runner dispatches readers; it cites nothing and reads no scope list itself.
+        "cite_source", "list_scope_items",
+    },
+    "scope-reviewer": {
+        # The reviewer adds what no row carries; retiring a row is the estimator's call.
+        "retire_scope_item",
+    },
+}
+
+_CONNECTOR_DECLARATION_RE = re.compile(re.escape(CONNECTOR_TOOL_PREFIX) + r"([a-z][a-z0-9_]*)")
+
+_VERB_TOKEN_RE = re.compile(r"[a-z][a-z0-9_]*")
+
+# Group-capturing, and newline-tolerant where _INLINE_CODE_RE is not, because the body is joined
+# into one string before the spans are found.
+_INLINE_SPAN_RE = re.compile(r"`([^`]*)`")
+
+# Inside a fenced block only a call shape counts, so an example or a report template cannot invent
+# a verb while ordinary fenced text (a ledger line, a report field) stays untouched.
+_FENCED_CALL_RE = re.compile(r"\b([a-z][a-z0-9_]*)\s*\(")
+
+
+def _agent_body_lines(path: Path) -> list[str]:
+    """The lines after the frontmatter block, so a tools line never counts as the body naming a
+    verb. A file with no frontmatter is all body."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != "---":
+        return lines
+    for i, line in enumerate(lines[1:], start=1):
+        if line.strip() == "---":
+            return lines[i + 1:]
+    return []  # unterminated block is no body
+
+
+def _agent_tool_surface(path: Path) -> tuple[set[str], set[str], bool]:
+    """
+    Return (declared, named, wildcard) for one agent definition.
+
+    `declared` are the connector verbs on its `tools:` line, `named` the connector verbs its body
+    names, `wildcard` whether the tools line takes the whole connector.
+
+    The body is joined before the spans are found, because an inline code span wraps across lines
+    in these files (`get_page_text(...)` breaks mid-span in the reviewer) and a per-line scan
+    desynchronizes on the unclosed backtick, silently reading prose as code from there on. Fenced
+    blocks are scanned separately and only for a call shape.
+    """
+    tools_line = _parse_frontmatter(path).get("tools", "")
+    declared = set(_CONNECTOR_DECLARATION_RE.findall(tools_line))
+    wildcard = f"{CONNECTOR_TOOL_PREFIX}*" in tools_line
+
+    body = _agent_body_lines(path)
+    fence_mask = _fenced_code_line_mask(body)
+    prose = " ".join(l for l, fenced in zip(body, fence_mask) if not fenced)
+
+    named: set[str] = set()
+    for span in _INLINE_SPAN_RE.findall(prose):
+        named.update(t for t in _VERB_TOKEN_RE.findall(span) if t in CONNECTOR_VERBS)
+    for line, fenced in zip(body, fence_mask):
+        if fenced:
+            named.update(v for v in _FENCED_CALL_RE.findall(line) if v in CONNECTOR_VERBS)
+
+    return declared, named, wildcard
+
+
+def _agent_tool_surface_errors(path: Path, agent: str, label: str) -> list[str]:
+    """The four arms over one definition, in the terms the release reads them."""
+    errors: list[str] = []
+    declared, named, wildcard = _agent_tool_surface(path)
+
+    if wildcard:
+        errors.append(
+            f"{label}: tools line takes the whole connector "
+            f"(`{CONNECTOR_TOOL_PREFIX}*`) instead of naming its verbs"
+        )
+
+    for verb in sorted(declared - CONNECTOR_VERBS):
+        errors.append(f"{label}: declares `{verb}`, which the connector does not register")
+
+    prohibition_only = TOOLS_PROHIBITION_ONLY.get(agent, set())
+    for verb in sorted(named - declared - prohibition_only):
+        errors.append(f"{label}: names `{verb}` in its text but does not declare it on the tools line")
+
+    for verb in sorted(prohibition_only):
+        if verb not in named:
+            errors.append(
+                f"{label}: `{verb}` is held as prohibition-only but the file no longer names it"
+            )
+        if verb in declared:
+            errors.append(
+                f"{label}: `{verb}` is held as prohibition-only but the tools line now declares it"
+            )
+
+    return errors
+
+
+def check_agent_tool_surface(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "agent-tool-surface"
+    agents_dir = plugin_path / "agents"
+    if not agents_dir.is_dir():
+        return Result(name, False, detail=f"agents/ directory not found at {agents_dir}")
+
+    agent_files = sorted(agents_dir.rglob("*.md"))
+    if not agent_files:
+        return Result(name, False, detail="no agent definitions found in agents/")
+
+    errors: list[str] = []
+    declared_count = 0
+    named_count = 0
+    for agent_file in agent_files:
+        declared, named, _ = _agent_tool_surface(agent_file)
+        declared_count += len(declared)
+        named_count += len(named)
+        errors.extend(_agent_tool_surface_errors(agent_file, agent_file.stem, agent_file.name))
+
+    # The same arms over fixtures, so the check is shown to refuse rather than assumed to: a clean
+    # definition passes and each broken one comes back with the one line naming what is wrong.
+    fixtures = marketplace_root / "harness" / "fixtures"
+    expected = [
+        ("agent-fixture-clean.md", None),
+        ("agent-fixture-wildcard-tools.md", "takes the whole connector"),
+        ("agent-fixture-unnamed-verb.md", "does not declare it on the tools line"),
+    ]
+    for fixture_name, wanted in expected:
+        fixture = fixtures / fixture_name
+        if not fixture.is_file():
+            errors.append(f"fixture not found at {fixture}")
+            continue
+        got = _agent_tool_surface_errors(fixture, fixture.stem, fixture_name)
+        if wanted is None:
+            if got:
+                errors.append(f"{fixture_name}: clean fixture refused: {'; '.join(got)}")
+        elif len(got) != 1 or wanted not in got[0]:
+            errors.append(
+                f"{fixture_name}: expected one refusal naming '{wanted}', got {got}"
+            )
+
+    detail = (
+        f"{len(agent_files)} agent definitions scanned, {declared_count} connector verbs declared "
+        f"against {len(CONNECTOR_VERBS)} the connector registers, {named_count} named in their "
+        f"text, {len(expected)} fixtures"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: every agent definition pins its model
+# --------------------------------------------------------------------------- #
+#
+# An agent with no `model` runs on whatever the session happens to be on, so the same pass costs
+# and reasons differently depending on who dispatched it. Two of the three already pinned one and
+# the runner did not, which is the drift this closes: the field is present and non-empty, and which
+# model it names stays a decision, not a check.
+
+def _agent_model_errors(path: Path, label: str) -> list[str]:
+    if not _parse_frontmatter(path).get("model", "").strip():
+        return [f"{label}: frontmatter `model` is missing or empty"]
+    return []
+
+
+def check_agent_model_pinned(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "agents-model-pinned"
+    agents_dir = plugin_path / "agents"
+    if not agents_dir.is_dir():
+        return Result(name, False, detail=f"agents/ directory not found at {agents_dir}")
+
+    agent_files = sorted(agents_dir.rglob("*.md"))
+    if not agent_files:
+        return Result(name, False, detail="no agent definitions found in agents/")
+
+    errors: list[str] = []
+    models: list[str] = []
+    for agent_file in agent_files:
+        errors.extend(_agent_model_errors(agent_file, agent_file.name))
+        models.append(f"{agent_file.stem}={_parse_frontmatter(agent_file).get('model', '').strip() or 'none'}")
+
+    fixtures = marketplace_root / "harness" / "fixtures"
+    expected = [
+        ("agent-fixture-clean.md", None),
+        ("agent-fixture-no-model.md", "frontmatter `model` is missing or empty"),
+    ]
+    for fixture_name, wanted in expected:
+        fixture = fixtures / fixture_name
+        if not fixture.is_file():
+            errors.append(f"fixture not found at {fixture}")
+            continue
+        got = _agent_model_errors(fixture, fixture_name)
+        if wanted is None:
+            if got:
+                errors.append(f"{fixture_name}: clean fixture refused: {'; '.join(got)}")
+        elif len(got) != 1 or wanted not in got[0]:
+            errors.append(f"{fixture_name}: expected one refusal naming '{wanted}', got {got}")
+
+    detail = f"{', '.join(models)}, {len(expected)} fixtures"
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Public entry point
 # --------------------------------------------------------------------------- #
 
@@ -2532,6 +2810,8 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_runner_mode_set(plugin_path),
         check_plan_inventory(plugin_path, marketplace_root),
         check_no_fork_subagent(plugin_path),
+        check_agent_tool_surface(plugin_path, marketplace_root),
+        check_agent_model_pinned(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

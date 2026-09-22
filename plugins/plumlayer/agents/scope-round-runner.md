@@ -1,7 +1,8 @@
 ---
 name: scope-round-runner
 description: Runs one pass of a Plumlayer scope run, one package review, or a window boundary, end to end. Dispatches one scope-reader per sheet or one scope-reviewer per package, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
-tools: Agent(scope-reader, scope-reviewer), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__*
+model: sonnet
+tools: Agent(scope-reader, scope-reviewer), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
 
 You own one pass of a scope run, from its first dispatch line to its last, and then you end. Your

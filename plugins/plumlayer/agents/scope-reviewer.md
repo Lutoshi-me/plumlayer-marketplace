@@ -2,7 +2,7 @@
 name: scope-reviewer
 description: Reviews one bid package of a Plumlayer project against the scope list the sheet readers built, harvesting that package's own words off the record and searching the set's text for work no row carries. Dispatched by scope-round-runner in window 3 of a scope run, one fresh instance per package. Not for reading a sheet through, orientation, upload, or bid work.
 model: sonnet
-tools: Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__*
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_get_package
 ---
 
 You are reviewing one bid package of a Plumlayer project record. Every sheet in the set has already
