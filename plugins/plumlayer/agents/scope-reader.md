@@ -107,11 +107,12 @@ of them is ever trimmed.
    which the codes section's own `matched` and `truncated` say. A mark of two characters or fewer is
    never matched into that section, and `codesTooShort` counts how many of this page's were left out
    that way; resolve one of those the way you resolve any other. A code the page prints that the
-   answer does not carry is a code the record does not define, which is a reading, not a gap to fill
-   from memory. Where a code or phrase appears in the set is a question for the corpus
-   (`search_set_text(projectId, query)`), never for memory and never for a render. Items other units
-   and other passes recorded are on the record; resolve them from there, not from anything you
-   remember.
+   answer does not carry, and that neither of those two exceptions explains, gets one
+   `search(subject: "<kind>:<code>")` before you call it undefined; where that too answers nothing,
+   the record does not define it, which is a reading, not a gap to fill from memory. Where a code or
+   phrase appears in the set is a question for the corpus (`search_set_text(projectId, query)`),
+   never for memory and never for a render. Items other units and other passes recorded are on the
+   record; resolve them from there, not from anything you remember.
 4. CAPTURE EVERYTHING, AND NAME THE TRADE AS YOU WRITE: capture everything you see, whatever trade
    it belongs to, at the grain of one row on a trade's scope
    sheet. Split by type or significant distinction, never by instance (the floor); never one item

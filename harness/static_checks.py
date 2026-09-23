@@ -2801,8 +2801,13 @@ _SUBAGENT_TYPE_LINE_RE = re.compile(r"^\s*subagent_type\s*:", re.IGNORECASE)
 _FOREGROUND_LINE_RE = re.compile(r"^\s*run_in_background\s*:\s*false\s*$", re.IGNORECASE)
 
 
-def _fenced_blocks(lines: list[str]) -> list[tuple[int, list[str]]]:
-    """Every fenced block, as (the 1-based line its opening fence sits on, its body lines)."""
+def _fenced_blocks(lines: list[str]) -> tuple[list[tuple[int, list[str]]], int]:
+    """
+    Every fenced block, as (the 1-based line its opening fence sits on, its body lines), and the
+    1-based line of a fence left open at end of file, or 0 when every fence closed. A block only
+    lands when its closing fence arrives, so an unclosed fence would otherwise drop whatever it
+    opened and leave the caller reading a short list as a clean file.
+    """
     blocks: list[tuple[int, list[str]]] = []
     opened_at = 0
     body: list[str] = []
@@ -2818,30 +2823,37 @@ def _fenced_blocks(lines: list[str]) -> list[tuple[int, list[str]]]:
             continue
         if in_fence:
             body.append(line)
-    return blocks
+    return blocks, (opened_at if in_fence else 0)
 
 
-def _dispatch_templates(path: Path) -> list[tuple[int, list[str]]]:
-    """The fenced blocks that dispatch an agent: the ones naming a subagent type."""
+def _dispatch_templates(path: Path) -> tuple[list[tuple[int, list[str]]], int]:
+    """The fenced blocks that dispatch an agent: the ones naming a subagent type, with the
+    unclosed-fence line `_fenced_blocks` reports carried through."""
     lines = path.read_text(encoding="utf-8").splitlines()
+    blocks, unclosed_at = _fenced_blocks(lines)
     return [
         (at, body)
-        for at, body in _fenced_blocks(lines)
+        for at, body in blocks
         if any(_SUBAGENT_TYPE_LINE_RE.match(l) for l in body)
-    ]
+    ], unclosed_at
 
 
 def _dispatch_foreground_errors(path: Path, label: str) -> list[str]:
     try:
-        templates = _dispatch_templates(path)
+        templates, unclosed_at = _dispatch_templates(path)
     except Exception as e:
         return [f"{label}: read error: {e}"]
-    return [
+    errors = [
         f"{label}:{at}: dispatch template names a subagent type and does not name "
         f"`run_in_background: false`"
         for at, body in templates
         if not any(_FOREGROUND_LINE_RE.match(l) for l in body)
     ]
+    # The scan cannot speak for what an unclosed fence swallowed, so the file is refused rather
+    # than read as though the dropped block were not there.
+    if unclosed_at:
+        errors.append(f"{label}:{unclosed_at}: fenced block opened here is never closed")
+    return errors
 
 
 def check_dispatch_foreground(plugin_path: Path, marketplace_root: Path) -> Result:
@@ -2860,7 +2872,8 @@ def check_dispatch_foreground(plugin_path: Path, marketplace_root: Path) -> Resu
     for f in files:
         label = f"{f.parent.name}/{f.name}" if f.name == "SKILL.md" else f.name
         try:
-            templates += len(_dispatch_templates(f))
+            found, _ = _dispatch_templates(f)
+            templates += len(found)
         except Exception:
             pass
         errors.extend(_dispatch_foreground_errors(f, label))
@@ -2870,6 +2883,7 @@ def check_dispatch_foreground(plugin_path: Path, marketplace_root: Path) -> Resu
     expected = [
         ("dispatch-fixture-clean.md", None),
         ("dispatch-fixture-background.md", "does not name `run_in_background: false`"),
+        ("dispatch-fixture-unclosed.md", "is never closed"),
     ]
     for fixture_name, wanted in expected:
         fixture = fixtures / fixture_name
