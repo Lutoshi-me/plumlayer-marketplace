@@ -2557,8 +2557,8 @@ CONNECTOR_VERBS = {
     "list_projects", "list_questions", "list_scope_items", "log_question_reply_received",
     "mark_question_sent", "project_add_design_team_contact",
     "project_remove_design_team_contact", "project_set_design_team_contact", "question_board",
-    "read_deliverables", "read_invitation_flow", "read_set_text", "recognize_sheets",
-    "recognize_sheets_status", "reconcile_index", "reconcile_set", "record",
+    "read_deliverables", "read_invitation_flow", "read_set_text", "read_sheet_context",
+    "recognize_sheets", "recognize_sheets_status", "reconcile_index", "reconcile_set", "record",
     "record_additional_item", "record_batch", "record_batch_file", "register_file",
     "register_files", "register_pages", "remove_project_date", "render_page",
     "reopen_question", "reply_question", "request_file_upload", "request_file_uploads",
@@ -2786,6 +2786,114 @@ def check_agent_model_pinned(plugin_path: Path, marketplace_root: Path) -> Resul
 
 
 # --------------------------------------------------------------------------- #
+# Check: every dispatch template names the foreground
+# --------------------------------------------------------------------------- #
+#
+# A dispatch is one Agent tool call and the call is the wait. A background dispatch breaks that
+# shape: the dispatcher's turn can end with a reader still running, and a turn that ends in a
+# headless session is a process that exits and takes the reader with it. The templates are where
+# this run says how the call is made, so they are where the parameter is checked.
+#
+# What this cannot judge: whether a running agent actually passes the parameter. It proves the
+# shipped text tells it to.
+
+_SUBAGENT_TYPE_LINE_RE = re.compile(r"^\s*subagent_type\s*:", re.IGNORECASE)
+_FOREGROUND_LINE_RE = re.compile(r"^\s*run_in_background\s*:\s*false\s*$", re.IGNORECASE)
+
+
+def _fenced_blocks(lines: list[str]) -> list[tuple[int, list[str]]]:
+    """Every fenced block, as (the 1-based line its opening fence sits on, its body lines)."""
+    blocks: list[tuple[int, list[str]]] = []
+    opened_at = 0
+    body: list[str] = []
+    in_fence = False
+    for i, line in enumerate(lines, 1):
+        if line.strip().startswith("```"):
+            if in_fence:
+                blocks.append((opened_at, body))
+                body = []
+            else:
+                opened_at = i
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            body.append(line)
+    return blocks
+
+
+def _dispatch_templates(path: Path) -> list[tuple[int, list[str]]]:
+    """The fenced blocks that dispatch an agent: the ones naming a subagent type."""
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return [
+        (at, body)
+        for at, body in _fenced_blocks(lines)
+        if any(_SUBAGENT_TYPE_LINE_RE.match(l) for l in body)
+    ]
+
+
+def _dispatch_foreground_errors(path: Path, label: str) -> list[str]:
+    try:
+        templates = _dispatch_templates(path)
+    except Exception as e:
+        return [f"{label}: read error: {e}"]
+    return [
+        f"{label}:{at}: dispatch template names a subagent type and does not name "
+        f"`run_in_background: false`"
+        for at, body in templates
+        if not any(_FOREGROUND_LINE_RE.match(l) for l in body)
+    ]
+
+
+def check_dispatch_foreground(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "dispatch-foreground"
+    skills_dir = plugin_path / "skills"
+    agents_dir = plugin_path / "agents"
+
+    files: list[Path] = []
+    if skills_dir.is_dir():
+        files.extend(sorted(skills_dir.rglob("SKILL.md")))
+    if agents_dir.is_dir():
+        files.extend(sorted(agents_dir.rglob("*.md")))
+
+    errors: list[str] = []
+    templates = 0
+    for f in files:
+        label = f"{f.parent.name}/{f.name}" if f.name == "SKILL.md" else f.name
+        try:
+            templates += len(_dispatch_templates(f))
+        except Exception:
+            pass
+        errors.extend(_dispatch_foreground_errors(f, label))
+
+    # The same helper over fixtures, so the check is shown to refuse rather than assumed to.
+    fixtures = marketplace_root / "harness" / "fixtures"
+    expected = [
+        ("dispatch-fixture-clean.md", None),
+        ("dispatch-fixture-background.md", "does not name `run_in_background: false`"),
+    ]
+    for fixture_name, wanted in expected:
+        fixture = fixtures / fixture_name
+        if not fixture.is_file():
+            errors.append(f"fixture not found at {fixture}")
+            continue
+        got = _dispatch_foreground_errors(fixture, fixture_name)
+        if wanted is None:
+            if got:
+                errors.append(f"{fixture_name}: clean fixture refused: {'; '.join(got)}")
+        elif len(got) != 1 or wanted not in got[0]:
+            errors.append(f"{fixture_name}: expected one refusal naming '{wanted}', got {got}")
+
+    detail = (
+        f"{len(files)} skill/agent files scanned, {templates} dispatch templates, "
+        f"{len(expected)} fixtures"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Public entry point
 # --------------------------------------------------------------------------- #
 
@@ -2812,6 +2920,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_no_fork_subagent(plugin_path),
         check_agent_tool_surface(plugin_path, marketplace_root),
         check_agent_model_pinned(plugin_path, marketplace_root),
+        check_dispatch_foreground(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

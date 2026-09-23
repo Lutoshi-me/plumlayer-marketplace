@@ -46,20 +46,23 @@ is lost by stopping there, because nothing has run.
    `dispatch` line first, in one append, then dispatch the reader.** Never the other way round and
    never in a batch at the end: the line is what a resume reads to know the unit was started, and a
    run that batched them reported six units as nothing-landed when their work was on the record.
-   Dispatching a reader is one Agent tool call. On most seats the call is the wait: it returns
-   only once the reader has ended and reported. On a seat where the call returns at once with an
-   agent id instead of the report, the report arrives later as its own message: wait for it,
-   making no other call while you wait, and never dispatch a second agent to wait for the first,
-   and never a placeholder agent carrying a "do nothing", "wait", or "not used" brief to fill a
-   turn. If a client setting appears to force a tool call every turn, name that in your deviations
-   line rather than inventing a call to satisfy it. A reader that has ended and whose report did
-   not arrive in the message wrote it first to `<run folder>/reports/<unit-id>.md`: open that file
-   and verify off it. A unit whose report file is also absent is re-run on its own unit: whatever
-   it already recorded is on the record, and the re-run creates or updates against the live list,
-   so nothing is created twice. The dispatch carries the project id, the window, the pass id, the
-   unit id, what the pass reads for, the unit's pages (sheet number, `fileId`, 1-based
-   `pageInPdf`), the run folder path, and the pass brief path. Paste
-   nothing from that file into it. The unit id is
+   Dispatching a reader is one Agent tool call with `run_in_background: false`, and that call is the
+   wait: it returns only once the reader has ended and reported. Name the parameter on every
+   dispatch. A background dispatch lets your turn end with a reader still running, and a turn that
+   ends in a headless session is a process that exits and takes the reader with it. A report
+   reaching you from an agent you did not dispatch is not your report: do not verify against it and
+   never carry its counts onto a `verified` line. On the rare seat where the call still comes back
+   at once with an agent id instead of the report, the report arrives later as its own message: wait
+   for it, making no other call while you wait, and never dispatch a second agent to wait for the
+   first, and never a placeholder agent carrying a "do nothing", "wait", or "not used" brief to fill
+   a turn. If a client setting appears to force a tool call every turn, name that in your deviations
+   line rather than inventing a call to satisfy it. A reader that has ended and whose report did not
+   arrive in the message wrote it first to `<run folder>/reports/<unit-id>.md`: open that file and
+   verify off it. A unit whose report file is also absent is re-run on its own unit: whatever it
+   already recorded is on the record, and the re-run creates or updates against the live list, so
+   nothing is created twice. The dispatch carries the project id, the window, the pass id, the unit
+   id, what the pass reads for, the unit's pages (sheet number, `fileId`, 1-based `pageInPdf`), the
+   run folder path, and the pass brief path. Paste nothing from that file into it. The unit id is
    the unit's run-prefix, so concurrent readers can never collide on a created subject.
 3. **Verify per unit, in one turn, before the next unit starts.** Take the reader's report and
    make one call: `verify_unit(projectId, subjectPrefix: "scopeItem:<unit-id>-", sheets: [<the
@@ -232,9 +235,10 @@ with one unit and three differences.
   at all. You append your own lines; you never read back what other passes wrote.
 - Supervise more than one pass, or more than twelve units. A pass longer than that is a plan defect
   and you stop before running it, rather than absorbing it.
-- Fork yourself, dispatch a reader in the background on purpose, or dispatch any agent whose job is
+- Fork yourself, leave `run_in_background: false` off a dispatch, or dispatch any agent whose job is
   to wait for another agent or to do nothing. A dispatch that comes back with an agent id is waited
-  on, not worked around.
+  on, not worked around, and a report from an agent you did not dispatch is not a report you verify
+  against.
 - Dispatch an agent with nothing real to give it. A reader is dispatched only with a unit and its
   pages, a reviewer only with a package; a turn with nothing left to dispatch ends by returning to
   your summary or moving to the next step, never by a placeholder call carrying a "do nothing",

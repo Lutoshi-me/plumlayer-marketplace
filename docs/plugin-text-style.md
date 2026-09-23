@@ -209,6 +209,12 @@ Each of these is a harness check.
     whether a given Question actually reads in plain words, only that the instruction carries the
     rule or a pointer to it; that judgment stays in review.
 
+13. Every dispatch template runs in the foreground. A fenced block in a shipped skill or agent
+    file that carries a `subagent_type:` line also carries `run_in_background: false`, so the
+    Agent call that dispatches an agent is the wait rather than a turn that can end with work in
+    flight. Blocks naming no subagent type are out of scope. This cannot judge whether a running
+    agent passes the parameter, only that the text tells it to.
+
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is
 invisible.

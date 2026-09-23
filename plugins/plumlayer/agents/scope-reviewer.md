@@ -95,9 +95,10 @@ them is ever trimmed.
    - The hit is the work of a row on another package that this package could also bid, in your
      judgment. It is a `packageRole:<this package's trade>` record with role `candidate` on that
      existing row, the candidate rule reader mandate 4 gives. It is not a create.
-   - The hit is work no row carries. Create it, at the grain of your own mandate 5, after the one
-     `search(text: <two or three distinguishing words of its name>)` across the whole project that
-     reader mandate 1 requires before every create.
+   - The hit is work no row carries. Create it, at the grain of your own mandate 5. The record
+     refuses a create whose name this project already carries, on any trade, and names the row that
+     holds it; turn such a refusal into the citation and the note on that named row and send again,
+     the way reader mandate 1 does.
 5. THE GENERAL GRAIN SHAPES WHAT YOU CREATE, AND NEVER RESHAPES WHAT EXISTS. You hold this
    package's whole row set, which is the only place in the run where it sits in one context. Use
    the general grain of reader mandate 6 on the rows you create. Where that grain and the rows

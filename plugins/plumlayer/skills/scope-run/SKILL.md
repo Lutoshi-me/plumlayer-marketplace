@@ -83,17 +83,22 @@ that relaxes any one of them reproduces a measured, named failure.
    Question, with a title and a citation. A Question is what clears the bar in the reader's
    mandate 1, the first inkling of an RFI. Never a
    parallel list, never a re-create of what exists, never silent skipping of what's already
-   listed. Before every create, one `search` on the item's distinguishing words across the whole
-   project, whatever trade the match is on: work another trade's pass already captured is updated,
-   never created again. Before raising a Question, read the open Questions on the item's trade
-   (`list_questions`, filtered); where an open one already covers the same ask, reply to it
-   instead of asking it a second time. A Question is about the project, never about a Plumlayer
-   failure; a read or write that fails is reported and handled in the run's own failure path, not
-   raised as a Question. Question text is plain estimator words, per docs/plugin-text-style.md.
+   listed. The record refuses a create whose name the project already carries, on any trade and
+   under any category, and names the row that holds it: work another trade's pass already captured
+   is updated, never created again, and the reader turns that refusal into an update on the named
+   row and sends again. Before raising a Question, read the open Questions on the item's trade; the
+   reader's own page read carries the open ones on the trades its rows name, and `list_questions`,
+   filtered, is the read for a trade it did not cover. Where an open one already covers the same
+   ask, reply to it instead of asking it a second time. A Question is about the project, never about
+   a Plumlayer failure; a read or write that fails is reported and handled in the run's own failure
+   path, not raised as a Question. Question text is plain estimator words, per
+   docs/plugin-text-style.md.
 3. **Store-resolution is mandatory.** A mark, tag, or code is resolved by querying the project
-   record (`search`, `list_definitions`), never from memory, never inherited from another sheet's
-   read, never assumed from a similar-looking mark. Where a code appears in the set is a question
-   for the corpus (`search_set_text`), never for memory either.
+   record, never from memory, never inherited from another sheet's read, never assumed from a
+   similar-looking mark. For a code the page in front of a reader prints, its own
+   `read_sheet_context` answer is that read; `search` and `list_definitions` answer for a code that
+   answer does not carry. Where a code appears in the set is a question for the corpus
+   (`search_set_text`), never for memory either.
 4. **Capture everything; name the trade as you write.** Capture is complete: everything seen goes
    into the one shared list, whatever trade it belongs to. The reader that writes the row sets its
    trade right then, from the packages orientation
@@ -222,6 +227,10 @@ project.
 Everything an agent in this run needs to know about the project is on the project record, and is
 read from there by the agent that needs it, when it needs it:
 
+- everything the above holds about one page of the drawings, in one call:
+  `read_sheet_context(projectId, fileId, pageInPdf)`, which a sheet reader takes once per page. It
+  is cut to fit rather than paged, and it names every list it did not carry whole, so the verb that
+  owns that list reads it;
 - the orientation facts (identity, systems, scope areas, hazards): `get_project` and `search` on
   their predicates;
 - the packages and their catalog trades: `solicitation_list_packages`;
@@ -333,13 +342,19 @@ everything else from the record; the runner opens the read plan for its
 own pass and appends the ledger without reading it. Nothing from those files is pasted into a
 dispatch, because whatever is pasted stays in the dispatcher's context for the rest of the run.
 
-A dispatch is one Agent tool call and the call is the wait. On a seat where the call returns at
-once with an agent id instead of the report, the report arrives later as its own message: wait for
-it, making no other call in between, and never dispatch a second agent to wait for the first, and
-never a placeholder agent to fill a turn. Where a reader, a reviewer or a runner has ended and its
-report did not arrive in the message, its report file under `reports/` is the report, written
-before it returned; open that file rather than re-running the unit. A unit whose report file is
-also absent is re-run on its own unit, against the live list, so nothing is created twice.
+A dispatch is one Agent tool call with `run_in_background: false`, and the call is the wait. Named
+that way the call does not return until the agent has ended and reported, which is the whole shape:
+a background dispatch lets the caller end its turn with work still in flight, and in a headless
+session an ended turn is an exited process that takes everything under it with it. A report arriving
+from an agent you did not dispatch yourself, such as a reader your runner dispatched, is not your
+report: never relay its counts, and wait for your own dispatch to return. On the rare seat where the
+call still comes back at once with an agent id instead of the report, the report arrives later as
+its own message: wait for it, making no other call in between, and never dispatch a second agent to
+wait for the first, and never a placeholder agent to fill a turn. Where a reader, a reviewer or a
+runner has ended and its report did not arrive in the message, its report file under `reports/` is
+the report, written before it returned; open that file rather than re-running the unit. A unit whose
+report file is also absent is re-run on its own unit, against the live list, so nothing is created
+twice.
 
 Reports travel upward in a fixed short shape, counts and named anomalies only (the shapes are
 given with the dispatch templates below). A runner's summary is what the lead reads when that pass
@@ -461,6 +476,7 @@ lines.
    `<run folder>/grid/`, and returns one line. Read that line and nothing else.
 
    ```text
+   run_in_background: false
    Fetch the sheet grid for project <projectId> to disk. This is your whole job. Do nothing else,
    and end when it is done.
 
@@ -588,7 +604,8 @@ every page too:
    `leftoverCounts` carries the true count per kind of what it could not cite, with
    `truncatedKinds` naming the kinds whose rows were cut for size. Read the counts; never the
    pages. `queued` and `stale` are both safe to wait through.
-3. **Put what it left open on disk.** Dispatch a fresh general agent whose whole job is to page
+3. **Put what it left open on disk.** Dispatch a fresh general agent, with
+   `run_in_background: false` like every other dispatch in this run, whose whole job is to page
    what the index left open into `<run folder>/plan/index/`, copied never retyped, and return one
    line: pages fetched, rows on disk. It calls `index_citations_leftover(projectId, kind, offset,
    limit)` once per kind that `leftoverCounts` shows above zero, paging each kind until a response
@@ -634,8 +651,8 @@ On the go-ahead:
    runner's `verify_unit` per sheet, your own created counts per unit, one `pass:` line each, in
    the plan's order. Passes of different disciplines start together. Every reader reads its sheet
    whole, for everything on it, whatever trade the work belongs to (non-negotiable 4); the runner's
-   overlap scan and the reader's search-before-create are what keep two passes running alongside
-   each other from creating the same work twice.
+   overlap scan and the record's refusal of a create whose name the project already carries are what
+   keep two passes running alongside each other from creating the same work twice.
 3. **Check in every few passes.** After every fourth `pass:` line of the window, check in (format
    below): the sheets read, what landed by trade, what was raised. A pause here is at a pass
    boundary and loses nothing.
@@ -776,7 +793,9 @@ When the report has been given, append `phase: closed out`.
 Every dispatch carries pointers and nothing else. Whatever is pasted into a dispatch stays in the
 dispatcher's context for the rest of the run, so the read plan and the brief values are opened by
 the agent that needs them, from the paths it is handed, and the record is read by the agent that
-needs it.
+needs it. Every template below names `run_in_background: false` on the Agent call because the call
+is the wait: a background dispatch lets the dispatcher end its turn with work still in flight, and a
+turn that ends in a headless session is a process that exits and takes the work with it.
 
 The mandates are not in these templates. They live in the three agent definitions the plugin ships,
 `scope-round-runner`, `scope-reader` and `scope-reviewer`, where each dispatched instance reads
@@ -787,6 +806,7 @@ a measured failure.
 run):
 
 ```text
+run_in_background: false
 Project: <projectId>.
 Run the `learn-project` skill for this project, in full, exactly as it is written. Then return
 your summary and end.
@@ -802,6 +822,7 @@ sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n> 
 
 ```text
 subagent_type: plumlayer:scope-round-runner
+run_in_background: false
 Project: <projectId>. Window: <1, 2, or 3>.
 Pass: <pass id, or "review-<pass id>", or "boundary">.
 Run folder: <path>. Read plan: <path to read-plan.md>.
@@ -816,6 +837,7 @@ string there, so `<pass id>.md` is the name the review's own report already hold
 
 ```text
 subagent_type: plumlayer:scope-reader
+run_in_background: false
 Project: <projectId>. Window: <n>. Pass: <pass id>. Unit: <unit id>.
 Reading for: <"the vocabulary", or "the sheet">.
 Pages: <sheet number + fileId + 1-based pageInPdf, one per page>.
@@ -828,6 +850,7 @@ then return it.
 
 ```text
 subagent_type: plumlayer:scope-reviewer
+run_in_background: false
 Project: <projectId>. Window: 3. Pass: <pass id>. Unit: <unit id>.
 Reviewing: <the package's catalog trade id>. Package: <the package id>.
 Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>.
