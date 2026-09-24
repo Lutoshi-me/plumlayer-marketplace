@@ -285,8 +285,11 @@ any repo, never uploaded to the project except record files, never recorded as p
   retyped and never read by a model. `packages.json` (`solicitation_list_packages`) is the plan
   script's window 3 input. `window-1.json` is what the window 1 plan run wrote, the unit keys it
   selected and the unit keys it left out, and it is the window 2 plan run's input, so that window
-  subtracts window 1 rather than recomputing it. Nothing else is copied here: the definitions are
-  on the record and no window plans off them. Audience: machine.
+  subtracts window 1 rather than recomputing it. `window-2.json` is what the last window 2 plan run
+  wrote, the unit ids it assigned and, for a slice, each `--only` pattern and the unit keys it
+  deferred; the next window 2 plan run reads its ids back, so a slice's ids stay where they are.
+  Nothing else is copied here: the definitions are on the record and no window plans off them.
+  Audience: machine.
 - `read-plan.md`: the read plan, one per window, written by the plan script, never by hand: the
   passes, the units within each with their sheets, files and pages in windows 1 and 2 and the
   package each review reads for in window 3, and what is deliberately excluded. Audience: agent; a
@@ -371,8 +374,9 @@ reports, verified against the record with the lead's own count queries and writt
 `pass:` line, never relayed as-is and never held past that line.
 
 Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
-approved; window 1 complete; index built; window 2 complete; window 3
-complete; packages amended; closed out. Inside a window the `pass:` lines are the boundaries: one
+approved; window 1 complete; index built; window 2 complete, or window 2 paused where a slice
+deferred sheets; window 3 complete; packages amended; closed out. Inside a window the `pass:`
+lines are the boundaries: one
 per pass in windows 1 and 2, one per package in window 3. On every start
 this skill reads the ledger's `phase:` and `pass:` lines first, with a local filter, never the
 file: a run in flight resumes at the phase after the last line, or at the next pass of the window
@@ -652,13 +656,17 @@ On the go-ahead:
    passes. The reading order inside a discipline is a constant in the script, never a setting and
    never a judgment made at run time. Read back only its bounds line: sheets, passes, disciplines,
    the sheets by type, and `every sheet once`, which states the units planned against the distinct
-   sheets they touch and refuses where the two differ. This window takes no packages and no kinds;
-   the script refuses either in one line.
+   sheets they touch and refuses where the two differ. A user who wants a slice of the window first
+   names the sheets and why: `--only` plans that slice and records the rest as deferred, and the
+   next plan run without it brings them back and keeps every id already handed out. Read back the
+   deferred count with the bounds line. This window takes no packages and no kinds; the script
+   refuses either in one line.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 2 \
      --inventory '<run folder>/inventory.json' \
      --window-1 '<run folder>/plan/window-1.json' \
+     [--only '<pattern>:<reason>']... \
      --out '<run folder>/read-plan.md'
    ```
 
@@ -674,12 +682,20 @@ On the go-ahead:
 4. **Close the window** with a boundary runner, as in stage 4 step 4, then append
    `phase: window 2 complete` with the window's verified totals, run the index (stage 5, steps 1 to
    4) so every row cites every page it appears on before any review reads it, and check in.
+   When the plan deferred sheets, the window is not closed. After the slice's passes, run the
+   boundary runner and the index the same way, but append
+   `phase: window 2 paused units <n> ... deferred <m>` in place of `phase: window 2 complete`: the
+   same verified totals the complete line carries, with `deferred <m>` added. The window picks up
+   again at step 1, with a plan run without `--only`, and a resume after that line starts there.
 
 <!-- user-facing -->
-At this check-in, say plainly that every sheet in the set has now been read, once each, and that
-nothing was left unread except what was deliberately left out at the start. Name what landed by
-trade, say each trade's page carries its items and shows every sheet each one appears on, and say
-what comes next in one sentence: one package at a time, against what landed.
+At this check-in, when nothing was deferred, say plainly that every sheet in the set has now been
+read, once each, and that nothing was left unread except what was deliberately left out at the
+start. Name what landed by trade, say each trade's page carries its items and shows every sheet
+each one appears on, and say what comes next in one sentence: one package at a time, against what
+landed. When sheets were deferred, say which sheets were read and what landed from them by trade,
+that the rest of the set, <m> sheets, is still waiting, and that the next go-ahead reads it. Never
+say every sheet has been read while any is waiting.
 <!-- /user-facing -->
 
 ## 7. Window 3: one review per package

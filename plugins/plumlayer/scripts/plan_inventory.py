@@ -18,7 +18,7 @@ Two subcommands:
 
   plan       reads the window's inputs and writes `read-plan.md` whole: the window's passes, the
              unit lines with their page references, what each pass reads for, what is deliberately
-             left out, and the totals.
+             left out, what a window 2 slice deferred, and the totals.
 
 The three windows, and what each selects:
 
@@ -31,6 +31,16 @@ The three windows, and what each selects:
      discipline in inventory order and sorted inside a discipline by sheet type, composition ahead
      of extent. The selection is a partition of what window 1 left, so the bounds line states the
      units planned against the distinct sheets they touch, and refuses where the two differ.
+     `--only` cuts a run to a slice the user asked for first: the run plans only the sheets window
+     1 left whose sheet number matches one of its patterns, and every other sheet window 1 left is
+     deferred, not left out. A deferred sheet carries no unit; the next plan run of this window
+     without `--only` plans it again. The partition is then planned plus deferred, once each, and
+     the bounds line states both. Grouping, the type order and the split are unchanged over the
+     slice, except that a discipline the whole window would split into lettered parts is lettered
+     in the slice too (`A2a` for a slice of six), so the slice's unit ids already name the part
+     they sit at the front of when the whole window is planned. Every window 2 run writes
+     `plan/window-2.json` beside window 1's file: the unit ids it assigned, each `--only` pattern
+     with its reason and the unit keys it selected, and the deferred unit keys with their count.
   3  one review per package: one pass per row of the packages file, in package order, with the
      packages of one trade kept together. It reads no sheets, so it takes no inventory.
 
@@ -47,9 +57,9 @@ Unit ids across a replan, in windows 1 and 2:
      unit id to those sheet numbers. Authoritative, because it is the only append-only record of
      what was actually dispatched.
   2  the previous `plan/window-<n>.json`, whose `units` array binds a unit id to an inventory unit
-     key. It covers a unit that was planned and never dispatched. Only window 1 writes that file
-     today, so in window 2 this tier is empty and an id that was planned and never dispatched can
-     still move; nothing is recorded under it, so nothing on the record moves with it.
+     key. It covers a unit that was planned and never dispatched. Windows 1 and 2 both write that
+     file, so a window 2 slice keeps its ids on the next plan run whether or not any of them was
+     dispatched.
   3  new numbers: the next number after the highest any tier names for that pass, taken in the
      window's own natural order. A number any tier named is never handed out again, so a sheet cut
      from the plan leaves its id retired.
@@ -59,6 +69,13 @@ Unit ids across a replan, in windows 1 and 2:
   placed in the window's natural order before ids are assigned, so composition still precedes
   extent among the sheets not yet read.
 
+  A window 2 slice and the whole window: on the next full plan the slice's units are bound, so they
+  sort to the front of their discipline's pass and keep the part their ids name, as long as the
+  units the slices planned in one discipline fit that discipline's first part of the whole window
+  (twelve units where the discipline fills its parts, fewer where it splits into smaller ones).
+  Past that, a bound unit lands in the next part, and the plan refuses it as it refuses any bound
+  unit whose sheet now plans under a different pass id, rather than renumbering it.
+
 Usage:
 
     python plan_inventory.py inventory --grid <dir or file> --expect-count 209 --out-dir <dir>
@@ -66,7 +83,8 @@ Usage:
     python plan_inventory.py plan --window 1 --inventory <path>
         [--include <pattern>:<reason>] [--exclude <pattern>:<reason>] --out <path>
 
-    python plan_inventory.py plan --window 2 --inventory <path> --window-1 <path> --out <path>
+    python plan_inventory.py plan --window 2 --inventory <path> --window-1 <path>
+        [--only <pattern>:<reason>] --out <path>
 
     python plan_inventory.py plan --window 3 --packages <path> --out <path>
 
@@ -89,9 +107,10 @@ Exit codes:
   1  a named failure, one line on stderr: a file that does not parse, a row total that does not
      match `--expect-count`, two rows folding to one unit key, a missing window input, an argument
      some other window takes, an input row with no `tradeCode`, a window 1 file naming a unit key
-     the inventory does not hold or naming one as both selected and excluded, an `--include` or
-     `--exclude` with no colon or matching no sheet, an inventory file this script did not write,
-     or a window 2 selection that is not a partition of what window 1 left. Six of them are about
+     the inventory does not hold or naming one as both selected and excluded, an `--include`,
+     `--exclude` or `--only` with no colon or matching no sheet it may select, an inventory file
+     this script did not write, or a window 2 plan whose planned and deferred sheets are not a
+     partition of what window 1 left. Six of them are about
      a unit id already handed out: a ledger dispatch line for this window whose unit id is not
      `<pass>-<number>`, one sheet number bound to two unit ids, one unit id bound to two sheet
      sets, a bound sheet number matching more than one inventory row, a bound unit whose sheet set
@@ -888,7 +907,9 @@ def _bind_unit_ids(
         bound.sort(key=lambda row: _parse_unit_id(id_of_key[row["unitKey"]]))
         plan_pass["units"] = bound + unbound
 
-        for part_id, part_units in _split_pass(plan_pass["id"], plan_pass["units"]):
+        for part_id, part_units in _split_pass(
+            plan_pass["id"], plan_pass["units"], plan_pass.get("lettered", False)
+        ):
             next_number = high_water.get(part_id, 0) + 1
             for row in part_units:
                 existing = id_of_key.get(row["unitKey"])
@@ -921,14 +942,20 @@ def _bind_unit_ids(
 # Passes
 # --------------------------------------------------------------------------- #
 
-def _split_pass(pass_id: str, units: list[dict]) -> list[tuple[str, list[dict]]]:
+def _split_pass(
+    pass_id: str, units: list[dict], lettered: bool = False
+) -> list[tuple[str, list[dict]]]:
     """
     A pass over twelve units is split into parts of as even a size as possible, earlier parts taking
     the remainder. Balanced and naive chunking always give the same number of parts, so balancing
     costs nothing and keeps a runner from being started for a single unit.
+
+    `lettered` names even a single part with its letter. A window 2 slice sets it where the whole
+    window would split the discipline, so the slice's part is `A2a` rather than `A2`: its unit ids
+    then name the part they sit at the front of when the whole window is planned.
     """
     n = len(units)
-    if n <= UNITS_PER_PASS:
+    if n <= UNITS_PER_PASS and not lettered:
         return [(pass_id, units)]
     count = math.ceil(n / UNITS_PER_PASS)
     if count > len(string.ascii_lowercase):
@@ -1008,7 +1035,8 @@ def _pass_id_for_discipline(discipline: str, window: int) -> str:
 def _split_pattern_argument(raw: str, flag: str) -> tuple[str, str]:
     """
     `<pattern>:<reason>`, split on the first colon only so a reason may carry one. Both halves are
-    required: an include or exclude with no reason is a judgment with nothing recorded behind it.
+    required: an include, exclude or only with no reason is a judgment with nothing recorded behind
+    it.
     """
     pattern, sep, reason = raw.partition(":")
     if not sep or not pattern.strip() or not reason.strip():
@@ -1073,34 +1101,56 @@ def _window_1(rows: list[dict], includes, excludes) -> dict:
 # Window 2: every remaining sheet, once
 # --------------------------------------------------------------------------- #
 
-def _window_2(rows: list[dict], window_1_keys: set[str], selected: int, excluded: int) -> dict:
+def _window_2(
+    rows: list[dict], window_1_keys: set[str], selected: int, excluded: int, only
+) -> dict:
     remaining = [r for r in rows if r["unitKey"] not in window_1_keys]
 
+    # A slice the user asked for first. Each pattern selects among the sheets window 1 left only,
+    # so a pattern naming nothing this window reads is a typo, refused as an include's is.
+    only_blocks: list[dict] = []
+    sliced: set[str] = set()
+    for pattern, reason in only:
+        hits = _select(remaining, {"patterns": [pattern]})
+        if not hits:
+            raise PlanError(f"--only: no sheet number window 2 reads matches the pattern {pattern}")
+        sliced.update(r["unitKey"] for r in hits)
+        only_blocks.append({"pattern": pattern, "reason": reason, "sheets": hits})
+    chosen = [r for r in remaining if r["unitKey"] in sliced] if only else remaining
+    deferred = [r for r in remaining if r["unitKey"] not in sliced] if only else []
+
+    # Lettering follows the whole window, not the slice, so a slice's part id is the one its units
+    # keep at the front of that discipline when the whole window is planned.
+    whole = {discipline: len(group) for discipline, group in _by_discipline(remaining)}
     passes: list[dict] = []
-    for discipline, group in _by_discipline(remaining):
+    for discipline, group in _by_discipline(chosen):
         passes.append(
             {
                 "id": _pass_id_for_discipline(discipline, 2),
                 "name": f"Every sheet, discipline {discipline}",
                 "readsFor": "the sheet",
                 "units": _by_sheet_type(group),
+                "lettered": whole[discipline] > UNITS_PER_PASS,
             }
         )
 
     planned = [r["unitKey"] for plan_pass in passes for r in plan_pass["units"]]
-    distinct = len(set(planned))
-    # The selection is a partition of what window 1 left. Grouping and sorting can only reorder it,
-    # so a run where the planned units are not exactly those rows, once each, is a defect in this
-    # script rather than a set that reads twice.
-    if len(planned) != distinct or len(planned) != len(remaining):
+    deferred_keys = [r["unitKey"] for r in deferred]
+    together = planned + deferred_keys
+    distinct = len(set(together))
+    # Planned plus deferred is a partition of what window 1 left. Selecting, grouping and sorting
+    # can only divide and reorder it, so a run where the two together are not exactly those rows,
+    # once each, is a defect in this script rather than a set that reads twice.
+    if len(together) != distinct or set(together) != {r["unitKey"] for r in remaining}:
+        deferred_clause = f" and deferred {len(deferred_keys)}" if deferred_keys else ""
         raise PlanError(
-            f"window 2 planned {len(planned)} unit(s) over {distinct} distinct sheet(s) from the "
-            f"{len(remaining)} row(s) window 1 left; the selection is a partition and this run is "
-            f"a script defect"
+            f"window 2 planned {len(planned)} unit(s){deferred_clause} over {distinct} distinct "
+            f"sheet(s) from the {len(remaining)} row(s) window 1 left; the selection is a "
+            f"partition and this run is a script defect"
         )
 
     by_type: dict[str, int] = {}
-    for row in remaining:
+    for row in chosen:
         sheet_type = _sheet_type_of(row)
         by_type[sheet_type] = by_type.get(sheet_type, 0) + 1
     ordered_types = [t for t in WINDOW_2_SHEET_TYPE_ORDER if t in by_type]
@@ -1112,6 +1162,8 @@ def _window_2(rows: list[dict], window_1_keys: set[str], selected: int, excluded
         "excludes": [],
         "excludedCount": 0,
         "unassigned": [],
+        "only": only_blocks,
+        "deferred": deferred,
         "units": len(planned),
         "distinctSheets": distinct,
         "disciplines": len(passes),
@@ -1211,6 +1263,64 @@ def _window_3(packages: list[dict]) -> dict:
 # The read plan file
 # --------------------------------------------------------------------------- #
 
+def _every_sheet_once(plan: dict) -> str:
+    """
+    The window 2 partition said out loud. A slice names its deferred sheets beside the units it
+    plans, so the line still accounts for every sheet window 1 left; a whole window reads as it
+    always has.
+    """
+    if not plan["deferred"]:
+        return (
+            f"every sheet once (units {plan['units']} equals distinct sheets "
+            f"{plan['distinctSheets']})"
+        )
+    return (
+        f"every sheet once (units {plan['units']} plus deferred {len(plan['deferred'])} equals "
+        f"distinct sheets {plan['distinctSheets']})"
+    )
+
+
+def _render_slice(plan: dict, show_file: bool) -> list[str]:
+    """
+    What a window 2 slice read and what it deferred. Each pattern's sheets are listed as a left-out
+    block lists its sheets, a plain ordinal on each; the deferred sheets are counted by discipline
+    rather than listed, since they are the rest of the window and the next full plan lists them.
+    """
+    lines: list[str] = []
+    lines.append("## Read now, the rest deferred")
+    lines.append("")
+    lines.append("This run plans only the sheets an --only pattern names. A deferred sheet is not left")
+    lines.append("out: the next plan run of this window without --only plans it again.")
+    lines.append("")
+    for block in plan["only"]:
+        lines.append(f"### Only: {block['pattern']}")
+        lines.append("")
+        lines.append(f"reason: {block['reason']}")
+        lines.append(f"sheets: {len(block['sheets'])}")
+        lines.append("")
+        for number, row in enumerate(block["sheets"], 1):
+            lines.append(_unit_line(str(number), row, show_file))
+        lines.append("")
+    lines.append("### Deferred")
+    lines.append("")
+    reasons: list[str] = []
+    for block in plan["only"]:
+        if block["reason"] not in reasons:
+            reasons.append(block["reason"])
+    for reason in reasons:
+        lines.append(f"reason: {reason}")
+    lines.append(f"sheets: {len(plan['deferred'])}")
+    lines.append("")
+    if plan["deferred"]:
+        lines.append("discipline | sheets")
+        for discipline, group in _by_discipline(plan["deferred"]):
+            lines.append(f"{discipline} | {len(group)}")
+    else:
+        lines.append("Nothing. Every sheet window 1 left matches an --only pattern.")
+    lines.append("")
+    return lines
+
+
 def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple[str, int, int]:
     lines: list[str] = []
     lines.append(f"# Read plan: window {window}")
@@ -1227,7 +1337,7 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
     total_passes = 0
 
     for plan_pass in plan["passes"]:
-        parts = _split_pass(plan_pass["id"], plan_pass["units"])
+        parts = _split_pass(plan_pass["id"], plan_pass["units"], plan_pass.get("lettered", False))
         total_passes += len(parts)
         total_units += len(plan_pass["units"])
         for part_index, (part_id, part_units) in enumerate(parts, 1):
@@ -1265,6 +1375,9 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
             lines.append(_unit_line(str(number), row, show_file))
         lines.append("")
 
+    if plan.get("only"):
+        lines.extend(_render_slice(plan, show_file))
+
     lines.append("## Nothing read for")
     lines.append("")
     if window == 3:
@@ -1290,10 +1403,9 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
             f"sheets added by include patterns {sum(len(b['sheets']) for b in plan['includes'])}"
         )
     if window == 2:
-        lines.append(
-            f"every sheet once (units {plan['units']} equals distinct sheets "
-            f"{plan['distinctSheets']})"
-        )
+        lines.append(_every_sheet_once(plan))
+        if plan["deferred"]:
+            lines.append(f"sheets deferred {len(plan['deferred'])} by --only")
         lines.append(
             f"sheets window 1 selected {plan['window1Selected']}, sheets window 1 left out "
             f"{plan['window1Excluded']}, sheets in the inventory {len(rows)}"
@@ -1327,7 +1439,7 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
 # dropped quietly: dropping it would lose the caller's intent with nothing said about it.
 ALLOWED_BY_WINDOW = {
     1: ("--inventory", "--include", "--exclude"),
-    2: ("--inventory", "--window-1"),
+    2: ("--inventory", "--window-1", "--only"),
     3: ("--packages",),
 }
 REQUIRED_BY_WINDOW = {
@@ -1352,6 +1464,7 @@ def _check_arguments(args, window: int) -> None:
         "--index": args.index,
         "--include": args.include,
         "--exclude": args.exclude,
+        "--only": args.only,
     }
     for flag, reason in RETIRED_ARGUMENTS.items():
         if values[flag]:
@@ -1401,7 +1514,8 @@ def plan(args) -> str:
         window_1_path = args.out.parent.joinpath(*WINDOW_1_FILE)
     elif window == 2:
         keys, selected, excluded = _read_window_1(args.window_1, rows)
-        result = _window_2(rows, keys, selected, excluded)
+        only = [_split_pattern_argument(raw, "--only") for raw in (args.only or [])]
+        result = _window_2(rows, keys, selected, excluded, only)
     else:
         packages = _read_packages(args.packages)
         result = _window_3(packages)
@@ -1433,6 +1547,17 @@ def plan(args) -> str:
         )
 
     written = len(payload)
+    # What this run assigned, so a replan that the ledger cannot answer for still keeps a unit id
+    # that was planned and never dispatched.
+    assigned = (
+        [
+            {"id": row["unitId"], "unitKey": row["unitKey"]}
+            for plan_pass in result["passes"]
+            for row in plan_pass["units"]
+        ]
+        if window in (1, 2)
+        else []
+    )
     if window == 1:
         window_1_payload = (
             json.dumps(
@@ -1440,13 +1565,7 @@ def plan(args) -> str:
                     "window": 1,
                     "selected": result["selectedKeys"],
                     "excluded": result["excludedKeys"],
-                    # What this run assigned, so a replan that the ledger cannot answer for still
-                    # keeps a unit id that was planned and never dispatched.
-                    "units": [
-                        {"id": row["unitId"], "unitKey": row["unitKey"]}
-                        for plan_pass in result["passes"]
-                        for row in plan_pass["units"]
-                    ],
+                    "units": assigned,
                 },
                 indent=2,
             )
@@ -1461,16 +1580,44 @@ def plan(args) -> str:
         )
 
     if window == 2:
+        # Written on every window 2 run, a whole window as well as a slice, so the next run's plan
+        # file tier always reads what this one assigned.
+        window_2_path = _window_file(args.out.parent, 2)
+        window_2_payload = (
+            json.dumps(
+                {
+                    "window": 2,
+                    "units": assigned,
+                    "only": [
+                        {
+                            "pattern": block["pattern"],
+                            "reason": block["reason"],
+                            "sheets": [row["unitKey"] for row in block["sheets"]],
+                        }
+                        for block in result["only"]
+                    ],
+                    "deferredKeys": [row["unitKey"] for row in result["deferred"]],
+                    "deferredCount": len(result["deferred"]),
+                },
+                indent=2,
+            )
+            + "\n"
+        ).encode("utf-8")
+        _write_atomically(window_2_path, window_2_payload)
+        written += len(window_2_payload)
         by_type = ", ".join(f"{name} {count}" for name, count in result["byType"])
         unordered = (
             "; sheet types the reading order does not name: " + ", ".join(result["unorderedTypes"])
             if result["unorderedTypes"]
             else ""
         )
+        deferred = (
+            f", sheets deferred {len(result['deferred'])} by --only" if result["deferred"] else ""
+        )
         return (
-            f"wrote {args.out}: window 2, sheets {total_units}, passes {total_passes}, "
-            f"disciplines {result['disciplines']}, every sheet once (units {result['units']} "
-            f"equals distinct sheets {result['distinctSheets']}), sheets window 1 selected "
+            f"wrote {args.out} and {window_2_path}: window 2, sheets {total_units}, passes "
+            f"{total_passes}, disciplines {result['disciplines']}, {_every_sheet_once(result)}"
+            f"{deferred}, sheets window 1 selected "
             f"{result['window1Selected']}, sheets window 1 left out {result['window1Excluded']}, "
             f"sheets in the inventory {len(rows)}, sheets by type {by_type}, sheets typed other or "
             f"untyped {result['otherOrUntyped']}{ids_clause}{unordered}; {written:,} bytes"
@@ -1519,6 +1666,13 @@ def main(argv: list[str] | None = None) -> int:
     win.add_argument(
         "--exclude", action="append", metavar="PATTERN:REASON",
         help="window 1 only: a sheet number pattern to leave out, and why; repeatable",
+    )
+    win.add_argument(
+        "--only", action="append", metavar="PATTERN:REASON",
+        help=(
+            "window 2 only: a sheet number pattern to read in this run, and why; every other sheet "
+            "is deferred to the next window 2 plan run without it; repeatable"
+        ),
     )
     win.add_argument("--out", required=True, type=Path, help="the read plan file to write")
 

@@ -64,10 +64,17 @@ Checks:
       verify_unit subject prefix stem with none a prefix of another, a first plan of windows 1 and
       2 numbering each pass's units from 1 and a replan keeping every unit id the run ledger and
       the previous plan file already handed out, numbering new sheets after the highest number the
-      pass has ever carried and never handing a cut sheet's id out again, and a one-line refusal
-      naming what is wrong for each of eighteen broken invocations, two grid rows folding to one
-      unit key, a window 1 file naming a key as both selected and excluded, and the seven ways a
-      kept unit id would be wrong among them. The shipped script is compiled from source here
+      pass has ever carried and never handing a cut sheet's id out again, a window 2 slice planned
+      with `--only` holding exactly the sheets its patterns name and deferring the rest, with its
+      bounds line, its `plan/window-2.json` and its read plan's per-pattern and deferred sections
+      each matching an independent tally, the slice lettered by the whole window so the full plan
+      after it keeps its ids at the front of part a (three dispatched, then twelve) and reads its
+      partition exactly as before once nothing is deferred, and a one-line refusal naming what is
+      wrong for each of twenty-one broken invocations, two grid rows folding to one unit key, a
+      window 1 file naming a key as both selected and excluded, the seven ways a kept unit id would
+      be wrong, an `--only` on window 1, an `--only` matching no sheet window 2 reads, and a slice
+      of thirteen dispatched in one discipline, which the full plan's first part of twelve cannot
+      hold, among them. The shipped script is compiled from source here
       rather than imported through the loader, so a script edited twice inside one second to the
       same byte length can never be checked as its earlier bytecode.
   14b. Pass summary: the shipped scripts/pass_summary.py, imported in-process and run over two
@@ -1738,6 +1745,9 @@ _PLAN_UNIT_RE = re.compile(r"^(\S+)\. (\S+), page (\d+): (.*)$")
 _PLAN_REVIEW_RE = re.compile(r"^(\d+)\. (rev-\S+): (.*)$")
 _PLAN_FIELD_RE = re.compile(r"^([a-z][a-z ]*): (.*)$")
 _LEFT_OUT_HEADING = "## Deliberately left out"
+# A window 2 slice lists what each `--only` pattern read and counts what it deferred under this
+# heading, after the left-out section, so no unit line in it is ever read as a planned unit.
+_SLICE_HEADING = "## Read now, the rest deferred"
 
 # The recognizer's deterministic sheet types: SHEET_TYPES in the api's sheet-type-classifier.ts,
 # less `other`, which that classifier never returns (an unplaceable sheet types null instead).
@@ -2088,6 +2098,9 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     # by the pinned type order with inventory order kept inside a type, split at twelve. An excluded
     # sheet stays out: the lead left it out with a reason, and reading it here would overrule that.
     w2_path = out_dir / "read-plan-w2.md"
+    # Window 2 writes its own plan file too, and its ids are a tier the next run keeps, so the file
+    # an earlier harness run left behind goes first, as window 1's does above.
+    (out_dir / "plan" / "window-2.json").unlink(missing_ok=True)
     code, w2_bounds, err = _run_script_main(
         module,
         ["plan", "--window", "2", "--inventory", inventory_json,
@@ -2586,6 +2599,285 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         expect_bounds("the window 2 replan", w2_replan_bounds,
                       "ids kept 2 (ledger 2, plan file 0), ids new 4, ids retired 0")
 
+    # --- a window 2 slice, and the whole window after it --------------- #
+    #
+    # `--only` plans the sheets a user asked for first and defers the rest of window 2, and the next
+    # plan run without it plans the rest. The slice's ids have to survive that run, so a discipline
+    # the whole window splits is lettered in the slice too, and the slice's units then sort to the
+    # front of that discipline's part a. Every expectation below is built here off the fixture rows.
+    def slice_row(discipline: str, number: str, sheet_type: str, page: int) -> dict:
+        return {
+            "unitKey": f"{number}@file-0001#{page}",
+            "discipline": discipline,
+            "sheetNumber": number,
+            "pageTitle": f"{sheet_type} on {number}",
+            "sheetType": sheet_type,
+            "fileId": "file-0001",
+            "pageInPdf": page,
+        }
+
+    slice_rank = {t: i for i, t in enumerate(_WINDOW_2_SHEET_TYPE_ORDER)}
+
+    def in_type_order(type_rows: list[dict]) -> list[dict]:
+        return sorted(type_rows, key=lambda r: slice_rank.get(r["sheetType"], len(slice_rank)))
+
+    # Twenty architectural sheets in three types, so the whole discipline splits into two parts of
+    # ten and a slice of six fits the first; five structural, which never split; three mechanical,
+    # which the slice defers whole.
+    slice_types = ("plan", "section", "elevation")
+    slice_a = [slice_row("A", f"A-3.{i:02d}", slice_types[i % 3], 19 + i) for i in range(1, 21)]
+    slice_s = [slice_row("S", f"S-2.{i:02d}", "plan", 39 + i) for i in range(1, 6)]
+    slice_m = [slice_row("M", f"M-2.{i:02d}", "schematic", 44 + i) for i in range(1, 4)]
+    slice_dir = replan_root / "slice"
+    slice_inventory = write_replan_inventory(slice_dir, vocabulary_rows + slice_a + slice_s + slice_m)
+    slice_window_1 = ["--window-1", str(slice_dir / "plan" / "window-1.json")]
+    code, _bounds, err, _passes = run_replan(slice_dir, 1, slice_inventory, [])
+    if code != 0:
+        errors.append(f"the slice fixture's window 1 run refused: {err}")
+
+    first_reason = "the user asked for the first six plans first"
+    second_reason = "the key plan the user asked for"
+    sliced_a = [r for r in slice_a if fnmatch.fnmatchcase(r["sheetNumber"], "A-3.0[1-6]")]
+    sliced_s = [r for r in slice_s if r["sheetNumber"] == "S-2.01"]
+    sliced_keys = {r["unitKey"] for r in sliced_a + sliced_s}
+    deferred_rows = [r for r in slice_a + slice_s + slice_m if r["unitKey"] not in sliced_keys]
+    # A slice of six in a discipline of twenty is part a, a slice in a discipline that never splits
+    # keeps its bare pass id, and the six are not in inventory order once the type order sorts them.
+    expected_slice = (
+        [(f"A2a-{i}", r["sheetNumber"]) for i, r in enumerate(in_type_order(sliced_a), 1)]
+        + [(f"S2-{i}", r["sheetNumber"]) for i, r in enumerate(in_type_order(sliced_s), 1)]
+    )
+    if not len(sliced_a) <= 12 < len(slice_a) or len(slice_s) > 12:
+        errors.append("the slice fixture proves nothing about lettering a slice by the whole window")
+    if [r["sheetNumber"] for r in in_type_order(sliced_a)] == [r["sheetNumber"] for r in sliced_a]:
+        errors.append("the slice fixture proves nothing about the type order inside a slice")
+
+    code, slice_bounds, err, slice_passes = run_replan(
+        slice_dir, 2, slice_inventory,
+        slice_window_1 + ["--only", f"A-3.0[1-6]:{first_reason}", "--only", f"S-2.01:{second_reason}"],
+    )
+    if code != 0:
+        errors.append(f"the window 2 slice refused: {err}")
+    else:
+        if planned_ids(slice_passes) != expected_slice:
+            errors.append(
+                f"the window 2 slice planned {planned_ids(slice_passes)}, expected {expected_slice}"
+            )
+        remaining_count = len(sliced_keys) + len(deferred_rows)
+        for fragment in (
+            f"window 2, sheets {len(sliced_keys)}, passes 2, disciplines 2",
+            f"every sheet once (units {len(sliced_keys)} plus deferred {len(deferred_rows)} equals "
+            f"distinct sheets {remaining_count})",
+            f"sheets deferred {len(deferred_rows)} by --only",
+            f"ids kept 0 (ledger 0, plan file 0), ids new {len(sliced_keys)}, ids retired 0",
+        ):
+            expect_bounds("the window 2 slice", slice_bounds, fragment)
+
+        slice_file_path = slice_dir / "plan" / "window-2.json"
+        if str(slice_file_path) not in slice_bounds:
+            errors.append(f"the window 2 slice bounds line does not name the file it wrote: {slice_bounds!r}")
+        try:
+            slice_file = json.loads(slice_file_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            errors.append(f"the slice's window-2.json: {e}")
+            slice_file = {}
+        sheet_of = {r["unitKey"]: r["sheetNumber"] for r in slice_a + slice_s + slice_m}
+        if set(slice_file) != {"window", "units", "only", "deferredKeys", "deferredCount"}:
+            errors.append(f"the slice's window-2.json carries the keys {sorted(slice_file)}")
+        if slice_file.get("window") != 2:
+            errors.append("the slice's window-2.json does not say which window wrote it")
+        written_units = [
+            (u.get("id"), sheet_of.get(u.get("unitKey"))) for u in slice_file.get("units", [])
+        ]
+        if written_units != expected_slice:
+            errors.append(f"the slice's window-2.json binds {written_units}, expected {expected_slice}")
+        expected_only = [
+            {"pattern": "A-3.0[1-6]", "reason": first_reason, "sheets": [r["unitKey"] for r in sliced_a]},
+            {"pattern": "S-2.01", "reason": second_reason, "sheets": [r["unitKey"] for r in sliced_s]},
+        ]
+        if slice_file.get("only") != expected_only:
+            errors.append(f"the slice's window-2.json `only` is {slice_file.get('only')}, expected {expected_only}")
+        if slice_file.get("deferredKeys") != [r["unitKey"] for r in deferred_rows]:
+            errors.append("the slice's window-2.json `deferredKeys` are not the deferred sheets in inventory order")
+        if slice_file.get("deferredCount") != len(deferred_rows):
+            errors.append(
+                f"the slice's window-2.json `deferredCount` is {slice_file.get('deferredCount')}, "
+                f"expected {len(deferred_rows)}"
+            )
+
+        # The read plan: one block per pattern listing what it selected, with a plain ordinal on each
+        # line as a left-out block carries, and one deferred block that counts by discipline rather
+        # than listing the rest of the window.
+        slice_text = (slice_dir / "read-plan.md").read_text(encoding="utf-8")
+        blocks: dict[str, list[str]] = {}
+        inside, current = False, None
+        for line in slice_text.splitlines():
+            if line.startswith("## "):
+                inside, current = line.strip() == _SLICE_HEADING, None
+            elif inside and line.startswith("### "):
+                current = line[4:].strip()
+                blocks[current] = []
+            elif inside and current is not None and line.strip():
+                blocks[current].append(line.strip())
+
+        def listed(block_rows: list[dict]) -> list[str]:
+            return [
+                f"{i}. {r['sheetNumber']}, page {r['pageInPdf']}: {r['pageTitle']}"
+                for i, r in enumerate(block_rows, 1)
+            ]
+
+        deferred_table: list[str] = []
+        for discipline in ("A", "S", "M"):
+            count = sum(1 for r in deferred_rows if r["discipline"] == discipline)
+            if count:
+                deferred_table.append(f"{discipline} | {count}")
+        expected_blocks = {
+            "Only: A-3.0[1-6]": [f"reason: {first_reason}", f"sheets: {len(sliced_a)}", *listed(sliced_a)],
+            "Only: S-2.01": [f"reason: {second_reason}", f"sheets: {len(sliced_s)}", *listed(sliced_s)],
+            "Deferred": [
+                f"reason: {first_reason}", f"reason: {second_reason}",
+                f"sheets: {len(deferred_rows)}", "discipline | sheets", *deferred_table,
+            ],
+        }
+        if blocks != expected_blocks:
+            errors.append(f"the slice's read plan sections are {blocks}, expected {expected_blocks}")
+        for line in (
+            f"every sheet once (units {len(sliced_keys)} plus deferred {len(deferred_rows)} equals "
+            f"distinct sheets {remaining_count})",
+            f"sheets deferred {len(deferred_rows)} by --only",
+        ):
+            if line not in slice_text.splitlines():
+                errors.append(f"the slice's read plan totals do not carry `{line}`")
+        if w2_path.is_file() and _SLICE_HEADING in w2_path.read_text(encoding="utf-8"):
+            errors.append("a whole window 2 plan carries the slice's section")
+
+    # The whole window after the slice, three of the slice's units dispatched: the three keep their
+    # ids off the ledger and the other slice units off the plan file, all of them at the front of
+    # the part their ids name, and every sheet the slice deferred numbered after the highest.
+    write_ledger(slice_dir, [
+        "phase: window 2 paused",
+        "dispatch: window 2 pass A2a units 6",
+        *[
+            f"dispatch 2 A2a {unit_id} sheets {sheet} purpose the sheet"
+            for unit_id, sheet in expected_slice[:3]
+        ],
+    ])
+    a_sizes = _expected_split(len(slice_a), 12)
+    if len(a_sizes) != 2:
+        errors.append(f"the slice fixture's architectural discipline splits {a_sizes}, not in two")
+    a_kept = [(unit_id, sheet) for unit_id, sheet in expected_slice if unit_id.startswith("A2a-")]
+    a_new = [r["sheetNumber"] for r in in_type_order(slice_a) if r["unitKey"] not in sliced_keys]
+    room = a_sizes[0] - len(a_kept)
+    expected_whole = (
+        a_kept
+        + [(f"A2a-{i}", sheet) for i, sheet in enumerate(a_new[:room], len(a_kept) + 1)]
+        + [(f"A2b-{i}", sheet) for i, sheet in enumerate(a_new[room:], 1)]
+        + [(unit_id, sheet) for unit_id, sheet in expected_slice if unit_id.startswith("S2-")]
+        + [
+            (f"S2-{i}", r["sheetNumber"])
+            for i, r in enumerate(
+                [r for r in in_type_order(slice_s) if r["unitKey"] not in sliced_keys], len(sliced_s) + 1
+            )
+        ]
+        + [(f"M2-{i}", r["sheetNumber"]) for i, r in enumerate(in_type_order(slice_m), 1)]
+    )
+    code, whole_bounds, err, whole_passes = run_replan(slice_dir, 2, slice_inventory, slice_window_1)
+    if code != 0:
+        errors.append(f"the whole window after the slice refused: {err}")
+    else:
+        if planned_ids(whole_passes) != expected_whole:
+            errors.append(
+                f"the whole window after the slice did not keep the slice's ids in part a and number "
+                f"the rest after them: {planned_ids(whole_passes)}, expected {expected_whole}"
+            )
+        whole_count = len(sliced_keys) + len(deferred_rows)
+        # With nothing deferred the partition reads exactly as it always has.
+        expect_bounds("the whole window after the slice", whole_bounds,
+                      f"every sheet once (units {whole_count} equals distinct sheets {whole_count})")
+        expect_bounds("the whole window after the slice", whole_bounds,
+                      f"ids kept {len(expected_slice)} (ledger 3, plan file {len(expected_slice) - 3}), "
+                      f"ids new {len(deferred_rows)}, ids retired 0")
+        if "deferred" in whole_bounds:
+            errors.append(f"the whole window's bounds line names a deferral: {whole_bounds!r}")
+        _check_split_arithmetic(whole_passes, 12, errors, "the whole window after the slice")
+        whole_file = json.loads((slice_dir / "plan" / "window-2.json").read_text(encoding="utf-8"))
+        if (whole_file.get("only"), whole_file.get("deferredKeys"), whole_file.get("deferredCount")) != ([], [], 0):
+            errors.append("the whole window's window-2.json still carries a slice or a deferral")
+        if _SLICE_HEADING in (slice_dir / "read-plan.md").read_text(encoding="utf-8"):
+            errors.append("the whole window's read plan still carries the slice's section")
+
+    # The limit a slice lives within: the units the slices planned in one discipline keep their part
+    # only while they fit the whole window's first part of it. Twenty-four sheets of one type split
+    # twelve and twelve; a slice of twelve dispatched keeps every id, and a slice of thirteen, split
+    # seven and six over itself, puts A2b-1 at position eight of part a, which the plan refuses.
+    def dispatched_slice(case: str, count: int) -> tuple[Path, str, list[tuple[str, str]], str]:
+        folder = replan_root / case
+        rows_a = [slice_row("A", f"A-3.{i:02d}", "plan", 19 + i) for i in range(1, 25)]
+        inventory_path = write_replan_inventory(folder, vocabulary_rows + rows_a)
+        run_code, _b, run_err, _p = run_replan(folder, 1, inventory_path, [])
+        if run_code != 0:
+            errors.append(f"the {case} fixture's window 1 run refused: {run_err}")
+        window_1_args = ["--window-1", str(folder / "plan" / "window-1.json")]
+        reason = f"the user asked for {count} plans first"
+        only_args = ["--only", f"A-3.0*:{reason}", "--only", f"A-3.1[0-{count - 10}]:{reason}"]
+        sizes = _expected_split(count, 12)
+        expected: list[tuple[str, str]] = []
+        start = 0
+        for index, size in enumerate(sizes):
+            part = f"A2{string.ascii_lowercase[index]}"
+            expected += [(f"{part}-{i}", rows_a[start + i - 1]["sheetNumber"]) for i in range(1, size + 1)]
+            start += size
+        run_code, _b, run_err, cut_passes = run_replan(folder, 2, inventory_path, window_1_args + only_args)
+        if run_code != 0:
+            errors.append(f"the {case} slice refused: {run_err}")
+        elif planned_ids(cut_passes) != expected:
+            errors.append(f"the {case} slice planned {planned_ids(cut_passes)}, expected {expected}")
+        write_ledger(folder, [
+            f"dispatch 2 {unit_id.rsplit('-', 1)[0]} {unit_id} sheets {sheet} purpose the sheet"
+            for unit_id, sheet in expected
+        ])
+        return folder, inventory_path, expected, window_1_args[1]
+
+    twelve_dir, twelve_inventory, twelve_ids, twelve_window_1 = dispatched_slice("slice-twelve", 12)
+    code, twelve_bounds, err, twelve_passes = run_replan(
+        twelve_dir, 2, twelve_inventory, ["--window-1", twelve_window_1])
+    if code != 0:
+        errors.append(f"the whole window after a slice of twelve dispatched refused: {err}")
+    else:
+        if planned_ids(twelve_passes)[:12] != twelve_ids:
+            errors.append(
+                f"the whole window after a slice of twelve dispatched did not keep them as part a: "
+                f"{planned_ids(twelve_passes)[:12]}, expected {twelve_ids}"
+            )
+        expect_bounds("the whole window after a slice of twelve dispatched", twelve_bounds,
+                      "ids kept 12 (ledger 12, plan file 0), ids new 12, ids retired 0")
+    thirteen_dir, thirteen_inventory, thirteen_ids, thirteen_window_1 = dispatched_slice("slice-thirteen", 13)
+    if [unit_id for unit_id, _sheet in thirteen_ids][7:8] != ["A2b-1"]:
+        errors.append(f"the thirteen fixture does not put A2b-1 eighth: {thirteen_ids}")
+    refused_plan = str(out_dir / "refused.md")
+    slice_refusals: list[tuple[str, list[str], str]] = [
+        (
+            "an --only on window 1",
+            ["plan", "--window", "1", "--inventory", inventory_json,
+             "--only", f"{include_pattern}:the elevations first", "--out", refused_plan],
+            "--only is a window 2 argument",
+        ),
+        (
+            "an --only pattern matching no sheet window 2 reads",
+            # Every sheet the include pattern names is one window 1 already reads.
+            ["plan", "--window", "2", "--inventory", inventory_json, "--window-1", str(window_1_json),
+             "--only", f"{include_pattern}:the elevations first", "--out", refused_plan],
+            f"no sheet number window 2 reads matches the pattern {include_pattern}",
+        ),
+        (
+            "thirteen units dispatched in one discipline across a slice",
+            ["plan", "--window", "2", "--inventory", thirteen_inventory, "--window-1", thirteen_window_1,
+             "--out", str(thirteen_dir / "read-plan.md")],
+            f"unit A2b-1 read sheet {thirteen_ids[7][1] if len(thirteen_ids) > 7 else ''} and this "
+            f"plan puts that sheet in pass A2a",
+        ),
+    ]
+
     # --- the seven ways a kept id would be wrong ----------------------- #
     #
     # Each one stops the plan rather than renumbering, because every one of them would move an id
@@ -2781,6 +3073,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         ),
     ]
     refusals.extend(replan_refusals)
+    refusals.extend(slice_refusals)
     for what, argv, must_name in refusals:
         code, _refused_bounds, err = _run_script_main(module, argv)
         if code != 1:
@@ -2806,7 +3099,10 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"ledger and the plan file already handed out and numbering five new sheets after the "
         f"highest, an id the ledger dispatched read back onto the same sheet, a cut sheet's id "
         f"retired and not handed out again, the ledger beating the plan file, window 2 numbering "
-        f"its new sheets in the pinned type order, "
+        f"its new sheets in the pinned type order, a window 2 slice planned with --only deferring "
+        f"the rest with its bounds line, window-2.json and read plan sections checked against an "
+        f"independent tally, the full plan after it keeping the slice's ids in part a with three "
+        f"and then twelve dispatched, "
         f"{len(refusals)} broken invocations each refused in one line naming what is wrong"
     )
     # An honest bound, not a pass: the fixtures are invented and small. They carry the field names
