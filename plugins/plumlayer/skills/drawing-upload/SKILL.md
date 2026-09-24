@@ -701,8 +701,8 @@ disk the whole time.
 **Report the counts honestly, not just "N sections found."** One line per filed file, from its
    succeeded job's `report`: sections found, and the completeness-diff, mismatch, and could-not-read
    counts. A single-file read that could not open its file never reaches `succeeded`: it fails with
-   the reason, which is a finding for the user, never a silent retry loop. **`sectionsFound` counts only
-   footer-confirmed sections** (the per-page CSI-code footer read). The reader also reads the
+   the reason, which is a finding for the user, never a silent retry loop. `sectionsFound` counts only
+   footer-confirmed sections (the per-page CSI-code footer read). The reader also reads the
    manual's own table of contents: `tocDeclaredCount` is what it lists, `tocPagesRead` the pages it
    read, and `tocOnlyCount` the sections the table of contents names that no page footer confirmed.
    Those are recorded as sections too, cited to the line of the table of contents they came from,
