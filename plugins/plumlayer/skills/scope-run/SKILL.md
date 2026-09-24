@@ -1019,7 +1019,8 @@ trade, what I'd like you to look at, and what the next window reads. Proceed, ad
 ## What this skill does not do
 
 - **Upload or recognize drawings** (`drawing-upload`), **create projects** (`project-setup`),
-  **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`), **draft the
+  **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`), **get the
+  invitations ready** (`prepare-invitations`, which does not wait for this run), **draft the
   baseline package split** (owned by `learn-project`).
 - **Author boundary enrollments other than trade-responsibility candidates**: exclusions, general
   requirements, and VE/alternates stay manual-first doctrine; the user authors those boundary
