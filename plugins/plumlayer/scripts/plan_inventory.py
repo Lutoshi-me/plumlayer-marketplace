@@ -112,8 +112,9 @@ an empty plan:
               is ordinary here: both plan a review, and the plan places them one after the
               other.
   --window-1  the file window 1 wrote: `selected` and `excluded`, both arrays of inventory unit
-              keys. Its other fields are this script's own bookkeeping and window 2 reads none. A key the inventory does not hold is a refusal, since a file from some other
-              run would leave a sheet unread with nothing said about it.
+              keys. Its other fields are this script's own bookkeeping and window 2 reads none. A
+              key the inventory does not hold is a refusal, since a file from some other run
+              would leave a sheet unread with nothing said about it.
   ledger.md   found beside the plan file, never named by an argument, and absent on a first plan
               run. A flag would be a flag the lead can forget, and forgetting it is the failure
               this reading exists to prevent.

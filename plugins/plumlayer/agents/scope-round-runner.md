@@ -217,8 +217,9 @@ with one unit and three differences.
   `<pass id>.md`, which is the name the review's own report already carries.
 - **You dispatch exactly one agent type here, `plumlayer:scope-reviewer`**, and never a
   `scope-reader`. Look for the unit's own `verified` line, then append its `dispatch` line first,
-  in one append, then dispatch, exactly as pass mode's step 2 says. That line's `sheets` field reads `none`, because a review is planned off
-  the record and opens a page only where a hit sends it, and its `purpose` names the package. The
+  in one append, then dispatch, exactly as pass mode's step 2 says. That line's `sheets` field
+  reads `none`, because a review is planned off the record and opens a page only where a hit
+  sends it, and its `purpose` names the package. The
   dispatch carries the project id, the window, the pass id, the unit id, the catalog trade id it
   reviews for, the package id, the run folder path, and the pass brief path. Paste nothing from
   that file into it, and never the package's `codes`: the reviewer reads those off the record, so
