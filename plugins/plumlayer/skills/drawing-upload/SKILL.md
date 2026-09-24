@@ -335,6 +335,12 @@ did not observe that. What the server says on each poll:
   `extractionWarningCount`, `calibrated`, `capHit`. Never assume "N pages scanned = N sheets recognized":
   state both numbers. `confidence` on individual entries (visible later via `search`/`set_grid`) is
   triage/review-priority metadata only, never a trust tier.
+- On a `succeeded` pass, `written.enteredValuesKept` lists the pages where the pass read nothing but a
+  sheet number, title, discipline, or type that a person or an agent entered still stands. The pass
+  left each one as it is. When `pages` is above zero, name those pages to the user with the value
+  kept on each, and ask whether each one is right. Never correct one yourself.
+- `report.pagesUnread` lists pages the pass did not read at all (each such `unnamedPages` row says
+  why in `unread`). Those pages are not in `enteredValuesKept`; read them yourself in step 6.
 
 For a multi-file delivery, start and poll a separate job per file; there is no merge step and no
 `SET_TAG`: each file's recognized entries land under the shared `deliveryId` as soon as its own job
