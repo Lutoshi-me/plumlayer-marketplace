@@ -26,7 +26,8 @@ The three windows, and what each selects:
      `--include` names and minus what `--exclude` names, grouped into passes by discipline. It also
      writes `plan/window-1.json` in the run folder the `--out` path sits in, holding the unit keys
      it selected and the unit keys it left out, so window 2 subtracts this window rather than
-     recomputing it from arguments it might not be given identically.
+     recomputing it from arguments it might not be given identically, and the `--include` and
+     `--exclude` patterns with their reasons, so a resume can run this plan again exactly.
   2  every sheet once: every inventory row `plan/window-1.json` does not already name, grouped by
      discipline in inventory order and sorted inside a discipline by sheet type, composition ahead
      of extent. The selection is a partition of what window 1 left, so the bounds line states the
@@ -59,7 +60,10 @@ Unit ids across a replan, in windows 1 and 2:
   2  the previous `plan/window-<n>.json`, whose `units` array binds a unit id to an inventory unit
      key. It covers a unit that was planned and never dispatched. Windows 1 and 2 both write that
      file, so a window 2 slice keeps its ids on the next plan run whether or not any of them was
-     dispatched.
+     dispatched. A unit bound by this tier alone whose sheet now plans under a different pass is
+     numbered in the part it now sits in and its old id is retired: nothing was dispatched under
+     that id, so no record and no run file carries it. A unit the ledger binds is refused there
+     instead, since the record already carries rows under its id.
   3  new numbers: the next number after the highest any tier names for that pass, taken in the
      window's own natural order. A number any tier named is never handed out again, so a sheet cut
      from the plan leaves its id retired.
@@ -73,8 +77,20 @@ Unit ids across a replan, in windows 1 and 2:
   sort to the front of their discipline's pass and keep the part their ids name, as long as the
   units the slices planned in one discipline fit that discipline's first part of the whole window
   (twelve units where the discipline fills its parts, fewer where it splits into smaller ones).
-  Past that, a bound unit lands in the next part, and the plan refuses it as it refuses any bound
-  unit whose sheet now plans under a different pass id, rather than renumbering it.
+  Past that, a bound unit lands in the next part: one the ledger dispatched is refused rather than
+  renumbered, and one the plan file alone binds is renumbered there. A slice holds the ids of its
+  deferred sheets differently by tier: a dispatched one keeps its number taken and is not counted
+  retired, since it comes back; a planned one is dropped, and the sheet is numbered again when the
+  whole window is planned.
+
+Units already verified, in every window:
+
+  The plan also reads this window's `verified <window> <pass> <unit> ... result ok` lines off the
+  same ledger. A unit line whose id carries one ends with ` verified`, and every pass block says
+  `units verified: <k>` under `units: <n>`, so a pass is finished unit by unit rather than by its
+  `pass:` line: a resume, or a pass that a replan grew, dispatches every pass whose two numbers
+  differ, and its runner skips the units already verified. A `verified` line whose result is not
+  `ok` marks nothing, and one naming an id this plan does not carry is ignored rather than refused.
 
 Usage:
 
@@ -96,7 +112,7 @@ an empty plan:
               is ordinary here: both plan a review, and the plan places them one after the
               other.
   --window-1  the file window 1 wrote: `selected` and `excluded`, both arrays of inventory unit
-              keys. A key the inventory does not hold is a refusal, since a file from some other
+              keys. Its other fields are this script's own bookkeeping and window 2 reads none. A key the inventory does not hold is a refusal, since a file from some other
               run would leave a sheet unread with nothing said about it.
   ledger.md   found beside the plan file, never named by an argument, and absent on a first plan
               run. A flag would be a flag the lead can forget, and forgetting it is the failure
@@ -114,8 +130,8 @@ Exit codes:
      a unit id already handed out: a ledger dispatch line for this window whose unit id is not
      `<pass>-<number>`, one sheet number bound to two unit ids, one unit id bound to two sheet
      sets, a bound sheet number matching more than one inventory row, a bound unit whose sheet set
-     this plan does not read as one unit of its own, and a bound unit whose sheet now plans under
-     a different pass id.
+     this plan does not read as one unit of its own, and a unit the ledger binds whose sheet now
+     plans under a different pass id.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A file that does not parse whole is a refusal,
@@ -816,12 +832,37 @@ def _read_plan_file_units(path: Path, window: int) -> dict[str, str]:
     return bindings
 
 
+def _read_ledger_verified(path: Path, window: int) -> set[str]:
+    """
+    This window's unit ids that carry a `verified <window> <pass> <unit> ... result ok` line: the
+    units a runner already finished, which the plan marks so a pass is finished unit by unit rather
+    than by its `pass:` line. A line whose result is anything but `ok` marks nothing, and an id no
+    planned unit carries is ignored here, since the pass summary is where a `verified` line is
+    judged. A missing ledger is nothing verified.
+    """
+    if not path.is_file():
+        return set()
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
+    finished: set[str] = set()
+    for raw in text.splitlines():
+        parts = raw.strip().split()
+        if len(parts) < 4 or parts[0] != "verified" or parts[1] != str(window):
+            continue
+        if "result" in parts and parts[parts.index("result") + 1:][:1] == ["ok"]:
+            finished.add(parts[3])
+    return finished
+
+
 def _bind_unit_ids(
     passes: list[dict],
     rows: list[dict],
     ledger_units: dict[str, tuple[str, ...]],
     plan_file_units: dict[str, str],
     ledger_path: Path,
+    deferred_keys: set[str],
 ) -> dict[str, int]:
     """
     Put a unit id on every planned unit, keeping every id either tier already handed out and
@@ -832,6 +873,12 @@ def _bind_unit_ids(
     sheet set resolves to exactly one planned sheet keeps its id, one that resolves to none is
     retired, and one that resolves to more than one, or to some of its sheets and not all, is a
     refusal. There is no honest way to split an id whose prefix already carries rows.
+
+    A window 2 slice defers sheets rather than cutting them. A ledger unit whose sheets are all
+    deferred is held: its number stays taken and it is not counted retired, since it comes back on
+    the next full plan. A plan file id on a deferred sheet is dropped: nothing was dispatched under
+    it, the slice's own plan file no longer names it, and the sheet is numbered again when the
+    whole window is planned.
     """
     planned_keys = {row["unitKey"] for plan_pass in passes for row in plan_pass["units"]}
 
@@ -843,6 +890,7 @@ def _bind_unit_ids(
     id_of_key: dict[str, str] = {}
     source_of_id: dict[str, str] = {}
     named_ids: set[str] = set()
+    held: set[str] = set()
 
     for unit_id, sheets in ledger_units.items():
         named_ids.add(unit_id)
@@ -859,6 +907,8 @@ def _bind_unit_ids(
                 matched.append(hits[0]["unitKey"])
         in_cut = [key for key in matched if key in planned_keys]
         if not in_cut:
+            if matched and all(key in deferred_keys for key in matched):
+                held.add(unit_id)
             continue
         if len(in_cut) != len(sheets):
             raise PlanError(
@@ -881,6 +931,8 @@ def _bind_unit_ids(
         source_of_id[unit_id] = "ledger"
 
     for unit_id, unit_key in plan_file_units.items():
+        if unit_key in deferred_keys:
+            continue
         named_ids.add(unit_id)
         if unit_id in key_of_id or unit_key in id_of_key or unit_key not in planned_keys:
             continue
@@ -913,14 +965,17 @@ def _bind_unit_ids(
             next_number = high_water.get(part_id, 0) + 1
             for row in part_units:
                 existing = id_of_key.get(row["unitKey"])
-                if existing is not None:
-                    pass_component, _number = _parse_unit_id(existing)
-                    if pass_component != part_id:
+                if existing is not None and _parse_unit_id(existing)[0] != part_id:
+                    if source_of_id[existing] == "ledger":
                         raise PlanError(
                             f"unit {existing} read sheet {_text(row.get('sheetNumber'))} and this "
                             f"plan puts that sheet in pass {part_id}; a dispatched unit cannot "
                             f"change pass, so re-cut the window rather than renumbering it"
                         )
+                    # Planned and never dispatched, so no record and no run file carries this id:
+                    # the unit is numbered in the part it now sits in, and the old id is retired.
+                    existing = None
+                if existing is not None:
                     row["unitId"] = existing
                     kept_by_source[source_of_id[existing]] += 1
                 else:
@@ -934,7 +989,7 @@ def _bind_unit_ids(
         "ledger": kept_by_source["ledger"],
         "planFile": kept_by_source["plan file"],
         "new": new_count,
-        "retired": len(named_ids - carried),
+        "retired": len(named_ids - carried - held),
     }
 
 
@@ -1351,13 +1406,16 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
             for label, value in plan_pass.get("extra", []):
                 lines.append(f"{label}: {value}")
             lines.append(f"units: {len(part_units)}")
+            unit_ids = [unit["id"] if window == 3 else unit["unitId"] for unit in part_units]
+            lines.append(f"units verified: {sum(1 for u in unit_ids if u in plan['verified'])}")
             lines.append("")
-            for number, unit in enumerate(part_units, 1):
-                lines.append(
+            for number, (unit, unit_id) in enumerate(zip(part_units, unit_ids), 1):
+                line = (
                     _review_line(number, unit)
                     if window == 3
-                    else _unit_line(unit["unitId"], unit, show_file)
+                    else _unit_line(unit_id, unit, show_file)
                 )
+                lines.append(line + (" verified" if unit_id in plan["verified"] else ""))
             lines.append("")
 
     lines.append("## Deliberately left out")
@@ -1521,18 +1579,21 @@ def plan(args) -> str:
         result = _window_3(packages)
         result["packages"] = len(packages)
 
+    ledger_path = args.out.parent / LEDGER_FILE
     if window in (1, 2):
         # Both tiers sit in the run folder the plan file is written into, so neither is an argument
         # the lead can forget. A window 3 review id is derived from its own trade code and ordinal
         # and is already the same string on every run, so nothing here touches it.
-        ledger_path = args.out.parent / LEDGER_FILE
         result["unitIds"] = _bind_unit_ids(
             result["passes"],
             rows,
             _read_ledger_units(ledger_path, window),
             _read_plan_file_units(_window_file(args.out.parent, window), window),
             ledger_path,
+            {row["unitKey"] for row in result.get("deferred", [])},
         )
+    # Read after the ids are bound, since the ids are what a `verified` line names.
+    result["verified"] = _read_ledger_verified(ledger_path, window)
 
     body, total_units, total_passes = _render(window, result, rows, show_file)
     payload = body.encode("utf-8")
@@ -1566,6 +1627,16 @@ def plan(args) -> str:
                     "selected": result["selectedKeys"],
                     "excluded": result["excludedKeys"],
                     "units": assigned,
+                    # The arguments this plan was written with, so a resume can run it again
+                    # exactly rather than from whatever the lead still holds.
+                    "include": [
+                        {"pattern": block["pattern"], "reason": block["reason"]}
+                        for block in result["includes"]
+                    ],
+                    "exclude": [
+                        {"pattern": block["pattern"], "reason": block["reason"]}
+                        for block in result["excludes"]
+                    ],
                 },
                 indent=2,
             )

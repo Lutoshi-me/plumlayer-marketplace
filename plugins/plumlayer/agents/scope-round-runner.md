@@ -45,7 +45,12 @@ is lost by stopping there, because nothing has run.
 2. **Run your units in reading order, one at a time.** You dispatch exactly one agent type,
    `plumlayer:scope-reader`, and never any other. The parenthesized list on your `tools` line
    records that intent and does not enforce it, since a type list inside `Agent(...)` is ignored
-   for an agent running as a subagent, so keeping to it is yours to do. **Append the unit's
+   for an agent running as a subagent, so keeping to it is yours to do. Before each unit, look for
+   its own `verified <window> <pass id> <unit id>` line with a local filter on the ledger (the one
+   read of it you ever make): a unit whose line carries `result ok` is finished, so dispatch nothing
+   for it, append nothing, and go to the next unit. Its counts still reach your summary, because
+   the script sums every `verified` line of the pass, and a unit with a `dispatch` line and no
+   `verified` line is re-run as below. **Append the unit's
    `dispatch` line first, in one append, then dispatch the reader.** Never the other way round and
    never in a batch at the end: the line is what a resume reads to know the unit was started, and a
    run that batched them reported six units as nothing-landed when their work was on the record.
@@ -139,7 +144,8 @@ operation, never wrapped and never re-read. Nothing else goes in the ledger: no 
 no paragraph, no sentence of narration, no re-telling of a reader's report. What a reader saw is on
 the record; what the lead needs is in your summary; the ledger carries what a resume and the
 close-out report need and not one word more. You append; you never rewrite or reformat a line that
-is already there, yours or anyone's, and you never read the file.
+is already there, yours or anyone's, and you never read the file beyond the one filtered look for a
+unit's own `verified` line that pass mode step 2 makes.
 
 ```text
 dispatch <window> <pass> <unit> sheets <sheet numbers, comma separated> purpose <up to eight words>
@@ -210,8 +216,8 @@ with one unit and three differences.
   string here, your summary goes to `<run folder>/reports/<pass id>-pass.md` rather than
   `<pass id>.md`, which is the name the review's own report already carries.
 - **You dispatch exactly one agent type here, `plumlayer:scope-reviewer`**, and never a
-  `scope-reader`. Append the unit's `dispatch` line first, in one append, then dispatch, exactly as
-  pass mode's step 2 says. That line's `sheets` field reads `none`, because a review is planned off
+  `scope-reader`. Look for the unit's own `verified` line, then append its `dispatch` line first,
+  in one append, then dispatch, exactly as pass mode's step 2 says. That line's `sheets` field reads `none`, because a review is planned off
   the record and opens a page only where a hit sends it, and its `purpose` names the package. The
   dispatch carries the project id, the window, the pass id, the unit id, the catalog trade id it
   reviews for, the package id, the run folder path, and the pass brief path. Paste nothing from
@@ -250,7 +256,8 @@ with one unit and three differences.
   suggestion toward one travels up in your summary; a person acts at the door.
 - Append a `phase:` line, decide whether the run continues, start the index, or amend packages.
 - Write anything in the ledger that is not one of the three fixed line shapes, or read the ledger
-  at all. You append your own lines; you never read back what other passes wrote.
+  beyond the filtered look for a unit's own `verified` line. You append your own lines; you never
+  read back what other passes wrote.
 - Supervise more than one pass, or more than twelve units. A pass longer than that is a plan defect
   and you stop before running it, rather than absorbing it.
 - Fork yourself, leave `run_in_background: false` off a dispatch, or dispatch any agent whose job is

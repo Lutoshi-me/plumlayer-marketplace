@@ -284,10 +284,12 @@ any repo, never uploaded to the project except record files, never recorded as p
 - `plan/`: byte-for-byte copies of a verb's response, paged to disk by a fresh agent, never
   retyped and never read by a model. `packages.json` (`solicitation_list_packages`) is the plan
   script's window 3 input. `window-1.json` is what the window 1 plan run wrote, the unit keys it
-  selected and the unit keys it left out, and it is the window 2 plan run's input, so that window
-  subtracts window 1 rather than recomputing it. `window-2.json` is what the last window 2 plan run
-  wrote, the unit ids it assigned and, for a slice, each `--only` pattern and the unit keys it
-  deferred; the next window 2 plan run reads its ids back, so a slice's ids stay where they are.
+  selected and the unit keys it left out with its `--include` and `--exclude` patterns and their
+  reasons, and it is the window 2 plan run's input, so that window subtracts window 1 rather than
+  recomputing it. `window-2.json` is what the last window 2 plan run wrote, the unit ids it
+  assigned and, for a slice, each `--only` pattern and the unit keys it deferred; the next window 2
+  plan run reads its ids back, so a slice's ids stay where they are. A resume takes a window's
+  patterns off its file to run that plan again exactly.
   Nothing else is copied here: the definitions are on the record and no window plans off them.
   Audience: machine.
 - `read-plan.md`: the read plan, one per window, written by the plan script, never by hand: the
@@ -376,11 +378,19 @@ reports, verified against the record with the lead's own count queries and writt
 Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
 approved; window 1 complete; index built; window 2 complete, or window 2 paused where a slice
 deferred sheets; window 3 complete; packages amended; closed out. Inside a window the `pass:`
-lines are the boundaries: one
-per pass in windows 1 and 2, one per package in window 3. On every start
-this skill reads the ledger's `phase:` and `pass:` lines first, with a local filter, never the
-file: a run in flight resumes at the phase after the last line, or at the next pass of the window
-in flight not yet carrying a `pass:` line, with the read plan read off disk. A missing run folder for a
+lines are the boundaries: one per pass in windows 1 and 2, one per package in window 3. A pass run
+again to finish it carries a second `pass:` line, and its last one carries the whole pass: every
+total taken over a window, and the close-out report, counts that one. On every start this skill
+reads the ledger's `phase:` and `pass:` lines first, with a local filter, never the file: a run in
+flight resumes at the phase after the last line. Inside the window in flight, run that window's
+plan script again first, exactly as its stage wrote it, with the same arguments: window 1's
+`--include` and `--exclude` and a slice's `--only`, each with its reason, are on that window's
+`plan/window-<n>.json`, taken off it with a local filter, and after `phase: window 2 paused` the run
+is the one without `--only` that stage 6 step 4 names. The script keeps every id the ledger and the
+plan file already hold and marks the units already verified. Then dispatch the first pass of the
+window whose block shows `units verified` below `units`, found with a local filter on the pass
+headings and those two lines, whether or not a `pass:` line for it is on the ledger; a pass whose
+two numbers are equal is finished. A missing run folder for a
 project that already carries scope items is named plainly and the run re-plans against the record;
 the live-list mandate (non-negotiable 2) keeps a re-read from creating what is already there.
 Resumption is how a run continues after a stop at a boundary, and crash and multi-day hygiene. It
@@ -393,8 +403,9 @@ is never offered to the user as a way to manage cost, and the check-in never sug
 2. **Resume, if a run is already in flight.** With the `projectId` in hand and before anything else,
    read the `phase:` and `pass:` lines of `ledger.md` from the run folder with a local filter on
    the line prefix; never open the file whole. A `phase:` line means a run is in flight: resume at
-   the phase after the last one, or at the next window 2 package with no `pass:` line, reading
-   `read-plan.md` off disk rather than re-planning or re-reading what is already recorded. A
+   the phase after the last one, and inside the window in flight run its plan script again and
+   dispatch the first pass whose `units verified` is below its `units`, as the windows section
+   above says, so nothing already verified is read again. A
    project that already carries scope items but has no run folder is named plainly and re-planned
    against the record; the live-list mandate (non-negotiable 2) is what keeps a re-read from
    creating what is already there. Where the last `phase:` line is `window 1 complete` with no
@@ -576,9 +587,12 @@ nothing else:
 1. **Start one runner per pass.** For each pass in the window, dispatch a fresh
    `plumlayer:scope-round-runner` with the runner dispatch below: pointers only, no pass brief and
    no read-plan text. Append that pass's dispatch line to the ledger before you
-   dispatch it, never after. Passes of different disciplines start together; passes the plan marks
-   as seeing the same work start one after another. What a pass leaves in the lead's context is
-   its dispatch line and its summary, nothing else.
+   dispatch it, never after. A pass whose block shows `units verified` equal to `units` is finished
+   and is not dispatched. One below it is dispatched whole even when it already carries a `pass:`
+   line, as a pass does once a replan adds sheets to it: its runner skips the units already
+   verified, and its new `pass:` line carries the whole pass. Passes of different disciplines
+   start together; passes the plan marks as seeing the same work start one after another. What a
+   pass leaves in the lead's context is its dispatch line and its summary, nothing else.
 2. **The runner owns the pass.** It writes the pass brief if it is not already on disk, runs the
    pass's units in reading order (one fresh
    `plumlayer:scope-reader` per unit, one unit at a time), appends each unit's dispatch line
@@ -672,7 +686,10 @@ On the go-ahead:
 
 2. **Run the passes** exactly as stage 4 runs them: one runner per pass, dispatch line first, the
    runner's `verify_unit` per sheet, your own created counts per unit, one `pass:` line each, in
-   the plan's order. Passes of different disciplines start together. Every reader reads its sheet
+   the plan's order. After a slice, the full plan's part that holds the slice's units holds new
+   ones beside them: it shows `units verified` below `units` and is dispatched like any unfinished
+   pass, its runner skips the slice's finished units, and its new `pass:` line carries the whole
+   part. Passes of different disciplines start together. Every reader reads its sheet
    whole, for everything on it, whatever trade the work belongs to (non-negotiable 4); the runner's
    overlap scan and the record's refusal of a create whose name the project already carries are what
    keep two passes running alongside each other from creating the same work twice.
@@ -816,9 +833,10 @@ Read them with one filter each and count them locally: the sheet reads are the `
 the distinct sheets are the sheet numbers on them, the rows created and the items are the `created`
 and `items` fields of the `verified` lines, and the candidates, the pages a review re-opened and
 the searches it ran are the `candidates`, `pages-opened` and `searches` fields of the `pass:`
-lines. What the index left open comes off the `phase: index built` lines, which carry its counts,
-and the codes found nowhere are the one `codeNoLocation` read the index step took, the only
-leftover rows the run holds. When the report has been given, append `phase: closed out`.
+lines, the last one of a pass that carries two. What the index left open comes off the
+`phase: index built` lines, which carry its counts, and the codes found nowhere are the one
+`codeNoLocation` read the index step took, the only leftover rows the run holds. When the report
+has been given, append `phase: closed out`.
 
 ## The dispatches and the report shapes
 
