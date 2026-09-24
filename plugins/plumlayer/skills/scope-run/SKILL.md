@@ -285,10 +285,8 @@ any repo, never uploaded to the project except record files, never recorded as p
   retyped and never read by a model. `packages.json` (`solicitation_list_packages`) is the plan
   script's window 3 input. `window-1.json` is what the window 1 plan run wrote, the unit keys it
   selected and the unit keys it left out, and it is the window 2 plan run's input, so that window
-  subtracts window 1 rather than recomputing it. `index/` (one file per
-  response, `index_citations_leftover`, what the index left open, one kind at a time) is what the
-  close-out reports open by count. Nothing else is copied here: the definitions are on the record
-  and no window plans off them. Audience: machine.
+  subtracts window 1 rather than recomputing it. Nothing else is copied here: the definitions are
+  on the record and no window plans off them. Audience: machine.
 - `read-plan.md`: the read plan, one per window, written by the plan script, never by hand: the
   passes, the units within each with their sheets, files and pages in windows 1 and 2 and the
   package each review reads for in window 3, and what is deliberately excluded. Audience: agent; a
@@ -304,6 +302,9 @@ any repo, never uploaded to the project except record files, never recorded as p
   summary takes `<pass id>-pass.md`, since the review already holds `<pass id>.md`. Audience: agent.
 - `names/`: one file per pass, the new item names each unit created, one per line, matched
   against themselves and each other with a local command for overlaps. Audience: machine.
+- `kinds/`: one file per pass, the definition kinds each unit's reader named, one per line,
+  appended a unit at a time, and the window boundary takes their union with a local command to
+  find every kind a reader named without holding any of them itself. Audience: machine.
 - `trades/`: one file per pass, the trades each unit's own verification read, appended a unit at a
   time: one line per trade as `<unit id> trade <catalog id> <count>`, and one line as
   `<unit id> candidates <count>`, that count being the unit's created subjects carrying at least
@@ -620,18 +621,16 @@ every page too:
    `leftoverCounts` carries the true count per kind of what it could not cite, with
    `truncatedKinds` naming the kinds whose rows were cut for size. Read the counts; never the
    pages. `queued` and `stale` are both safe to wait through.
-3. **Put what it left open on disk.** Dispatch a fresh general agent, with
-   `run_in_background: false` like every other dispatch in this run, whose whole job is to page
-   what the index left open into `<run folder>/plan/index/`, copied never retyped, and return one
-   line: pages fetched, rows on disk. It calls `index_citations_leftover(projectId, kind, offset,
-   limit)` once per kind that `leftoverCounts` shows above zero, paging each kind until a response
-   comes back with no rows, and writes each response to its own file the way the grid was fetched.
-   A kind the pass cut for size has fewer rows to page through than its `total`, which stays the
-   true count either way, so the end of the rows is what stops the paging. The kinds are
+3. **Keep what it left open as counts.** No agent is dispatched for those rows and nothing is
+   paged to disk: `leftoverCounts` is the whole of what the run keeps, and it rides onto the
+   ledger's `phase: index built` line at step 4, where the close-out report reads it. The kinds are
    `unmatchedTag`, `codeNoLocation`, `codeTooShort`, `fragmentUnresolvable`, `pageNotASheet`,
-   `codeOverCap`, `hitNotDrawable` and `overRunCap`. Nothing in the run chases those rows: they are
-   what the close-out reports as still open, by count and with the codes found nowhere named. A tag
-   no reader resolved on its own sheet is named as a loss rather than attached by guesswork to
+   `codeOverCap`, `hitNotDrawable` and `overRunCap`, and each is reported by its count alone. The
+   one exception is `codeNoLocation`: where its count is above zero, take one
+   `index_citations_leftover(projectId, kind: "codeNoLocation")` read yourself, so the close out
+   can name the codes found nowhere. Nothing in the run chases those rows: they are what the
+   close-out reports as still open, by count and with the codes found nowhere named. A tag no
+   reader resolved on its own sheet is named as a loss rather than attached by guesswork to
    whichever package it might belong to.
 4. Append `phase: index built` to the ledger with the counts off the status. After window 1 and
    window 2, check in (format below); after window 3 the close out is the next step.
@@ -801,8 +800,9 @@ Read them with one filter each and count them locally: the sheet reads are the `
 the distinct sheets are the sheet numbers on them, the rows created and the items are the `created`
 and `items` fields of the `verified` lines, and the candidates, the pages a review re-opened and
 the searches it ran are the `candidates`, `pages-opened` and `searches` fields of the `pass:`
-lines. What the index left open comes off the `phase: index built` lines, which carry its counts.
-When the report has been given, append `phase: closed out`.
+lines. What the index left open comes off the `phase: index built` lines, which carry its counts,
+and the codes found nowhere are the one `codeNoLocation` read the index step took, the only
+leftover rows the run holds. When the report has been given, append `phase: closed out`.
 
 ## The dispatches and the report shapes
 

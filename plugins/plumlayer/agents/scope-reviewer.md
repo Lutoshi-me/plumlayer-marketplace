@@ -93,8 +93,10 @@ them is ever trimmed.
    - The hit is the work of a row on this package that does not cite that page. It is a citation on
      that row, after you open the page. It is not a create.
    - The hit is the work of a row on another package that this package could also bid, in your
-     judgment. It is a `packageRole:<this package's trade>` record with role `candidate` on that
-     existing row, the candidate rule reader mandate 4 gives. It is not a create.
+     judgment. It is a `packageRole:<this package's trade>` record on that existing row whose value
+     is the object `{ role: "candidate", note: "<why this package might price it>" }`, the
+     candidate rule reader mandate 4 gives. Never the bare word: the door refuses it, and
+     `record_batch` is atomic, so it costs the whole batch. It is not a create.
    - The hit is work no row carries. Create it, at the grain of your own mandate 5. The record
      refuses a create whose name this project already carries, on any trade, and names the row that
      holds it; turn such a refusal into the citation and the note on that named row and send again,
