@@ -65,11 +65,11 @@ Checks:
       2 numbering each pass's units from 1 and a replan keeping every unit id the run ledger and
       the previous plan file already handed out, numbering new sheets after the highest number the
       pass has ever carried and never handing a cut sheet's id out again, and a one-line refusal
-      naming what is wrong for each of seventeen broken invocations, two grid rows folding to one
-      unit key, a window 1 file naming a key as both selected and excluded, and the six ways a kept
-      unit id would be wrong among them. The shipped script is compiled from source here rather than
-      imported through the loader, so a script edited twice inside one second to the same byte
-      length can never be checked as its earlier bytecode.
+      naming what is wrong for each of eighteen broken invocations, two grid rows folding to one
+      unit key, a window 1 file naming a key as both selected and excluded, and the seven ways a
+      kept unit id would be wrong among them. The shipped script is compiled from source here
+      rather than imported through the loader, so a script edited twice inside one second to the
+      same byte length can never be checked as its earlier bytecode.
   14b. Pass summary: the shipped scripts/pass_summary.py, imported in-process and run over two
       invented ledger fixtures, sums one pass's own dispatch and verified lines into the published
       summary shape, and every number, every note line and every label is compared against a tally
@@ -2586,7 +2586,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         expect_bounds("the window 2 replan", w2_replan_bounds,
                       "ids kept 2 (ledger 2, plan file 0), ids new 4, ids retired 0")
 
-    # --- the six ways a kept id would be wrong ------------------------- #
+    # --- the seven ways a kept id would be wrong ----------------------- #
     #
     # Each one stops the plan rather than renumbering, because every one of them would move an id
     # the record already carries rows under.
@@ -2618,6 +2618,8 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         "sheet-on-two-rows", [f"dispatch 1 A1 A1-1 sheets A-1.01 {read_line}"], doubled_rows)
     partly_out, partly_inventory = broken_replan(
         "partly-cut", [f"dispatch 1 A1 A1-1 sheets A-1.01,A-1.02 {read_line}"], vocabulary_rows)
+    split_out, split_inventory = broken_replan(
+        "split-units", [f"dispatch 1 A1 A1-1 sheets A-1.01,A-1.02 {read_line}"], vocabulary_rows)
     moved_out, moved_inventory = broken_replan(
         "moved-pass", [f"dispatch 1 A1 A1-1 sheets A-1.01 {read_line}"], wide_rows)
 
@@ -2647,6 +2649,11 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             ["plan", "--window", "1", "--inventory", partly_inventory,
              "--exclude", "A-1.02:the user took this sheet out of the window", "--out", str(partly_out)],
             "1 of them as its own unit",
+        ),
+        (
+            "a bound unit whose sheets all stay in the cut and plan as two units",
+            ["plan", "--window", "1", "--inventory", split_inventory, "--out", str(split_out)],
+            "unit A1-1 was dispatched on A-1.01, A-1.02 and this plan reads them as 2 separate units",
         ),
         (
             "a bound unit whose sheet now plans under a different pass part",

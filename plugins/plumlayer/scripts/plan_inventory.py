@@ -847,6 +847,16 @@ def _bind_unit_ids(
                 f"reads {len(in_cut)} of them as its own unit; the record already carries rows "
                 f"under that id, so the id can be neither split nor kept"
             )
+        if len(in_cut) > 1:
+            # Every sheet the line named is still in the cut, but the plan now reads them as
+            # separate units, so keeping the id would point it at one of them and hand the rest
+            # fresh numbers, which is the silent repointing this binding exists to prevent.
+            raise PlanError(
+                f"{ledger_path}: unit {unit_id} was dispatched on {', '.join(sheets)} and this plan "
+                f"reads them as {len(in_cut)} separate units ({', '.join(in_cut)}); the record "
+                f"already carries rows under that id for every one of those sheets, so the id can "
+                f"be neither split nor kept, and the lead re-cuts the window"
+            )
         key_of_id[unit_id] = in_cut[0]
         id_of_key[in_cut[0]] = unit_id
         source_of_id[unit_id] = "ledger"
