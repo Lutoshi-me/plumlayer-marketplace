@@ -59,15 +59,16 @@ unless Claude compatibility is handled separately.
 
 A hosted MCP connector to your Plumlayer project record
 (`api-production-0a7b.up.railway.app/mcp`), auto-wired on install with no manual `claude mcp add`,
-and eight skills that use it.
+and nine skills that use it.
 
-A skill is a step; what you run is a process. There are four:
+A skill is a step; what you run is a process. There are five:
 
 - **New pursuit**: `project-setup` stands the whole thing up in one session, then `scope-run` builds
   the scope list in a session of its own.
 - **New paper**: `drawing-upload`, every time a bulletin, an addendum, or a re-issued set arrives.
-- **Buyout**: `bid-intake`, once proposals come back. Invitations and outreach live on plumlayer.com
-  for now.
+- **Invite**: `prepare-invitations`, any time after project setup: reads the bidding requirements
+  into the invitations; you review and send on plumlayer.com.
+- **Buyout**: `bid-intake`, once proposals come back.
 - **Measure**: `takeoff`, whenever you want something counted or measured off the sheets.
 
 Plus two utilities you reach for directly: `project-record` and `setup`.
@@ -78,7 +79,8 @@ Plus two utilities you reach for directly: `project-record` and `setup`.
   takes in the few facts only you carry (or reads them out of an invitation to bid or a project
   summary you already have), uploads and reads in the drawing delivery and the project manual, then
   orients on what came back. On a project that already exists it tells you where you are instead of
-  creating a second one.
+  creating a second one. When the job is going out to bid, it offers `prepare-invitations` at its
+  close.
 - **`learn-project`**: the orientation pass `project-setup` runs at the end of that session. It reads
   the cover sheet, the drawing index, and the key plans, records what it found so every other skill
   starts from a shared picture of the project, and drafts and creates the baseline trade-package
@@ -96,6 +98,17 @@ Plus two utilities you reach for directly: `project-record` and `setup`.
   conforming and no local spreadsheet step. It asks first whether the delivery is changed sheets only
   or a full re-issue, and on a full re-issue it names the sheets from the old set that are still
   showing.
+
+### Invite
+
+- **`prepare-invitations`**: gets a job's invitations ready without waiting for the scope run. It
+  reads the bidding requirements in the project manual (the invitation to bid, the instructions to
+  bidders, the wage requirements) and anything you hand it, then sets on the invitations only what
+  those documents state: union or prevailing wage, the job's state in the places they go to, the
+  owner bid date, site visits and pre-bid meeting, and the address when the project has none. It
+  asks you once for your subcontractor bid due date when the project has none, and reports where
+  each value came from and how many companies each trade reaches. Nothing is sent: you review and
+  send on plumlayer.com.
 
 ### Buyout
 
@@ -159,6 +172,7 @@ plugins/plumlayer/
     learn-project/SKILL.md
     scope-run/SKILL.md
     drawing-upload/SKILL.md
+    prepare-invitations/SKILL.md
     bid-intake/SKILL.md
     takeoff/SKILL.md
     setup/SKILL.md

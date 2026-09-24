@@ -53,6 +53,7 @@ EXPECTED_SKILL_NAMES = {
     "plumlayer:bid-intake",
     "plumlayer:drawing-upload",
     "plumlayer:learn-project",
+    "plumlayer:prepare-invitations",
     "plumlayer:project-record",
     "plumlayer:project-setup",
     "plumlayer:scope-run",
