@@ -217,6 +217,14 @@ Each of these is a harness check.
     check. This cannot judge whether a running agent passes the parameter, only that the text tells
     it to.
 
+14. The pass summary script sums the ledger. The shipped `pass_summary.py` is run in-process over
+    two invented ledger fixtures, and its counts, its note placement, its refusals and the labels
+    it prints are compared against a tally the check computes itself; the labels also have to equal
+    the labels of the skill's own published summary block, in order, so the script and the shape
+    cannot drift apart. Its bound is stated in the harness README entry and in the check's own
+    detail line: the fixtures are ledger text, so this proves the arithmetic and not a real
+    verification.
+
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is
 invisible.

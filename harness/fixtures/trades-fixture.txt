@@ -1,0 +1,7 @@
+A1-1 trade 09 21 16 7
+A1-1 trade 06 10 00 3
+A1-1 candidates 4
+A1-2 trade 09 21 16 5
+A1-2 trade 08 53 13 3
+A1-2 trade 03 30 00 3
+A1-2 candidates 2

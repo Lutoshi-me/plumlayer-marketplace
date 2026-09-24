@@ -125,12 +125,19 @@ of them is ever trimmed.
    never a word for the trade, so a row written
    `drywall` is refused, and never a respelling of the code, so `09-21-16` and `092116` are refused
    too, with a hint naming the exact id. Where you cannot tell which of two or more trades owns
-   it, write your best single trade as the home and a `packageRole:<trade>` record with role
-   `candidate` for each other
+   it, write your best single trade as the home and one `packageRole:<trade>` record for each other
    trade, the `<trade>` in that predicate the same catalog code, in the same batch, and keep
-   moving; never hold a row back for its trade and never raise a Question for it. The door refuses
-   a row with no trade and no candidate, and refuses a trade the catalog does not carry, on
-   `belongsToTrade` and inside `packageRole:<trade>` alike. `record_batch` is atomic and order
+   moving; never hold a row back for its trade and never raise a Question for it. That record's
+   value is an object, never a bare word. The door takes
+   `{ role: "exclusion" | "general-requirement" | "ve-alternate" | "candidate", counterparty?,
+   note? }`, or `{ retracted: true, reason? }` to put the row back out of that package, and nothing
+   else. So a candidate is written
+   `{"role": "candidate", "note": "confirm trade responsibility: could be 09 21 16 or 06 10 00"}`,
+   the note internal and never bidder-facing. A value of `"candidate"` on its own is refused with
+   "a boundary line on a scope item needs a role", and `record_batch` is atomic, so that one value
+   costs every entry in the batch. The door refuses a row with no trade and no candidate, and
+   refuses a trade the catalog does not carry, on `belongsToTrade` and inside `packageRole:<trade>`
+   alike. `record_batch` is atomic and order
    free, so the trade rides in the same batch as the name; a single `record` call carries one
    entry, so there you write the trade entry before the name. Whether a row is an exclusion, a
    general requirement, or an alternate is a person's call at the package surface, never yours;
@@ -170,10 +177,13 @@ of them is ever trimmed.
    the grain question. Recall never drops to grain uncertainty.
 7. RECORD directly and VERIFY: `record_batch` (at most 500 per call, atomic; subjects
    `scopeItem:<unit-id>-<seq>` for new items, the item's existing subject for updates), or upload a
-   JSONL and use `record_batch_file` for larger runs. After every batch, read the record back and
-   confirm the count that landed equals the count sent, and recheck any conflicting ids individually.
-   This verification happens before you finish and is part of your report. If you cannot confirm
-   your counts, report the mismatch and stop rather than reporting success.
+   JSONL and use `record_batch_file` for larger runs. An entry carries `subject`, `predicate`,
+   `value`, `sourceInstrument` and `evidence`, plus `supersedesId` where you are replacing a value.
+   Leave `versionScope` off: a sheet read names no issue label, and a null there is refused with
+   "Expected string, received null", which rejects the whole batch. After every batch, read the
+   record back and confirm the count that landed equals the count sent, and recheck any conflicting
+   ids individually. This verification happens before you finish and is part of your report. If you
+   cannot confirm your counts, report the mismatch and stop rather than reporting success.
 8. VOCABULARY SHEETS (a schedule, legend, or notes sheet, in any window): also record what the
    schedules define, extending the kinds the record already knows (`list_definition_kinds`) and
    never creating a parallel vocabulary, AND own the scope items the schedules themselves ground.
@@ -220,6 +230,22 @@ check mandate 7 asks for, one resend of that batch where the door refuses a name
 page whose `pageRead` came back null costs a second context read, after `get_page_text` has had the
 page read. Anything past that shape is a named fallback for a list the answer said it cut, or the
 corpus search of mandate 3.
+
+Four reads the page's context answer has already made, and you do not make again. A trade-filtered
+`list_scope_items` pulls one package's whole slice, which is the review's read and never yours; a
+sheet carries whatever trades it carries. A `search(subject: "sheet:<n>")` for a sheet whose
+reading the answer carried repeats what you already hold; take it only where the sheet resolves to
+more than one legend or calls out more than one sheet, which the answer says. A
+`list_definitions(kind)` for a kind whose codes this page prints repeats the answer's own code
+list; take it for the codes this page does not print, or for the codes past the two hundred the
+answer carries. A `list_questions(projectId, trade)` for a trade the answer's rows already named
+repeats the open questions it gave you; take it for a trade the answer did not cover, or where
+`truncatedParts` named the questions. Each of those, made anyway, is a call that carries nothing to
+the record.
+
+The batch is one call: one Write to a file sent with `record_batch_file`, or sent inline with
+`record_batch`. A shell script that assembles, splits, counts or reformats the batch is a call that
+carries nothing to the record either.
 
 The rows you match against come with the page. The context read's scope rows are the items whose
 citations name this sheet, plus the items whose own name or description carries one of the page's

@@ -61,11 +61,22 @@ Checks:
       constants pinned here and neither naming a type the recognizer does not produce, one
       window 3 review per package over two packages fixtures in package order with two packages
       on one trade both planning and planned one after the other, every window 3 unit id a legal
-      verify_unit subject prefix stem with none a prefix of another, and a one-line refusal naming
-      what is wrong for each of eleven broken invocations, two grid rows folding to one unit key
-      and a window 1 file naming a key as both selected and excluded among them. The shipped script is compiled from source here rather than
+      verify_unit subject prefix stem with none a prefix of another, a first plan of windows 1 and
+      2 numbering each pass's units from 1 and a replan keeping every unit id the run ledger and
+      the previous plan file already handed out, numbering new sheets after the highest number the
+      pass has ever carried and never handing a cut sheet's id out again, and a one-line refusal
+      naming what is wrong for each of seventeen broken invocations, two grid rows folding to one
+      unit key, a window 1 file naming a key as both selected and excluded, and the six ways a kept
+      unit id would be wrong among them. The shipped script is compiled from source here rather than
       imported through the loader, so a script edited twice inside one second to the same byte
       length can never be checked as its earlier bytecode.
+  14b. Pass summary: the shipped scripts/pass_summary.py, imported in-process and run over two
+      invented ledger fixtures, sums one pass's own dispatch and verified lines into the published
+      summary shape, and every number, every note line and every label is compared against a tally
+      this file computes itself off the same fixture text. The labels it prints are compared in
+      order against the skill's own summary block, another pass's and another window's lines and
+      the lead's own `pass:` line are shown to reach no total, and ten broken invocations each
+      refuse in one line with nothing on stdout.
   15. No shipped skill or agent file names `fork` as a subagent type, in either the
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
   16. Every shipped skill or agent file that names `ask_question` or tells the agent to raise a
@@ -93,6 +104,7 @@ import io
 import json
 import math
 import re
+import shutil
 import string
 import subprocess
 import sys
@@ -1720,7 +1732,9 @@ def check_runner_mode_set(plugin_path: Path) -> Result:
 PLAN_INVENTORY_SCRIPT = ("scripts", "plan_inventory.py")
 
 _PLAN_PASS_RE = re.compile(r"^### (\S+?)\.\s")
-_PLAN_UNIT_RE = re.compile(r"^(\d+)\. (\S+), page (\d+): (.*)$")
+# A planned unit line leads with its own unit id (`A1-7.`) and the deliberately-left-out section
+# leads with a plain ordinal, so the label is read as whatever non-space token sits before the dot.
+_PLAN_UNIT_RE = re.compile(r"^(\S+)\. (\S+), page (\d+): (.*)$")
 _PLAN_REVIEW_RE = re.compile(r"^(\d+)\. (rev-\S+): (.*)$")
 _PLAN_FIELD_RE = re.compile(r"^([a-z][a-z ]*): (.*)$")
 _LEFT_OUT_HEADING = "## Deliberately left out"
@@ -1777,8 +1791,8 @@ def _load_script_module(script_path: Path, module_name: str):
     return module
 
 
-def _run_plan_script(module, argv: list[str]) -> tuple[int, str, str]:
-    """Call the script's own main() and capture its exit code and both streams."""
+def _run_script_main(module, argv: list[str]) -> tuple[int, str, str]:
+    """Call a shipped script's own main() and capture its exit code and both streams."""
     out, err = io.StringIO(), io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
         code = module.main(argv)
@@ -1793,8 +1807,9 @@ def _fold_code(code: str) -> str:
 def _plan_passes(read_plan: str) -> list[dict]:
     """
     The read plan's passes, read straight off the file: the pass id, the `key: value` lines of its
-    block, its sheet unit lines as (sheet number, page), and its review unit lines as (unit id,
-    name). Stops at the left-out section, whose entries share the sheet unit line's shape.
+    block, its sheet unit lines as (unit id, sheet number, page), and its review unit lines as
+    (unit id, name). Stops at the left-out section, whose entries share the sheet unit line's shape
+    and carry a plain ordinal where a planned unit carries its id.
     """
     passes: list[dict] = []
     for line in read_plan.splitlines():
@@ -1808,7 +1823,7 @@ def _plan_passes(read_plan: str) -> list[dict]:
             continue
         unit = _PLAN_UNIT_RE.match(line)
         if unit:
-            passes[-1]["units"].append((unit.group(2), int(unit.group(3))))
+            passes[-1]["units"].append((unit.group(1), unit.group(2), int(unit.group(3))))
             continue
         review = _PLAN_REVIEW_RE.match(line)
         if review:
@@ -1941,7 +1956,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     # ------------------------------------------------------------------ #
     # inventory
     # ------------------------------------------------------------------ #
-    code, bounds, err = _run_plan_script(
+    code, bounds, err = _run_script_main(
         module,
         ["inventory", "--grid", str(grid_fixture), "--expect-count", str(expected_rows),
          "--out-dir", str(out_dir)],
@@ -1975,7 +1990,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     if {r["unitKey"] for r in written.get("sheets", [])} != set(key_of.values()):
         errors.append("inventory.json's unit keys are not sheet number, file id and page")
 
-    off_code, _off_bounds, off_err = _run_plan_script(
+    off_code, _off_bounds, off_err = _run_script_main(
         module,
         ["inventory", "--grid", str(grid_fixture), "--expect-count", str(expected_rows + 1),
          "--out-dir", str(out_dir / "off-by-one")],
@@ -1995,7 +2010,11 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     exclude_pattern = "S-1.01"
     w1_path = out_dir / "read-plan-w1.md"
     window_1_json.unlink(missing_ok=True)
-    code, w1_bounds, err = _run_plan_script(
+    # Both unit id tiers sit in the folder the plan is written into, so this run starts with
+    # neither: the first plan of a window has no ledger and no previous plan file, and the two
+    # bounds lines below are what prove the change is inert there.
+    (out_dir / "ledger.md").unlink(missing_ok=True)
+    code, w1_bounds, err = _run_script_main(
         module,
         ["plan", "--window", "1", "--inventory", inventory_json,
          "--include", f"{include_pattern}:the elevations carry the window and finish marks",
@@ -2030,11 +2049,12 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             f"passes {len(expected_w1_disciplines)}",
             f"excluded {len(excluded)}",
             f"unassigned {expected_rows - len(expected_w1) - len(excluded)}",
+            f"ids kept 0 (ledger 0, plan file 0), ids new {len(expected_w1)}, ids retired 0",
         ):
             if fragment not in w1_bounds:
                 errors.append(f"the window 1 bounds line does not name `{fragment}`: {w1_bounds!r}")
         w1_passes = _plan_passes(w1_path.read_text(encoding="utf-8"))
-        w1_sheets = [sheet for p in w1_passes for sheet, _page in p["units"]]
+        w1_sheets = [sheet for p in w1_passes for _id, sheet, _page in p["units"]]
         if set(w1_sheets) != expected_w1:
             errors.append(
                 f"window 1 planned {sorted(set(w1_sheets))}, expected {sorted(expected_w1)}"
@@ -2068,7 +2088,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     # by the pinned type order with inventory order kept inside a type, split at twelve. An excluded
     # sheet stays out: the lead left it out with a reason, and reading it here would overrule that.
     w2_path = out_dir / "read-plan-w2.md"
-    code, w2_bounds, err = _run_plan_script(
+    code, w2_bounds, err = _run_script_main(
         module,
         ["plan", "--window", "2", "--inventory", inventory_json,
          "--window-1", str(window_1_json), "--out", str(w2_path)],
@@ -2114,6 +2134,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             f"sheets in the inventory {expected_rows}",
             f"sheets typed other or untyped "
             f"{by_type.get('other', 0) + by_type.get('untyped', 0)}",
+            f"ids kept 0 (ledger 0, plan file 0), ids new {len(left)}, ids retired 0",
         ):
             if fragment not in w2_bounds:
                 errors.append(f"the window 2 bounds line does not name `{fragment}`: {w2_bounds!r}")
@@ -2137,7 +2158,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                 stem = stem[:-1]
             if not planned or planned[-1][0] != stem:
                 planned.append((stem, []))
-            planned[-1][1].extend(sheet for sheet, _page in plan_pass["units"])
+            planned[-1][1].extend(sheet for _id, sheet, _page in plan_pass["units"])
         if planned != expected_w2_order:
             errors.append(
                 f"window 2 is not the inventory minus window 1, by discipline and in the sheet "
@@ -2166,7 +2187,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     def window_3_over(label: str, packages_path: Path, out_name: str) -> tuple[list[dict], str]:
         """Run window 3 over one packages fixture and assert everything the plan file says."""
         path = out_dir / out_name
-        run_code, run_bounds, run_err = _run_plan_script(
+        run_code, run_bounds, run_err = _run_script_main(
             module,
             ["plan", "--window", "3", "--packages", str(packages_path), "--out", str(path)],
         )
@@ -2307,12 +2328,340 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         errors.append("the join test never sees a second review on one trade, which is the case it exists for")
 
     # ------------------------------------------------------------------ #
+    # Unit ids kept across a replan
+    # ------------------------------------------------------------------ #
+    #
+    # A unit id is a live subject prefix on the project record: a reader records
+    # `scopeItem:<unit id>-<seq>`, the runner verifies that prefix and the lead counts it. A replan
+    # that renumbered would point an id already in use at another sheet's work, so the script reads
+    # the run ledger's dispatch lines and its own previous plan file, keeps every id already handed
+    # out, numbers what is new after the highest number its pass has ever carried, and hands no
+    # number out twice. Everything below is computed here off the fixtures the check writes.
+    # With no ledger and no previous plan file, a pass numbers its units from 1, so the id on each
+    # line is exactly the ordinal the line used to carry. That is the guard that this is inert on a
+    # first plan.
+    for where, first_plan_passes in (("window 1", w1_passes), ("window 2", w2_passes)):
+        for plan_pass in first_plan_passes:
+            first_ids = [unit_id for unit_id, _sheet, _page in plan_pass["units"]]
+            wanted_ids = [f"{plan_pass['id']}-{i}" for i in range(1, len(first_ids) + 1)]
+            if first_ids != wanted_ids:
+                errors.append(
+                    f"{where}: pass {plan_pass['id']} carries unit ids {first_ids}, expected "
+                    f"{wanted_ids} on a first plan"
+                )
+
+    replan_root = out_dir / "replan"
+    shutil.rmtree(replan_root, ignore_errors=True)
+
+    def replan_row(number: str, sheet_type: str, page: int) -> dict:
+        return {
+            "unitKey": f"{number}@file-0001#{page}",
+            "discipline": "A",
+            "sheetNumber": number,
+            "pageTitle": f"{sheet_type} on {number}",
+            "sheetType": sheet_type,
+            "fileId": "file-0001",
+            "pageInPdf": page,
+        }
+
+    def write_replan_inventory(folder: Path, inventory_rows: list[dict]) -> str:
+        path = folder / "inventory.json"
+        folder.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"sheets": inventory_rows}, indent=2) + "\n", encoding="utf-8")
+        return str(path)
+
+    def write_ledger(folder: Path, ledger_lines: list[str]) -> None:
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "ledger.md").write_text("\n".join(ledger_lines) + "\n", encoding="utf-8")
+
+    def run_replan(folder: Path, window: int, inventory_path: str, extra: list[str]):
+        """One plan run in its own folder, so the ledger and the plan file it reads are its own."""
+        out = folder / "read-plan.md"
+        run_code, run_bounds, run_err = _run_script_main(
+            module,
+            ["plan", "--window", str(window), "--inventory", inventory_path, *extra,
+             "--out", str(out)],
+        )
+        if run_code != 0:
+            return run_code, run_bounds, run_err, []
+        return run_code, run_bounds, run_err, _plan_passes(out.read_text(encoding="utf-8"))
+
+    def planned_ids(plan_passes: list[dict]) -> list[tuple[str, str]]:
+        """(unit id, sheet number) in the order the file lists them."""
+        return [(unit_id, sheet) for p in plan_passes for unit_id, sheet, _page in p["units"]]
+
+    def expect_bounds(label: str, bounds: str, fragment: str) -> None:
+        if fragment not in bounds:
+            errors.append(f"{label}: the bounds line does not name `{fragment}`: {bounds!r}")
+
+    # Eleven sheets window 1 selects on sheet type alone, and four window 2 reads after it, in an
+    # inventory order that is not the window 2 reading order.
+    vocabulary_rows = [
+        replan_row(f"A-1.{index:02d}", "schedule" if index % 2 else "legend", index)
+        for index in range(1, 12)
+    ]
+    other_rows = [
+        replan_row("A-2.01", "plan", 12),
+        replan_row("A-2.02", "section", 13),
+        replan_row("A-2.03", "detail", 14),
+        replan_row("A-2.04", "elevation", 15),
+    ]
+
+    # --- plan six, dispatch four, replan with five more ---------------- #
+    grow = replan_root / "grow"
+    grow_inventory = write_replan_inventory(grow, vocabulary_rows + other_rows)
+    first_six = [f"A-1.{index:02d}" for index in range(1, 12, 2)]
+    held_back = [f"A-1.{index:02d}" for index in range(2, 12, 2)]
+    cut_to_six = [
+        arg
+        for sheet in held_back
+        for arg in ("--exclude", f"{sheet}:the user cut this window to six sheets")
+    ]
+    code, bounds, err, six_passes = run_replan(grow, 1, grow_inventory, cut_to_six)
+    if code != 0:
+        errors.append(f"the replan fixture's first window 1 run refused: {err}")
+    elif planned_ids(six_passes) != [(f"A1-{i}", sheet) for i, sheet in enumerate(first_six, 1)]:
+        errors.append(f"the first plan of six did not number them 1 to 6: {planned_ids(six_passes)}")
+
+    write_ledger(grow, [
+        "phase: plan approved",
+        "dispatch: window 1 pass A1 units 6",
+        *[
+            f"dispatch 1 A1 A1-{index} sheets {sheet} purpose a schedule this pass reads"
+            for index, sheet in enumerate(first_six[:4], 1)
+        ],
+    ])
+
+    code, grow_bounds, err, grown_passes = run_replan(grow, 1, grow_inventory, [])
+    if code != 0:
+        errors.append(f"the replan over eleven sheets refused: {err}")
+    else:
+        # Kept ids hold the front of the pass in the order they were read; new sheets follow, in
+        # inventory order. That is not the inventory's own order, which is what proves the file is
+        # ordered by id rather than by the grid.
+        expected_grown = (
+            [(f"A1-{i}", sheet) for i, sheet in enumerate(first_six, 1)]
+            + [(f"A1-{i}", sheet) for i, sheet in enumerate(held_back, 7)]
+        )
+        if planned_ids(grown_passes) != expected_grown:
+            errors.append(
+                f"the replan did not keep the six ids and append the five new ones: "
+                f"{planned_ids(grown_passes)}, expected {expected_grown}"
+            )
+        inventory_order = [row["sheetNumber"] for row in vocabulary_rows]
+        if [sheet for _id, sheet in planned_ids(grown_passes)] == inventory_order:
+            errors.append("the replan fixture proves nothing about ordering by id: it is inventory order")
+        expect_bounds(
+            "the replan over eleven sheets", grow_bounds,
+            "ids kept 6 (ledger 4, plan file 2), ids new 5, ids retired 0",
+        )
+        totals = (grow / "read-plan.md").read_text(encoding="utf-8")
+        if "unit ids kept 6, new 5, retired 0" not in totals:
+            errors.append("the plan file's totals block does not carry the same id counts as its bounds line")
+
+    # --- the round trip: an id the plan wrote, dispatched, and read back - #
+    seventh_id, seventh_sheet = planned_ids(grown_passes)[6] if len(planned_ids(grown_passes)) > 6 else ("", "")
+    write_ledger(grow, [
+        "phase: plan approved",
+        "dispatch: window 1 pass A1 units 6",
+        *[
+            f"dispatch 1 A1 A1-{index} sheets {sheet} purpose a schedule this pass reads"
+            for index, sheet in enumerate(first_six[:4], 1)
+        ],
+        f"dispatch 1 A1 {seventh_id} sheets {seventh_sheet} purpose a schedule this pass reads",
+    ])
+    code, round_trip_bounds, err, round_trip_passes = run_replan(grow, 1, grow_inventory, [])
+    if code != 0:
+        errors.append(f"the round trip replan refused: {err}")
+    else:
+        if (seventh_id, seventh_sheet) not in planned_ids(round_trip_passes):
+            errors.append(
+                f"the plan wrote {seventh_id} on {seventh_sheet}, the ledger dispatched it, and the "
+                f"replan did not put it back: {planned_ids(round_trip_passes)}"
+            )
+        expect_bounds("the round trip replan", round_trip_bounds,
+                      "ids kept 11 (ledger 5, plan file 6), ids new 0, ids retired 0")
+        # Every id the plan writes is a legal verify_unit prefix stem, and none is a prefix of
+        # another, which is what keeps one unit's rows from counting as another's.
+        replan_prefixes = [f"scopeItem:{unit_id}-" for unit_id, _sheet in planned_ids(round_trip_passes)]
+        for prefix in replan_prefixes:
+            if not _SUBJECT_PREFIX_RE.match(prefix):
+                errors.append(f"the subject prefix {prefix!r} is not a legal verify_unit prefix stem")
+        for one in replan_prefixes:
+            for other in replan_prefixes:
+                if one is not other and other.startswith(one):
+                    errors.append(f"the subject prefix {one!r} is a prefix of {other!r}")
+
+    # --- a removed sheet's id is not reused ---------------------------- #
+    retired_sheet = first_six[2]
+    code, retire_bounds, err, retire_passes = run_replan(
+        grow, 1, grow_inventory,
+        ["--exclude", f"{retired_sheet}:the user took this sheet out of the window",
+         "--include", "A-2.01:the key plan carries the unit mix"],
+    )
+    if code != 0:
+        errors.append(f"the replan that cuts a read sheet refused: {err}")
+    else:
+        carried = dict(planned_ids(retire_passes))
+        if "A1-3" in carried:
+            errors.append(f"the id of the sheet cut from the plan was handed out again, to {carried['A1-3']}")
+        if carried.get("A1-12") != "A-2.01":
+            errors.append(f"the new sheet did not take the next number after the highest: {carried}")
+        expect_bounds("the replan that cuts a read sheet", retire_bounds,
+                      "ids kept 10 (ledger 4, plan file 6), ids new 1, ids retired 1")
+
+    # --- the ledger beats the plan file -------------------------------- #
+    conflict = replan_root / "conflict"
+    conflict_inventory = write_replan_inventory(conflict, vocabulary_rows)
+    kept_two = ["A-1.01", "A-1.02"]
+    cut_to_two = [
+        arg
+        for row in vocabulary_rows
+        if row["sheetNumber"] not in kept_two
+        for arg in ("--exclude", f"{row['sheetNumber']}:the user cut this window to two sheets")
+    ]
+    (conflict / "plan").mkdir(parents=True, exist_ok=True)
+    (conflict / "plan" / "window-1.json").write_text(
+        json.dumps(
+            {
+                "window": 1,
+                "selected": [row["unitKey"] for row in vocabulary_rows if row["sheetNumber"] in kept_two],
+                "excluded": [],
+                "units": [{"id": "A1-9", "unitKey": vocabulary_rows[0]["unitKey"]}],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    write_ledger(conflict, [f"dispatch 1 A1 A1-2 sheets {kept_two[0]} purpose a schedule this pass reads"])
+    code, conflict_bounds, err, conflict_passes = run_replan(conflict, 1, conflict_inventory, cut_to_two)
+    if code != 0:
+        errors.append(f"the ledger-against-plan-file replan refused: {err}")
+    else:
+        carried = dict(planned_ids(conflict_passes))
+        if carried.get("A1-2") != kept_two[0]:
+            errors.append(f"the ledger did not win the disagreement with the plan file: {carried}")
+        if carried.get("A1-10") != kept_two[1]:
+            errors.append(f"the new sheet did not number after the highest either tier names: {carried}")
+        expect_bounds("the ledger-against-plan-file replan", conflict_bounds,
+                      "ids kept 1 (ledger 1, plan file 0), ids new 1, ids retired 1")
+
+    # --- window 2 numbers its new units in the pinned type order ------- #
+    w2_replan = replan_root / "window-2"
+    w2_rows = vocabulary_rows + other_rows
+    w2_inventory = write_replan_inventory(w2_replan, w2_rows)
+    code, _bounds, err, _passes = run_replan(w2_replan, 1, w2_inventory, [])
+    if code != 0:
+        errors.append(f"the window 2 replan fixture's window 1 run refused: {err}")
+    w2_window_1 = str(w2_replan / "plan" / "window-1.json")
+    write_ledger(w2_replan, [
+        "dispatch 2 A2 A2-1 sheets A-2.02 purpose the wall section",
+        "dispatch 2 A2 A2-2 sheets A-2.03 purpose the head and sill details",
+    ])
+    grown_w2_rows = w2_rows + [replan_row("A-2.05", "section", 16), replan_row("A-2.06", "plan", 17)]
+    w2_inventory = write_replan_inventory(w2_replan, grown_w2_rows)
+    code, _bounds, err, _passes = run_replan(w2_replan, 1, w2_inventory, [])
+    if code != 0:
+        errors.append(f"the window 2 replan fixture's second window 1 run refused: {err}")
+    code, w2_replan_bounds, err, w2_replan_passes = run_replan(
+        w2_replan, 2, w2_inventory, ["--window-1", w2_window_1]
+    )
+    if code != 0:
+        errors.append(f"the window 2 replan refused: {err}")
+    else:
+        rank = {t: i for i, t in enumerate(_WINDOW_2_SHEET_TYPE_ORDER)}
+        still_new = [r for r in grown_w2_rows if r["sheetNumber"] not in ("A-2.02", "A-2.03")
+                     and r["sheetType"] not in _VOCABULARY_SHEET_TYPES]
+        still_new.sort(key=lambda r: rank[r["sheetType"]])
+        expected_w2_replan = (
+            [("A2-1", "A-2.02"), ("A2-2", "A-2.03")]
+            + [(f"A2-{i}", r["sheetNumber"]) for i, r in enumerate(still_new, 3)]
+        )
+        if planned_ids(w2_replan_passes) != expected_w2_replan:
+            errors.append(
+                f"window 2 did not keep its dispatched ids and number the new sheets in the pinned "
+                f"type order: {planned_ids(w2_replan_passes)}, expected {expected_w2_replan}"
+            )
+        expect_bounds("the window 2 replan", w2_replan_bounds,
+                      "ids kept 2 (ledger 2, plan file 0), ids new 4, ids retired 0")
+
+    # --- the six ways a kept id would be wrong ------------------------- #
+    #
+    # Each one stops the plan rather than renumbering, because every one of them would move an id
+    # the record already carries rows under.
+    def broken_replan(case: str, ledger_lines: list[str], inventory_rows: list[dict]) -> tuple[Path, str]:
+        folder = replan_root / "broken" / case
+        path = write_replan_inventory(folder, inventory_rows)
+        write_ledger(folder, ledger_lines)
+        return folder / "read-plan.md", path
+
+    read_line = "purpose a schedule this pass reads"
+    doubled_rows = vocabulary_rows + [replan_row("A-1.01", "schedule", 99)]
+    wide_rows = vocabulary_rows + [
+        replan_row(f"A-1.{index}", "schedule", index) for index in range(12, 15)
+    ]
+
+    bad_id_out, bad_id_inventory = broken_replan(
+        "unit-id", [f"dispatch 1 A1 A1x sheets A-1.01 {read_line}"], vocabulary_rows)
+    two_ids_out, two_ids_inventory = broken_replan(
+        "sheet-under-two-ids",
+        [f"dispatch 1 A1 A1-1 sheets A-1.01 {read_line}",
+         f"dispatch 1 A1 A1-2 sheets A-1.01 {read_line}"],
+        vocabulary_rows)
+    two_sets_out, two_sets_inventory = broken_replan(
+        "id-over-two-sheet-sets",
+        [f"dispatch 1 A1 A1-1 sheets A-1.01 {read_line}",
+         f"dispatch 1 A1 A1-1 sheets A-1.02 {read_line}"],
+        vocabulary_rows)
+    doubled_out, doubled_inventory = broken_replan(
+        "sheet-on-two-rows", [f"dispatch 1 A1 A1-1 sheets A-1.01 {read_line}"], doubled_rows)
+    partly_out, partly_inventory = broken_replan(
+        "partly-cut", [f"dispatch 1 A1 A1-1 sheets A-1.01,A-1.02 {read_line}"], vocabulary_rows)
+    moved_out, moved_inventory = broken_replan(
+        "moved-pass", [f"dispatch 1 A1 A1-1 sheets A-1.01 {read_line}"], wide_rows)
+
+    replan_refusals: list[tuple[str, list[str], str]] = [
+        (
+            "a ledger dispatch line whose unit id is not <pass>-<number>",
+            ["plan", "--window", "1", "--inventory", bad_id_inventory, "--out", str(bad_id_out)],
+            "A1x",
+        ),
+        (
+            "one sheet number dispatched under two unit ids",
+            ["plan", "--window", "1", "--inventory", two_ids_inventory, "--out", str(two_ids_out)],
+            "A-1.01 under A1-1 and A1-2",
+        ),
+        (
+            "one unit id dispatched over two sheet sets",
+            ["plan", "--window", "1", "--inventory", two_sets_inventory, "--out", str(two_sets_out)],
+            "unit A1-1 is dispatched on",
+        ),
+        (
+            "a bound sheet number the inventory holds twice",
+            ["plan", "--window", "1", "--inventory", doubled_inventory, "--out", str(doubled_out)],
+            "holds 2 times",
+        ),
+        (
+            "a bound unit whose sheets are only partly still in the cut",
+            ["plan", "--window", "1", "--inventory", partly_inventory,
+             "--exclude", "A-1.02:the user took this sheet out of the window", "--out", str(partly_out)],
+            "1 of them as its own unit",
+        ),
+        (
+            "a bound unit whose sheet now plans under a different pass part",
+            ["plan", "--window", "1", "--inventory", moved_inventory, "--out", str(moved_out)],
+            "pass A1a",
+        ),
+    ]
+
+    # ------------------------------------------------------------------ #
     # Every sheet unit line's page reference, checked against the fixture grid
     # ------------------------------------------------------------------ #
     sheet_units = [unit for p in w1_passes + w2_passes for unit in p["units"]]
     misplaced = [
         f"{sheet} on page {page} where the grid says {page_of.get(sheet)}"
-        for sheet, page in sheet_units
+        for _unit_id, sheet, page in sheet_units
         if page_of.get(sheet) != page
     ]
     if misplaced:
@@ -2424,8 +2773,9 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             "colliding unit key",
         ),
     ]
+    refusals.extend(replan_refusals)
     for what, argv, must_name in refusals:
-        code, _refused_bounds, err = _run_plan_script(module, argv)
+        code, _refused_bounds, err = _run_script_main(module, argv)
         if code != 1:
             errors.append(f"{what}: exited {code}, not 1")
         elif len(err.splitlines()) != 1:
@@ -2445,12 +2795,399 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"fixtures, in package order, with two packages on "
         f"one trade both planning and planned one after the other, {len(unit_ids)} unit ids checked "
         f"to be legal verify_unit prefix stems with none a prefix of another, "
+        f"a first plan of each window numbering its units from 1, a replan keeping the ids the "
+        f"ledger and the plan file already handed out and numbering five new sheets after the "
+        f"highest, an id the ledger dispatched read back onto the same sheet, a cut sheet's id "
+        f"retired and not handed out again, the ledger beating the plan file, window 2 numbering "
+        f"its new sheets in the pinned type order, "
         f"{len(refusals)} broken invocations each refused in one line naming what is wrong"
     )
     # An honest bound, not a pass: the fixtures are invented and small. They carry the field names
     # the shipped verbs return, so a rename on the record's side would fail here, but nothing about
     # a real grid or a real packages read is proved by them.
     detail += "; bound: invented fixtures, not a real grid or a real packages read"
+    if errors:
+        detail += " | " + "; ".join(errors)
+
+    return Result(name, passed=len(errors) == 0, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: the pass summary script
+# --------------------------------------------------------------------------- #
+#
+# A pass runner verifies each unit against the record and appends that unit's counts to the run
+# ledger as it goes, and then the pass summary says those counts again. A runner that added them up
+# itself gave a second answer that did not match the first, so the shipped script sums the ledger
+# and the runner writes what it returns. This runs the script in-process over two ledger fixtures
+# and asserts every number against a tally computed here off the same fixture text.
+#
+# The join this check exists for: the summary shape is published in the skill and in the runner
+# definition, and the script fills it. The three would otherwise meet for the first time mid-run,
+# so the labels the script prints are compared against the labels of the skill's own fenced block,
+# in order, with nothing extra and nothing missing.
+#
+# Honest bound, stated in the detail line: the fixtures are ledger text, so this proves the
+# script's arithmetic, its line placement and its refusals, and nothing about a real verification.
+
+PASS_SUMMARY_SCRIPT = ("scripts", "pass_summary.py")
+
+_SUMMARY_LABEL_RE = re.compile(r"^([a-z][a-z ]*): ")
+
+
+def _fenced_block_bodies(lines: list[str]) -> list[list[str]]:
+    """Every closed fenced block's body, in file order. A fence left open drops its body."""
+    blocks: list[list[str]] = []
+    body: list[str] = []
+    inside = False
+    for line in lines:
+        if line.lstrip().startswith("```"):
+            if inside:
+                blocks.append(body)
+                body = []
+            inside = not inside
+            continue
+        if inside:
+            body.append(line)
+    return blocks
+
+
+def _summary_labels(lines: list[str]) -> list[str]:
+    """
+    The label of each summary line, with consecutive repeats collapsed. `per unit:` prints one line
+    per unit and `anomalies:` one line per note, while the published shape names each label once,
+    so the two are comparable only after the repeats are folded.
+    """
+    labels: list[str] = []
+    for line in lines:
+        m = _SUMMARY_LABEL_RE.match(line)
+        if m is None:
+            continue
+        label = m.group(1)
+        if not labels or labels[-1] != label:
+            labels.append(label)
+    return labels
+
+
+def _ledger_rows(path: Path, window: int, pass_id: str) -> list[list[str]]:
+    """This window and pass's runner lines, split into fields, read here rather than off the script."""
+    rows: list[list[str]] = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        parts = raw.split()
+        if len(parts) < 4 or parts[0] not in ("dispatch", "verified", "note"):
+            continue
+        if parts[1] != str(window) or parts[2] != pass_id:
+            continue
+        rows.append(parts)
+    return rows
+
+
+def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "pass-summary"
+    script = plugin_path.joinpath(*PASS_SUMMARY_SCRIPT)
+    if not script.is_file():
+        return Result(name, False, detail=f"pass summary script not found at {script}")
+
+    fixtures = marketplace_root / "harness" / "fixtures"
+    a1_fixture = fixtures / "ledger-fixture-a1.md"
+    mixed_fixture = fixtures / "ledger-fixture-mixed.md"
+    trades_fixture = fixtures / "trades-fixture.txt"
+    for fixture in (a1_fixture, mixed_fixture, trades_fixture):
+        if not fixture.is_file():
+            return Result(name, False, detail=f"fixture not found at {fixture}")
+
+    try:
+        module = _load_script_module(script, "pass_summary")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import {script.name}: {e}")
+
+    errors: list[str] = []
+    out_dir = Path(__file__).parent / ".test-results" / "pass-summary"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # ------------------------------------------------------------------ #
+    # The whole of one pass, against a tally computed here
+    # ------------------------------------------------------------------ #
+    code, a1_out, a1_err = _run_script_main(module, [str(a1_fixture), "1", "A1"])
+    a1_lines = a1_out.splitlines()
+    if code != 0:
+        return Result(name, False, detail=f"the A1 fixture refused: {a1_err or a1_out}")
+
+    rows = _ledger_rows(a1_fixture, 1, "A1")
+    expected_units: list[str] = []
+    for parts in rows:
+        if parts[0] == "dispatch" and parts[3] not in expected_units:
+            expected_units.append(parts[3])
+    verified_rows = [parts for parts in rows if parts[0] == "verified"]
+
+    def field_of(parts: list[str], field: str) -> int:
+        return int(parts[parts.index(field) + 1])
+
+    expected_totals = {
+        field: sum(field_of(parts, field) for parts in verified_rows)
+        for field in ("created", "items", "updated", "questions", "replied", "conflicts")
+    }
+
+    if f"units read: {', '.join(expected_units)}" not in a1_lines:
+        errors.append(
+            f"`units read:` is not the dispatched units in reading order, once each: "
+            f"{[l for l in a1_lines if l.startswith('units read:')]}"
+        )
+    if len(expected_units) != len(set(expected_units)):
+        errors.append("the A1 fixture no longer dispatches a unit twice, which is the case that line exists for")
+
+    for parts in verified_rows:
+        counts = " ".join(
+            f"{field} {field_of(parts, field)}"
+            for field in ("created", "items", "updated", "questions", "replied")
+        )
+        verdict = "yes" if parts[parts.index("result") + 1] == "ok" else "no"
+        wanted = f"per unit: {parts[3]} {counts} verified {verdict}"
+        if wanted not in a1_lines:
+            errors.append(f"the per unit line for {parts[3]} is not {wanted!r}")
+    per_unit_lines = [line for line in a1_lines if line.startswith("per unit: ")]
+    if len(per_unit_lines) != len(expected_units):
+        errors.append(
+            f"{len(per_unit_lines)} per unit lines over {len(expected_units)} units read"
+        )
+
+    wanted_totals = (
+        f"totals verified: created {expected_totals['created']} (entry count under the unit "
+        f"prefixes), items {expected_totals['items']} (reader's own item count), updated "
+        f"{expected_totals['updated']}, questions {expected_totals['questions']} replied "
+        f"{expected_totals['replied']}"
+    )
+    if wanted_totals not in a1_lines:
+        errors.append(
+            f"the totals line is not the sum of the verified lines: "
+            f"{[l for l in a1_lines if l.startswith('totals verified:')]}, expected {wanted_totals!r}"
+        )
+
+    conflicted = [parts[3] for parts in verified_rows if field_of(parts, "conflicts")]
+    wanted_conflicts = f"conflicting rows: {expected_totals['conflicts']}, on units {', '.join(conflicted)}"
+    if wanted_conflicts not in a1_lines:
+        errors.append(f"the conflicting rows line is not {wanted_conflicts!r}")
+
+    expected_kinds: list[str] = []
+    for parts in rows:
+        if parts[0] == "note" and parts[4] == "kinds":
+            for word in parts[5:]:
+                if word not in expected_kinds:
+                    expected_kinds.append(word)
+    if f"definitions kinds added: {', '.join(expected_kinds)}" not in a1_lines:
+        errors.append("the definitions kinds line is not the union of the fixture's kinds notes, in first-seen order")
+
+    for kind, label in (("anomaly", "anomalies"), ("deviation", "deviations and repairs"),
+                        ("overlap", "overlap notes")):
+        of_kind = [parts for parts in rows if parts[0] == "note" and parts[4] == kind]
+        printed = [line for line in a1_lines if line.startswith(f"{label}: ")]
+        if len(printed) != len(of_kind):
+            errors.append(f"{label} carries {len(printed)} lines over {len(of_kind)} `{kind}` notes")
+        for parts in of_kind:
+            where = "" if parts[3] == "-" else f"{parts[3]} "
+            wanted = f"{label}: {where}{' '.join(parts[5:])}"
+            if wanted not in a1_lines:
+                errors.append(f"a `{kind}` note is not carried verbatim: expected {wanted!r}")
+    if "unread pages: none" not in a1_lines:
+        errors.append("the A1 fixture raises no unread note, so that line has to read none")
+
+    if f"ledger: {a1_fixture}, appended through " not in a1_out:
+        errors.append("the ledger line does not name the file it read")
+
+    # stdout is the deliverable, so the bounds line has to be somewhere else.
+    if len(a1_err.splitlines()) != 1 or not a1_err.startswith("pass_summary: read "):
+        errors.append(f"the bounds line is not one line on stderr: {a1_err!r}")
+    stray = [line for line in a1_lines if _SUMMARY_LABEL_RE.match(line) is None]
+    if stray:
+        errors.append(f"stdout carries {len(stray)} line(s) that are not summary lines: {stray[:3]}")
+
+    # ------------------------------------------------------------------ #
+    # The join: the labels the script prints are the published shape's
+    # ------------------------------------------------------------------ #
+    skill = plugin_path / "skills" / "scope-run" / "SKILL.md"
+    published: list[str] = []
+    if not skill.is_file():
+        errors.append(f"skill not found at {skill}")
+    else:
+        blocks = [
+            block for block in _fenced_block_bodies(skill.read_text(encoding="utf-8").splitlines())
+            if any(line.startswith("per unit:") for line in block)
+        ]
+        if len(blocks) != 1:
+            errors.append(f"{len(blocks)} runner summary blocks in {skill.name}, expected 1")
+        else:
+            published = _summary_labels(blocks[0])
+            if _summary_labels(a1_lines) != published:
+                errors.append(
+                    f"the script prints the labels {_summary_labels(a1_lines)} and the skill "
+                    f"publishes {published}"
+                )
+
+    # ------------------------------------------------------------------ #
+    # One pass only, and none of the lead's own numbers
+    # ------------------------------------------------------------------ #
+    code, mixed_out, mixed_err = _run_script_main(module, [str(mixed_fixture), "1", "B1"])
+    mixed_lines = mixed_out.splitlines()
+    if code != 0:
+        errors.append(f"the mixed fixture refused: {mixed_err or mixed_out}")
+    else:
+        mixed_rows = _ledger_rows(mixed_fixture, 1, "B1")
+        mixed_verified = [parts for parts in mixed_rows if parts[0] == "verified"]
+        mixed_created = sum(field_of(parts, "created") for parts in mixed_verified)
+        if f"created {mixed_created} (entry count" not in mixed_out:
+            errors.append(f"the mixed fixture's totals are not the sum of its own verified lines")
+        for stranger in ("9999", "777", "333"):
+            if stranger in mixed_out:
+                errors.append(
+                    f"a figure from the lead's own line, another pass or another window reached "
+                    f"the totals: {stranger}"
+                )
+        # A dispatched unit with no verified line prints dashes and is named on the bounds line.
+        if "per unit: B1-3 created - items - updated - questions - replied - verified no" not in mixed_lines:
+            errors.append("a dispatched unit with no verified line does not print as unverified")
+        if "dispatched with no verified line: B1-3" not in mixed_err:
+            errors.append(f"the bounds line does not name the unverified unit: {mixed_err!r}")
+        if "verified no" not in " ".join(
+            line for line in mixed_lines if line.startswith("per unit: B1-2 ")
+        ):
+            errors.append("a unit whose result is a mismatch does not print as unverified")
+        # The last line of this pass, not the last line of the file.
+        last_of_pass = [" ".join(parts) for parts in mixed_rows][-1]
+        if not mixed_out.rstrip().endswith(last_of_pass):
+            errors.append(
+                f"the ledger line names {mixed_lines[-1]!r} rather than this pass's last line, "
+                f"{last_of_pass!r}"
+            )
+        # Three note kinds have no line in this shape, and the bounds line counts them rather than
+        # letting a note land nowhere in silence.
+        for kind in ("grain", "door", "packet"):
+            if f"{kind} 1 with no summary line" not in mixed_err:
+                errors.append(f"the bounds line does not count the `{kind}` note it read: {mixed_err!r}")
+
+    # ------------------------------------------------------------------ #
+    # The trades file
+    # ------------------------------------------------------------------ #
+    code, trades_out, _trades_err = _run_script_main(
+        module, [str(a1_fixture), "1", "A1", "--trades", str(trades_fixture)]
+    )
+    if code != 0:
+        errors.append("the trades fixture refused")
+    else:
+        by_trade: dict[str, int] = {}
+        candidates = 0
+        for raw in trades_fixture.read_text(encoding="utf-8").splitlines():
+            parts = raw.split()
+            if not parts:
+                continue
+            if parts[1] == "candidates":
+                candidates += int(parts[2])
+            else:
+                code_text = " ".join(parts[2:-1])
+                by_trade[code_text] = by_trade.get(code_text, 0) + int(parts[-1])
+        ordered = sorted(by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
+        wanted = (
+            "trades: " + ", ".join(f"{c} x{n}" for c, n in ordered) + f"; candidates {candidates}"
+        )
+        if wanted not in trades_out.splitlines():
+            errors.append(f"the trades line is not the sum of the trades file: expected {wanted!r}")
+        if len({n for _c, n in ordered}) == len(ordered):
+            errors.append("the trades fixture never ties on count, so it proves nothing about the tie break")
+    if "trades: no trades file for this pass" not in a1_lines:
+        errors.append("without a trades file the trades line does not say so")
+
+    # ------------------------------------------------------------------ #
+    # Refusals, each exiting 1 with one line on stderr
+    # ------------------------------------------------------------------ #
+    a1_text = a1_fixture.read_text(encoding="utf-8")
+    broken: list[tuple[str, str, str]] = [
+        (
+            "two verified lines for one unit",
+            a1_text + "verified 1 A1 A1-1 created 1 items 1 updated 0 questions 0 replied 0 "
+                      "sent 1 landed 1 conflicts 0 result ok\n",
+            "already carries a verified line",
+        ),
+        (
+            "a count that is not a whole number",
+            a1_text.replace("created 29 items 7", "created many items 7"),
+            "not a whole number",
+        ),
+        (
+            "a verified line missing a field the shape names",
+            a1_text.replace(" landed 96 conflicts 0", " landed 96"),
+            "no `conflicts` field",
+        ),
+        (
+            "a dispatch line with no sheets field",
+            a1_text.replace("dispatch 1 A1 A1-1 sheets A-0.11", "dispatch 1 A1 A1-1 pages A-0.11"),
+            "no `sheets` field",
+        ),
+        (
+            "a note kind outside the closed set",
+            a1_text.replace("note 1 A1 A1-6 anomaly", "note 1 A1 A1-6 observation"),
+            "observation",
+        ),
+        (
+            "a line whose first word is none of the three shapes",
+            a1_text + "narrative 1 A1 A1-1 a sentence nobody is counting\n",
+            "none of the three shapes",
+        ),
+    ]
+    refusals: list[tuple[str, list[str], str]] = []
+    for index, (what, text, must_name) in enumerate(broken, 1):
+        path = out_dir / f"broken-{index}.md"
+        path.write_text(text, encoding="utf-8")
+        refusals.append((what, [str(path), "1", "A1"], must_name))
+    refusals.extend([
+        (
+            "a window and pass with no lines",
+            [str(a1_fixture), "2", "A1"],
+            "carries no dispatch, verified or note line",
+        ),
+        (
+            "a ledger that is not there",
+            [str(out_dir / "no-such-ledger.md"), "1", "A1"],
+            "no ledger at",
+        ),
+        (
+            "a trades file that is not there",
+            [str(a1_fixture), "1", "A1", "--trades", str(out_dir / "no-such-trades.txt")],
+            "no trades file at",
+        ),
+        (
+            "a trades file line in neither of its two shapes",
+            [str(a1_fixture), "1", "A1", "--trades", str(out_dir / "broken-trades.txt")],
+            "neither",
+        ),
+    ])
+    (out_dir / "broken-trades.txt").write_text("A1-1 trades 09 21 16\n", encoding="utf-8")
+
+    for what, argv, must_name in refusals:
+        run_code, run_out, run_err = _run_script_main(module, argv)
+        if run_code != 1:
+            errors.append(f"{what}: exited {run_code}, not 1")
+        elif len(run_err.splitlines()) != 1:
+            errors.append(f"{what}: the refusal is not one line on stderr")
+        elif must_name not in run_err:
+            errors.append(f"{what}: the refusal does not name {must_name}: {run_err!r}")
+        elif run_out:
+            errors.append(f"{what}: a refusal still printed a summary on stdout")
+
+    detail = (
+        f"{len(expected_units)} units over one pass of a ledger fixture: units read, every per "
+        f"unit line, the totals, the conflicting rows, the definitions kinds union and every note "
+        f"line checked against a tally computed here off the same text; {len(published)} summary "
+        f"labels matched against the skill's own published block in order; a second fixture "
+        f"proving another pass, another window and the lead's own `pass:` line reach no total, a "
+        f"dispatched unit with no verified line printing as unverified and named on the bounds "
+        f"line, a mismatch result printing as unverified, the ledger line naming this pass's last "
+        f"line, and the three note kinds with no summary line counted rather than dropped; the "
+        f"trades line summed from a trades file and said plainly to be absent without one; "
+        f"{len(refusals)} broken invocations each refused in one line naming what is wrong, with "
+        f"nothing on stdout"
+    )
+    # An honest bound, not a pass: the fixtures are ledger text. This proves the script's
+    # arithmetic, where each note lands and what it refuses, and nothing about a real verification.
+    detail += "; bound: ledger fixtures, not a real pass"
     if errors:
         detail += " | " + "; ".join(errors)
 
@@ -2931,6 +3668,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_ledger_fixed_shape(plugin_path),
         check_runner_mode_set(plugin_path),
         check_plan_inventory(plugin_path, marketplace_root),
+        check_pass_summary(plugin_path, marketplace_root),
         check_no_fork_subagent(plugin_path),
         check_agent_tool_surface(plugin_path, marketplace_root),
         check_agent_model_pinned(plugin_path, marketplace_root),

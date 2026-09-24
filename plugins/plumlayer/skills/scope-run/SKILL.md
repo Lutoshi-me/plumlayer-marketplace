@@ -183,10 +183,13 @@ A newly created scope item is a full row, not a name. Every new item writes:
   respelling of the code either, so `09-21-16` and `092116` are refused too, with a hint naming the
   exact id. Browse the codes with `directory_list_trades` where a package's own `tradeCode` does
   not answer it. Where the work straddles packages, the best single
-  home goes here and each other candidate gets a `packageRole:<trade>` record with role `candidate`
-  and a note in the shape "confirm trade responsibility: could be `<home>` or `<this trade>`"
-  (internal only, never bidder-facing), written in the same batch. The `<trade>` in that predicate
-  is the same catalog code, and the door reads it there too.
+  home goes here and each other candidate gets a `packageRole:<trade>` record whose value is the
+  object `{ role: "candidate", note: "confirm trade responsibility: could be <home> or <this
+  trade>" }`, the note internal only and never bidder-facing, written in the same batch. The roles
+  the door takes are `exclusion`, `general-requirement`, `ve-alternate` and `candidate`, each with
+  an optional `counterparty` and `note`, and `{ retracted: true, reason? }` is the only other value
+  it takes. A bare word is refused and the batch is atomic, so it costs every entry in the batch.
+  The `<trade>` in that predicate is the same catalog code, and the door reads it there too.
 - **description** (optional, zero to three sentences): only what a bidder must know to price the
   line that the name and citation do not already say: the product or method the drawings call
   for, the extent or limits, a rated or special condition. A simple item has none. The citation
@@ -301,6 +304,11 @@ any repo, never uploaded to the project except record files, never recorded as p
   summary takes `<pass id>-pass.md`, since the review already holds `<pass id>.md`. Audience: agent.
 - `names/`: one file per pass, the new item names each unit created, one per line, matched
   against themselves and each other with a local command for overlaps. Audience: machine.
+- `trades/`: one file per pass, the trades each unit's own verification read, appended a unit at a
+  time: one line per trade as `<unit id> trade <catalog id> <count>`, and one line as
+  `<unit id> candidates <count>`, that count being the unit's created subjects carrying at least
+  one candidate trade, each subject counted once however many candidate trades it carries. The
+  pass summary script sums this file, so no runner adds the trades up itself. Audience: machine.
 - `records/`: JSONL files for large batch writes (these do get uploaded, as the write
   mechanism). Audience: machine.
 
@@ -528,6 +536,11 @@ lines.
    a one-line reason and a fix to your arguments, never a reason to write the plan by hand. Never
    open `read-plan.md` yourself; the runners open their own pass.
 
+   Running it again is how a plan changes, and it is safe to run again: it reads the ledger's
+   dispatch lines and the unit ids it wrote last time, keeps every id already dispatched on the
+   same sheet, numbers what is new after the highest id its pass already carries, and never hands
+   an id out twice, so the record's own `scopeItem:<unit id>-` prefixes stay where they are.
+
 <!-- user-facing -->
 Before any reading runs, tell the user, in a few plain sentences, not a table:
 
@@ -573,7 +586,10 @@ nothing else:
    each of that pass's units with your own `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)`,
    reading `count`. That is the third boundary of non-negotiable 5, and it is count-only: never a
    row list. Say the update and Question counts as the runner verified them, and the created
-   counts as your own. Append one `pass:` line to the ledger carrying that pass's verified totals,
+   counts as your own. Those counts are the script's sum of that pass's ledger lines rather than a
+   runner's own addition, so the `pass:` line copies the updated, questions and replied totals
+   straight off the summary, and only the created counts are yours to re-take.
+   Append one `pass:` line to the ledger carrying that pass's verified totals,
    and work from that line from then on rather than from the summary. A mismatch stops the run and
    gets investigated, never papered over.
 4. **Close the window at its boundary.** When every pass of the window has reported and carries
@@ -826,12 +842,16 @@ run_in_background: false
 Project: <projectId>. Window: <1, 2, or 3>.
 Pass: <pass id, or "review-<pass id>", or "boundary">.
 Run folder: <path>. Read plan: <path to read-plan.md>.
+Scripts: <path to the plugin's scripts directory>.
 Run your pass as your definition says, write your summary to <run folder>/reports/<pass id>.md,
 or in window 3 to <run folder>/reports/<pass id>-pass.md, then return it.
 ```
 
 The window 3 path in the template carries that suffix because the pass id and the unit id are one
-string there, so `<pass id>.md` is the name the review's own report already holds.
+string there, so `<pass id>.md` is the name the review's own report already holds. The `Scripts:`
+line is the plugin's own scripts directory, the path you already resolved for your plan script
+calls: the runner sums its pass with the script that sits there, and a runner handed no path would
+have to guess one.
 
 **Reader dispatch** (the runner writes this, once per read unit, in windows 1 and 2):
 
@@ -901,7 +921,7 @@ units read: <unit ids, in reading order>
 per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> verified <yes/no>
 totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n> replied <n>
 trades: <trade id + item count, one per trade; candidates <n>>
-conflicting rows: <id + how each resolved, or "none">
+conflicting rows: <n>, on units <unit ids>, or "none"
 overlap notes: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 unread pages: <sheet + page + reason, one per line, or "none">

@@ -22,11 +22,14 @@ are matched there.
 ## What your dispatch gives you
 
 Pointers only, never pasted text: the project id, the window number, your pass id (or `review-<pass
-id>`, or `boundary`), the run folder path, and the read plan path. Read your own
+id>`, or `boundary`), the run folder path, the read plan path, and the scripts path, the plugin's
+own scripts directory, which your dispatch names on its `Scripts:` line. Read your own
 pass's section of the read plan and nothing else from it: what the pass reads for (the vocabulary,
 the sheet, or, in a review, one catalog trade id), and its units. In windows 1 and 2 a unit is one
 sheet with its sheet number, `fileId`, and 1-based `pageInPdf`; in window 3 a pass carries one
-review unit whose id is the pass id, with the package it reviews on the block's `package:` line. If
+review unit whose id is the pass id, with the package it reviews on the block's `package:` line. A
+unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
+line and in the `verify_unit` prefix; never rebuild it from the pass id and the line's position. If
 a path is missing, say so and stop rather than running
 against a plan you invented. If your pass carries more than twelve read units, stop before
 dispatching anything and say so: the pass is too long to supervise and the plan is wrong. Nothing
@@ -104,6 +107,13 @@ is lost by stopping there, because nothing has run.
    `<run folder>/kinds/<pass-id>.txt`, creating the folder the first time it is needed. Where that
    line reads "none", write nothing. This is what lets the window boundary find every kind a reader
    named without holding any of them itself.
+
+   Also append this unit's trades to `<run folder>/trades/<pass-id>.txt`, one line per trade as
+   `<unit id> trade <catalog id> <count>` and one line as `<unit id> candidates <count>`, the
+   candidates count being the created subjects carrying at least one candidate trade, each subject
+   counted once however many candidate trades it carries. Read those counts off the `verify_unit`
+   result you already have. This is what lets the pass summary script sum the trades without you
+   adding them.
 4. **Match overlaps in a file, not in your context.** As each unit verifies, write that unit's new
    item names, one per line, to `<run folder>/names/<pass-id>.txt`, and find repeats by matching that
    file against itself with a local command rather than by holding the names. Read back only the
@@ -111,8 +121,16 @@ is lost by stopping there, because nothing has run.
    pass: a twelve-unit pass at a hundred items a unit is twelve hundred names, and none of them
    belongs in a model context. Every match travels up as an overlap note. Merging is a person's call
    at the review surface, never yours.
-5. **Write your summary** to `<run folder>/reports/<pass-id>.md` in the shape below, then return
-   it and end.
+5. **Sum the pass with the script; add no number of your own.** Run
+   `python3 '<scripts path>/pass_summary.py' '<run folder>/ledger.md' <window> <pass id>
+   --trades '<run folder>/trades/<pass-id>.txt'` with the Bash tool, single quoted, taking the
+   scripts path off your dispatch. It reads your pass's own `dispatch` and `verified` lines and
+   prints the summary filled in: the units in reading order, each unit's counts, the totals, and
+   every note line placed on the summary line it belongs to. Write that output to
+   `<run folder>/reports/<pass-id>.md` unchanged, return it, and end. You add nothing to those
+   numbers and you re-add none of them: the script sums what you already verified, and a figure you
+   work out beside it is a second answer to a settled question. A refusal names one thing wrong with
+   a line you wrote: fix that line and run it again, never hand-assemble the summary instead.
 
 ## The ledger lines
 
@@ -259,7 +277,7 @@ units read: <unit ids, in reading order>
 per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> verified <yes/no>
 totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n> replied <n>
 trades: <trade id + item count, one per trade; candidates <n>>
-conflicting rows: <id + how each resolved, or "none">
+conflicting rows: <n>, on units <unit ids>, or "none"
 overlap notes: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 unread pages: <sheet + page + reason, one per line, or "none">

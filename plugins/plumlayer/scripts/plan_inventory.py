@@ -34,6 +34,31 @@ The three windows, and what each selects:
   3  one review per package: one pass per row of the packages file, in package order, with the
      packages of one trade kept together. It reads no sheets, so it takes no inventory.
 
+Unit ids across a replan, in windows 1 and 2:
+
+  A unit id is a live subject prefix on the project record. A reader records
+  `scopeItem:<unit id>-<seq>`, the runner verifies that prefix, and the lead counts it, so an id
+  that moved to another sheet on a replan would point at another sheet's work. The plan therefore
+  names the unit id on the unit line itself rather than leaving it to be read off the line's
+  position, and it keeps every id already handed out. Three tiers, in order:
+
+  1  the run ledger beside the plan file (`ledger.md` in the folder `--out` sits in). Every
+     `dispatch <window> <pass> <unit> sheets <...> purpose <...>` line of this window binds that
+     unit id to those sheet numbers. Authoritative, because it is the only append-only record of
+     what was actually dispatched.
+  2  the previous `plan/window-<n>.json`, whose `units` array binds a unit id to an inventory unit
+     key. It covers a unit that was planned and never dispatched. Only window 1 writes that file
+     today, so in window 2 this tier is empty and an id that was planned and never dispatched can
+     still move; nothing is recorded under it, so nothing on the record moves with it.
+  3  new numbers: the next number after the highest any tier names for that pass, taken in the
+     window's own natural order. A number any tier named is never handed out again, so a sheet cut
+     from the plan leaves its id retired.
+
+  The plan file then lists a pass's units by id ascending, so everything already read holds the
+  front of the pass in the order it was read and new work is appended after it. New units are
+  placed in the window's natural order before ids are assigned, so composition still precedes
+  extent among the sheets not yet read.
+
 Usage:
 
     python plan_inventory.py inventory --grid <dir or file> --expect-count 209 --out-dir <dir>
@@ -55,6 +80,9 @@ an empty plan:
   --window-1  the file window 1 wrote: `selected` and `excluded`, both arrays of inventory unit
               keys. A key the inventory does not hold is a refusal, since a file from some other
               run would leave a sheet unread with nothing said about it.
+  ledger.md   found beside the plan file, never named by an argument, and absent on a first plan
+              run. A flag would be a flag the lead can forget, and forgetting it is the failure
+              this reading exists to prevent.
 
 Exit codes:
   0  wrote the files; one bounds line on stdout naming what it read and what it wrote.
@@ -63,7 +91,12 @@ Exit codes:
      some other window takes, an input row with no `tradeCode`, a window 1 file naming a unit key
      the inventory does not hold or naming one as both selected and excluded, an `--include` or
      `--exclude` with no colon or matching no sheet, an inventory file this script did not write,
-     or a window 2 selection that is not a partition of what window 1 left.
+     or a window 2 selection that is not a partition of what window 1 left. Six of them are about
+     a unit id already handed out: a ledger dispatch line for this window whose unit id is not
+     `<pass>-<number>`, one sheet number bound to two unit ids, one unit id bound to two sheet
+     sets, a bound sheet number matching more than one inventory row, a bound unit whose sheet set
+     this plan does not read as one unit of its own, and a bound unit whose sheet now plans under
+     a different pass id.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A file that does not parse whole is a refusal,
@@ -77,6 +110,7 @@ import fnmatch
 import json
 import math
 import os
+import re
 import string
 import sys
 from pathlib import Path
@@ -120,6 +154,14 @@ _WINDOW_2_TYPE_RANK = {name: index for index, name in enumerate(WINDOW_2_SHEET_T
 SELECT_KEYS = {"discipline", "sheetTypes", "patterns"}
 
 WINDOW_1_FILE = ("plan", "window-1.json")
+
+# The run ledger sits beside the plan file, and its `dispatch` lines are the only append-only
+# record of which unit id was actually handed out.
+LEDGER_FILE = "ledger.md"
+
+# A unit id is a pass id, a hyphen, and a positive number. The pass id may itself carry a hyphen
+# (a window 3 review id does), so the number is taken off the end.
+_UNIT_ID_RE = re.compile(r"^(?P<pass>\S+)-(?P<number>[1-9][0-9]*)$")
 
 
 class PlanError(Exception):
@@ -649,6 +691,223 @@ def _read_window_1(path: Path, rows: list[dict]) -> tuple[set[str], int, int]:
 
 
 # --------------------------------------------------------------------------- #
+# Unit ids already handed out
+# --------------------------------------------------------------------------- #
+
+def _parse_unit_id(unit_id: str) -> tuple[str, int] | None:
+    """The pass component and the number, or None where the string is not a unit id."""
+    m = _UNIT_ID_RE.match(unit_id)
+    if m is None:
+        return None
+    return m.group("pass"), int(m.group("number"))
+
+
+def _window_file(out_parent: Path, window: int) -> Path:
+    return out_parent / "plan" / f"window-{window}.json"
+
+
+def _read_ledger_units(path: Path, window: int) -> dict[str, tuple[str, ...]]:
+    """
+    This window's `dispatch` lines, as unit id -> the sheet numbers the line names. A missing file
+    is no bindings, which is right for the first plan run of a window: the ledger's own
+    `phase: plan approved` line is only appended after the window 1 plan is written.
+
+    The lead's own lines (`dispatch:`, `pass:`, `phase:`) are skipped by the colon after the
+    keyword; another window's lines are skipped by the window field. The same unit dispatched twice
+    on the same sheets is a resume and binds once.
+    """
+    if not path.is_file():
+        return {}
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
+
+    by_unit: dict[str, tuple[str, ...]] = {}
+    owner_of_sheet: dict[str, str] = {}
+    two_owners: list[str] = []
+    want = str(window)
+
+    for raw in text.splitlines():
+        parts = raw.strip().split()
+        if len(parts) < 5 or parts[0] != "dispatch":
+            continue
+        if parts[1] != want:
+            continue
+        unit_id = parts[3]
+        if parts[4] != "sheets":
+            raise PlanError(
+                f"{path}: a window {window} dispatch line names no `sheets` field, so its unit id "
+                f"binds to nothing: {raw.strip()[:120]}"
+            )
+        if _parse_unit_id(unit_id) is None:
+            raise PlanError(
+                f"{path}: the window {window} dispatch line for {unit_id!r} does not carry a unit "
+                f"id of the shape <pass>-<number>, so the sheets it read cannot be bound to an id"
+            )
+        rest = parts[5:]
+        if "purpose" in rest:
+            rest = rest[: rest.index("purpose")]
+        sheets = tuple(sorted({s.strip() for s in " ".join(rest).split(",") if s.strip()}))
+        if unit_id in by_unit and by_unit[unit_id] != sheets:
+            raise PlanError(
+                f"{path}: unit {unit_id} is dispatched on {', '.join(by_unit[unit_id]) or 'no sheet'} "
+                f"and on {', '.join(sheets) or 'no sheet'}; one unit id reads one set of sheets"
+            )
+        by_unit[unit_id] = sheets
+        for sheet in sheets:
+            first = owner_of_sheet.setdefault(sheet, unit_id)
+            if first != unit_id:
+                two_owners.append(f"{sheet} under {first} and {unit_id}")
+
+    if two_owners:
+        raise PlanError(
+            f"{path}: {len(two_owners)} sheet number(s) dispatched under two unit ids in window "
+            f"{window} ({_named(two_owners)}); the record carries a subject prefix for each"
+        )
+    return by_unit
+
+
+def _read_plan_file_units(path: Path, window: int) -> dict[str, str]:
+    """
+    The `units` array the last plan run of this window wrote: unit id -> inventory unit key. A
+    missing file, or one from a window that does not write one, is no bindings.
+    """
+    if not path.is_file():
+        return {}
+    data = _read_json(path, f"the window {window} plan file")
+    if not isinstance(data, dict) or data.get("window") != window:
+        raise PlanError(f"{path} is not a window {window} file written by this script")
+    units = data.get("units")
+    if units is None:
+        return {}
+    if not isinstance(units, list):
+        raise PlanError(f"{path}: `units` is not a list of unit id and unit key pairs")
+    bindings: dict[str, str] = {}
+    for index, entry in enumerate(units, 1):
+        if not isinstance(entry, dict):
+            raise PlanError(f"{path}: `units` entry {index} is not an object")
+        unit_id = entry.get("id")
+        unit_key = entry.get("unitKey")
+        if not isinstance(unit_id, str) or _parse_unit_id(unit_id) is None:
+            raise PlanError(f"{path}: `units` entry {index} carries no unit id of the shape <pass>-<number>")
+        if not isinstance(unit_key, str) or not unit_key:
+            raise PlanError(f"{path}: `units` entry {index} carries no `unitKey`")
+        bindings[unit_id] = unit_key
+    return bindings
+
+
+def _bind_unit_ids(
+    passes: list[dict],
+    rows: list[dict],
+    ledger_units: dict[str, tuple[str, ...]],
+    plan_file_units: dict[str, str],
+    ledger_path: Path,
+) -> dict[str, int]:
+    """
+    Put a unit id on every planned unit, keeping every id either tier already handed out and
+    numbering the rest after the highest number that pass has ever carried. Returns the counts the
+    bounds line and the totals block both say out loud, so the file and the line cannot disagree.
+
+    Every planned unit is one sheet, which is what makes the binding decidable: a ledger unit whose
+    sheet set resolves to exactly one planned sheet keeps its id, one that resolves to none is
+    retired, and one that resolves to more than one, or to some of its sheets and not all, is a
+    refusal. There is no honest way to split an id whose prefix already carries rows.
+    """
+    planned_keys = {row["unitKey"] for plan_pass in passes for row in plan_pass["units"]}
+
+    rows_by_sheet: dict[str, list[dict]] = {}
+    for row in rows:
+        rows_by_sheet.setdefault(_text(row.get("sheetNumber")), []).append(row)
+
+    key_of_id: dict[str, str] = {}
+    id_of_key: dict[str, str] = {}
+    source_of_id: dict[str, str] = {}
+    named_ids: set[str] = set()
+
+    for unit_id, sheets in ledger_units.items():
+        named_ids.add(unit_id)
+        matched: list[str] = []
+        for sheet in sheets:
+            hits = rows_by_sheet.get(sheet, [])
+            if len(hits) > 1:
+                raise PlanError(
+                    f"{ledger_path}: unit {unit_id} was dispatched on sheet {sheet}, which the "
+                    f"inventory holds {len(hits)} times; a sheet number alone cannot say which row "
+                    f"that unit read"
+                )
+            if hits:
+                matched.append(hits[0]["unitKey"])
+        in_cut = [key for key in matched if key in planned_keys]
+        if not in_cut:
+            continue
+        if len(in_cut) != len(sheets):
+            raise PlanError(
+                f"{ledger_path}: unit {unit_id} was dispatched on {', '.join(sheets)} and this plan "
+                f"reads {len(in_cut)} of them as its own unit; the record already carries rows "
+                f"under that id, so the id can be neither split nor kept"
+            )
+        key_of_id[unit_id] = in_cut[0]
+        id_of_key[in_cut[0]] = unit_id
+        source_of_id[unit_id] = "ledger"
+
+    for unit_id, unit_key in plan_file_units.items():
+        named_ids.add(unit_id)
+        if unit_id in key_of_id or unit_key in id_of_key or unit_key not in planned_keys:
+            continue
+        key_of_id[unit_id] = unit_key
+        id_of_key[unit_key] = unit_id
+        source_of_id[unit_id] = "plan file"
+
+    high_water: dict[str, int] = {}
+    for unit_id in named_ids:
+        parsed = _parse_unit_id(unit_id)
+        if parsed is None:
+            continue
+        pass_component, number = parsed
+        high_water[pass_component] = max(high_water.get(pass_component, 0), number)
+
+    kept_by_source = {"ledger": 0, "plan file": 0}
+    new_count = 0
+    carried: set[str] = set()
+
+    for plan_pass in passes:
+        units = plan_pass["units"]
+        bound = [row for row in units if row["unitKey"] in id_of_key]
+        unbound = [row for row in units if row["unitKey"] not in id_of_key]
+        bound.sort(key=lambda row: _parse_unit_id(id_of_key[row["unitKey"]]))
+        plan_pass["units"] = bound + unbound
+
+        for part_id, part_units in _split_pass(plan_pass["id"], plan_pass["units"]):
+            next_number = high_water.get(part_id, 0) + 1
+            for row in part_units:
+                existing = id_of_key.get(row["unitKey"])
+                if existing is not None:
+                    pass_component, _number = _parse_unit_id(existing)
+                    if pass_component != part_id:
+                        raise PlanError(
+                            f"unit {existing} read sheet {_text(row.get('sheetNumber'))} and this "
+                            f"plan puts that sheet in pass {part_id}; a dispatched unit cannot "
+                            f"change pass, so re-cut the window rather than renumbering it"
+                        )
+                    row["unitId"] = existing
+                    kept_by_source[source_of_id[existing]] += 1
+                else:
+                    row["unitId"] = f"{part_id}-{next_number}"
+                    next_number += 1
+                    new_count += 1
+                carried.add(row["unitId"])
+
+    return {
+        "kept": kept_by_source["ledger"] + kept_by_source["plan file"],
+        "ledger": kept_by_source["ledger"],
+        "planFile": kept_by_source["plan file"],
+        "new": new_count,
+        "retired": len(named_ids - carried),
+    }
+
+
+# --------------------------------------------------------------------------- #
 # Passes
 # --------------------------------------------------------------------------- #
 
@@ -674,14 +933,18 @@ def _split_pass(pass_id: str, units: list[dict]) -> list[tuple[str, list[dict]]]
     return parts
 
 
-def _unit_line(number: int, row: dict, show_file: bool) -> str:
+def _unit_line(label: str, row: dict, show_file: bool) -> str:
+    """
+    A planned unit's label is its unit id, which is what the runner puts on the ledger line and in
+    the `verify_unit` prefix. A left-out sheet has no unit, so its label is a plain ordinal.
+    """
     title = _text(row["pageTitle"]) or "(no title)"
     where = f"page {row['pageInPdf']}"
     if show_file:
         # The file id only earns its place where the set spans more than one file and the page
         # number alone would not say which document to open.
         where = f"file {_text(row.get('fileId')) or '(no file)'}, " + where
-    return f"{number}. {row['sheetNumber']}, {where}: {title}"
+    return f"{label}. {row['sheetNumber']}, {where}: {title}"
 
 
 def _review_line(number: int, review: dict) -> str:
@@ -944,7 +1207,8 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
     lines.append("")
     lines.append("Written by scripts/plan_inventory.py off this window's inputs.")
     lines.append("The unit lines are copied from the sheet grid and the packages file. Run the")
-    lines.append("script again rather than editing this file.")
+    lines.append("script again rather than editing this file: a unit id already dispatched keeps")
+    lines.append("its number, and a new sheet is numbered after the highest id its pass carries.")
     lines.append("")
     lines.append(f"## Window {window}")
     lines.append("")
@@ -970,7 +1234,9 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
             lines.append("")
             for number, unit in enumerate(part_units, 1):
                 lines.append(
-                    _review_line(number, unit) if window == 3 else _unit_line(number, unit, show_file)
+                    _review_line(number, unit)
+                    if window == 3
+                    else _unit_line(unit["unitId"], unit, show_file)
                 )
             lines.append("")
 
@@ -986,7 +1252,7 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
         lines.append(f"sheets: {len(block['sheets'])}")
         lines.append("")
         for number, row in enumerate(block["sheets"], 1):
-            lines.append(_unit_line(number, row, show_file))
+            lines.append(_unit_line(str(number), row, show_file))
         lines.append("")
 
     lines.append("## Nothing read for")
@@ -1000,6 +1266,11 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
     lines.append("## Totals")
     lines.append("")
     lines.append(f"units planned {total_units}, passes {total_passes}")
+    if window in (1, 2):
+        ids = plan["unitIds"]
+        lines.append(
+            f"unit ids kept {ids['kept']}, new {ids['new']}, retired {ids['retired']}"
+        )
     if window == 1:
         lines.append(
             f"sheets left out {plan['excludedCount']}, sheets this window does not read "
@@ -1126,9 +1397,30 @@ def plan(args) -> str:
         result = _window_3(packages)
         result["packages"] = len(packages)
 
+    if window in (1, 2):
+        # Both tiers sit in the run folder the plan file is written into, so neither is an argument
+        # the lead can forget. A window 3 review id is derived from its own trade code and ordinal
+        # and is already the same string on every run, so nothing here touches it.
+        ledger_path = args.out.parent / LEDGER_FILE
+        result["unitIds"] = _bind_unit_ids(
+            result["passes"],
+            rows,
+            _read_ledger_units(ledger_path, window),
+            _read_plan_file_units(_window_file(args.out.parent, window), window),
+            ledger_path,
+        )
+
     body, total_units, total_passes = _render(window, result, rows, show_file)
     payload = body.encode("utf-8")
     _write_atomically(args.out, payload)
+
+    ids_clause = ""
+    if window in (1, 2):
+        ids = result["unitIds"]
+        ids_clause = (
+            f", ids kept {ids['kept']} (ledger {ids['ledger']}, plan file {ids['planFile']}), "
+            f"ids new {ids['new']}, ids retired {ids['retired']}"
+        )
 
     written = len(payload)
     if window == 1:
@@ -1138,6 +1430,13 @@ def plan(args) -> str:
                     "window": 1,
                     "selected": result["selectedKeys"],
                     "excluded": result["excludedKeys"],
+                    # What this run assigned, so a replan that the ledger cannot answer for still
+                    # keeps a unit id that was planned and never dispatched.
+                    "units": [
+                        {"id": row["unitId"], "unitKey": row["unitKey"]}
+                        for plan_pass in result["passes"]
+                        for row in plan_pass["units"]
+                    ],
                 },
                 indent=2,
             )
@@ -1148,7 +1447,7 @@ def plan(args) -> str:
         return (
             f"wrote {args.out} and {window_1_path}: window 1, units {total_units}, passes "
             f"{total_passes}, excluded {result['excludedCount']}, unassigned "
-            f"{len(result['unassigned'])}; {written:,} bytes"
+            f"{len(result['unassigned'])}{ids_clause}; {written:,} bytes"
         )
 
     if window == 2:
@@ -1164,7 +1463,7 @@ def plan(args) -> str:
             f"equals distinct sheets {result['distinctSheets']}), sheets window 1 selected "
             f"{result['window1Selected']}, sheets window 1 left out {result['window1Excluded']}, "
             f"sheets in the inventory {len(rows)}, sheets by type {by_type}, sheets typed other or "
-            f"untyped {result['otherOrUntyped']}{unordered}; {written:,} bytes"
+            f"untyped {result['otherOrUntyped']}{ids_clause}{unordered}; {written:,} bytes"
         )
 
     return (
