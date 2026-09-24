@@ -681,22 +681,27 @@ disk the whole time.
    drawing sheet, so it does not attach to a `deliveryId`. Misfiled earlier as a drawing? Fix it in
    place with `update_file(projectId, fileId, kind: "document")` rather than re-uploading:
    reclassifying away from `drawing` sweeps its stray page rows in the same call.
-2. **Start the extraction: one job, never N.** Call `extract_spec_toc(projectId, fileIds, issueLabel?)`.
-   Pass the single manual's `fileId` for a combined-manual delivery. For a folder-of-divisions delivery
-   (`Division 01.pdf`, `Division 02.pdf`, ... instead of one bound manual), pass every division PDF's
-   `fileId` together in the SAME call: the extraction unions across them into one section set; never
-   call it once per division file. It returns `{jobId, status}` immediately.
+2. **Filing starts the read; ask for its job one file at a time.** `register_file`, `register_files`,
+   or `update_file` to `kind: "document"` starts one spec section read per document PDF on the server,
+   held about two minutes so drawing recognition filed alongside it goes first. For each filed file,
+   call `extract_spec_toc(projectId, fileIds: [<that one fileId>])`: it returns the read filing
+   started (`alreadyActive: true`) rather than starting another, and that is the `jobId` to poll.
+   Never pass several `fileIds` together. A folder-of-divisions manual (`Division 01.pdf`,
+   `Division 02.pdf`, ... instead of one bound manual) is one read per division file, each with its
+   own `jobId`; nothing joins them, and two files holding the same section follow latest write like
+   any other slot. A file that is not a PDF gets no read. A finished read is never repeated; a
+   failed or stale one starts again on the same call.
 3. **Poll `extract_spec_toc_status(projectId, jobId)`** every ~3-5s under the same loop rule as
    step 5: the only exits are `succeeded`, `failed`, or `stale`, never the clock or your own
    judgment. On `failed`, read `error`, report it, and retry only when the error names something a
-   retry changes. On `stale`, re-call `extract_spec_toc` on the same file set to restart. Any report
+   retry changes. On `stale`, re-call `extract_spec_toc` on that one `fileId` to restart. Any report
    of where the job stands quotes the last payload received and its time.
 4.
 <!-- user-facing -->
-**Report the counts honestly, not just "N sections found."** From the succeeded job's `report`:
-   sections found, files opened vs failed (a multi-file run can succeed overall while still naming one
-   corrupt division PDF in `failedFiles`: that's a finding for the user, never a silent retry
-   loop), and the completeness-diff, mismatch, and could-not-read counts. **`sectionsFound` counts only
+**Report the counts honestly, not just "N sections found."** One line per filed file, from its
+   succeeded job's `report`: sections found, and the completeness-diff, mismatch, and could-not-read
+   counts. A single-file read that could not open its file never reaches `succeeded`: it fails with
+   the reason, which is a finding for the user, never a silent retry loop. **`sectionsFound` counts only
    footer-confirmed sections** (the per-page CSI-code footer read). The reader also reads the
    manual's own table of contents: `tocDeclaredCount` is what it lists, `tocPagesRead` the pages it
    read, and `tocOnlyCount` the sections the table of contents names that no page footer confirmed.
@@ -712,11 +717,14 @@ disk the whole time.
    tree, with no confirming footer, does NOT add to any count; it surfaces through the completeness
    findings, never as a silent gap in the number you report.
 <!-- /user-facing -->
-5. **Verify.** Call `search(projectId, predicate: "inDivision")` and confirm the recorded row
-   count equals the job's `sectionsFound` plus `tocOnlyCount` exactly (`tocOnlyCount` is 0 when
-   the report does not carry it): completeness and
-   could-not-read findings ride their own predicate (`hasCompletenessStatus`) and never appear in
-   this read. A mismatch stops the run and gets reported, never a guessed correction.
+5. **Verify, per file.** For each read that succeeded with `written.alreadyWritten: false`, confirm
+   `written.byPredicate.inDivision` equals that job's `sectionsFound` plus `tocOnlyCount` exactly
+   (`tocOnlyCount` is 0 when the report does not carry it). A read whose `sectionsFound` plus
+   `tocOnlyCount` is 0 found no spec sections in that file and wrote nothing: report that file as
+   not a spec book, not as a failure. Then `search(projectId, predicate: "inDivision")` returns the
+   sum over every read that wrote: completeness and could-not-read findings ride their own
+   predicate (`hasCompletenessStatus`) and never appear in this read. A mismatch stops the run and
+   gets reported, never a guessed correction.
 
 **If `extract_spec_toc` / `extract_spec_toc_status` don't appear in your tool list**, the same
 session-reload rule from step 7 applies. Start a fresh session rather than
