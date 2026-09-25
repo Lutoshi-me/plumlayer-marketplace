@@ -3769,8 +3769,8 @@ CONNECTOR_TOOL_PREFIX = "mcp__plugin_plumlayer_plumlayer__"
 # arm that would flag the mismatch reads the reason here instead.
 TOOLS_PROHIBITION_ONLY = {
     "scope-round-runner": {
-        # The runner dispatches readers; it cites nothing and reads no scope list itself.
-        "cite_source", "list_scope_items",
+        # The runner dispatches readers; it reads no scope list itself.
+        "list_scope_items",
     },
     "scope-reviewer": {
         # The reviewer adds what no row carries; retiring a row is the estimator's call.

@@ -85,8 +85,8 @@ is lost by stopping there, because nothing has run.
    - **Items, from the reader.** The reader's own `created:` figure, its count of scope items, goes
      on the `verified` line as `items`, carried as reported.
    - **Sent and landed, from the reader.** The reader's `sent:` and `landed:` figures cover every
-     write call it made for the unit, its batch, any `cite_source`, and any individual record
-     call. Carry them onto the `verified` line as reported.
+     write call it made for the unit, its batch with the citations it carries, and any individual
+     record call. Carry them onto the `verified` line as reported.
    - **Updated, by sheet.** Every subject the reader's `updated subjects:` line names must appear
      among the subjects citing one of the unit's sheets in the `verify_unit` result. One it names
      that the result does not carry is a mismatch. A new citation on a pre-existing item counts as
