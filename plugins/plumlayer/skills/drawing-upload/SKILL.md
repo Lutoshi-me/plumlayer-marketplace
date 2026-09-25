@@ -339,6 +339,10 @@ did not observe that. What the server says on each poll:
   sheet number, title, discipline, or type that a person or an agent entered still stands. The pass
   left each one as it is. When `pages` is above zero, name those pages to the user with the value
   kept on each, and ask whether each one is right. Never correct one yourself.
+- On a `succeeded` pass, `written.laterIssueKept.sheets` counts the sheets where a newer drawing
+  issue already holds the title, discipline, or type this pass read, so this pass wrote none of them.
+  When it is above zero, tell the user this issue was read after a newer one and that the newer
+  issue's values stand on those sheets. Do not record this issue's values over them.
 - `report.pagesUnread` lists pages the pass did not read at all (each such `unnamedPages` row says
   why in `unread`). Those pages are not in `enteredValuesKept`; read them yourself in step 6.
 
