@@ -49,7 +49,10 @@ The three windows:
    package's own rows and candidates, the definition codes that resolve to it, the spec sections
    under its codes, and its catalog name and aliases. Those are the words the review searches the
    set's text for, and a hit no row carries becomes a row, cited to a page the reviewer opened for
-   it. A package's page is finished when its review is.
+   it. The same review finds where the manual and the drawings are silent on each other: a
+   section on the package whose work no sheet shows, and work on the package's rows that no page
+   of the manual names. Each is a Question, cited to the section or the sheets. A package's page
+   is finished when its review is.
 
 A run can stop at the end of any window, inside window 2 at any pass boundary, and inside window 3
 at any package boundary, and resume later with nothing lost.
@@ -811,7 +814,9 @@ Report to the user, in plain words:
 - **What you would like them to look at**: the items you weren't sure how finely to split, the
   document defects found (contradictions, missing schedule rows, duplicate sheets), and the
   assumed items that don't fit this job, each counted by kind and the leading ones named.
-  Document defects worth sending to the design team are the open Questions on each trade's page.
+  Document defects worth sending to the design team are the open Questions on each trade's page,
+  among them the sections of the manual no sheet shows and the work on the sheets the manual never
+  names.
 - **Trade responsibility to confirm**: how many items sit in more than one trade's package
   (count each item once, however many packages it sits in), the leading trades named, and where
   to review them (the "Trade responsibility to confirm" section in each affected trade's package
@@ -983,6 +988,10 @@ trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
+silent sections: <section code + the Question id + the words searched, one per line, or "none">
+unspecified work: <row family + the Question id + the words searched, one per line, or "none">
+sections not checked: <section code + the reason, one per line, or "none">
+families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 

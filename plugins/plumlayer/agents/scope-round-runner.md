@@ -225,7 +225,9 @@ with one unit and three differences.
   that file into it, and never the package's `codes`: the reviewer reads those off the record, so
   the codes it matches against have one source.
 - **Verify against the pages the review opened.** The reviewer names every page it opened on its
-  `pages opened:` line, and those sheets are what you check:
+  `pages opened:` line, and those sheets are what you check. A line naming `section <code>` is a
+  manual page the review read to judge a section, not a sheet, and never goes into the call; a
+  review whose only pages were manual pages is one that opened no page, below:
 
   ```text
   verify_unit(projectId,

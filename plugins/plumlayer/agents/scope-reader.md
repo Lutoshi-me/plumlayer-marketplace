@@ -124,6 +124,8 @@ of them is ever trimmed.
    the work; whatever the sheet in front of you is, each row goes to the trade that would bid it. A
    trade is the catalog id copied verbatim off `solicitation_list_packages`, exactly as the package
    prints it, spaces and all (`09 21 16`; `directory_list_trades` browses the catalog itself). It is
+   a package's `tradeCode`, never an entry of its `codes`: a row homed to a section code the package
+   only lists is read by no package's review, since a read by trade matches the code exactly. It is
    never a word for the trade, so a row written
    `drywall` is refused, and never a respelling of the code, so `09-21-16` and `092116` are refused
    too, with a hint naming the exact id. Where you cannot tell which of two or more trades owns
