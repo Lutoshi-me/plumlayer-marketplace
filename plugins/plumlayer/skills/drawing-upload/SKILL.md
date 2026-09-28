@@ -264,8 +264,10 @@ Every file you upload in step 4 attaches to this one `deliveryId`.
    ```bash
    curl -X PUT "$SIGNED_URL" -H "Content-Type: application/pdf" --data-binary @"$LOCAL_PDF_PATH"
    ```
-3. `register_file(projectId, fileId, filename, contentType, deliveryId)`: always pass `deliveryId` so
-   chronology comes from the delivery, not upload order. Idempotent: a retried call for the same
+3. `register_file(projectId, fileId, filename, contentType, kind: "drawing", deliveryId)`: always pass
+   `kind: "drawing"` and `deliveryId`. The kind files it as a drawing at once, so section 5 can read its
+   sheets; without it the server sorts the file first. The delivery makes chronology come from the
+   delivery, not upload order. Idempotent: a retried call for the same
    `fileId` returns the existing row. Rejects `not_found` (PUT didn't land), `empty`, or `oversize`
    (2 GB ceiling per file): if any of these fire, stop and report rather than retrying blindly.
 
@@ -287,8 +289,8 @@ calls of at most 250:
      curl -X PUT "$url" -H "Content-Type: application/pdf" --data-binary @"$LOCAL_DIR/$filename"
    done
    ```
-3. `register_files(projectId, files, deliveryId)`: pass every file's `{fileId, filename,
-   contentType?}` plus the same `deliveryId` from step 3, so chronology comes from the delivery, not
+3. `register_files(projectId, files, kind: "drawing", deliveryId)`: pass every file's `{fileId,
+   filename, contentType?}`, `kind: "drawing"`, and the same `deliveryId` from step 3, so chronology comes from the delivery, not
    upload order. Answers per file, never all-or-nothing: `{registered, failed, counts}`.
    `counts.registered` must equal the number of files you sent. Anything in `failed` names its
    `fileId`, `filename`, `reason`, and `message`: re-PUT and re-register only those files, by
