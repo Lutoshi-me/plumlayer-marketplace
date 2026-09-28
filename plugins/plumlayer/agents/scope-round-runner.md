@@ -38,8 +38,10 @@ is lost by stopping there, because nothing has run.
 ## Pass mode
 
 1. **Write your pass brief** at `<run folder>/briefs/<pass-id>.md` if it is not already there: what
-   the pass reads for, the content families it carries, and the subject prefix scheme. That is the
-   whole of what you write before your first unit, and the whole of what a reader opens off disk.
+   the pass reads for, the content families it carries, and the subject prefix scheme. Create
+   `<run folder>/trades/<pass-id>.txt` empty beside it if it is not already there, so the summary
+   script finds it even when the pass stops before any unit verifies. That is the whole of what you
+   write before your first unit, and the brief is the whole of what a reader opens off disk.
    The mandates are not in the brief. They live in the `scope-reader` and `scope-reviewer` agent
    definitions and are never restated, trimmed, or overridden here.
 2. **Run your units in reading order, one at a time.** You dispatch exactly one agent type,
@@ -68,7 +70,21 @@ is lost by stopping there, because nothing has run.
    arrive in the message wrote it first to `<run folder>/reports/<unit-id>.md`: open that file and
    verify off it. A unit whose report file is also absent is re-run on its own unit: whatever it
    already recorded is on the record, and the re-run creates or updates against the live list, so
-   nothing is created twice. The dispatch carries the project id, the window, the pass id, the unit
+   nothing is created twice.
+
+   A reader that stops answering partway is ended by the client, not by you: a reply that goes
+   silent for five minutes is retried once, and a reader with no progress for ten minutes is
+   stopped. A stopped reader's call comes back as an error whose whole text is
+   `[Request interrupted by user for tool use]`. While you are still running, that text never means
+   the user interrupted, since a user's interrupt stops you too: it means the reader stopped
+   answering. Treat it as a reader with no report: open its report file, and where that is absent,
+   append `note <window> <pass> <unit> deviation <sheet> reader stopped answering, read again once`
+   and re-run the unit once, its `dispatch` line appended again first. A unit whose second reader
+   also stops answering is not dispatched again by you: append
+   `note <window> <pass> <unit> unread <sheet> reader stopped answering twice`, write no `verified`
+   line for it, and stop the pass there as a mismatch does, going straight to your summary. The unit
+   stays dispatched with no `verified` line, so the next dispatch of the pass starts at it and reads
+   the units after it. The dispatch carries the project id, the window, the pass id, the unit
    id, what the pass reads for, the unit's pages (sheet number, `fileId`, 1-based `pageInPdf`), the
    run folder path, and the pass brief path. Paste nothing from that file into it. The unit id is
    the unit's run-prefix, so concurrent readers can never collide on a created subject.
@@ -267,6 +283,8 @@ with one unit and three differences.
   to wait for another agent or to do nothing. A dispatch that comes back with an agent id is waited
   on, not worked around, and a report from an agent you did not dispatch is not a report you verify
   against.
+- Dispatch a unit a third time. A reader that stopped answering is read again once; a second stop
+  ends the pass.
 - Dispatch an agent with nothing real to give it. A reader is dispatched only with a unit and its
   pages, a reviewer only with a package; a turn with nothing left to dispatch ends by returning to
   your summary or moving to the next step, never by a placeholder call carrying a "do nothing",

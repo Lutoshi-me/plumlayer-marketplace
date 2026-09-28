@@ -373,6 +373,16 @@ the report, written before it returned; open that file rather than re-running th
 report file is also absent is re-run on its own unit, against the live list, so nothing is created
 twice.
 
+An agent that stops answering partway is ended by the client within about ten minutes, and its
+dispatch comes back as an error whose whole text is `[Request interrupted by user for tool use]`.
+While the caller is still running, that is never the user: their interrupt would have stopped the
+caller too. It is an agent that stopped answering. A reader that stops is read again once by its
+runner, as the runner's definition says, and a second stop ends that pass. A waiting runner is
+never ended for its reader's silence, so a runner that comes back this way stopped on its own
+reply: start no further pass and check in at once, naming the pass and its sheets. On the
+go-ahead, dispatch that pass again; its runner skips every unit already verified. Every further
+read of a sheet that stopped waits for the user's go-ahead.
+
 Reports travel upward in a fixed short shape, counts and named anomalies only (the shapes are
 given with the dispatch templates below). A runner's summary is what the lead reads when that pass
 reports, verified against the record with the lead's own count queries and written down as one
@@ -400,6 +410,12 @@ Resumption is how a run continues after a stop at a boundary, and crash and mult
 is never offered to the user as a way to manage cost, and the check-in never suggests it.
 
 ## 1. Preconditions
+
+Before any of these, a resume included, run `claude --version`. The run leans on the client to end
+an agent that stops answering: an older client has been seen waiting over an hour on one reader,
+with the whole run waiting behind it. Below 2.1.283, stop and ask the user to update Claude Code
+first. Where the command is not found, ask the user once to confirm their Claude Code is up to date
+before going on.
 
 1. **Project exists and is the user's intent.** `list_projects`, confirm which project with the
    user, get its `projectId`. No project → hand off to `project-setup`.
@@ -613,7 +629,11 @@ nothing else:
    straight off the summary, and only the created counts are yours to re-take.
    Append one `pass:` line to the ledger carrying that pass's verified totals,
    and work from that line from then on rather than from the summary. A mismatch stops the run and
-   gets investigated, never papered over.
+   gets investigated, never papered over. So does a summary whose `per unit` line reads
+   `verified no` for a unit its `unread pages` line names as stopped answering twice: start no
+   further pass, check in at once naming that sheet, and on the go-ahead dispatch that pass again,
+   which starts at that sheet and reads the ones after it. Once that unit reads `verified yes`, the
+   earlier stop is history on the summary and stops nothing.
 4. **Close the window at its boundary.** When every pass of the window has reported and carries
    its `pass:` line, dispatch one more runner with `boundary` in place of the pass id. It scans the
    window's new items for the same work captured by two passes that ran alongside each other,
@@ -1017,7 +1037,10 @@ in plain sentences:
   plumlayer.com.
 - What is defined now that wasn't before, and anything the next window depends on.
 - Anything that went sideways: a count that didn't match and how you fixed it, a page you couldn't
-  read, a pass that stopped. Say it plainly.
+  read, a pass that stopped. Say it plainly. A sheet whose reading stopped partway is named with
+  what happened to it: "Reading A-5.01 stopped partway, so I read it again from the start and it
+  finished", or, where it stopped twice, "Reading A-5.01 stopped partway twice, so I stopped there.
+  Everything before it is in. Go ahead and I'll try that sheet again."
 - What comes next in one sentence, what it will leave out, and the ask: proceed, adjust, or pause.
   A pause here loses nothing; the run picks up where it stopped.
 
