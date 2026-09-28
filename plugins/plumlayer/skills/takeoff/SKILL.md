@@ -287,12 +287,14 @@ marks summed, so the marks are the takeoff.
   - **a refusal you cannot explain**: stop the run rather than retrying blind.
 - **Judgment calls ride the trail.** A border-case instance you counted carries the call in its
   own evidence; exclusions shaped by judgment are recorded with the census reconciliation. (A
-  dedicated way to raise a Question on a record is coming to the verbs; until it exists, the trail and the
-  report are where your unsureness lives, and it must live somewhere. Silent confidence you do
-  not have is the one dishonesty this skill cannot absorb. When that way ships, it stays about
-  the project, never about a Plumlayer failure: a failed call is triaged above and reported,
-  never turned into a Question. Question text is plain estimator words, per
-  docs/plugin-text-style.md.)
+  way to flag a mark for a person's check is coming to the verbs; until it exists, the trail and
+  the report are where your unsureness lives, and it must live somewhere. Silent confidence you
+  do not have is the one dishonesty this skill cannot absorb. Unsureness about your own count is
+  never a Question: a Question is a draft RFI about the project, never about a Plumlayer
+  failure, and a failed call is triaged above and reported, never turned into a Question.
+  Question text is plain estimator words, and every Question meets the standard the
+  `ask_question` verb states: a title, a citation for every place it names, and only what is
+  worth the design team's time.)
 
 ## 8. Verify by reading back
 
@@ -388,7 +390,7 @@ in that run's evidence and report, never here.
   real use makes redo common, a deliberate revision path for a whole condition's marks (and a
   retirement path for legacy records) is a verb-surface question, not something this skill
   improvises.
-- **A way to raise a Question on writes.** A first-class way for a write to carry "check this one" (visible
+- **A way to flag a mark for a person's check.** A first-class way for a write to carry "check this one" (visible
   at the true location on the sheet) is designed but not yet in the verbs; the trail + report
   carry it meanwhile. Adopt it here when it ships.
 - **Untyped sets.** Sheet discovery leans on `sheetType` records from drawing-upload; the

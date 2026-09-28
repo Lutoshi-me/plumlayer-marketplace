@@ -1,7 +1,7 @@
 ---
 name: project-record
 description: >
-  Read, search, review, or add entries to a Plumlayer project record: the drawing set, open
+  Read, search, review, or add records to a Plumlayer project record: the drawing set, open
   questions, scope items, and takeoff data. Use when the user asks "what's in my
   project" or says "/project-record". Drives the read verbs (set_grid, search,
   list_scope_items, list_questions, search_set_text, set_text_status) and write verbs (record,
@@ -35,10 +35,11 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
 - A field holds the latest write, by anyone, with its trail. Supersede freely, naming what your
   entry replaces with `supersedesId`, whether it's your own prior read or something a person set;
   if you're not sure your read should stand over what's there, ask instead of overwriting it blind.
-- Raise a Question, with a title and a citation, for what you are unsure of. That is what
-  reaches a person for judgment, and human sign-off still gates what leaves the building: an
-  ITB or package send, an RFI, anything published outside, a bid. Nothing leaves unsigned;
-  nothing enters untraced.
+- Raise a Question only for a draft RFI that meets the standard the `ask_question` verb
+  states; what you are unsure of in your own reading goes on the record as your reading, with its
+  sources, or to the user in the conversation. Human sign-off still gates what leaves the
+  building: an ITB or package send, an RFI, anything published outside, a bid. Nothing leaves
+  unsigned; nothing enters untraced.
 
 ## The verbs
 **Identity / discovery**
@@ -61,10 +62,13 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   nextOffset` while `truncated` is true rather than asking for it all at once. `full: true` adds
   each item's records, including the page and file behind each citation. Use this to see what's
   already been captured before creating or updating a scope item.
-- `list_questions`: every question on the project, open ones first, each with its wording, the
-  places it cites, its replies oldest first, the trade it's homed to, and the trail of every
-  close and reopen on it. Read this before you ask, so you don't raise one that's already open,
-  and before you close one, so you close the right one.
+- `list_questions`: the questions on the project. A bare call returns the open ones only, one
+  compact row each (its number, title, the start of its wording, the sheets it cites, the trades
+  it affects, how many replies it has, and where it stands); pass `status: "all"` for the closed
+  ones too, narrow with `trade`, `sheet` or `section`, and pass `full: true` for the whole thread:
+  the wording, every place it cites, its replies oldest first, and the trail of every close and
+  reopen. Read it with `status: "all"` before you ask, so you don't raise one that's already open
+  or already answered, and before you close one, so you close the right one.
 
 **Drawing recognition** (cloud PDF: these work against files already uploaded to the project)
 - `list_files`: list the drawing files registered to a project.
@@ -131,13 +135,10 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   on `belongsToTrade` and inside `packageRole:<trade>` alike: a code the catalog does not carry is
   refused too, so `drywall` does not land, and neither does a respelling of a real code, so
   `09-21-16` and `092116` are refused with a hint naming the exact id.
-- `ask_question`: raise ONE open item a person has to answer or resolve, with a title and the
-  citations it's about (a sheet, a spec section, or a record you read). This is how a
-  disagreement between sources, or a reading you genuinely cannot resolve yourself, reaches a
-  person's judgment. `supersedesId` revises your own prior wording. A Question is about the
-  project, never about a Plumlayer failure. The drawings, the specs, the scope, who carries
-  what, a conflict between sources, something missing, a project decision, or a value on the
-  record you cannot resolve from what you read belongs in a Question; a job that failed or
+- `ask_question`: raise ONE draft RFI, with a title and the citations it's about (a box on a
+  sheet, a spec section, or a record you read). The verb's own description states the standard a
+  Question meets; read it there rather than from a summary. `supersedesId` revises your own prior
+  wording. A Question is about the project, never about a Plumlayer failure: a job that failed or
   timed out, a verb that refused a write, a server limit, a retry decision, confusion about how
   to run a workflow, or a report that something now works belongs in the conversation and in
   the skill's own failure path, never here.
@@ -236,9 +237,10 @@ The edge is what makes your read govern the grid: an agent edge onto a `machine-
 regardless of who or what originally produced it, as long as it names what it replaces with
 `supersedesId`. If a person already set the value and you think it's wrong, ask them rather than
 overwrite it. A **bare** competing entry (no `supersedesId`) does not win; it stays a candidate
-beneath the machine value, which is the anti-hallucination anchor working as intended. So reserve `ask_question` for a reading
-you genuinely cannot resolve, never as the way to fix a title you already read correctly (that is
-the "go set it on the site" dead end).
+beneath the machine value, which is the anti-hallucination anchor working as intended. A reading
+of a sheet's title or discipline you cannot resolve is named to the user in the conversation, not
+raised as a Question, and a title you already read correctly is never put to anyone (that is the
+"go set it on the site" dead end).
 <!-- user-facing -->
 To the user this is plain: "the automatic scan grabbed the wrong
 text on those sheets, so I read them and set them right."
@@ -257,16 +259,21 @@ Tell the user
 Drawn
   measurements and sheet scale are not this door's to write (see Write, above).
 - **"Find conflicts / RFIs"** → `list_questions` for the open items, the drawing-index check's
-  among them; where you spot a disagreement between sources, or something you genuinely can't resolve,
-  `ask_question` with a title and the citations it's about, after checking `list_questions`, so
-  you reply to an open one covering the same ask rather than raising it twice. Where instead you can see the
+  among them; where you spot a disagreement between sources, or a gap a bidder could not price
+  around, check before asking: search the rest of the set and the manual with `search_set_text`,
+  and read every Question with `list_questions(status: "all")`, closed ones included, with no
+  trade filter and paged with `offset: nextOffset` until it comes back whole. Reply to an
+  open one covering the same ask rather than raising it twice, never ask a closed one again, and
+  otherwise `ask_question` with a title and the citations it's about. Where instead you can see the
   recognizer grabbed the wrong cell for a title or discipline, correct it with a supersession
   edge (see "Correcting a machine misread"), not a Question.
 
 ## Discipline
 - A Question is about the project, never about a Plumlayer failure; a failed job, a refused
   write, or any other tool problem is reported in the conversation, not raised here.
-- Question text is plain estimator words, per docs/plugin-text-style.md.
+- Question text is plain estimator words, and every Question meets the standard the
+  `ask_question` verb states: a title, a citation for every place it names, and only what is worth
+  the design team's time.
 - Be honest about your own entries: they govern provisionally as your reading, not as a
   person's own entry, and a later correction from a person supersedes them the same way any
   write does.

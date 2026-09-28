@@ -93,8 +93,15 @@ Checks:
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
   16. Every shipped skill or agent file that names `ask_question` or tells the agent to raise a
       Question carries the fixed phrase "Question text is plain estimator words", either stating
-      the rule in full or pointing at it (docs/plugin-text-style.md §1, `learn-project`'s
-      judgment-entry table).
+      the rule in full or pointing at it (docs/plugin-text-style.md §1) beside the standard the
+      `ask_question` verb states.
+  16b. Question RFI bar: agents/scope-reader.md carries the bar in its fixed wording, "a draft
+      RFI"; no shipped skill or agent file carries a retired raise-for-everything phrase ("rather
+      than smoothing it", "rather than guessing") on the same line as the word Question; and none
+      carries the wording of a Question rule the draft-RFI standard retired ("always raises a
+      Question", "raise a Question if inferred" or "when inferred", "Question naming the grain",
+      "a correction of an earlier write, that is a Question", `mepDeliveryShape`, a
+      `"scope-item"` source type), matched over the whole file with whitespace collapsed.
   17. Agent tool surface: no agents/*.md tools line takes the whole connector as a wildcard;
       every connector verb an agent's body names is on its tools line; every declared connector
       verb is one of the 112 the connector registers; and the prohibition-only exception table
@@ -1352,26 +1359,44 @@ def check_question_failure_boundary(plugin_path: Path) -> Result:
 # a Question for anything a sub could have priced as drawn, which buries the handful a person
 # actually has to answer. The bar is now stated once, in scope-reader's mandate 1, in fixed words.
 #
-# Two mechanical arms, the same shape as the two checks above:
+# The bar was then raised to a draft RFI, the standard the `ask_question` verb states, after a
+# review of one project's Questions found orientation asking the design team to confirm the
+# agent's own reading, a grain call nobody on the design team answers raised as a Question, and a
+# scope row cited as the evidence against the drawings.
 #
-#   1. scope-reader.md carries the bar in its fixed wording. Two phrases, both required, so the
-#      rule is provably present rather than plausible-sounding nearby text.
+# Three mechanical arms, the same shape as the two checks above:
+#
+#   1. scope-reader.md carries the bar in its fixed wording, so the rule is provably present rather
+#      than plausible-sounding nearby text.
 #   2. No shipped skill or agent file carries a retired raise-for-everything phrase next to the
 #      word Question. Matched on one line: the phrases are short and the collocation is what makes
 #      them a directive, and "rather than guessing at one" about a category string (which the same
 #      file legitimately carries) is not about Questions at all.
+#   3. No shipped skill or agent file carries the wording of a Question rule the standard retired:
+#      a Question raised for the agent's own inferred reading or by an entry's nature, a grain
+#      call raised as a Question, the MEP delivery-shape judgment, or a scope row as a Question's
+#      source. Matched over the whole file with whitespace collapsed, since these phrases wrap
+#      across lines.
 #
 # What this cannot judge, and does not try to: whether a Question an agent actually raises clears
 # the bar. That stays in review.
 
 QUESTION_RFI_BAR_PHRASES = (
-    "first inkling of an RFI",
+    "a draft RFI",
 )
 
 # Wording retired with the bar: it told the reader to raise a Question wherever it was unsure,
 # which is the failure mode the bar exists to stop.
 _QUESTION_RAISE_FOR_EVERYTHING_RE = re.compile(
     r"rather than smoothing it|rather than guessing", re.IGNORECASE
+)
+
+# Wording of the Question rules the draft-RFI standard retired.
+_QUESTION_RETIRED_RULE_RE = re.compile(
+    r"always raises? a Question|raises? a Question (?:if|when)\b[^.,;]{0,30}\binferred|"
+    r"Question naming the grain|correction of (?:an|your own) earlier write[,;]? "
+    r"(?:that|which) is a Question|mepDeliveryShape|type\"?:\s*\"scope-item\"",
+    re.IGNORECASE,
 )
 
 _QUESTION_WORD_RE = re.compile(r"\bquestions?\b", re.IGNORECASE)
@@ -1421,6 +1446,10 @@ def check_question_rfi_bar(plugin_path: Path) -> Result:
                     f"{label}:{i + 1}: retired raise-for-everything wording '{m.group(0)}' "
                     f"next to Question — {line.strip()[:160]}"
                 )
+
+        normalized = re.sub(r"\s+", " ", "\n".join(lines))
+        for m in _QUESTION_RETIRED_RULE_RE.finditer(normalized):
+            errors.append(f"{label}: retired Question rule wording '{m.group(0)}'")
 
     detail = f"{len(files)} skill/agent files scanned, {len(QUESTION_RFI_BAR_PHRASES)} bar phrases required"
     if errors:

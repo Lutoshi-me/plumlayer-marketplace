@@ -63,6 +63,7 @@ How to say each thing as it happens:
 - "reading the spec book's table of contents" (step 8, while the extraction job is running)
 - "N sections found" (step 8, on job success)
 - "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
+- "re-reading the N open questions on the changed sheets" (step 9b)
 - "N sheets were sitting in Other because their numbers didn't say which discipline they belong
   to; I read the pages and sorted K of them, and J need you" (step 6d)
 <!-- /user-facing -->
@@ -130,8 +131,9 @@ your own read.
 
 **A project manual arriving on its own**, with no drawings: this is not a drawing delivery. Register
 nothing, skip steps 3 through 7, and enter at step 8, which files the manual and reads its table of
-contents. Step 9 still runs, and its drawing legs report as unchanged because no sheet changed. Say
-in the closing report that no drawings came with it.
+contents. Step 9 still runs, and its drawing legs report as unchanged because no sheet changed.
+Step 9b re-reads the open Questions citing the sections the new manual carries. Say in the closing
+report that no drawings came with it.
 
 ## 1c. Cloud-resident entry (files already in the project, nothing local)
 
@@ -383,9 +385,11 @@ every page in that tail yourself:
     anti-hallucination anchor working as designed. If the slot is empty (the pass
     left this page blank), just author the entry fresh: there is nothing to supersede.
   - **Genuinely unclear**: you honestly cannot tell which of two readings is right. Author your reading
-    as a bare entry, cited to what you read, and raise it as a question with `ask_question` so a person
-    resolves it; never silently pick. Ask only for a real toss-up; never for a correction you are
-    confident about (that just hands a person a title you already read correctly).
+    as a bare entry, cited to what you read, and name it to the user in the step 7 report, with both
+    readings, so a person settles it; never silently pick. Which of two readings of our own sheet
+    title is right is our reading of the set, not a Question for the design team. Name only a real
+    toss-up; never a correction you are confident about (that just hands a person a title you
+    already read correctly).
 - **Image-only / scanned pages**: flag them honestly. Create the page as its own subject:
   `page:<fileId>:<pageInPdf>`, never `subject: null`, and never add an OCR dependency (deferred).
   Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
@@ -541,9 +545,9 @@ The edge is what makes your read govern the grid: the recognizer's binding is `m
 agent edge onto it is honored regardless of who wrote the value it corrects, as long as your entry
 names what it replaces with `supersedesId`. If a person already set the value and you think it's
 wrong, ask them rather than overwrite it. A **bare** corrected entry with no `supersedesId` does NOT
-win; it sits as a candidate beneath the machine value. Never raise this as a question here: reserve
-`ask_question` for genuine uncertainty, and asking about a title you already read correctly is the
-"go set it on the site" dead end this step exists to close.
+win; it sits as a candidate beneath the machine value. Never raise this as a question: a reading
+you cannot resolve is named to the user, and asking about a title you already read correctly is
+the "go set it on the site" dead end this step exists to close.
 
 <!-- user-facing -->
 Say it the way it happened: "the automatic scan grabbed the wrong text on N sheets, so I read them
@@ -589,16 +593,15 @@ told the recognizer what it could, and you finish the read from the page.
    off a rendered crop you judged by eye. Pool this into the step 7 batch write alongside 6, 6b,
    and 6c's entries; it is the same write, not a second one.
 4. **Not settled: no write, no guess.** When neither the title block, the sheet's own content, nor
-   the index says which discipline the sheet belongs to, leave `discipline` alone and raise it:
-   `ask_question(projectId, text: "<the ask in plain words>", sourceInstrument: "drawing-upload",
-   versionScope: "<issue label>", sources: [{"type": "sheet", "sheet": "sheet:<n>"}])`, e.g. "Sheet
-   OS-1 has no discipline caption on the page or in the index; which discipline does it belong
-   to?". One question per sheet: this is a set of individual toss-ups, not one disagreement with
-   many sources.
+   the index says which discipline the sheet belongs to, leave `discipline` alone and name the
+   sheet to the user, with what you read and the disciplines it could be, e.g. "Sheet OS-1 has no
+   discipline caption on the page or in the index; it reads like site work, so civil or
+   landscape". Which discipline our own sheet list files a sheet under is ours to settle, not a
+   Question for the design team.
 
 **Gate:** every leftover sheet this step finds ends the step either recorded with a citation or
-raised as a question, never left sitting in Other with nothing done about it. State the counts:
-found, sorted, asked.
+named to the user, never left sitting in Other with nothing said about it. State the counts:
+found, sorted, named to the user.
 <!-- user-facing -->
 "N sheets were sitting in Other because their numbers didn't say which discipline they belong to;
 I read the pages and sorted K of them, and J need you."
@@ -671,9 +674,10 @@ count: a person resolves them, not something this skill resolves itself.
 Report: the
 project and delivery; the recognition run's counts (pages scanned, sheets recognized, how many were
 high-confidence, how many were flagged for a closer look); how many sheet records were saved and how
-many were already on file; the count of entries you added yourself for the sheets you reviewed and
+many were already on file; the count of sheet records you added yourself for the sheets you reviewed and
 typed, confirmed against what you sent; whether every recognized sheet in this delivery now carries a
-type or an honest skip-count, naming the gap plainly if there is one; and that the set is now readable
+type or an honest skip-count, naming the gap plainly if there is one; any sheet title left between
+two readings, with both readings and the sheet named, for them to settle; and that the set is now readable
 on plumlayer.com with each sheet's source page behind it.
 <!-- /user-facing -->
 
@@ -796,9 +800,82 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    project-wide Question naming the series and their counts. Read them back with `list_questions`.
    This is internal work: it needs no go-ahead, and the user corrects anything wrong on the site.
 
+## 9b. Re-read the open Questions this delivery touches
+
+A revised sheet can answer a Question somebody raised against the one it replaces, or move the
+callout the Question points at. This step reads every open Question on what changed against the
+new paper and says what it found on each one. It runs whenever a prior delivery or manual existed:
+a revision, a full re-issue, or a manual on its own. On the project's first delivery there is
+nothing earlier on the board to re-read, so skip it.
+
+1. **Which sheets changed.** For a revision, the `set_grid` rows whose governing delivery is this
+   one, read the way step 10 reads the set: `set_grid(projectId, limit: 0)` for the counts, then
+   pages with `discipline` + `limit`/`offset`. For a full re-issue, every sheet this delivery
+   carries, since nothing compares a sheet's content between issues. For a manual on its own, the
+   sections step 8 read out of the new manual.
+2. **Which Questions.** The `sheet` and `section` filters on `list_questions` read only the places
+   the ask itself cites, and a reader that meets the same callout on a second sheet cites it in a
+   reply, so a filtered read misses a Question that names a changed sheet only in a reply. Read the
+   open Questions whole instead: `list_questions(projectId, full: true, limit: 10)`, paged with
+   `offset: nextOffset` until `nextOffset` is absent. Keep every one whose ask or any reply cites a
+   changed sheet (`sheet:<n>`) or a section the new manual carries (`specSection:<packed code>`).
+   A place somebody took off the ask still sits in `sources`, one for one with `sourceRemovals`,
+   which is null where the place still stands and names who took it off where it is gone. Skip
+   every ask source whose `sourceRemovals` entry is not null, here and in point 3: a Question whose
+   only citation of a changed sheet was taken off on purpose is not this step's, and never gets a
+   new box put back. Reply citations are read as they are. That read also carries each kept
+   Question's ask and every place it and its replies cite, which the points below work from.
+3. **On a changed sheet, check that every cited box still lands.** A sheet citation names the
+   sheet, not the file, so a box cited on a changed sheet now opens on the new page at its old
+   coordinates: a re-issue that moves the layout moves every box on that sheet silently. For each
+   `sheet-region` box or `sheet-point` on a changed sheet, in the ask (a standing source only) or in
+   a reply, take the
+   sheet's `fileId` and `pageInPdf` off its `set_grid` row. A whole-page `render_page(fileId,
+   pageNum: <that pageInPdf>)` answers with `pageWidthPt` and `pageHeightPt`; render the box itself
+   with `region` set to the box's PDF points over those (x over `pageWidthPt`, y over
+   `pageHeightPt`, each a fraction of the page), and read its text with `get_page_text(fileId,
+   pageNum: <that pageInPdf>, region: <the box in PDF points>)`. Check it still lands on the same
+   callout the ask names. Where it no longer does, find the callout on the new page
+   (`search_set_text` its tag, whose hits carry boxes in the same PDF points, then `get_page_text`
+   around the hit), and `add_question_source` a `sheet-region` box around it there; the reply in
+   point 5 says so. The old box stays, since taking one off is the estimator's call.
+   `add_question_source` is refused once a Question holds ten places. Never take one off to make
+   room: cite the new box in the reply instead, and name that Question to the user as one whose
+   callout moved with no room for another place on it.
+4. **Re-read each one against the new paper.**
+   - On a changed sheet: read the callout's text at the box that lands on it, and search the ask's
+     own tags and words with `search_set_text`, after `set_text_status` says the new pages have
+     been read. Render further only where the change is in the linework, a cloud or a delta the
+     text does not carry.
+   - On a section of the new manual: a spec citation has no box and no sheet. Read the section's
+     pages off its `locatedAt` (`search(projectId, subject: "specSection:<packed code>", predicate:
+     "locatedAt")`), with `get_page_text` on the part the ask is about, and search the ask's words
+     with `search_set_text` and `kind: document`.
+5. **Three outcomes, and no fourth.**
+   - The new paper answers it: `reply_question` saying what the revised sheet or section shows,
+     and tell the user it may be answered.
+   - The new paper changed on the point without answering it: `reply_question` saying what
+     changed.
+   - Unchanged on the point: no reply, and it is counted in the report, unless point 3 moved a
+     box, when a reply says only that the callout moved and where it now sits.
+   A reply on a sheet cites a `sheet-region` box around what it read there. A reply on a section
+   cites the section, `{ "type": "spec", "section": "specSection:<packed code>" }`.
+6. **Never close one, and never raise one here.** Closing is the estimator's: `close_question`
+   only when the user settles it in this session, with their reason in `note`. No new Question
+   comes out of this step; what the delivery changes in the scope list is still the handoff in
+   step 10.
+
+<!-- user-facing -->
+Report: how many open Questions cite a changed sheet or section, how many got a reply, the ones
+the new paper may answer, by number, the ones whose callout moved and now point at its new place,
+by number, any whose callout moved with no room for another place on it, by number, and how many
+were unchanged on the point. Say plainly that none was closed and that settling one is theirs.
+<!-- /user-facing -->
+
 ## 10. Close out
 
-Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re-issue path only.
+Step 9b's re-read of the open Questions is reported before any of this. Point 3 runs on every path
+through this skill. Points 1 and 2 run on the full-re-issue path only.
 
 1. **The full-re-issue finding.** Run this on the baseline path, and only when a prior delivery
    existed; on the project's first delivery there is nothing to compare against (step 1b), so say
@@ -838,7 +915,9 @@ Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re
   with its error, retried only when the error names what a retry changes, and never put to the
   user as a choice of retry strategy. A failure is reported in the conversation, never written
   into the project as a Question: a Question is about the project, never about a Plumlayer
-  failure. Question text is plain estimator words, per docs/plugin-text-style.md.
+  failure. Question text is plain estimator words, and every Question meets the standard the
+  `ask_question` verb states: a title, a citation for every place it names, and only what is worth
+  the design team's time.
 - **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
   (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
   1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing
@@ -862,8 +941,8 @@ Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re
   re-record over a rule-typed sheet (correct it by supersession edge, per 6b); unsure stays untyped.
 - A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
   already-recognized sheet) is a supersession **edge** onto the stored entry (`supersedesId` from
-  `search`), never a bare competing entry and never a question raised with `ask_question`: reserve
-  that for a reading you genuinely cannot resolve.
+  `search`), never a bare competing entry and never a question raised with `ask_question`. A
+  reading you cannot resolve is named to the user.
 - The page entries and your own type entries (the leftover sheets and any correction) are your own reading,
   cited to the page you read; never present them as the deterministic pass's confirmed output, and
   never present a rule-typed sheet as your own read.
@@ -890,6 +969,9 @@ Point 3 runs on every path through this skill. Points 1 and 2 run on the full-re
   backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
   problems found." `reconcile_set` findings are recorded without asking, and the report says what
   landed: sheet findings for our own queue, and Questions on the board for the design team's side.
+- **An open Question on a changed sheet is re-read and replied to, never closed by this skill.**
+  Step 9b replies where the new paper answers it or changes on its point, adds a box where its
+  callout moved, and raises no new Question.
 - **The step 10 lingering-sheet list is a complete paged read, not a first page.** It comes from
   `set_grid(limit: 0)` followed by pages until the rows cover the count, and its criterion (the
   sheet's governing delivery is not this delivery) is stated with the list. Paging that could not be

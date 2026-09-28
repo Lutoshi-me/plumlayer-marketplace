@@ -51,7 +51,7 @@ say to the user (no em dashes, no bolded emphasis words). Say:
   zero)
 - "N unlisted scope items, things they priced that aren't on the checklist" (after a proposal read,
   when the proposal carries unlisted content: plain words for what stage 7b records)
-- "K proposals read, J entries to record" (before recording)
+- "K proposals read, J bid lines to record" (before recording)
 - "declared this a revised proposal, which replaces their prior bid" or "declared a clarification"
   (before recording, when a repeat proposal applies, see stage 6)
 

@@ -56,9 +56,12 @@ A Question an agent raises with `ask_question` is not shipped plugin text, but t
 the site exactly like any other user-facing string, so it answers to the same rules as everything
 else in this contract. Question text is plain estimator words: no em dashes, no internal names (a
 predicate, an internal step, a field, or another Question's own internal name), no bold for
-emphasis, one vocabulary the same as section 3 requires. The worked rule and an example live in
-`learn-project`'s judgment-entry table; every other skill or agent file that tells an agent to raise
-a Question points at that rule instead of restating it.
+emphasis, one vocabulary the same as section 3 requires. What makes a Question worth raising, and
+its title, its citations and how it reads to the design team, is the standard the `ask_question`
+verb's own description states, where every agent reads it at the verb; this section keeps only
+the plain-words rule, and `learn-project` keeps one worked example. Every skill or agent file that
+tells an agent to raise a Question carries the plain-words phrase and points at the verb's
+standard instead of restating either.
 
 ### Record text never carries another entry's name
 
@@ -204,10 +207,19 @@ Each of these is a harness check.
     arithmetic, its ordering and its refusals, not how a real grid or packages read arrives.
 12. Question-text plain-words pointer. Every shipped skill or agent file that names `ask_question`
     or tells the agent to raise a Question carries the fixed phrase "Question text is plain
-    estimator words", either stating the rule in full (`learn-project`'s judgment-entry table, and
-    this file's own Question text on the record section) or pointing at it. This cannot judge
+    estimator words", either stating the rule in full (this file's own Question text on the record
+    section) or pointing at it beside the standard the `ask_question` verb states. This cannot judge
     whether a given Question actually reads in plain words, only that the instruction carries the
     rule or a pointer to it; that judgment stays in review.
+12b. The Question bar. `agents/scope-reader.md` carries the bar in its fixed wording, "a draft
+    RFI". No shipped skill or agent file carries a retired raise-for-everything phrase ("rather than
+    smoothing it", "rather than guessing") on the same line as the word Question, and none carries
+    the wording of a Question rule the draft-RFI standard retired: "always raises a Question",
+    "raise a Question if inferred" or "when inferred", "Question naming the grain", "a correction
+    of an earlier write, that is a Question", `mepDeliveryShape`, or a `"scope-item"` source type, matched over the whole file with whitespace collapsed because those
+    phrases wrap across lines. This cannot judge whether a Question an agent raises clears the bar,
+    only that the bar is stated and the retired rules have not come back; that judgment stays in
+    review.
 
 13. Every dispatch template runs in the foreground. A fenced block in a shipped skill or agent
     file that carries a `subagent_type:` line also carries `run_in_background: false`, so the

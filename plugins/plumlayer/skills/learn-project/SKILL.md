@@ -20,9 +20,9 @@ gets this context instead of orienting from scratch, which is where reads get un
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
 untraced.** This is an *orientation* pass, not comprehension, it reads what upload already
 recognized, takes a handful of bounded renders, and stops. Everything it emits is **your own reading**,
-cited, and it becomes the project's working context the moment it lands, so what you raised a
-Question about as inferred is what a person should judge. Examples in this file are generic, never put a real
-project name, client data, or a real extracted value here.
+cited, and it becomes the project's working context the moment it lands, so an inferred value says
+it was inferred and cites what it was read from. Examples in this file are generic, never put a
+real project name, client data, or a real extracted value here.
 
 ## What this is, and the boundary
 
@@ -117,8 +117,9 @@ comparison ran.
   findings raised the design team's side as Questions on the board, each citing the index page and
   the sheets, and those are the standing ones rather than a fresh comparison's. Fold anything real
   into the packet: an unmatched index entry as a `missingScopeFamily` or `setShapeObservation`
-  candidate (per step 6's rules, raise a Question if inferred), and an unrecognized-in-index sheet
-  as a `setShapeObservation`. Before citing anything from
+  candidate, recorded as a fact (the gate's own Questions already carry the design team's side, so
+  this pass raises none for it), and an unrecognized-in-index sheet as a `setShapeObservation`.
+  Before citing anything from
   `report.declaredLedgerDrift`, check `.ran` first, it's `false`, never a hollow zero, whenever no
   index page could be read at all, or a receiving-check run had to widen its re-read to another
   delivery's pages; a drift check that didn't run is never folded into the packet as if it found
@@ -161,32 +162,37 @@ unusually deep set), say so explicitly in the report rather than quietly renderi
 All net-new, subject `project` unless noted, recorded via **one** `record_batch(projectId, entries)`
 call:
 
-| Predicate | Value shape | Question rule |
-|---|---|---|
-| `structuralSystem` | free text, one entry per system (e.g. "post-tensioned concrete flat plate") | raise a Question if inferred rather than labeled on the drawings |
-| `envelopeSystem` | free text, one entry per system (e.g. "unitized curtain wall") | raise a Question if inferred |
-| `mepDeliveryShape` | `{division, shape}`, `shape` ∈ `full-design` \| `design-build-thin`, one entry per MEP division present | **always raises a Question**, this is a judgment entry |
-| `scopeArea` | free text, one entry per area (e.g. "below-grade parking", "amenity terrace") | raise a Question if the boundary was inferred rather than labeled |
-| `phasingNote` | free text (e.g. "occupied renovation, phased by wing") | raise a Question if inferred |
-| `setShapeObservation` | free text (e.g. "schedules live on the A-10 series") | usually no Question, a direct observation |
-| `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC") | **always raises a Question**, an absence entry is defeasible |
-| `hazardFlag` | free text (e.g. "occupied renovation, coordinate around active tenants") | raise a Question when inferred from context rather than stated outright |
+| Predicate | Value shape |
+|---|---|
+| `structuralSystem` | free text, one entry per system (e.g. "post-tensioned concrete flat plate") |
+| `envelopeSystem` | free text, one entry per system (e.g. "unitized curtain wall") |
+| `scopeArea` | free text, one entry per area (e.g. "below-grade parking", "amenity terrace") |
+| `phasingNote` | free text (e.g. "occupied renovation, phased by wing") |
+| `setShapeObservation` | free text (e.g. "schedules live on the A-10 series") |
+| `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC"), cited to the table of contents |
+| `hazardFlag` | free text (e.g. "occupied renovation, coordinate around active tenants") |
 
-**Question text is plain estimator words, not the table above.** Whichever column above triggers
-the raise, what actually lands in `ask_question`'s title and body states what was seen and what
-needs deciding, in a sentence a person on the job site would write. It never names a predicate, an
-internal step, a field, or another question by its internal name, and it carries no em dash
-(docs/plugin-text-style.md states the same rule for every other piece of user-facing text).
+This pass raises no Question for its own reading. What you judge about the project goes on the
+record as a fact, cited to what you read it from, and where it was inferred rather than labeled it
+says what it was read from. A family the table of contents is silent on is a `missingScopeFamily`
+fact at this point, an expectation drawn from what a job of this kind usually carries before any
+sheet is read; the package review, which holds the drawing evidence, is where a manual silent on
+work the drawings show becomes a Question.
 
-Good: "The electrical drawings show a full design, stamped and dimensioned, but no electrical spec
-section confirms it. Is this trade full design or design-build?"
+The one Question this pass raises is a disagreement between two documents it read, cited to both,
+and only when it meets the standard. Read `list_questions(projectId, status: "all")` first, with
+no trade filter, paged with `offset: nextOffset` until it comes back whole: an
+open one on the same topic gets a reply rather than a second Question, and a closed one is not
+asked again. A Question is about the project, never about a Plumlayer failure. Question text is
+plain estimator words, and every Question meets the standard the `ask_question` verb states: a
+title, a citation for every place it names, and only what is worth the design team's time. It
+never names a predicate from the table above, an internal step, or a field, and it carries no em
+dash.
 
-Bad:
-```text
-mepDeliveryShape classified as full-design for Division 26 — no Division 26 spec section
-was footer-confirmed in the spec-section index (see the related missingScopeFamily
-question). Please confirm this delivery-shape classification.
-```
+Good: title "Story count differs between cover and sections"; "The cover sheet lists four
+stories; building sections A-301 and A-302 show five. Please confirm five stories." Bad: a
+Question asking the design team to confirm your own reading of the structure, the envelope, the
+phasing, or what a trade's drawings look like.
 
 **`sourceInstrument` is per-entry, not one batch label.** For an entry grounded
 in a specific page or render, cite the specific source file/instrument name, the same convention
@@ -238,10 +244,9 @@ amendments, stays in `scope-run`.
 3. **Draft the split** from the spec TOC (step 3), by how subcontractors actually split
    themselves in this market: which sections bundle into which package, which get carved out, a
    primary CSI section per package. Probe the usually-present families the TOC is silent on
-   (site/civil, SOE, landscaping/exterior improvements, thin design-build MEP divisions), the same
-   probe that already produces `missingScopeFamily` entries (step 6): a silent family becomes a
-   `missingScopeFamily` entry AND, where a job of this kind would normally carry the trade, a
-   package.
+   (site/civil, SOE, landscaping/exterior improvements), the same probe that already produces
+   `missingScopeFamily` entries (step 6): a silent family becomes a `missingScopeFamily` entry AND,
+   where a job of this kind would normally carry the trade, a package. It raises no Question.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be
@@ -272,8 +277,7 @@ once, after the entries above are recorded and before the report.
 2. **Write what the job is.** What the building is, what work is being done, for whom, where, and
    whatever makes this job different from a typical one, in plain estimator prose. Every statement
    traces to something read this run, a render, a page, a seed entry, or an entry recorded in step
-   6; a genuine differentiator you would otherwise infer instead of read gets raised as a Question
-   the same way any other orientation judgment is, not folded into the description unconfirmed.
+   6; a differentiator you would only infer is left out of the description.
 3. **Leave out what already has a field.** Total SF, floor count, bid due date, status, structural
    or envelope system, and any sheet or spec bookkeeping already live as their own entries;
    restating them here duplicates the record instead of orienting a reader. Leave out narration of
@@ -288,7 +292,7 @@ A projection compiled fresh from the entries read in step 2 and recorded in step
 recorded as an entry, never stored as truth.** Sections, in order:
 
 1. **Identity**, name, type, delivery method, location, size, key dates (from the seed entries).
-2. **Systems**, structural and envelope systems, MEP delivery shape per division.
+2. **Systems**, structural and envelope systems.
 3. **Scope areas**, the `scopeArea` and `phasingNote` entries.
 4. **Set shape**, disciplines present, issue labels seen, `setShapeObservation` entries,
    `missingScopeFamily` entries, the spec-TOC status (division spread + count, or the "hasn't run
@@ -315,13 +319,12 @@ user-facing at the crossing and is translated there.
 Tell the user, in plain terms:
 - **What was read**, identity, which of the seeded project facts were present, the sheet-inventory
   scope (disciplines covered, set_grid vs. sampled search), and the spec-TOC status.
-- **What was learned**, per checklist category, systems, MEP delivery shape, scope areas, set shape,
-  hazards.
+- **What was learned**, per checklist category, systems, scope areas, set shape, hazards.
 - **What the reconciliation gate found**, or that it hasn't run yet for this set, never silent on
   which.
-- **What was recorded**, how many entries, and how many raised a Question for a person's judgment,
-  for example "recorded 14 project facts, 3 questions for your judgment". What you recorded is the
-  project's working context now, carrying your name and citations; anything a person changes wins.
+- **What was recorded**, how many facts were recorded, and any Question raised for a disagreement
+  between documents. What you recorded is the project's working context now, carrying your name
+  and citations; anything a person changes wins.
 - **The package split**, packages created, packages already present on the project, any package
   named "no catalog trade, not created," TOC sections deliberately unbundled, or the "spec reading
   hasn't run for this project" note when no spec sections exist.
@@ -331,8 +334,8 @@ Tell the user, in plain terms:
   which.
 - **Where the packet landed**, the full path.
 - **The placeholder note**, the definitions-as-context section is a stub, not yet designed.
-- **What a person should look at**, the entries with Questions raised, visible on plumlayer.com with the
-  page each one was read from.
+- **What a person should look at**, the facts you recorded, visible on plumlayer.com with the page
+  each one was read from, and any Question raised for a disagreement between documents.
 
 Close by saying orientation is done and everything it made is on the project record.
 <!-- /user-facing -->
@@ -342,8 +345,8 @@ Close by saying orientation is done and everything it made is on the project rec
 - **Cite everything.** No citation → don't emit the entry.
 - **Net-new facts only.** Never re-create a seed entry `project-setup` already recorded, or a sheet /
   spec-section entry `drawing-upload` already recorded.
-- **Judgment entries are cited and raise a Question.** `mepDeliveryShape` always does; the rest raise
-  one whenever the value was inferred rather than read off a label.
+- **Judgment entries are cited and raise no Question.** The one raise is a disagreement between two
+  documents, per step 6.
 - **A Question is about the project, never about a Plumlayer failure.** A render or read that
   fails is reported in the conversation, not raised as a Question.
 - **Say it is your reading.** These entries become the project's working context immediately, so an

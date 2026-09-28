@@ -68,8 +68,8 @@ them is ever trimmed.
    - *The catalog name and its aliases.* `directory_list_trades(code: <the package's tradeCode>)`,
      an exact lookup returning zero or one row with its `name` and `aliases`.
 
-   A harvest read is for choosing what to search for. It is never evidence you cite; a row's own
-   subject is the one thing from it a Question may point at, under mandate 9. `search`
+   A harvest read is for choosing what to search for. It is never evidence you cite, and nothing
+   harvested is ever a Question's source, a row's own subject included. `search`
    returns raw entries, live and replaced alike, before the record projects them, so a spec title
    read that way may be a title something later wrote over. That is safe for choosing a word and
    unsafe for anything recorded, and nothing you harvest is ever written to the record as a fact.
@@ -112,23 +112,33 @@ them is ever trimmed.
 5. THE GENERAL GRAIN SHAPES WHAT YOU CREATE, AND NEVER RESHAPES WHAT EXISTS. You hold this
    package's whole row set, which is the only place in the run where it sits in one context. Use
    the general grain of reader mandate 6 on the rows you create. Where that grain and the rows
-   already on the record disagree, raise one Question naming the grain and the rows, and stop
-   there. You never retire, merge, rewrite, or re-home an existing row: `retire_scope_item` is the
-   door for a row the user asked removed, and a split you judged is not that. Where you cannot
-   tell how finely a piece of work splits, create at best judgment and raise a Question naming the
-   grain question. Recall never drops to an unanswered question about how finely to split.
+   already on the record disagree, name the grain and the rows on your `grain questions:` line,
+   and stop there. You never regroup the rows that exist: never retire, merge, split, or re-home
+   one, and never rewrite a row to change what it covers. `retire_scope_item` is the door for a row
+   the user asked removed, and a split you judged is not that. Correcting a value that is wrong on
+   a row, a quantity or a size the sheet you opened shows otherwise, is a different act and is
+   required: it goes onto that field as reader mandate 5 says, as when a silence in mandate 9
+   exists only because a row is wrong. Where you
+   cannot tell how finely a piece of work splits, create at best judgment and name it on the same
+   line. How finely our own scope sheet splits is ours to settle, and nobody on the design team
+   answers it. Recall never drops to an unanswered question about how finely to split.
 6. EVERY PAGE YOU OPEN IS NAMED WITH ITS REASON. One line per page on your `pages opened:` line:
    the sheet number, the page, the word whose hit sent you there, and what you did with it. A
    manual page mandate 9 sent you to is named the same way, with `section <code>` in place of the
    sheet number. A
    review that opens twenty pages and names two has no trail for the other eighteen.
 7. QUESTIONS, AT THE SAME BAR. Reader mandate 1 governs the bar and its three shapes, whole and
-   unrestated here. What is yours is that the trade is known before you start, so the read it asks
-   for is `list_questions(projectId, trade: <this package's tradeCode>)`, paged with `offset:
-   nextOffset` until it comes back whole, which also carries the Questions on the whole job, and
-   every Question you raise or reply to names this package's trade. A Question is about the project, never about a Plumlayer failure; a read or write that
-   fails is reported to your dispatcher, not raised as a Question. Question text is plain estimator
-   words, per docs/plugin-text-style.md.
+   unrestated here, the read before a new Question among them: every Question on the project,
+   `list_questions(projectId, status: "all")` with no trade filter, paged with `offset:
+   nextOffset` until it comes back whole. A read filtered to this package's trade drops the
+   Questions on other trades and the ones nobody has placed on a trade, and a silence one of those
+   already asks about is a duplicate all the same. What is yours is that the trade is known before
+   you start: every Question you raise or reply to names this package's trade. A closed one is
+   never asked again. A Question is about the project, never
+   about a Plumlayer failure; a read or write that fails is reported to your dispatcher, not raised
+   as a Question. Question text is plain estimator words, and every Question meets the standard the
+   `ask_question` verb states: a title, a citation for every place it names, and only what is worth
+   the design team's time.
 8. YOUR ROWS SIT UNDER YOUR UNIT'S PREFIX. A new row's subject is `scopeItem:<unit id>-<seq>`,
    where the unit id is the one your dispatch names, `rev-<the catalog code with its spaces
    out>-<n>`, so a drywall review writes `scopeItem:rev-092116-1-1` and up. An update or a new
@@ -138,10 +148,14 @@ them is ever trimmed.
 9. THE MANUAL AND THE DRAWINGS, EACH SILENT ON THE OTHER. You are the one place in the run where a
    package's sections and its rows sit in one context, and every `kind: drawing` search you run
    also says, in `countsByKind`, how many manual pages carry the same words. That is enough to find
-   the two silences. Each one is a Question and nothing else: never a row, never a value on a row,
-   and nothing priced off it. Both checks run inside mandate 3's forty searches, and neither runs
-   at all on a project with no manual read in, where every section read in mandate 1 came back
-   empty: there, the missing manual is the one Question, and orientation already asked it.
+   the two silences. Each one is a Question only when the answer could move the price materially
+   or stop a bidder pricing the work, and never a row, never a value on a row, and nothing priced
+   off it. A low-cost silence (a finish, an accessory, a product choice, signage detail, bins,
+   blinds, mirrors, toilet partitions) is left open for bidders: no Question, no row, no
+   assumption, and it is named on its report line as `left open` with why it is low cost. Both
+   checks run inside mandate 3's forty searches, and neither runs at all on a project with no
+   manual read in, where every section read in mandate 1 came back empty: there, nothing is raised,
+   and your `sections not checked:` line says the manual was not read in.
    - A SECTION THE DRAWINGS NEVER SHOW. A section on this package specifies something a bidder
      would have to locate and count on the sheets to price, a product, an assembly, a piece of
      equipment, and no sheet shows it. It is silent only when all three hold. Its distinguishing
@@ -151,8 +165,11 @@ them is ever trimmed.
      predicate: "locatedAt")` returns names the section's file and page range, read at most two of
      those pages with `get_page_text` for the product part, and search the one or two names a sheet
      would carry. And no row on this package names that work with a sheet cited. Then raise one
-     Question citing `{ type: "spec", section: "specSection:<packed code>" }`, with this package's
-     trade. A section that governs how work shown elsewhere is done raises nothing: common work
+     Question citing `{ type: "spec", section: "specSection:<packed code>" }`, which opens at the
+     start of the section, and a `sheet-region` box around the schedule or plan legend where the
+     item would sit when the set has one, with this package's trade. It states the absence as a
+     fact after those searches ("No sheet shows the dimensional letters Section 10 14 19
+     specifies"), never "we could not find it, please confirm it exists". A section that governs how work shown elsewhere is done raises nothing: common work
      results, hangers and supports, identification, testing and balancing, closeout, and every
      Division 00 or 01 section. A section is judged only off the searches you ran for it. One the
      budget did not reach, or whose two pages gave no product words, is named with its reason on
@@ -170,19 +187,29 @@ them is ever trimmed.
      work, a related-sections entry or a "see Section" reference, sends you to that section's
      first pages through its `locatedAt` before you judge; a reference that leads to no section
      specifying the work leaves it silent. A family you could not settle either way goes on your
-     `families not checked:` line and raises nothing. For a silent family, raise one Question citing up to three of the sheets its rows
-     cite and its rows as `{ type: "scope-item", scopeItem: "<subject>" }`, ten sources at most in
-     all, with this package's trade. A family the budget did not reach is named on your `families
-     not checked:` line and raises nothing. A candidate row is judged by its home package's review,
-     never by yours.
+     `families not checked:` line and raises nothing. For a silent family, raise one Question
+     citing a `sheet-region` box around the drawing callout on up to three of the sheets its rows
+     cite, read on the page as mandate 2 says, plus every sheet its text names, ten sources at most
+     in all, with this package's trade. A family the budget did not reach is named on your
+     `families not checked:` line and raises nothing. A candidate row is judged by its home
+     package's review, never by yours.
+   - ONE QUESTION PER TOPIC. Silences on the same topic within this package, several signage
+     sections or three items of one kind, go into one Question carrying all their sources, or into
+     a reply on the open one.
+   - NEVER A GC MATTER, NEVER OUR OWN ROW. A silence about labor, means and methods, or who
+     furnishes or installs is not the design team's to answer, and raises nothing. Our own row is
+     never the evidence against the documents: where the silence exists only because one of our
+     rows is wrong, correct the value that is wrong on it as reader mandate 5 says, with the box
+     in its evidence and one sentence in its `notesInternal` saying how the value was reached and
+     what the correction replaced, raise nothing, and count it on `updated:`.
 
-   Both are the "this is what you meant, right?" Question. It says what the one document shows and
-   the other does not, in the drawings' or the manual's own words, and asks the design team to
-   confirm the work, its extent and where it goes, or to supply the section. Before you raise one,
-   read the open Questions as mandate 7 says: an open one on the same silence is replied to, never
-   raised again, and orientation may already have asked about a whole division missing from the
-   manual. Every one is named on your `silent sections:` or `unspecified work:` line, so the two
-   directions are counted apart.
+   Both are the "this is what you meant, right?" Question. It says plainly which document shows
+   what and which does not, in the drawings' or the manual's own words, says why it matters to
+   pricing, and ends with one clear ask: the specification, or the extent and where it goes,
+   proposing a default where one is sensible ("please confirm X, or provide Y"). Before you raise
+   one, read the Questions as mandate 7 says: an open one on the same silence is replied to, and a
+   closed one is never raised again. Every silence is named on your `silent sections:` or
+   `unspecified work:` line, raised or left open, so the two directions are counted apart.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
 created only at their own doors. You never close a Question: if you think one should be closed, say
@@ -258,8 +285,8 @@ trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
-silent sections: <section code + the Question id + the words searched, one per line, or "none">
-unspecified work: <row family + the Question id + the words searched, one per line, or "none">
+silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
+unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 sections not checked: <section code + the reason, one per line, or "none">
 families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">

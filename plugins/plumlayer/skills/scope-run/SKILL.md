@@ -51,8 +51,9 @@ The three windows:
    set's text for, and a hit no row carries becomes a row, cited to a page the reviewer opened for
    it. The same review finds where the manual and the drawings are silent on each other: a
    section on the package whose work no sheet shows, and work on the package's rows that no page
-   of the manual names. Each is a Question, cited to the section or the sheets. A package's page
-   is finished when its review is.
+   of the manual names. Each that could move the price materially or stop a bidder pricing the
+   work is a Question, cited to the start of the section or a box around the callout; a low-cost
+   one is left open for bidders. A package's page is finished when its review is.
 
 A run can stop at the end of any window, inside window 2 at any pass boundary, and inside window 3
 at any package boundary, and resume later with nothing lost.
@@ -84,18 +85,21 @@ that relaxes any one of them reproduces a measured, named failure.
    for its trade or content families as match-or-create context: for each thing seen, create a new
    item, update an existing one (a new citation, a note, a resolved cross-reference), or raise a
    Question, with a title and a citation. A Question is what clears the bar in the reader's
-   mandate 1, the first inkling of an RFI. Never a
+   mandate 1, a draft RFI. Never a
    parallel list, never a re-create of what exists, never silent skipping of what's already
    listed. The record refuses a create whose name the project already carries, on any trade and
    under any category, and names the row that holds it: work another trade's pass already captured
    is updated, never created again, and the reader turns that refusal into an update on the named
-   row and sends again. Before raising a Question, read the open Questions on the item's trade; the
-   reader's own page read carries the open ones on the trades its rows name, and `list_questions`,
-   filtered, is the read for a trade it did not cover. Where an open one already covers the same
-   ask, reply to it instead of asking it a second time. A Question is about the project, never about
-   a Plumlayer failure; a read or write that fails is reported and handled in the run's own failure
-   path, not raised as a Question. Question text is plain estimator words, per
-   docs/plugin-text-style.md.
+   row and sends again. Before raising a Question, read every Question on the project, closed
+   ones included: `list_questions` with `status: "all"` and no trade filter, paged until it comes
+   back whole. A trade filter drops the Questions on other trades and the ones nobody has placed on
+   a trade, and the reader's own page read carries only the open ones on its own trades. Where an
+   open one already covers the same ask, reply to it instead of
+   asking it a second time; a closed one is never asked again. A Question is about the project,
+   never about a Plumlayer failure; a read or write that fails is reported and handled in the run's
+   own failure path, not raised as a Question. Question text is plain estimator words, and every
+   Question meets the standard the `ask_question` verb states: a title, a citation for every place
+   it names, and only what is worth the design team's time.
 3. **Store-resolution is mandatory.** A mark, tag, or code is resolved by querying the project
    record, never from memory, never inherited from another sheet's read, never assumed from a
    similar-looking mark. For a code the page in front of a reader prints, its own
@@ -131,8 +135,9 @@ that relaxes any one of them reproduces a measured, named failure.
    one row on a trade's scope sheet (the ceiling: package headers are never the reader's). One
    item per sheet is a ceiling violation; one item per instance is a floor violation. Where the
    reader or the reviewer cannot tell how finely the work in front of it splits, it creates at best
-   judgment AND raises a Question naming the grain question: recall never drops to grain
-   uncertainty.
+   judgment and names it on its `grain questions:` report line, which the check-in and the close
+   out carry to the user; how finely our own scope sheet splits is ours to settle, and nobody on
+   the design team answers it. Recall never drops to grain uncertainty.
 7. **The vocabulary, then every sheet, then the reviews.** A window 2 pass reads only after the
    vocabulary is recorded and indexed; a review reads only after every sheet has been read and
    indexed. Inside window 3, two packages carrying the same catalog trade run one after the other,
@@ -201,9 +206,15 @@ A newly created scope item is a full row, not a name. Every new item writes:
   schedule's name and its citation, not its contents.
 - **notesExternal** (optional, one sentence): an instruction to the bidder about the line: what is
   by others, what to break out, what to confirm, what is an alternate.
-- **notesInternal** (optional, one sentence): a watch item for the estimator: an open Question, a
-  conflict between sheets, an assumption to check. Never a citation audit or a correction of an
-  earlier write; that is a Question.
+- **notesInternal** (optional, one sentence): either a watch item for the estimator, an open
+  Question on the row or an assumption to check, or how the row's count or grouping was reached
+  and what a correction replaced. Never a citation audit, and never a conflict between two
+  documents: that is a Question. A correction of a value on the record is two things: the write
+  onto that field naming what it replaces (`supersedesId`), cited to a box around what shows the
+  right value with the words read there as the evidence snippet; and this note, one plain sentence
+  saying how the value was reached and what it replaced, never an id or a hand-written tag. That
+  note is what lets a later reader correct the row rather than doubt the drawings. A correction is
+  never a Question.
 - **quantity**: only where the sheet itself carries one, as `{value, unit}`.
 
 A row's text never carries another item's subject id or a hand-written SUPERSEDED or date tag,
@@ -217,16 +228,26 @@ never comes near them. A verbose row is a defect, not diligence.
 
 ## The Question bar
 
-A Question is what a person will answer, and in a bid it is what becomes an RFI. It clears the bar
-when a bidder could not price the work without the answer, or when two sources disagree about the
-work: a schedule row with no matching plan tag, a detail called where none is drawn, a spec
-section and a sheet naming different products for one assembly, a dimension the sheets contradict.
-It does not clear the bar when the answer is on another sheet the reader has not opened yet (the
-corpus answers that: `search_set_text` first), when it is a grain question (that is a Question
-naming the grain, per non-negotiable 6), or when it is a note to the
-estimator (that is `notesInternal`). Every Question names its trade, the same way an item does, so
-it sits on that trade's page; a Question about the set as a whole names no trade and sits on the
-project.
+A Question is a draft RFI, and it meets the standard the `ask_question` verb states. What this
+run adds to that standard is where it applies here. A Question clears the bar when the answer
+could move the price materially or stop a bidder pricing the work, or when two documents disagree
+about the work: a schedule row with no matching plan tag, a detail called where none is drawn, a
+spec section and a sheet naming different products for one assembly, a dimension the sheets
+contradict. It does not clear the bar:
+
+- when the answer is elsewhere in the set or the manual: `search_set_text` first, across the
+  drawings and with `kind: document` across the manual;
+- when a Question already asks it: read every Question on the project first, closed ones
+  included, with no trade filter (non-negotiable 2);
+- when it is a low-cost gap in a small trade: it is left open for bidders, with no Question and no
+  assumption written for it;
+- when it is a grain call: that is a report line (non-negotiable 6);
+- when it is a note to the estimator: that is `notesInternal`;
+- when it is about a scope row: the row is what is wrong, and it is corrected on the record.
+
+Every Question names its trade, the same way an item does, so it sits on that trade's page; a
+Question about the set as a whole is raised with `everyTrade: true`, never with the trade left
+off, which the record reads as not known yet.
 
 ## What the record holds, and what stays on disk
 
@@ -484,8 +505,7 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    record, which is where every reader reads it.
 <!-- user-facing -->
    Tell the user what orientation found, in a few plain sentences, in your own words off that line:
-   roughly what was learned, how many questions it raised for their judgment, and the package
-   split it drafted. Say it as what happened, not as a question.
+   roughly what was learned, any Question it raised, and the package split it drafted. Say it as what happened, not as a question.
 <!-- /user-facing -->
    Where step 1 finds orientation already exists, skip the dispatch and call
    `reconcile_set(projectId)` report-only yourself (never pass `record`, never pass a
@@ -836,7 +856,7 @@ Report to the user, in plain words:
   assumed items that don't fit this job, each counted by kind and the leading ones named.
   Document defects worth sending to the design team are the open Questions on each trade's page,
   among them the sections of the manual no sheet shows and the work on the sheets the manual never
-  names.
+  names, and the silences left open for bidders, by count.
 - **Trade responsibility to confirm**: how many items sit in more than one trade's package
   (count each item once, however many packages it sits in), the leading trades named, and where
   to review them (the "Trade responsibility to confirm" section in each affected trade's package
@@ -1008,8 +1028,8 @@ trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
-silent sections: <section code + the Question id + the words searched, one per line, or "none">
-unspecified work: <row family + the Question id + the words searched, one per line, or "none">
+silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
+unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 sections not checked: <section code + the reason, one per line, or "none">
 families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">

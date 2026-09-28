@@ -21,8 +21,8 @@ manual in, and orients on what came back.
 > starting frame, recorded as agent-stated with your citation, and it is user-asserted at the
 > source: someone *told you*, you didn't read it off a stamped drawing. That makes it the weakest
 > thing in the ledger, so when real drawings and specs are read later, better-grounded entries
-> supersede or corroborate it. **Cite every entry, never invent a fact, and raise a Question for
-> what's uncertain.**
+> supersede or corroborate it. **Cite every entry, never invent a fact, and name what's uncertain
+> to the user rather than seeding it.**
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud project record
 > (project isolation + private bucket + RLS), that's fine. They must never land in tracked or
@@ -85,11 +85,16 @@ and `learn-project` are unchanged, and they are the only reasons to stop this se
 ## 2. Ask for what only the user carries
 
 The goal is **a named shell plus only the facts the drawings won't supply**, not a complete project
-record. **Never invent a fact.** Mark each one `confirmed`, `uncertain`, or `conflicting` as you go:
-a confirmed fact seeds as a record entry; an uncertain or conflicting one gets raised as a Question
-with `ask_question` instead of seeded. A Question is about the project, never about a Plumlayer
-failure; a tool problem in this interview is reported in the conversation, not raised as a
-Question. Question text is plain estimator words, per docs/plugin-text-style.md.
+record. **Never invent a fact.** Mark each one `confirmed`, `uncertain`, or `conflicting` as you go.
+A confirmed fact seeds as a record entry. An uncertain one, where the user is unsure or a document
+is unclear, is not seeded and is not a Question: when it is one of the ask-now facts below, put it
+forward in that group; otherwise name it in the closing report as left unseeded, and why. A
+conflicting one, where two handed-over documents disagree, is not seeded either: it becomes one
+Question with `ask_question`, cited to both documents, and only when it meets the standard. A
+Question is about the project, never about a Plumlayer failure; a tool problem in this interview
+is reported in the conversation, not raised as a Question. Question text is plain estimator words,
+and every Question meets the standard the `ask_question` verb states: a title, a citation for every
+place it names, and only what is worth the design team's time.
 
 ### Ask now vs. defer to the read (the triage that keeps this short)
 
@@ -232,9 +237,9 @@ Reading a document they handed you is not interrogation, it's the high-value pat
 
 Seed what a handed-over document plainly states, cited to that document (it is the entry's
 source, never a bare fact), and say what you seeded from where. Do not ask the user to confirm a
-fact the document states. Anything the source leaves unclear or that two sources disagree on is
-`uncertain` / `conflicting` and becomes a Question, never a seed. **Defer the gaps to the read
-rather than interrogating** for them.
+fact the document states. Anything the source leaves unclear is `uncertain`, and anything two
+sources disagree on is `conflicting`; neither is ever a seed, and each is handled as the top of
+this step says. **Defer the gaps to the read rather than interrogating** for them.
 
 ---
 
@@ -257,8 +262,8 @@ One project = one project record.
 
 ## 4. Seed the facts only the user carries
 
-Map the confirmed facts to entries and record them; raise every uncertain or conflicting fact as a
-Question instead of seeding it. **Prefer the `record_batch` MCP tool**, one call with
+Map the confirmed facts to entries and record them; an uncertain or conflicting fact is never
+seeded (step 2). **Prefer the `record_batch` MCP tool**, one call with
 `projectId=<the new project>` and an `entries` array of all the confirmed-fact seed entries (it's
 atomic: one bad entry rejects the batch and names the index). **Fallback:** if `record_batch` isn't
 available (older server), call the **`record`** tool once per entry, batched in parallel (many per
@@ -269,8 +274,8 @@ message).
   This correctly marks the entry as low-instrument / user-asserted.
 - `evidence` = `{ source: "<user-interview | filename>", method: "human", snippet: "<what was
   said / the source line>" }`.
-- **Uncertain or conflicting fact:** don't seed it as an entry. Raise it with `ask_question` instead,
-  citing the source(s) it came from, so a person resolves it.
+- **Uncertain or conflicting fact:** don't seed it as an entry. An uncertain one is named to the
+  user; a conflicting one is one Question cited to both documents, per step 2.
 
 **What to seed** (skip any the user didn't give, never fabricate):
 
@@ -339,15 +344,17 @@ real finding out of step 5, not a precondition to wave through.
 One closing report for the whole session, in plain terms. Read every count back from the record
 rather than restating it from what an earlier step said:
 - **Created:** project name + `projectId`.
-- **Seeded:** how many entries, broken down (facts / parties / trades / sets), and how many were
-  raised as Questions, the pile a person should resolve.
+- **Seeded:** how many facts were recorded, broken down (project facts / parties / trades / sets).
+- **Not seeded:** each fact left off the record and why (the user was unsure, or a document was
+  unclear), listed here in the conversation. These are not on the site, since nothing was recorded
+  for them; this list is the one place they are named.
 - **The set:** the delivery that was read in, how many sheets were recognized, how many pages you
   read yourself, how many sheets carry a type and how many you left for a closer look, how many
   spec sections were found (or that no project manual came with it), and what the index check found.
 - **Orientation:** what it learned, and the baseline packages that now exist.
-- **What a person should look at:** everything raised as a Question, on plumlayer.com, where every
-  seeded value carries your name, the time, and what you read it from. What you seeded is the
-  project's starting frame now, carrying your name and what you were told, and anything a person
+- **What a person should look at on plumlayer.com:** any Question raised for two documents that
+  disagree, among the project's Questions, and the seeded facts, each carrying your name, the time, and
+  what you read it from. What you seeded is the project's starting frame now, carrying your name and what you were told, and anything a person
   changes, or a drawing read later replaces, wins.
 - **Next:** the scope run is the next step and it wants its own session. Say plainly that this
   session is done, and that `/scope-run` starts the next one.
@@ -362,9 +369,9 @@ rather than restating it from what an earlier step said:
   `drawing-upload` and `learn-project` end it early.
 - **Cite everything.** Every seeded entry carries `sourceInstrument` + evidence. No citation → don't
   seed it.
-- **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. Uncertain or
-  conflicting facts are raised as Questions with `ask_question`, not silently resolved, seeded as
-  fact, or dropped.
+- **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. An
+  uncertain fact is named to the user and a conflicting one between two documents is one Question
+  with `ask_question`; neither is silently resolved, seeded as fact, or dropped.
 - **Seeds are the weakest entries in the ledger.** They take effect as the starting frame, recorded as
   agent-stated from what the user told you, and a drawing read supersedes them. Never present one
   as a fact read off the documents.

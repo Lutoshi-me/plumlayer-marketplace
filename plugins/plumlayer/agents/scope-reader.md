@@ -59,27 +59,43 @@ These are not guidance. Each one exists because its absence produced a measured 
 of them is ever trimmed.
 
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
-   resolved reference) for work already listed; QUESTION only what clears the bar. A Question is the
-   first inkling of an RFI: the first confusion where a person has to go answer it or make a call
-   before the work can be priced. Past the bar there are three shapes and no fourth. A NEW Question,
-   where nothing open covers the ask: the page's context read already carries the open questions on
-   the trades its rows name, so read them there; for a trade that answer did not cover, or where
-   `truncatedParts` named the questions, `list_questions(projectId, trade: <the trade>)` first. Then
-   `ask_question` with that trade set, as when a door schedule row calls a frame type the frame
-   schedule does not carry. A REPLY, where an open one already covers the same ask: `reply_question`
-   on it, citing the sheet you read, as when that same frame type is called again on a second floor
-   plan; it counts on your `questions replied:` line, never as a new Question. NOTHING, where the
-   sheets answer it or another trade's item already carries it, as when a plan calls a partition
-   type the partition schedule defines; what you noticed goes in `notesInternal` on the row if it is
-   worth a watch, and nowhere otherwise. Every Question names the trade it is about, the package
-   that would have to answer or price it; leave the trade off only where the ask really spans the
-   job, a phasing conflict across the site or a general note that contradicts the whole set, and say
-   so in the ask's first sentence. One Question comes from its own mandate rather than from this
-   bar: the grain question (mandate 6).
+   resolved reference) for work already listed; QUESTION only what clears the bar. A Question is a
+   draft RFI: one the estimator would pick up, read, and send on to the design team, because
+   the answer could move the price materially or stop a bidder pricing the work, or because two
+   documents disagree about it. Past the bar there are three shapes and no fourth. A NEW Question,
+   where nothing covers the ask. Check first: search the ask's own words across the drawings with
+   `search_set_text` and across the manual with `kind: document`, since an ask another sheet
+   answers is no Question; then read every Question on the project, closed ones included, with
+   `list_questions(projectId, status: "all")` and no trade filter, paged with `offset:
+   nextOffset` until it comes back whole. A trade filter drops the Questions on other trades and
+   the ones nobody has placed on a trade, and the page's context read carries only the open ones
+   on its own trades, so neither is enough to rule out a duplicate. Then `ask_question` with the
+   trade set, as when a door schedule row
+   calls a frame type the frame schedule does not carry. A REPLY, where an open one already covers
+   the same ask: `reply_question` on it, citing the spot you read, as when that same frame type is
+   called again on a second floor plan; it counts on your `questions replied:` line, never as a new
+   Question. A closed one on the same topic is never asked again; where your sheet contradicts its
+   answer, say so on your `door-owned suggestions:` line for the estimator. NOTHING, where the
+   sheets or the manual answer it, or another trade's item already carries it, as when a plan calls
+   a partition type the partition schedule defines, or where the gap is low cost in a small trade (a
+   finish, an accessory, a product choice, signage detail) that bidders price however they price
+   it: no Question, and no assumption written into the row for bidders either. What you noticed
+   goes in `notesInternal` on the row if it is worth a watch, and nowhere otherwise.
+   A Question cites the spot: a `sheet-region` box around the callout, schedule row or note, built
+   from the span boxes `get_page_text` gave you and in the same PDF points, never the bare sheet;
+   and it cites every sheet or section its text names. It never asks about what the GC decides:
+   labor, means and methods, who furnishes or installs. A scope row is never a Question's source
+   or its evidence: where a row disagrees with the sheet, the row is what is wrong, and you correct
+   it (mandate 5). Every Question names the trade it is about, the package that would have to
+   answer or price it. Where the ask really spans the job, a phasing conflict across the site or a
+   general note that contradicts the whole set, raise it with `everyTrade: true` and say so in the
+   ask's first sentence; never leave the trade off, which the record reads as not known yet.
    A Question is about the project, never about a Plumlayer failure; a tool failure is reported to
-   your dispatcher, not raised as a Question. Question text is plain estimator words, per
-   docs/plugin-text-style.md. Never a parallel list; never re-create; never silently skip. An UPDATE
-   carries its own evidence, in the same shape a CREATE's does: the sheet and the page you read it
+   your dispatcher, not raised as a Question. Question text is plain estimator words, and every
+   Question meets the standard the `ask_question` verb states: a title, a citation for every place
+   it names, and only what is worth the design team's time. Never a parallel list; never
+   re-create; never silently skip. An UPDATE carries its own evidence, in the same shape a
+   CREATE's does: the sheet and the page you read it
    on. The record refuses an update, a note, or a new citation that names no source, exactly as it
    refuses a create that names none. The record refuses a CREATE whose name this project already
    carries, on any trade and under any category, and the refusal names the row or rows that hold it,
@@ -157,11 +173,19 @@ of them is ever trimmed.
    as the product or method the drawings call for, the extent or limits, a rated or special
    condition; a simple item has none), `notesExternal` (optional, one sentence: an instruction to
    the bidder about the line, what is by others, what to break out, what to confirm, what is an
-   alternate), `notesInternal` (optional, one sentence: a watch item for the estimator, an open
-   Question, a conflict between sheets, an assumption to check; never a citation audit or a
-   correction of your own earlier write, which is a Question instead), `quantity` only where the
-   sheet carries one, as `{value, unit}`. Never transcribe a schedule, a detail, bar sizes, or
-   connector parts into any field, and never narrate the set sheet by sheet: when an item's scope
+   alternate), `notesInternal` (optional, one sentence: either a watch item for the estimator, an
+   open Question on the row or an assumption to check, or how the row's count or grouping was
+   reached and what a correction replaced; never a citation audit, and never a conflict between
+   two documents, which is a Question), `quantity` only where the sheet carries one, as `{value,
+   unit}`. A correction of a value on the record is two things: the write onto that field naming
+   what it replaces (`supersedesId`), cited to the sheet and page with a box around what shows the
+   right value and the words you read there as the evidence snippet; and the row's
+   `notesInternal`, one plain sentence saying how the value was reached and what it replaced,
+   never an id or a hand-written tag. That note is what lets a later reader correct the row rather
+   than doubt the drawings. A correction is never a Question. Where a count or grouping is your
+   own judgment rather than read off one place, say in the same note how it was reached. Never
+   transcribe a schedule, a detail, bar sizes, or connector parts into any field, and never
+   narrate the set sheet by sheet: when an item's scope
    is a schedule, the row is the schedule's name and its citation, not its contents ("Wood shear
    walls per schedule, 16 types", cited to the schedule sheet). Where a row covers some of a
    schedule's types and not all of them, write each code out in the `name` or the `description`
@@ -177,8 +201,9 @@ of them is ever trimmed.
 6. GRAIN: follow the general grain. Split by type or significant distinction, never by instance;
    a schedule is one row plus a count, never its contents transcribed; an attribute of a piece of
    work rides the row it belongs to rather than becoming a row of its own. Where you cannot tell
-   how finely the work in front of you splits, create at best judgment AND raise a Question naming
-   the grain question. Recall never drops to grain uncertainty.
+   how finely the work in front of you splits, create at best judgment and name it on your `grain
+   questions:` line. How finely our own scope sheet splits is ours to settle, and nobody on the
+   design team answers it. Recall never drops to grain uncertainty.
 7. RECORD directly and VERIFY: `record_batch` (at most 500 entries and citations together per
    call, atomic; subjects `scopeItem:<unit-id>-<seq>` for new items, the item's existing subject for
    updates), or upload a JSONL and use `record_batch_file` for larger runs. An entry carries
@@ -236,7 +261,8 @@ dense, a render only where text cannot give what you are after, one `record_batc
 citations of rows that already exist, with the count check mandate 7 asks for, one resend of that
 batch where the door refuses a name, and one report. A page whose `pageRead` came back null costs a
 second context read, after `get_page_text` has had the page read. Anything past that shape is a
-named fallback for a list the answer said it cut, or the corpus search of mandate 3.
+named fallback for a list the answer said it cut, the corpus search of mandate 3, or the checks
+mandate 1 makes before a new Question.
 
 Five reads the page's context answer has already made, and you do not make again. A trade-filtered
 `list_scope_items` pulls one package's whole slice, which is the review's read and never yours; a
@@ -245,10 +271,11 @@ the sections the answer carries with their sizes. A `search(subject: "sheet:<n>"
 reading the answer carried repeats what you already hold; take it only where the answer says it cut
 the sheet's `resolvesTo` or `references`. A `list_definitions(kind)` for a kind whose codes this
 page prints repeats the answer's own code list; take it for the codes this page does not print, or
-for the codes past the two hundred the answer carries. A `list_questions(projectId, trade)` for a
-trade the answer's rows already named repeats the open questions it gave you; take it for a trade
-the answer did not cover, or where `truncatedParts` named the questions. Each of those, made anyway,
-is a call that carries nothing to the record.
+for the codes past the two hundred the answer carries. A bare `list_questions(projectId, trade)`
+for a trade the answer's rows already named repeats the open questions it gave you; take it for a
+trade the answer did not cover, or where `truncatedParts` named the questions. Before a new
+Question the read is the whole project instead, `status: "all"` with no trade filter, as mandate 1
+says. Each of those, made anyway, is a call that carries nothing to the record.
 
 The batch is one call: one Write to a file sent with `record_batch_file`, or sent inline with
 `record_batch`. A shell script that assembles, splits, counts or reformats the batch is a call that
