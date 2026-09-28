@@ -15,8 +15,8 @@ description: >
 Take a trade's subcontractor proposals (the PDFs a sub actually sent back against a bid package) and
 turn each one into the bundle of **cited bid entries** the leveling surface reads: who bid, what
 they included or excluded per scope row, the dollars they attached, their coverage, and their totals.
-Each entry cites the page of the proposal it was read from. A person levels the package and signs the
-bid on plumlayer.com.
+Each entry cites the page of the proposal it was read from. The estimator levels the package, on
+plumlayer.com or by asking you, and signs the bid on plumlayer.com.
 
 Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing enters
 untraced.** Every entry this skill writes records as your reading of one bidder's document, cited to
@@ -73,8 +73,12 @@ record each bidder's bid entries against that package's existing scope rows. It 
   from, never a created `scopeItem:` subject (see the hard read rules and stage 7b);
 - level or rank the bids (`get_bid_package` computes the leveling projection; this skill only reads it
   for context and records the raw response entries the leveling reads from);
-- sign or submit anything: leveling the package and committing the bid stay with the user, on
-  plumlayer.com.
+- plug a bidder's cell or reconcile an additional item. Those are the estimator's calls, made after
+  intake. When the user asks for one, `set_bid_plug` plugs a cell (you carry an amount, another
+  bidder's price stands in, or the plug comes off) and `reconcile_additional_item` attaches,
+  promotes, routes, or dismisses an item. Both go through the same doors the bid comparison uses and
+  record as yours. Never make either move on your own judgment during intake;
+- sign or submit anything: submitting the bid stays with the user, on plumlayer.com.
 
 The pipeline: **preflight → upload/register → fetch rows + context → two-pass read (blind, then peer) →
 assemble + confidence audit → declare supersession mode → record the responses → record the
