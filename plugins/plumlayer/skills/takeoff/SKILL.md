@@ -249,6 +249,15 @@ never invent one.
   ("Windows: exterior elevations"); `type` is the kind from stage 1 (`count` / `linear` /
   `area`); `unit` to match (`ea`, `lf`, `sf`); `folder` / `color` / `notes` only when they carry
   real information (a note is a fine home for the run's counting rule).
+- `outputs`: `{ included, sidebar, volumeUnit? }`, only when the request asks for more than the
+  base quantity. `included` lists the quantities the condition reports, `sidebar` is the one the
+  Measurements panel shows, `volumeUnit` is `CF` or `CY` (CF when left out). A count offers
+  count, length (base perimeter), area (footprint area) and volume; a linear offers length and
+  area (footprint area from `thicknessIn`); an area offers area. With no `outputs` a condition
+  reports its base quantity only. Dimensions (`lengthFt`, `widthFt`, `heightFt` on a count,
+  `thicknessIn` on a linear) come from what the drawings say. A volume may be included before
+  its height is known; leave the height out and say so in the report. Never invent a dimension
+  to fill a quantity.
 - `evidence`: `method`: how you decided this condition belongs (the request plus what you read);
   `source`: the sheets and legend you read to define it.
 - `sourceInstrument`: name what actually produced it (e.g. `takeoff-skill`). Never
@@ -257,6 +266,9 @@ never invent one.
   and is the intended shape: reuse their conditionId from stage 2; do not create a duplicate. Only
   revise a condition definition (`supersedesId`) when it is your own and the revision is real
   (rename, note); type and unit are immutable: a different kind is a new condition.
+- A revision replaces the whole value. Read the condition back with `takeoff_read` first (it
+  returns folder, color, notes, dimensions and `outputs`) and send every field you mean to keep,
+  or a person's color and notes are lost. A field the door does not know is refused.
 
 ## 7. Place the marks
 
@@ -302,7 +314,9 @@ Two reads, because they answer different questions:
 
 1. **The condition:** `takeoff_read(projectId, conditionId: <the condition>)`: the same read the
    editor's panel is fed from. Its summary carries the condition's live member count and base
-   total for the whole set. Two traps: the row list includes the condition's own definition row
+   total for the whole set, and `quantities`: each quantity the condition reports, with its
+   number and unit, or no number and `absent` naming why (`needs-height`, `needs-dimensions`,
+   `no-base`). Report an absent quantity with its reason; never fill it in. Two traps: the row list includes the condition's own definition row
    (so raw row totals run one higher than the member count), and paging with `nextCursor` can
    repeat a boundary row: if you walk rows across pages, dedupe by entry id before counting.
 2. **Per-sheet counts, the cheap way:** the summary always describes the **whole filtered set**,
