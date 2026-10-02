@@ -243,25 +243,57 @@ amendments, stays in `scope-run`.
    the finished scope list instead. No question asked, no branch beyond this sentence.
 3. **Draft the split** from the spec TOC (step 3), by how subcontractors actually split
    themselves in this market: which sections bundle into which package, which get carved out, a
-   primary CSI section per package. Probe the usually-present families the TOC is silent on
-   (site/civil, SOE, landscaping/exterior improvements), the same probe that already produces
-   `missingScopeFamily` entries (step 6): a silent family becomes a `missingScopeFamily` entry AND,
-   where a job of this kind would normally carry the trade, a package. It raises no Question.
+   primary CSI section per package. Every section step 3 read outside Divisions 00 and 01 goes to
+   the package whose bidder buys it: you place the manual section by section. Probe the
+   usually-present families the TOC is silent on (site/civil, SOE, landscaping/exterior
+   improvements), the same probe that already produces `missingScopeFamily` entries (step 6): a
+   silent family becomes a `missingScopeFamily` entry AND, where a job of this kind would normally
+   carry the trade, a package. It raises no Question.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be
    created (the verb requires a catalog code): name it in the report as "no catalog trade, not
    created," never force a wrong code.
+
+   A package carries two lists, and they hold different things. `codes` holds catalog trades: the
+   other trades the package buys, which decide which companies get invited. `manualSections`
+   holds the manual's own sections the package buys, by the numbers the manual prints. The
+   manual's numbers and the catalog's often differ (a manual's residential appliances section at
+   `11 30 13` against the catalog's `11 31 00`, or a glazing section at `08 80 00` the catalog
+   only splits finer). So a package's catalog trades are resolved by trade name through
+   `directory_list_trades`, and the manual's section numbers go into `manualSections` exactly as
+   step 3 read them. Never write the nearest catalog code in place of a manual section, and never
+   put a manual section number into `codes`.
 5. **Create each missing package** with `solicitation_create_package(projectId, tradeCode, name,
-   codes, notes)`: name = the package display name; `tradeCode` is the package's primary section;
-   `codes` lists the other sections bundled into it (verbatim catalog ids from the same
-   `directory_list_trades` resolution as step 4, never repeating `tradeCode`); `notes` carries a
-   one-line rationale in plain prose, no fixed shape. Count-verify: re-list packages
-   (`solicitation_list_packages`) and confirm every created one landed.
+   codes, manualSections, notes)`: name = the package display name; `tradeCode` is the package's
+   primary catalog trade; `codes` lists the other catalog trades bundled into it (verbatim catalog
+   ids from the same `directory_list_trades` resolution as step 4, never repeating `tradeCode`);
+   `manualSections` lists every manual section the package buys; `notes` carries a one-line
+   rationale in plain prose, no fixed shape. A package already on the project (sub-step 1) gets
+   the sections your draft gives it the way sub-step 6 adds a section to a package.
+6. **Place every section, then count.** Re-list packages with `solicitation_list_packages` and
+   confirm every created one landed. The same answer carries `manualSectionPlacement`:
+   `sectionsOutsideFrontEnd`, how many sections outside Divisions 00 and 01 are on the record,
+   and `onNoPackage`, each one no package lists. For each section on `onNoPackage`, find the
+   package whose bidder buys it the way sub-steps 3 to 5 do, creating that package when the
+   project lacks it and the catalog has its trade. To add a section to a package, read the
+   package's current `manualSections`, then send `solicitation_update_package(packageId,
+   manualSections)` with that list plus the new sections, each number once:
+   `solicitation_update_package` replaces the whole list, and it refuses two spellings of one
+   section. Re-read the package before each later change to it. Re-list until `onNoPackage` is
+   empty, or every section left on it is one of two kinds, each named in the report with its
+   reason: work you leave off on purpose because no subcontractor bids it here, such as
+   owner-furnished work with no installer, or a section whose buying trade has no catalog
+   match, named with the trade you looked for. Always read `manualSectionPlacement.truncated`:
+   when it is true the count is incomplete, even with `onNoPackage` empty, and the report says
+   so. When it is false, the sections placed are `sectionsOutsideFrontEnd` less the length of
+   `onNoPackage`. This sub-step is also how a project whose packages predate the manual, or were
+   drafted without placing every section, gets its sections placed; `scope-run` runs it before
+   any package review reads.
 <!-- user-facing -->
-6. **Show the split as what you did, not as a question**, mirroring `scope-run`'s wording: "I split
-   the job into N packages; here they are. Change any of them on the site or tell me and I will
-   redo it." No approval is collected.
+7. **Report the split**, mirroring `scope-run`'s wording: "I split the job into N packages; here
+   they are. Change any of them on the site or tell me and I will redo it." No approval is
+   collected.
 <!-- /user-facing -->
 
 ## 9. Write the project description
@@ -299,9 +331,10 @@ recorded as an entry, never stored as truth.** Sections, in order:
    yet" note from step 3), and the reconciliation-gate status (its report counts, or "hasn't run yet"
    from step 4).
 5. **Hazards**, the `hazardFlag` entries.
-6. **Packages**, the packages on the project after step 8: name, catalog trade id, primary section,
-   bundled sections, per package, or the "spec reading hasn't run for this project" note when step 8
-   created none.
+6. **Packages**, the packages on the project after step 8: name, catalog trade id, the other
+   catalog trades it buys, and the manual sections it buys, per package; then the manual sections
+   on no package with each one's reason, or the "spec reading hasn't run for this project" note
+   when step 8 created none.
 7. `[PLACEHOLDER, definitions-as-context envelope]`, a clearly marked final section; this
    skill does not design that envelope, it only reserves the slot.
 
@@ -326,8 +359,10 @@ Tell the user, in plain terms:
   between documents. What you recorded is the project's working context now, carrying your name
   and citations; anything a person changes wins.
 - **The package split**, packages created, packages already present on the project, any package
-  named "no catalog trade, not created," TOC sections deliberately unbundled, or the "spec reading
-  hasn't run for this project" note when no spec sections exist.
+  named "no catalog trade, not created," how many of the manual's sections outside Divisions 00
+  and 01 you placed on a package out of how many the manual has (or that the count is incomplete,
+  when it was cut short), each section you left on no package with its reason, or the "spec reading hasn't run for this project" note when no spec
+  sections exist.
 - **The structure**, the sheet that grounded the system and the sheet that grounded the floor
   counts when you filled it, or that you left it blank and which half the set does not state.
 - **The description**, whether you wrote one or found a person's already in place and left it, say
@@ -360,6 +395,7 @@ Close by saying orientation is done and everything it made is on the project rec
   regenerated in full on the next run rather than patched.
 - **The split anchors on the spec table of contents, never on drawing disciplines.** No spec
   sections on the project means no packages, and the report says so plainly.
+- **Complete step 8's placement check before reporting the split.**
 - **Packages are match-or-create; a re-run never duplicates one.** Read `solicitation_list_packages`
   first and skip any catalog trade id already represented on the project.
 - **Status is a person's categorization; no skill sets it.** Orientation's only write to the

@@ -238,8 +238,8 @@ with one unit and three differences.
   sends it, and its `purpose` names the package. The
   dispatch carries the project id, the window, the pass id, the unit id, the catalog trade id it
   reviews for, the package id, the run folder path, and the pass brief path. Paste nothing from
-  that file into it, and never the package's `codes`: the reviewer reads those off the record, so
-  the codes it matches against have one source.
+  that file into it, and never the package's `codes` or `manualSections`: the reviewer reads
+  those off the record, so the sections it checks have one source.
 - **Verify against the pages the review opened.** The reviewer names every page it opened on its
   `pages opened:` line, and those sheets are what you check. A line naming `section <code>` is a
   manual page the review read to judge a section, not a sheet, and never goes into the call; a

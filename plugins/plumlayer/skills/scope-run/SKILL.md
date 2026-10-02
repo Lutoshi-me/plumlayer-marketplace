@@ -46,8 +46,8 @@ The three windows:
    too coarse for, the Questions that clear the bar for an RFI. When the window closes the index
    runs again, so every row cites every page it appears on before a review reads it.
 3. **The reviews.** One review per bid package, read off the record rather than off the set: the
-   package's own rows and candidates, the definition codes that resolve to it, the spec sections
-   under its codes, and its catalog name and aliases. Those are the words the review searches the
+   package's own rows and candidates, the definition codes that resolve to it, the manual sections
+   it lists in `manualSections`, and its catalog name and aliases. Those are the words the review searches the
    set's text for, and a hit no row carries becomes a row, cited to a page the reviewer opened for
    it. The same review finds where the manual and the drawings are silent on each other: a
    section on the package whose work no sheet shows, and work on the package's rows that no page
@@ -515,8 +515,17 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    carries a catalog `tradeCode`. A package with none is resolved now (`directory_list_trades`,
    exact `code` first then `query` by name or alias, the id recorded verbatim) or named "no catalog
    trade" in the ledger; readers may only choose trades the catalog knows, since the door checks
-   them. Then send one fresh agent to copy that response to `<run folder>/plan/packages.json`,
-   byte for byte, returning one line; the plan script reads it from there, and you never hold it.
+   them.
+4. **The manual's sections are placed.** The same `solicitation_list_packages` answer carries
+   `manualSectionPlacement`. A package review reads only the manual sections its package lists in
+   `manualSections`, so a section on no package is a section no review checks. Where
+   `onNoPackage` is not empty, the packages were drafted before every section was placed: run
+   `learn-project` step 8 sub-step 6 yourself now, placing each listed section on the package that
+   buys it, before window 1 starts. Read `manualSectionPlacement.truncated` whatever
+   `onNoPackage` holds: when it is true the placement count is incomplete, and close-out says so.
+   Every section still on `onNoPackage` carries its reason to close-out. Then send one fresh agent to copy the final `solicitation_list_packages` response
+   to `<run folder>/plan/packages.json`, byte for byte, returning one line; the plan script reads
+   it from there, and you never hold it.
 
 ## 3. The read plan, user-approved
 
@@ -795,10 +804,11 @@ come next, in one sentence. A pause here loses nothing.
    open, by count and named where it is a code found nowhere.
 
 Spec sections account differently, since estimators never write CSI digit strings into scope
-text: a TOC section is accounted when it appears as a package's `tradeCode` or in its `codes`,
-read fresh via `solicitation_list_packages`, not a local artifact. After stage 8's amendments are
-applied, list every TOC section that appears on no package's `tradeCode` or `codes`: those are the
-TOC sections still open, reported the same way.
+text: a manual section is accounted when a package lists it in `manualSections`. After stage 8's
+amendments are applied, read `manualSectionPlacement` off a fresh `solicitation_list_packages`
+call, never a local artifact: its `onNoPackage` sections are the manual sections still open,
+reported the same way, each with the reason you left it off, and where its `truncated` is true
+the count is incomplete and is reported as incomplete.
 
 ## 8. Amend the packages
 
@@ -813,11 +823,13 @@ drafted and created at orientation (`learn-project`): read it fresh via
    `solicitation_create_package` for a genuinely new package, `solicitation_update_package` to
    fold, split, or rename an existing one. Resolve the amendment's trade the same way as
    orientation (`directory_list_trades`, exact `code` first then `query` by name/alias; the
-   catalog trade id recorded verbatim, store-resolution, non-negotiable 3), and set `codes` to the
-   other sections the package now covers (verbatim catalog ids, never repeating the package's own
-   `tradeCode`), with a one-line rationale in `notes` (plain prose, no fixed shape).
-   `solicitation_update_package(packageId, codes)` replaces the whole list, so a fold or split
-   rewrites the lists of every package involved. A package with no reasonable catalog match cannot
+   catalog trade id recorded verbatim, store-resolution, non-negotiable 3), set `codes` to the
+   other catalog trades the package now buys (verbatim catalog ids, never repeating the package's
+   own `tradeCode`), and set `manualSections` to the manual sections it now buys, by the manual's
+   own numbers, with a one-line rationale in `notes` (plain prose, no fixed shape).
+   `solicitation_update_package` replaces each list it is sent whole, so a fold or split rewrites
+   both lists of every package involved, and a section moved off one package lands on another
+   in the same amendment. A package with no reasonable catalog match cannot
    be created or amended into one: name it "no catalog trade, not created" in the report. Where an
    amendment moves work between packages, the items on the moved trade are re-homed in one
    `record_batch` of `belongsToTrade` records, count-verified, and the move is named in the
@@ -864,10 +876,11 @@ Report to the user, in plain words:
 - **What is still open**: the tags and codes the index could match to nothing, by count, with the
   codes found nowhere named, and said plainly as what it is: those are marks nobody placed on the
   sheet they sit on, and this run did not go back for them. Also the sheets left out of the read
-  plan at the start, and the TOC sections on no package.
+  plan at the start, and the manual sections on no package, each with the reason it is on none,
+  or that the count of them is incomplete when it was cut short.
 - **The package split**: the amendments made this run (created / split / collapsed / renamed,
   each with its rationale), the packages derived here from scratch only in the no-spec-book case,
-  and TOC sections deliberately unbundled.
+  and how many manual sections you placed on a package at the start of the run, if any.
 - **How long it took**: wall-clock from the read plan's approval to this report.
 <!-- /user-facing -->
 
@@ -957,9 +970,9 @@ Review your package as your definition says, write your report to
 <run folder>/reports/<unit id>.md, then return it.
 ```
 
-The package's `codes` are not in that dispatch: the reviewer reads them off the record with
-`solicitation_get_package`, so the codes it matches spec sections against have one source and are
-the ones the record holds when the review runs.
+The package's `codes` and `manualSections` are not in that dispatch: the reviewer reads them off
+the record with `solicitation_get_package`, so the manual sections it checks have one source and
+are the ones the record holds when the review runs.
 
 **The reader's report** comes back in this shape, counts and named anomalies only:
 
@@ -1030,7 +1043,7 @@ anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
-sections not checked: <section code + the reason, one per line, or "none">
+sections not checked: <section code + the reason, one per line, "no manual sections on this package", "the manual was not read in", or "none">
 families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```

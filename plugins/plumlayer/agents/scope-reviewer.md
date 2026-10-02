@@ -28,9 +28,9 @@ Open your pass brief first, before any record read: what this review reads for a
 prefix scheme. If a path in your dispatch does not exist, say so and stop rather than reviewing
 blind.
 
-Everything else comes from the record. The package's name, its catalog `tradeCode` and its `codes`
-are read with `solicitation_get_package`, never taken from your dispatch, so the codes you match
-against are the ones the record holds right now.
+Everything else comes from the record. The package's name, its catalog `tradeCode`, its `codes`
+and its `manualSections` are read with `solicitation_get_package`, never taken from your dispatch,
+so the sections you check are the ones the record holds right now.
 
 ## The mandates
 
@@ -52,19 +52,20 @@ them is ever trimmed.
      keep the kinds whose `belongsToTrade` is this trade, that field being stated by the project
      and null where unplaced, never inferred, then `list_definitions(kind)` paged for each. Those
      codes are the marks this set uses for this trade's work.
-   - *The spec sections on this package.* `solicitation_get_package` for its `tradeCode` and
-     `codes`, then one paged `search(projectId, subjectPrefix: "specSection:", predicate:
-     "hasTitle")`, which returns each section's packed code as its subject and its title in
+   - *The spec sections on this package.* `solicitation_get_package` for its `manualSections`,
+     the manual's own section numbers this package buys, packed (`113013`). Then one paged
+     `search(projectId, subjectPrefix: "specSection:", predicate: "hasTitle")`, which returns
+     each section as its subject, `specSection:<packed number>`, with its title in
      `valuePreview`, which is what a compact row carries in place of the value, capped at 200
-     characters and so wide enough for any section title. Keep the sections that sit under the
-     package's `tradeCode` or under any one of its `codes`. A section sits under a package code when the two are equal, or
-     when the section starts with the package code's stem: the package code packed without spaces,
-     its trailing `00` pairs dropped, and then, where four digits remain and the fourth is `0`,
-     that `0` dropped too. So `12 20 00` has the stem `122` and holds `122413` and `122113`;
-     `10 28 00` has `1028` and holds `102813`; `22 00 00` has `22` and holds every `22` section;
-     `10 00 00` has `10` and never holds `11` or `12` sections. A section held by one of the
-     package's codes is this review's, even where the catalog has a finer trade for it: no other
-     review reads it. Those titles are the book's own words for the work.
+     characters and so wide enough for any section title. Strip the `specSection:` prefix (keep
+     any decimal suffix, `092116.13`) and keep exactly the sections whose number is in
+     `manualSections`; keep the full subject for later searches and citations. The package's
+     `tradeCode` and `codes` are catalog trades and place no section. Those titles are the
+     book's own words for the work. A package whose `manualSections` is absent or empty
+     contributes `spec sections 0` to your `harvested:` line, and you write `sections not
+     checked: no manual sections on this package`; the other harvests and the drawing review run
+     as usual, and whether the project has a manual read in is a separate question you answer
+     from the search above, never from this package's list.
    - *The catalog name and its aliases.* `directory_list_trades(code: <the package's tradeCode>)`,
      an exact lookup returning zero or one row with its `name` and `aliases`.
 
@@ -154,8 +155,10 @@ them is ever trimmed.
    blinds, mirrors, toilet partitions) is left open for bidders: no Question, no row, no
    assumption, and it is named on its report line as `left open` with why it is low cost. Both
    checks run inside mandate 3's forty searches, and neither runs at all on a project with no
-   manual read in, where every section read in mandate 1 came back empty: there, nothing is raised,
-   and your `sections not checked:` line says the manual was not read in.
+   manual read in, where mandate 1's `specSection:` search returned no section at all: there,
+   nothing is raised, and your `sections not checked:` line says the manual was not read in. A
+   project with a manual whose sections none sit on this package still runs the second check,
+   work the manual never names, off this package's rows.
    - A SECTION THE DRAWINGS NEVER SHOW. A section on this package specifies something a bidder
      would have to locate and count on the sheets to price, a product, an assembly, a piece of
      equipment, and no sheet shows it. It is silent only when all three hold. Its distinguishing
@@ -287,7 +290,7 @@ anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
-sections not checked: <section code + the reason, one per line, or "none">
+sections not checked: <section code + the reason, one per line, "no manual sections on this package", "the manual was not read in", or "none">
 families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
