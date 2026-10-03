@@ -307,7 +307,7 @@ any repo, never uploaded to the project except record files, never recorded as p
   never a sheet line. Audience: machine, and the tables for the lead.
 - `plan/`: byte-for-byte copies of a verb's response, paged to disk by a fresh agent, never
   retyped and never read by a model. `packages.json` (`solicitation_list_packages`) is the plan
-  script's window 3 input. `window-1.json` is what the window 1 plan run wrote, the unit keys it
+  script's window 3 input, copied again at the start of window 3. `window-1.json` is what the window 1 plan run wrote, the unit keys it
   selected and the unit keys it left out with its `--include` and `--exclude` patterns and their
   reasons, and it is the window 2 plan run's input, so that window subtracts window 1 rather than
   recomputing it. `window-2.json` is what the last window 2 plan run wrote, the unit ids it
@@ -771,7 +771,11 @@ say every sheet has been read while any is waiting.
 
 On the go-ahead:
 
-1. **Write the window 3 plan.** Run the plan script for window 3. It writes one pass per package in
+1. **Write the window 3 plan.** The packages may have changed since window 1: a scope item written
+   on a trade with no package makes that trade's package as it lands, so windows 1 and 2 can have
+   made packages the plan has not seen. First send one fresh agent to copy a fresh
+   `solicitation_list_packages` response over `<run folder>/plan/packages.json`, byte for byte,
+   returning one line. Then run the plan script for window 3. It writes one pass per package in
    `plan/packages.json`, in package order, each pass carrying one review unit whose id is the pass
    id, with two packages carrying the same catalog trade planned one after the other. It reads no
    sheets and takes no inventory. Read back only its bounds line: packages, reviews, passes,
@@ -821,7 +825,8 @@ drafted and created at orientation (`learn-project`): read it fresh via
    specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
    package that should collapse into another once scale is understood), apply the amendment live:
    `solicitation_create_package` for a genuinely new package, `solicitation_update_package` to
-   fold, split, or rename an existing one. Resolve the amendment's trade the same way as
+   fold, split, or rename an existing one. A trade an item already sits on has its package
+   already, so amend that package rather than creating one. Resolve the amendment's trade the same way as
    orientation (`directory_list_trades`, exact `code` first then `query` by name/alias; the
    catalog trade id recorded verbatim, store-resolution, non-negotiable 3), set `codes` to the
    other catalog trades the package now buys (verbatim catalog ids, never repeating the package's
@@ -844,9 +849,12 @@ Show what you did in plain words, mirroring orientation's wording: name the amen
    a tool call. Once the amendments are applied, append `phase: packages amended` to the ledger.
 2. **Empty-baseline case.** When `solicitation_list_packages` returned no packages because the
    project has no spec sections (precondition 4), orientation could draft no split and readers
-   named trades off the catalog alone; this stage derives the split from the finished scope list
-   instead of amending a baseline: same bundling logic as orientation, same catalog resolution,
-   same `solicitation_create_package` calls and `codes`/`notes` usage. Say so plainly in the
+   named trades off the catalog alone. Every trade an item landed on already has a package under
+   its catalog name, made as the item was written, so this stage shapes that split from the
+   finished scope list instead of amending a baseline: same bundling logic as orientation, same
+   catalog resolution, `solicitation_update_package` to fold, bundle and rename those packages with
+   the same `codes`/`notes` usage, and `solicitation_create_package` only for a package whose trade
+   no item carries. Say so plainly in the
    report: the split was derived here, from the scope list, because there was no spec book to
    anchor an earlier baseline.
 
