@@ -5,8 +5,8 @@ description: >
   drawing delivery and the project manual in, then orient and draft the baseline packages. Trigger on
   "set up this project", "new project", "create a project", "start a new bid or pursuit", "onboard
   this project", "/project-setup". Drives create_project, record_batch, and the drawing-upload and
-  learn-project skills in full. Does not build the scope list (scope-run), read sub proposals
-  (bid-intake), or place takeoff measurements (takeoff).
+  learn-project skills in full. Does not build the scope list (scope-run), prepare the invitations
+  (prepare-invitations), read sub proposals (bid-intake), or place takeoff measurements (takeoff).
 ---
 
 # Project setup: stand up a new pursuit, end to end
@@ -35,8 +35,10 @@ manual in, and orients on what came back.
 A skill is a step; what a user runs is a process. This skill is **New pursuit, session 1**, and it
 runs that session end to end: the shell, the seed facts, the delivery read in, and the orientation
 pass. The **scope run is session 2**, its own skill (`scope-run`), and it wants its own session; do
-not start it from here. When new paper arrives later (a bulletin, an addendum, a re-issue), that is
-a different process and its first step is `drawing-upload` on its own.
+not start it from here. Getting the invitations ready is its own step too (`prepare-invitations`),
+callable any time after this session; it does not wait for the scope run. When new paper arrives
+later (a bulletin, an addendum, a re-issue), that is a different process and its first step is
+`drawing-upload` on its own.
 
 **The load-bearing consequence, don't interrogate for what the set is about to tell you.** Almost
 everything about a project is **read off the drawings later in this same session, at a far higher
@@ -181,6 +183,12 @@ starter-file offer, and, when other files exist, that one take-or-leave question
 no held answer, when nothing at all is found, is the exception the one-turn rule allows: a plain
 request for the drawings' path.
 
+When the user says to use the other files, each is a handed-over document, read as the end of this
+step says: seed what it plainly states, cited to it, and pass any that belongs to the drawing
+delivery or the project manual (an addendum, another volume) to step 5 with the rest. A file that
+carries neither, a bid tab or a budget, is named in the closing report as read with nothing
+seeded. Left, nothing reads them.
+
 The drawings and the project manual are the job, and step 5 uploads them. Never walk above the
 folder you were handed, into siblings, or into a folder you merely happen to be running in when the
 user named a different one.
@@ -253,6 +261,10 @@ scoped to it.
 > **Fallback if `create_project` isn't available** (older plugin/server without the verb): ask the
 > user to create the project on **plumlayer.com** (one click), then call `list_projects` and resolve
 > the new `projectId` from the list. The rest of the skill is unchanged.
+>
+> **If the client refuses the call** (its permission check, or the user declining it), nothing was
+> created: say so, quote the refusal, and stop. Never send the write again in another shape or
+> through another verb; once the user allows it, `/project-setup` starts over from step 1.
 
 <!-- user-facing -->
 Confirm back to the user: "Created project **<name>** (`<projectId>`)."
@@ -341,6 +353,14 @@ real finding out of step 5, not a precondition to wave through.
 
 ## 7. Report
 
+Before the report, decide whether the job is going out to bid, from what this session already
+holds and never from a new question. Any one of these is enough: the user called it a bid (a hard
+bid, out to bid, a new bid); a document they handed over is an invitation to bid, a bid form, or
+instructions to bidders; a bid due date was given or seeded; or the project manual's Division 00
+carries bidding requirements, which one `search(projectId, subjectPrefix: "specSection:00",
+predicate: "hasTitle")` shows (an invitation or advertisement for bids, instructions to bidders, a
+bid form). With none of these, the close names the scope run alone.
+
 <!-- user-facing -->
 One closing report for the whole session, in plain terms. Read every count back from the record
 rather than restating it from what an earlier step said:
@@ -357,8 +377,11 @@ rather than restating it from what an earlier step said:
   disagree, among the project's Questions, and the seeded facts, each carrying your name, the time, and
   what you read it from. What you seeded is the project's starting frame now, carrying your name and what you were told, and anything a person
   changes, or a drawing read later replaces, wins.
-- **Next:** the scope run is the next step and it wants its own session. Say plainly that this
-  session is done, and that `/scope-run` starts the next one.
+- **Next:** when the job is going out to bid, offer `/prepare-invitations` as the next step in this
+  same session: it reads the bidding requirements into the invitations in about a minute and does
+  not wait for the scope run, and the user starts it by typing it now or any time later. Then name
+  `/scope-run`, which builds the scope list and wants its own session. When nothing you hold says
+  the job is going out to bid, say plainly that this session is done and name `/scope-run` alone.
 <!-- /user-facing -->
 
 ---
@@ -393,6 +416,11 @@ rather than restating it from what an earlier step said:
   seeds.
 - **Every count in the closing report is read back from the record**, never carried across from a
   sub-skill's own report or from memory.
+- **Invitations are offered, never run from here.** `prepare-invitations` is named at the close
+  when the job is going out to bid, and this skill never starts it. Reading an invitation to bid in
+  step 2 for the identity facts it seeds (name, type, parties, a bid due date) is this skill's;
+  setting what the invitations go out under (labor, places, the project's dates) is
+  `prepare-invitations`'.
 - **The instructions offer never overwrites.** Never write `CLAUDE.md` or `AGENTS.md` over one that
   already exists, never write either file without the user's yes, and write only the one file that
   matches the client running the session.

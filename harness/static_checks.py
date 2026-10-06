@@ -140,6 +140,7 @@ EXPECTED_SKILLS = {
     "bid-intake",
     "drawing-upload",
     "learn-project",
+    "prepare-invitations",
     "project-record",
     "project-setup",
     "scope-run",
