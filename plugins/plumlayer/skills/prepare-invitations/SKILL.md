@@ -158,7 +158,7 @@ Only what the documents or the estimator state is set.
 | job location | give the project's address: the invitation, the title page, Division 01's summary | where bids are delivered, the architect's or the owner's office |
 | owner bid due | give the day, and the time, bids must be received by: the deadline for submitting them | the time bids are opened, when given apart from that deadline; "to be announced" |
 | site visit, pre-bid meeting, questions due | give the day, and the time | "by appointment", "to be scheduled" |
-| subcontractor bid due | never from the documents: only the estimator's own word | the owner bid date less some days, a usual offset |
+| subcontractor bid due | never from the documents: only the estimator's own word | the owner bid date less some days, a usual offset, a date the documents set for bids from subcontractors |
 | time of day | give the time and either name the zone or the job's state lies in one zone | a state spanning two zones with no zone named: set the day only and quote the time in the report |
 
 Never inferred: a wage requirement from who the owner is; union from a labor agreement or the
@@ -238,12 +238,13 @@ The decisions:
 ### Dates
 
 - `owner_bid` for the deadline for receiving bids; `site_visit` for a site visit, with `endDay` for
-  a range; `other` for a pre-bid meeting and a questions deadline, named "Pre-bid meeting" and
-  "Questions due".
+  a range, one date when the documents combine it with a pre-bid meeting; `other` for a pre-bid
+  meeting, a questions deadline, and any date the documents set for bids from subcontractors (a
+  filed sub-bid deadline), one date per deadline, each named in the documents' words.
 - `list_project_dates` answers `{ count, dates }`, each date with an `id`. To change one, send
   `set_project_date(projectId, dateId: <that id>, ...)` with only the fields that change and never
   `kind`: a change naming a kind is refused, because a different kind is a different date. To add
-  one, leave `dateId` out and send `kind` and `onDay`.
+  one, leave `dateId` out and send `kind` and `onDay`, with `internal` left at its default.
 - A document's date matches a record date of the same kind (and, for `other`, the same name) when
   `onDay`, `endDay`, `atTime` and `timeZone` all agree. A matched date is left alone.
 - A record date that agrees on the day and the range but has no time, where the documents give one,
@@ -255,16 +256,16 @@ The decisions:
   the record's may be the same visit moved or another visit. The record holds none of that kind:
   add it. The documents list the record's date as well as this one: it is another visit, add it.
   Otherwise it is a step 4 item.
-- `internal` stays at its default.
 - A time only per the table above. `atTime` always goes with `timeZone`, an IANA zone such as
   "America/New_York". A time zone read off the job's state waits for step 4 when the address is a
   question there.
-- The subcontractor bid due date is never read off the documents and never worked out from the
-  owner's date. When `list_project_dates` already holds a `subcontractor_bids` date, leave it. When
-  the estimator has already said it in this conversation, set it with `set_project_date(kind:
-  "subcontractor_bids")`. Otherwise it is asked in step 4.
+- The subcontractor bid due date, the estimator's own, is never read off the documents and never
+  worked out from another date. When `list_project_dates` already holds a `subcontractor_bids`
+  date, leave it. When the estimator has already said it in this conversation, set it with
+  `set_project_date(kind: "subcontractor_bids")`. Otherwise it is asked in step 4, beside the
+  owner's date and any date the documents set for bids from subcontractors.
 - A seeded `bidDueDate` entry names a bid date without saying whose. Never set it as either date;
-  show its current value in step 4's question beside the owner's date.
+  show its current value in step 4's question too.
 
 ### The address
 
@@ -317,8 +318,8 @@ project has one on May 4.", with "add it as another site visit", "move the one o
 May 6" and "leave it" as the choices.
 
 The bid date reads like: "When are subcontractor bids due to you? Bids to the owner are due March 3
-at 2:00 PM, from the invitation to bid, page 3.", answered in their own words, with "not decided
-yet" offered beside it.
+at 2:00 PM, and filed sub-bids February 18, from the invitation to bid, page 3.", answered in their
+own words, with "not decided yet" offered beside it.
 <!-- /user-facing -->
 
 Nothing else is asked: not labor the documents leave unstated, never a trade at a time, never a
