@@ -156,7 +156,7 @@ Only what the documents or the estimator state is set.
 | prevailing wage | say the work or the contract is subject to prevailing wage, Davis-Bacon, or a named state wage law, or attach a wage schedule or determination for this project | "comply with applicable laws", "if applicable", a public owner, a building type, the market |
 | union | require union labor, or union-signatory subcontractors, for the work or for named trades | a project labor agreement alone, the region, the market, a trade's usual |
 | job location | give the project's address: the invitation, the title page, Division 01's summary | where bids are delivered, the architect's or the owner's office |
-| owner bid due | give the day, and the time, bids must be received by: the deadline for submitting them | the time bids are opened, when given apart from that deadline; "to be announced" |
+| owner bid due | give the day, and the time, bids must be received by: the deadline for submitting them, the general bids' where subcontractors' bids have their own | the time bids are opened, when given apart from that deadline; "to be announced"; a deadline for bids from subcontractors |
 | site visit, pre-bid meeting, questions due | give the day, and the time | "by appointment", "to be scheduled" |
 | subcontractor bid due | never from the documents: only the estimator's own word | the owner bid date less some days, a usual offset, a date the documents set for bids from subcontractors |
 | time of day | give the time and either name the zone or the job's state lies in one zone | a state spanning two zones with no zone named: set the day only and quote the time in the report |
