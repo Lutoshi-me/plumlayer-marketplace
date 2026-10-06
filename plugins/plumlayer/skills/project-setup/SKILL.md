@@ -157,7 +157,8 @@ somewhere else. Say nothing about the search itself.
 
 Check whether the folder already holds `CLAUDE.md` or `AGENTS.md`, and check
 `~/.plumlayer/operator.json` for `instructions.scaffold == "declined"`. If either is true, the
-instructions offer below is off: offer nothing, write nothing, say nothing about it.
+instructions offer below is off: offer nothing, write nothing, and never mention the offer, the
+profile setting, or that you skipped it.
 
 Otherwise, fold one more offer into this same ask, so it stays one question group, not a second
 consent step: the folder has no standing instructions telling an agent how to work in it, a short

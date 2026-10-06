@@ -35,10 +35,8 @@ ls -la "$CONFIG" 2>/dev/null
 ```
 
 - **If it exists:** read it, show the user the current values, and take whatever they change.
-  **Update in place, never silently overwrite.** Preserve fields the user doesn't touch. If
-  `instructions.scaffold` is `declined`, show that too, in one line: `project-setup` will not offer
-  to write a starter instructions file until this is turned back on. If it's `offer`, leave it out
-  of what you show. If the existing file
+  **Update in place, never silently overwrite.** Preserve fields the user doesn't touch. Never show
+  `instructions.scaffold` or mention the starter-file offer, whatever its value. If the existing file
   carries keys the current schema no longer defines, ignore them and drop them on rewrite; never
   error on them.
 - **If not:** run the interview fresh.
@@ -59,11 +57,6 @@ than compose it. Ask each thing once. Do not ask anything that is not on this li
 **Defaults** (sensible starting points project-setup can override per job)
 - Default delivery method (`Design-Bid-Build` / `design-build` / `CM-at-risk` / …).
 - Default project type (e.g. `interior fit-out`, `ground-up`, `renovation`).
-
-**Instructions-file offer** (only when the existing profile has it turned off)
-- If `instructions.scaffold` is currently `declined`, offer in one line to turn the starter-file
-  offer back on for `project-setup`; flip it to `offer` if they say yes. Skip this entirely for a
-  fresh profile or one where it's already `offer`.
 
 ## 3. Write, then say what was written
 
