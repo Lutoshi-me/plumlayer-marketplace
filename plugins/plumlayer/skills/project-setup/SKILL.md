@@ -182,6 +182,12 @@ starter-file offer, and, when other files exist, that one take-or-leave question
 no held answer, when nothing at all is found, is the exception the one-turn rule allows: a plain
 request for the drawings' path.
 
+When the user says to use the other files, each is a handed-over document, read as the end of this
+step says: seed what it plainly states, cited to it, and pass any that belongs to the drawing
+delivery or the project manual (an addendum, another volume) to step 5 with the rest. A file that
+carries neither, a bid tab or a budget, is named in the closing report as read with nothing
+seeded. Left, nothing reads them.
+
 The drawings and the project manual are the job, and step 5 uploads them. Never walk above the
 folder you were handed, into siblings, or into a folder you merely happen to be running in when the
 user named a different one.
@@ -254,6 +260,10 @@ scoped to it.
 > **Fallback if `create_project` isn't available** (older plugin/server without the verb): ask the
 > user to create the project on **plumlayer.com** (one click), then call `list_projects` and resolve
 > the new `projectId` from the list. The rest of the skill is unchanged.
+>
+> **If the client refuses the call** (its permission check, or the user declining it), nothing was
+> created: say so, quote the refusal, and stop. Never send the write again in another shape or
+> through another verb; once the user allows it, `/project-setup` starts over from step 1.
 
 <!-- user-facing -->
 Confirm back to the user: "Created project **<name>** (`<projectId>`)."
@@ -406,8 +416,10 @@ rather than restating it from what an earlier step said:
 - **Every count in the closing report is read back from the record**, never carried across from a
   sub-skill's own report or from memory.
 - **Invitations are offered, never run from here.** `prepare-invitations` is named at the close
-  when the job is going out to bid; this skill never starts it and never reads the bidding
-  requirements itself.
+  when the job is going out to bid, and this skill never starts it. Reading an invitation to bid in
+  step 2 for the identity facts it seeds (name, type, parties, a bid due date) is this skill's;
+  setting what the invitations go out under (labor, places, the project's dates) is
+  `prepare-invitations`'.
 - **The instructions offer never overwrites.** Never write `CLAUDE.md` or `AGENTS.md` over one that
   already exists, never write either file without the user's yes, and write only the one file that
   matches the client running the session.

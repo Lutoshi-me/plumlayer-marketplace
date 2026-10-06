@@ -54,30 +54,35 @@ step 5 names, never through plumlayer.com or its api directly. Two reads also wr
 
 ## 1. Preconditions
 
-1. `whoami`, then `list_projects`: confirm which project this is and take its `projectId`. With no
-   project yet, hand off to `project-setup` and stop.
+1. `whoami`, then `list_projects`: confirm which project this is and take its `id` from
+   `projects[]` as the `projectId`. With no project yet, hand off to `project-setup` and stop.
 2. `read_invitation_flow(projectId)`. Keep the whole answer: it is the before picture, and its
-   counts are the before numbers the report prints. When `trades.source` is `none`, the project has
-   no packages and no trades selected: stop and hand off to `learn-project`, or to `project-setup`
-   when nothing has been read in yet.
-3. Is there anything to read? `set_text_status(projectId)` lists every file the project's text read
-   covers, each with its `kind`. A `document` file is a project manual or another filed document,
-   whether or not its table of contents was ever read into sections, so a project with no sections
-   on the record can still have everything to read. What the estimator hands over counts too: the
-   owner's invitation to bid, an email, a bid form. With no document file and nothing handed over,
-   report what the invitations already hold, say there was nothing to read, and stop.
-4. Is the text read? A document file still `queued` or `running`, or with `pagesNotRead` above
-   zero, has pages a search cannot find yet; `pagesBounded` and `pagesFailed` are pages read in part
-   or not at all. Look once more after step 2's orientation reads. If it is still reading, carry on
-   over what is read and name in the report how many of those pages were not searched. A page
-   nobody has read is never reported as stating nothing.
+   counts are the report's before numbers. Then `solicitation_list_packages(projectId, status:
+   "open")`. An empty `trades.selected` means no invite trades are selected. With no open package,
+   hand off to `learn-project` (to `project-setup` when nothing is read in yet) and stop. With open
+   packages, every package trade is one the company performs itself (`trades.source: "none"`) or
+   someone emptied the list (`"project"`): carry on, since the job-wide requirements, the dates and
+   the address do not wait on trades, and the report says so.
+3. Is there anything to read? `set_text_status(projectId)` lists the files the text read covers,
+   each with its `kind`, oldest first and at most 500: `truncated` says when there are more, and
+   `fileCount` is the true number. A `document` file is a project manual or another filed
+   document, whether or not its sections were ever read onto the record. What the estimator hands
+   over counts too: the owner's invitation to bid, an email, a bid form. With no document file
+   listed, `truncated` false, and nothing handed over, report what the invitations already hold,
+   say there was nothing to read, and stop.
+4. Is the text read? A document file whose `state` is not `succeeded`, or whose `pagesNotRead` is
+   above zero or null (null: nobody has opened the file, so none of it is read), has pages a search
+   cannot find yet; `pagesBounded` and `pagesFailed` are pages read in part or not at all. Look once
+   more after step 2's orientation reads. If it is still reading, carry on over what is read and
+   name in the report how many of those pages were not searched, or that a file's page count is not
+   known yet. With `truncated` true, the report also says this check saw the first 500 of
+   `fileCount` files. A page nobody has read is never reported as stating nothing.
 
 ## 2. Read the bidding requirements (about a minute)
 
 The budget, in calls: about 10 orientation reads (step 1 and item 1 below), at most 5 record reads
-(item 2), at most 8 text searches, at most 10 page reads, at most 3 pages of Questions in step 4,
-then the writes. Past it, stop reading and name in the report what was not read. Never read
-on silently.
+(item 2), at most 8 text searches, at most 10 page reads, then the writes and their reads back.
+Past it, stop reading and name in the report what was not read. Never read on silently.
 
 1. Orientation.
    - `get_project(projectId)` for `location`.
@@ -144,7 +149,7 @@ holds nothing.
 
 ### What counts as stated
 
-Anything not stated is not set.
+Only what the documents or the estimator state is set.
 
 | Value | Stated when the documents | Not stated, set nothing |
 |---|---|---|
@@ -160,15 +165,9 @@ Never inferred: a wage requirement from who the owner is; union from a labor agr
 region; one date from another; the job's state from a city with no state named; a trade the
 document does not name.
 
-The owner bid date is always the deadline for receiving bids. A bid opening the documents give
-apart from it is named in the report and set on nothing.
-
-A statement naming trades, "electrical work by signatory contractors" for example, goes on the
-selected codes under the division or section it names. A trade name whose codes cannot be read off
-is reported, not set.
-
-Participation goals, insurance, bonds, bid security and a project labor agreement are not filters
-on who is invited. The report names them with their sections; nothing sets them.
+Participation goals, insurance, bonds, bid security, a project labor agreement and a bid opening
+time are not filters on who is invited. The report names them with their sections; nothing sets
+them.
 
 ## 3. Decide each value
 
@@ -181,39 +180,42 @@ from step 4 is made in step 5, once the answer is in.
 Labor the documents do not state is the company's call, not this skill's: set nothing and ask
 nothing. The report gives each trade's current condition and where it came from.
 
-Which trades carry a condition of their own comes from the first `read_invitation_flow` alone. Its
-`wholeProjectLabor` is `"union"` or `"prevailing wage"` when that condition is set on the whole
-job, and null when none is. A trade whose `labor.source` is `project` carries its own rule when its
-`labor.condition` differs from `wholeProjectLabor`, or when `wholeProjectLabor` is null. A trade
-that reads the job-wide condition has no rule of its own that conflicts with anything, so there is
-nothing to ask about it.
+What the first `read_invitation_flow` can and cannot tell:
+
+- `wholeProjectLabor` is `"union"` or `"prevailing wage"` when exactly one whole-job condition
+  stands and spells one of them. Null means none stands, more than one stands, or the one standing
+  spells none of the three; the read does not say which, so null never means the job asks nothing.
+  While more than one stands, every whole-job write is refused.
+- A trade whose `labor.source` is `project` reads a condition set on this project, its own or the
+  whole job's, and the read does not say which. Only its own stays when the job-wide one changes.
+- A trade whose `labor.condition` is null reads a rule or a usual none of the three conditions
+  spell: leave it out of every write and name it.
+
+The decisions:
 
 - A requirement for the whole contract ("the work is subject to", "this contract requires") is one
   job-wide condition: `set_invitation_labor(projectId, wholeProject: true, condition)`. It reaches
-  every trade the invitations list, and every trade a later package adds. When `wholeProjectLabor`
-  already holds a different condition, that is a disagreement with the record, unless an addendum
-  governs.
-- A trade carrying its own rule keeps it under a job-wide condition, because a trade's own rule
-  wins. When its own condition differs from what the documents require of it, that is a
-  disagreement with the record for step 4. When the estimator picks the documents' condition,
-  `set_invitation_labor(projectId, code, condition)` puts it on that trade.
+  every trade the invitations list, and every trade a later package adds, except a trade carrying a
+  condition of its own. When `wholeProjectLabor` already holds a different condition, that is a
+  disagreement with the record for step 4's labor item, unless an addendum governs.
 - A requirement naming trades goes on the selected codes (`trades.selected[].code`) under the
   division or section it names: `set_invitation_labor(projectId, codes, condition)`, at most 50
-  codes a call. Leave out a code carrying its own rule with a different condition; that one is a
-  disagreement for step 4.
-- For named codes the verb answers `{ projectId, condition, written }`, one `written` row per code
-  with `code`, `ruleId` and `changed`. `changed: false` means the trade's own rule already held the
-  condition and nothing was written. Only the trade's own rule counts: a trade that reads the
-  condition from the job-wide rule gets a rule of its own, so the named requirement stays if the
-  job-wide condition is taken off later.
-- For the whole job it answers `{ projectId, condition, wholeProject: true, ruleId, changed }`.
-  `changed: false` means the job-wide condition already held it, or, for open shop, that there was
-  none to take off, when `ruleId` is null.
-- The `changed` flags are what the report says was set, and why a re-run rewrites nothing.
+  codes a call. A manual section the catalog numbers differently reaches no code by its number: the
+  open package whose `manualSections` lists it (packed, `113013`) buys it, and when that package
+  carries one trade (its `tradeCode` and no `codes`), that is the trade. Otherwise, and for a trade
+  named only in words, it is reported, not set.
+- Every trade a requirement reaches that reads a different condition set on this project, its own
+  or the job's alike, is a disagreement with the record for step 4's labor item.
+- Step 5's read after the whole-job write settles which trades carry their own: there, a trade with
+  `labor.source: "project"` reading anything but the job-wide condition carries its own.
+- The verb answers `written`, one row per named code with `code`, `ruleId` and `changed`, or for
+  the whole job one `ruleId` and `changed`. `changed: false` means nothing was written: the trade's
+  own rule or the job-wide condition already held it, or open shop found no job-wide condition to
+  take off (`ruleId` null). A trade that read the condition from the job gets a rule of its own, so
+  a named requirement outlasts a later job-wide change. The `changed` flags are what the report
+  says was set, and why a re-run rewrites nothing.
 - Prevailing wage and union both required: set prevailing wage, and report the union requirement
   as not set. A trade carries one condition, and union on it would take prevailing wage off.
-- A trade whose `labor.condition` is null carries a rule none of the three conditions spell: leave
-  it out of every write and name it.
 - A project labor agreement alone is reported with its section and set on no trade.
 - A job-wide condition an addendum expressly withdraws follows the addendum rule below. When it
   governs, `set_invitation_labor(projectId, wholeProject: true, condition: "open shop")` takes the
@@ -229,8 +231,7 @@ nothing to ask about it.
   state])`. The verb replaces the list, so send everything in effect plus the one state. The report
   names the list it replaced, and that the project now keeps its own places, so a later change to
   the usual places no longer reaches it.
-- No filter in effect (`places.states` empty): set nothing. One state would narrow every trade to
-  it.
+- No filter in effect (`places.states` empty): set nothing. One state would narrow every trade.
 - `places.ungrounded` not empty: set nothing and name those places. The verb refuses a list holding
   a spelling the catalog does not carry, and correcting it is not this skill's.
 
@@ -247,14 +248,13 @@ nothing to ask about it.
   `onDay`, `endDay`, `atTime` and `timeZone` all agree. A matched date is left alone.
 - A record date that agrees on the day and the range but has no time, where the documents give one,
   gets the time added by its `dateId`. Nothing it holds is replaced, and the report says so.
-- The project has one owner bid date. A record `owner_bid` that differs in its day, its range, its
-  time or its zone is a disagreement with the record, unless an addendum governs. Never add a second
-  one beside it.
+- One owner bid date is this skill's own rule; the server would take a second. A record `owner_bid`
+  that differs in its day, its range, its time or its zone is a disagreement with the record,
+  unless an addendum governs. Never add a second one beside it.
 - Site visits and named dates can be several, so a document's site visit on a different day from
   the record's may be the same visit moved or another visit. The record holds none of that kind:
   add it. The documents list the record's date as well as this one: it is another visit, add it.
-  Otherwise ask in step 4, with "add it as another site visit", "move the one on the record to this
-  day" and "leave it" as the choices.
+  Otherwise it is a step 4 item.
 - `internal` stays at its default.
 - A time only per the table above. `atTime` always goes with `timeZone`, an IANA zone such as
   "America/New_York". A time zone read off the job's state waits for step 4 when the address is a
@@ -287,12 +287,9 @@ nothing to ask about it.
   that is a disagreement with the record.
 - Every other conflict, one document against another or a document against the record, is asked in
   step 4.
-- A record value that carries its own citation is a second source: a current seeded entry whose
-  `sourceInstrument` or evidence names a file or a sheet, rather than `project-setup-interview`,
-  the estimator's own word in project setup. A disagreement with it is between two sources, so it
-  is asked and also raised as a Question. A record value with no citation, the project's location,
-  a date, a labor or places setting, or a seed from the interview, is asked only.
-- Two documents disagreeing is asked and also raised as a Question.
+- A current seeded entry whose `sourceInstrument` or evidence names a file or a sheet, rather than
+  `project-setup-interview`, the estimator's own word in project setup, stands for the document it
+  cites. A setting, a date, the project's location and an interview seed are not documents.
 
 ## 4. Ask once
 
@@ -300,6 +297,9 @@ One question group, through the client's choice-question tool (`AskUserQuestion`
 the equivalent in Codex), holding:
 
 - every disagreement, each value with where it came from, plus "leave it as it is";
+- one labor item: a different job-wide condition, and every trade a requirement reaches that reads
+  a different condition set on this project, with "leave it as it is" when the job-wide condition
+  differs;
 - a site visit or named date the skill cannot place as moved or another;
 - the subcontractor bid due date, when the project has none and the estimator has not said it.
 
@@ -307,6 +307,14 @@ the equivalent in Codex), holding:
 A disagreement reads like: "The invitation to bid (page 3) says bids must be received by March 3 at
 2:00 PM. The project's owner bid date is March 5. Which one stands?", with "March 3, from the
 invitation" and "leave it at March 5" as the choices.
+
+The labor item reads like: "Section 00 73 46 puts the whole contract on prevailing wage. Electrical
+and Plumbing are on union, set on this project. Put them on prevailing wage too?", with "every
+trade on prevailing wage" and "a trade with its own condition keeps it" as the choices.
+
+A site visit reads like: "The instructions to bidders (page 12) give a site visit on May 6. The
+project has one on May 4.", with "add it as another site visit", "move the one on the project to
+May 6" and "leave it" as the choices.
 
 The bid date reads like: "When are subcontractor bids due to you? Bids to the owner are due March 3
 at 2:00 PM, from the invitation to bid, page 3.", answered in their own words, with "not decided
@@ -321,65 +329,77 @@ The estimator's bid date is set with `set_project_date(kind: "subcontractor_bids
 `atTime` and `timeZone` only per the time rule above. An answer that does not pin one calendar day
 is not set; the report quotes it under what is still missing.
 
-A disagreement the rules above also send to the record is raised as a Question. Read
-`list_questions(projectId, limit: 200)` first, following `truncated` and `nextOffset` until every
-open Question is read, at most 3 pages, so an open one is not raised twice. When the pages run out
-first, or `scanTruncated` is true, raise it anyway and say in the report that the check for one
-already open was incomplete. Then one `ask_question` per disagreement:
+A disagreement between two documents is also raised as a Question, whatever the answer.
+Before each, read `list_questions(projectId, status: "all", section: "<a section it cites>")`: an
+open one on the same topic is named in the report rather than raised again, and a closed one is not
+asked again; with `scanTruncated` true, the report says this check was incomplete. Then one
+`ask_question` per disagreement, with a `title` of a few words naming the ask, and:
 
 - `sources`: each spec section as `{ "type": "spec", "section": "specSection:<the six digits,
-  packed>" }`; a seeded entry as `{ "type": "record", "entryId": "<its current entry's id>" }`; a
-  sheet it cites as `{ "type": "sheet", "sheet": "<the sheet subject>" }`. A section numbered the
-  older five-digit way, or a document handed over that is not on the record, cannot be cited that
-  way, so name it and its page in the text.
+  packed>" }`; a sheet it cites as `{ "type": "sheet", "sheet": "<the sheet subject>" }`; a seeded
+  entry as `{ "type": "record", "entryId": "<its current entry's id>" }`, only beside a section or
+  a sheet. A section numbered the older five-digit way, or a document handed over that is not on the
+  record, cannot be cited, so name it and its page in the text. With no section or sheet to cite,
+  the verb takes no Question: the disagreement is asked only, and the report says so.
 - `everyTrade: true` when it is about the whole job, and `sourceInstrument: "prepare-invitations"`.
 
-Question text is plain estimator words, per docs/plugin-text-style.md. A Question is about the
-project, never about a Plumlayer failure: a refused write or a page that would not read goes in the
-report.
+Question text is plain estimator words, per docs/plugin-text-style.md, and every Question meets the
+standard the `ask_question` verb states. A Question is about the project, never about a Plumlayer
+failure: a refused write or a page that would not read goes in the report.
 
 ## 5. Write
 
 Nothing is written before step 4's answers are in. First settle what waited on them: the job's
 state from the address the estimator chose, then the places decision, then any time whose zone
-follows from the job's state. Then write in this order: labor, places, dates, the address, the
-Questions. The writes this skill makes, and no others:
+follows from the job's state. Then write in this order:
+
+1. Labor on the whole job, then `read_invitation_flow(projectId)` again, which settles the trades
+   carrying a condition of their own (step 3).
+2. Labor on named codes: the trades a named requirement reaches, and, where the estimator chose
+   "every trade", the trades still carrying a different condition of their own. A trade the
+   estimator chose to keep is left out.
+3. Places, dates, the address, the Questions.
+
+The writes this skill makes, and no others:
 
 - `set_invitation_labor`, on the whole job or on named codes;
 - `set_invitation_places`;
 - `set_project_date`: `owner_bid`, `site_visit`, `other`, and `subcontractor_bids` from the
   estimator's word;
 - `update_project` with `location` only;
-- `ask_question` for a disagreement between sources.
+- `ask_question` for a disagreement between documents.
 
-Read each answer back. For labor, read `changed` on each `written` row and on the whole-job answer:
-`false` means the condition already held and nothing was written. A refusal is
-reported in its own words and never sent again in another shape, routed through another verb, or
-handed to the site.
+Read each answer back, labor by its `changed` flags.
 
 Then one more `read_invitation_flow(projectId)`. Its counts are the after numbers.
 
 ## 6. Report
+
+The counts are `counts.perCode`: `base` passes the places, `companies` is those that also pass the
+labor condition, and with `includeUnknown` true both count companies with no answer on file.
 
 <!-- user-facing -->
 One closing report in plain words. Every count comes from a read of the invitations: the first read
 gives the before numbers and the last read the after numbers, and the report prints both.
 
 - **Trades going out**: how many, and where the list comes from: the packages, or a list someone
-  set on this project. For each trade, how many companies it reaches, a number; the companies behind
-  it are on the site's invite list. Trades that reach no company come first. When the directory
-  holds no companies yet, say so, since every trade then reaches none.
+  set on this project; or that no invite trades are selected, and why. For each trade, how many
+  companies pass its filters, a number; the companies behind it are on the site's invite list.
+  Trades no company passes come first. When your account keeps companies with missing data in, say
+  that these numbers count the companies with no answer on file. When the directory holds no
+  companies yet, say so, since every trade then reaches none.
 - **What changed each trade's count**: before and after for every trade whose count moved. Each
   trade has two numbers, the companies that pass the places and, of those, the companies that pass
   its labor condition. A change in the first is the places change, and a change between the two is
   labor, so a change is never put down to labor alone when places moved too: "Electrical went from
-  14 companies to 6: adding the job's state took it to 16, and 6 of those pay prevailing wage."
+  14 companies to 6: adding the job's state took it to 16, and 6 of those pass the prevailing wage
+  filter, counting the companies with no labor answer on file."
 - **What I set, and where it came from**: one line per value, with its section and page. "Prevailing
   wage on the whole job, from section 00 73 46, page 212 of the project manual." "Owner bid due
   March 3 at 2:00 PM, from the invitation to bid, page 3." A value the estimator gave says so. A
   value an addendum changed names both. A places change names the list it replaced. A labor
   condition that already stood, on a trade or on the whole job, is listed as already set, not as
-  set now.
+  set now. A trade that kept a condition of its own under the job-wide one is named with it.
 - **What I read and did not set**: participation goals, bonds, insurance, a project labor
   agreement, a union requirement beside prevailing wage, a bid opening time, a trade named in words
   the trade list cannot be matched to, each with its section.
@@ -388,8 +408,8 @@ gives the before numbers and the last read the after numbers, and the report pri
   this project stays and is named as set on this project. Trades that read the same are grouped.
 - **What is still missing**: for example no subcontractor bid due date, no project address stated,
   no labor requirement stated.
-- **What I asked, and any Questions I raised**: each Question by its number, and whether the check
-  for one already open was incomplete.
+- **What I asked, and any Questions I raised**: each Question by its number, any one already open
+  named instead of raised again, and whether the check for one already open was incomplete.
 - **What I did not read**: pages past the reading budget, pages of the manual not read yet, and
   pages read only in part or not at all, and that running this again later picks them up.
 - **Next**: review and send from the invitations on plumlayer.com, through the project's Coverage
@@ -399,27 +419,6 @@ gives the before numbers and the last read the after numbers, and the report pri
 
 ## Gates
 
-- Set only what the documents or the estimator state. Nothing is inferred from the owner, the
-  region, the building type, or another date.
-- The owner bid date is the deadline for receiving bids, never the opening.
-- Only the current entry of a value read through `search` is compared; a replaced one never makes
-  a disagreement.
-- Which trades carry a labor condition of their own is read from `read_invitation_flow` alone,
-  never from the stored rules.
-- This skill does not write the trade list, the usual settings, or the invitation message. The
-  places list is written only to add the job's state.
-- This skill does not save the invite list, and no verb it drives does.
-- Sending the invitations, putting the plan room up, and changing which files it shows are signature
-  acts, the person's to sign; this skill never does them.
-- Every write goes through the verbs step 5 names, so each is marked as the agent's, never through
-  the site or its api directly.
 - Writing over a value that already stands names what it replaces, or is asked first.
-- One question group: every disagreement, a date the skill cannot place, and the subcontractor bid
-  due date when the project has none. Labor the documents leave unstated is never asked about.
-- Nothing is written before that group is answered.
-- Never work one date out from another.
-- A re-run rewrites nothing already set to the stated value. For labor that is the verb's doing:
-  `changed: false` means it wrote nothing, and the report follows those answers.
-- The reading budget holds, and anything past it, or read only in part, is named in the report.
-- Every count in the report is read from the invitations, before and after.
-- A refusal is reported in its own words, never worked around.
+- A refusal is reported in its own words, and never sent again in another shape, routed through
+  another verb, or handed to the site.
