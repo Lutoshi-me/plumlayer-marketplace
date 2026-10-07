@@ -705,8 +705,11 @@ disk the whole time.
    Never pass several `fileIds` together. A folder-of-divisions manual (`Division 01.pdf`,
    `Division 02.pdf`, ... instead of one bound manual) is one read per division file, each with its
    own `jobId`; nothing joins them, and two files holding the same section follow latest write like
-   any other slot. A file that is not a PDF gets no read. A finished read is never repeated; a
-   failed or stale one starts again on the same call.
+   any other slot. A file that is not a PDF gets no read. A failed or stale read starts again on the
+   same call. You repeat a finished read only when the user asks to read a manual again, by passing
+   `reread: true` with that one `fileId`: a value the user entered on a section stays unless you now
+   read that section differently than the last read did, and the status's `written.reread` counts
+   say what you replaced, kept, and no longer found. Report those counts to the user.
 3. **Poll `extract_spec_toc_status(projectId, jobId)`** every ~3-5s under the same loop rule as
    step 5: the only exits are `succeeded`, `failed`, or `stale`, never the clock or your own
    judgment. On `failed`, read `error`, report it, and retry only when the error names something a
