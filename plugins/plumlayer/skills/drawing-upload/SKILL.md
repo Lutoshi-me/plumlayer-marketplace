@@ -962,7 +962,7 @@ through this skill. Points 1 and 2 run on the full-re-issue path only.
   resolution of it. (A close-out once named a sheet among five title disagreements, then the next
   report named it among five untyped sheets and called the two lists "the exact same 5"; both lists
   were right on their own terms and the narration was wrong.)
-- The spec-book leg (step 8) extracts a file set once, never once per division file, and its counts are
+- The spec-book leg (step 8) reads each manual file on its own, one `fileId` per call, and its counts are
   read back with `search` and verified against the job's own `report`, never assumed. A named
   `failedFiles` entry is a finding for the user, never a silent retry loop.
 - The reconciliation gate (step 9) is honest about its own bounds: no classified index page, a
