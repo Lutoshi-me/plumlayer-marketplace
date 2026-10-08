@@ -182,15 +182,16 @@ nothing. The report gives each trade's current condition and where it came from.
 
 What the first `read_invitation_flow` can and cannot tell:
 
-- `wholeProjectLabor` is `"union"` or `"prevailing wage"` when exactly one whole-job condition
-  stands and spells one of them. Null means none stands, more than one stands, or the one standing
+- `wholeProjectLabor` is `"open shop"`, `"union"` or `"prevailing wage"` when exactly one whole-job
+  condition stands and spells one of them. Null means none stands, more than one stands, or the one standing
   spells none of the three; the read does not say which, so null never means the job asks nothing.
   While more than one stands, every whole-job write is refused.
 - A trade whose `labor.source` is `project` reads a condition set on this project, its own or the
   whole job's, and the read does not say which. Only its own stays when the job-wide one changes.
-- A trade whose `labor.condition` is null reads a rule or a usual none of the three conditions
+- A trade whose `labor.condition` is null reads a rule or a usual none of the four conditions
   spell: leave it out of every write and name it. A trade with `labor.source: "none"` reads
-  `"open shop"`, which is nothing asked of it, never a condition someone set.
+  `"any"`, which is nothing asked of it, never a condition someone set. `"open shop"` is a
+  condition: it reaches only subs marked open shop.
 
 The decisions:
 
@@ -211,14 +212,14 @@ The decisions:
   `labor.source: "project"` reading anything but the job-wide condition carries its own.
 - The verb answers `written`, one row per named code with `code`, `ruleId` and `changed`, or for
   the whole job one `ruleId` and `changed`. `changed: false` means nothing was written: the trade's
-  own rule or the job-wide condition already held it, or open shop found no job-wide condition to
-  take off (`ruleId` null). The `changed` flags are what the report says was set, and why a re-run
+  own rule or the job-wide condition already held it, or any found no job-wide condition to take
+  off (`ruleId` null). The `changed` flags are what the report says was set, and why a re-run
   rewrites nothing. A trade that read the condition from the job gets a rule of its own.
 - Prevailing wage and union both required: set prevailing wage, and report the union requirement
   as not set. A trade carries one condition, and union on it would take prevailing wage off.
 - A project labor agreement alone is reported with its section and set on no trade.
 - A job-wide condition an addendum expressly withdraws follows the addendum rule below. When it
-  governs, `set_invitation_labor(projectId, wholeProject: true, condition: "open shop")` takes the
+  governs, `set_invitation_labor(projectId, wholeProject: true, condition: "any")` takes the
   job-wide condition off, and each trade reads its own condition or the usual again.
 
 ### Places
