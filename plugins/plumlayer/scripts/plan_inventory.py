@@ -23,15 +23,17 @@ Two subcommands:
 The three windows, and what each selects:
 
   1  the vocabulary: every sheet whose type is schedule, legend, notes or cover-index, plus what
-     `--include` names and minus what `--exclude` names, grouped into passes by discipline. It also
-     writes `plan/window-1.json` in the run folder the `--out` path sits in, holding the unit keys
-     it selected and the unit keys it left out, so window 2 subtracts this window rather than
+     `--include` names and minus what `--exclude` names, grouped into passes by discipline, with a
+     pass under three units folded into the pass before or after it (below). It also writes
+     `plan/window-1.json` in the run folder the `--out` path sits in, holding the unit keys it
+     selected and the unit keys it left out, so window 2 subtracts this window rather than
      recomputing it from arguments it might not be given identically, and the `--include` and
      `--exclude` patterns with their reasons, so a resume can run this plan again exactly.
   2  every sheet once: every inventory row `plan/window-1.json` does not already name, grouped by
      discipline in inventory order and sorted inside a discipline by sheet type, composition ahead
-     of extent. The selection is a partition of what window 1 left, so the bounds line states the
-     units planned against the distinct sheets they touch, and refuses where the two differ.
+     of extent, with a pass under three units folded as in window 1. The selection is a partition
+     of what window 1 left, so the bounds line states the units planned against the distinct
+     sheets they touch, and refuses where the two differ.
      `--only` cuts a run to a slice the user asked for first: the run plans only the sheets window
      1 left whose sheet number matches one of its patterns, and every other sheet window 1 left is
      deferred, not left out, unless the ledger holds its dispatched unit with `result ok`, in
@@ -68,12 +70,12 @@ Unit ids across a replan, in windows 1 and 2:
      numbered in the part it now sits in and its old id is retired: nothing was dispatched under
      that id, so no record and no run file carries it. A unit the ledger binds is refused there
      instead, since the record already carries rows under its id.
-  3  new numbers: the next number after the highest any tier names for that pass, taken in the
+  3  new numbers: the next number after the highest any tier names for that part, taken in the
      window's own natural order. A number any tier named is never handed out again, so a sheet cut
      from the plan leaves its id retired.
 
-  The plan file then lists a pass's units by id ascending, so everything already read holds the
-  front of the pass in the order it was read and new work is appended after it. New units are
+  The plan file then lists each part's units by id ascending, so everything already read holds
+  the front of the part in the order it was read and new work is appended after it. New units are
   placed in the window's natural order before ids are assigned, so composition still precedes
   extent among the sheets not yet read.
 
@@ -96,6 +98,23 @@ Units already verified, in every window:
   differ, and its runner skips the units already verified. A `verified` line whose result is not
   `ok` marks nothing, and one naming an id this plan neither carries nor holds is ignored rather
   than refused. A held unit verified ok counts as read earlier in a window 2 slice.
+
+Passes under three units, in windows 1 and 2:
+
+  A runner pays a fixed cost before its first unit, so a part under three units folds into a
+  neighbouring pass rather than starting a runner of its own. Once each discipline's pass is split
+  at twelve and its unit ids are bound, the window's parts are walked in plan order: a part joins
+  the pass being built where either side of the join is under three units and the joined pass
+  stays at twelve or fewer, and starts a new pass otherwise. So a small part joins the pass before
+  it, and where that pass is full it starts a pass of its own and takes in the part after it on
+  the same terms; one that fits neither reads alone, and the bounds line names it as kept. A part
+  under three is always a whole discipline, since a split part holds at least six, so every fold
+  makes a pass that carries more than one discipline. A pass holds at most one part of three or
+  more, and that part gives the pass its id; a pass with none takes its first part's id. The fold
+  groups parts and never renumbers one: a folded unit keeps the id its own discipline's part gave
+  it, the parts read one after another in plan order, and the pass block names each part folded
+  in. Nothing about the fold is stored; every plan run folds again from its own parts. Window 3
+  never folds: a review is its own pass, and its pass id is its unit id.
 
 Usage:
 
@@ -163,6 +182,10 @@ ROW_FIELDS = ("discipline", "sheetNumber", "pageTitle", "sheetType", "fileId", "
 # The `scope-round-runner` stops a pass above twelve units, so a plan that emits a bigger pass is a
 # plan defect rather than a big pass.
 UNITS_PER_PASS = 12
+
+# A runner pays a fixed cost before its first unit (its brief, the plan, its verification setup), so
+# a part under this many units folds into a neighbouring pass rather than starting a runner alone.
+MIN_PASS_UNITS = 3
 
 PREFIX_GROUP_CAP = 60
 TITLES_PER_PREFIX = 3
@@ -1037,6 +1060,85 @@ def _split_pass(
     return parts
 
 
+def _window_parts(plan: dict) -> list[dict]:
+    """
+    Every part a window reads, in plan order: each pass split at twelve, with the name its heading
+    carries and the pass it came from.
+    """
+    parts: list[dict] = []
+    for plan_pass in plan["passes"]:
+        split = _split_pass(plan_pass["id"], plan_pass["units"], plan_pass.get("lettered", False))
+        for index, (part_id, part_units) in enumerate(split, 1):
+            name = plan_pass["name"]
+            if len(split) > 1:
+                name += f" (part {index} of {len(split)})"
+            parts.append({"id": part_id, "name": name, "units": part_units, "pass": plan_pass})
+    return parts
+
+
+def _fold_small_parts(parts: list[dict]) -> list[list[dict]]:
+    """
+    Group a window's parts into runner passes. Walking the parts in plan order, a part joins the
+    pass being built where either side of the join is under MIN_PASS_UNITS and the joined pass stays
+    at UNITS_PER_PASS or fewer, and starts a new pass otherwise. Two parts of MIN_PASS_UNITS or more
+    never join, so a pass holds at most one.
+
+    There is no same-discipline neighbour to prefer: a part under MIN_PASS_UNITS is always a whole
+    discipline, since a split part holds at least six units, so every fold carries more than one
+    discipline. Only part sizes and adjacency decide; no part is reordered, split or renumbered.
+    """
+    passes: list[list[dict]] = []
+    for part in parts:
+        if passes:
+            built = sum(len(member["units"]) for member in passes[-1])
+            size = len(part["units"])
+            if min(built, size) < MIN_PASS_UNITS and built + size <= UNITS_PER_PASS:
+                passes[-1].append(part)
+                continue
+        passes.append([part])
+    return passes
+
+
+def _host(runner_pass: list[dict]) -> dict:
+    """The part a runner pass is named for: its one part of MIN_PASS_UNITS or more, or its first."""
+    return next(
+        (part for part in runner_pass if len(part["units"]) >= MIN_PASS_UNITS), runner_pass[0]
+    )
+
+
+def _runner_passes(window: int, plan: dict) -> list[list[dict]]:
+    """The passes a runner is started for, each a list of the parts it reads in order."""
+    parts = _window_parts(plan)
+    if window == 3:
+        # A review is its own pass and its pass id is its unit id, so nothing folds.
+        return [[part] for part in parts]
+    return _fold_small_parts(parts)
+
+
+def _folds(runner_passes: list[list[dict]]) -> list[str]:
+    """Each folded part, as `<part> into <pass>`, in plan order."""
+    return [
+        f"{part['id']} into {_host(runner_pass)['id']}"
+        for runner_pass in runner_passes
+        for part in runner_pass
+        if part is not _host(runner_pass)
+    ]
+
+
+def _fold_clause(runner_passes: list[list[dict]]) -> str:
+    """The bounds line's account of the fold: every fold named, and every small pass that stayed."""
+    folds = _folds(runner_passes)
+    clause = f"folds {len(folds)} ({', '.join(folds)})" if folds else "folds 0"
+    kept = [
+        _host(runner_pass)["id"]
+        for runner_pass in runner_passes
+        if sum(len(part["units"]) for part in runner_pass) < MIN_PASS_UNITS
+    ]
+    if kept:
+        clause += f", passes under three units kept {len(kept)} ({', '.join(kept)})"
+    return clause
+
+
 def _unit_line(label: str, row: dict, show_file: bool) -> str:
     """
     A planned unit's label is its unit id, which is what the runner puts on the ledger line and in
@@ -1143,6 +1245,7 @@ def _window_1(rows: list[dict], includes, excludes) -> dict:
         passes.append(
             {
                 "id": _pass_id_for_discipline(discipline, 1),
+                "discipline": discipline,
                 "name": f"Vocabulary, discipline {discipline}",
                 "readsFor": "the vocabulary",
                 "units": group,
@@ -1194,6 +1297,7 @@ def _window_2(
         passes.append(
             {
                 "id": _pass_id_for_discipline(discipline, 2),
+                "discipline": discipline,
                 "name": f"Every sheet, discipline {discipline}",
                 "readsFor": "the sheet",
                 "units": _by_sheet_type(group),
@@ -1398,47 +1502,57 @@ def _render_slice(plan: dict, show_file: bool) -> list[str]:
     return lines
 
 
-def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple[str, int, int]:
+def _render(
+    window: int, plan: dict, rows: list[dict], show_file: bool, runner_passes: list[list[dict]]
+) -> tuple[str, int, int]:
     lines: list[str] = []
     lines.append(f"# Read plan: window {window}")
     lines.append("")
     lines.append("Written by scripts/plan_inventory.py off this window's inputs.")
     lines.append("The unit lines are copied from the sheet grid and the packages file. Run the")
     lines.append("script again rather than editing this file: a unit id already dispatched keeps")
-    lines.append("its number, and a new sheet is numbered after the highest id its pass carries.")
+    lines.append("its number, and a new sheet is numbered after the highest id its discipline's")
+    lines.append("part carries.")
     lines.append("")
     lines.append(f"## Window {window}")
     lines.append("")
 
     total_units = 0
-    total_passes = 0
+    total_passes = len(runner_passes)
 
-    for plan_pass in plan["passes"]:
-        parts = _split_pass(plan_pass["id"], plan_pass["units"], plan_pass.get("lettered", False))
-        total_passes += len(parts)
-        total_units += len(plan_pass["units"])
-        for part_index, (part_id, part_units) in enumerate(parts, 1):
-            heading = f"### {part_id}. {plan_pass['name']}"
-            if len(parts) > 1:
-                heading += f" (part {part_index} of {len(parts)})"
-            lines.append(heading)
-            lines.append("")
-            lines.append(f"window: {window}")
-            lines.append(f"reads for: {plan_pass['readsFor']}")
-            for label, value in plan_pass.get("extra", []):
-                lines.append(f"{label}: {value}")
-            lines.append(f"units: {len(part_units)}")
-            unit_ids = [unit["id"] if window == 3 else unit["unitId"] for unit in part_units]
-            lines.append(f"units verified: {sum(1 for u in unit_ids if u in plan['verified'])}")
-            lines.append("")
-            for number, (unit, unit_id) in enumerate(zip(part_units, unit_ids), 1):
-                line = (
-                    _review_line(number, unit)
-                    if window == 3
-                    else _unit_line(unit_id, unit, show_file)
-                )
-                lines.append(line + (" verified" if unit_id in plan["verified"] else ""))
-            lines.append("")
+    for runner_pass in runner_passes:
+        host = _host(runner_pass)
+        folded = [part for part in runner_pass if part is not host]
+        pass_units = [unit for part in runner_pass for unit in part["units"]]
+        total_units += len(pass_units)
+        heading = f"### {host['id']}. {host['name']}"
+        if folded:
+            # The lead finds a discipline's passes by their headings, so a folded pass names every
+            # discipline it carries.
+            disciplines = [part["pass"]["discipline"] for part in folded]
+            heading += (
+                f", with discipline{'s' if len(disciplines) > 1 else ''} {', '.join(disciplines)}"
+            )
+        lines.append(heading)
+        lines.append("")
+        lines.append(f"window: {window}")
+        lines.append(f"reads for: {host['pass']['readsFor']}")
+        if folded:
+            lines.append(f"folded in: {', '.join(part['id'] for part in folded)}")
+        for label, value in host["pass"].get("extra", []):
+            lines.append(f"{label}: {value}")
+        lines.append(f"units: {len(pass_units)}")
+        unit_ids = [unit["id"] if window == 3 else unit["unitId"] for unit in pass_units]
+        lines.append(f"units verified: {sum(1 for u in unit_ids if u in plan['verified'])}")
+        lines.append("")
+        for number, (unit, unit_id) in enumerate(zip(pass_units, unit_ids), 1):
+            line = (
+                _review_line(number, unit)
+                if window == 3
+                else _unit_line(unit_id, unit, show_file)
+            )
+            lines.append(line + (" verified" if unit_id in plan["verified"] else ""))
+        lines.append("")
 
     lines.append("## Deliberately left out")
     lines.append("")
@@ -1468,7 +1582,13 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
 
     lines.append("## Totals")
     lines.append("")
-    lines.append(f"units planned {total_units}, passes {total_passes}")
+    if window in (1, 2):
+        lines.append(
+            f"units planned {total_units}, passes {total_passes}, "
+            f"folds {len(_folds(runner_passes))}"
+        )
+    else:
+        lines.append(f"units planned {total_units}, passes {total_passes}")
     if window in (1, 2):
         ids = plan["unitIds"]
         lines.append(
@@ -1630,7 +1750,8 @@ def plan(args) -> str:
             row for row in result["deferred"] if row["unitKey"] not in read_earlier_keys
         ]
 
-    body, total_units, total_passes = _render(window, result, rows, show_file)
+    runner_passes = _runner_passes(window, result)
+    body, total_units, total_passes = _render(window, result, rows, show_file, runner_passes)
     payload = body.encode("utf-8")
     _write_atomically(args.out, payload)
 
@@ -1682,8 +1803,8 @@ def plan(args) -> str:
         written += len(window_1_payload)
         return (
             f"wrote {args.out} and {window_1_path}: window 1, units {total_units}, passes "
-            f"{total_passes}, excluded {result['excludedCount']}, unassigned "
-            f"{len(result['unassigned'])}{ids_clause}; {written:,} bytes"
+            f"{total_passes}, {_fold_clause(runner_passes)}, excluded {result['excludedCount']}, "
+            f"unassigned {len(result['unassigned'])}{ids_clause}; {written:,} bytes"
         )
 
     if window == 2:
@@ -1724,7 +1845,8 @@ def plan(args) -> str:
         )
         return (
             f"wrote {args.out} and {window_2_path}: window 2, sheets {total_units}, passes "
-            f"{total_passes}, disciplines {result['disciplines']}, {_every_sheet_once(result)}"
+            f"{total_passes}, {_fold_clause(runner_passes)}, disciplines {result['disciplines']}, "
+            f"{_every_sheet_once(result)}"
             f"{deferred}, sheets window 1 selected "
             f"{result['window1Selected']}, sheets window 1 left out {result['window1Excluded']}, "
             f"sheets in the inventory {len(rows)}, sheets by type {by_type}, sheets typed other or "
