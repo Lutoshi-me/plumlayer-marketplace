@@ -82,7 +82,7 @@ of them is ever trimmed.
    it: no Question, and no assumption written into the row for bidders either. What you noticed
    goes in `notesInternal` on the row if it is worth a watch, and nowhere otherwise.
    A Question cites the spot: a `sheet-region` box around the callout, schedule row or note, built
-   from the span boxes `get_page_text` gave you and in the same PDF points, never the bare sheet;
+   from the line boxes `get_page_text` gave you and in the same PDF points, never the bare sheet;
    and it cites every sheet or section its text names. It never asks about what the GC decides:
    labor, means and methods, who furnishes or installs. A scope row is never a Question's source
    or its evidence: where a row disagrees with the sheet, the row is what is wrong, and you correct
@@ -256,8 +256,7 @@ so in your report, and the lead closes it only if the user settles the answer in
 ## How you read
 
 The call shape of one page, end to end, so the cost is visible: one `read_sheet_context` for the
-page, one `get_page_text` for the same page, paged or read as a few regions where the sheet is
-dense, a render only where text cannot give what you are after, one `record_batch` carrying its
+page, one `get_page_text` in lines for the same page, walked on `nextOffset` to its end, a render only where text cannot give what you are after, one `record_batch` carrying its
 citations of rows that already exist, with the count check mandate 7 asks for, one resend of that
 batch where the door refuses a name, and one report. A page whose `pageRead` came back null costs a
 second context read, after `get_page_text` has had the page read. Anything past that shape is a
@@ -306,22 +305,26 @@ render only what text cannot give.
   the record entry it stands on, or null where the sheet carries none. Start from it and do not
   re-derive it. It says when either list went out of the answer to fit, and only then does
   `search(subject: "sheet:<sheet number>")` read them whole.
-- **Text next.** `get_page_text(fileId, pageInPdf)`. A page with no text layer comes back read by
-  OCR: `textSource` says `ocr`, the spans are whole lines with page coordinates, and a line
-  crossing a tile edge can arrive as two reads of its halves, both kept. Each span is an array
-  `[text, x0, y0, x1, y1]`, the word then its box in PDF points. Treat those spans as the page's
-  text. A bare call returns as many spans as fit one answer, bounded by size rather than by a fixed
-  count, so a dense sheet walks in a few calls: when `truncated` is true and `nextOffset` is
-  present, call again with `offset: nextOffset` until it is absent. When you are
-  after one region, pass `region: [x0, y0, x1, y1]` in the same PDF points as the span boxes to
-  get only the spans inside that rectangle, and read a dense sheet as a few regions rather than as
-  one read that spills.
+- **Text next.** `get_page_text(projectId, fileId, pageNum: <pageInPdf>, form: "lines")`, the
+  whole page, no region. Each entry under `lines` is an array `[text, x0, y0, x1, y1]`: one line
+  the page prints, its words joined by single spaces, then one box in PDF points around those
+  words. Treat those lines as the page's text. A call returns as many lines as fit one answer,
+  bounded by size, so a dense plan usually comes back in one or two calls: when `truncated` is
+  true and `nextOffset` is present, call again with `form: "lines"` and `offset: nextOffset` until
+  it is absent, and read the page once, start to end. Where the answer carries
+  `workerCapped: true`, the page holds more text than its read kept and no paging reaches the
+  rest; name that page on your `pages read:` line as read in part. `lineGrouping: "none"` means
+  this read of the page carries no line grouping, so each entry is one word; read it the same way.
+  A page with no text layer comes back read by OCR: the answer's `textSource` is `ocr`, each entry
+  is already one detected line, and a line crossing a tile edge can arrive as two reads of its
+  halves, both kept. Ask with `form: "words"` and a `region` (an `[x0, y0, x1, y1]` rectangle in
+  the same PDF points) only when you need the box of one word inside a line.
 - **Reading for the sheet.** Read it whole, for everything on it, whatever trade the work belongs
   to. Nothing narrows what you capture: no pass reads for one trade, and the set is read once, so
   what you leave on the sheet is what the run leaves. Locate a mark, tag or callout you meet with
   `search_set_text(projectId, query)`, whose every hit names its `sheetNumber`, `page` and the
-  boxes the read returned, so you keep the hits on your own sheet and read the regions around them
-  rather than the whole plan. There is no sheet argument on that verb: it searches the drawings
+  boxes the read returned, so you keep the hits on your own sheet and find each one in the lines
+  you already read. There is no sheet argument on that verb: it searches the drawings
   (every answer names the `kind` it covered, and `kind: document` asks the project manual
   instead), and you narrow by the `sheetNumber` on each hit.
 - **The corpus for where.** A code, tag, phrase, or detail callout is located across the set with
@@ -331,7 +334,7 @@ render only what text cannot give.
   string.
 - **Render only what text cannot give.** `render_page` for a detail whose meaning is in its
   drawing (a section, an assembly, a symbol), for a region the text came back `bounded` or
-  `textSource: none` on, or for a region whose spans are unreadable as text (a rotated table, a
+  `textSource: none` on, or for a region whose lines are unreadable as text (a rotated table, a
   hatched legend). Name the reason for every render on your `pages read:` line. Never a full-page
   render to orient yourself: the record, the sheet's own reading, and the text are the
   orientation. A page that would take more than three renders is reported on that line as needing
@@ -340,7 +343,7 @@ render only what text cannot give.
   has no usable text layer, or the work you are after is in the linework across the sheet, call
   `render_page` with `tiles: {maxPx: 2000, dpi: 120}`: one call returns a small orientation
   overview plus a grid of tiles that covers the whole page with no gap, each tile carrying its own
-  `clipPt` and `pxPerPt` so text spans overlay per tile with the same formula. On an E-size sheet
+  `clipPt` and `pxPerPt` so text boxes overlay per tile with the same formula. On an E-size sheet
   that is about 9 tiles and costs roughly what 8 hand-picked crops cost, in one turn instead of
   eight, with nothing skipped. 120 is the default; when a dense region resists reading at 120,
   call again at `dpi: 150` before falling back to region crops. A tiled call counts as one render
