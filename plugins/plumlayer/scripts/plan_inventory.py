@@ -34,14 +34,18 @@ The three windows, and what each selects:
      units planned against the distinct sheets they touch, and refuses where the two differ.
      `--only` cuts a run to a slice the user asked for first: the run plans only the sheets window
      1 left whose sheet number matches one of its patterns, and every other sheet window 1 left is
-     deferred, not left out. A deferred sheet carries no unit; the next plan run of this window
-     without `--only` plans it again. The partition is then planned plus deferred, once each, and
-     the bounds line states both. Grouping, the type order and the split are unchanged over the
+     deferred, not left out, unless the ledger holds its dispatched unit with `result ok`, in
+     which case the plan lists it as read earlier. A deferred sheet carries no unit; the next
+     plan run of this window without `--only` plans it again. The partition is then planned plus
+     read earlier plus deferred, once each; the bounds line adds `plus read earlier <r>` only
+     when nonzero, and its deferred count excludes those sheets. The lead uses that count for
+     the paused line's `deferred <m>`. Grouping, the type order and the split are unchanged over the
      slice, except that a discipline the whole window would split into lettered parts is lettered
      in the slice too (`A2a` for a slice of six), so the slice's unit ids already name the part
      they sit at the front of when the whole window is planned. Every window 2 run writes
      `plan/window-2.json` beside window 1's file: the unit ids it assigned, each `--only` pattern
-     with its reason and the unit keys it selected, and the deferred unit keys with their count.
+     with its reason and the unit keys it selected, the read-earlier keys in `readEarlierKeys`,
+     and the deferred unit keys with their count.
   3  one review per package: one pass per row of the packages file, in package order, with the
      packages of one trade kept together. It reads no sheets, so it takes no inventory.
 
@@ -80,8 +84,8 @@ Unit ids across a replan, in windows 1 and 2:
   Past that, a bound unit lands in the next part: one the ledger dispatched is refused rather than
   renumbered, and one the plan file alone binds is renumbered there. A slice holds the ids of its
   deferred sheets differently by tier: a dispatched one keeps its number taken and is not counted
-  retired, since it comes back; a planned one is dropped, and the sheet is numbered again when the
-  whole window is planned.
+  retired, since it comes back, and the bounds line adds `ids held <h>` when nonzero; a planned
+  one is dropped, and the sheet is numbered again when the whole window is planned.
 
 Units already verified, in every window:
 
@@ -90,7 +94,8 @@ Units already verified, in every window:
   `units verified: <k>` under `units: <n>`, so a pass is finished unit by unit rather than by its
   `pass:` line: a resume, or a pass that a replan grew, dispatches every pass whose two numbers
   differ, and its runner skips the units already verified. A `verified` line whose result is not
-  `ok` marks nothing, and one naming an id this plan does not carry is ignored rather than refused.
+  `ok` marks nothing, and one naming an id this plan neither carries nor holds is ignored rather
+  than refused. A held unit verified ok counts as read earlier in a window 2 slice.
 
 Usage:
 
@@ -838,8 +843,8 @@ def _read_ledger_verified(path: Path, window: int) -> set[str]:
     This window's unit ids that carry a `verified <window> <pass> <unit> ... result ok` line: the
     units a runner already finished, which the plan marks so a pass is finished unit by unit rather
     than by its `pass:` line. A line whose result is anything but `ok` marks nothing, and an id no
-    planned unit carries is ignored here, since the pass summary is where a `verified` line is
-    judged. A missing ledger is nothing verified.
+    planned or held unit carries is ignored here, since the pass summary is where a `verified`
+    line is judged. A missing ledger is nothing verified.
     """
     if not path.is_file():
         return set()
@@ -864,11 +869,13 @@ def _bind_unit_ids(
     plan_file_units: dict[str, str],
     ledger_path: Path,
     deferred_keys: set[str],
-) -> dict[str, int]:
+    verified: set[str],
+) -> dict:
     """
     Put a unit id on every planned unit, keeping every id either tier already handed out and
     numbering the rest after the highest number that pass has ever carried. Returns the counts the
-    bounds line and the totals block both say out loud, so the file and the line cannot disagree.
+    bounds line and the totals block both say out loud, along with held units' sheet keys and
+    whether the ledger shows each verified ok.
 
     Every planned unit is one sheet, which is what makes the binding decidable: a ledger unit whose
     sheet set resolves to exactly one planned sheet keeps its id, one that resolves to none is
@@ -892,6 +899,7 @@ def _bind_unit_ids(
     source_of_id: dict[str, str] = {}
     named_ids: set[str] = set()
     held: set[str] = set()
+    held_units: list[dict] = []
 
     for unit_id, sheets in ledger_units.items():
         named_ids.add(unit_id)
@@ -910,6 +918,7 @@ def _bind_unit_ids(
         if not in_cut:
             if matched and all(key in deferred_keys for key in matched):
                 held.add(unit_id)
+                held_units.append({"id": unit_id, "sheetKeys": matched, "verified": unit_id in verified})
             continue
         if len(in_cut) != len(sheets):
             raise PlanError(
@@ -991,6 +1000,8 @@ def _bind_unit_ids(
         "planFile": kept_by_source["plan file"],
         "new": new_count,
         "retired": len(named_ids - carried - held),
+        "held": len(held),
+        "heldUnits": held_units,
     }
 
 
@@ -1322,16 +1333,16 @@ def _window_3(packages: list[dict]) -> dict:
 def _every_sheet_once(plan: dict) -> str:
     """
     The window 2 partition said out loud. A slice names its deferred sheets beside the units it
-    plans, so the line still accounts for every sheet window 1 left; a whole window reads as it
-    always has.
+    plans, and the sheets an earlier slice already read and verified as read earlier, so the line
+    still accounts for every sheet window 1 left; a whole window reads as it always has.
     """
-    if not plan["deferred"]:
-        return (
-            f"every sheet once (units {plan['units']} equals distinct sheets "
-            f"{plan['distinctSheets']})"
-        )
+    read_earlier = plan["readEarlier"]
+    earlier_clause = f" plus read earlier {len(read_earlier)}" if read_earlier else ""
+    deferred_clause = (
+        f" plus deferred {len(plan['deferred'])}" if plan["deferred"] or read_earlier else ""
+    )
     return (
-        f"every sheet once (units {plan['units']} plus deferred {len(plan['deferred'])} equals "
+        f"every sheet once (units {plan['units']}{earlier_clause}{deferred_clause} equals "
         f"distinct sheets {plan['distinctSheets']})"
     )
 
@@ -1357,6 +1368,14 @@ def _render_slice(plan: dict, show_file: bool) -> list[str]:
         for number, row in enumerate(block["sheets"], 1):
             lines.append(_unit_line(str(number), row, show_file))
         lines.append("")
+    if plan["readEarlier"]:
+        lines.append("### Read earlier")
+        lines.append("")
+        lines.append(f"sheets: {len(plan['readEarlier'])}")
+        lines.append("")
+        for number, row in enumerate(plan["readEarlier"], 1):
+            lines.append(_unit_line(str(number), row, show_file))
+        lines.append("")
     lines.append("### Deferred")
     lines.append("")
     reasons: list[str] = []
@@ -1371,6 +1390,8 @@ def _render_slice(plan: dict, show_file: bool) -> list[str]:
         lines.append("discipline | sheets")
         for discipline, group in _by_discipline(plan["deferred"]):
             lines.append(f"{discipline} | {len(group)}")
+    elif plan["readEarlier"]:
+        lines.append("Nothing. Every sheet window 1 left is planned now or was read earlier.")
     else:
         lines.append("Nothing. Every sheet window 1 left matches an --only pattern.")
     lines.append("")
@@ -1452,6 +1473,7 @@ def _render(window: int, plan: dict, rows: list[dict], show_file: bool) -> tuple
         ids = plan["unitIds"]
         lines.append(
             f"unit ids kept {ids['kept']}, new {ids['new']}, retired {ids['retired']}"
+            + (f", ids held {ids['held']}" if ids["held"] else "")
         )
     if window == 1:
         lines.append(
@@ -1581,6 +1603,7 @@ def plan(args) -> str:
         result["packages"] = len(packages)
 
     ledger_path = args.out.parent / LEDGER_FILE
+    result["verified"] = _read_ledger_verified(ledger_path, window)
     if window in (1, 2):
         # Both tiers sit in the run folder the plan file is written into, so neither is an argument
         # the lead can forget. A window 3 review id is derived from its own trade code and ordinal
@@ -1592,9 +1615,20 @@ def plan(args) -> str:
             _read_plan_file_units(_window_file(args.out.parent, window), window),
             ledger_path,
             {row["unitKey"] for row in result.get("deferred", [])},
+            result["verified"],
         )
-    # Read after the ids are bound, since the ids are what a `verified` line names.
-    result["verified"] = _read_ledger_verified(ledger_path, window)
+    if window == 2:
+        read_earlier_keys = {
+            key for unit in result["unitIds"]["heldUnits"] if unit["verified"]
+            for key in unit["sheetKeys"]
+        }
+        # Move only verified held sheets, preserving the partition and inventory order.
+        result["readEarlier"] = [
+            row for row in result["deferred"] if row["unitKey"] in read_earlier_keys
+        ]
+        result["deferred"] = [
+            row for row in result["deferred"] if row["unitKey"] not in read_earlier_keys
+        ]
 
     body, total_units, total_passes = _render(window, result, rows, show_file)
     payload = body.encode("utf-8")
@@ -1606,6 +1640,7 @@ def plan(args) -> str:
         ids_clause = (
             f", ids kept {ids['kept']} (ledger {ids['ledger']}, plan file {ids['planFile']}), "
             f"ids new {ids['new']}, ids retired {ids['retired']}"
+            + (f", ids held {ids['held']}" if ids["held"] else "")
         )
 
     written = len(payload)
@@ -1670,6 +1705,7 @@ def plan(args) -> str:
                     ],
                     "deferredKeys": [row["unitKey"] for row in result["deferred"]],
                     "deferredCount": len(result["deferred"]),
+                    "readEarlierKeys": [row["unitKey"] for row in result["readEarlier"]],
                 },
                 indent=2,
             )

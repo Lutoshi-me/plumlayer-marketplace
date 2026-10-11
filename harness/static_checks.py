@@ -2736,8 +2736,10 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append(f"the slice's window-2.json: {e}")
             slice_file = {}
         sheet_of = {r["unitKey"]: r["sheetNumber"] for r in slice_a + slice_s + slice_m}
-        if set(slice_file) != {"window", "units", "only", "deferredKeys", "deferredCount"}:
+        if set(slice_file) != {"window", "units", "only", "deferredKeys", "deferredCount", "readEarlierKeys"}:
             errors.append(f"the slice's window-2.json carries the keys {sorted(slice_file)}")
+        if slice_file.get("readEarlierKeys") != [] or "read earlier" in slice_bounds or "ids held" in slice_bounds:
+            errors.append("the first slice reports sheets read earlier or ids held")
         if slice_file.get("window") != 2:
             errors.append("the slice's window-2.json does not say which window wrote it")
         written_units = [
@@ -2895,16 +2897,61 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                 )
         if "deferred" in whole_bounds:
             errors.append(f"the whole window's bounds line names a deferral: {whole_bounds!r}")
+        if "read earlier" in whole_bounds or "ids held" in whole_bounds:
+            errors.append("the whole window's bounds line names sheets read earlier or ids held")
         _check_split_arithmetic(whole_passes, 12, errors, "the whole window after the slice")
         whole_file = json.loads((slice_dir / "plan" / "window-2.json").read_text(encoding="utf-8"))
         if (whole_file.get("only"), whole_file.get("deferredKeys"), whole_file.get("deferredCount")) != ([], [], 0):
             errors.append("the whole window's window-2.json still carries a slice or a deferral")
+        if whole_file.get("readEarlierKeys") != []:
+            errors.append("the whole window's window-2.json still carries sheets read earlier")
         if _SLICE_HEADING in whole_text:
             errors.append("the whole window's read plan still carries the slice's section")
 
-    # A second slice defers the first one's dispatched units: they keep their numbers and are not
-    # counted retired, since they come back on the next full plan, and the sheet it names keeps the
-    # id the full plan gave it.
+    def check_read_earlier(
+        label: str, folder: Path, bounds: str, planned_rows: list[dict], earlier_rows: list[dict],
+        remaining_rows: list[dict], held_count: int,
+    ) -> None:
+        earlier_keys = {r["unitKey"] for r in earlier_rows}
+        planned_keys = {r["unitKey"] for r in planned_rows}
+        waiting = [r for r in remaining_rows if r["unitKey"] not in earlier_keys | planned_keys]
+        partition = (
+            f"every sheet once (units {len(planned_rows)} plus read earlier {len(earlier_rows)} "
+            f"plus deferred {len(waiting)} equals distinct sheets {len(remaining_rows)})"
+        )
+        expect_bounds(label, bounds, partition)
+        expect_bounds(label, bounds, f"sheets deferred {len(waiting)} by --only")
+        expect_bounds(label, bounds, f"ids held {held_count}")
+        saved = json.loads((folder / "plan" / "window-2.json").read_text(encoding="utf-8"))
+        if saved.get("readEarlierKeys") != [r["unitKey"] for r in earlier_rows]:
+            errors.append(f"{label}: readEarlierKeys does not list the verified held sheets in inventory order")
+        if (saved.get("deferredKeys"), saved.get("deferredCount")) != (
+            [r["unitKey"] for r in waiting], len(waiting)
+        ):
+            errors.append(f"{label}: deferredKeys or deferredCount does not match the sheets still waiting")
+        text = (folder / "read-plan.md").read_text(encoding="utf-8")
+        earlier_block = ["### Read earlier", "", f"sheets: {len(earlier_rows)}", ""] + [
+            f"{i}. {r['sheetNumber']}, page {r['pageInPdf']}: {r['pageTitle']}"
+            for i, r in enumerate(earlier_rows, 1)
+        ] + ["", "### Deferred"]
+        if "\n".join(earlier_block) not in text:
+            errors.append(f"{label}: the read plan does not list exactly the sheets read earlier beside Deferred")
+        deferred_block = text.split("### Deferred\n", 1)[-1].split("\n## ", 1)[0]
+        expected_table = [
+            f"{discipline} | {sum(r['discipline'] == discipline for r in waiting)}"
+            for discipline in dict.fromkeys(r["discipline"] for r in waiting)
+        ]
+        actual_table = [line for line in deferred_block.splitlines() if " | " in line]
+        if f"sheets: {len(waiting)}" not in deferred_block.splitlines() or actual_table != [
+            "discipline | sheets", *expected_table
+        ]:
+            errors.append(f"{label}: the Deferred block does not count the sheets still waiting")
+        for line in (partition, f"sheets deferred {len(waiting)} by --only"):
+            if line not in text.splitlines():
+                errors.append(f"{label}: the read plan totals do not carry `{line}`")
+
+    # A second slice holds the first one's dispatched ids and counts three verified sheets as
+    # read earlier. The mismatch stays deferred, and the selected sheet keeps its full-plan id.
     s202 = {sheet: unit_id for unit_id, sheet in expected_whole}.get("S-2.02", "")
     code, again_bounds, err, again_passes = run_replan(
         slice_dir, 2, slice_inventory,
@@ -2917,6 +2964,85 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append(f"the second slice planned {planned_ids(again_passes)}, expected {[(s202, 'S-2.02')]}")
         expect_bounds("a second slice after dispatched units", again_bounds,
                       "ids kept 1 (ledger 0, plan file 1), ids new 0, ids retired 0")
+        finished_sheets = {sheet for unit_id, sheet in ledger_units if unit_id in finished}
+        check_read_earlier(
+            "a second slice after dispatched units", slice_dir, again_bounds,
+            [r for r in slice_s if r["sheetNumber"] == "S-2.02"],
+            [r for r in slice_a if r["sheetNumber"] in finished_sheets],
+            slice_a + slice_s + slice_m, len(ledger_units),
+        )
+
+    # Slice after slice, with no whole-window plan between: six verified units hold numbers 1..6,
+    # the next three take 7..9, and the whole window then binds and marks all nine verified.
+    consecutive_dir = replan_root / "slice-after-slice"
+    remaining_rows = slice_a + slice_s + slice_m
+    consecutive_inventory = write_replan_inventory(consecutive_dir, vocabulary_rows + remaining_rows)
+    consecutive_window_1 = ["--window-1", str(consecutive_dir / "plan" / "window-1.json")]
+    code, _bounds, err, _passes = run_replan(consecutive_dir, 1, consecutive_inventory, [])
+    if code != 0:
+        errors.append(f"the slice-after-slice fixture's window 1 refused: {err}")
+    first_six = expected_slice[:6]
+    next_rows = [r for r in slice_a if fnmatch.fnmatchcase(r["sheetNumber"], "A-3.0[7-9]")]
+    next_three = [(f"A2a-{i}", r["sheetNumber"]) for i, r in enumerate(in_type_order(next_rows), 7)]
+    code, _bounds, err, first_passes = run_replan(
+        consecutive_dir, 2, consecutive_inventory,
+        consecutive_window_1 + ["--only", f"A-3.0[1-6]:{first_reason}"],
+    )
+    if code != 0 or planned_ids(first_passes) != first_six:
+        errors.append(f"the slice-after-slice first cut refused or numbered incorrectly: {err}")
+
+    def verified_dispatches(units: list[tuple[str, str]]) -> list[str]:
+        return [
+            f"dispatch 2 A2a {unit_id} sheets {sheet} purpose the sheet"
+            for unit_id, sheet in units
+        ] + [
+            f"verified 2 A2a {unit_id} created 4 items 4 updated 0 questions 0 replied 0 sent 4 "
+            f"landed 4 conflicts 0 result ok"
+            for unit_id, _sheet in units
+        ]
+
+    first_ledger = verified_dispatches(first_six)
+    write_ledger(consecutive_dir, first_ledger)
+    code, consecutive_bounds, err, next_passes = run_replan(
+        consecutive_dir, 2, consecutive_inventory,
+        consecutive_window_1 + ["--only", "A-3.0[7-9]:the user asked for three more sheets"],
+    )
+    if code != 0:
+        errors.append(f"slice after slice with no whole-window plan between refused: {err}")
+    else:
+        if planned_ids(next_passes) != next_three:
+            errors.append(f"slice after slice planned {planned_ids(next_passes)}, expected {next_three}")
+        expect_bounds("slice after slice with no whole-window plan between", consecutive_bounds,
+                      "ids kept 0 (ledger 0, plan file 0), ids new 3, ids retired 0, ids held 6")
+        check_read_earlier(
+            "slice after slice with no whole-window plan between", consecutive_dir, consecutive_bounds,
+            next_rows, sliced_a, remaining_rows, 6,
+        )
+
+    write_ledger(consecutive_dir, first_ledger + verified_dispatches(next_three))
+    code, consecutive_whole_bounds, err, consecutive_whole = run_replan(
+        consecutive_dir, 2, consecutive_inventory, consecutive_window_1,
+    )
+    if code != 0:
+        errors.append(f"the whole window after consecutive slices refused: {err}")
+    else:
+        all_nine = first_six + next_three
+        if planned_ids(consecutive_whole)[:9] != all_nine:
+            errors.append("the whole window after consecutive slices did not bind all nine to their sheets")
+        whole_text = (consecutive_dir / "read-plan.md").read_text(encoding="utf-8")
+        if marked_units(whole_text) != {unit_id for unit_id, _sheet in all_nine}:
+            errors.append("the whole window after consecutive slices did not mark exactly all nine verified")
+        for plan_pass in consecutive_whole:
+            want = "9" if plan_pass["id"] == "A2a" else "0"
+            if plan_pass["fields"].get("units verified") != want:
+                errors.append(f"the whole window after consecutive slices miscounts verified units in {plan_pass['id']}")
+        expect_bounds("the whole window after consecutive slices", consecutive_whole_bounds,
+                      f"ids kept 9 (ledger 9, plan file 0), ids new {len(remaining_rows) - 9}, ids retired 0")
+        expect_bounds("the whole window after consecutive slices", consecutive_whole_bounds,
+                      f"every sheet once (units {len(remaining_rows)} equals distinct sheets {len(remaining_rows)})")
+        saved = json.loads((consecutive_dir / "plan" / "window-2.json").read_text(encoding="utf-8"))
+        if (saved.get("readEarlierKeys"), saved.get("deferredKeys"), saved.get("deferredCount")) != ([], [], 0):
+            errors.append("the whole window after consecutive slices still counts sheets outside its units")
 
     # --- a planned id that changes pass is renumbered, not refused ----- #
     #
@@ -3278,7 +3404,9 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"independent tally, the full plan after it keeping the slice's ids in part a with three "
         f"and then twelve dispatched, every pass counting and marking exactly its units verified ok, "
         f"a planned id that changes pass renumbered with the old one retired, a second slice "
-        f"holding the first one's dispatched ids, window-1.json carrying its patterns, "
+        f"holding the first one's dispatched ids with verified sheets read earlier and a mismatch "
+        f"still deferred, consecutive slices keeping ids 1..9 with six read earlier and all nine "
+        f"bound and verified on the next whole-window plan, window-1.json carrying its patterns, "
         f"{len(refusals)} broken invocations each refused in one line naming what is wrong"
     )
     # An honest bound, not a pass: the fixtures are invented and small. They carry the field names

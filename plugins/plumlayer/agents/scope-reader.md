@@ -278,7 +278,9 @@ says. Each of those, made anyway, is a call that carries nothing to the record.
 
 The batch is one call: one Write to a file sent with `record_batch_file`, or sent inline with
 `record_batch`. A shell script that assembles, splits, counts or reformats the batch is a call that
-carries nothing to the record either.
+carries nothing to the record either. Call the batch by its full tool name,
+`mcp__plugin_plumlayer_plumlayer__record_batch_file` or
+`mcp__plugin_plumlayer_plumlayer__record_batch`; the short name is refused as no such tool.
 
 The rows you match against come with the page. The context read's scope rows are the items whose
 citations name this sheet, plus the items whose own name or description carries one of the page's

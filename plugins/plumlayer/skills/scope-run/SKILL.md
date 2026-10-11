@@ -311,7 +311,8 @@ any repo, never uploaded to the project except record files, never recorded as p
   selected and the unit keys it left out with its `--include` and `--exclude` patterns and their
   reasons, and it is the window 2 plan run's input, so that window subtracts window 1 rather than
   recomputing it. `window-2.json` is what the last window 2 plan run wrote, the unit ids it
-  assigned and, for a slice, each `--only` pattern and the unit keys it deferred; the next window 2
+  assigned and, for a slice, each `--only` pattern, the unit keys it deferred and the unit keys an
+  earlier slice already read and verified; the next window 2
   plan run reads its ids back, so a slice's ids stay where they are. A resume takes a window's
   patterns off its file to run that plan again exactly.
   Nothing else is copied here: the definitions are on the record and no window plans off them.
@@ -725,8 +726,10 @@ On the go-ahead:
    sheets they touch and refuses where the two differ. A user who wants a slice of the window first
    names the sheets and why: `--only` plans that slice and records the rest as deferred, and the
    next plan run without it brings them back and keeps every id already handed out. Read back the
-   deferred count with the bounds line. This window takes no packages and no kinds; the script
-   refuses either in one line.
+   deferred count with the bounds line. A `plus read earlier <r>` clause counts the sheets an
+   earlier slice already read and verified; the deferred count leaves them out, and it is the
+   number the paused line's `deferred <m>` carries. This window takes no packages and no kinds; the
+   script refuses either in one line.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 2 \
@@ -756,6 +759,9 @@ On the go-ahead:
    `phase: window 2 paused units <n> ... deferred <m>` in place of `phase: window 2 complete`: the
    same verified totals the complete line carries, with `deferred <m>` added. The window picks up
    again at step 1, with a plan run without `--only`, and a resume after that line starts there.
+   A slice whose bounds line reads `plus deferred 0` is the window's last slice: after its passes,
+   run the plan once more without `--only`. Every unit in it shows verified, and the window closes
+   from that plan with `phase: window 2 complete`.
 
 <!-- user-facing -->
 At this check-in, when nothing was deferred, say plainly that every sheet in the set has now been
