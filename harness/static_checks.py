@@ -1867,7 +1867,9 @@ def _plan_passes(read_plan: str) -> list[dict]:
             break
         heading = _PLAN_PASS_RE.match(line)
         if heading:
-            passes.append({"id": heading.group(1), "fields": {}, "units": [], "reviews": []})
+            passes.append(
+                {"id": heading.group(1), "heading": line[4:], "fields": {}, "units": [], "reviews": []}
+            )
             continue
         if not passes:
             continue
@@ -1929,6 +1931,150 @@ def _check_split_arithmetic(passes: list[dict], cap: int, errors: list[str], whe
     return split
 
 
+# A pass under this many units folds into a neighbouring pass: a runner pays a fixed cost before its
+# first unit, so a runner started for one or two sheets is mostly that cost.
+_SMALL_PASS_UNITS = 3
+
+
+def _plan_parts(passes: list[dict]) -> list[dict]:
+    """
+    The discipline parts a read plan's passes carry, rebuilt off the unit ids in file order. A unit
+    id's pass component names the part it was numbered in, and a fold groups whole parts into one
+    runner pass without renumbering a unit, so each run of one pass component inside one pass is a
+    part. Each part records the index of the pass it sits in.
+    """
+    parts: list[dict] = []
+    for index, plan_pass in enumerate(passes):
+        for unit in plan_pass["units"]:
+            part_id = unit[0].rsplit("-", 1)[0]
+            if not parts or parts[-1]["id"] != part_id or parts[-1]["passIndex"] != index:
+                parts.append({"id": part_id, "passIndex": index, "units": []})
+            parts[-1]["units"].append(unit)
+    return parts
+
+
+def _grouping(passes: list[dict]) -> list[list[str]]:
+    """Each pass's part ids, in file order, for comparing against a grouping pinned by hand."""
+    parts = _plan_parts(passes)
+    return [[part["id"] for part in parts if part["passIndex"] == index] for index in range(len(passes))]
+
+
+def _check_fold(
+    passes: list[dict],
+    bounds: str,
+    read_plan: str,
+    window: int,
+    discipline_of: dict[str, str],
+    errors: list[str],
+    where: str,
+) -> list[list[str]]:
+    """
+    What a fold may do, checked on one read plan the script wrote; the expected grouping is the
+    caller's, pinned by hand, and this returns the grouping the file holds.
+
+    A fold moves the boundary between adjacent passes and nothing else. Every part reads whole in
+    one pass, under ids numbered in its own discipline; a pass holds at most twelve units and at
+    most one part of three or more, which gives the pass its id; a part under three joins the pass
+    before it whenever that pass has room; no pass under three stands beside a pass it would fit
+    into; and the heading, the `folded in` line, the bounds line and the totals block each say what
+    the file holds.
+    """
+    parts = _plan_parts(passes)
+    seen: set[str] = set()
+    for part in parts:
+        if part["id"] in seen:
+            errors.append(f"{where}: part {part['id']} is read in two places, so a fold split or moved it")
+        seen.add(part["id"])
+        # A folded unit keeps the id its own discipline numbered it under, so every part is one
+        # discipline's sheets under that discipline's pass id, lettered or not.
+        disciplines = {discipline_of.get(sheet, "(unknown)") for _id, sheet, _page in part["units"]}
+        stems = {("NONE" if d == "(none)" else d) + str(window) for d in disciplines}
+        lettered = part["id"][:-1] in stems and part["id"][-1] in string.ascii_lowercase
+        if len(stems) != 1 or not (part["id"] in stems or lettered):
+            errors.append(
+                f"{where}: unit ids {[unit[0] for unit in part['units']]} are numbered under "
+                f"{part['id']} over sheets of discipline {sorted(disciplines)}"
+            )
+
+    grouping = _grouping(passes)
+    sizes: list[int] = []
+    folds: list[str] = []
+    kept: list[str] = []
+    for index, plan_pass in enumerate(passes):
+        members = [part for part in parts if part["passIndex"] == index]
+        size = sum(len(part["units"]) for part in members)
+        sizes.append(size)
+        if size > 12:
+            errors.append(f"{where}: pass {plan_pass['id']} holds {size} units, over the cap of 12")
+        if plan_pass["fields"].get("units") != str(size):
+            errors.append(
+                f"{where}: pass {plan_pass['id']} reads `units: {plan_pass['fields'].get('units')}` "
+                f"over {size} unit lines"
+            )
+        if not members:
+            continue
+        large = [part for part in members if len(part["units"]) >= _SMALL_PASS_UNITS]
+        if len(large) > 1:
+            errors.append(
+                f"{where}: pass {plan_pass['id']} joins {[part['id'] for part in large]}, each of "
+                f"{_SMALL_PASS_UNITS} units or more"
+            )
+        host = large[0] if large else members[0]
+        if plan_pass["id"] != host["id"]:
+            errors.append(
+                f"{where}: the pass holding {grouping[index]} is named {plan_pass['id']}, not "
+                f"{host['id']}"
+            )
+        folded = [part for part in members if part is not host]
+        folds.extend(f"{part['id']} into {host['id']}" for part in folded)
+        if size < _SMALL_PASS_UNITS:
+            kept.append(plan_pass["id"])
+        want_field = ", ".join(part["id"] for part in folded) or None
+        if plan_pass["fields"].get("folded in") != want_field:
+            errors.append(
+                f"{where}: pass {plan_pass['id']} reads `folded in: "
+                f"{plan_pass['fields'].get('folded in')}`, expected {want_field!r}"
+            )
+        folded_disciplines = [discipline_of.get(part["units"][0][1], "(unknown)") for part in folded]
+        suffix = (
+            f", with discipline{'s' if len(folded_disciplines) > 1 else ''} "
+            f"{', '.join(folded_disciplines)}"
+            if folded
+            else ""
+        )
+        if not plan_pass["heading"].endswith(suffix) or (not folded and ", with discipline" in plan_pass["heading"]):
+            errors.append(
+                f"{where}: pass {plan_pass['id']} is headed {plan_pass['heading']!r}, which does not "
+                f"name the disciplines folded into it ({suffix!r})"
+            )
+
+    for index in range(1, len(sizes)):
+        before, after = sizes[index - 1], sizes[index]
+        if (before < _SMALL_PASS_UNITS or after < _SMALL_PASS_UNITS) and before + after <= 12:
+            errors.append(
+                f"{where}: passes {passes[index - 1]['id']} of {before} and {passes[index]['id']} of "
+                f"{after} stand apart though one is under {_SMALL_PASS_UNITS} units and both fit in 12"
+            )
+        first = next((part for part in parts if part["passIndex"] == index), None)
+        if first is not None and len(first["units"]) < _SMALL_PASS_UNITS and before + len(first["units"]) <= 12:
+            errors.append(
+                f"{where}: part {first['id']} starts pass {passes[index]['id']} though the pass before "
+                f"it holds {before} units and has room for it"
+            )
+
+    fold_clause = f"folds {len(folds)} ({', '.join(folds)})" if folds else "folds 0"
+    kept_clause = (
+        f", passes under three units kept {len(kept)} ({', '.join(kept)})" if kept else ""
+    )
+    fragment = f"passes {len(passes)}, {fold_clause}{kept_clause},"
+    if fragment not in bounds:
+        errors.append(f"{where}: the bounds line does not name `{fragment}`: {bounds!r}")
+    totals = f"units planned {sum(sizes)}, passes {len(passes)}, folds {len(folds)}"
+    if totals not in read_plan.splitlines():
+        errors.append(f"{where}: the read plan's totals do not carry `{totals}`")
+    return grouping
+
+
 def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "plan-inventory"
     script = plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT)
@@ -1956,6 +2102,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     expected_cross: dict[str, dict[str, int]] = {}
     page_of: dict[str, int] = {}
     key_of: dict[str, str] = {}
+    discipline_of: dict[str, str] = {}
     for row in fixture_rows:
         discipline = row.get("discipline") or "(none)"
         sheet_type = row.get("sheetType") or "(untyped)"
@@ -1963,6 +2110,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         expected_cross.setdefault(discipline, {})
         expected_cross[discipline][sheet_type] = expected_cross[discipline].get(sheet_type, 0) + 1
         page_of[row["sheetNumber"]] = row["pageInPdf"]
+        discipline_of[row["sheetNumber"]] = discipline
         key_of[row["sheetNumber"]] = (
             f"{row['sheetNumber']}@{row.get('fileId') or ''}#{row['pageInPdf']}"
         )
@@ -2096,7 +2244,6 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         }
         for fragment in (
             f"units {len(expected_w1)}",
-            f"passes {len(expected_w1_disciplines)}",
             f"excluded {len(excluded)}",
             f"unassigned {expected_rows - len(expected_w1) - len(excluded)}",
             f"ids kept 0 (ledger 0, plan file 0), ids new {len(expected_w1)}, ids retired 0",
@@ -2111,7 +2258,21 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             )
         if len(w1_sheets) != len(set(w1_sheets)):
             errors.append("a sheet appears in more than one window 1 unit line")
-        _check_split_arithmetic(w1_passes, 12, errors, "window 1")
+        _check_split_arithmetic(_plan_parts(w1_passes), 12, errors, "window 1")
+        if len(_plan_parts(w1_passes)) != len(expected_w1_disciplines):
+            errors.append(
+                f"window 1 reads {len(_plan_parts(w1_passes))} discipline parts over "
+                f"{len(expected_w1_disciplines)} disciplines"
+            )
+        # The fold, pinned by hand off the fixture. G1 is one sheet with no pass before it, so it
+        # starts a pass, and a pass under three takes in the part behind it: A1's five, which give
+        # the pass its id. NONE1's one sheet then joins A1 at seven.
+        w1_grouping = _check_fold(
+            w1_passes, w1_bounds, w1_path.read_text(encoding="utf-8"), 1, discipline_of, errors,
+            "window 1",
+        )
+        if w1_grouping != [["G1", "A1", "NONE1"]]:
+            errors.append(f"window 1 reads its parts as {w1_grouping}, expected [['G1', 'A1', 'NONE1']]")
 
         # The file window 2 subtracts, and the reason it exists: window 2 provably reads what
         # window 1 left rather than recomputing window 1's own selection from its arguments.
@@ -2214,13 +2375,13 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
 
         w2_passes = _plan_passes(w2_path.read_text(encoding="utf-8"))
         planned: list[tuple[str, list[str]]] = []
-        for plan_pass in w2_passes:
-            stem = plan_pass["id"]
+        for part in _plan_parts(w2_passes):
+            stem = part["id"]
             if len(stem) > 1 and stem[-1] in string.ascii_lowercase:
                 stem = stem[:-1]
             if not planned or planned[-1][0] != stem:
                 planned.append((stem, []))
-            planned[-1][1].extend(sheet for _id, sheet, _page in plan_pass["units"])
+            planned[-1][1].extend(sheet for _id, sheet, _page in part["units"])
         if planned != expected_w2_order:
             errors.append(
                 f"window 2 is not the inventory minus window 1, by discipline and in the sheet "
@@ -2239,9 +2400,131 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         )
         if not reordered:
             errors.append("the window 2 fixture proves nothing about the sheet type order")
-        w2_split = _check_split_arithmetic(w2_passes, 12, errors, "window 2")
+        w2_split = _check_split_arithmetic(_plan_parts(w2_passes), 12, errors, "window 2")
         if w2_split == 0:
             errors.append("the window 2 fixture proves nothing about the twelve-unit split")
+        # The fold, pinned by hand off the fixture. S2's two sheets fit beside A2b's nine at
+        # eleven. P2's two would make that thirteen, so P2 starts a pass, and a pass under three
+        # takes in E2's one sheet at three. C2's eight stand alone.
+        w2_grouping = _check_fold(
+            w2_passes, w2_bounds, w2_path.read_text(encoding="utf-8"), 2, discipline_of, errors,
+            "window 2",
+        )
+        if w2_grouping != [["A2a"], ["A2b", "S2"], ["P2", "E2"], ["C2"]]:
+            errors.append(
+                f"window 2 reads its parts as {w2_grouping}, expected "
+                f"[['A2a'], ['A2b', 'S2'], ['P2', 'E2'], ['C2']]"
+            )
+
+    # ------------------------------------------------------------------ #
+    # A 209-sheet set: window 1 in three passes
+    # ------------------------------------------------------------------ #
+    #
+    # The grid of a 209-page set as its record holds it: the discipline and sheet type of every row,
+    # in grid order, with every sheet number invented. Its vocabulary is seventeen sheets over eight
+    # disciplines, five of them one or two sheets, and that planned as eight runners before the
+    # fold. The tally below is computed off the fixture, never off what the script wrote.
+    set_209 = fixtures / "set-grid-fixture-209.json"
+    set_209_dir = out_dir / "set-209"
+    shutil.rmtree(set_209_dir, ignore_errors=True)
+    w1_209_grouping: list[list[str]] = []
+    w2_209_grouping: list[list[str]] = []
+    try:
+        rows_209 = json.loads(set_209.read_text(encoding="utf-8"))["sheets"]
+    except Exception as e:
+        errors.append(f"the 209-sheet fixture: {e}")
+        rows_209 = []
+    if len(rows_209) != 209:
+        errors.append(f"the 209-sheet fixture holds {len(rows_209)} rows, not 209")
+    discipline_209 = {row["sheetNumber"]: row.get("discipline") or "(none)" for row in rows_209}
+    vocabulary_209: dict[str, int] = {}
+    rest_209: dict[str, int] = {}
+    for row in rows_209:
+        tally = vocabulary_209 if (row.get("sheetType") or "") in _VOCABULARY_SHEET_TYPES else rest_209
+        tally[row.get("discipline") or "(none)"] = tally.get(row.get("discipline") or "(none)", 0) + 1
+
+    def expected_parts(counts: dict[str, int], window: int) -> list[tuple[str, int]]:
+        parts: list[tuple[str, int]] = []
+        for discipline, count in counts.items():
+            stem = ("NONE" if discipline == "(none)" else discipline) + str(window)
+            sizes = _expected_split(count, 12)
+            parts += [
+                (stem if len(sizes) == 1 else f"{stem}{string.ascii_lowercase[i]}", size)
+                for i, size in enumerate(sizes)
+            ]
+        return parts
+
+    w1_209_parts = expected_parts(vocabulary_209, 1)
+    w2_209_parts = expected_parts(rest_209, 2)
+    code, bounds_209, err = _run_script_main(
+        module,
+        ["inventory", "--grid", str(set_209), "--expect-count", "209", "--out-dir", str(set_209_dir)],
+    )
+    if code != 0:
+        errors.append(f"the inventory mode refused the 209-sheet fixture: {err}")
+    else:
+        if "209 rows" not in bounds_209:
+            errors.append(f"the 209-sheet inventory bounds line does not name 209 rows: {bounds_209!r}")
+        inventory_209 = str(set_209_dir / "inventory.json")
+        w1_209_path = set_209_dir / "read-plan-w1.md"
+        code, w1_209_bounds, err = _run_script_main(
+            module, ["plan", "--window", "1", "--inventory", inventory_209, "--out", str(w1_209_path)]
+        )
+        if code != 0:
+            errors.append(f"the 209-sheet window 1 refused: {err}")
+        else:
+            w1_209_text = w1_209_path.read_text(encoding="utf-8")
+            w1_209_passes = _plan_passes(w1_209_text)
+            got = [(part["id"], len(part["units"])) for part in _plan_parts(w1_209_passes)]
+            if got != w1_209_parts:
+                errors.append(f"the 209-sheet window 1 reads the parts {got}, expected {w1_209_parts}")
+            if f"units {sum(vocabulary_209.values())}," not in w1_209_bounds:
+                errors.append(
+                    f"the 209-sheet window 1 bounds line does not name `units "
+                    f"{sum(vocabulary_209.values())}`: {w1_209_bounds!r}"
+                )
+            # E1's three hold the pass five parts of one or two sheets join, in grid order, ten in
+            # all. A1's four and S1's three each stand alone, since two parts of three or more
+            # never join.
+            w1_209_grouping = _check_fold(
+                w1_209_passes, w1_209_bounds, w1_209_text, 1, discipline_209, errors,
+                "the 209-sheet window 1",
+            )
+            pinned = [["A1"], ["E1", "FA1", "FP1", "G1", "H1", "P1"], ["S1"]]
+            if w1_209_grouping != pinned or len(w1_209_grouping) > 3:
+                errors.append(
+                    f"the 209-sheet window 1 reads in {len(w1_209_grouping)} passes, "
+                    f"{w1_209_grouping}, expected three: {pinned}"
+                )
+        w2_209_path = set_209_dir / "read-plan-w2.md"
+        code, w2_209_bounds, err = _run_script_main(
+            module,
+            ["plan", "--window", "2", "--inventory", inventory_209,
+             "--window-1", str(set_209_dir / "plan" / "window-1.json"), "--out", str(w2_209_path)],
+        )
+        if code != 0:
+            errors.append(f"the 209-sheet window 2 refused: {err}")
+        else:
+            w2_209_text = w2_209_path.read_text(encoding="utf-8")
+            w2_209_passes = _plan_passes(w2_209_text)
+            got = [(part["id"], len(part["units"])) for part in _plan_parts(w2_209_passes)]
+            if got != w2_209_parts:
+                errors.append(f"the 209-sheet window 2 reads the parts {got}, expected {w2_209_parts}")
+            # I2's one sheet cannot join H2b's twelve, so it starts a pass L2a's eight join. LS2's
+            # one sheet joins L2b at eight, and the one page no sheet covers joins S2c at twelve.
+            w2_209_grouping = _check_fold(
+                w2_209_passes, w2_209_bounds, w2_209_text, 2, discipline_209, errors,
+                "the 209-sheet window 2",
+            )
+            folded_209 = [group for group in w2_209_grouping if len(group) > 1]
+            if folded_209 != [["I2", "L2a"], ["L2b", "LS2"], ["S2c", "Pages2"]] or len(
+                w2_209_grouping
+            ) != len(w2_209_parts) - 3:
+                errors.append(
+                    f"the 209-sheet window 2 reads {len(w2_209_grouping)} passes folding "
+                    f"{folded_209}, expected {len(w2_209_parts) - 3} folding I2 into L2a, LS2 into "
+                    f"L2b and Pages2 into S2c"
+                )
 
     # ------------------------------------------------------------------ #
     # Window 3: one review per package
@@ -2282,6 +2565,8 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append(f"{label}: window 3 planned {len(passes)} passes over {len(rows)} packages")
         if any(len(p["reviews"]) != 1 or p["units"] for p in passes):
             errors.append(f"{label}: a window 3 pass does not carry exactly one review and no sheet")
+        if any("folded in" in p["fields"] for p in passes) or ", folds " in run_bounds:
+            errors.append(f"{label}: window 3 folds a review into another pass")
         by_id = {r["id"]: r for r in expected}
         planned_ids = [p["reviews"][0][0] for p in passes if p["reviews"]]
         if sorted(planned_ids) != sorted(by_id):
@@ -2413,12 +2698,12 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     f"{plan_pass['fields'].get('units verified')}` on a plan with no ledger"
                 )
     for where, first_plan_passes in (("window 1", w1_passes), ("window 2", w2_passes)):
-        for plan_pass in first_plan_passes:
-            first_ids = [unit_id for unit_id, _sheet, _page in plan_pass["units"]]
-            wanted_ids = [f"{plan_pass['id']}-{i}" for i in range(1, len(first_ids) + 1)]
+        for part in _plan_parts(first_plan_passes):
+            first_ids = [unit_id for unit_id, _sheet, _page in part["units"]]
+            wanted_ids = [f"{part['id']}-{i}" for i in range(1, len(first_ids) + 1)]
             if first_ids != wanted_ids:
                 errors.append(
-                    f"{where}: pass {plan_pass['id']} carries unit ids {first_ids}, expected "
+                    f"{where}: part {part['id']} carries unit ids {first_ids}, expected "
                     f"{wanted_ids} on a first plan"
                 )
 
@@ -2456,7 +2741,16 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         )
         if run_code != 0:
             return run_code, run_bounds, run_err, []
-        return run_code, run_bounds, run_err, _plan_passes(out.read_text(encoding="utf-8"))
+        run_text = out.read_text(encoding="utf-8")
+        run_passes = _plan_passes(run_text)
+        # Whatever case a fixture exists for, the plan it writes keeps the fold's rules.
+        inventory_rows = json.loads(Path(inventory_path).read_text(encoding="utf-8"))["sheets"]
+        _check_fold(
+            run_passes, run_bounds, run_text, window,
+            {row["sheetNumber"]: row.get("discipline") or "(none)" for row in inventory_rows},
+            errors, f"{folder.name} window {window}",
+        )
+        return run_code, run_bounds, run_err, run_passes
 
     def planned_ids(plan_passes: list[dict]) -> list[tuple[str, str]]:
         """(unit id, sheet number) in the order the file lists them."""
@@ -2722,9 +3016,13 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append(
                 f"the window 2 slice planned {planned_ids(slice_passes)}, expected {expected_slice}"
             )
+        # S2's one sheet joins A2a's six, the part the whole window letters, so the slice is one
+        # pass of seven.
+        if _grouping(slice_passes) != [["A2a", "S2"]]:
+            errors.append(f"the window 2 slice reads its parts as {_grouping(slice_passes)}, expected [['A2a', 'S2']]")
         remaining_count = len(sliced_keys) + len(deferred_rows)
         for fragment in (
-            f"window 2, sheets {len(sliced_keys)}, passes 2, disciplines 2",
+            f"window 2, sheets {len(sliced_keys)}, passes 1, folds 1 (S2 into A2a), disciplines 2",
             f"every sheet once (units {len(sliced_keys)} plus deferred {len(deferred_rows)} equals "
             f"distinct sheets {remaining_count})",
             f"sheets deferred {len(deferred_rows)} by --only",
@@ -2904,7 +3202,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append(f"the whole window's bounds line names a deferral: {whole_bounds!r}")
         if "read earlier" in whole_bounds or "ids held" in whole_bounds:
             errors.append("the whole window's bounds line names sheets read earlier or ids held")
-        _check_split_arithmetic(whole_passes, 12, errors, "the whole window after the slice")
+        _check_split_arithmetic(_plan_parts(whole_passes), 12, errors, "the whole window after the slice")
         whole_file = json.loads((slice_dir / "plan" / "window-2.json").read_text(encoding="utf-8"))
         if (whole_file.get("only"), whole_file.get("deferredKeys"), whole_file.get("deferredCount")) != ([], [], 0):
             errors.append("the whole window's window-2.json still carries a slice or a deferral")
@@ -3048,6 +3346,28 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         saved = json.loads((consecutive_dir / "plan" / "window-2.json").read_text(encoding="utf-8"))
         if (saved.get("readEarlierKeys"), saved.get("deferredKeys"), saved.get("deferredCount")) != ([], [], 0):
             errors.append("the whole window after consecutive slices still counts sheets outside its units")
+
+    # --- the twelve-unit cap outranks the fold ------------------------ #
+    #
+    # One sheet between two passes of twelve has no pass it fits into, so it reads alone, and the
+    # bounds line names it as kept rather than leaving a small pass unexplained.
+    full_dir = replan_root / "both-full"
+    full_inventory = write_replan_inventory(
+        full_dir,
+        [slice_row("A", f"A-1.{i:02d}", "schedule", i) for i in range(1, 13)]
+        + [slice_row("B", "B-1.01", "legend", 13)]
+        + [slice_row("C", f"C-1.{i:02d}", "schedule", 13 + i) for i in range(1, 13)],
+    )
+    code, full_bounds, err, full_passes = run_replan(full_dir, 1, full_inventory, [])
+    if code != 0:
+        errors.append(f"the both-full fixture's window 1 run refused: {err}")
+    elif _grouping(full_passes) != [["A1"], ["B1"], ["C1"]] or (
+        "passes 3, folds 0, passes under three units kept 1 (B1)," not in full_bounds
+    ):
+        errors.append(
+            f"one sheet between two passes of twelve reads as {_grouping(full_passes)}, expected "
+            f"[['A1'], ['B1'], ['C1']] with B1 named as kept: {full_bounds!r}"
+        )
 
     # --- a planned id that changes pass is renumbered, not refused ----- #
     #
@@ -3412,6 +3732,17 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"holding the first one's dispatched ids with verified sheets read earlier and a mismatch "
         f"still deferred, consecutive slices keeping ids 1..9 with six read earlier and all nine "
         f"bound and verified on the next whole-window plan, window-1.json carrying its patterns, "
+        f"the fold checked on every window 1 and 2 plan (a pass at most twelve units holding at "
+        f"most one part of three or more, which names it, a part under three joining the pass "
+        f"before it whenever that has room, no pass under three beside one it fits into, every "
+        f"folded unit keeping its own discipline's id, and the heading, the folded in line, the "
+        f"bounds line and the totals naming each fold) with the fixture's groupings pinned by hand, "
+        f"one sheet between two passes of twelve kept alone and named, a 209-sheet set's window 1 "
+        f"of {sum(vocabulary_209.values())} vocabulary sheets in {len(w1_209_parts)} discipline "
+        f"parts read in {len(w1_209_grouping)} passes with "
+        f"{sum(len(group) - 1 for group in w1_209_grouping)} folds and its window 2 of "
+        f"{len(w2_209_parts)} parts in {len(w2_209_grouping)} passes with "
+        f"{sum(len(group) - 1 for group in w2_209_grouping)} folds, "
         f"{len(refusals)} broken invocations each refused in one line naming what is wrong"
     )
     # An honest bound, not a pass: the fixtures are invented and small. They carry the field names
