@@ -128,6 +128,11 @@ of them is ever trimmed.
    refuses something, fix the citation to what you actually read, and never game the shape. An item
    already cites the pages the index found it on; cite what the index did not, and never re-cite a
    page the item already carries. A citation of a row that already exists rides the batch.
+   A manual-grounded record's evidence names its spec section the way a drawing-grounded one
+   names its sheet: `kind: "spec-section"` with the section number as the manual prints it, plus
+   the file and the page you read it on. The section is what the estimator reads on the citation,
+   and the page is where the app opens it. Never cite a manual page as a bare document page when
+   you know its section.
 3. STORE-RESOLUTION IS MANDATORY: resolve a mark, tag, or code by querying the record, never from
    memory, never inherited from another sheet's read, never assumed from a similar-looking mark. For
    a code this page prints, the page's context read has already done it: the answer names the code's
