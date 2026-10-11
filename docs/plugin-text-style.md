@@ -236,9 +236,14 @@ Each of these is a harness check.
     counts, so a run that reports nothing fails. Those refusals cover the two ways a sheet could
     otherwise go missing or be miscounted with nothing said about it: two grid rows folding to one
     unit key, which window 2 would subtract as one and drop as two, and a window 1 file naming a key
-    as both selected and left out. Its bound is stated in the harness README entry
-    and in the check's own detail line: the fixtures are invented, so this proves the script's
-    arithmetic, its ordering and its refusals, not how a real grid or packages read arrives.
+    as both selected and left out. Every window 1 and 2 plan it writes is also held to the fold:
+    a pass under three units joins the pass before or after it, no pass goes over twelve or holds
+    two parts of three or more, every folded unit keeps the id its own discipline gave it, and the
+    bounds line names each fold and each small pass left alone. A 209-sheet grid carrying a real
+    set's discipline and sheet type shape, with invented sheet numbers, plans its window 1 in three
+    passes. Its bound is stated in the harness README entry and in the check's own detail line:
+    the fixtures are invented, so this proves the script's arithmetic, its ordering, its fold and
+    its refusals, not how a real grid or packages read arrives.
 18. The pass summary script sums the ledger. The shipped `pass_summary.py` is run in-process over
     two invented ledger fixtures, and its counts, its note placement, its refusals and the labels
     it prints are compared against a tally the check computes itself; the labels also have to equal

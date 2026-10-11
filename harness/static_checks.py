@@ -73,10 +73,11 @@ Checks:
       window 3 review per package over two packages fixtures in package order with two packages
       on one trade both planning and planned one after the other, every window 3 unit id a legal
       verify_unit subject prefix stem with none a prefix of another, a first plan of windows 1 and
-      2 numbering each pass's units from 1 and a replan keeping every unit id the run ledger and
-      the previous plan file already handed out, numbering new sheets after the highest number the
-      pass has ever carried and never handing a cut sheet's id out again, a window 2 slice planned
-      with `--only` holding exactly the sheets its patterns name and deferring the rest, with its
+      2 numbering each discipline part's units from 1 and a replan keeping every unit id the run
+      ledger and the previous plan file already handed out, numbering new sheets after the highest
+      number the part has ever carried and never handing a cut sheet's id out again, a window 2
+      slice planned with `--only` holding exactly the sheets its patterns name and deferring the
+      rest, with its
       bounds line, its `plan/window-2.json` and its read plan's per-pattern and deferred sections
       each matching an independent tally, the slice lettered by the whole window so the full plan
       after it keeps its ids at the front of part a (three dispatched, then twelve) and reads its
@@ -90,7 +91,17 @@ Checks:
       window 1 file naming a key as both selected and excluded, the seven ways a kept unit id would
       be wrong, an `--only` on window 1, an `--only` matching no sheet window 2 reads, and a slice
       of thirteen dispatched in one discipline, which the full plan's first part of twelve cannot
-      hold, among them. The shipped script is compiled from source here
+      hold, among them. Every window 1 and 2 plan it writes is also held to the fold: a pass of at
+      most twelve units holding at most one part of three or more, which names it, a part under
+      three joining the pass before it whenever that pass has room and the pass after it
+      otherwise, no pass under three beside one it fits into, every folded unit keeping the id its
+      own discipline gave it, and the heading, the `folded in` line, the bounds line and the totals
+      naming each fold, with the fixtures' groupings pinned by hand, one sheet between two passes
+      of twelve read alone and named as kept, and harness/fixtures/set-grid-fixture-209.json, a
+      209-sheet grid with a real set's discipline and sheet type counts in grid order and invented
+      sheet numbers, planning its window 1 of seventeen vocabulary sheets over eight disciplines in
+      three passes and its window 2 of twenty-two parts in nineteen. The shipped script is
+      compiled from source here
       rather than imported through the loader, so a script edited twice inside one second to the
       same byte length can never be checked as its earlier bytecode.
   18. Pass summary: the shipped scripts/pass_summary.py, imported in-process and run over two
