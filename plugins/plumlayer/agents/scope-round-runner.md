@@ -29,11 +29,12 @@ the sheet, or, in a review, one catalog trade id), and its units. In windows 1 a
 sheet with its sheet number, `fileId`, and 1-based `pageInPdf`; in window 3 a pass carries one
 review unit whose id is the pass id, with the package it reviews on the block's `package:` line. A
 unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
-line and in the `verify_unit` prefix; never rebuild it from the pass id and the line's position. If
-a path is missing, say so and stop rather than running
-against a plan you invented. If your pass carries more than twelve read units, stop before
-dispatching anything and say so: the pass is too long to supervise and the plan is wrong. Nothing
-is lost by stopping there, because nothing has run.
+line and in the `verify_unit` prefix; never rebuild it from the pass id and the line's position. A
+pass the plan folded carries units of more than one discipline, each under the id its own
+discipline gave it, and its `folded in:` line names the parts it took in. If a path is missing,
+say so and stop rather than running against a plan you invented. If your pass carries more than
+twelve read units, stop before dispatching anything and say so: the pass is too long to supervise
+and the plan is wrong. Nothing is lost by stopping there, because nothing has run.
 
 ## Pass mode
 
@@ -48,11 +49,12 @@ is lost by stopping there, because nothing has run.
    `plumlayer:scope-reader`, and never any other. The parenthesized list on your `tools` line
    records that intent and does not enforce it, since a type list inside `Agent(...)` is ignored
    for an agent running as a subagent, so keeping to it is yours to do. Before each unit, look for
-   its own `verified <window> <pass id> <unit id>` line with a local filter on the ledger (the one
-   read of it you ever make): a unit whose line carries `result ok` is finished, so dispatch nothing
-   for it, append nothing, and go to the next unit. Its counts still reach your summary, because
-   the script sums every `verified` line of the pass, and a unit with a `dispatch` line and no
-   `verified` line is re-run as below. **Append the unit's
+   a `verified` line carrying your window and that unit id, whatever pass it names, with a local
+   filter on the ledger (the one read of it you ever make): a replan can put a unit in another pass,
+   and its unit id is what stays. A unit whose line carries `result ok` is finished, so dispatch
+   nothing for it, append nothing, and go to the next unit. Its counts reach the summary of the pass
+   it was verified in, because the script sums every `verified` line naming that pass, and a unit
+   with a `dispatch` line and no `verified` line is re-run as below. **Append the unit's
    `dispatch` line first, in one append, then dispatch the reader.** Never the other way round and
    never in a batch at the end: the line is what a resume reads to know the unit was started, and a
    run that batched them reported six units as nothing-landed when their work was on the record.

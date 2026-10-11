@@ -586,12 +586,12 @@ lines.
    digest at its tail. Never the sheet lines above them.
 4. **Write the window 1 plan.** Run the plan mode of the same script for window 1. It selects the
    vocabulary sheets by sheet type (schedule, legend, notes, cover and index), groups them into
-   passes by discipline, splits a pass over twelve
-   units at the twelve, and names what it left out and why. Families you want read anyway, or
-   left out, go in as `--include` and `--exclude` patterns with a reason each; that is where your
-   judgment lives, and it carries no sheet titles and no page numbers. This window takes no
-   packages: nothing in it is chosen per trade, and the script refuses that
-   argument in one line rather than accepting and ignoring it.
+   passes by discipline, splits a pass over twelve units at the twelve, folds a pass under three
+   units into the pass before or after it, and names what it left out and why. Families you want
+   read anyway, or left out, go in as `--include` and `--exclude` patterns with a reason each; that
+   is where your judgment lives, and it carries no sheet titles and no page numbers. This window
+   takes no packages: nothing in it is chosen per trade, and the script refuses that argument in
+   one line rather than accepting and ignoring it.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 1 \
@@ -599,16 +599,18 @@ lines.
      --out '<run folder>/read-plan.md'
    ```
 
-   Read back only its bounds line: units, passes, excluded, unassigned. It also writes
-   `<run folder>/plan/window-1.json`, the unit keys it selected and the ones it left out, which is
-   window 2's input and is what makes every sheet once provable rather than inferred. A refusal is
-   a one-line reason and a fix to your arguments, never a reason to write the plan by hand. Never
-   open `read-plan.md` yourself; the runners open their own pass.
+   Read back only its bounds line: units, passes, folds, excluded, unassigned. Each fold reads
+   `<part> into <pass>`, and a pass under three that fits beside no other is named as kept. It also
+   writes `<run folder>/plan/window-1.json`, the unit keys it selected and the ones it left out,
+   which is window 2's input and is what makes every sheet once provable rather than inferred. A
+   refusal is a one-line reason and a fix to your arguments, never a reason to write the plan by
+   hand. Never open `read-plan.md` yourself; the runners open their own pass.
 
    Running it again is how a plan changes, and it is safe to run again: it reads the ledger's
    dispatch lines and the unit ids it wrote last time, keeps every id already dispatched on the
-   same sheet, numbers what is new after the highest id its pass already carries, and never hands
-   an id out twice, so the record's own `scopeItem:<unit id>-` prefixes stay where they are.
+   same sheet, numbers what is new after the highest id its discipline's part already carries,
+   whichever pass the fold puts that part in, and never hands an id out twice, so the record's own
+   `scopeItem:<unit id>-` prefixes stay where they are.
 
 <!-- user-facing -->
 Before any reading runs, tell the user, in a few plain sentences, not a table:
@@ -643,9 +645,10 @@ nothing else:
    dispatch it, never after. A pass whose block shows `units verified` equal to `units` is finished
    and is not dispatched. One below it is dispatched whole even when it already carries a `pass:`
    line, as a pass does once a replan adds sheets to it: its runner skips the units already
-   verified, and its new `pass:` line carries the whole pass. Passes of different disciplines
-   start together; passes the plan marks as seeing the same work start one after another. What a
-   pass leaves in the lead's context is its dispatch line and its summary, nothing else.
+   verified, and its new `pass:` line carries the whole pass. Passes that share no discipline
+   start together, and a folded pass's heading names every discipline it carries; passes the plan
+   marks as seeing the same work start one after another. What a pass leaves in the lead's context
+   is its dispatch line and its summary, nothing else.
 2. **The runner owns the pass.** It writes the pass brief if it is not already on disk, runs the
    pass's units in reading order (one fresh
    `plumlayer:scope-reader` per unit, one unit at a time), appends each unit's dispatch line
@@ -727,9 +730,10 @@ On the go-ahead:
 1. **Write the window 2 plan.** Run the plan script for window 2. It takes every row of the
    inventory that `plan/window-1.json` does not already name, selected or left out, groups them
    into passes by discipline in inventory order, sorts inside a discipline by sheet type with
-   composition ahead of extent, and splits a pass over twelve units at the twelve into lettered
-   passes. The reading order inside a discipline is a constant in the script, never a setting and
-   never a judgment made at run time. Read back only its bounds line: sheets, passes, disciplines,
+   composition ahead of extent, splits a pass over twelve units at the twelve into lettered
+   passes, and folds a pass under three units into the pass before or after it, as in window 1. The
+   reading order inside a discipline is a constant in the script, never a setting and never a
+   judgment made at run time. Read back only its bounds line: sheets, passes, folds, disciplines,
    the sheets by type, and `every sheet once`, which states the units planned against the distinct
    sheets they touch and refuses where the two differ. A user who wants a slice of the window first
    names the sheets and why: `--only` plans that slice and records the rest as deferred, and the
@@ -752,10 +756,11 @@ On the go-ahead:
    the plan's order. After a slice, the full plan's part that holds the slice's units holds new
    ones beside them: it shows `units verified` below `units` and is dispatched like any unfinished
    pass, its runner skips the slice's finished units, and its new `pass:` line carries the whole
-   part. Passes of different disciplines start together. Every reader reads its sheet
-   whole, for everything on it, whatever trade the work belongs to (non-negotiable 4); the runner's
-   overlap scan and the record's refusal of a create whose name the project already carries are what
-   keep two passes running alongside each other from creating the same work twice.
+   part. Passes that share no discipline start together, and a folded pass's heading names every
+   discipline it carries. Every reader reads its sheet whole, for everything on it, whatever trade
+   the work belongs to (non-negotiable 4); the runner's overlap scan and the record's refusal of a
+   create whose name the project already carries are what keep two passes running alongside each
+   other from creating the same work twice.
 3. **Check in every few passes.** After every fourth `pass:` line of the window, check in (format
    below): the sheets read, what landed by trade, what was raised. A pause here is at a pass
    boundary and loses nothing.
@@ -1134,7 +1139,7 @@ trade, what I'd like you to look at, and what the next window reads. Proceed, ad
 
 Do not restore or run per-trade fan-out / reconcile-by-overlap machinery as a scope path, and never
 present it as current: every pass writes onto the one shared list against the live record, and
-nothing is reconciled afterward. Do not restore rounds, legs, folds, or the completeness accounting
-as stages; the index and the reviews are what replaced them. Do not restore a window that reads
+nothing is reconciled afterward. Do not restore rounds, legs, or the completeness accounting as
+stages; the index and the reviews are what replaced them. Do not restore a window that reads
 sheets for one trade: the set is read once, sheet by sheet, and a package is reached through its
 review.
