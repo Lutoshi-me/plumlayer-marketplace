@@ -141,17 +141,26 @@ Each of these is a harness check.
 
 `python harness/run.py static` checks, and fails on:
 
-1. The version quadruple in lockstep: both `marketplace.json` version fields, the Claude
+1. The CLI validator passes: `claude plugin validate --strict` exits 0 over the plugin, with
+   warnings counted as errors, and where `claude` is not on the path the check reports a skip
+   rather than a pass. This cannot judge what the validator does not read: it validates the
+   manifest, and it passed while a shipped agent's frontmatter was invalid YAML, which is why
+   checks 3 and 4 read the frontmatter themselves.
+2. The version quadruple in lockstep: both `marketplace.json` version fields, the Claude
    `plugin.json`, and the Codex `.codex-plugin/plugin.json`.
-2. The shipped skill set matches the expected set exactly, in both directions, and so does the
-   shipped agent set under `agents/`. Every agent definition carries a `name` and a `description`,
+3. The shipped skill set matches the expected set exactly, in both directions, and every skill's
+   frontmatter parses as YAML and carries a non-empty `name` and `description`, with no name
+   used twice.
+4. The shipped agent set under `agents/` matches the expected set exactly, in both directions.
+   Every agent definition's frontmatter parses as YAML and carries a `name` and a `description`,
    and none declares `hooks`, `mcpServers`, or `permissionMode`, the three fields the runtime
-   ignores for plugin-shipped agents.
-3. Every frontmatter description is non-empty, folded style, and at most 600 characters.
-4. No banned string in any shipped text: client-name denylist, `PLU-\d+`, internal vault filenames,
+   ignores for plugin-shipped agents. Declaring one is not a load error, so it would read as
+   configured behavior and silently not be. This cannot judge whether a description dispatches
+   its agent at the right moment, only that the fields are there and the runtime reads them.
+5. Every frontmatter description is non-empty, folded style, and at most 600 characters.
+6. No banned string in any shipped text: client-name denylist, `PLU-\d+`, internal vault filenames,
    `MOSOT`, em dash, middle dot.
-5. No absolute local paths in any manifest.
-6. Retired vocabulary does not creep back in. This is a regression guard, not a live enforcement
+7. Retired vocabulary does not creep back in. This is a regression guard, not a live enforcement
    layer: it checks a fixed, curated list of names that a past sweep already retired (most recently
    the D6 rewrite, commit `8096333`), not "is this word acceptable" in general. Two scopes:
    - A **whole-file** list (e.g. `residue`, `roster`, `checkpoint`, `mint`, `enrich`, `operator` as
@@ -165,32 +174,57 @@ Each of these is a harness check.
      clause — the places the file itself has already declared the text user-facing.
    Every shipped file takes the same scan. There is no lenient population and no exemption list:
    a shipped file is the plugin's own prose, in the plugin's own voice, and a hit in one is drift.
-7. Bold used for emphasis on a short, high-precision denylist of ordinary words (`not`, `never`,
+8. Bold used for emphasis on a short, high-precision denylist of ordinary words (`not`, `never`,
    `only`, `must`, `no`, `exactly`, and similar) when the bold span is not immediately followed by a
    colon (the `**Label**:` convention that marks a genuine label). This is deliberately narrower than
    "any bold not followed by a colon": that broader rule flags the bulk of this codebase's own
    legitimate bolded-lead-in and first-use-term conventions, not just emphasis.
-8. Title-Case pseudo-heading lines — a standalone line of 2+ consecutive Title-Case words that isn't
+9. Title-Case pseudo-heading lines — a standalone line of 2+ consecutive Title-Case words that isn't
    a real `#`/`##` heading, a table row, a list item, a blockquote, or code — are reported as a WARN.
    This check is advisory only (it never fails the release): an inline version was tested against
    the real shipped text and flagged only proper nouns and quoted example values, never a genuine
    violation, so the narrower standalone-line version ships instead, unproven against a true
    positive.
-9. The run ledger's fixed line shapes. The scope run's ledger is a line-shaped log, not prose, and
-   the harness never sees a run's ledger, so the checkable target is the text that tells the agent
-   what to write. Three arms: the runner definition's grammar block declares exactly the three line
-   kinds and the closed `note` kind set, both compared in both directions; every skill or agent file
-   that instructs appending to the ledger carries the sentence "Nothing else goes in the ledger";
-   and no prose-permitting cue (`narrate`, `summarize`, `paragraph`, `in your own words`) sits near
-   a ledger mention with no prohibition cue in range. That last arm is a regression guard against a
-   drift that shipped, not a proof: wording it does not name still passes. Its bound is stated in
-   the harness README entry rather than left to read as a proof.
-10. The runner's mode set. The `##` headings of `agents/scope-round-runner.md` match a pinned set
+10. The connector address is exact: `.mcp.json` names the `plumlayer` server at the one
+    production url the check pins, character for character. This cannot judge whether that
+    server is up or answers, only that the plugin points at it.
+11. No absolute local paths in any manifest.
+12. A Question is never a failure report. No shipped skill or agent file tells the agent to raise
+    a Question near failure language (a failed or timed-out job, an image-only or unresolved
+    page, a retry) with no prohibition cue in range, and every file that names `ask_question` or
+    tells the agent to raise a Question carries the sentence ending "never about a Plumlayer
+    failure". This is a regression guard over a cue list: failure wording it does not name still
+    passes, and whether a Question an agent raises is about the project stays in review.
+13. The Question bar. `agents/scope-reader.md` carries the bar in its fixed wording, "a draft
+    RFI". No shipped skill or agent file carries a retired raise-for-everything phrase ("rather than
+    smoothing it", "rather than guessing") on the same line as the word Question, and none carries
+    the wording of a Question rule the draft-RFI standard retired: "always raises a Question",
+    "raise a Question if inferred" or "when inferred", "Question naming the grain", "a correction
+    of an earlier write, that is a Question", `mepDeliveryShape`, or a `"scope-item"` source type, matched over the whole file with whitespace collapsed because those
+    phrases wrap across lines. This cannot judge whether a Question an agent raises clears the bar,
+    only that the bar is stated and the retired rules have not come back; that judgment stays in
+    review.
+14. Question-text plain-words pointer. Every shipped skill or agent file that names `ask_question`
+    or tells the agent to raise a Question carries the fixed phrase "Question text is plain
+    estimator words", either stating the rule in full (this file's own Question text on the record
+    section) or pointing at it beside the standard the `ask_question` verb states. This cannot judge
+    whether a given Question actually reads in plain words, only that the instruction carries the
+    rule or a pointer to it; that judgment stays in review.
+15. The run ledger's fixed line shapes. The scope run's ledger is a line-shaped log, not prose, and
+    the harness never sees a run's ledger, so the checkable target is the text that tells the agent
+    what to write. Three arms: the runner definition's grammar block declares exactly the three line
+    kinds and the closed `note` kind set, both compared in both directions; every skill or agent file
+    that instructs appending to the ledger carries the sentence "Nothing else goes in the ledger";
+    and no prose-permitting cue (`narrate`, `summarize`, `paragraph`, `in your own words`) sits near
+    a ledger mention with no prohibition cue in range. That last arm is a regression guard against a
+    drift that shipped, not a proof: wording it does not name still passes. Its bound is stated in
+    the harness README entry rather than left to read as a proof.
+16. The runner's mode set. The `##` headings of `agents/scope-round-runner.md` match a pinned set
     exactly, in both directions, so the one-runner-per-pass shape cannot be partly undone (a
     `## Round mode` or a `## Leftover mode` coming back, a `## Pass mode` renamed away) without
     failing the release. The set is pass, review and boundary, plus the four headings
     that are not modes.
-11. The plan inventory script does its arithmetic. The shipped `plan_inventory.py` is run
+17. The plan inventory script does its arithmetic. The shipped `plan_inventory.py` is run
     in-process over an invented grid and two packages fixtures, and its counts, its
     three windows' unit lines and page references, its pinned reading order, its balanced pass
     split and its window 3 unit ids are compared against a tally the check computes itself off the
@@ -205,37 +239,36 @@ Each of these is a harness check.
     as both selected and left out. Its bound is stated in the harness README entry
     and in the check's own detail line: the fixtures are invented, so this proves the script's
     arithmetic, its ordering and its refusals, not how a real grid or packages read arrives.
-12. Question-text plain-words pointer. Every shipped skill or agent file that names `ask_question`
-    or tells the agent to raise a Question carries the fixed phrase "Question text is plain
-    estimator words", either stating the rule in full (this file's own Question text on the record
-    section) or pointing at it beside the standard the `ask_question` verb states. This cannot judge
-    whether a given Question actually reads in plain words, only that the instruction carries the
-    rule or a pointer to it; that judgment stays in review.
-12b. The Question bar. `agents/scope-reader.md` carries the bar in its fixed wording, "a draft
-    RFI". No shipped skill or agent file carries a retired raise-for-everything phrase ("rather than
-    smoothing it", "rather than guessing") on the same line as the word Question, and none carries
-    the wording of a Question rule the draft-RFI standard retired: "always raises a Question",
-    "raise a Question if inferred" or "when inferred", "Question naming the grain", "a correction
-    of an earlier write, that is a Question", `mepDeliveryShape`, or a `"scope-item"` source type, matched over the whole file with whitespace collapsed because those
-    phrases wrap across lines. This cannot judge whether a Question an agent raises clears the bar,
-    only that the bar is stated and the retired rules have not come back; that judgment stays in
-    review.
-
-13. Every dispatch template runs in the foreground. A fenced block in a shipped skill or agent
-    file that carries a `subagent_type:` line also carries `run_in_background: false`, so the
-    Agent call that dispatches an agent is the wait rather than a turn that can end with work in
-    flight. Blocks naming no subagent type are out of scope. A fence left open at the end of a file
-    is refused rather than skipped, so the block it swallowed cannot pass as a file with nothing to
-    check. This cannot judge whether a running agent passes the parameter, only that the text tells
-    it to.
-
-14. The pass summary script sums the ledger. The shipped `pass_summary.py` is run in-process over
+18. The pass summary script sums the ledger. The shipped `pass_summary.py` is run in-process over
     two invented ledger fixtures, and its counts, its note placement, its refusals and the labels
     it prints are compared against a tally the check computes itself; the labels also have to equal
     the labels of the skill's own published summary block, in order, so the script and the shape
     cannot drift apart. Its bound is stated in the harness README entry and in the check's own
     detail line: the fixtures are ledger text, so this proves the arithmetic and not a real
     verification.
+19. No dispatch names `fork` as a subagent type, in either the `subagent_type:` dispatch-line
+    shape or a `tools: Agent(fork)` frontmatter declaration, so a runner cannot build a wait out
+    of fork agents in place of the reader dispatch that is the wait. Ordinary uses of the word
+    stay clean, since the pattern matches only right after those two anchors. This cannot judge
+    a wait invented in some other shape; that stays in review.
+20. Each agent names the connector verbs it calls. No `agents/*.md` tools line takes the whole
+    connector as a wildcard, every connector verb an agent's text names is on its tools line,
+    every declared verb is one the connector registers, and each entry in the prohibition-only
+    exception table is still named in that agent's text and still off its tools line. The check
+    runs its own helper over three agent fixtures, so the refusals are shown rather than
+    assumed. This cannot judge whether a declared verb is one that agent should hold; that stays
+    in review.
+21. Every agent pins its model. Every `agents/*.md` frontmatter carries a non-empty `model`, so a
+    dispatched agent does not run on whatever model the session happens to be on, and a fixture
+    with no `model` is shown to refuse. This cannot judge which model a definition should name;
+    that stays a decision.
+22. Every dispatch template runs in the foreground. A fenced block in a shipped skill or agent
+    file that carries a `subagent_type:` line also carries `run_in_background: false`, so the
+    Agent call that dispatches an agent is the wait rather than a turn that can end with work in
+    flight. Blocks naming no subagent type are out of scope. A fence left open at the end of a file
+    is refused rather than skipped, so the block it swallowed cannot pass as a file with nothing to
+    check. This cannot judge whether a running agent passes the parameter, only that the text tells
+    it to.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

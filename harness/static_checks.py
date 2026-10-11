@@ -8,50 +8,61 @@ Checks:
      (Codex), and marketplace.json (2 fields).
   3. Skills: no duplicate `name`; no missing/empty `description`; the shipped
      skill set matches EXPECTED_SKILLS exactly, in both directions.
-  4. Description contract: every skill description is non-empty, folded YAML
-     style (`description: >`), and at most DESC_MAX_CHARS characters.
-  4b. Agents: every agents/*.md has frontmatter that actually parses as YAML
+  4. Agents: every agents/*.md has frontmatter that actually parses as YAML
      and a non-empty `name` and `description`; the shipped agent set matches
      EXPECTED_AGENTS exactly, in both directions (`scope-reader`,
      `scope-reviewer`, `scope-round-runner`); and no agent declares a
      frontmatter field the runtime ignores for plugin-shipped agents
-     (`hooks`, `mcpServers`, `permissionMode`). Checks 3 and 4b both validate
+     (`hooks`, `mcpServers`, `permissionMode`). Checks 3 and 4 both validate
      the frontmatter block with PyYAML when it is importable, falling back to
      a stdlib check for the unquoted ": " failure when it is not.
-  5. No banned string in shipped text: client-name denylist, `PLU-\\d+`,
+  5. Description contract: every skill description is non-empty, folded YAML
+     style (`description: >`), and at most DESC_MAX_CHARS characters.
+  6. No banned string in shipped text: client-name denylist, `PLU-\\d+`,
      internal vault filenames, `MOSOT`, em dash, middle dot. Em dash and
      middle dot are exempt inside fenced code blocks and inline code spans
      (data, not prose); every other pattern applies to code too. Every
      shipped file takes the same scan: there is no lenient population and no
      exemption list.
-  6. Retired vocabulary regression guard: a curated list of names retired by
+  7. Retired vocabulary regression guard: a curated list of names retired by
      the D6 vocabulary sweep (commit 8096333 and follow-ups) must not creep
      back in. Whole-file terms (e.g. `residue`, `roster`, `operator` as the
      name for the person) are banned everywhere in the full-scope files;
      scoped terms (e.g. `supersede`, `fan-out`, `census`) are legitimate
      agent-facing machinery and are banned only inside a
      `<!-- user-facing -->` span or an `Audience: user` artifact clause.
-  7. Bold-for-emphasis on a short, high-precision denylist of ordinary words
+  8. Bold-for-emphasis on a short, high-precision denylist of ordinary words
      (`not`, `never`, `only`, ...) not immediately followed by a colon.
-  8. Title-Case pseudo-heading lines (advisory only — reported as a WARN,
+  9. Title-Case pseudo-heading lines (advisory only — reported as a WARN,
      never fails the release; see the check's own docstring for why).
-  9. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
-  10. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
+  10. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
+  11. No absolute paths (Windows C:\\ or Unix /Users/ /home/) in .mcp.json,
       plugin.json (Claude), plugin.json (Codex), or marketplace.json.
-  11. Question/failure boundary: no shipped skill or agent file tells the agent to raise a
+  12. Question/failure boundary: no shipped skill or agent file tells the agent to raise a
       Question over a Plumlayer failure (a job that failed or timed out, an image-only or
       unresolved page, a retry), and every file that mentions `ask_question` / "raise a
       Question" at all carries the boundary sentence saying a Question is about the project,
       never about a Plumlayer failure.
-  12. Ledger fixed shape: the runner definition's ledger grammar block still declares exactly
+  13. Question RFI bar: agents/scope-reader.md carries the bar in its fixed wording, "a draft
+      RFI"; no shipped skill or agent file carries a retired raise-for-everything phrase ("rather
+      than smoothing it", "rather than guessing") on the same line as the word Question; and none
+      carries the wording of a Question rule the draft-RFI standard retired ("always raises a
+      Question", "raise a Question if inferred" or "when inferred", "Question naming the grain",
+      "a correction of an earlier write, that is a Question", `mepDeliveryShape`, a
+      `"scope-item"` source type), matched over the whole file with whitespace collapsed.
+  14. Every shipped skill or agent file that names `ask_question` or tells the agent to raise a
+      Question carries the fixed phrase "Question text is plain estimator words", either stating
+      the rule in full or pointing at it (docs/plugin-text-style.md §1) beside the standard the
+      `ask_question` verb states.
+  15. Ledger fixed shape: the runner definition's ledger grammar block still declares exactly
       three line kinds and the closed `note` kind set; every shipped file instructing an append
       to the ledger carries the prohibition sentence; and no prose-permitting cue sits near a
       ledger mention with no prohibition cue in range.
-  13. Runner mode set: the `##` headings of agents/scope-round-runner.md match
+  16. Runner mode set: the `##` headings of agents/scope-round-runner.md match
       EXPECTED_RUNNER_MODE_HEADINGS exactly, in both directions, so the per-pass shape cannot be
       partly undone without failing the release. The set is pass, review and
       boundary; a `Leftover mode` coming back fails here.
-  14. Plan inventory: the shipped scripts/plan_inventory.py, imported in-process and run end to
+  17. Plan inventory: the shipped scripts/plan_inventory.py, imported in-process and run end to
       end over invented fixtures, produces counts that agree with a tally this file computes
       itself, unit lines whose page references match the fixture's own sheet-to-page map, a
       window 1 selection matching an independent tally of the vocabulary sheet types plus the
@@ -82,34 +93,28 @@ Checks:
       hold, among them. The shipped script is compiled from source here
       rather than imported through the loader, so a script edited twice inside one second to the
       same byte length can never be checked as its earlier bytecode.
-  14b. Pass summary: the shipped scripts/pass_summary.py, imported in-process and run over two
+  18. Pass summary: the shipped scripts/pass_summary.py, imported in-process and run over two
       invented ledger fixtures, sums one pass's own dispatch and verified lines into the published
       summary shape, and every number, every note line and every label is compared against a tally
       this file computes itself off the same fixture text. The labels it prints are compared in
       order against the skill's own summary block, another pass's and another window's lines and
       the lead's own `pass:` line are shown to reach no total, and ten broken invocations each
       refuse in one line with nothing on stdout.
-  15. No shipped skill or agent file names `fork` as a subagent type, in either the
+  19. No shipped skill or agent file names `fork` as a subagent type, in either the
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
-  16. Every shipped skill or agent file that names `ask_question` or tells the agent to raise a
-      Question carries the fixed phrase "Question text is plain estimator words", either stating
-      the rule in full or pointing at it (docs/plugin-text-style.md §1) beside the standard the
-      `ask_question` verb states.
-  16b. Question RFI bar: agents/scope-reader.md carries the bar in its fixed wording, "a draft
-      RFI"; no shipped skill or agent file carries a retired raise-for-everything phrase ("rather
-      than smoothing it", "rather than guessing") on the same line as the word Question; and none
-      carries the wording of a Question rule the draft-RFI standard retired ("always raises a
-      Question", "raise a Question if inferred" or "when inferred", "Question naming the grain",
-      "a correction of an earlier write, that is a Question", `mepDeliveryShape`, a
-      `"scope-item"` source type), matched over the whole file with whitespace collapsed.
-  17. Agent tool surface: no agents/*.md tools line takes the whole connector as a wildcard;
+  20. Agent tool surface: no agents/*.md tools line takes the whole connector as a wildcard;
       every connector verb an agent's body names is on its tools line; every declared connector
-      verb is one of the 112 the connector registers; and the prohibition-only exception table
+      verb is one of the 113 the connector registers; and the prohibition-only exception table
       stays honest, each entry still named in that agent's text and still off its tools line.
-  18. Agent model pinned: every agents/*.md frontmatter carries a non-empty `model`, so a
-      dispatched agent does not run on whatever model the session happens to be on. Checks 17 and
-      18 each run their own helper over the agent fixtures under harness/fixtures/, so the clean
+  21. Agent model pinned: every agents/*.md frontmatter carries a non-empty `model`, so a
+      dispatched agent does not run on whatever model the session happens to be on. Checks 20 and
+      21 each run their own helper over the agent fixtures under harness/fixtures/, so the clean
       one is shown to pass and each broken one to refuse in one line naming what is wrong.
+  22. Dispatch foreground: every fenced block in a shipped skill or agent file that carries a
+      `subagent_type:` line also carries `run_in_background: false`, so the Agent call that
+      dispatches an agent is the wait; a fence left open at the end of a file is refused rather
+      than skipped. Runs its own helper over the dispatch fixtures under harness/fixtures/, so the
+      clean one is shown to pass and each broken one to refuse in one line naming what is wrong.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
