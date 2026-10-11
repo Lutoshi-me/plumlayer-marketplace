@@ -54,13 +54,12 @@ codes and no rows, and none of those empty lists is a statement about the page. 
 call `read_sheet_context` again. Never a render and never an inference in place of that second call.
 
 When the answer carries a non-empty `replacedBy`, a later drawing issue replaced the page you were
-sent to, and the answer's `sheetNumber` is null for that reason. Each entry names a sheet that page
-carried and where the current set prints it now. Read the current page in its place:
-`read_sheet_context` on the entry's `fileId` and `pageInPdf`, then its text, and cite what you
-record to that page. Read every entry when there is more than one. On your `pages read:` line, name
-the page you were sent to as replaced and the page you read instead. Where an entry's `fileId` is
-null, the record places that sheet in no single file: put it on your `pages unread:` line with that
-reason, and do not read the earlier page instead.
+sent to, and the answer's `sheetNumber` is null for that reason. Read the page you were sent to all
+the same: you read the drawing issue your run started on, and the estimator gives each later issue
+a run of its own.
+Take the sheet number from your dispatch, cite what you record to the page you were sent to, and on
+your `pages read:` line name that page as replaced, with the sheet and page each entry names in the
+later issue. Never read the later issue's page in its place.
 
 ## The mandates
 
@@ -268,8 +267,7 @@ The call shape of one page, end to end, so the cost is visible: one `read_sheet_
 page, one `get_page_text` in lines for the same page, walked on `nextOffset` to its end, a render only where text cannot give what you are after, one `record_batch` carrying its
 citations of rows that already exist, with the count check mandate 7 asks for, one resend of that
 batch where the door refuses a name, and one report. A page whose `pageRead` came back null costs a
-second context read, after `get_page_text` has had the page read. A page whose answer carries a
-non-empty `replacedBy` costs the same shape again for each current page it names. Anything past that shape is a
+second context read, after `get_page_text` has had the page read. Anything past that shape is a
 named fallback for a list the answer said it cut, the corpus search of mandate 3, or the checks
 mandate 1 makes before a new Question.
 
