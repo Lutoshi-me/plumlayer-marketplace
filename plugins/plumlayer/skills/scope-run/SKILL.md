@@ -695,12 +695,16 @@ every page too:
 3. **Keep what it left open as counts.** No agent is dispatched for those rows and nothing is
    paged to disk: `leftoverCounts` is the whole of what the run keeps, and it rides onto the
    ledger's `phase: index built` line at step 4, where the close-out report reads it. The kinds are
-   `unmatchedTag`, `codeNoLocation`, `codeTooShort`, `fragmentUnresolvable`, `pageNotASheet`,
-   `codeOverCap`, `hitNotDrawable` and `overRunCap`, and each is reported by its count alone. The
-   one exception is `codeNoLocation`: where its count is above zero, take one
-   `index_citations_leftover(projectId, kind: "codeNoLocation")` read yourself, so the close out
-   can name the codes found nowhere. Nothing in the run chases those rows: they are what the
-   close-out reports as still open, by count and with the codes found nowhere named. A tag no
+   `unmatchedTag`, `codeNoLocation`, `codeOnlyOnReplacedPages`, `codeTooShort`,
+   `fragmentUnresolvable`, `pageNotASheet`, `codeOverCap`, `hitNotDrawable` and `overRunCap`, and
+   each is reported by its count alone. The two exceptions are `codeNoLocation` and
+   `codeOnlyOnReplacedPages`: where either count is above zero, take one
+   `index_citations_leftover(projectId, kind: ...)` read of that kind yourself, so the close out
+   can name the codes found nowhere, and the codes a later drawing issue dropped with the earlier
+   sheets that printed them. One read returns up to 50 rows; where the count is higher, the close
+   out names those 50 and says how many more there are. A row on the record that still names a dropped code is work the
+   revision may have taken out; the close out says so. Nothing in the run chases those rows: they
+   are what the close-out reports as still open, by count and with those codes named. A tag no
    reader resolved on its own sheet is named as a loss rather than attached by guesswork to
    whichever package it might belong to.
 4. Append `phase: index built` to the ledger with the counts off the status. After window 1 and
@@ -889,7 +893,9 @@ Report to the user, in plain words:
   on plumlayer.com).
 - **What is still open**: the tags and codes the index could match to nothing, by count, with the
   codes found nowhere named, and said plainly as what it is: those are marks nobody placed on the
-  sheet they sit on, and this run did not go back for them. Also the sheets left out of the read
+  sheet they sit on, and this run did not go back for them. Name apart the codes a later drawing
+  issue dropped, each with the earlier sheets that printed it, and say that any scope item still
+  naming one is work the revision may have taken out, for you to check. Also the sheets left out of the read
   plan at the start, and the manual sections on no package, each with the reason it is on none,
   or that the count of them is incomplete when it was cut short.
 - **The package split**: the amendments made this run (created / split / collapsed / renamed,
@@ -906,8 +912,9 @@ the distinct sheets are the sheet numbers on them, the rows created and the item
 and `items` fields of the `verified` lines, and the candidates, the pages a review re-opened and
 the searches it ran are the `candidates`, `pages-opened` and `searches` fields of the `pass:`
 lines, the last one of a pass that carries two. What the index left open comes off the
-`phase: index built` lines, which carry its counts, and the codes found nowhere are the one
-`codeNoLocation` read the index step took, the only leftover rows the run holds. When the report
+`phase: index built` lines, which carry its counts, and the codes found nowhere and the codes a
+later issue dropped are the `codeNoLocation` and `codeOnlyOnReplacedPages` reads the index step
+took, the only leftover rows the run holds. When the report
 has been given, append `phase: closed out`.
 
 ## The dispatches and the report shapes
