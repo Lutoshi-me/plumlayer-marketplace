@@ -46,8 +46,8 @@ re-issue when the paper does not say, which files are the drawings when the pack
 genuinely unclear, and whether to send a page and type bundle again when a prior one is on file.
 Ask each of those once, in plain words, and where you already have a reading (off a cover sheet,
 off the file list) put it forward as the answer with its source named, so the user corrects it
-rather than composes it. Everything else the skill does is its own work, recorded with its trail
-and editable afterward. Never stop to collect approval for a course you have already chosen, and
+rather than composes it. Everything else the skill does is its own work, recorded with who did it
+and when, and editable afterward. Never stop to collect approval for a course you have already chosen, and
 never put your own next step to the user as a choice: if something is wrong, stop, say what is
 wrong, and hand it over; if nothing is wrong, proceed and say what you did.
 

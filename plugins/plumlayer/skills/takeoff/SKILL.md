@@ -13,8 +13,8 @@ description: >
 
 Take the user's sentence (what to count or measure, and where) and come back with the same
 artifact an intern at the next desk would produce: a named condition in the Measurements panel with
-individual marks placed at true locations on the sheets, totaled, editable, and carrying the full
-trail of who counted what from where. The user opens the takeoff editor and sees a takeoff,
+individual marks placed at true locations on the sheets, totaled, editable, and carrying
+who counted what, when, and from where. The user opens the takeoff editor and sees a takeoff,
 not a data import.
 
 Doctrine binds every stage: **you read and judge; deterministic tooling grounds; nothing enters
@@ -24,7 +24,7 @@ window tag or a cladding callout?) is your reading of the sheet, recorded as you
 citation. There is no counting algorithm in this skill and none behind the verbs; a fixed rule
 table would replace your reading with a guess that happens to be repeatable.
 
-Your work lands as working truth immediately, carrying its trail. There is no waiting pile and no
+Your work lands as working truth immediately, carrying who wrote it, when, and from what. There is no waiting pile and no
 review step to narrate: the user corrects anything they disagree with directly in the editor,
 and anything a person touches or has said belongs to them from then on: the verbs refuse a write
 there; you never need to police it, only to expect refusals near human-touched work and to
@@ -103,7 +103,7 @@ honest options with their real costs:
   new condition from that evidence without re-reading the sheets. Cheap and honest only if
   the earlier read's judgment calls and caveats travel with it, into the condition's notes, the
   records' evidence, and the report, never quietly dropped: the marks inherit that read, and
-  the trail must say so;
+  what the marks carry must say so;
 - **count fresh**: a genuinely independent second read; slower, and the standing record remains
   on record beside it;
 - **leave it**: report what stands and stop.
@@ -297,9 +297,9 @@ marks summed, so the marks are the takeoff.
     not a landed record): retry that one write once; the stage-8 verification is what proves no
     duplicate resulted either way;
   - **a refusal you cannot explain**: stop the run rather than retrying blind.
-- **Judgment calls ride the trail.** A border-case instance you counted carries the call in its
+- **Judgment calls ride the evidence.** A border-case instance you counted carries the call in its
   own evidence; exclusions shaped by judgment are recorded with the census reconciliation. (A
-  way to flag a mark for a person's check is coming to the verbs; until it exists, the trail and
+  way to flag a mark for a person's check is coming to the verbs; until it exists, the evidence and
   the report are where your unsureness lives, and it must live somewhere. Silent confidence you
   do not have is the one dishonesty this skill cannot absorb. Unsureness about your own count is
   never a Question: a Question is a draft RFI about the project, never about a Plumlayer
@@ -385,7 +385,7 @@ the moment they lean on the standing number, so they are part of the answer, not
 - The landed result is verified by a fresh recount read before the user is told it
   landed: the condition read (paginated to completion) for marks, a separate sheet-scoped read
   for each scale; a mismatch is reported, never patched silently.
-- Judgment calls are named in the trail and led with in the report: never silently resolved,
+- Judgment calls are named in the evidence and led with in the report: never silently resolved,
   never buried.
 - Nothing this skill writes is a person's own entry, and nothing it does deletes, approves, or signs;
   corrections and removals belong to the user in the editor.
@@ -405,7 +405,7 @@ in that run's evidence and report, never here.
   retirement path for legacy records) is a verb-surface question, not something this skill
   improvises.
 - **A way to flag a mark for a person's check.** A first-class way for a write to carry "check this one" (visible
-  at the true location on the sheet) is designed but not yet in the verbs; the trail + report
+  at the true location on the sheet) is designed but not yet in the verbs; the evidence and report
   carry it meanwhile. Adopt it here when it ships.
 - **Untyped sets.** Sheet discovery leans on `sheetType` records from drawing-upload; the
   title-based fallback for untyped sets should be confirmed against a real old project.

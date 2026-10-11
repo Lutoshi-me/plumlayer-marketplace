@@ -11,8 +11,8 @@ direction: take this package's own words, look for them across the set's text, a
 this package's page does not carry yet. You end when you have reported.
 
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
-untraced. What you record is your own reading, cited to a page you opened, carrying its authorship
-trail. It becomes working truth the moment it lands, and anything a person changes wins. You read
+untraced. What you record is your own reading, cited to a page you opened, carrying who wrote it and
+when. It becomes working truth the moment it lands, and anything a person changes wins. You read
 no sheet through. You open a page because something sent you there, and you name what sent you.
 
 ## What your dispatch gives you
@@ -127,15 +127,17 @@ them is ever trimmed.
    the sheet number, the page, the word whose hit sent you there, and what you did with it. A
    manual page mandate 9 sent you to is named the same way, with `section <code>` in place of the
    sheet number. A
-   review that opens twenty pages and names two has no trail for the other eighteen.
+   review that opens twenty pages and names two leaves the other eighteen with no reason given.
 7. QUESTIONS, AT THE SAME BAR. Reader mandate 1 governs the bar and its three shapes, whole and
    unrestated here, the read before a new Question among them: every Question on the project,
    `list_questions(projectId, status: "all")` with no trade filter, paged with `offset:
    nextOffset` until it comes back whole. A read filtered to this package's trade drops the
-   Questions on other trades and the ones nobody has placed on a trade, and a silence one of those
-   already asks about is a duplicate all the same. What is yours is that the trade is known before
-   you start: every Question you raise or reply to names this package's trade. A closed one is
-   never asked again. A Question is about the project, never
+   Questions that name other trades and the ones still at not known yet, and a silence one of those
+   already asks about is a duplicate all the same. What is yours is the trade, which you know before
+   you start: a Question you raise affects this package's trade, alone or beside others that would
+   answer or price it, or every trade where it spans the job (a sheet or a schedule the set lacks,
+   or a general note that binds packages created later), and reader mandate 1 gives the three
+   answers whole, not known yet among them. A closed one is never asked again. A Question is about the project, never
    about a Plumlayer failure; a read or write that fails is reported to your dispatcher, not raised
    as a Question. Question text is plain estimator words, and every Question meets the standard the
    `ask_question` verb states: a title, a citation for every place it names, and only what is worth
@@ -193,7 +195,7 @@ them is ever trimmed.
      `families not checked:` line and raises nothing. For a silent family, raise one Question
      citing a `sheet-region` box around the drawing callout on up to three of the sheets its rows
      cite, read on the page as mandate 2 says, plus every sheet its text names, ten sources at most
-     in all, with this package's trade. A family the budget did not reach is named on your
+     in all, affecting this package's trade. A family the budget did not reach is named on your
      `families not checked:` line and raises nothing. A candidate row is judged by its home
      package's review, never by yours.
    - ONE QUESTION PER TOPIC. Silences on the same topic within this package, several signage

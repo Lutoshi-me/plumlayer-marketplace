@@ -65,7 +65,7 @@ what the spec TOC could not see, shows what it did, and stops; they stay editabl
 is a change on the site or a tool call.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
-untraced.** Everything a reader records is its own reading, cited, carrying its authorship trail;
+untraced.** Everything a reader records is its own reading, cited, carrying who wrote it and when;
 it becomes working truth the moment it lands; anything a person changes wins. The project record
 is what every agent in the run reads from and writes to: definitions, sheet readings, orientation
 facts, open Questions. No agent keeps its own copy of what the record already holds.
@@ -79,7 +79,7 @@ that relaxes any one of them reproduces a measured, named failure.
    the sheet AND a resolvable 1-based page: `evidence.page` or `evidence.pageInPdf` as a positive
    integer for the page actually read. A sheet named with no page cannot be render-verified and the
    record door refuses it. Never fabricate a page or sheet to satisfy the door. A citation the
-   index wrote is the index's own, in the trail as a text match; a reader cites what the index did
+   index wrote is the index's own, recorded as a text match; a reader cites what the index did
    not already cite and never re-cites a page the item already carries.
 2. **Create / update / question against the live list.** Every reader holds the current scope list
    for its trade or content families as match-or-create context: for each thing seen, create a new
@@ -92,8 +92,8 @@ that relaxes any one of them reproduces a measured, named failure.
    is updated, never created again, and the reader turns that refusal into an update on the named
    row and sends again. Before raising a Question, read every Question on the project, closed
    ones included: `list_questions` with `status: "all"` and no trade filter, paged until it comes
-   back whole. A trade filter drops the Questions on other trades and the ones nobody has placed on
-   a trade, and the reader's own page read carries only the open ones on its own trades. Where an
+   back whole. A trade filter drops the Questions that name other trades and the ones still at not
+   known yet, and the reader's own page read carries only the open ones on its own trades. Where an
    open one already covers the same ask, reply to it instead of
    asking it a second time; a closed one is never asked again. A Question is about the project,
    never about a Plumlayer failure; a read or write that fails is reported and handled in the run's
@@ -147,7 +147,7 @@ that relaxes any one of them reproduces a measured, named failure.
    schedules ground, on their trades.
 9. **Run, or stop and report; never create a consent step.** The user's decisions in this skill
    are the read plan and each check-in. Everything else the run does is its own work, recorded
-   with its trail and editable afterward. Never stop to collect approval for a course you have
+   with who did it and when, and editable afterward. Never stop to collect approval for a course you have
    already chosen, and never offer a recommended yes: if something is genuinely wrong, stop, say
    what is wrong, and hand it over; if nothing is wrong, proceed and say what you did.
 10. **The index runs three times, and what it left open is named.** The citation index is a
@@ -245,9 +245,13 @@ contradict. It does not clear the bar:
 - when it is a note to the estimator: that is `notesInternal`;
 - when it is about a scope row: the row is what is wrong, and it is corrected on the record.
 
-Every Question names its trade, the same way an item does, so it sits on that trade's page; a
-Question about the set as a whole is raised with `everyTrade: true`, never with the trade left
-off, which the record reads as not known yet.
+Every Question says which trades it affects, and there are three honest answers. It names the
+trades that would have to answer or price it: `trades` with the catalog codes, one or several, or
+`trade` for a single code. It takes `everyTrade: true` where it spans the job and belongs to no one
+package, as with a sheet or a schedule the set lacks or a general note that binds packages created
+later, never a hand-picked list of the packages that exist now. Where nobody can tell which trade
+owns it, none of the three is sent, and the Question sits at not known yet rather than being
+guessed into a package; `set_question_trades` answers it later, once someone knows.
 
 ## What the record holds, and what stays on disk
 
@@ -268,7 +272,7 @@ read from there by the agent that needs it, when it needs it:
 - where a code or phrase appears in the set: `search_set_text`, over the corpus every page was
   read into at upload, the drawings by default; `kind: document` asks the project manual instead,
   `kind: all` every file at once, and every answer names the `kind` it covered;
-- the open Questions on a trade: `list_questions`, filtered;
+- the open Questions that name a trade or affect every trade: `list_questions` with `trade`;
 - the sheet inventory: `set_grid`, taken once to disk for the plan script and never held.
 
 No packet, no definitions files, no per-run copy of any of it: a reader that wants to know what a
@@ -884,8 +888,8 @@ Report to the user, in plain words:
 - **What you would like them to look at**: the items you weren't sure how finely to split, the
   document defects found (contradictions, missing schedule rows, duplicate sheets), and the
   assumed items that don't fit this job, each counted by kind and the leading ones named.
-  Document defects worth sending to the design team are the open Questions on each trade's page,
-  among them the sections of the manual no sheet shows and the work on the sheets the manual never
+  Document defects worth sending to the design team are the open Questions, by the trades they
+  name, with the every-trade ones and the not-known-yet ones apart, among them the sections of the manual no sheet shows and the work on the sheets the manual never
   names, and the silences left open for bidders, by count.
 - **Trade responsibility to confirm**: how many items sit in more than one trade's package
   (count each item once, however many packages it sits in), the leading trades named, and where
@@ -1085,7 +1089,8 @@ At each check-in, name the window, or the packages, you finished and what they c
 in plain sentences:
 
 - What you read and what landed: sheets read, items added, items updated, by trade, and what you
-  raised as Questions, by trade. Your own verified counts, never the ones reported up to you.
+  raised as Questions, by the trades they name, with the every-trade ones and the not-known-yet
+  ones counted apart. Your own verified counts, never the ones reported up to you.
 - What you would like them to look at now: document defects, items you weren't sure how finely to
   split, anomalies, each with its sheet reference, reviewable on each trade's page on
   plumlayer.com.

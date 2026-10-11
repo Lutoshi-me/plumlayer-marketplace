@@ -133,7 +133,7 @@ you already hold an answer, put it forward as the answer with its source named (
 document they handed you, a cover sheet you can see), so the user corrects it rather than composes
 it; a pre-filled answer is how their own context earns its keep. **Only `name` is required;
 everything else is "skip if you don't have it handy."** Everything else this skill does is its own
-work, recorded with its trail and editable on plumlayer.com: never ask whether to proceed with it,
+work, recorded with who did it and when, and editable on plumlayer.com: never ask whether to proceed with it,
 never ask the user to confirm a summary of what you are about to do, and never put your own next
 step to them as a choice. Do not reconcile the user's saved defaults against this project here.
 Package and trade-fit decisions belong to `scope-run`, not this step.

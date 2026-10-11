@@ -22,17 +22,17 @@ signed-in user's own projects).
 - `sheet:A-101 — title — "First Floor Plan"`
 - `door:103 — count — 6`
 
-## Trust: the trail is the mechanism
+## Who wrote it, when, and from what
 An entry you write takes effect immediately as provisional working truth, recorded as
 agent-stated with your citation. There is no promotion step to wait for. What makes it
-trustworthy is the trail: author, timestamp, and the evidence it came from, so cite every
-entry (an ungrounded entry is a guess; say so instead of writing it).
+trustworthy is that the record carries who wrote it, when, and the evidence it came from, so
+cite every entry (an ungrounded entry is a guess; say so instead of writing it).
 - The server stamps the authorship from your identity, never from what you declare. An
   agent's judgment records as `agent-stated`, a reproducible machine transcription as
   `machine-read`, a value the deterministic layer confirmed as `tool-verified`, a person's
   own gesture as `human-stated`. This door can never record an entry as human-authored or
   tool-verified.
-- A field holds the latest write, by anyone, with its trail. Supersede freely, naming what your
+- A field holds the latest write, by anyone, with who wrote it, when, and from what. Supersede freely, naming what your
   entry replaces with `supersedesId`, whether it's your own prior read or something a person set;
   if you're not sure your read should stand over what's there, ask instead of overwriting it blind.
 - Raise a Question only for a draft RFI that meets the standard the `ask_question` verb
@@ -64,10 +64,13 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   already been captured before creating or updating a scope item.
 - `list_questions`: the questions on the project. A bare call returns the open ones only, one
   compact row each (its number, title, the start of its wording, the sheets it cites, the trades
-  it affects, how many replies it has, and where it stands); pass `status: "all"` for the closed
-  ones too, narrow with `trade`, `sheet` or `section`, and pass `full: true` for the whole thread:
-  the wording, every place it cites, its replies oldest first, and the trail of every close and
-  reopen. Read it with `status: "all"` before you ask, so you don't raise one that's already open
+  it affects as codes, every trade, or not known yet, how many replies it has, and where it
+  stands); pass `status: "all"` for the closed ones too, narrow with `trade` (a Question that names
+  the trade comes back, and so does one that affects every trade), `sheet` or `section`, and pass
+  `full: true` for the whole thread: the wording, every place it cites, its replies oldest first,
+  every close and reopen with whoever made it, every answer about which trades it affects with
+  whoever gave it, and its communications, every send, follow-up and reply that came back, in time
+  order. Read it with `status: "all"` before you ask, so you don't raise one that's already open
   or already answered, and before you close one, so you close the right one.
 
 **Drawing recognition** (cloud PDF: these work against files already uploaded to the project)
@@ -141,7 +144,14 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   wording. A Question is about the project, never about a Plumlayer failure: a job that failed or
   timed out, a verb that refused a write, a server limit, a retry decision, confusion about how
   to run a workflow, or a report that something now works belongs in the conversation and in
-  the skill's own failure path, never here.
+  the skill's own failure path, never here. It says which trades it affects with `trades` (the
+  codes, one or several), `trade` (one code) or `everyTrade: true` for the whole job; with none of
+  the three it sits at not known yet rather than being guessed into a package.
+- `set_question_trades`: say which trades ONE question affects (`projectId`, `questionId`, and one
+  of `trades`, `trade` or `everyTrade: true`). A question affects the trades it names, one or
+  several, or every trade, or is not known yet; `trades: []` puts it back to not known yet. The
+  answer that stands replaces the one before it, and every earlier answer stays readable with
+  whoever gave it. Leave a question at not known, and name no trade the ask does not state.
 - `record_batch`: append an array of entries in one atomic call (`projectId` + `entries`
   array). Atomic: a bad entry rejects the whole batch and names the index. Prefer this over
   repeated `record` calls for bulk writes (e.g. upload or scope writes). Each call
@@ -152,7 +162,7 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
   of `record_batch` for large runs (e.g. a scope-run pass recording hundreds of items).
 - `retire_scope_item`: remove ONE scope item from the scope list (`projectId`, `subject`,
   `basis`, optional `reason`). Appends a retirement record; nothing is deleted and a later
-  record can bring the item back. Same door a person uses; the trail names you. Call it only
+  record can bring the item back. Same door a person uses; the record carries your name and the time. Call it only
   for a row the user asked removed and put their ask in `basis` in their words. A row you
   merely suspect is wrong is reported, not retired. The generic write doors refuse the
   `scopeItemRetraction` predicate; this verb and `restore_scope_item` are its only doors.
@@ -162,12 +172,12 @@ entry (an ungrounded entry is a guess; say so instead of writing it).
 - `close_question`: close ONE question (`projectId`, `questionId`, optional `note`,
   `sourceInstrument`), when the user has told you it's settled. It stops showing as open and its
   pins come off the sheets; nothing is deleted, and the ask, every reply, and your close all stay
-  in the question's trail with your name. Put their reason in `note` in their own words, or leave
+  on the question, your close with your name and the time. Put their reason in `note` in their own words, or leave
   `note` off rather than writing a reason nobody gave. A question you merely think looks answered
   is reported or replied to, not closed. Refused if the question is already closed.
 - `reopen_question`: put a closed question back (`projectId`, `questionId`, optional `note`,
   `sourceInstrument`), when the user says it was closed too early or has come up again. The
-  earlier close stays in the trail with the name of whoever made it. Refused if the question
+  earlier close stays on the question with the name of whoever made it. Refused if the question
   isn't closed. The generic write doors refuse the `questionClosed` predicate; these two verbs
   and their door on plumlayer.com are the only way to settle or unsettle a question.
 

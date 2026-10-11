@@ -303,7 +303,7 @@ cold. This is the first pass with enough of a read on the set to write one, so i
 once, after the entries above are recorded and before the report.
 
 1. **Leave a person's description alone.** Re-check the `description` read in step 2.
-   `get_project` exposes no trail for this field, no author, no write time, so a Learn run cannot
+   `get_project` carries no author and no write time for this field, so a Learn run cannot
    tell its own past write from a person's edit. Treat any non-empty description as a person's:
    leave it as is and say so in the report. Only an empty description gets written below.
 2. **Write what the job is.** What the building is, what work is being done, for whom, where, and
