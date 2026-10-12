@@ -15,16 +15,29 @@ three runner line shapes are the whole grammar it knows:
     note <window> <pass> <unit-or-dash> <kind> <one clause>
 
 The lead's own lines (`dispatch:`, `pass:`, `phase:`) carry a colon after the keyword and are
-skipped by it, so a lead figure can never reach these totals. Lines of another window or another
-pass are skipped by their window and pass fields.
+skipped by it, so a lead figure can never reach these totals.
+
+Which lines are the pass's own comes off the read plan, not off the pass field. A replan can fold a
+discipline's part into another pass, and a unit the runner already verified under the part's own
+pass id keeps its unit id and its `verified` line, and is skipped rather than read again. So the
+script reads the pass's block in the read plan, and counts every line of this window whose unit
+the block carries, whatever pass the line names, each unit verified once. A note on no unit (`-`)
+counts when it names this pass or a part the block's `folded in:` line names. A line naming this
+pass for a unit the block no longer carries reaches no total and is named on the bounds line.
 
 Usage:
 
-    python pass_summary.py <run folder>/ledger.md <window> <pass id> [--trades <path>]
+    python pass_summary.py <run folder>/ledger.md <window> <pass id> --plan <read plan>
+        [--trades <path>]
 
 The two streams differ from the plan script's on purpose, and the difference is the point: here
 stdout is the deliverable, so it carries the summary and nothing else and the runner pastes it
 whole. The bounds line saying what was read goes to stderr beside it.
+
+  --plan    the read plan the pass runs off, `<run folder>/read-plan.md`. The pass's block there
+            lists the units it carries, under a heading `### <pass id>. <name>`, one unit line each:
+            `<unit id>. <sheet number>, ...` in windows 1 and 2, `<n>. <unit id>: <name>` in window
+            3, where the unit id is the pass id.
 
   --trades  the pass's own trades file, `<run folder>/trades/<pass id>.txt`, which the runner
             appends a unit at a time off its `verify_unit` results:
@@ -36,15 +49,21 @@ whole. The bounds line saying what was read goes to stderr beside it.
             argument the `trades:` line says there is no trades file, which is a plain statement
             rather than a guess. `candidates <n>` is the created subjects carrying at least one
             candidate trade, each subject counted once however many candidate trades it carries.
+            A unit's trades are read off the file of the pass its `verified` line names: this file
+            for a unit verified under this pass, and `<pass id>.txt` beside it for a unit verified
+            under another. A line here for a unit the summary does not count is named on the
+            bounds line.
 
 Exit codes:
   0  the summary on stdout, one bounds line on stderr.
-  1  a named failure, one line on stderr: a ledger file that is not there, a line whose first word
-     is none of the three shapes, a `verified` line missing a field the shape names or carrying a
-     count that is not a whole number, two `verified` lines for one unit, a `dispatch` line with no
-     `sheets` field, a `note` line whose kind is outside the closed set, a window and pass with no
-     lines at all, or a trades file line in neither of its two shapes.
-  2  argparse rejected the invocation.
+  1  a named failure, one line on stderr: a read plan or ledger file that is not there, a read plan
+     of another window, one with no block for the pass, or a block whose unit lines are not its
+     `units:` count, a line whose first word is none of the three shapes, a `verified` line missing
+     a field the shape names or carrying a count that is not a whole number, two `verified` lines
+     for one unit under any passes, a `dispatch` line with no `sheets` field, a `note` line whose
+     kind is outside the closed set, a pass with no lines at all, a trades file that is not there,
+     or a trades file line in neither of its two shapes.
+  2  argparse rejected the invocation, a summary with no read plan among them.
 
 Grounding role: reads a file and copies byte values. Nothing here fills a gap. A unit dispatched
 with no `verified` line prints its counts as a dash and is named on the bounds line; a note kind
@@ -54,6 +73,7 @@ the summary shape has no line for is counted on the bounds line rather than drop
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -110,6 +130,80 @@ def _whole_number(text: str, field: str, where: str) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# Reading the read plan
+# --------------------------------------------------------------------------- #
+
+# The shapes plan_inventory.py writes. A sheet unit line leads with its unit id, a part id and a
+# number; a review unit line leads with an ordinal and carries the unit id after it.
+_PLAN_HEADER_RE = re.compile(r"^# Read plan: window ([1-9][0-9]*)$")
+_PASS_HEADING_RE = re.compile(r"^### (\S+?)\.\s")
+_SHEET_UNIT_RE = re.compile(r"^(\S+-[1-9][0-9]*)\. ")
+_REVIEW_UNIT_RE = re.compile(r"^[1-9][0-9]*\. (\S+): ")
+_PLAN_FIELD_RE = re.compile(r"^([a-z][a-z ]*): (.*)$")
+# The left-out entries share the sheet unit line's shape behind a plain ordinal, and every planned
+# block sits above them, so reading stops there.
+_LEFT_OUT_HEADING = "## Deliberately left out"
+
+
+def read_plan(path: Path, window: int, pass_id: str) -> dict:
+    """The unit ids the pass's block carries, in the plan's order, and the parts it folded in."""
+    if not path.is_file():
+        raise SummaryError(f"no read plan at {path}")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        raise SummaryError(f"cannot read the read plan at {path}: {e}") from e
+
+    lines = text.splitlines()
+    first = next((line.strip() for line in lines if line.strip()), "")
+    header = _PLAN_HEADER_RE.match(first)
+    if header is None:
+        raise SummaryError(f"{path} does not open with `# Read plan: window <n>`, so it is no read plan")
+    if int(header.group(1)) != window:
+        raise SummaryError(
+            f"{path} is the read plan for window {header.group(1)}, and this summary is for window "
+            f"{window}"
+        )
+
+    unit_re = _REVIEW_UNIT_RE if window == 3 else _SHEET_UNIT_RE
+    found = False
+    units: list[str] = []
+    fields: dict[str, str] = {}
+    for line in lines:
+        if line.strip() == _LEFT_OUT_HEADING:
+            break
+        heading = _PASS_HEADING_RE.match(line)
+        if heading:
+            if found:
+                break
+            found = heading.group(1) == pass_id
+            continue
+        if not found:
+            continue
+        unit = unit_re.match(line)
+        if unit:
+            if unit.group(1) in units:
+                raise SummaryError(f"{path}: pass {pass_id}'s block lists unit {unit.group(1)} twice")
+            units.append(unit.group(1))
+            continue
+        field = _PLAN_FIELD_RE.match(line)
+        if field:
+            fields[field.group(1)] = field.group(2).strip()
+
+    if not found:
+        raise SummaryError(f"{path} carries no pass {pass_id} in window {window}")
+    if "units" not in fields:
+        raise SummaryError(f"{path}: pass {pass_id}'s block names no `units` line")
+    if fields["units"] != str(len(units)):
+        raise SummaryError(
+            f"{path}: pass {pass_id}'s block names units {fields['units']} and lists "
+            f"{len(units)} unit lines"
+        )
+    folded_in = [part.strip() for part in fields.get("folded in", "").split(",") if part.strip()]
+    return {"path": path, "units": units, "foldedIn": folded_in}
+
+
+# --------------------------------------------------------------------------- #
 # Reading the ledger
 # --------------------------------------------------------------------------- #
 
@@ -129,14 +223,15 @@ def _read_verified(parts: list[str], where: str) -> dict:
     at = rest.index("result")
     if at + 1 >= len(rest):
         raise SummaryError(f"{where}: the verified line ends after `result` with no verdict")
-    return {"unit": parts[3], "fields": fields, "result": rest[at + 1]}
+    return {"unit": parts[3], "pass": parts[2], "fields": fields, "result": rest[at + 1]}
 
 
-def read_pass(path: Path, window: int, pass_id: str) -> dict:
+def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
     """
-    Every line of this window and this pass, in file order, as the three shapes. A line the grammar
-    does not hold is a refusal rather than a line stepped over: the ledger is a fixed-shape log,
-    and a line nobody can read is a line nobody is counting.
+    Every line of this window whose unit the pass's plan block carries, whatever pass it names, in
+    file order, as the three shapes, plus each note on no unit that names this pass or a part it
+    folded in. A line the grammar does not hold is a refusal rather than a line stepped over: the
+    ledger is a fixed-shape log, and a line nobody can read is a line nobody is counting.
     """
     if not path.is_file():
         raise SummaryError(f"no ledger at {path}")
@@ -146,11 +241,14 @@ def read_pass(path: Path, window: int, pass_id: str) -> dict:
         raise SummaryError(f"cannot read the ledger at {path}: {e}") from e
 
     want_window = str(window)
+    members = set(plan["units"])
+    parts_named = {pass_id, *plan["foldedIn"]}
     dispatched: list[str] = []
     verified: list[dict] = []
-    verified_units: dict[str, int] = {}
+    verified_units: dict[str, tuple[int, str]] = {}
     notes: list[dict] = []
     notes_by_kind: dict[str, int] = {kind: 0 for kind in NOTE_KINDS}
+    left_behind: dict[str, int] = {}
     lead_lines = 0
     other_lines = 0
     total_lines = 0
@@ -174,25 +272,37 @@ def read_pass(path: Path, window: int, pass_id: str) -> dict:
             )
         if len(parts) < 4:
             raise SummaryError(f"{where}: the {keyword} line names no window, pass and unit")
-        if parts[1] != want_window or parts[2] != pass_id:
+        # A malformed line of another pass is still refused above, because the grammar is the
+        # file's, not this pass's.
+        unit = parts[3]
+        if parts[1] != want_window:
             other_lines += 1
-            # A malformed line of another pass is still refused above, because the grammar is the
-            # file's, not this pass's.
+            continue
+        if unit == "-":
+            if parts[2] not in parts_named:
+                other_lines += 1
+                continue
+        elif unit not in members:
+            if parts[2] == pass_id:
+                left_behind[unit] = left_behind.get(unit, 0) + 1
+            else:
+                other_lines += 1
             continue
 
         if keyword == "dispatch":
             if len(parts) < 5 or parts[4] != "sheets":
                 raise SummaryError(f"{where}: the dispatch line names no `sheets` field")
-            if parts[3] not in dispatched:
-                dispatched.append(parts[3])
+            if unit not in dispatched:
+                dispatched.append(unit)
         elif keyword == "verified":
             entry = _read_verified(parts, where)
-            if entry["unit"] in verified_units:
+            if unit in verified_units:
+                at, under = verified_units[unit]
                 raise SummaryError(
-                    f"{where}: unit {entry['unit']} already carries a verified line at line "
-                    f"{verified_units[entry['unit']]}; one unit is verified once"
+                    f"{where}: unit {unit} already carries a verified line at line {at}, under "
+                    f"pass {under}; one unit is verified once"
                 )
-            verified_units[entry["unit"]] = number
+            verified_units[unit] = (number, parts[2])
             verified.append(entry)
         else:
             if len(parts) < 5:
@@ -217,6 +327,7 @@ def read_pass(path: Path, window: int, pass_id: str) -> dict:
         "verified": verified,
         "notes": notes,
         "notesByKind": notes_by_kind,
+        "leftBehind": left_behind,
         "leadLines": lead_lines,
         "otherLines": other_lines,
         "totalLines": total_lines,
@@ -228,11 +339,11 @@ def read_pass(path: Path, window: int, pass_id: str) -> dict:
 # The trades file
 # --------------------------------------------------------------------------- #
 
-def read_trades(path: Path) -> tuple[dict[str, int], int]:
+def read_trades(path: Path) -> dict[str, list[tuple[str | None, int]]]:
     """
-    The pass's trades file, as catalog id to item count plus the candidates total. A catalog id
-    carries spaces, so the count is the last word of the line and the id is everything between the
-    keyword and it.
+    One trades file, as each unit's lines: (catalog id, item count) for a trade line and (None,
+    count) for its candidates line. A catalog id carries spaces, so the count is the last word of
+    the line and the id is everything between the keyword and it.
     """
     if not path.is_file():
         raise SummaryError(f"no trades file at {path}")
@@ -241,8 +352,7 @@ def read_trades(path: Path) -> tuple[dict[str, int], int]:
     except Exception as e:
         raise SummaryError(f"cannot read the trades file at {path}: {e}") from e
 
-    by_trade: dict[str, int] = {}
-    candidates = 0
+    by_unit: dict[str, list[tuple[str | None, int]]] = {}
     for number, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
         if not line:
@@ -250,17 +360,50 @@ def read_trades(path: Path) -> tuple[dict[str, int], int]:
         parts = line.split()
         where = f"{path} line {number}"
         if len(parts) >= 3 and parts[1] == "candidates":
-            candidates += _whole_number(parts[2], "candidates", where)
+            by_unit.setdefault(parts[0], []).append(
+                (None, _whole_number(parts[2], "candidates", where))
+            )
             continue
         if len(parts) >= 4 and parts[1] == "trade":
-            code = " ".join(parts[2:-1])
-            by_trade[code] = by_trade.get(code, 0) + _whole_number(parts[-1], "trade count", where)
+            by_unit.setdefault(parts[0], []).append(
+                (" ".join(parts[2:-1]), _whole_number(parts[-1], "trade count", where))
+            )
             continue
         raise SummaryError(
             f"{where}: the line is neither `<unit id> trade <catalog id> <count>` nor "
             f"`<unit id> candidates <count>`"
         )
-    return by_trade, candidates
+    return by_unit
+
+
+def sum_trades(pass_data: dict, pass_id: str, path: Path) -> tuple[dict[str, int], int, dict]:
+    """
+    The trades of every unit the summary counts, each read off the file of the pass its `verified`
+    line names, plus what the bounds line says about the files: the other passes' files read and
+    the lines of this file for a unit the summary does not count.
+    """
+    files: dict[Path, dict] = {path: read_trades(path)}
+    by_trade: dict[str, int] = {}
+    candidates = 0
+    read_here: set[str] = set()
+    for entry in pass_data["verified"]:
+        source = path if entry["pass"] == pass_id else path.parent / f"{entry['pass']}.txt"
+        if source not in files:
+            files[source] = read_trades(source)
+        if source == path:
+            read_here.add(entry["unit"])
+        for code, count in files[source].get(entry["unit"], []):
+            if code is None:
+                candidates += count
+            else:
+                by_trade[code] = by_trade.get(code, 0) + count
+    left_out = {
+        unit: len(lines) for unit, lines in files[path].items() if unit not in read_here
+    }
+    return by_trade, candidates, {
+        "beside": [source for source in files if source != path],
+        "leftOut": left_out,
+    }
 
 
 def _trades_line(by_trade: dict[str, int], candidates: int) -> str:
@@ -346,7 +489,16 @@ def _note_lines(notes: list[dict], kind: str) -> list[str]:
     return out
 
 
-def bounds_line(pass_data: dict, window: int, pass_id: str, ledger: Path, trades: Path | None) -> str:
+def _lines_named(counts: dict[str, int]) -> str:
+    if not counts:
+        return "none"
+    return _named([f"{unit} ({n} line{'' if n == 1 else 's'})" for unit, n in counts.items()])
+
+
+def bounds_line(
+    pass_data: dict, plan: dict, window: int, pass_id: str, ledger: Path, trades: Path | None,
+    trades_read: dict | None,
+) -> str:
     placed = sum(
         count for kind, count in pass_data["notesByKind"].items() if kind in PLACED_KINDS
     )
@@ -358,14 +510,31 @@ def bounds_line(pass_data: dict, window: int, pass_id: str, ledger: Path, trades
     )
     verified_units = {entry["unit"] for entry in pass_data["verified"]}
     unverified = [unit for unit in pass_data["dispatched"] if unit not in verified_units]
-    trades_said = str(trades) if trades is not None else "none given"
+    moved = [
+        f"{entry['unit']} ({entry['pass']})"
+        for entry in pass_data["verified"] if entry["pass"] != pass_id
+    ]
+    folded_in = ", ".join(plan["foldedIn"]) if plan["foldedIn"] else "none"
+    if trades is None or trades_read is None:
+        trades_said = "none given"
+    else:
+        beside = trades_read["beside"]
+        trades_said = (
+            f"{trades}"
+            + (f", and beside it {_named([str(p) for p in beside])}" if beside else "")
+            + f"; trades lines for a unit this summary does not count: "
+            + _lines_named(trades_read["leftOut"])
+        )
     return (
-        f"pass_summary: read {ledger}, {pass_data['totalLines']} lines; window {window} pass "
-        f"{pass_id}: units dispatched {len(pass_data['dispatched'])}, verified "
+        f"pass_summary: read {ledger}, {pass_data['totalLines']} lines, and the read plan "
+        f"{plan['path']}; window {window} pass {pass_id} carries units {len(plan['units'])}, "
+        f"folded in {folded_in}: units dispatched {len(pass_data['dispatched'])}, verified "
         f"{len(pass_data['verified'])}, notes read {read} placed {placed} ({by_kind}); "
         f"lines of another window or pass {pass_data['otherLines']}, lead lines "
         f"{pass_data['leadLines']}; dispatched with no verified line: "
-        f"{_named(unverified) if unverified else 'none'}; trades file {trades_said}"
+        f"{_named(unverified) if unverified else 'none'}; verified under another pass: "
+        f"{_named(moved) if moved else 'none'}; lines naming this pass for a unit its plan block "
+        f"does not carry: {_lines_named(pass_data['leftBehind'])}; trades file {trades_said}"
     )
 
 
@@ -381,6 +550,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("window", type=int, help="the window the pass belongs to")
     parser.add_argument("pass_id", metavar="pass", help="the pass id, exactly as the ledger spells it")
     parser.add_argument(
+        "--plan", type=Path, required=True,
+        help="the read plan the pass runs off, whose block for the pass lists the units it carries",
+    )
+    parser.add_argument(
         "--trades", type=Path,
         help="the pass's trades file, one line per trade per unit plus one candidates line per unit",
     )
@@ -388,15 +561,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        pass_data = read_pass(args.ledger, args.window, args.pass_id)
+        plan = read_plan(args.plan, args.window, args.pass_id)
+        pass_data = read_pass(args.ledger, args.window, args.pass_id, plan)
+        trades_read = None
         if args.trades is None:
             trades_line = "trades: no trades file for this pass"
         else:
-            by_trade, candidates = read_trades(args.trades)
+            by_trade, candidates, trades_read = sum_trades(pass_data, args.pass_id, args.trades)
             trades_line = _trades_line(by_trade, candidates)
         for line in summary_lines(pass_data, args.window, args.pass_id, args.ledger, trades_line):
             print(line)
-        print(bounds_line(pass_data, args.window, args.pass_id, args.ledger, args.trades), file=sys.stderr)
+        print(
+            bounds_line(
+                pass_data, plan, args.window, args.pass_id, args.ledger, args.trades, trades_read,
+            ),
+            file=sys.stderr,
+        )
     except SummaryError as e:
         print(f"pass_summary: {e}", file=sys.stderr)
         return 1
