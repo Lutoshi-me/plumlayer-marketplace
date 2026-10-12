@@ -5,7 +5,8 @@ description: >
   questions, scope items, and takeoff data. Use when the user asks "what's in my
   project" or says "/project-record". Drives the read verbs (set_grid, search,
   list_scope_items, list_questions, search_set_text, set_text_status) and write verbs (record,
-  record_batch, record_batch_file, ask_question, close_question, reopen_question).
+  record_batch, record_batch_file, ask_question, set_question_trades, close_question,
+  reopen_question).
   Does not upload drawings (drawing-upload), build the scope list (scope-run), or place takeoff
   measurements (takeoff).
 ---

@@ -194,7 +194,8 @@ them is ever trimmed.
      specifying the work leaves it silent. A family you could not settle either way goes on your
      `families not checked:` line and raises nothing. For a silent family, raise one Question
      citing a `sheet-region` box around the drawing callout on up to three of the sheets its rows
-     cite, read on the page as mandate 2 says, plus every sheet its text names, ten sources at most
+     cite, read on the page as mandate 2 says and sent with `frame: "page-points"` since the box
+     comes from `get_page_text`'s line boxes, plus every sheet its text names, ten sources at most
      in all, affecting this package's trade. A family the budget did not reach is named on your
      `families not checked:` line and raises nothing. A candidate row is judged by its home
      package's review, never by yours.

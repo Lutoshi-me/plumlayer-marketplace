@@ -91,7 +91,8 @@ of them is ever trimmed.
    it: no Question, and no assumption written into the row for bidders either. What you noticed
    goes in `notesInternal` on the row if it is worth a watch, and nowhere otherwise.
    A Question cites the spot: a `sheet-region` box around the callout, schedule row or note, built
-   from the line boxes `get_page_text` gave you and in the same PDF points, never the bare sheet;
+   from the line boxes `get_page_text` gave you, in the points it gave them, sent with
+   `frame: "page-points"` so the pin lands where you read; never the bare sheet;
    and it cites every sheet or section its text names. It never asks about what the GC decides:
    labor, means and methods, who furnishes or installs. A scope row is never a Question's source
    or its evidence: where a row disagrees with the sheet, the row is what is wrong, and you correct
