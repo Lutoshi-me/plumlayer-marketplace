@@ -99,6 +99,24 @@ Units already verified, in every window:
   `ok` marks nothing, and one naming an id this plan neither carries nor holds is ignored rather
   than refused. A held unit verified ok counts as read earlier in a window 2 slice.
 
+Passes already summed, in every window:
+
+  Every unit verified is not enough on its own, because a replan can change which units a pass
+  carries after its summary was written: a fold can take in a part whose units another pass
+  verified, and a cut can drop units, with the count coming out the same. So every pass block also
+  says `summed: yes` or `summed: no, <why>` under `units verified:`. It reads yes when the pass's
+  summary on file, `reports/<pass id>.md` in the run folder (`reports/<pass id>-pass.md` in window
+  3), names on its `per unit:` lines exactly the unit ids the block carries, and the ledger's last
+  `pass: <window> <pass id>` line carries that summary's figures: its units count, and the
+  updated, questions and replied totals the lead copies off it. A pass reading no is summed again:
+  its runner skips the units already verified and writes a new summary. The reasons it names:
+
+      summed: no, no summary on file
+      summed: no, the summary on file reads other units: without <ids>; beyond <ids>
+      summed: no, the summary on file carries no totals line
+      summed: no, no pass line on the ledger
+      summed: no, the last pass line does not carry the summary on file
+
 Passes under three units, in windows 1 and 2:
 
   A runner pays a fixed cost before its first unit, so a part under three units folds into a
@@ -142,6 +160,10 @@ an empty plan:
   ledger.md   found beside the plan file, never named by an argument, and absent on a first plan
               run. A flag would be a flag the lead can forget, and forgetting it is the failure
               this reading exists to prevent.
+  reports/    the pass summaries the runners wrote, found beside the ledger the same way. Only a
+              summary's `per unit:` lines and its `totals verified:` line are read, and a pass
+              with no summary on file, or one whose summary carries no totals line, reads
+              `summed: no` with that reason rather than refusing.
 
 Exit codes:
   0  wrote the files; one bounds line on stdout naming what it read and what it wrote.
@@ -222,6 +244,15 @@ WINDOW_1_FILE = ("plan", "window-1.json")
 # The run ledger sits beside the plan file, and its `dispatch` lines are the only append-only
 # record of which unit id was actually handed out.
 LEDGER_FILE = "ledger.md"
+
+# Where a pass runner writes its summary, beside the ledger. A window 3 pass id is also its unit
+# id, so its summary carries a suffix the review's own report does not.
+REPORTS_FOLDER = "reports"
+WINDOW_3_SUMMARY_SUFFIX = "-pass"
+
+# The figures a `pass:` line copies off the summary, and the totals line they are read from.
+PASS_LINE_FIGURES = ("units", "updated", "questions", "replied")
+_SUMMARY_TOTALS_RE = re.compile(r"updated (\d+), questions (\d+) replied (\d+)")
 
 # A unit id is a pass id, a hyphen, and a positive number. The pass id may itself carry a hyphen
 # (a window 3 review id does), so the number is taken off the end.
@@ -885,6 +916,84 @@ def _read_ledger_verified(path: Path, window: int) -> set[str]:
     return finished
 
 
+def _read_ledger_pass_lines(path: Path, window: int) -> dict[str, list[str]]:
+    """Each pass's last `pass: <window> <pass id> ...` line of this window, split into fields."""
+    if not path.is_file():
+        return {}
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
+    last: dict[str, list[str]] = {}
+    for raw in text.splitlines():
+        parts = raw.strip().split()
+        if len(parts) >= 3 and parts[0] == "pass:" and parts[1] == str(window):
+            last[parts[2]] = parts
+    return last
+
+
+def _figure(parts: list[str], field: str) -> str | None:
+    """The word after a field name on a split line, or None where the line names no such field."""
+    if field not in parts:
+        return None
+    at = parts.index(field)
+    return parts[at + 1] if at + 1 < len(parts) else None
+
+
+def _summed(
+    window: int, runner_passes: list[list[dict]], run_folder: Path, pass_lines: dict[str, list[str]]
+) -> dict[str, str]:
+    """
+    Each pass's `summed:` value: `yes` where its summary on file names exactly the unit ids it now
+    carries and its last `pass:` line carries that summary's figures, otherwise `no` and why.
+    """
+    summed: dict[str, str] = {}
+    for runner_pass in runner_passes:
+        pass_id = _host(runner_pass)["id"]
+        unit_ids = [
+            unit["id"] if window == 3 else unit["unitId"]
+            for part in runner_pass for unit in part["units"]
+        ]
+        suffix = WINDOW_3_SUMMARY_SUFFIX if window == 3 else ""
+        path = run_folder / REPORTS_FOLDER / f"{pass_id}{suffix}.md"
+        if not path.is_file():
+            summed[pass_id] = "no, no summary on file"
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except Exception as e:
+            raise PlanError(f"cannot read the pass summary at {path}: {e}") from e
+        named: list[str] = []
+        totals = None
+        for line in text.splitlines():
+            parts = line.split()
+            if parts[:2] == ["per", "unit:"] and len(parts) > 2 and parts[2] not in named:
+                named.append(parts[2])
+            elif line.startswith("totals verified:"):
+                totals = _SUMMARY_TOTALS_RE.search(line)
+        without = [unit_id for unit_id in unit_ids if unit_id not in named]
+        beyond = [unit_id for unit_id in named if unit_id not in unit_ids]
+        if without or beyond:
+            # A pass holds at most twelve units, so every id is named rather than a count.
+            differences = [f"without {', '.join(without)}"] if without else []
+            differences += [f"beyond {', '.join(beyond)}"] if beyond else []
+            summed[pass_id] = "no, the summary on file reads other units: " + "; ".join(differences)
+            continue
+        if totals is None:
+            summed[pass_id] = "no, the summary on file carries no totals line"
+            continue
+        line = pass_lines.get(pass_id)
+        if line is None:
+            summed[pass_id] = "no, no pass line on the ledger"
+            continue
+        wanted = dict(zip(PASS_LINE_FIGURES, [str(len(named)), *totals.groups()]))
+        if any(_figure(line, field) != value for field, value in wanted.items()):
+            summed[pass_id] = "no, the last pass line does not carry the summary on file"
+            continue
+        summed[pass_id] = "yes"
+    return summed
+
+
 def _bind_unit_ids(
     passes: list[dict],
     rows: list[dict],
@@ -1544,6 +1653,7 @@ def _render(
         lines.append(f"units: {len(pass_units)}")
         unit_ids = [unit["id"] if window == 3 else unit["unitId"] for unit in pass_units]
         lines.append(f"units verified: {sum(1 for u in unit_ids if u in plan['verified'])}")
+        lines.append(f"summed: {plan['summed'][host['id']]}")
         lines.append("")
         for number, (unit, unit_id) in enumerate(zip(pass_units, unit_ids), 1):
             line = (
@@ -1751,6 +1861,9 @@ def plan(args) -> str:
         ]
 
     runner_passes = _runner_passes(window, result)
+    result["summed"] = _summed(
+        window, runner_passes, args.out.parent, _read_ledger_pass_lines(ledger_path, window)
+    )
     body, total_units, total_passes = _render(window, result, rows, show_file, runner_passes)
     payload = body.encode("utf-8")
     _write_atomically(args.out, payload)
