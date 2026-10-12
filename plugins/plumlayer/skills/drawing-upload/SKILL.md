@@ -41,8 +41,7 @@ user's answers or report a job's state first-hand. A long recognition job is wai
 the open, with the poll loop in step 5.
 
 Run, or stop and report; never create a consent step. The user's decisions in this skill are:
-which project this delivery belongs to, its issue label, whether it is changed sheets or a full
-re-issue when the paper does not say, which files are the drawings when the packaging leaves it
+which project this delivery belongs to, its issue label, which files are the drawings when the packaging leaves it
 genuinely unclear, and whether to send a page and type bundle again when a prior one is on file.
 Ask each of those once, in plain words, and where you already have a reading (off a cover sheet,
 off the file list) put it forward as the answer with its source named, so the user corrects it
@@ -95,39 +94,31 @@ skill does not create projects. Confirm you also know the **issue label** for th
 generic "2025-12-22 CD Set" or "Bulletin 01"): ask the user, or plan to read it off the cover sheet
 during recognition. It is load-bearing for supersession later.
 
-## 1b. What kind of delivery is this
+## 1b. Set or addendum: the server's answer
 
-Settle this before anything is registered: is this **changed sheets only** (a bulletin, an addendum,
-an ASI) or a **full re-issue** (a permit set, a conformed set, a re-issued CD set)? The answer
-decides how the delivery registers in step 3 and what step 10 has to report, and it is nearly always
-printed on the paper. Read the cover sheet or the bulletin header first and put your reading
-forward as the answer, naming where you read it; never ask cold when the document says it.
+You never ask the user whether a delivery is a new set or an addendum, and you never decide it
+yourself. Once its sheet numbers are read (step 5), the `issue` that `list_drawing_deliveries`
+gives the delivery says which it is: walking the deliveries in order, the first one holding sheets
+is a set, a later one printing fewer sheet numbers than the latest set is an addendum of that set,
+and any other is a new set. `issue` is null while its sheet numbers are still being read, so read
+it after step 5, and steps 9b and 10 branch on it.
 
-<!-- user-facing -->
-Ask it in plain words, "is this a set of changed sheets, or a full re-issue of the whole set?", and
-say which one you think it is and what you read that off.
-<!-- /user-facing -->
+The server combines the deliveries by sheet number either way, and for each sheet the newest
+delivery that carries it wins: a sheet an addendum does not carry keeps showing from the delivery
+that last issued it, and so does a sheet an earlier set had that a new set does not carry. Step 10
+reads those sheets back and reports them as a finding. Nothing is retired, here or anywhere else in
+this skill.
 
-**Changed sheets only** registers as `deliveryKind: "revision"` in step 3. The server combines the
-deliveries by sheet number, and for each sheet the newest delivery that carries it wins, so the set
-stays whole: a sheet this delivery doesn't carry keeps showing from the delivery that last issued
-it, which is the right outcome for a bulletin.
+Step 3 registers the delivery with `deliveryKind: "baseline"` where `list_drawing_deliveries`
+comes back empty, the project's first delivery, and `"revision"` for any later one. That field
+only orders deliveries that share an issue date and a sequence; it says nothing about whether the
+delivery is a set or an addendum.
 
-**A full re-issue** registers as `deliveryKind: "baseline"`. Name the consequence up front, before
-the upload, rather than letting it surface as a surprise afterwards: a baseline combines the same
-way, so every sheet the prior set had that this delivery does not carry keeps showing as part of the
-set. Step 10 reads those sheets back and reports them as a finding. Nothing is retired, here or
-anywhere else in this skill.
+**The project's first delivery** is a set by that rule, and step 10's comparison has nothing to
+compare against on this path, and says so plainly rather than reporting an empty finding.
 
-**The project's first delivery**, meaning `list_drawing_deliveries(projectId)` comes back empty: it
-is a baseline by construction. Don't put the question to the user; there is no prior set for a
-re-issue to replace. Step 10's comparison has nothing to compare against on this path, and says so
-plainly rather than reporting an empty finding.
-
-**An already-registered delivery** (the 1c branch below): its kind is already recorded. Read it off
-`list_drawing_deliveries` rather than re-asking, and check it against the cover sheet. A
-disagreement between the two is a finding for the user; don't change the registered kind to match
-your own read.
+**An already-registered delivery** (the 1c branch below): its `issue` reads off
+`list_drawing_deliveries` like any other's.
 
 **A project manual arriving on its own**, with no drawings: this is not a drawing delivery. Register
 nothing, skip steps 3 through 7, and enter at step 8, which files the manual and reads its table of
@@ -137,8 +128,8 @@ report that no drawings came with it.
 
 ## 1c. Cloud-resident entry (files already in the project, nothing local)
 
-Step 1b's question still applies on this branch: a file with no delivery attached to it needs its
-kind settled before step 3 can register anything for it.
+A file with no delivery attached to it needs one registered, as step 3 says, before step 5 reads
+its sheet numbers; whether that delivery is a set or an addendum is the server's answer after.
 
 Not every run starts from a local delivery. When the user points you at a project whose set is
 already in cloud storage (uploaded in a prior session, or they ask you to "read the uploaded set"
@@ -243,8 +234,8 @@ a dual-source quirk.
 Call `list_drawing_deliveries(projectId)` first. If a delivery with this issue label already exists,
 reuse it rather than registering a duplicate. Otherwise call `create_drawing_delivery`:
 
-- `deliveryKind: "baseline"` for a full/conformed re-issue; `"revision"` for a bulletin/addendum/ASI
-  (changed sheets only).
+- `deliveryKind: "baseline"` for the project's first delivery and `"revision"` for any later one,
+  as step 1b says; never put the question to the user.
 - `label`: the human issue label from step 1.
 - `issuedOn` (`YYYY-MM-DD`) and `sequence`: read these off the documents themselves (a cover sheet, a
   bulletin header). **Never substitute upload time**: chronology drives supersession resolution.
@@ -811,14 +802,30 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
 A revised sheet can answer a Question somebody raised against the one it replaces, or move the
 callout the Question points at. This step reads every open Question on what changed against the
 new paper and says what it found on each one. It runs whenever a prior delivery or manual existed:
-a revision, a full re-issue, or a manual on its own. On the project's first delivery there is
+an addendum, a new set, or a manual on its own. On the project's first delivery there is
 nothing earlier on the board to re-read, so skip it.
 
-1. **Which sheets changed.** For a revision, the `set_grid` rows whose governing delivery is this
-   one, read the way step 10 reads the set: `set_grid(projectId, limit: 0)` for the counts, then
-   pages with `discipline` + `limit`/`offset`. For a full re-issue, every sheet this delivery
-   carries, since nothing compares a sheet's content between issues. For a manual on its own, the
-   sections step 8 read out of the new manual.
+1. **Which sheets changed.** For a manual on its own, the sections step 8 read out of the new
+   manual. For a drawing delivery, first read its `issue` off `list_drawing_deliveries`. Where it
+   is null with `stillReading` false, the delivery holds no sheet number: `set_grid` refuses it and
+   no sheet is known to have changed, so skip the rest of this step and go to step 10, whose
+   handoff names it. Otherwise the changed sheets are the ones this delivery itself prints, each
+   on its own page of it, read by its own id and never off the current set: an addendum uploaded
+   after a later one is not the current set's page for any sheet the later one reprints, and it
+   still changed that sheet. Take `set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)`
+   for the counts, then pages with `discipline` + `limit`/`offset`.
+   - For an addendum, every row is a sheet it prints, on its own page.
+   - For a new set, the grid joins the set with its addenda and gives each sheet the newest page
+     that prints it. A row whose `deliveryId` is this delivery's is a sheet the set prints, on its
+     own page. A row from one of its addenda is a sheet the addendum reprinted or added: find
+     whether the set prints it too with
+     `search_set_text(projectId, query: "<sheet number>", deliveryId: <this delivery's id>, wholeWord: true)`,
+     which searches this delivery's pages only and names each hit's sheet number as this delivery
+     printed it. A hit whose `sheetNumber` is that number is the set's own page of the sheet, by
+     its `fileId` and `page`, and the sheet changed; with none, the addendum added the sheet and
+     this set does not print it.
+   Each changed sheet's `fileId` and `pageInPdf` are this delivery's page of it, which points 3
+   and 4 read.
 2. **Which Questions.** The `sheet` and `section` filters on `list_questions` read only the places
    the ask itself cites, and a reader that meets the same callout on a second sheet cites it in a
    reply, so a filtered read misses a Question that names a changed sheet only in a reply. Read the
@@ -831,28 +838,28 @@ nothing earlier on the board to re-read, so skip it.
    only citation of a changed sheet was taken off on purpose is not this step's, and never gets a
    new box put back. Reply citations are read as they are. That read also carries each kept
    Question's ask and every place it and its replies cite, which the points below work from.
-3. **On a changed sheet, check that every cited box still lands.** A sheet citation names the
-   sheet, not the file, so a box cited on a changed sheet now opens on the new page at its old
-   coordinates: a re-issue that moves the layout moves every box on that sheet silently. For each
-   `sheet-region` box or `sheet-point` on a changed sheet, in the ask (a standing source only) or in
-   a reply, take the
-   sheet's `fileId` and `pageInPdf` off its `set_grid` row. A whole-page `render_page(fileId,
-   pageNum: <that pageInPdf>)` answers with `pageWidthPt` and `pageHeightPt`; render the box itself
-   with `region` set to the box's PDF points over those (x over `pageWidthPt`, y over
-   `pageHeightPt`, each a fraction of the page), and read its text with `get_page_text(fileId,
-   pageNum: <that pageInPdf>, region: <the box in PDF points>)`. Check it still lands on the same
-   callout the ask names. Where it no longer does, find the callout on the new page
-   (`search_set_text` its tag, whose hits carry boxes in the same PDF points, then `get_page_text`
-   around the hit), and `add_question_source` a `sheet-region` box around it there; the reply in
-   point 5 says so. The old box stays, since taking one off is the estimator's call.
+3. **On a changed sheet, point the Question at this delivery's page too.** A source that names its
+   drawing file opens on the page it was cited on, whatever later issue reprints the sheet; a
+   source with no file opens on the page the current set shows for the sheet, at its old
+   coordinates, which a moved layout leaves on nothing. Keep every existing source, either way,
+   since taking one off is the estimator's call. For each `sheet-region` box or `sheet-point` on a
+   changed sheet, in the ask (a standing source only) or in a reply, that names no file or another
+   file than this delivery's: find the callout on this delivery's page, the `fileId` and
+   `pageInPdf` on that sheet's row from point 1, with `search_set_text` its tag with `deliveryId`
+   set to this delivery, whose hits carry boxes in the same PDF points, then `get_page_text(fileId,
+   pageNum: <that pageInPdf>, region: <around the hit>)`. A whole-page `render_page(fileId,
+   pageNum: <that pageInPdf>)` answers with `pageWidthPt` and `pageHeightPt`, for rendering a
+   region where the callout is in the linework. Then `add_question_source` a `sheet-region` box
+   around the callout there, with this delivery's `fileId`, so the Question opens on the new paper
+   as well as the page it was raised on; the reply in point 5 says so.
    `add_question_source` is refused once a Question holds ten places. Never take one off to make
-   room: cite the new box in the reply instead, and name that Question to the user as one whose
-   callout moved with no room for another place on it.
+   room: cite the new box in the reply instead, and name that Question to the user as one with no
+   room for another place on it.
 4. **Re-read each one against the new paper.**
-   - On a changed sheet: read the callout's text at the box that lands on it, and search the ask's
-     own tags and words with `search_set_text`, after `set_text_status` says the new pages have
-     been read. Render further only where the change is in the linework, a cloud or a delta the
-     text does not carry.
+   - On a changed sheet: read the callout's text on this delivery's page, and search the ask's own
+     tags and words with `search_set_text` and `deliveryId` set to this delivery, after
+     `set_text_status` says the new pages have been read. Render further only where the change is
+     in the linework, a cloud or a delta the text does not carry.
    - On a section of the new manual: a spec citation has no box and no sheet. Read the section's
      pages off its `locatedAt` (`search(projectId, subject: "specSection:<packed code>", predicate:
      "locatedAt")`), with `get_page_text` on the part the ask is about, and search the ask's words
@@ -862,10 +869,11 @@ nothing earlier on the board to re-read, so skip it.
      and tell the user it may be answered.
    - The new paper changed on the point without answering it: `reply_question` saying what
      changed.
-   - Unchanged on the point: no reply, and it is counted in the report, unless point 3 moved a
-     box, when a reply says only that the callout moved and where it now sits.
-   A reply on a sheet cites a `sheet-region` box around what it read there. A reply on a section
-   cites the section, `{ "type": "spec", "section": "specSection:<packed code>" }`.
+   - Unchanged on the point: no reply, and it is counted in the report, unless point 3 added a
+     box, when a reply says only where the callout sits on the new paper.
+   A reply on a sheet cites a `sheet-region` box around what it read there, with this delivery's
+   `fileId`. A reply on a section cites the section, `{ "type": "spec", "section":
+   "specSection:<packed code>" }`.
 6. **Never close one, and never raise one here.** Closing is the estimator's: `close_question`
    only when the user settles it in this session, with their reason in `note`. No new Question
    comes out of this step; what the delivery changes in the scope list is still the handoff in
@@ -873,24 +881,25 @@ nothing earlier on the board to re-read, so skip it.
 
 <!-- user-facing -->
 Report: how many open Questions cite a changed sheet or section, how many got a reply, the ones
-the new paper may answer, by number, the ones whose callout moved and now point at its new place,
-by number, any whose callout moved with no room for another place on it, by number, and how many
-were unchanged on the point. Say plainly that none was closed and that settling one is theirs.
+the new paper may answer, by number, the ones you pointed at the new paper too, by number, any
+with no room for another place on it, by number, and how many were unchanged on the point. Say
+plainly that none was closed and that settling one is theirs.
 <!-- /user-facing -->
 
 ## 10. Close out
 
 Step 9b's re-read of the open Questions is reported before any of this. Point 3 runs on every path
-through this skill. Points 1 and 2 run on the full-re-issue path only.
+through this skill. Points 1 and 2 run only where the server reads this delivery as a new set.
 
-1. **The full-re-issue finding.** Run this on the baseline path, and only when a prior delivery
-   existed; on the project's first delivery there is nothing to compare against (step 1b), so say
-   that instead of reporting an empty finding. Read the set back from the record:
+1. **The new-set finding.** Run this where `list_drawing_deliveries` gives this delivery `issue:
+   "set"`, and only when a prior delivery existed; on the project's first delivery there is nothing
+   to compare against (step 1b), so say that instead of reporting an empty finding. Read the set
+   back from the record:
    `set_grid(projectId, limit: 0)` first for `count` and `disciplineCounts`, then page with
    `discipline` + `limit`/`offset` until the rows you hold cover the count. Never a bare call: its
    default first page is not the set. Every row carries the delivery governing it (`deliveryId`,
    `label`, `kind`). The lingering sheets are the rows whose governing delivery is not this one:
-   sheets the prior set carried, this re-issue did not, and the server still shows as part of the
+   sheets the prior set carried, this new set did not, and the server still shows as part of the
    current set. Report `currentSetStatus` / `currentSetNotes` for any row the resolver could not
    settle rather than folding it into the list. If the paging could not be completed, say so and say
    how far it got; a partial list is never put up as a complete one.
@@ -905,10 +914,22 @@ through this skill. Points 1 and 2 run on the full-re-issue path only.
    Say plainly that they still show as part of the set and that nothing here changed or removed
    them, rather than wording it so it sounds like the run acted on them.
 <!-- /user-facing -->
-3. **The handoff.**
+3. **The handoff.** For a drawing delivery, read its `issue` off `list_drawing_deliveries` and
+   name the scope pass for it, which `scope-run` runs: a new set gets a full pass over every sheet
+   it prints, against the record the earlier passes built, and an addendum a partial pass over the
+   sheets it prints, reviewing only the packages that pass writes on. A scope pass already underway
+   on this project finishes first, and this delivery's pass comes after it. Two paths name no pass.
+   No scope pass reads a project manual on its own: it registered no delivery, and the package
+   reviews of the next pass read the sections it carries. A delivery whose `issue` is null with
+   `stillReading` false holds no sheet number, so a pass would have no sheet to read: name it, say
+   no pass reads it, and point back at what step 5 and step 6 found on its pages.
 <!-- user-facing -->
-   Name what comes next: reading what this delivery changes in the scope list. Say plainly that it
-   is not available yet, rather than leaving the user waiting on it.
+   Name what comes next in one sentence: for a new set, a full scope pass over it; for an
+   addendum, a partial scope pass over the sheets it prints. Say that `scope-run` starts it, and
+   where a pass is already underway, that it finishes first. For a manual on its own, say no scope
+   pass reads it alone, and that the package reviews of the next pass read its sections. For a
+   delivery with no sheet number read, name it and say no scope pass can read it until its sheet
+   numbers are read.
 <!-- /user-facing -->
 
 ## Gates (non-negotiable)
@@ -982,7 +1003,7 @@ through this skill. Points 1 and 2 run on the full-re-issue path only.
   `set_grid(limit: 0)` followed by pages until the rows cover the count, and its criterion (the
   sheet's governing delivery is not this delivery) is stated with the list. Paging that could not be
   completed is reported as incomplete, never presented as the whole set.
-- **This skill never retires or supersedes a sheet the delivery did not carry.** A full re-issue
+- **This skill never retires or supersedes a sheet the delivery did not carry.** A new set
   that drops sheets produces the step 10 finding and nothing else: no retirement, no supersession
   edge, and no entry authored about the dropped sheets, on any path.
 

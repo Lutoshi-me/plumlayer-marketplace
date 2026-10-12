@@ -53,7 +53,8 @@ One pass per drawing issue:
   refusal. Then a delivery still being read is waited on,
   since it may yet be a new set. Then the latest set is started where no run folder names it,
   with the next tag past every tag a run folder carries. An earlier set with no pass is never
-  started over a later one, and an addendum after its set's pass is named rather than started.
+  started over a later one. Once the latest set has its pass, the earliest addendum of it no pass
+  read is started, one at a time in the order they landed, each a partial pass of its own.
 
 The three windows, and what each selects:
 
@@ -85,7 +86,12 @@ The three windows, and what each selects:
      with its reason and the unit keys it selected, the read-earlier keys in `readEarlierKeys`,
      and the deferred unit keys with their count.
   3  one review per package: one pass per row of the packages file, in package order, with the
-     packages of one trade kept together. It reads no sheets, so it takes no inventory.
+     packages of one trade kept together. It reads no sheets, so it takes no inventory. In a pass
+     on an addendum, whose `run.json` reads `issue: "addendum"`, it reads the pass's own
+     `trades/` files beside the plan and plans only the packages whose trade the pass wrote on, a
+     row it created, updated or cited or a Question it raised, naming every other package as left
+     out; a pass that wrote on no trade plans no review, and one with no `trades/` folder at all
+     is refused.
 
 The repeated lines, in windows 1 and 2:
 
@@ -257,7 +263,8 @@ Exit codes:
      with no `run.json` that holds such an inventory or a ledger of tagged unit ids; an inventory
      whose issue differs from `run.json`; a window 1 file planned under another tag; a delivery
      list with no array, a delivery that is neither a set nor an addendum, or one whose
-     `stillReading` is not true or false; two passes in flight; and a run folder holding a ledger
+     `stillReading` is not true or false; window 3 of a pass on an addendum with no `trades/`
+     folder, or a trades line of neither known shape; two passes in flight; and a run folder holding a ledger
      and no `run.json`, or a `run.json` the issue mode cannot read. Another pass's broken
      `run.json` never stops a plan.
   2  argparse rejected the invocation.
@@ -1953,7 +1960,9 @@ def _window_2(
 # Window 3: one review per package
 # --------------------------------------------------------------------------- #
 
-def _window_3(packages: list[dict], tag: str | None = None) -> dict:
+def _window_3(
+    packages: list[dict], tag: str | None = None, written_on: set[str] | None = None
+) -> dict:
     """
     One review per package, in package order, with the packages of one trade kept together. The
     order is the order the packages were bought in: the first package of each trade holds that
@@ -1963,6 +1972,10 @@ def _window_3(packages: list[dict], tag: str | None = None) -> dict:
     Two packages carrying one trade both plan, one after the other, and their unit ids differ by the
     ordinal each carries. The runner's overlap scan sees them side by side, which is how two passes
     over the same work are kept from doubling it.
+
+    `written_on`, the folded trades an addendum's pass wrote on, keeps only the reviews of
+    those trades' packages, and every other package is named as left out. Ids are numbered over the
+    whole list first, so a package's review id is the same whichever packages plan beside it.
     """
     ordinals: dict[str, int] = {}
     reviews: list[dict] = []
@@ -1982,6 +1995,10 @@ def _window_3(packages: list[dict], tag: str | None = None) -> dict:
                 "codes": list(package.get("codes") or []),
             }
         )
+    left_out: list[dict] = []
+    if written_on is not None:
+        left_out = [review for review in reviews if review["tradeKey"] not in written_on]
+        reviews = [review for review in reviews if review["tradeKey"] in written_on]
 
     # Grouped by folded trade code in first-seen order, so two packages on one trade review one
     # after the other and everything else keeps the order the packages were bought in.
@@ -2028,8 +2045,93 @@ def _window_3(packages: list[dict], tag: str | None = None) -> dict:
         "trades": len(order),
         "sharedCount": len(shared),
         "sharedCodes": distinct_codes(shared),
+        "leftOut": [{"name": review["name"], "tradeCode": review["tradeCode"]} for review in left_out],
+        "partial": written_on is not None,
         "notes": [],
     }
+
+
+_WHOLE_NUMBER_RE = re.compile(r"^[0-9]+$")
+
+
+def _read_pass_trades(folder: Path) -> tuple[set[str], set[str]]:
+    """
+    The folded trades an addendum's pass wrote on, and the units that named a trade they touched.
+    The trades are every catalog id on a `<unit id> trade <catalog id> <count>` line of the pass's
+    trades files, which the runners append off each unit's own verification, and on a `<unit id>
+    touched <catalog id>` line, the home trade of a row the unit updated or cited and a trade a
+    Question it raised names, which the runners carry off the reader's report. An addendum that
+    only changes existing scope still has its packages reviewed. A candidates line names no trade.
+
+    The grammar is the one `pass_summary.py` reads the same files by, held as strictly: a count
+    that is not a whole number is refused, as it is there. The folder is found beside the plan, so
+    it is never an argument; a pass with no trades folder at all is refused, since planning no
+    review off a folder that was never written would read as a pass that wrote nothing.
+    """
+    trades_dir = folder / "trades"
+    if not trades_dir.is_dir():
+        raise PlanError(
+            f"{trades_dir} does not exist; window 3 of a pass on an addendum reviews the packages its "
+            f"trades files name, and the runners write them as each unit verifies"
+        )
+    written_on: set[str] = set()
+    touched_units: set[str] = set()
+    for path in sorted(trades_dir.glob("*.txt")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except Exception as e:
+            raise PlanError(f"cannot read the trades file at {path}: {e}") from e
+        for number, raw in enumerate(text.splitlines(), 1):
+            parts = raw.split()
+            if not parts:
+                continue
+            if len(parts) >= 3 and parts[1] == "candidates":
+                if not _WHOLE_NUMBER_RE.match(parts[2]):
+                    raise PlanError(f"{path} line {number}: the candidates count {parts[2]!r} is not a whole number")
+                continue
+            # A catalog id carries spaces, so the count is the last word and the id sits before it.
+            if len(parts) >= 4 and parts[1] == "trade":
+                if not _WHOLE_NUMBER_RE.match(parts[-1]):
+                    raise PlanError(f"{path} line {number}: the trade count {parts[-1]!r} is not a whole number")
+                written_on.add(_fold(" ".join(parts[2:-1])))
+                continue
+            if len(parts) >= 3 and parts[1] == "touched":
+                written_on.add(_fold(" ".join(parts[2:])))
+                touched_units.add(parts[0])
+                continue
+            raise PlanError(
+                f"{path} line {number} is neither `<unit id> trade <catalog id> <count>`, "
+                f"`<unit id> candidates <count>` nor `<unit id> touched <catalog id>`"
+            )
+    return written_on, touched_units
+
+
+def _units_touching_unnamed_trades(ledger: Path, touched_units: set[str]) -> list[str]:
+    """
+    The units whose last `verified` line in windows 1 and 2 shows a row updated or a Question
+    raised, and that carry no `touched` line: their reader named no trade it touched, so the trades
+    this pass wrote on are not all known, and no package can be left out as untouched.
+    """
+    if not ledger.is_file():
+        return []
+    try:
+        text = ledger.read_text(encoding="utf-8")
+    except Exception as e:
+        raise PlanError(f"cannot read the run ledger at {ledger}: {e}") from e
+    last: dict[str, list[str]] = {}
+    for raw in text.splitlines():
+        parts = raw.split()
+        if len(parts) >= 4 and parts[0] == "verified" and parts[1] in ("1", "2"):
+            last[parts[3]] = parts
+    unnamed: list[str] = []
+    for unit_id, parts in last.items():
+        wrote = any(
+            _WHOLE_NUMBER_RE.match(_figure(parts, field) or "") and int(_figure(parts, field)) > 0
+            for field in ("updated", "questions")
+        )
+        if wrote and unit_id not in touched_units:
+            unnamed.append(unit_id)
+    return unnamed
 
 
 # --------------------------------------------------------------------------- #
@@ -2216,7 +2318,21 @@ def _render(
 
     lines.append("## Nothing read for")
     lines.append("")
-    if window == 3:
+    if window == 3 and plan.get("unnamed"):
+        lines.append("Nothing. A pass on an addendum reviews only the packages whose trade it wrote on,")
+        lines.append("but these units updated a row or raised a Question and named no trade they touched,")
+        lines.append("so which packages the pass wrote on is not known and every package plans a review:")
+        lines.append("")
+        for number, unit_id in enumerate(plan["unnamed"], 1):
+            lines.append(f"{number}. {unit_id}")
+    elif window == 3 and plan.get("leftOut"):
+        lines.append("A pass on an addendum reviews only the packages whose trade it wrote on: a row it")
+        lines.append("created, a row it updated or cited, or a Question it raised. It wrote on none of")
+        lines.append("these, so no review reads for them:")
+        lines.append("")
+        for number, package in enumerate(plan["leftOut"], 1):
+            lines.append(f"{number}. {package['name']}, trade {package['tradeCode']}")
+    elif window == 3:
         lines.append("Nothing. Every package on the project plans a review.")
     else:
         lines.append("Nothing. This window plans off the inventory, not off the packages.")
@@ -2441,8 +2557,16 @@ def plan(args) -> str:
         result["repeatedRead"] = _read_repeated_read(args.out.parent / LEDGER_FILE, repeated_sets)
     else:
         packages = _read_packages(args.packages)
-        result = _window_3(packages, tag)
+        # A pass on an addendum reviews only the packages it wrote on; a set's pass reviews them all,
+        # and so does an addendum's pass where a unit wrote on a trade it did not name.
+        written_on: set[str] | None = None
+        unnamed: list[str] = []
+        if run is not None and run["issue"] == "addendum":
+            written_on, touched_units = _read_pass_trades(args.out.parent)
+            unnamed = _units_touching_unnamed_trades(args.out.parent / LEDGER_FILE, touched_units)
+        result = _window_3(packages, tag, None if unnamed else written_on)
         result["packages"] = len(packages)
+        result["unnamed"] = unnamed
 
     ledger_path = args.out.parent / LEDGER_FILE
     result["verified"] = _read_ledger_verified(ledger_path, window)
@@ -2621,7 +2745,12 @@ def plan(args) -> str:
         f"wrote {args.out}: window 3{tag_clause}, packages {result['packages']}, reviews {result['reviews']}, "
         f"passes {total_passes}, trades {result['trades']}, "
         f"packages sharing a trade: {result['sharedCount']} "
-        f"({_named(result['sharedCodes']) if result['sharedCodes'] else 'none'}); {written:,} bytes"
+        f"({_named(result['sharedCodes']) if result['sharedCodes'] else 'none'})"
+        + (f", packages left out {len(result['leftOut'])}, nothing this pass wrote on their trade"
+           if result["partial"] else "")
+        + (f", every package reviewed: units {', '.join(result['unnamed'])} updated a row or raised a "
+           f"Question and named no trade they touched" if result["unnamed"] else "")
+        + f"; {written:,} bytes"
     )
 
 
@@ -2682,9 +2811,10 @@ def issue(runs: Path, deliveries_path: Path) -> str:
               closes out; the old layout's own ledger, in the project folder itself, is in flight
               from its first `phase:` line until it closes out. Two in flight is a refusal.
       wait    a delivery still being read for its sheet numbers, which may yet be a new set.
-      start   the latest set, where no pass names it, with the run folder and the next unit tag.
-      none    nothing to start: no delivery reads as a set, or the latest set has its pass, with
-              the addenda of it no pass read named.
+      start   the latest set, where no pass names it, or else the earliest addendum of it no pass
+              read, with the run folder and the next unit tag.
+      none    nothing to start: no delivery reads as a set, or the latest set and every addendum of
+              it have their pass.
 
     Only the latest set is started. An earlier set with no pass of its own stays unread unless the
     estimator asks for it, since a later set already prints its sheets.
@@ -2744,22 +2874,29 @@ def issue(runs: Path, deliveries_path: Path) -> str:
     latest = sets[-1]
     covered = {d for _child, run, _closed in passes for d in [run["deliveryId"], *run["readFrom"]]}
     earlier = f"; the earlier pass in {runs} names no drawing issue" if root_state == "closed" else ""
+    number = 1 + max((int(run["unitTag"][1:]) for _child, run, _closed in passes), default=0)
     if latest["id"] not in covered:
-        number = 1 + max((int(run["unitTag"][1:]) for _child, run, _closed in passes), default=0)
         count = latest.get("sheetCount")
         return (
             f"start {latest['id']}: {_label(latest)}, a set of {count} sheet"
             f"{'' if count == 1 else 's'}; run folder {runs / latest['id']}, unit tag i{number}{earlier}"
         )
+    # An addendum of the latest set that landed after the set's pass gets a partial pass of its own,
+    # the earliest first, so a later addendum's pass reads the record the earlier one left.
     waiting = [
         row for row in deliveries
         if row.get("issue") == "addendum" and row.get("setId") == latest["id"] and row["id"] not in covered
     ]
     if waiting:
-        named = ", ".join(f"{row['id']} {_label(row)}" for row in waiting)
+        row = waiting[0]
+        count = row.get("sheetCount")
+        more = f"; {len(waiting) - 1} more addenda of it after this one" if len(waiting) > 1 else ""
+        # No note about a pass in the old layout: that pass read some set, and an addendum's pass
+        # reads only the addendum's own sheets, so nothing it reads can be a set already scoped.
         return (
-            f"none: the latest set {latest['id']}, {_label(latest)}, has its pass, and "
-            f"{len(waiting)} addend{'um' if len(waiting) == 1 else 'a'} of it no pass read: {named}"
+            f"start {row['id']}: {_label(row)}, an addendum of {_label(latest)} printing {count} "
+            f"sheet{'' if count == 1 else 's'}; run folder {runs / row['id']}, unit tag i{number}"
+            f"{more}"
         )
     return (
         f"none: the latest set {latest['id']}, {_label(latest)}, has its pass, and every addendum "

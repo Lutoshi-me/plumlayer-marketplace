@@ -371,9 +371,13 @@ def read_trades(path: Path) -> dict[str, list[tuple[str | None, int]]]:
                 (" ".join(parts[2:-1]), _whole_number(parts[-1], "trade count", where))
             )
             continue
+        # A trade the unit updated a row on or raised a Question naming. The plan reads it to choose
+        # an addendum's reviews; the summary's trades line counts created items only, so it is skipped.
+        if len(parts) >= 3 and parts[1] == "touched":
+            continue
         raise SummaryError(
-            f"{where}: the line is neither `<unit id> trade <catalog id> <count>` nor "
-            f"`<unit id> candidates <count>`"
+            f"{where}: the line is neither `<unit id> trade <catalog id> <count>`, "
+            f"`<unit id> candidates <count>` nor `<unit id> touched <catalog id>`"
         )
     return by_unit
 

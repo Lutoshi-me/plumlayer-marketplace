@@ -6427,8 +6427,26 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     verdict("a pass in flight beside a delivery list the issue mode could not read", "resume", "deliv-d1",
             folders={"deliv-d1": (run_d1, open_ledger)},
             listed=deliveries + [delivery("deliv-d6", "baseline", None, 5)])
-    verdict("the latest set's pass closed with its addendum unread", "none", "deliv-d4",
+    # An addendum that landed after its set's pass gets a partial pass of its own, the earliest
+    # first, and once it has one there is nothing left to start.
+    verdict("the latest set's pass closed with its addendum unread", "start", "deliv-d4", "addendum", "i3",
             folders={"deliv-d1": (run_d1, closed), "deliv-d3": (run_d3, closed)})
+    verdict("two addenda after the latest set's pass", "start", "deliv-d4",
+            folders={"deliv-d3": (run_d3, closed)},
+            listed=deliveries + [delivery("deliv-d7", "addendum", "deliv-d3", 6)])
+    verdict("the addendum's own pass closed", "none", "deliv-d3",
+            folders={"deliv-d3": (run_d3, closed),
+                     "deliv-d4": (dict(_issue_run("deliv-d4", ["deliv-d4"], "i3"), issue="addendum", setId="deliv-d3"), closed)})
+    verdict("an addendum's pass in flight", "resume", "deliv-d4",
+            folders={"deliv-d3": (run_d3, closed),
+                     "deliv-d4": (dict(_issue_run("deliv-d4", ["deliv-d4"], "i3"), issue="addendum", setId="deliv-d3"), open_ledger)},
+            listed=deliveries + [delivery("deliv-d7", "addendum", "deliv-d3", 6)])
+    # A closed pass in the old layout read some set, and the lead says so at a set's start. An
+    # addendum's pass reads only the addendum's sheets, so its start carries no such note.
+    code, out, err, _runs = choose("an addendum after a pass in the old layout", root_ledger=closed,
+                                   folders={"deliv-d3": (run_d3, closed)})
+    if code != 0 or not out.startswith("start deliv-d4") or "names no drawing issue" in out:
+        errors.append(f"an addendum's start beside a closed pass in the old layout reads {out or err!r}")
     verdict("the latest set's pass closed with its addendum read in it", "none", "deliv-d3",
             folders={"deliv-d3": (_issue_run("deliv-d3", ["deliv-d3", "deliv-d4"], "i2"), closed)})
     verdict("a delivery still being read", "wait", "deliv-d5",
@@ -6465,6 +6483,160 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             "a delivery whose stillReading is not true or false", "deliv-g1")
     no_array = write(root / "choose" / "no-array.json", {"count": 0})
     refused(["issue", "--runs", str(no_runs), "--deliveries", str(no_array)], "a deliveries file with no deliveries array", "deliveries")
+
+    # ------------------------------------------------------------------ #
+    # An addendum's partial pass
+    # ------------------------------------------------------------------ #
+    #
+    # An addendum's pass reads the sheets it prints and nothing else, its revised schedule in window
+    # 1 ahead of the plans that call it in window 2, and reviews only the packages it wrote on.
+    by_number = {row["sheetNumber"]: row for row in rows}
+    addendum_numbers = ["A-0.04", "A-2.01", "A-2.02", "A-2.03"]
+    ad = _issue_ref("deliv-ad", "addendum", "deliv-s1", len(addendum_numbers))
+    addendum_run = dict(_issue_run("deliv-ad", ["deliv-ad"], "i3"), issue="addendum", setId="deliv-s1")
+    addendum = root / "addendum" / "deliv-ad"
+    write(addendum / "run.json", addendum_run)
+    code, bounds, err = inventory(addendum, _issue_grid([by_number[n] for n in addendum_numbers], ad, [ad], "deliv-ad"))
+    if code != 0:
+        errors.append(f"an addendum's inventory refused its own grid: {err or bounds}")
+    else:
+        # Each runner creates its pass's trades file as it starts, so window 3 always finds the folder.
+        (addendum / "trades").mkdir(parents=True, exist_ok=True)
+        addendum_plans = plans(addendum)
+        planned = {
+            window: [line.split(". ", 1)[1].split(",", 1)[0]
+                     for line in text.split(_LEFT_OUT_HEADING)[0].splitlines()
+                     if _ISSUE_UNIT_RE.match(line) and "repeated lines" not in line]
+            for window, text in addendum_plans.items() if window in (1, 2)
+        }
+        if planned.get(1) != ["A-0.04"]:
+            errors.append(f"an addendum's window 1 reads {planned.get(1)}, not its revised schedule A-0.04 alone")
+        if sorted(planned.get(2, [])) != ["A-2.01", "A-2.02", "A-2.03"]:
+            errors.append(f"an addendum's window 2 reads {planned.get(2)}, not its three plans")
+        strangers = sorted({n for sheets in planned.values() for n in sheets} - set(addendum_numbers))
+        if strangers:
+            errors.append(f"an addendum's pass reads sheets it does not print: {strangers}")
+    stray = _issue_grid([by_number[n] for n in addendum_numbers], ad, [ad], "deliv-ad")
+    stray["sheets"][1]["deliveryId"] = "deliv-s1"
+    folder = tagged_folder("addendum-with-a-set-sheet", addendum_run, stray)
+    refused(inventory_argv(folder), "an addendum's grid carrying a sheet of its set", "A-2.01")
+    shutil.rmtree(folder, ignore_errors=True)
+
+    # An addendum that prints no schedule, legend, notes or index sheet, and no file of five sheets,
+    # plans no window 1 unit and reads everything in window 2.
+    bare = root / "addendum-bare" / "deliv-ae"
+    ae = _issue_ref("deliv-ae", "addendum", "deliv-s1", 3)
+    write(bare / "run.json", dict(_issue_run("deliv-ae", ["deliv-ae"], "i4"), issue="addendum", setId="deliv-s1"))
+    code, bounds, err = inventory(bare, _issue_grid([by_number[n] for n in ("A-2.04", "A-2.05", "P-1.01")], ae, [ae], "deliv-ae"))
+    if code != 0:
+        errors.append(f"an addendum with no vocabulary sheet refused its inventory: {err or bounds}")
+    else:
+        code, bounds, err = run(["plan", "--window", "1", "--inventory", str(bare / "inventory.json"), "--out", str(bare / "read-plan-w1.md")])
+        if code != 0 or "units 0," not in bounds:
+            errors.append(f"an addendum with no vocabulary sheet does not plan an empty window 1: {err or bounds}")
+        code, bounds, err = run(["plan", "--window", "2", "--inventory", str(bare / "inventory.json"),
+                                 "--window-1", str(bare / "plan" / "window-1.json"), "--out", str(bare / "read-plan-w2.md")])
+        if code != 0 or "sheets 3," not in bounds:
+            errors.append(f"an addendum with no vocabulary sheet does not read its three sheets in window 2: {err or bounds}")
+
+    # Window 3 of an addendum's pass reviews the packages its trades files name and names the rest.
+    def review_plan(folder: Path) -> tuple[int, str, str, str]:
+        out = folder / "read-plan-w3.md"
+        code, bounds, err = run(["plan", "--window", "3", "--packages", str(packages), "--out", str(out)])
+        return code, bounds, err, out.read_text(encoding="utf-8") if code == 0 else ""
+
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 09 21 16 4\ni3-A1-1 candidates 1\n")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 trade 22 11 16 2\ni3-A2-1 candidates 0\ni3-A2-2 trade 09 21 16 1\n")
+    code, bounds, err, text = review_plan(addendum)
+    reviewed = sorted(_issue_ids(text)[1])
+    if code != 0:
+        errors.append(f"window 3 of an addendum's pass refused: {err or bounds}")
+    elif reviewed != ["i3-rev-092116-1", "i3-rev-221116-1"]:
+        errors.append(f"window 3 of an addendum's pass reviews {reviewed}, not the two packages its rows were written on")
+    elif "packages left out 6" not in bounds or not all(
+        name in text.split(_LEFT_OUT_HEADING)[-1] for name in ("Painting", "Windows", "Glazing", "Landscaping", "Window treatments", "Pre-engineered structures")
+    ):
+        errors.append(f"window 3 of an addendum's pass does not name the six packages it leaves out: {bounds!r}")
+    for trades_file in (addendum / "trades").glob("*.txt"):
+        write(trades_file, "i3-A1-1 candidates 0\n")
+    code, bounds, err, text = review_plan(addendum)
+    if code != 0 or _issue_ids(text)[1] or "packages left out 8" not in bounds:
+        errors.append(f"window 3 of an addendum's pass that wrote no row does not plan no review: {err or bounds}")
+    # An addendum that only changes existing scope, a revised hardware row cited on its page or a
+    # Question it raised, is the case where the estimator most needs that package reviewed. The
+    # runner carries the trades the reader touched as `touched` lines beside the created ones.
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 candidates 0\ni3-A1-1 touched 08 50 00\n")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\ni3-A2-2 candidates 0\ni3-A2-2 touched 32 90 00\n")
+    code, bounds, err, text = review_plan(addendum)
+    if code != 0 or sorted(_issue_ids(text)[1]) != ["i3-rev-085000-1", "i3-rev-329000-1"]:
+        errors.append(
+            f"window 3 of an addendum's pass that only updated rows and raised a Question does not review "
+            f"those two packages: {err or sorted(_issue_ids(text)[1])}"
+        )
+    # A catalog id the reader spaced otherwise than the package folds to the same trade.
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 candidates 0\ni3-A1-1 touched 085000\n")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\n")
+    code, bounds, err, text = review_plan(addendum)
+    if code != 0 or _issue_ids(text)[1] != ["i3-rev-085000-1"]:
+        errors.append(f"a touched id spaced `085000` does not review the `08 50 00` package: {err or _issue_ids(text)[1]}")
+    # Both scripts read one grammar, equally strict: a count that is not a whole number is refused.
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates many\n")
+    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(addendum / "read-plan-w3.md")],
+            "a trades line whose candidates count is not a number", "i3-A2.txt line 1")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 trade 09 21 16 four\n")
+    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(addendum / "read-plan-w3.md")],
+            "a trades line whose trade count is not a number", "i3-A2.txt line 1")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\n")
+    # The union rests on the reader's own `trades touched:` line, so a unit whose verified line shows
+    # an update or a Question raised and that carries no touched line leaves the union unknown: every
+    # package is reviewed and the plan says why, rather than naming packages left out as untouched.
+    write(addendum / "ledger.md", (
+        "phase: plan approved\n"
+        "verified 1 i3-A1 i3-A1-1 created 0 items 0 updated 1 questions 0 replied 0 sent 1 landed 1 conflicts 0 result ok\n"
+        "verified 2 i3-A2 i3-A2-1 created 0 items 0 updated 0 questions 1 replied 0 sent 1 landed 1 conflicts 0 result ok\n"
+    ))
+    code, bounds, err, text = review_plan(addendum)
+    if code != 0 or len(_issue_ids(text)[1]) != 8 or "i3-A2-1" not in bounds or "i3-A2-1" not in text:
+        errors.append(
+            f"window 3 of an addendum's pass whose unit raised a Question and named no trade does not review "
+            f"every package and say which unit: {err or bounds}"
+        )
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\ni3-A2-1 touched 32 90 00\n")
+    code, bounds, err, text = review_plan(addendum)
+    if code != 0 or sorted(_issue_ids(text)[1]) != ["i3-rev-085000-1", "i3-rev-329000-1"]:
+        errors.append(
+            f"window 3 of an addendum's pass whose every updating unit named its trades does not review "
+            f"only those: {err or sorted(_issue_ids(text)[1])}"
+        )
+    (addendum / "ledger.md").unlink(missing_ok=True)
+    # The summary script sums the created trades off the same file and reads past a touched line.
+    try:
+        summary_module = _load_script_module(plugin_path.joinpath(*PASS_SUMMARY_SCRIPT), "pass_summary")
+        write(addendum / "ledger.md", (
+            "phase: plan approved\n"
+            "dispatch 1 i3-A1 i3-A1-1 sheets A-0.04 purpose vocabulary\n"
+            "verified 1 i3-A1 i3-A1-1 created 0 items 0 updated 1 questions 0 replied 0 sent 1 "
+            "landed 1 conflicts 0 result ok\n"
+        ))
+        code, out, err = _run_script_main(
+            summary_module,
+            [str(addendum / "ledger.md"), "1", "i3-A1", "--plan", str(addendum / "read-plan-w1.md"),
+             "--trades", str(addendum / "trades" / "i3-A1.txt")],
+        )
+        if code != 0 or "08 50 00" in out:
+            errors.append(f"the summary script does not read past a touched line, or sums it as created: exited {code}, {err or out[:200]}")
+        (addendum / "ledger.md").unlink(missing_ok=True)
+    except Exception as e:
+        errors.append(f"the summary script over a touched line: {e}")
+    shutil.rmtree(addendum / "trades", ignore_errors=True)
+    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(addendum / "read-plan-w3.md")],
+            "window 3 of an addendum's pass with no trades files", "trades")
+    # A set's pass reviews every package, whatever its trades files say.
+    write(first / "trades" / "i1-A1.txt", "i1-A1-1 trade 09 21 16 4\n")
+    code, bounds, err, text = review_plan(first)
+    if code != 0 or len(_issue_ids(text)[1]) != 8:
+        errors.append(f"window 3 of a set's pass does not review all eight packages: {err or bounds}")
+    shutil.rmtree(first / "trades", ignore_errors=True)
 
     # ------------------------------------------------------------------ #
     # The text the lead and the reader follow
@@ -6597,6 +6769,60 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     if "sheets: [<the unit's sheet numbers>]" in runner_flat:
         errors.append("the runner still verifies a unit by its sheet numbers alone")
 
+    # An addendum's pass, in the text that drives it: the lead's partial pass, the reviewer searching
+    # the pass's own deliveries and naming the file it opened, the runner checking a review on that
+    # file, and drawing-upload taking set or addendum from the server rather than asking.
+    try:
+        reviewer_flat = " ".join((plugin_path / "agents" / "scope-reviewer.md").read_text(encoding="utf-8").split())
+        upload_flat = " ".join((plugin_path / "skills" / "drawing-upload" / "SKILL.md").read_text(encoding="utf-8").split())
+    except Exception as e:
+        return Result(name, False, detail=f"cannot read the reviewer or drawing-upload: {e}")
+    opened_shape = "pages opened: <sheet number + fileId + page + the term that sent you + what you did"
+    for flat, who, phrase in (
+        (skill_flat, "the skill", "a partial pass over the sheets it prints"),
+        (skill_flat, "the skill", "the index after each window that ran"),
+        (skill_flat, "the skill", "`phase: window 1 skipped`"),
+        (skill_flat, "the skill", "`plan/packages-start.json`"),
+        (skill_flat, "the skill's copy of the reviewer report", opened_shape.replace("you did", "it did").replace("sent you", "sent it")),
+        (reviewer_flat, "the reviewer", "with `deliveryId` set to each delivery its `readFrom` names"),
+        (reviewer_flat, "the reviewer", "carries the hit's `fileId`"),
+        (reviewer_flat, "the reviewer", opened_shape),
+        (runner_flat, "the runner", "with the `fileId` the reviewer's line names for it"),
+        (runner_flat, "the runner", "`<unit id> touched <catalog id>`"),
+        (reader_flat, "the reader", "trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names"),
+        (skill_flat, "the skill's copy of the reader report", "trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names"),
+        (upload_flat, "drawing-upload", "You never ask the user whether a delivery is a new set or an addendum"),
+        (upload_flat, "drawing-upload", "a partial scope pass over the sheets it prints"),
+        # A drawing search by delivery counts only that delivery's files, and a manual uploaded on
+        # its own sits in none of them, so the manual is asked on its own before it is called silent.
+        (reviewer_flat, "the reviewer", "run one `kind: document` search for the same words with no `deliveryId`"),
+        # Step 9b reads the uploaded delivery's own sheets and cites them on its own file.
+        (upload_flat, "drawing-upload", "`set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)`"),
+        (upload_flat, "drawing-upload", "`search_set_text` its tag with `deliveryId` set to this delivery"),
+        (upload_flat, "drawing-upload", "with this delivery's `fileId`"),
+        (upload_flat, "drawing-upload", "Keep every existing source"),
+        # The handoff on the two paths with no scope pass to name.
+        (upload_flat, "drawing-upload", "No scope pass reads a project manual on its own"),
+        (upload_flat, "drawing-upload", "holds no sheet number"),
+        # A set's grid by delivery carries a sheet one of its addenda reprinted as the addendum's
+        # row, so the set's own page of it is found inside the set by a delivery-scoped search.
+        (upload_flat, "drawing-upload", "A row from one of its addenda is a sheet the addendum reprinted or added"),
+        (upload_flat, "drawing-upload", "`search_set_text(projectId, query: \"<sheet number>\", deliveryId: <this delivery's id>, wholeWord: true)`"),
+        # set_grid refuses a delivery holding no sheet number, so step 9b skips the grid read.
+        (upload_flat, "drawing-upload", "`set_grid` refuses it and no sheet is known to have changed, so skip the rest of this step"),
+    ):
+        if phrase not in flat:
+            errors.append(f"{who} does not read {phrase!r}")
+    for phrase in (
+        "is this a set of changed sheets, or a full re-issue of the whole set?",
+        "is not available yet",
+        "A sheet citation names the sheet, not the file",
+        # The filter that dropped a set's sheet an addendum of it reprinted.
+        "for a new set its own sheets, not those an addendum of it already reprints",
+    ):
+        if phrase in upload_flat:
+            errors.append(f"drawing-upload still reads {phrase!r}")
+
     shutil.rmtree(root / "choose", ignore_errors=True)
     detail = (
         f"two sets of one project and the old layout planned over the 39-sheet fixture, every unit "
@@ -6614,7 +6840,11 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         f"before any other and before the listing is read, the old layout resumed, a closed pass "
         f"never resumed and only an exact close-out line closing one, the latest set started with "
         f"the next tag and a closed old layout pass named on the line, a delivery still being read "
-        f"waited on, an addendum after its set's pass named); the "
+        f"waited on, an addendum after its set's pass started, earliest first); an addendum's "
+        f"pass reading its own sheets only, its revised schedule in window 1, an empty window 1 "
+        f"where it prints no vocabulary, and a window 3 reviewing only the packages its trades "
+        f"files name, naming the rest, none where it wrote no row, refused with no trades folder; "
+        f"the "
         f"skill's issue command and run.json fed to the script, its grid fetch by delivery, and the "
         f"reader's citations naming the drawing file; bound: invented grids and listings, not a "
         f"real set_grid or list_drawing_deliveries answer"

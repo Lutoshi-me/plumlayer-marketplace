@@ -69,6 +69,12 @@ a later delivery; it finishes the issue it started on, and the later one waits f
 own. Whether a delivery is a set or an addendum is the `issue` that `list_drawing_deliveries`
 gives it, never a question for the user.
 
+An addendum that lands after its set's pass gets a partial pass over the sheets it prints, and
+nothing else: window 1 over its schedules, legends and notes, so a revised schedule is read before
+the plans that call it, and window 2 over the rest of its sheets, with the index after each window
+that ran, then window 3 over only the packages this pass wrote rows on. The stages below say where
+a pass on an addendum differs; everywhere else it runs as a set's pass does.
+
 **This run is attended.** The user approves the read plan before any reading and reviews at every
 check-in. Never read past a check-in without the user's go-ahead. The package split is not a gate:
 this run reads the baseline packages orientation created, amends them as the scope list surfaces
@@ -166,7 +172,8 @@ that relaxes any one of them reproduces a measured, named failure.
    already chosen, and never offer a recommended yes: if something is genuinely wrong, stop, say
    what is wrong, and hand it over; if nothing is wrong, proceed and say what you did.
 10. **The index runs three times, and what it left open is named.** The citation index is a
-    standing step after each of the three windows, never optional. Nothing chases what it left
+    standing step after each of the three windows, never optional; in a pass on an addendum, it
+    runs after each window that ran. Nothing chases what it left
     open: a tag no reader could resolve on its own sheet is reported at close out, by count and
     with the codes found nowhere named, and that is a loss the report says out loud rather than
     a gap it fills by inference. Never assumed closed, never zeroed by hope.
@@ -462,7 +469,8 @@ reports, verified against the record with the lead's own count queries and writt
 `pass:` line, never relayed as-is and never held past that line.
 
 Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
-approved; window 1 complete; index built; window 2 complete, or window 2 paused where a slice
+approved; window 1 complete, or window 1 skipped where a pass on an addendum planned no window 1
+unit; index built; window 2 complete, or window 2 paused where a slice
 deferred sheets; window 3 complete; packages amended; closed out. Inside a window the `pass:`
 lines are the boundaries: one per pass in windows 1 and 2, one per package in window 3. A pass run
 again to finish it carries a second `pass:` line, and its last one carries the whole pass: every
@@ -536,21 +544,25 @@ before going on.
    - `wait <deliveryId>`: that delivery's sheet numbers are still being read, and it may yet be a
      new set. Wait, then copy the delivery list again and run the issue mode again, waiting between
      tries rather than trying back to back.
-   - `start <deliveryId>`: the latest set, which no pass has read. The line names its run folder
+   - `start <deliveryId>`: the latest set, which no pass has read, or, once the set has its pass,
+     the earliest addendum of it that landed after that pass; the line says which, and names the
+     addenda still waiting behind this one. Each of those gets a pass of its own, one at a time,
+     in the order they landed. The line names its run folder
      and its unit tag. Make the folder, and check the tag on the record:
      `search(projectId, subjectPrefix: "scopeItem:i<n>-", limit: 1)`, reading `count`. A tag is
      free where no subject starts `scopeItem:<unit tag>-`; a count above zero is rows from a pass
      whose run folder is not on this seat, so take the next number and count again until one reads
-     zero. That count goes into `run.json` at stage 3 step 1. The pass is a full pass over every
-     sheet the set and its addenda print. Where the line ends by saying the earlier pass in the
+     zero. That count goes into `run.json` at stage 3 step 1. The pass on a set is a full pass over
+     every sheet the set and its addenda print; the pass on an addendum is a partial pass over the
+     sheets it prints, since `set_grid` by an addendum's `deliveryId` gives only those. Where the line ends by saying the earlier pass in the
      project folder names no drawing issue, a pass from before passes had folders of their own is
      closed out there, and nothing records which set it read: start all the same, never guess
      which set that was, and say so at the read plan's check-in.
    - `none`: there is nothing to start, and the run stops here.
 <!-- user-facing -->
-   Say what the line says, plainly: you already ran a scope pass on the latest set, naming it;
-     each addendum the line names landed after that pass, and no pass has read it yet. Where no
-     delivery reads as a set yet, say the drawings are not in, and hand off to `drawing-upload`.
+   Say what the line says, plainly: you already ran a scope pass on the latest set, naming it,
+     and on every addendum of it since. Where no delivery reads as a set yet, say the drawings are
+     not in, and hand off to `drawing-upload`.
 <!-- /user-facing -->
 4. **Drawings are recognized, and their text is read.** Spot-check recognition actually
    recorded: `search(projectId, predicate: "appearsOnPage", limit: 1)`: zero rows → hand off to
@@ -737,6 +749,9 @@ Before any reading runs, tell the user, in a few plain sentences, not a table:
 - What is deliberately left out, by sheet family or number. Say it plainly: anything here will not
   be scoped.
 - When the first check-in will be, roughly.
+- On a pass on an addendum: you read only the sheets the addendum prints, naming how many, its
+  schedules and legends first where it has any, and afterward you review only the packages this
+  pass writes rows on.
 - Only where precondition 3's line said an earlier pass names no drawing issue: you scoped this
   project before, the earlier run did not record which set it read, and this pass may read a set
   that was already scoped. Name no set for it.
@@ -754,6 +769,12 @@ about how the run is executed. Never offer a recommended option.
 On the go-ahead, append `phase: plan approved` to the ledger. Nothing reads before that line exists.
 
 ## 4. Window 1: vocabulary
+
+A pass on an addendum whose window 1 plan reads `units 0` and plans no repeated lines unit has no
+vocabulary of its own to read: its sheets print no schedule, legend, notes or index, and no file
+of five of them. Window 1 does not run and no index runs after it. Append
+`phase: window 1 skipped` to the ledger and go straight to stage 6 step 1; the plan's approval is
+that window's go-ahead.
 
 The reading happens one level down, one runner per pass. The lead does exactly this and holds
 nothing else:
@@ -808,7 +829,8 @@ nothing else:
 After each of the three windows, and never skipped. It runs after window 1 so every trade's page is
 usable at the first check-in, after window 2 so every reviewer works from a record whose rows
 already cite every page they appear on, and after window 3 so the rows the reviews created carry
-every page too:
+every page too. In a pass on an addendum it runs the index after each window that ran: a window 1
+that was skipped has none, and a window 3 that planned no review has none:
 
 1. **Start it.** `index_citations(projectId)`. It walks the corpus for every definition code and
    every item's tag or mark on the record and cites every page each appears on, onto the definition
@@ -926,13 +948,26 @@ On the go-ahead:
 
 1. **Write the window 3 plan.** The packages may have changed since window 1: a scope item written
    on a trade with no package makes that trade's package as it lands, so windows 1 and 2 can have
-   made packages the plan has not seen. First send one fresh agent to copy a fresh
+   made packages the plan has not seen. In a pass on an addendum, first move the copy stage 2 made
+   to `<run folder>/plan/packages-start.json` with a local command, since stage 8 compares the two.
+   Then send one fresh agent to copy a fresh
    `solicitation_list_packages` response over `<run folder>/plan/packages.json`, byte for byte,
    returning one line. Then run the plan script for window 3. It writes one pass per package in
    `plan/packages.json`, in package order, each pass carrying one review unit whose id is the pass
    id, with two packages carrying the same catalog trade planned one after the other. It reads no
    sheets and takes no inventory. Read back only its bounds line: packages, reviews, passes,
    trades, and the packages sharing a trade.
+
+   In a pass on an addendum, the script reads the pass's own `trades/` files beside the plan and
+   plans a review only for a package whose `tradeCode` this pass wrote on: a row it created, a row
+   that already existed and that it updated or cited, or a Question it raised naming that trade.
+   Its bounds line counts the packages it left out, and the read plan names each. Where a unit's
+   `verified` line shows a row updated or a Question raised and its reader named no trade it
+   touched, which packages the pass wrote on is not known: the plan reviews every package, and its
+   bounds line names those units. A pass that
+   wrote on no trade plans no review: append `phase: window 3 complete` with zero totals and go to stage 8. The
+   reviews of an addendum's pass search only the deliveries its `run.json` reads from, so they find
+   what the readers missed on the addendum's own pages without finding the whole set again.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 3 \
@@ -973,6 +1008,11 @@ The estimator-judgment stage. Packages are bundles of spec sections grouped by h
 actually split themselves in the market, not by the book's divisions. The baseline split was
 drafted and created at orientation (`learn-project`): read it fresh via
 `solicitation_list_packages(projectId)` rather than re-drafting it.
+
+In a pass on an addendum this stage runs only where the pass made a package: one whose `id` is in
+`plan/packages.json` and in no row of `plan/packages-start.json`, found with a local comparison of
+the two. A pass that made none appends `phase: packages amended` with no amendment and goes to
+close out; the split the earlier passes settled stands.
 
 1. **Scope-driven amendments.** Where the scope list surfaces what the TOC cannot see (a
    specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
@@ -1040,7 +1080,9 @@ Report to the user, in plain words:
   issue dropped, each with the earlier sheets that printed it, and say that any scope item still
   naming one is work the revision may have taken out, for you to check. Also the sheets left out of the read
   plan at the start, and the manual sections on no package, each with the reason it is on none,
-  or that the count of them is incomplete when it was cut short.
+  or that the count of them is incomplete when it was cut short. On a pass on an addendum, also
+  name the packages you did not review, and say why: this pass wrote no row on their trade, so
+  the addendum's sheets changed nothing they price that the readers found.
 - **The package split**: the amendments made this run (created / split / collapsed / renamed,
   each with its rationale), the packages derived here from scratch only in the no-spec-book case,
   and how many manual sections you placed on a package at the start of the run, if any.
@@ -1160,6 +1202,7 @@ questions raised ids: <the id of every Question raised, or "none">
 questions replied ids: <the id of every Question replied to, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
+trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
 anomalies: <one line each, with sheet and page, or "none">
@@ -1208,7 +1251,7 @@ unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
 harvested: rows <n>, definition codes <n>, spec sections <n>, aliases <n>
 searches: <n> run, <n> returned nothing
 terms too general: <term + its page count, one per line, or "none">
-pages opened: <sheet number + page + the term that sent it + what it did, one per line, or "none">
+pages opened: <sheet number + fileId + page + the term that sent it + what it did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
 updated subjects: <the subject of every row updated or newly cited, or "none">
 questions raised ids: <the id of every Question raised, or "none">

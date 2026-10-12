@@ -547,12 +547,19 @@ questions raised ids: <the id of every Question you raised, or "none">
 questions replied ids: <the id of every Question you replied to, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
+trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
+
+`trades touched:` is each pre-existing row's `belongsToTrade` as the page's context read or
+`list_scope_items` gave it to you, and each code you sent a Question you raised in `trades` or
+`trade`, each catalog id once. A Question sent with `everyTrade: true`, or with no trade, names
+none here. A pass on an addendum reviews these packages afterward, so an addendum that only
+changes rows that already exist still has their packages reviewed.
 
 `created:` is your own item count: how many scope items you created, not the entries under them.
 `updated:` counts every pre-existing item you wrote anything onto: a note, a value, or a citation

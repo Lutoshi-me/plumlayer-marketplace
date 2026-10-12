@@ -181,7 +181,12 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    candidates count being the created subjects carrying at least one candidate trade, each subject
    counted once however many candidate trades it carries. Read those counts off the `verify_unit`
    result you already have. This is what lets the pass summary script sum the trades without you
-   adding them.
+   adding them. Then append one line `<unit id> touched <catalog id>` to the same file for each
+   catalog id on the reader's `trades touched:` line, carried as the reader reported it, as its
+   `sent:` and `landed:` figures are, since no call you make reads a pre-existing row's trade or a
+   Question's trades. Where the line reads "none", write nothing. Window 3 of a pass on an addendum
+   reviews those packages too, so an addendum that only changed rows that already existed still has
+   their packages reviewed.
 4. **Match overlaps in a file, not in your context.** As each unit verifies, write that unit's new
    item names, one per line, to `<run folder>/names/<pass-id>.txt`, and find repeats by matching that
    file against itself with a local command rather than by holding the names. Read back only the
@@ -294,9 +299,9 @@ with one unit and three differences.
 - **Verify against the pages the review opened.** The reviewer names every page it opened on its
   `pages opened:` line, and those sheets are what you check. A line naming `section <code>` is a
   manual page the review read to judge a section, not a sheet, and never goes into the call; a
-  review whose only pages were manual pages is one that opened no page, below. Neither your
-  dispatch nor the reviewer's line names the file a page was opened in, so each sheet goes as the
-  sheet number alone:
+  review whose only pages were manual pages is one that opened no page, below. Each sheet goes as
+  `{ "sheet": "<sheet number>", "fileId": "<fileId>" }` with the `fileId` the reviewer's line names
+  for it, the file of the page it opened, and as the sheet number alone where the line names none:
 
   ```text
   verify_unit(projectId,

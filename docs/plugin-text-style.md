@@ -324,9 +324,15 @@ Each of these is a harness check.
     `fileId`, with an update counted only where a write landed, and the runner checks each sheet
     of a unit on the file its plan line names. The reader searches its pass's own deliveries and
     keeps a hit only on a page its inventory carries, and reads a row's live citations off
-    `drawingRefs`. This cannot judge whether a reader
-    sends the file on every citation;
-    that stays in review and the measured pass.
+    `drawingRefs`. A pass on an addendum plans its own sheets only, reviews only the packages its
+    trades files name, the ones it only updated rows on or raised a Question naming among them,
+    and names the rest, and starts after its set's pass, earliest first; the
+    reviewer searches its pass's deliveries and names the file of every page it opens, and
+    drawing-upload never asks whether a delivery is a set or an addendum. A unit that wrote on a
+    trade it did not name makes window 3 review every package; the reviewer asks the manual itself
+    before calling it silent; and drawing-upload's re-read of the open Questions reads the uploaded
+    delivery by its id and cites its file. This cannot judge whether a reader sends the file on
+    every citation; that stays in review and the measured pass.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is
