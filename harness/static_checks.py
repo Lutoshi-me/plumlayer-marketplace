@@ -97,7 +97,9 @@ Checks:
       otherwise, no pass under three beside one it fits into, every folded unit keeping the id its
       own discipline gave it, and the heading, the `folded in` line, the bounds line and the totals
       naming each fold, with the fixtures' groupings pinned by hand, one sheet between two passes
-      of twelve read alone and named as kept, and harness/fixtures/set-grid-fixture-209.json, a
+      of twelve read alone and named as kept, a unit verified under its part's own pass before a
+      replan folds that part kept, marked verified and counted once in the folded pass's summary,
+      and harness/fixtures/set-grid-fixture-209.json, a
       209-sheet grid with a real set's discipline and sheet type counts in grid order and invented
       sheet numbers, planning its window 1 of seventeen vocabulary sheets over eight disciplines in
       three passes and its window 2 of twenty-two parts in nineteen. The shipped script is
@@ -3905,7 +3907,9 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"before it whenever that has room, no pass under three beside one it fits into, every "
         f"folded unit keeping its own discipline's id, and the heading, the folded in line, the "
         f"bounds line and the totals naming each fold) with the fixture's groupings pinned by hand, "
-        f"one sheet between two passes of twelve kept alone and named, a 209-sheet set's window 1 "
+        f"one sheet between two passes of twelve kept alone and named, a unit verified under its "
+        f"part's own pass before a replan folds that part kept, marked verified and counted once "
+        f"in the folded pass's summary, a 209-sheet set's window 1 "
         f"of {sum(vocabulary_209.values())} vocabulary sheets in {len(w1_209_parts)} discipline "
         f"parts read in {len(w1_209_grouping)} passes with "
         f"{sum(len(group) - 1 for group in w1_209_grouping)} folds and its window 2 of "
