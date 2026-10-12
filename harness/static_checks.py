@@ -104,13 +104,16 @@ Checks:
       compiled from source here
       rather than imported through the loader, so a script edited twice inside one second to the
       same byte length can never be checked as its earlier bytecode.
-  18. Pass summary: the shipped scripts/pass_summary.py, imported in-process and run over two
-      invented ledger fixtures, sums one pass's own dispatch and verified lines into the published
-      summary shape, and every number, every note line and every label is compared against a tally
-      this file computes itself off the same fixture text. The labels it prints are compared in
-      order against the skill's own summary block, another pass's and another window's lines and
-      the lead's own `pass:` line are shown to reach no total, and ten broken invocations each
-      refuse in one line with nothing on stdout.
+  18. Pass summary: the shipped scripts/pass_summary.py, imported in-process and run over three
+      invented ledger fixtures with their read plans, sums the lines of every unit the pass's plan
+      block carries, whatever pass they name, into the published summary shape, and every number,
+      every note line and every label is compared against a tally this file computes itself off
+      the same fixture text. The labels it prints are compared in order against the skill's own
+      summary block, and the runner's own summary command is fed to the script's arguments.
+      Another pass's and another window's lines and the lead's own `pass:` line are shown to reach
+      no total; a folded pass counts a unit verified under its part's own pass id once, with its
+      trades off that pass's file, and names a unit the plan cut; and sixteen broken invocations
+      each refuse in one line with nothing on stdout.
   19. No shipped skill or agent file names `fork` as a subagent type, in either the
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
   20. Agent tool surface: no agents/*.md tools line takes the whole connector as a wildcard;
@@ -3927,13 +3930,19 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
 # A pass runner verifies each unit against the record and appends that unit's counts to the run
 # ledger as it goes, and then the pass summary says those counts again. A runner that added them up
 # itself gave a second answer that did not match the first, so the shipped script sums the ledger
-# and the runner writes what it returns. This runs the script in-process over two ledger fixtures
-# and asserts every number against a tally computed here off the same fixture text.
+# and the runner writes what it returns. This runs the script in-process over three ledger fixtures
+# and their read plans, and asserts every number against a tally computed here off the same text.
 #
-# The join this check exists for: the summary shape is published in the skill and in the runner
+# A pass's units come off its read plan block. A replan can fold a part into another pass after a
+# unit of that part was verified under the part's own pass id, and the runner then skips the unit,
+# so the folded pass's summary has to count it off that line, once. The folded fixture carries that
+# unit, and a unit the plan cut whose lines still name the pass.
+#
+# The joins this check exists for: the summary shape is published in the skill and in the runner
 # definition, and the script fills it. The three would otherwise meet for the first time mid-run,
 # so the labels the script prints are compared against the labels of the skill's own fenced block,
-# in order, with nothing extra and nothing missing.
+# in order, with nothing extra and nothing missing. The runner definition also spells the command
+# that runs the script, and that command is fed to the script's own arguments.
 #
 # Honest bound, stated in the detail line: the fixtures are ledger text, so this proves the
 # script's arithmetic, its line placement and its refusals, and nothing about a real verification.

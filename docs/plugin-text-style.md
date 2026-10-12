@@ -245,12 +245,14 @@ Each of these is a harness check.
     the fixtures are invented, so this proves the script's arithmetic, its ordering, its fold and
     its refusals, not how a real grid or packages read arrives.
 18. The pass summary script sums the ledger. The shipped `pass_summary.py` is run in-process over
-    two invented ledger fixtures, and its counts, its note placement, its refusals and the labels
-    it prints are compared against a tally the check computes itself; the labels also have to equal
-    the labels of the skill's own published summary block, in order, so the script and the shape
-    cannot drift apart. Its bound is stated in the harness README entry and in the check's own
-    detail line: the fixtures are ledger text, so this proves the arithmetic and not a real
-    verification.
+    three invented ledger fixtures with their read plans, and its counts, its note placement, its
+    refusals and the labels it prints are compared against a tally the check computes itself; the
+    labels also have to equal the labels of the skill's own published summary block, in order, so
+    the script and the shape cannot drift apart. A pass's units come off its read plan block, so a
+    unit verified under its part's own pass id before a replan folded the part is counted once in
+    the folded pass, and the runner's own summary command has to be one the script accepts. Its
+    bound is stated in the harness README entry and in the check's own detail line: the fixtures
+    are ledger text, so this proves the arithmetic and not a real verification.
 19. No dispatch names `fork` as a subagent type, in either the `subagent_type:` dispatch-line
     shape or a `tools: Agent(fork)` frontmatter declaration, so a runner cannot build a wait out
     of fork agents in place of the reader dispatch that is the wait. Ordinary uses of the word
