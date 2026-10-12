@@ -4386,8 +4386,12 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
             f"created {w3_created} (entry count" not in w3_out
         ):
             errors.append("the window 3 summary does not read its one review unit off the plan")
+        # The pass id itself carries 9999, so the strangers are looked for on the totals line.
+        w3_totals = next(
+            (line for line in w3_out.splitlines() if line.startswith("totals verified:")), ""
+        )
         for stranger in ("9999", "777"):
-            if stranger in w3_out:
+            if stranger in w3_totals:
                 errors.append(f"a figure of another window reached the window 3 totals: {stranger}")
 
     # The plan is what says which units a pass carries, so a summary without one is no summary.
