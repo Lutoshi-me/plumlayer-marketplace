@@ -81,6 +81,10 @@ that relaxes any one of them reproduces a measured, named failure.
    record door refuses it. Never fabricate a page or sheet to satisfy the door. A citation the
    index wrote is the index's own, recorded as a text match; a reader cites what the index did
    not already cite and never re-cites a page the item already carries.
+   A manual-grounded record cites its spec section the way a drawing-grounded one cites its
+   sheet: `kind: "spec-section"` with the section number as the manual prints it, plus the file
+   and the page read. The section is what the estimator reads; the page is where the app opens
+   it. Never a bare document page for a manual whose section is known.
 2. **Create / update / question against the live list.** Every reader holds the current scope list
    for its trade or content families as match-or-create context: for each thing seen, create a new
    item, update an existing one (a new citation, a note, a resolved cross-reference), or raise a
