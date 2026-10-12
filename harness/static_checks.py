@@ -4148,6 +4148,28 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
                 )
 
     # ------------------------------------------------------------------ #
+    # The join: the runner's own command line is one the script accepts
+    # ------------------------------------------------------------------ #
+    runner = plugin_path / "agents" / "scope-round-runner.md"
+    calls = (
+        re.findall(
+            r"`python3 '<scripts path>/pass_summary\.py' ([^`]*)`",
+            runner.read_text(encoding="utf-8"),
+        )
+        if runner.is_file() else []
+    )
+    if len(calls) != 1:
+        errors.append(f"{len(calls)} pass summary command lines in {runner.name}, expected 1")
+    else:
+        command = " ".join(calls[0].split()).replace("<window>", "1").replace("<pass id>", "A1")
+        call_argv = [token.strip("'") for token in re.findall(r"'[^']*'|\S+", command)]
+        code, _out, _err = summarize(call_argv)
+        if code == 2:
+            errors.append(
+                f"the runner's summary command is one the script's arguments refuse: {call_argv}"
+            )
+
+    # ------------------------------------------------------------------ #
     # One pass only, and none of the lead's own numbers
     # ------------------------------------------------------------------ #
     code, mixed_out, mixed_err = summarize([str(mixed_fixture), "1", "B1", *w1_args])
