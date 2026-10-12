@@ -52,9 +52,10 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    a `verified` line carrying your window and that unit id, whatever pass it names, with a local
    filter on the ledger (the one read of it you ever make): a replan can put a unit in another pass,
    and its unit id is what stays. A unit whose line carries `result ok` is finished, so dispatch
-   nothing for it, append nothing, and go to the next unit. Its counts reach the summary of the pass
-   it was verified in, because the script sums every `verified` line naming that pass, and a unit
-   with a `dispatch` line and no `verified` line is re-run as below. **Append the unit's
+   nothing for it, append nothing, and go to the next unit. Its counts still reach your summary:
+   the script sums the `verified` line of every unit your pass carries, matched the same way on
+   window and unit id whatever pass it names, each unit once. A unit with a `dispatch` line and no
+   `verified` line is re-run as below. **Append the unit's
    `dispatch` line first, in one append, then dispatch the reader.** Never the other way round and
    never in a batch at the end: the line is what a resume reads to know the unit was started, and a
    run that batched them reported six units as nothing-landed when their work was on the record.
@@ -146,14 +147,16 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    at the review surface, never yours.
 5. **Sum the pass with the script; add no number of your own.** Run
    `python3 '<scripts path>/pass_summary.py' '<run folder>/ledger.md' <window> <pass id>
-   --trades '<run folder>/trades/<pass-id>.txt'` with the Bash tool, single quoted, taking the
-   scripts path off your dispatch. It reads your pass's own `dispatch` and `verified` lines and
-   prints the summary filled in: the units in reading order, each unit's counts, the totals, and
-   every note line placed on the summary line it belongs to. Write that output to
-   `<run folder>/reports/<pass-id>.md` unchanged, return it, and end. You add nothing to those
-   numbers and you re-add none of them: the script sums what you already verified, and a figure you
-   work out beside it is a second answer to a settled question. A refusal names one thing wrong with
-   a line you wrote: fix that line and run it again, never hand-assemble the summary instead.
+   --plan '<read plan path>' --trades '<run folder>/trades/<pass-id>.txt'` with the Bash tool,
+   single quoted, taking the scripts path and the read plan path off your dispatch. It reads the
+   `dispatch` and `verified` lines of every unit your pass's block in the read plan carries,
+   whatever pass they name, and prints the summary filled in: the units in reading order, each
+   unit's counts, the totals, and every note line placed on the summary line it belongs to. Write
+   that output to `<run folder>/reports/<pass-id>.md` unchanged, return it, and end. You add
+   nothing to those numbers and you re-add none of them: the script sums what you already verified,
+   and a figure you work out beside it is a second answer to a settled question. A refusal names one
+   thing wrong with a line you wrote: fix that line and run it again, never hand-assemble the
+   summary instead.
 
 ## The ledger lines
 
