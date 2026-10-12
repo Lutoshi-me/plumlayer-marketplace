@@ -2713,6 +2713,11 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     f"{where}: pass {plan_pass['id']} reads `units verified: "
                     f"{plan_pass['fields'].get('units verified')}` on a plan with no ledger"
                 )
+            if plan_pass["fields"].get("summed") != "no, no summary on file":
+                errors.append(
+                    f"{where}: pass {plan_pass['id']} reads `summed: "
+                    f"{plan_pass['fields'].get('summed')}` on a plan with no summary on file"
+                )
     for where, first_plan_passes in (("window 1", w1_passes), ("window 2", w2_passes)):
         for part in _plan_parts(first_plan_passes):
             first_ids = [unit_id for unit_id, _sheet, _page in part["units"]]
@@ -3539,6 +3544,178 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     f"naming it: exit {code}, {gone_err!r}"
                 )
 
+    # --- a summed pass whose units a fold changed, at the same count ---- #
+    #
+    # G1 of two and A1 of twelve are each read, summed and given the lead's `pass:` line. Cutting
+    # two A sheets folds G1 into A1: twelve units again, every one verified, and A1's last `pass:`
+    # line counts twelve, so only the units its summary names show that A1 needs a new summary. Its
+    # runner then rewrites the summary, and until the lead's line for it lands the plan still reads
+    # A1 as not summed; the new line closes it. Each summary here is the shipped pass summary
+    # script's own output, written where the runner writes it.
+    summed_dir = replan_root / "summed-then-folded"
+    summed_inventory = write_replan_inventory(
+        summed_dir,
+        [slice_row("G", f"G-0.0{i}", "notes", i) for i in (1, 2)]
+        + [slice_row("A", f"A-0.{i:02d}", "schedule", 2 + i) for i in range(1, 13)],
+    )
+    summed_label = "a summed pass whose units a fold changed"
+    summed_summary = _load_script_module(plugin_path.joinpath(*PASS_SUMMARY_SCRIPT), "pass_summary")
+
+    def summed_of(plan_passes: list[dict]) -> dict[str, str]:
+        return {plan_pass["id"]: plan_pass["fields"].get("summed", "") for plan_pass in plan_passes}
+
+    def sum_passes(folder: Path, window: int, pass_ids: list[str], suffix: str) -> list[str]:
+        """Each pass's summary written as its runner writes it, and the lead's line copied off it."""
+        reports = folder / "reports"
+        reports.mkdir(parents=True, exist_ok=True)
+        lead_lines: list[str] = []
+        for pass_id in pass_ids:
+            try:
+                run_code, summary, run_err = _run_script_main(summed_summary, [
+                    str(folder / "ledger.md"), str(window), pass_id,
+                    "--plan", str(folder / "read-plan.md"),
+                ])
+            except SystemExit as e:
+                run_code, summary, run_err = e.code, "", ""
+            totals = re.search(
+                r"created (\d+) .*updated (\d+), questions (\d+) replied (\d+)", summary
+            )
+            if run_code != 0 or totals is None:
+                errors.append(f"{summed_label}: the summary of {pass_id} refused: {run_err}")
+                continue
+            (reports / f"{pass_id}{suffix}.md").write_text(summary + "\n", encoding="utf-8")
+            units = sum(1 for line in summary.splitlines() if line.startswith("per unit: "))
+            lead_lines.append(
+                f"pass: {window} {pass_id} units {units} created {totals.group(1)} updated "
+                f"{totals.group(2)} questions {totals.group(3)} replied {totals.group(4)} "
+                f"candidates 0 lead-verified yes"
+            )
+        return lead_lines
+
+    code, _bounds, err, summed_first = run_replan(summed_dir, 1, summed_inventory, [])
+    if code != 0 or _grouping(summed_first) != [["G1"], ["A1"]]:
+        errors.append(
+            f"{summed_label}: the first plan reads as {_grouping(summed_first)}, expected "
+            f"[['G1'], ['A1']]: {err}"
+        )
+    else:
+        summed_ledger: list[str] = []
+        for plan_pass in summed_first:
+            # G's units raise a Question each, so a summary over other units carries other figures.
+            questions = 1 if plan_pass["id"] == "G1" else 0
+            for unit_id, sheet, _page in plan_pass["units"]:
+                summed_ledger += [
+                    f"dispatch 1 {plan_pass['id']} {unit_id} sheets {sheet} purpose the sheet",
+                    f"verified 1 {plan_pass['id']} {unit_id} created 5 items 5 updated 0 "
+                    f"questions {questions} replied 0 sent 5 landed 5 conflicts 0 result ok",
+                ]
+        write_ledger(summed_dir, summed_ledger)
+        summed_ledger += sum_passes(summed_dir, 1, ["G1", "A1"], "")
+        write_ledger(summed_dir, summed_ledger)
+        code, _bounds, err, summed_again = run_replan(summed_dir, 1, summed_inventory, [])
+        if code != 0 or summed_of(summed_again) != {"G1": "yes", "A1": "yes"}:
+            errors.append(
+                f"{summed_label}: two passes read, summed and given their lines read "
+                f"{summed_of(summed_again)}, expected yes for both: {err}"
+            )
+
+        first_ids = {sheet: unit_id for unit_id, sheet in planned_ids(summed_first)}
+        cut_ids = [first_ids["A-0.11"], first_ids["A-0.12"]]
+        g_ids = [first_ids["G-0.01"], first_ids["G-0.02"]]
+        cut_args = ["--exclude", "A-0.1[12]:the user cut two schedules"]
+        code, _bounds, err, summed_folded = run_replan(summed_dir, 1, summed_inventory, cut_args)
+        if code != 0 or _grouping(summed_folded) != [["G1", "A1"]]:
+            errors.append(
+                f"{summed_label}: the replan after two cuts reads as {_grouping(summed_folded)}, "
+                f"expected [['G1', 'A1']]: {err}"
+            )
+        else:
+            folded_fields = summed_folded[0]["fields"]
+            a1_line = [line for line in summed_ledger if line.startswith("pass: 1 A1 ")][-1].split()
+            # Every count agreeing with the summary before the fold is what the case exists for.
+            if not (
+                folded_fields.get("units") == folded_fields.get("units verified") == a1_line[4]
+            ):
+                errors.append(
+                    f"{summed_label}: the fold leaves A1 at units {folded_fields.get('units')}, "
+                    f"verified {folded_fields.get('units verified')} and a last pass line of "
+                    f"{a1_line[4]}, so the counts alone already tell it apart"
+                )
+            wanted = (
+                f"no, the summary on file reads other units: without {', '.join(g_ids)}; "
+                f"beyond {', '.join(cut_ids)}"
+            )
+            if summed_of(summed_folded).get("A1") != wanted:
+                errors.append(
+                    f"{summed_label}: A1 after the fold reads `summed: "
+                    f"{summed_of(summed_folded).get('A1')}`, expected `summed: {wanted}`"
+                )
+
+            resum_lines = sum_passes(summed_dir, 1, ["A1"], "")
+            code, _bounds, err, summed_resummed = run_replan(
+                summed_dir, 1, summed_inventory, cut_args
+            )
+            stale = "no, the last pass line does not carry the summary on file"
+            if summed_of(summed_resummed).get("A1") != stale:
+                errors.append(
+                    f"{summed_label}: a summary rewritten before the lead's line for it reads "
+                    f"`summed: {summed_of(summed_resummed).get('A1')}`, expected `summed: {stale}`"
+                )
+            summed_ledger += resum_lines
+            write_ledger(summed_dir, summed_ledger)
+            code, _bounds, err, summed_closed = run_replan(
+                summed_dir, 1, summed_inventory, cut_args
+            )
+            if summed_of(summed_closed).get("A1") != "yes":
+                errors.append(
+                    f"{summed_label}: the lead's line after the new summary leaves A1 reading "
+                    f"`summed: {summed_of(summed_closed).get('A1')}`, expected yes"
+                )
+
+    # A window 3 summary sits under the `-pass` name, since the review's own report holds the bare
+    # pass id.
+    review_dir = replan_root / "summed-window-3"
+    review_dir.mkdir(parents=True, exist_ok=True)
+    review_args = [
+        "plan", "--window", "3", "--packages", str(ordinary_packages),
+        "--out", str(review_dir / "read-plan.md"),
+    ]
+    code, _bounds, err = _run_script_main(module, review_args)
+    review_ids = (
+        [p["id"] for p in _plan_passes((review_dir / "read-plan.md").read_text(encoding="utf-8"))]
+        if code == 0 else []
+    )
+    if not review_ids:
+        errors.append(f"{summed_label}: the window 3 plan refused: {err}")
+    else:
+        review = review_ids[0]
+        review_ledger = [
+            f"dispatch 3 {review} {review} sheets none purpose review the package",
+            f"verified 3 {review} {review} created 4 items 4 updated 0 questions 0 replied 0 "
+            f"sent 4 landed 4 conflicts 0 result ok",
+        ]
+        write_ledger(review_dir, review_ledger)
+        (review_dir / "reports").mkdir(parents=True, exist_ok=True)
+        (review_dir / "reports" / f"{review}.md").write_text("the review's own report\n", encoding="utf-8")
+        write_ledger(review_dir, review_ledger + sum_passes(review_dir, 3, [review], "-pass"))
+        code, _bounds, err = _run_script_main(module, review_args)
+        review_summed = summed_of(
+            _plan_passes((review_dir / "read-plan.md").read_text(encoding="utf-8"))
+        )
+        wanted_review = {
+            review_id: "yes" if review_id == review else "no, no summary on file"
+            for review_id in review_ids
+        }
+        if code != 0 or review_summed != wanted_review:
+            errors.append(
+                f"{summed_label}: window 3 reads {review_summed}, expected {wanted_review}: {err}"
+            )
+
+    # The lead decides a pass is finished off this line, so the skill has to name it.
+    skill_path = plugin_path / "skills" / "scope-run" / "SKILL.md"
+    if "`summed: yes`" not in (skill_path.read_text(encoding="utf-8") if skill_path.is_file() else ""):
+        errors.append(f"{skill_path.name} does not name the `summed: yes` line the plan writes")
+
     # --- a planned id that changes pass is renumbered, not refused ----- #
     #
     # The whole window planned first, nothing dispatched, then the same slice: a slice unit whose
@@ -3909,7 +4086,10 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"bounds line and the totals naming each fold) with the fixture's groupings pinned by hand, "
         f"one sheet between two passes of twelve kept alone and named, a unit verified under its "
         f"part's own pass before a replan folds that part kept, marked verified and counted once "
-        f"in the folded pass's summary, a 209-sheet set's window 1 "
+        f"in the folded pass's summary, every pass marked summed only while its summary on file "
+        f"names exactly its units and its last pass line carries that summary (a fold at the same "
+        f"count, a summary rewritten before its pass line, and window 3's summary name among the "
+        f"cases), a 209-sheet set's window 1 "
         f"of {sum(vocabulary_209.values())} vocabulary sheets in {len(w1_209_parts)} discipline "
         f"parts read in {len(w1_209_grouping)} passes with "
         f"{sum(len(group) - 1 for group in w1_209_grouping)} folds and its window 2 of "
