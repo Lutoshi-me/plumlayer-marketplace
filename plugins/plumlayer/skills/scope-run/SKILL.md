@@ -429,11 +429,14 @@ plan script again first, exactly as its stage wrote it, with the same arguments:
 `plan/window-<n>.json`, taken off it with a local filter, and after `phase: window 2 paused` the run
 is the one without `--only` that stage 6 step 4 names. The script keeps every id the ledger and the
 plan file already hold and marks the units already verified. Then dispatch the first pass of the
-window that is not finished, found with a local filter on the pass headings, those two lines and
-the ledger's `pass:` lines. A pass is finished when its `units verified` equals its `units` and its
-last `pass:` line counts that many units. One below, or one whose last `pass:` line counts another
-number, as a pass does once a replan folds in a part that already carries its own line, is
-dispatched whether or not a `pass:` line for it is on the ledger. A missing run folder for a
+window that is not finished, found with a local filter on the pass headings and their `units:`,
+`units verified:` and `summed:` lines. A pass is finished when its block shows the same count on
+its `units:` and `units verified:` lines and shows `summed: yes`. The plan script writes that
+only while the pass's summary on file names exactly the unit ids the block now carries and the
+pass's last `pass:` line carries that summary's figures, so a replan that changes which units a
+pass carries, by a fold or a cut, leaves it unfinished even where the count comes out the same.
+Any other pass is dispatched, whether or not a `pass:` line for it is on the ledger: its runner
+skips the units already verified and writes a new summary. A missing run folder for a
 project that already carries scope items is named plainly and the run re-plans against the record;
 the live-list mandate (non-negotiable 2) keeps a re-read from creating what is already there.
 Resumption is how a run continues after a stop at a boundary, and crash and multi-day hygiene. It
@@ -647,11 +650,10 @@ nothing else:
    `plumlayer:scope-round-runner` with the runner dispatch below: pointers only, no pass brief and
    no read-plan text. Append that pass's dispatch line to the ledger before you
    dispatch it, never after. A finished pass, as the windows section above says, is not
-   dispatched. One whose block shows `units verified` below `units` is dispatched whole even when
-   it already carries a `pass:` line, as a pass does once a replan adds sheets to it, and so is one
-   whose last `pass:` line counts other than its block's `units`, as a pass does once a replan
-   folds in a part that carries its own line: its runner skips the units already verified, and its
-   new `pass:` line carries the whole pass. Passes that share no discipline
+   dispatched. Any other is dispatched whole even when it already carries a `pass:` line, as a
+   pass is once a replan adds sheets to it, folds a part into it or cuts a sheet it read: its
+   runner skips the units already verified, and its new `pass:` line carries the whole pass.
+   Passes that share no discipline
    start together, and a folded pass's heading names every discipline it carries; passes the plan
    marks as seeing the same work start one after another. What a pass leaves in the lead's context
    is its dispatch line and its summary, nothing else.
@@ -779,8 +781,11 @@ On the go-ahead:
    same verified totals the complete line carries, with `deferred <m>` added. The window picks up
    again at step 1, with a plan run without `--only`, and a resume after that line starts there.
    A slice whose bounds line reads `plus deferred 0` is the window's last slice: after its passes,
-   run the plan once more without `--only`. Every unit in it shows verified, and the window closes
-   from that plan with `phase: window 2 complete`.
+   run the plan once more without `--only`. Every unit in it shows verified, but that plan can fold
+   one slice's part into another's pass, so before you total or close anything, dispatch every pass
+   in it that is not finished, as the windows section says and step 2 runs them, each with its own
+   `pass:` line: their runners read nothing and write new summaries. Then the window closes from
+   that plan with `phase: window 2 complete`, its totals taken over the passes that plan carries.
 
 <!-- user-facing -->
 At this check-in, when nothing was deferred, say plainly that every sheet in the set has now been
