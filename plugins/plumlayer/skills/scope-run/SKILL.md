@@ -61,6 +61,14 @@ The three windows:
 A run can stop at the end of any window, inside window 2 at any pass boundary, and inside window 3
 at any package boundary, and resume later with nothing lost.
 
+A run is one pass over one drawing issue. A project goes through several sets before it is built,
+and each new set gets a full pass of its own over every sheet it prints, the way a new project
+does, read against the record the earlier passes built: readers update the rows the door names,
+reply to the open Questions, and cite the new set's pages. A pass underway is never interrupted by
+a later delivery; it finishes the issue it started on, and the later one waits for a pass of its
+own. Whether a delivery is a set or an addendum is the `issue` that `list_drawing_deliveries`
+gives it, never a question for the user.
+
 **This run is attended.** The user approves the read plan before any reading and reviews at every
 check-in. Never read past a check-in without the user's go-ahead. The package split is not a gate:
 this run reads the baseline packages orientation created, amends them as the scope list surfaces
@@ -280,16 +288,48 @@ read from there by the agent that needs it, when it needs it:
   read into at upload, the drawings by default; `kind: document` asks the project manual instead,
   `kind: all` every file at once, and every answer names the `kind` it covered;
 - the open Questions that name a trade or affect every trade: `list_questions` with `trade`;
-- the sheet inventory: `set_grid`, taken once to disk for the plan script and never held.
+- the sheet inventory: `set_grid` with the pass's `deliveryId`, taken once to disk for the plan
+  script and never held.
 
 No packet, no definitions files, no per-run copy of any of it: a reader that wants to know what a
 door type is asks the record, and a second reader on the same sheet finds the first one's reading
 there.
 
-The run folder, `~/.plumlayer/runs/<project-slug>/` (slug from the project name, lowercase, spaces
-to hyphens; fall back to the projectId), holds only the run's own bookkeeping. Never committed to
-any repo, never uploaded to the project except record files, never recorded as project entries:
+The project folder, `~/.plumlayer/runs/<project-slug>/` (slug from the project name, lowercase,
+spaces to hyphens; fall back to the projectId), holds `deliveries.json`, the delivery list the
+lead chooses a pass from, copied byte for byte from `list_drawing_deliveries` and read only by the
+plan script (Audience: machine), and one run folder per pass, named for the delivery the pass
+reads: `<project folder>/<deliveryId>/`. A pass begun before passes had folders of their own keeps its
+files in the project folder itself, and resumes there as it always has. A run folder holds only
+the run's own bookkeeping. Never committed to any repo, never uploaded to the project except
+record files, never recorded as project entries:
 
+- `run.json`: the drawing issue the pass reads and the tag its unit ids carry, written by the lead
+  at stage 3 step 1 and never changed once the plan is approved. The delivery's id, label, issue
+  and set come off the `delivery` the shape call names, `readFrom` is the id of every delivery its
+  `readFrom` lists, in that order, and `unitTagCheck` is the count of rows the record carried under
+  the tag before the plan:
+
+  ```json
+  {
+    "deliveryId": "deliv-7d1e4b20-5c3a-4f8e-9b61-0a2c8e5f3d14",
+    "label": "Permit set",
+    "issue": "set",
+    "setId": "deliv-7d1e4b20-5c3a-4f8e-9b61-0a2c8e5f3d14",
+    "readFrom": [
+      "deliv-7d1e4b20-5c3a-4f8e-9b61-0a2c8e5f3d14",
+      "deliv-c90a6f13-2e7b-4d58-8a04-6b3f1e9d7c22"
+    ],
+    "unitTag": "i2",
+    "unitTagCheck": { "subjectPrefix": "scopeItem:i2-", "count": 0 }
+  }
+  ```
+
+  The plan script reads it from the folder the plan sits in. Every unit id of the pass carries the
+  tag (`i2-A2-3`, `i2-RS1-1`, `i2-rev-092116-1`), so no pass records under, or counts, another
+  pass's subjects. It refuses a grid or an inventory whose delivery, or the deliveries its rows
+  came from, differ from this file, a tag another run folder of the project carries, and a tag the
+  record already carries rows under. Audience: machine.
 - `ledger.md`: the run ledger, appended as the run proceeds, one line per entry in the fixed shapes
   the `scope-round-runner` definition gives, plus the lead's own `pass:` and `phase:` lines.
   Nothing else goes in the ledger: no headings, no bullets, no paragraphs, no re-telling of a
@@ -445,9 +485,11 @@ only while the pass's summary on file names exactly the unit ids the block now c
 pass's last `pass:` line carries that summary's figures, so a replan that changes which units a
 pass carries, by a fold or a cut, leaves it unfinished even where the count comes out the same.
 Any other pass is dispatched, whether or not a `pass:` line for it is on the ledger: its runner
-skips the units already verified and writes a new summary. A missing run folder for a
-project that already carries scope items is named plainly and the run re-plans against the record;
-the live-list mandate (non-negotiable 2) keeps a re-read from creating what is already there.
+skips the units already verified and writes a new summary. A pass on a later drawing issue starts
+in a run folder of its own on a project that already carries scope items, and the live-list
+mandate (non-negotiable 2) keeps its readers from creating what is already there. A run folder
+lost from this seat leaves its rows on the record under its tag: the tag check moves past that
+tag, and the pass on that issue starts again in a new folder, against the live list.
 Resumption is how a run continues after a stop at a boundary, and crash and multi-day hygiene. It
 is never offered to the user as a way to manage cost, and the check-in never suggests it.
 
@@ -461,29 +503,62 @@ before going on.
 
 1. **Project exists and is the user's intent.** `list_projects`, confirm which project with the
    user, get its `projectId`. No project → hand off to `project-setup`.
-2. **Resume, if a run is already in flight.** With the `projectId` in hand and before anything else,
-   read the `phase:` and `pass:` lines of `ledger.md` from the run folder with a local filter on
-   the line prefix; never open the file whole. A `phase:` line means a run is in flight: resume at
-   the phase after the last one, and inside the window in flight run its plan script again and
-   dispatch the first pass that is not finished, as the windows section above says, so nothing
-   already verified is read again. A
-   project that already carries scope items but has no run folder is named plainly and re-planned
-   against the record; the live-list mandate (non-negotiable 2) is what keeps a re-read from
-   creating what is already there. Where the last `phase:` line is `window 1 complete` with no
-   `index built` after it, the index step (stage 5) runs first. A run is never resumed past a
-   boundary that did not run. Never offer resumption to the user as a way to manage anything, and
-   never raise it at a check-in.
-3. **Drawings are recognized, and the corpus exists.** `list_drawing_deliveries(projectId)`: no
-   deliveries → stop plainly, hand off to `drawing-upload`. Spot-check recognition actually
+2. **A Python interpreter on the seat.** Probe for one, `python3 --version` falling back
+   to `python --version`: which pass runs, and the read plan of every window, are written by a
+   script. Neither name present is a stop for this run: say so plainly and
+   hand over, since a plan written by hand has been the measured failure every time.
+3. **Resume the pass in flight, or choose the drawing issue to start one on.** With the
+   `projectId` in hand and before anything else, send one fresh agent to copy
+   `list_drawing_deliveries(projectId)` to `<project folder>/deliveries.json` byte for byte, by the
+   rules of the grid fetch in stage 3 step 2, returning one line. Then run the plan script's issue
+   mode the way stage 3 runs its other modes, and read its one line and nothing else:
+
+   ```sh
+   python3 '<plugin root>/scripts/plan_inventory.py' issue \
+     --runs '<project folder>' --deliveries '<project folder>/deliveries.json'
+   ```
+
+   Its first word is what you do.
+   - `resume <run folder>`: a pass is in flight, and it finishes before another starts, whatever
+     has landed since; a later delivery gets a pass of its own once this one closes out. Read the
+     `phase:` and `pass:` lines of that folder's `ledger.md` with a local filter on the line
+     prefix; never open the file whole. Resume at the phase after the last one, and inside the
+     window in flight run its plan script again and dispatch the first pass that is not finished,
+     as the windows section above says, so nothing already verified is read again. Where the last
+     `phase:` line is `window 1 complete` with no `index built` after it, the index step (stage 5)
+     runs first. Where the ledger carries no `phase:` line yet, the plan was never approved: take
+     stage 3 again from step 1 in that folder. Once the plan is approved, never fetch the grid of a
+     pass you resume: its `inventory.json` is its sheet list, and the plan script refuses a grid
+     or an inventory whose deliveries differ from its `run.json`. A pass begun before passes had
+     folders of their own resumes in the project folder itself, exactly as it always has. A run is
+     never resumed past a boundary that did not run. Never offer resumption to the user as a way to
+     manage anything, and never raise it at a check-in.
+   - `wait <deliveryId>`: that delivery's sheet numbers are still being read, and it may yet be a
+     new set. Wait, then copy the delivery list again and run the issue mode again, waiting between
+     tries rather than trying back to back.
+   - `start <deliveryId>`: the latest set, which no pass has read. The line names its run folder
+     and its unit tag. Make the folder, and check the tag on the record:
+     `search(projectId, subjectPrefix: "scopeItem:i<n>-", limit: 1)`, reading `count`. A tag is
+     free where no subject starts `scopeItem:<unit tag>-`; a count above zero is rows from a pass
+     whose run folder is not on this seat, so take the next number and count again until one reads
+     zero. That count goes into `run.json` at stage 3 step 1. The pass is a full pass over every
+     sheet the set and its addenda print. Where the line ends by saying the earlier pass in the
+     project folder names no drawing issue, a pass from before passes had folders of their own is
+     closed out there, and nothing records which set it read: start all the same, never guess
+     which set that was, and say so at the read plan's check-in.
+   - `none`: there is nothing to start, and the run stops here.
+<!-- user-facing -->
+   Say what the line says, plainly: you already ran a scope pass on the latest set, naming it;
+     each addendum the line names landed after that pass, and no pass has read it yet. Where no
+     delivery reads as a set yet, say the drawings are not in, and hand off to `drawing-upload`.
+<!-- /user-facing -->
+4. **Drawings are recognized, and their text is read.** Spot-check recognition actually
    recorded: `search(projectId, predicate: "appearsOnPage", limit: 1)`: zero rows → hand off to
-   `drawing-upload`. On a set that just landed, check `set_text_status(projectId)` first: a page
-   nobody has read yet cannot be found by `search_set_text`, so a fresh delivery still being read
-   would otherwise look like a missing corpus. Once the status shows the set read, confirm the
-   corpus itself with `search_set_text(projectId, query: "<the project's first sheet number off
-   set_grid's limit: 0 summary>", limit: 1)`: a corpus that answers nothing for a sheet number the
-   set carries has not been built, and the run stops and hands the delivery back to
-   `drawing-upload` for its text read rather than reading page by page without it.
-4. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)`: spec
+   `drawing-upload`. On a set that just landed, check `set_text_status(projectId)` and wait until
+   it shows the set read: a page nobody has read yet cannot be found by `search_set_text`, so a
+   fresh delivery still being read would otherwise look like a missing corpus. The corpus itself
+   is confirmed once the inventory is on disk, at stage 3 step 3.
+5. **Spec book, if it exists.** `search(projectId, predicate: "inDivision", limit: 1)`: spec
    sections present means the spec-TOC leg has run. Absent: ask the user whether a project manual /
    spec book exists. If one does, run it through `drawing-upload`'s spec-book leg first (upload +
    `extract_spec_toc`): the package split anchors on the spec table of contents and is
@@ -491,10 +566,6 @@ before going on.
    that in the ledger and the close-out report: orientation created no baseline packages for this
    project (no spec sections, no anchor), and stage 8 below derives the whole split from the
    finished scope list instead.
-5. **A Python interpreter on the seat.** Probe for one, `python3 --version` falling back
-   to `python --version`: the read plan of every window is written by a script. Neither name
-   present is a stop for this run: say so plainly and
-   hand over, since a plan written by hand has been the measured failure every time.
 6. **The user is present.**
 <!-- user-facing -->
 Tell them what the run will do: you read the set in three windows, the schedules and legends
@@ -559,11 +630,23 @@ You never read a sheet row. The grid is fetched to disk by a fresh agent, a scri
 counts and into the plan's unit lines, and what you read is the counts and the script's bounds
 lines.
 
-1. **Take the set's shape, and nothing else.** `set_grid(projectId, limit: 0)`. That is a
-   summary-only call: metadata and `disciplineCounts`, zero rows. Read `count` and the discipline
-   distribution off it. This is the only `set_grid` call you make in this run, at any set size.
-   Never call it for rows, never page it, and never fall back to sampled `search` reads for the
-   inventory: whatever you pull that way stays in your context for the rest of the run.
+1. **Take the set's shape, and nothing else.** `set_grid(projectId, deliveryId, limit: 0)`, with
+   the delivery precondition 3 named. That is a summary-only call: metadata, `disciplineCounts`,
+   the `delivery` you asked for and `readFrom`, the deliveries its rows come from, and zero rows.
+   Read `count` and the discipline distribution off it. These are the only `set_grid` calls the
+   run makes, at any set size: this one, taken again only where step 3 sends you back to it
+   before the plan is approved, and the fetch agent's paged calls in step 2, sent again where the
+   inventory refuses the grid. Never call it for rows yourself, never page it, and never fall back
+   to sampled `search` reads for the inventory: whatever you pull that way stays in your context
+   for the rest of the run.
+
+   Then write `<run folder>/run.json` in the shape the run folder section shows, off that answer
+   and the tag check: each id copied character for character. The inventory refuses a grid whose
+   deliveries differ from this file, so a slip costs one more fetch and never a wrong plan. Write
+   it again only before the plan is approved: where the inventory refuses the grid because a
+   delivery landed since, take this call again, write `run.json` again from it, and fetch again.
+   Once `phase: plan approved` is on the ledger it never changes, and the pass reads the sheet list
+   it started on.
 2. **Send one agent for the grid.** Dispatch a fresh general agent, whose whole job is this and
    which then ends, with the fetch below. It pages the grid, puts it on disk under
    `<run folder>/grid/`, and returns one line. Read that line and nothing else.
@@ -573,8 +656,9 @@ lines.
    Fetch the sheet grid for project <projectId> to disk. This is your whole job. Do nothing else,
    and end when it is done.
 
-   1. Call set_grid(projectId: "<projectId>", limit: 500, offset: 0), then again at offset 500,
-      1000, and so on, until the rows you have seen cover the response's own `count`.
+   1. Call set_grid(projectId: "<projectId>", deliveryId: "<deliveryId>", limit: 500, offset: 0),
+      then again at offset 500, 1000, and so on, until the rows you have seen cover the response's
+      own `count`.
    2. Where a call's result came back as a path to a file on disk, copy that file into
       `<run folder>/grid/` with the Bash tool, named `page-000.json`, `page-001.json`, and so on
       in call order. Copy it. Never retype it: a model retyping a grounded read is an unrecorded
@@ -597,9 +681,16 @@ lines.
    ```
 
    It writes `inventory.md` and `inventory.json` into the run folder. A refusal here means the grid
-   on disk is not the whole set: send the fetch again rather than planning off a partial grid. Read
-   only its bounds line, then read from `inventory.md` only the count tables and the sheet number
-   digest at its tail. Never the sheet lines above them.
+   on disk is not the whole set, or not this pass's sheet list: send the fetch again rather than
+   planning off a partial grid, and where the refusal names a delivery `run.json` does not, take
+   step 1 again first. Read only its bounds line, which names the drawing issue and the first
+   sheet, then read from `inventory.md` only the count tables and the sheet number digest at its
+   tail. Never the sheet lines above them.
+
+   Then confirm the corpus: `search_set_text(projectId, query: "<the first sheet the inventory's
+   bounds line names>", limit: 1)`. A corpus that answers nothing for a sheet number the set
+   carries has not been built, and the run stops and hands the delivery back to `drawing-upload`
+   for its text read rather than reading page by page without it.
 4. **Write the window 1 plan.** Run the plan mode of the same script for window 1. It selects the
    vocabulary sheets by sheet type (schedule, legend, notes, cover and index), groups them into
    passes by discipline, splits a pass over twelve units at the twelve, folds a pass under three
@@ -634,7 +725,8 @@ lines.
    dispatch lines and the unit ids it wrote last time, keeps every id already dispatched on the
    same sheet, numbers what is new after the highest id its discipline's part already carries,
    whichever pass the fold puts that part in, and never hands an id out twice, so the record's own
-   `scopeItem:<unit id>-` prefixes stay where they are.
+   `scopeItem:<unit id>-` prefixes stay where they are. Every id carries the unit tag off
+   `run.json`, and every window's bounds line names it.
 
 <!-- user-facing -->
 Before any reading runs, tell the user, in a few plain sentences, not a table:
@@ -645,6 +737,9 @@ Before any reading runs, tell the user, in a few plain sentences, not a table:
 - What is deliberately left out, by sheet family or number. Say it plainly: anything here will not
   be scoped.
 - When the first check-in will be, roughly.
+- Only where precondition 3's line said an earlier pass names no drawing issue: you scoped this
+  project before, the earlier run did not record which set it read, and this pass may read a set
+  that was already scoped. Name no set for it.
 - The ask: what is worth catching is a family left out that carries scope, or a schedule family
   the plan did not recognize as one. Then: go, or cut, add, or reorder.
 
@@ -906,7 +1001,7 @@ Show what you did in plain words, mirroring orientation's wording: name the amen
    No approval is collected: the amendment governs as applied and stays editable; a correction is
    a tool call. Once the amendments are applied, append `phase: packages amended` to the ledger.
 2. **Empty-baseline case.** When `solicitation_list_packages` returned no packages because the
-   project has no spec sections (precondition 4), orientation could draft no split and readers
+   project has no spec sections (precondition 5), orientation could draft no split and readers
    named trades off the catalog alone. Every trade an item landed on already has a package under
    its catalog name, made as the item was written, so this stage shapes that split from the
    finished scope list instead of amending a baseline: same bundling logic as orientation, same

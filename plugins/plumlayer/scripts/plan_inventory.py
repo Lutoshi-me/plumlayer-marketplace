@@ -10,7 +10,11 @@ The script copies field values, counts them, and refuses. It never infers a disc
 guesses a page number, and never reads meaning off a title. Which sheets a window reads is decided
 by the inventory alone; which packages a run reviews is decided by the packages file alone.
 
-Two subcommands:
+Three subcommands:
+
+  issue      reads the project's run folders and its delivery list, and names in one line what
+             the lead does next: resume the pass in flight, wait on a delivery still being read,
+             start a pass on the latest set, or nothing (below).
 
   inventory  reads the grid files, refuses unless the rows total the count the lead read for
              itself, and writes `inventory.md` (one line per sheet, then the count tables and the
@@ -19,6 +23,37 @@ Two subcommands:
   plan       reads the window's inputs and writes `read-plan.md` whole: the window's passes, the
              unit lines with their page references, what each pass reads for, what is deliberately
              left out, what a window 2 slice deferred, and the totals.
+
+One pass per drawing issue:
+
+  A project goes through several drawing issues, and each gets a pass of its own in a run folder
+  of its own, `<project folder>/<deliveryId>/`. The lead writes `run.json` there before the plan:
+  the delivery the pass reads, `readFrom`, the deliveries its sheet list comes from as `set_grid`
+  named them, and `unitTag`, `i<n>`, with the count of `scopeItem:i<n>-` it took on the record.
+  Every pass id and unit id the plan writes in that folder carries the tag (`i2-A1-3`,
+  `i2-RS1-1`, `i2-rev-092116-1`), so no pass records under, or counts, another pass's subjects. A
+  tag another run folder of the project carries, or one the record already carries rows under, is
+  refused.
+
+  The inventory holds a grid fetched by `deliveryId` to `run.json`: every page must name its
+  delivery and read from exactly its deliveries, and every row must come from one of them, so a
+  grid of another issue, and one fetched again after a delivery landed, are refused rather than
+  planned. A pass reads the sheet list it started on. `inventory.json` then carries
+  `drawingIssue`, and each window refuses an inventory whose issue differs from `run.json`.
+
+  A folder with no `run.json` is a pass begun before passes had folders of their own: it plans
+  as it always has, untagged, and a grid or an inventory naming a drawing issue is refused there,
+  as is any window in a folder holding such an inventory or a ledger of tagged unit ids, since
+  that folder is a pass that lost its `run.json`. A window 1 file names the tag it was planned
+  under, and window 2 refuses a tag that differs.
+
+  The issue mode resumes before anything else, before it reads the delivery list at all: a run
+  folder whose ledger carries no `phase: closed out` line, or the project folder's own ledger in
+  the old layout from its first `phase:` line until that line, and two of them in flight is a
+  refusal. Then a delivery still being read is waited on,
+  since it may yet be a new set. Then the latest set is started where no run folder names it,
+  with the next tag past every tag a run folder carries. An earlier set with no pass is never
+  started over a later one, and an addendum after its set's pass is named rather than started.
 
 The three windows, and what each selects:
 
@@ -166,6 +201,8 @@ Passes under three units, in windows 1 and 2:
 
 Usage:
 
+    python plan_inventory.py issue --runs <project folder> --deliveries <path>
+
     python plan_inventory.py inventory --grid <dir or file> --expect-count 209 --out-dir <dir>
 
     python plan_inventory.py plan --window 1 --inventory <path>
@@ -212,7 +249,17 @@ Exit codes:
      `<pass>-<number>`, one sheet number bound to two unit ids, one unit id bound to two sheet
      sets, a bound sheet number matching more than one inventory row, a bound unit whose sheet set
      this plan does not read as one unit of its own, and a unit the ledger binds whose sheet now
-     plans under a different pass id.
+     plans under a different pass id. The rest are about a drawing issue: a `run.json` that is
+     malformed, names a misshapen or taken tag, has no count of it from the record, or names a
+     drawing issue another run folder names; a grid page naming another delivery, other
+     deliveries, or none, or a row from a delivery the pass does not read from; a grid or an
+     inventory naming a drawing issue in a folder with no `run.json`, and any window in a folder
+     with no `run.json` that holds such an inventory or a ledger of tagged unit ids; an inventory
+     whose issue differs from `run.json`; a window 1 file planned under another tag; a delivery
+     list with no array, a delivery that is neither a set nor an addendum, or one whose
+     `stillReading` is not true or false; two passes in flight; and a run folder holding a ledger
+     and no `run.json`, or a `run.json` the issue mode cannot read. Another pass's broken
+     `run.json` never stops a plan.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A file that does not parse whole is a refusal,
@@ -280,8 +327,9 @@ REPEATED_PASS_ID = "RS1"
 REPEATED_MIN_ROWS = 5
 REPEATED_READS_FOR = "the repeated lines"
 REPEATED_MARK = ", repeated lines read"
-# A repeated lines unit id's pass component: the pass, or one lettered part of it.
-_REPEATED_PART_RE = re.compile(r"^RS1[a-z]?$")
+# A repeated lines unit id's pass component: the pass, or one lettered part of it, under a unit tag
+# where the pass carries one.
+_REPEATED_PART_RE = re.compile(r"^(?:i[1-9][0-9]*-)?RS1[a-z]?$")
 # The key a repeated lines unit binds under. A sheet's unit key always joins three fields with `@`
 # and `#`, so this one never meets a sheet's in the one binding it takes part in, which is its own.
 _REPEATED_KEY_PREFIX = "repeated lines@"
@@ -291,6 +339,18 @@ WINDOW_1_FILE = ("plan", "window-1.json")
 # The run ledger sits beside the plan file, and its `dispatch` lines are the only append-only
 # record of which unit id was actually handed out.
 LEDGER_FILE = "ledger.md"
+
+# A pass on one drawing issue keeps this file in its run folder, written by the lead before the
+# plan: the delivery the pass reads, the deliveries its sheet list comes from, and its unit tag.
+RUN_FILE = "run.json"
+
+# A unit tag is a lowercase `i` and a number from 1. A discipline pass id is upper case, so no
+# untagged unit id starts with a tag, and the record's subject prefix match is case-sensitive.
+_UNIT_TAG_RE = re.compile(r"^i[1-9][0-9]*$")
+
+# The line a closed pass's ledger ends on, and the prefix of every line that marks a phase.
+CLOSED_OUT_LINE = "phase: closed out"
+PHASE_PREFIX = "phase:"
 
 # Where a pass runner writes its summary, beside the ledger. A window 3 pass id is also its unit
 # id, so its summary carries a suffix the review's own report does not.
@@ -366,6 +426,95 @@ def _pack(code: str) -> str:
     return "".join(code.split())
 
 
+def _tagged(pass_id: str, tag: str | None) -> str:
+    """A pass id under the pass's unit tag, or as it is where the run folder carries none."""
+    return f"{tag}-{pass_id}" if tag else pass_id
+
+
+def _read_run(folder: Path) -> dict | None:
+    """
+    The run file in a run folder, or None where the folder holds none, as a run in the old layout
+    does. The lead writes it before the plan, so everything here is checked rather than trusted:
+    the delivery and the deliveries the sheet list comes from, which the inventory and the plan are
+    held to, and the unit tag every unit id of the pass carries.
+
+    A tag is refused where the lead's own count of `scopeItem:<tag>-` on the record is missing or
+    above zero, and where another run folder of the project already carries it: either way a unit
+    of this pass would record under, or be counted with, another pass's subjects.
+    """
+    path = folder / RUN_FILE
+    if not path.is_file():
+        return None
+    data = _read_json(path, "the run file")
+    if not isinstance(data, dict):
+        raise PlanError(f"{path} is not a run file object")
+    delivery_id = data.get("deliveryId")
+    if not isinstance(delivery_id, str) or not delivery_id:
+        raise PlanError(f"{path} names no `deliveryId`, the drawing issue the pass reads")
+    if data.get("issue") not in ("set", "addendum"):
+        raise PlanError(f"{path}: `issue` is {data.get('issue')!r}, not set or addendum as the delivery list reads it")
+    read_from = data.get("readFrom")
+    if (
+        not isinstance(read_from, list)
+        or not all(isinstance(d, str) and d for d in read_from)
+        or len(set(read_from)) != len(read_from)
+        or delivery_id not in read_from
+    ):
+        raise PlanError(
+            f"{path}: `readFrom` is not a list of distinct delivery ids naming {delivery_id} itself"
+        )
+    tag = data.get("unitTag")
+    if not isinstance(tag, str) or not _UNIT_TAG_RE.match(tag):
+        raise PlanError(f"{path}: unit tag {tag!r} is not a lowercase i and a number from 1")
+    check = data.get("unitTagCheck")
+    prefix = f"scopeItem:{tag}-"
+    if (
+        not isinstance(check, dict)
+        or check.get("subjectPrefix") != prefix
+        # A JSON true or false reads as a number in Python, and neither is a count.
+        or isinstance(check.get("count"), bool)
+        or not isinstance(check.get("count"), int)
+    ):
+        raise PlanError(
+            f"{path}: unit tag {tag} carries no count of `{prefix}` taken on the record before the plan"
+        )
+    if check["count"] != 0:
+        raise PlanError(
+            f"{path}: the record already carries {check['count']} rows under `{prefix}`, so unit tag "
+            f"{tag} is taken; take the next number and count it again"
+        )
+    here = folder.resolve()
+    for sibling in sorted(folder.parent.iterdir()):
+        other = sibling / RUN_FILE
+        if sibling.resolve() == here or not other.is_file():
+            continue
+        try:
+            other_data = _read_json(other, "another pass's run file")
+        except PlanError:
+            # Another pass's broken run file is that pass's to fix, and the issue mode names it; it
+            # never stops this pass, whose tag the record count already showed free.
+            continue
+        if not isinstance(other_data, dict):
+            continue
+        if other_data.get("unitTag") == tag:
+            raise PlanError(
+                f"unit tag {tag} is also the tag of the pass in {sibling}; each pass on the project "
+                f"takes its own"
+            )
+        if other_data.get("deliveryId") == delivery_id:
+            raise PlanError(
+                f"drawing issue {delivery_id} is also the issue of the pass in {sibling}; a drawing "
+                f"issue gets one pass"
+            )
+    return {
+        "deliveryId": delivery_id,
+        "label": _text(data.get("label")) or delivery_id,
+        "issue": data["issue"],
+        "readFrom": read_from,
+        "unitTag": tag,
+    }
+
+
 def _require_keys(obj, allowed: set[str], where: str) -> None:
     if not isinstance(obj, dict):
         raise PlanError(f"{where} is not an object")
@@ -389,12 +538,17 @@ def _grid_files(grid: Path) -> list[Path]:
     raise PlanError(f"no grid file or directory at {grid}")
 
 
-def _read_grid_pages(files: list[Path]) -> list[tuple[Path, list, int | None, dict | None]]:
-    pages: list[tuple[Path, list, int | None, dict | None]] = []
+def _read_grid_pages(files: list[Path]) -> list[tuple[Path, list, int | None, dict | None, dict | None]]:
+    """
+    Each grid file as (path, rows, offset, discipline counts, drawing issue). The drawing issue is
+    what a `set_grid` call by `deliveryId` names on `delivery` and `readFrom`, and None on a call
+    for the current set, which names neither.
+    """
+    pages: list[tuple[Path, list, int | None, dict | None, dict | None]] = []
     for path in files:
         obj = _read_json(path, "a grid file")
         if isinstance(obj, list):
-            pages.append((path, obj, None, None))
+            pages.append((path, obj, None, None, None))
             continue
         if not isinstance(obj, dict):
             raise PlanError(f"{path} is neither a grid response object nor an array of rows")
@@ -403,8 +557,73 @@ def _read_grid_pages(files: list[Path]) -> list[tuple[Path, list, int | None, di
             raise PlanError(f"{path} is a grid response with no `sheets` array")
         offset = obj.get("offset") if isinstance(obj.get("offset"), int) else None
         reported = obj.get("disciplineCounts")
-        pages.append((path, rows, offset, reported if isinstance(reported, dict) else None))
+        issue = None
+        if obj.get("delivery") is not None:
+            delivery = obj["delivery"]
+            read_from = obj.get("readFrom")
+            if (
+                not isinstance(delivery, dict)
+                or not isinstance(delivery.get("id"), str)
+                or not isinstance(read_from, list)
+                or not all(isinstance(d, dict) and isinstance(d.get("id"), str) for d in read_from)
+            ):
+                raise PlanError(
+                    f"{path} names a drawing issue with no delivery id, or no `readFrom` list of "
+                    f"the deliveries its rows came from"
+                )
+            issue = {"deliveryId": delivery["id"], "readFrom": [d["id"] for d in read_from]}
+        pages.append((path, rows, offset, reported if isinstance(reported, dict) else None, issue))
     return pages
+
+
+def _grid_issue(pages: list, run: dict | None, out_dir: Path) -> dict | None:
+    """
+    The drawing issue the grid on disk was fetched for, held to the run file. A pass reads the
+    sheet list it started on, so a grid fetched for another issue, one fetched again after a
+    delivery landed since the run file was written, and one carrying a row from a delivery the
+    pass does not read from are each refused rather than planned. A grid fetched for one issue
+    into a folder with no run file is refused too: nothing would then tag its unit ids.
+    """
+    if run is None:
+        named = next((page for page in pages if page[4] is not None), None)
+        if named is not None:
+            raise PlanError(
+                f"{named[0]} was fetched for drawing issue {named[4]['deliveryId']}, and {out_dir} "
+                f"holds no {RUN_FILE} naming the pass on it"
+            )
+        return None
+    wanted = run["readFrom"]
+    for path, rows, _offset, _reported, issue in pages:
+        if issue is None:
+            raise PlanError(
+                f"{path} names no drawing issue: the pass on {run['deliveryId']} fetches its grid "
+                f"with set_grid's deliveryId"
+            )
+        if issue["deliveryId"] != run["deliveryId"]:
+            raise PlanError(
+                f"{path} was fetched for drawing issue {issue['deliveryId']}, and {RUN_FILE} names "
+                f"{run['deliveryId']}"
+            )
+        extra = [d for d in issue["readFrom"] if d not in wanted]
+        missing = [d for d in wanted if d not in issue["readFrom"]]
+        if extra or missing:
+            differences = [f"reads from {', '.join(extra)} as well"] if extra else []
+            differences += [f"does not read from {', '.join(missing)}"] if missing else []
+            raise PlanError(
+                f"{path} {' and '.join(differences)}, against the deliveries {RUN_FILE} names: the "
+                f"deliveries changed since {RUN_FILE} was written, and a pass reads the sheet list "
+                f"it started on"
+            )
+        for row in rows:
+            source = row.get("deliveryId") if isinstance(row, dict) else None
+            if source not in wanted:
+                sheet = _text(row.get("sheetNumber")) if isinstance(row, dict) else ""
+                came = f"comes from delivery {source}" if source else "names no delivery"
+                raise PlanError(
+                    f"{path}: sheet {sheet or '(no sheet number)'} {came}, which the pass on "
+                    f"{run['deliveryId']} does not read from"
+                )
+    return {"deliveryId": run["deliveryId"], "readFrom": list(wanted)}
 
 
 def _order_pages(pages: list) -> tuple[list, str]:
@@ -456,7 +675,7 @@ def _normalize_rows(pages: list) -> tuple[list[dict], list[str]]:
     seen: set[tuple[str, str, str]] = set()
     rows: list[dict] = []
     duplicates: list[str] = []
-    for path, page_rows, _offset, _reported in pages:
+    for path, page_rows, _offset, _reported, _issue in pages:
         for raw in page_rows:
             if not isinstance(raw, dict):
                 raise PlanError(f"{path} carries a row that is not an object")
@@ -643,6 +862,7 @@ def _inventory_markdown(
 def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
     files = _grid_files(grid)
     pages, order_rule = _order_pages(_read_grid_pages(files))
+    issue = _grid_issue(pages, _read_run(out_dir), out_dir)
     rows, duplicates = _normalize_rows(pages)
 
     if len(rows) != expect_count:
@@ -656,7 +876,7 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
     unplaceable = [r for r in rows if not _placeable(r)]
 
     reported: dict[str, list[int]] = {}
-    for _path, _rows, _offset, page_reported in pages:
+    for _path, _rows, _offset, page_reported, _issue in pages:
         if not page_reported:
             continue
         for key, value in page_reported.items():
@@ -706,6 +926,10 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
             {field: r[field] for field in ROW_FIELDS} for r in unplaceable
         ],
     }
+    if issue is not None:
+        # Only a grid fetched for one drawing issue carries this, so an inventory of the current
+        # set is written as it always was.
+        payload["drawingIssue"] = issue
 
     md_bytes = md.encode("utf-8")
     json_bytes = (json.dumps(payload, indent=2) + "\n").encode("utf-8")
@@ -714,11 +938,19 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
 
     cap_text = f"cap {PREFIX_GROUP_CAP} reached" if capped else f"cap {PREFIX_GROUP_CAP} not reached"
     duplicate_text = f"{len(duplicates)} duplicates" + (f" ({_named(duplicates)})" if duplicates else "")
+    issue_text = (
+        f"drawing issue {issue['deliveryId']} read from {len(issue['readFrom'])} "
+        f"deliver{'y' if len(issue['readFrom']) == 1 else 'ies'}, "
+        if issue is not None
+        else ""
+    )
+    # The lead reads no sheet line, so the sheet number it probes the set's text with is named here.
+    first_text = f"first sheet {placeable[0]['sheetNumber']}, " if placeable else ""
     return (
-        f"wrote {md_path} and {json_path}: {len(rows):,} rows from {len(files)} grid "
+        f"wrote {md_path} and {json_path}: {issue_text}{len(rows):,} rows from {len(files)} grid "
         f"file{'' if len(files) == 1 else 's'}, {duplicate_text}, {len(unplaceable)} rows the grid "
         f"could not place, {len(counts)} disciplines, {len(digest)} sheet number stems "
-        f"({cap_text}), {untyped} untyped, {len(md_bytes) + len(json_bytes):,} bytes written"
+        f"({cap_text}), {untyped} untyped, {first_text}{len(md_bytes) + len(json_bytes):,} bytes written"
     )
 
 
@@ -820,7 +1052,9 @@ def _read_repeated_sets(path: Path, data: dict) -> list[dict]:
     return sets
 
 
-def _read_window_1(path: Path, rows: list[dict]) -> tuple[set[str], int, int, list[dict]]:
+def _read_window_1(
+    path: Path, rows: list[dict], tag: str | None = None
+) -> tuple[set[str], int, int, list[dict]]:
     """
     The file window 1 wrote: the unit keys it selected and the unit keys its `--exclude` patterns
     left out. Window 2 subtracts both. An excluded sheet was left out by the lead with a reason
@@ -829,11 +1063,18 @@ def _read_window_1(path: Path, rows: list[dict]) -> tuple[set[str], int, int, li
 
     A key the inventory does not hold is a refusal rather than a key skipped: a window 1 file from
     some other run would silently leave a sheet of this one unread. So is a repeated lines unit on
-    a file the inventory does not hold, which would mark nothing it means to.
+    a file the inventory does not hold, which would mark nothing it means to. So is a file planned
+    under another unit tag than the run file names now, whose window 2 ids would sit under a tag
+    the vocabulary's do not.
     """
     data = _read_json(path, "the window 1 file")
     if not isinstance(data, dict) or data.get("window") != 1:
         raise PlanError(f"{path} is not a window 1 file written by this script")
+    if data.get("unitTag") != tag:
+        raise PlanError(
+            f"{path} was planned under unit tag {data.get('unitTag') or 'none'}, and this plan is "
+            f"under {tag or 'none'}; a pass keeps one tag from window 1 on"
+        )
     lists: dict[str, list[str]] = {}
     for field in ("selected", "excluded"):
         value = data.get(field)
@@ -1489,10 +1730,13 @@ def _by_sheet_type(rows: list[dict]) -> list[dict]:
     )
 
 
-def _pass_id_for_discipline(discipline: str, window: int) -> str:
-    """A discipline pass is named for its discipline and its window, so `A1` reads as A, window 1."""
+def _pass_id_for_discipline(discipline: str, window: int, tag: str | None = None) -> str:
+    """
+    A discipline pass is named for its discipline and its window, so `A1` reads as A, window 1, and
+    `i2-A1` reads as the same pass of the drawing issue whose pass carries unit tag i2.
+    """
     stem = "NONE" if discipline == NO_DISCIPLINE else discipline
-    return f"{stem}{window}"
+    return _tagged(f"{stem}{window}", tag)
 
 
 # --------------------------------------------------------------------------- #
@@ -1511,7 +1755,7 @@ def _split_pattern_argument(raw: str, flag: str) -> tuple[str, str]:
     return pattern.strip(), reason.strip()
 
 
-def _window_1(rows: list[dict], includes, excludes) -> dict:
+def _window_1(rows: list[dict], includes, excludes, tag: str | None = None) -> dict:
     selected: dict[str, dict] = {
         r["unitKey"]: r for r in rows if _text(r.get("sheetType")) in VOCABULARY_SHEET_TYPES
     }
@@ -1540,15 +1784,15 @@ def _window_1(rows: list[dict], includes, excludes) -> dict:
 
     passes: list[dict] = []
     for discipline, group in _by_discipline(chosen):
-        if _pass_id_for_discipline(discipline, 1) == REPEATED_PASS_ID:
+        if _pass_id_for_discipline(discipline, 1, tag) == _tagged(REPEATED_PASS_ID, tag):
             raise PlanError(
                 f"discipline {discipline} would read its window 1 sheets as pass "
-                f"{REPEATED_PASS_ID}, which is the repeated lines pass, so its unit ids would be "
-                f"theirs; nothing written"
+                f"{_tagged(REPEATED_PASS_ID, tag)}, which is the repeated lines pass, so its unit "
+                f"ids would be theirs; nothing written"
             )
         passes.append(
             {
-                "id": _pass_id_for_discipline(discipline, 1),
+                "id": _pass_id_for_discipline(discipline, 1, tag),
                 "discipline": discipline,
                 "name": f"Vocabulary, discipline {discipline}",
                 "readsFor": "the vocabulary",
@@ -1564,6 +1808,7 @@ def _window_1(rows: list[dict], includes, excludes) -> dict:
         "repeatedPasses": _repeated_passes(
             [r for r in rows if r["unitKey"] not in excluded_keys],
             [r for r in rows if r["unitKey"] in excluded_keys],
+            tag,
         ),
         "includes": include_blocks,
         "excludes": exclude_blocks,
@@ -1575,7 +1820,9 @@ def _window_1(rows: list[dict], includes, excludes) -> dict:
     }
 
 
-def _repeated_passes(read_rows: list[dict], left_out_rows: list[dict]) -> list[dict]:
+def _repeated_passes(
+    read_rows: list[dict], left_out_rows: list[dict], tag: str | None = None
+) -> list[dict]:
     """
     The repeated lines pass: one unit per file holding REPEATED_MIN_ROWS or more of the rows the
     run reads, in the order each file first appears in the inventory, at the page of that first
@@ -1611,7 +1858,7 @@ def _repeated_passes(read_rows: list[dict], left_out_rows: list[dict]) -> list[d
         return []
     return [
         {
-            "id": REPEATED_PASS_ID,
+            "id": _tagged(REPEATED_PASS_ID, tag),
             "discipline": None,
             "name": "Repeated lines, read once",
             "readsFor": REPEATED_READS_FOR,
@@ -1626,7 +1873,8 @@ def _repeated_passes(read_rows: list[dict], left_out_rows: list[dict]) -> list[d
 # --------------------------------------------------------------------------- #
 
 def _window_2(
-    rows: list[dict], window_1_keys: set[str], selected: int, excluded: int, only
+    rows: list[dict], window_1_keys: set[str], selected: int, excluded: int, only,
+    tag: str | None = None,
 ) -> dict:
     remaining = [r for r in rows if r["unitKey"] not in window_1_keys]
 
@@ -1650,7 +1898,7 @@ def _window_2(
     for discipline, group in _by_discipline(chosen):
         passes.append(
             {
-                "id": _pass_id_for_discipline(discipline, 2),
+                "id": _pass_id_for_discipline(discipline, 2, tag),
                 "discipline": discipline,
                 "name": f"Every sheet, discipline {discipline}",
                 "readsFor": "the sheet",
@@ -1705,7 +1953,7 @@ def _window_2(
 # Window 3: one review per package
 # --------------------------------------------------------------------------- #
 
-def _window_3(packages: list[dict]) -> dict:
+def _window_3(packages: list[dict], tag: str | None = None) -> dict:
     """
     One review per package, in package order, with the packages of one trade kept together. The
     order is the order the packages were bought in: the first package of each trade holds that
@@ -1726,7 +1974,7 @@ def _window_3(packages: list[dict]) -> dict:
             {
                 # Always numbered, even where the trade carries one package: a bare `rev-092116-`
                 # would be a prefix of `rev-092116-2-`, and the runner verifies a review by prefix.
-                "id": f"rev-{_pack(code)}-{ordinals[key]}",
+                "id": _tagged(f"rev-{_pack(code)}-{ordinals[key]}", tag),
                 "tradeCode": code,
                 "tradeKey": key,
                 "name": _text(package.get("name")) or code,
@@ -2081,10 +2329,41 @@ def _check_arguments(args, window: int) -> None:
             raise PlanError(f"window {window} needs {flag} and it was not given")
 
 
-def _read_inventory(path: Path) -> list[dict]:
+def _read_inventory(path: Path, run: dict | None, run_folder: Path) -> list[dict]:
+    """
+    The inventory's rows, once its drawing issue agrees with the run file: an inventory taken for
+    another issue, one taken for the current set in a pass on one issue, and one taken for an issue
+    in a folder with no run file are each refused, since the plan would read a sheet list that is
+    not the pass's own.
+    """
     data = _read_json(path, "the inventory file")
     if not isinstance(data, dict) or not isinstance(data.get("sheets"), list):
         raise PlanError(f"{path} is not an inventory file written by this script")
+    issue = data.get("drawingIssue")
+    if issue is not None and (
+        not isinstance(issue, dict)
+        or not isinstance(issue.get("deliveryId"), str)
+        or not isinstance(issue.get("readFrom"), list)
+    ):
+        raise PlanError(f"{path}: `drawingIssue` is not a delivery id and the deliveries it read from")
+    if run is None and issue is not None:
+        raise PlanError(
+            f"{path} was taken for drawing issue {issue['deliveryId']}, and {run_folder} holds no "
+            f"{RUN_FILE} naming the pass on it"
+        )
+    if run is not None and issue is None:
+        raise PlanError(
+            f"{path} was taken for the current set, and {RUN_FILE} names drawing issue "
+            f"{run['deliveryId']}: fetch its grid with set_grid's deliveryId and take the inventory again"
+        )
+    if run is not None and (
+        issue["deliveryId"] != run["deliveryId"] or sorted(issue["readFrom"]) != sorted(run["readFrom"])
+    ):
+        raise PlanError(
+            f"{path} was taken for drawing issue {issue['deliveryId']} read from "
+            f"{', '.join(issue['readFrom'])}, and {RUN_FILE} names {run['deliveryId']} read from "
+            f"{', '.join(run['readFrom'])}"
+        )
     rows = data["sheets"]
     # Checked again here, not only where the file was written: a window plans off whatever
     # inventory.json is on disk, and a hand-edited one is still a file this script would subtract by
@@ -2093,33 +2372,76 @@ def _read_inventory(path: Path) -> list[dict]:
     return rows
 
 
+_TAGGED_UNIT_RE = re.compile(r"^i[1-9][0-9]*-")
+
+
+def _refuse_lost_run_file(folder: Path) -> None:
+    """
+    A folder with no run file plans untagged, as the old layout does, so a pass folder that lost
+    its run file would plan ids another pass already records under. Window 3 reads no inventory,
+    so the folder is judged by what else it holds: an inventory taken for one drawing issue, or a
+    ledger whose dispatch lines carry tagged unit ids.
+    """
+    inventory_path = folder / "inventory.json"
+    if inventory_path.is_file():
+        data = _read_json(inventory_path, "the inventory file")
+        issue = data.get("drawingIssue") if isinstance(data, dict) else None
+        if isinstance(issue, dict):
+            raise PlanError(
+                f"{folder} holds the inventory of drawing issue {issue.get('deliveryId')} and no "
+                f"{RUN_FILE}, so this plan would carry no unit tag; put the pass's {RUN_FILE} back"
+            )
+    ledger = folder / LEDGER_FILE
+    if ledger.is_file():
+        try:
+            text = ledger.read_text(encoding="utf-8")
+        except Exception as e:
+            raise PlanError(f"cannot read the run ledger at {ledger}: {e}") from e
+        for raw in text.splitlines():
+            parts = raw.split()
+            if len(parts) >= 4 and parts[0] == "dispatch" and _TAGGED_UNIT_RE.match(parts[3]):
+                raise PlanError(
+                    f"{ledger} dispatched tagged unit {parts[3]} and {folder} holds no {RUN_FILE}, "
+                    f"so this plan would carry no unit tag; put the pass's {RUN_FILE} back"
+                )
+
+
 def plan(args) -> str:
     window = args.window
     _check_arguments(args, window)
 
+    # The run file sits in the run folder beside the ledger, so neither is an argument the lead can
+    # forget. A folder in the old layout holds none, and its unit ids carry no tag.
+    run = _read_run(args.out.parent)
+    tag = run["unitTag"] if run else None
+    if run is None:
+        _refuse_lost_run_file(args.out.parent)
+
     rows: list[dict] = []
     show_file = False
     if window in (1, 2):
-        rows = _read_inventory(args.inventory)
-        show_file = len({_text(r.get("fileId")) for r in rows}) > 1
+        rows = _read_inventory(args.inventory, run, args.out.parent)
+        # A tagged pass's runner dispatches each sheet's file and verifies the unit on it, so the
+        # line names the file even in a set of one file. The old layout names it only across several.
+        show_file = len({_text(r.get("fileId")) for r in rows}) > 1 or tag is not None
 
     window_1_path: Path | None = None
     if window == 1:
         includes = [_split_pattern_argument(raw, "--include") for raw in (args.include or [])]
         excludes = [_split_pattern_argument(raw, "--exclude") for raw in (args.exclude or [])]
-        result = _window_1(rows, includes, excludes)
+        result = _window_1(rows, includes, excludes, tag)
         # The run folder is the folder the plan file sits in; window 2 subtracts this file rather
         # than recomputing window 1's selection from arguments it might not be given identically.
         window_1_path = args.out.parent.joinpath(*WINDOW_1_FILE)
     elif window == 2:
-        keys, selected, excluded, repeated_sets = _read_window_1(args.window_1, rows)
+        keys, selected, excluded, repeated_sets = _read_window_1(args.window_1, rows, tag)
         only = [_split_pattern_argument(raw, "--only") for raw in (args.only or [])]
-        result = _window_2(rows, keys, selected, excluded, only)
+        result = _window_2(rows, keys, selected, excluded, only, tag)
         result["repeatedSets"] = repeated_sets
         result["repeatedRead"] = _read_repeated_read(args.out.parent / LEDGER_FILE, repeated_sets)
     else:
         packages = _read_packages(args.packages)
-        result = _window_3(packages)
+        result = _window_3(packages, tag)
         result["packages"] = len(packages)
 
     ledger_path = args.out.parent / LEDGER_FILE
@@ -2189,6 +2511,7 @@ def plan(args) -> str:
         )
 
     written = len(payload)
+    tag_clause = f", unit tag {tag} for drawing issue {run['deliveryId']}" if run else ""
     # What this run assigned, so a replan that the ledger cannot answer for still keeps a unit id
     # that was planned and never dispatched.
     assigned = (
@@ -2229,6 +2552,9 @@ def plan(args) -> str:
                         for plan_pass in result["repeatedPasses"]
                         for row in plan_pass["units"]
                     ],
+                    # Only a tagged pass names its tag, so a window 1 file in the old layout is
+                    # written as it always was; window 2 refuses a tag that differs.
+                    **({"unitTag": tag} if tag else {}),
                 },
                 indent=2,
             )
@@ -2237,7 +2563,7 @@ def plan(args) -> str:
         _write_atomically(window_1_path, window_1_payload)
         written += len(window_1_payload)
         return (
-            f"wrote {args.out} and {window_1_path}: window 1, units {total_units}, passes "
+            f"wrote {args.out} and {window_1_path}: window 1{tag_clause}, units {total_units}, passes "
             f"{total_passes}, {_fold_clause(sheet_passes)}, excluded {result['excludedCount']}, "
             f"unassigned {len(result['unassigned'])}{ids_clause}, "
             f"{_repeated_clause(result, repeated_count, runner_passes)}; "
@@ -2281,7 +2607,7 @@ def plan(args) -> str:
             f", sheets deferred {len(result['deferred'])} by --only" if result["deferred"] else ""
         )
         return (
-            f"wrote {args.out} and {window_2_path}: window 2, sheets {total_units}, passes "
+            f"wrote {args.out} and {window_2_path}: window 2{tag_clause}, sheets {total_units}, passes "
             f"{total_passes}, {_fold_clause(sheet_passes)}, disciplines {result['disciplines']}, "
             f"{_every_sheet_once(result)}"
             f"{deferred}, sheets window 1 selected "
@@ -2292,10 +2618,152 @@ def plan(args) -> str:
         )
 
     return (
-        f"wrote {args.out}: window 3, packages {result['packages']}, reviews {result['reviews']}, "
+        f"wrote {args.out}: window 3{tag_clause}, packages {result['packages']}, reviews {result['reviews']}, "
         f"passes {total_passes}, trades {result['trades']}, "
         f"packages sharing a trade: {result['sharedCount']} "
         f"({_named(result['sharedCodes']) if result['sharedCodes'] else 'none'}); {written:,} bytes"
+    )
+
+
+# --------------------------------------------------------------------------- #
+# issue: which pass the lead resumes or starts
+# --------------------------------------------------------------------------- #
+
+def _read_deliveries(path: Path) -> list[dict]:
+    """
+    The `list_drawing_deliveries` answer, copied to disk, in delivery order. Each delivery's
+    `issue` is read as the server gives it: set, addendum, or null while its sheet numbers are
+    still being read or where it holds none. Anything else is a shape change, refused by name.
+    """
+    data = _read_json(path, "the deliveries file")
+    listed = data.get("deliveries") if isinstance(data, dict) else None
+    if not isinstance(listed, list):
+        raise PlanError(f"{path} carries no `deliveries` array")
+    deliveries: list[dict] = []
+    for index, row in enumerate(listed, 1):
+        if not isinstance(row, dict) or not isinstance(row.get("id"), str) or not row["id"]:
+            raise PlanError(f"{path}: delivery {index} carries no `id`")
+        if row.get("issue") not in ("set", "addendum", None):
+            raise PlanError(
+                f"{path}: delivery {row['id']} reads as {row.get('issue')!r}, which is neither a set "
+                f"nor an addendum"
+            )
+        if not isinstance(row.get("stillReading"), bool):
+            raise PlanError(
+                f"{path}: delivery {row['id']} says {row.get('stillReading')!r} for `stillReading`, "
+                f"which is neither true nor false"
+            )
+        deliveries.append(row)
+    return deliveries
+
+
+def _phase_lines(ledger: Path) -> list[str] | None:
+    """A ledger's `phase:` lines, or None where the folder holds no ledger."""
+    if not ledger.is_file():
+        return None
+    try:
+        text = ledger.read_text(encoding="utf-8")
+    except Exception as e:
+        raise PlanError(f"cannot read the run ledger at {ledger}: {e}") from e
+    return [line.strip() for line in text.splitlines() if line.strip().startswith(PHASE_PREFIX)]
+
+
+def _label(row: dict) -> str:
+    return _text(row.get("label")) or _text(row.get("id"))
+
+
+def issue(runs: Path, deliveries_path: Path) -> str:
+    """
+    One line naming what the lead does next on this project, read off the project's run folders
+    and its delivery list:
+
+      resume  a pass in flight, whatever has landed since, since a later delivery never interrupts
+              a pass. A pass on one drawing issue is in flight from its run file until its ledger
+              closes out; the old layout's own ledger, in the project folder itself, is in flight
+              from its first `phase:` line until it closes out. Two in flight is a refusal.
+      wait    a delivery still being read for its sheet numbers, which may yet be a new set.
+      start   the latest set, where no pass names it, with the run folder and the next unit tag.
+      none    nothing to start: no delivery reads as a set, or the latest set has its pass, with
+              the addenda of it no pass read named.
+
+    Only the latest set is started. An earlier set with no pass of its own stays unread unless the
+    estimator asks for it, since a later set already prints its sheets.
+
+    The pass in flight is named before the delivery list is read at all, so a delivery the list
+    gives in a shape this script does not know never holds a pass up.
+    """
+    root_phases = _phase_lines(runs / LEDGER_FILE)
+    root_state = None
+    if root_phases:
+        closed = any(line == CLOSED_OUT_LINE for line in root_phases)
+        root_state = "closed" if closed else "open"
+
+    passes: list[tuple[Path, dict, bool]] = []
+    if runs.is_dir():
+        for child in sorted(runs.iterdir()):
+            if not child.is_dir():
+                continue
+            run = _read_run(child)
+            if run is None:
+                if (child / LEDGER_FILE).is_file():
+                    raise PlanError(
+                        f"{child} holds a run ledger and no {RUN_FILE}, so nothing says which "
+                        f"drawing issue its pass read"
+                    )
+                continue
+            phases = _phase_lines(child / LEDGER_FILE) or []
+            passes.append((child, run, any(line == CLOSED_OUT_LINE for line in phases)))
+
+    in_flight = [f"{run['deliveryId']} in {child}" for child, run, closed in passes if not closed]
+    if root_state == "open":
+        in_flight.insert(0, f"the pass in {runs} with no drawing issue named")
+    if len(in_flight) > 1:
+        raise PlanError(
+            f"{len(in_flight)} passes are in flight on this project ({'; '.join(in_flight)}); a "
+            f"project runs one pass at a time"
+        )
+    if root_state == "open":
+        return f"resume {runs}: the pass in this folder's own ledger, which names no drawing issue"
+    for child, run, closed in passes:
+        if not closed:
+            return (
+                f"resume {child}: the pass on drawing issue {run['deliveryId']}, {run['label']}, "
+                f"a {run['issue']}, unit tag {run['unitTag']}"
+            )
+
+    deliveries = _read_deliveries(deliveries_path)
+    reading = next((row for row in deliveries if row["stillReading"]), None)
+    if reading is not None:
+        return (
+            f"wait {reading['id']}: {_label(reading)} is still being read for its sheet numbers, so "
+            f"it is neither a set nor an addendum yet"
+        )
+    sets = [row for row in deliveries if row.get("issue") == "set"]
+    if not sets:
+        return "none: no drawing delivery reads as a set yet"
+    latest = sets[-1]
+    covered = {d for _child, run, _closed in passes for d in [run["deliveryId"], *run["readFrom"]]}
+    earlier = f"; the earlier pass in {runs} names no drawing issue" if root_state == "closed" else ""
+    if latest["id"] not in covered:
+        number = 1 + max((int(run["unitTag"][1:]) for _child, run, _closed in passes), default=0)
+        count = latest.get("sheetCount")
+        return (
+            f"start {latest['id']}: {_label(latest)}, a set of {count} sheet"
+            f"{'' if count == 1 else 's'}; run folder {runs / latest['id']}, unit tag i{number}{earlier}"
+        )
+    waiting = [
+        row for row in deliveries
+        if row.get("issue") == "addendum" and row.get("setId") == latest["id"] and row["id"] not in covered
+    ]
+    if waiting:
+        named = ", ".join(f"{row['id']} {_label(row)}" for row in waiting)
+        return (
+            f"none: the latest set {latest['id']}, {_label(latest)}, has its pass, and "
+            f"{len(waiting)} addend{'um' if len(waiting) == 1 else 'a'} of it no pass read: {named}"
+        )
+    return (
+        f"none: the latest set {latest['id']}, {_label(latest)}, has its pass, and every addendum "
+        f"of it was read in a pass"
     )
 
 
@@ -2344,11 +2812,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     win.add_argument("--out", required=True, type=Path, help="the read plan file to write")
 
+    nxt = sub.add_parser("issue", help="name the pass to resume, or the drawing issue to start a pass on")
+    nxt.add_argument("--runs", required=True, type=Path, help="the project's folder, holding one run folder per pass")
+    nxt.add_argument(
+        "--deliveries", required=True, type=Path,
+        help="the list_drawing_deliveries answer on disk, in delivery order",
+    )
+
     args = parser.parse_args(argv)
 
     try:
         if args.mode == "inventory":
             print(inventory(args.grid, args.expect_count, args.out_dir))
+        elif args.mode == "issue":
+            print(issue(args.runs, args.deliveries))
         else:
             print(plan(args))
     except PlanError as e:

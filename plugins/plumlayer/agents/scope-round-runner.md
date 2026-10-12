@@ -113,13 +113,19 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    that file's sheets whole too. Blocks the reader names as printed only on sheets left out are
    the user's own cut and take no note.
 3. **Verify per unit, in one turn, before the next unit starts.** Take the reader's report and
-   make one call: `verify_unit(projectId, subjectPrefix: "scopeItem:<unit-id>-", sheets: [<the
-   unit's sheet numbers>])`, at most 20 sheets in one call. It returns `entryCount` and
+   make one call: `verify_unit(projectId, subjectPrefix: "scopeItem:<unit-id>-", sheets: [<each
+   of the unit's sheets>])`, at most 20 sheets in one call. Give each sheet as
+   `{ "sheet": "<sheet number>", "fileId": "<fileId>" }`, with the file its unit line names, the one
+   your dispatch carried to the reader: a subject then counts on that sheet only where one of its
+   citations names that file, so a row that cites the sheet only on an earlier drawing issue's page
+   is never found back as this unit's update. A sheet whose unit line names no file goes as the
+   sheet number alone, which counts every citation of the sheet. It returns `entryCount` and
    `subjectCount` under the prefix, `subjects`, every distinct subject under it with its
    `belongsToTrade` and its `candidateTrades` (`subjectsTruncated` says when there are more than
-   the call carries), and `sheets`, one row per sheet you asked about carrying the `subjects` whose
-   citations name it, its own `truncated`, and `droppedUnmatched`, the rows that named the sheet in
-   passing and were left out rather than attributed to it.
+   the call carries), and `sheets`, one row per sheet you asked about carrying the `fileId` it was
+   checked against where you gave one, the `subjects` whose citations name it, its own
+   `truncated`, and `droppedUnmatched`, the rows that named the sheet in passing and were left out
+   rather than attributed to it.
    - **Created, by count.** The entry count under the prefix goes on the `verified` line as
      `created`: an entry count, never copied from the reader's report and never an item count.
    - **Items, from the reader.** The reader's own `created:` figure, its count of scope items, goes
@@ -145,7 +151,8 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    - Never a row list of the whole project, never `list_scope_items`, and never a walk of `search`
      calls where one `verify_unit` answers.
    - **A repeated lines unit has no sheet of its own.** Its `sheets` are the ones on its reader's
-     `cited sheets:` line, at most 20 in one call. Every call answers the whole prefix, so where
+     `cited sheets:` line, each with the `fileId` its unit line names, since its reader cites a
+     file's repeated lines only on that file's own pages, at most 20 in one call. Every call answers the whole prefix, so where
      the line names more than 20, `created` and the trades come off the first call alone and are
      never added across calls; each later call, against the same prefix with the next 20 sheets,
      adds only its `sheets` rows, which is where the updated subjects are found back. Append
@@ -287,7 +294,9 @@ with one unit and three differences.
 - **Verify against the pages the review opened.** The reviewer names every page it opened on its
   `pages opened:` line, and those sheets are what you check. A line naming `section <code>` is a
   manual page the review read to judge a section, not a sheet, and never goes into the call; a
-  review whose only pages were manual pages is one that opened no page, below:
+  review whose only pages were manual pages is one that opened no page, below. Neither your
+  dispatch nor the reviewer's line names the file a page was opened in, so each sheet goes as the
+  sheet number alone:
 
   ```text
   verify_unit(projectId,

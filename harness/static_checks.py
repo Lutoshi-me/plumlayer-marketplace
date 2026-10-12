@@ -133,6 +133,13 @@ Checks:
       dispatches an agent is the wait; a fence left open at the end of a file is refused rather
       than skipped. Runs its own helper over the dispatch fixtures under harness/fixtures/, so the
       clean one is shown to pass and each broken one to refuse in one line naming what is wrong.
+  24. Drawing issue passes: the shipped scripts/plan_inventory.py plans two sets of one project,
+      each from a run folder whose run.json names its delivery and unit tag, every unit id of a
+      pass carrying its tag and no pass's subject prefix reaching another's, the old layout still
+      planning untagged; it refuses a taken tag, a grid or inventory of another issue or of
+      deliveries run.json does not name, and two passes in flight; its `issue` mode resumes the
+      pass in flight first and starts only the latest set with no pass; and the skill's own
+      `issue` command and run.json, and the reader's citation shapes, are checked against it.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -146,6 +153,7 @@ import io
 import json
 import math
 import re
+import shlex
 import shutil
 import string
 import subprocess
@@ -5950,6 +5958,672 @@ def check_repeated_lines_text(plugin_path: Path, marketplace_root: Path) -> Resu
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# 24. A scope pass belongs to one drawing issue
+# --------------------------------------------------------------------------- #
+#
+# A project goes through several drawing issues, and the estimator runs a pass on each. Every pass
+# records its rows under `scopeItem:<unit id>-<seq>` and counts them by that prefix, so a second
+# pass numbering its units the way the first one did would write onto the first pass's subjects,
+# and its counts would take in the first pass's rows. A pass therefore lives in a run folder of
+# its own whose `run.json` names the drawing issue and a unit tag, `i<n>`, that every unit id of
+# the pass carries; the plan script reads that file, and a fourth subcommand picks which pass the
+# lead resumes or starts.
+#
+# The failures this check exists for, each run against the shipped script: a second pass's ids
+# colliding with the first's; a second pass resuming the first's closed ledger; an inventory
+# carrying a sheet from another issue; a resume after a later delivery rebuilding the sheet list
+# from the newer state; a prefix count taking in an earlier pass's rows; a run in the old layout no
+# longer resuming; and a second pass started while one is in flight. Every expected value here is
+# written by hand off the fixtures this check builds, never off the script's output.
+#
+# Honest bound, stated in the detail line: the grids and deliveries are invented and built here,
+# so this proves the script's tagging, its refusals and its choice of pass, and nothing about how
+# a real `set_grid` or `list_drawing_deliveries` answer arrives.
+
+_ISSUE_PASS_RE = re.compile(r"^### (\S+?)\.\s")
+_ISSUE_UNIT_RE = re.compile(r"^(\S+-[1-9][0-9]*)\. ")
+_ISSUE_REVIEW_RE = re.compile(r"^[1-9][0-9]*\. (\S+): ")
+_ISSUE_TAGGED_ID_RE = re.compile(r"^(i[1-9][0-9]*)-(\S+)-([1-9][0-9]*)$")
+
+
+def _issue_ref(delivery_id: str, issue: str, set_id: str, sheets: int) -> dict:
+    """One delivery as `set_grid` names it on `delivery` and in `readFrom`."""
+    return {"id": delivery_id, "label": f"Label of {delivery_id}", "issue": issue, "setId": set_id, "sheetCount": sheets}
+
+
+def _issue_grid(rows: list[dict], delivery: dict | None, read_from: list[dict] | None, row_delivery: str | None) -> dict:
+    """A `set_grid` answer over the given rows, by delivery when `delivery` is given."""
+    body: dict = {}
+    if delivery is not None:
+        body["delivery"] = delivery
+        body["readFrom"] = read_from or []
+    body.update({
+        "count": len(rows), "returned": len(rows), "offset": 0, "limit": 500, "truncated": False,
+        "sheets": [dict(row, **({"deliveryId": row_delivery} if row_delivery else {})) for row in rows],
+    })
+    return body
+
+
+def _issue_run(delivery_id: str, read_from: list[str], tag: str, count: int | None = 0) -> dict:
+    """A run.json as the lead writes it before the plan, with the tag check it took."""
+    run: dict = {
+        "deliveryId": delivery_id,
+        "label": f"Label of {delivery_id}",
+        "issue": "set",
+        "setId": delivery_id,
+        "readFrom": read_from,
+        "unitTag": tag,
+    }
+    if count is not None:
+        run["unitTagCheck"] = {"subjectPrefix": f"scopeItem:{tag}-", "count": count}
+    return run
+
+
+def _issue_ids(read_plan: str) -> tuple[list[str], list[str]]:
+    """The pass ids and the unit ids a read plan carries, stopping at its left-out section."""
+    passes: list[str] = []
+    units: list[str] = []
+    for line in read_plan.splitlines():
+        if line.strip() == _LEFT_OUT_HEADING:
+            break
+        heading = _ISSUE_PASS_RE.match(line)
+        if heading:
+            passes.append(heading.group(1))
+            continue
+        unit = _ISSUE_UNIT_RE.match(line)
+        if unit:
+            units.append(unit.group(1))
+            continue
+        review = _ISSUE_REVIEW_RE.match(line)
+        if review:
+            units.append(review.group(1))
+    return passes, units
+
+
+def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "drawing-issue-passes"
+    script = plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT)
+    fixtures = marketplace_root / "harness" / "fixtures"
+    try:
+        module = _load_script_module(script, "plan_inventory")
+        rows = json.loads((fixtures / "set-grid-fixture.json").read_text(encoding="utf-8"))["sheets"]
+    except Exception as e:
+        return Result(name, False, detail=f"cannot load the plan script or its grid fixture: {e}")
+    packages = fixtures / "packages-fixture.json"
+    root = Path(__file__).parent / ".test-results" / "drawing-issues"
+    shutil.rmtree(root, ignore_errors=True)
+    errors: list[str] = []
+    refusals = 0
+
+    def write(path: Path, payload) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        text = payload if isinstance(payload, str) else json.dumps(payload, indent=2)
+        path.write_text(text, encoding="utf-8")
+        return path
+
+    def run(argv: list[str]) -> tuple[int, str, str]:
+        try:
+            return _run_script_main(module, argv)
+        except SystemExit as e:
+            return int(e.code or 0), "", "argparse exit"
+        except Exception as e:
+            return 99, "", f"raised {type(e).__name__}: {e}"
+
+    def refused(argv: list[str], case: str, needle: str) -> None:
+        """One refusal: exit 1, one line on stderr naming what is wrong, nothing on stdout."""
+        nonlocal refusals
+        refusals += 1
+        code, out, err = run(argv)
+        if code != 1 or out or len(err.splitlines()) != 1:
+            errors.append(f"{case}: exited {code} with stdout {out[:120]!r} and stderr {err[:160]!r}, not one refusal line")
+        elif needle not in err:
+            errors.append(f"{case}: refused without naming {needle!r}: {err[:200]}")
+
+    def inventory(folder: Path, grid: dict) -> tuple[int, str, str]:
+        grid_path = write(folder / "grid" / "page-000.json", grid)
+        return run(["inventory", "--grid", str(grid_path), "--expect-count", str(len(grid["sheets"])), "--out-dir", str(folder)])
+
+    def plans(folder: Path) -> dict[int, str]:
+        """Windows 1, 2 and 3 planned in one folder; the read plan text of each."""
+        texts: dict[int, str] = {}
+        for window, extra in (
+            (1, ["--inventory", str(folder / "inventory.json")]),
+            (2, ["--inventory", str(folder / "inventory.json"), "--window-1", str(folder / "plan" / "window-1.json")]),
+            (3, ["--packages", str(packages)]),
+        ):
+            out = folder / f"read-plan-w{window}.md"
+            code, bounds, err = run(["plan", "--window", str(window), *extra, "--out", str(out)])
+            if code != 0:
+                errors.append(f"{folder.name} window {window} refused: {err or bounds}")
+                texts[window] = ""
+                continue
+            texts[window] = out.read_text(encoding="utf-8")
+        return texts
+
+    # ------------------------------------------------------------------ #
+    # Two passes on two sets of one project, and the old layout beside them
+    # ------------------------------------------------------------------ #
+    project = root / "two-sets"
+    first = project / "deliv-s1"
+    second = project / "deliv-s2"
+    s1 = _issue_ref("deliv-s1", "set", "deliv-s1", len(rows))
+    s2 = _issue_ref("deliv-s2", "set", "deliv-s2", len(rows))
+    a1 = _issue_ref("deliv-a1", "addendum", "deliv-s1", 3)
+    write(first / "run.json", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i1"))
+    write(second / "run.json", _issue_run("deliv-s2", ["deliv-s2"], "i2"))
+    code, bounds, err = inventory(first, _issue_grid(rows, s1, [s1, a1], "deliv-s1"))
+    if code != 0:
+        errors.append(f"the first set's inventory refused its own grid: {err or bounds}")
+    elif "deliv-s1" not in bounds:
+        errors.append(f"the first set's inventory bounds line does not name its drawing issue: {bounds!r}")
+    elif f"first sheet {rows[0]['sheetNumber']}," not in bounds:
+        # The lead probes the corpus with this sheet number, since it reads no sheet line.
+        errors.append(f"the inventory bounds line does not name the first sheet, {rows[0]['sheetNumber']}: {bounds!r}")
+    code, bounds, err = inventory(second, _issue_grid(rows, s2, [s2], "deliv-s2"))
+    if code != 0:
+        errors.append(f"the second set's inventory refused its own grid: {err or bounds}")
+    legacy = root / "old-layout"
+    code, bounds, err = inventory(legacy, _issue_grid(rows, None, None, None))
+    if code != 0:
+        errors.append(f"an inventory in the old layout, with no run.json and no drawing issue, refused: {err or bounds}")
+
+    first_plans = plans(first)
+    second_plans = plans(second)
+    legacy_plans = plans(legacy)
+
+    # The runner dispatches a sheet's file and checks the unit by it, and reads both off the unit
+    # line, so a tagged plan names the file on every sheet line even where the set is one file, as
+    # the fixture is. The old layout names it only across several files, as it always has.
+    for window in (1, 2):
+        for line in first_plans[window].split(_LEFT_OUT_HEADING)[0].splitlines():
+            unit = _ISSUE_UNIT_RE.match(line)
+            if unit and "repeated lines" not in line and ", file file-0001, page " not in line:
+                errors.append(f"the first set's window {window} unit line names no file: {line!r}")
+                break
+
+    prefixes: dict[str, str] = {}
+    for label, texts, tag in (("the first set", first_plans, "i1"), ("the second set", second_plans, "i2"), ("the old layout", legacy_plans, None)):
+        for window, text in texts.items():
+            pass_ids, unit_ids = _issue_ids(text)
+            if not unit_ids:
+                errors.append(f"{label} window {window} planned no units")
+            for pass_id in pass_ids:
+                if tag is not None and not pass_id.startswith(f"{tag}-"):
+                    errors.append(f"{label} window {window} names pass {pass_id}, not tagged {tag}")
+                if tag is None and pass_id.startswith("i") and pass_id[1:2].isdigit():
+                    errors.append(f"the old layout names pass {pass_id}, which carries a unit tag")
+            numbers: dict[str, list[int]] = {}
+            for unit_id in unit_ids:
+                tagged = _ISSUE_TAGGED_ID_RE.match(unit_id)
+                if tag is not None and (tagged is None or tagged.group(1) != tag):
+                    errors.append(f"{label} window {window} carries unit {unit_id}, not tagged {tag}")
+                if tag is None and tagged is not None:
+                    errors.append(f"the old layout carries unit {unit_id}, which carries a unit tag")
+                part, _sep, number = unit_id.rpartition("-")
+                numbers.setdefault(part, []).append(int(number))
+                prefix = f"scopeItem:{unit_id}-"
+                if prefix in prefixes:
+                    errors.append(f"{label} window {window} and {prefixes[prefix]} both record under {prefix}")
+                prefixes[prefix] = f"{label} window {window}"
+            if window in (1, 2):
+                for part, found in numbers.items():
+                    if sorted(found) != list(range(1, len(found) + 1)):
+                        errors.append(f"{label} window {window} numbers part {part} {sorted(found)}, not from 1")
+    ordered = sorted(prefixes)
+    for index, prefix in enumerate(ordered):
+        for other in ordered[index + 1:]:
+            if other.startswith(prefix):
+                errors.append(f"{prefix} ({prefixes[prefix]}) is a prefix of {other} ({prefixes[other]}), so one count takes in the other's rows")
+            else:
+                break
+    if len(prefixes) < 3:
+        errors.append("fewer than three passes' unit ids were planned, so nothing was compared")
+    try:
+        repeated = json.loads((first / "plan" / "window-1.json").read_text(encoding="utf-8"))["repeatedSets"]
+        if not repeated or any(not entry["unitId"].startswith("i1-RS1") for entry in repeated):
+            errors.append(f"the first set's window 1 file names its repeated lines units as {[e['unitId'] for e in repeated]}")
+    except Exception as e:
+        errors.append(f"the first set's window 1 file: {e}")
+
+    # A replan keeps every tagged id the ledger handed out, and retires a cut sheet's.
+    try:
+        w1_units = _issue_ids(first_plans[1])[1]
+        bound_id = next(u for u in w1_units if u.startswith("i1-A1-") and u.endswith("-2"))
+        cut_id = bound_id[:-1] + "1"
+        sheet_of: dict[str, str] = {}
+        for line in first_plans[1].splitlines():
+            unit = _ISSUE_UNIT_RE.match(line)
+            if unit:
+                sheet_of[unit.group(1)] = line.split(". ", 1)[1].split(",", 1)[0]
+        write(first / "ledger.md", f"phase: plan approved\ndispatch 1 i1-A1 {bound_id} sheets {sheet_of[bound_id]} purpose vocabulary\n")
+        out = first / "read-plan-w1-again.md"
+        code, bounds, err = run([
+            "plan", "--window", "1", "--inventory", str(first / "inventory.json"),
+            "--exclude", f"{sheet_of[cut_id]}:the estimator left it out", "--out", str(out),
+        ])
+        if code != 0:
+            errors.append(f"the first set's window 1 replan refused: {err or bounds}")
+        else:
+            again: dict[str, str] = {}
+            for line in out.read_text(encoding="utf-8").split(_LEFT_OUT_HEADING)[0].splitlines():
+                unit = _ISSUE_UNIT_RE.match(line)
+                if unit:
+                    again[unit.group(1)] = line.split(". ", 1)[1].split(",", 1)[0]
+            if again.get(bound_id) != sheet_of[bound_id]:
+                errors.append(f"the replan moved {bound_id} off {sheet_of[bound_id]}: it now reads {again.get(bound_id)}")
+            if cut_id in again:
+                errors.append(f"the replan handed the cut sheet's id {cut_id} out again, to {again[cut_id]}")
+        (first / "ledger.md").unlink(missing_ok=True)
+    except StopIteration:
+        errors.append("the first set's window 1 plan carries no i1-A1-2 unit to replan around")
+
+    # The runner sums a tagged pass with the summary script, which reads the pass off the plan.
+    try:
+        summary_module = _load_script_module(plugin_path.joinpath(*PASS_SUMMARY_SCRIPT), "pass_summary")
+        write(first / "ledger.md", (
+            "phase: plan approved\n"
+            "dispatch 1 i1-A1 i1-A1-1 sheets A-0.01 purpose vocabulary\n"
+            "verified 1 i1-A1 i1-A1-1 created 4 items 2 updated 1 questions 0 replied 0 sent 6 "
+            "landed 6 conflicts 0 result ok\n"
+        ))
+        code, out, err = _run_script_main(
+            summary_module,
+            [str(first / "ledger.md"), "1", "i1-A1", "--plan", str(first / "read-plan-w1.md")],
+        )
+        if code != 0 or "per unit: i1-A1-1 created 4 items 2 updated 1" not in out:
+            errors.append(f"the summary script does not sum a tagged pass: exited {code}, {err or out[:200]}")
+        (first / "ledger.md").unlink(missing_ok=True)
+    except Exception as e:
+        errors.append(f"the summary script over a tagged pass: {e}")
+
+    # ------------------------------------------------------------------ #
+    # Refusals: the drawing issue and the unit tag
+    # ------------------------------------------------------------------ #
+    def tagged_folder(case: str, run_json, grid: dict | None = None, beside: Path | None = None) -> Path:
+        """
+        A run folder for one refusal, apart from the two sets unless `beside` puts it in their
+        project folder, since a run folder naming a delivery another one names is refused too.
+        """
+        folder = (beside or root / "refusals") / case
+        write(folder / "run.json", run_json)
+        if grid is not None:
+            write(folder / "grid" / "page-000.json", grid)
+        return folder
+
+    def plan_argv(folder: Path, inventory_path: Path) -> list[str]:
+        return ["plan", "--window", "1", "--inventory", str(inventory_path), "--out", str(folder / "read-plan.md")]
+
+    def inventory_argv(folder: Path) -> list[str]:
+        return ["inventory", "--grid", str(folder / "grid"), "--expect-count", str(len(rows)), "--out-dir", str(folder)]
+
+    first_inventory = first / "inventory.json"
+
+    folder = tagged_folder("tag-taken", _issue_run("deliv-s3", ["deliv-s3"], "i1"), beside=project)
+    refused(plan_argv(folder, first_inventory), "a tag another pass of the project already carries", "i1")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = tagged_folder("delivery-taken", _issue_run("deliv-s2", ["deliv-s2"], "i9"), beside=project)
+    # The second set's own inventory, so nothing but the other folder naming deliv-s2 refuses it.
+    refused(plan_argv(folder, second / "inventory.json"), "a second run folder for a delivery another one names", "deliv-s2")
+    shutil.rmtree(folder, ignore_errors=True)
+    wrong_prefix = _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i9")
+    wrong_prefix["unitTagCheck"]["subjectPrefix"] = "scopeItem:i3-"
+    folder = tagged_folder("tag-checked-elsewhere", wrong_prefix)
+    refused(plan_argv(folder, first_inventory), "a tag whose record count was taken under another prefix", "i9")
+    shutil.rmtree(folder, ignore_errors=True)
+    false_count = _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i9")
+    false_count["unitTagCheck"]["count"] = False
+    folder = tagged_folder("tag-count-false", false_count)
+    refused(plan_argv(folder, first_inventory), "a tag whose record count is false rather than a number", "i9")
+    shutil.rmtree(folder, ignore_errors=True)
+    # A broken run.json in another pass's folder names that folder when the issue mode reads it,
+    # and never stops this pass from planning.
+    beside_broken = root / "broken-sibling"
+    write(beside_broken / "deliv-s1" / "run.json", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i1"))
+    write(beside_broken / "lost-pass" / "run.json", "{ not json")
+    code, bounds, err = run(plan_argv(beside_broken / "deliv-s1", first_inventory))
+    if code != 0:
+        errors.append(f"a broken run.json in another pass's folder stopped this pass planning: {err or bounds}")
+    write(beside_broken / "deliveries.json", {"count": 0, "deliveries": []})
+    refused(["issue", "--runs", str(beside_broken), "--deliveries", str(beside_broken / "deliveries.json")],
+            "a broken run.json the issue mode cannot place", "lost-pass")
+    shutil.rmtree(beside_broken, ignore_errors=True)
+    folder = tagged_folder("tag-on-record", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i7", count=4))
+    refused(plan_argv(folder, first_inventory), "a tag the record already carries rows under", "i7")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = tagged_folder("tag-unchecked", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i8", count=None))
+    refused(plan_argv(folder, first_inventory), "a tag never checked on the record", "i8")
+    shutil.rmtree(folder, ignore_errors=True)
+    for bad in ("I9", "i0", "x9", "i9a"):
+        folder = tagged_folder(f"tag-shape-{bad}", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], bad))
+        refused(plan_argv(folder, first_inventory), f"a unit tag shaped {bad}", bad)
+        shutil.rmtree(folder, ignore_errors=True)
+    folder = tagged_folder("read-from-without-itself", _issue_run("deliv-s1", ["deliv-a1"], "i9"))
+    refused(plan_argv(folder, first_inventory), "a run.json whose readFrom leaves out its own delivery", "readFrom")
+    shutil.rmtree(folder, ignore_errors=True)
+
+    # The inventory carries a sheet from another issue: one row came from a delivery the pass does
+    # not read from.
+    stray = _issue_grid(rows, s1, [s1, a1], "deliv-s1")
+    stray["sheets"][5]["deliveryId"] = "deliv-s2"
+    folder = tagged_folder("stray-row", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i9"), stray)
+    refused(inventory_argv(folder), "a grid row from a delivery the pass does not read from", stray["sheets"][5]["sheetNumber"])
+    shutil.rmtree(folder, ignore_errors=True)
+    # A resume after a later delivery: the fetch run again now reads from an addendum that landed
+    # since run.json was written, so the sheet list would be the newer state.
+    a2 = _issue_ref("deliv-a2", "addendum", "deliv-s1", 2)
+    folder = tagged_folder("later-delivery", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i9"), _issue_grid(rows, s1, [s1, a1, a2], "deliv-s1"))
+    refused(inventory_argv(folder), "a grid fetched again after a later delivery landed", "deliv-a2")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = tagged_folder("delivery-gone", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i9"), _issue_grid(rows, s1, [s1], "deliv-s1"))
+    refused(inventory_argv(folder), "a grid reading from fewer deliveries than run.json names", "deliv-a1")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = tagged_folder("other-delivery", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i9"), _issue_grid(rows, s2, [s2], "deliv-s2"))
+    refused(inventory_argv(folder), "a grid fetched for another drawing issue", "deliv-s2")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = tagged_folder("grid-without-delivery", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i9"), _issue_grid(rows, None, None, None))
+    refused(inventory_argv(folder), "a grid fetched for the current set in a pass on one issue", "deliveryId")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = project / "grid-without-run"
+    write(folder / "grid" / "page-000.json", _issue_grid(rows, s1, [s1, a1], "deliv-s1"))
+    refused(inventory_argv(folder), "a grid fetched for one issue into a folder with no run.json", "run.json")
+    shutil.rmtree(folder, ignore_errors=True)
+    # The plan refuses an inventory whose delivery differs from run.json, and an inventory taken for
+    # one issue in a folder that names none.
+    folder = tagged_folder("inventory-of-another-issue", _issue_run("deliv-s2", ["deliv-s2"], "i9"))
+    refused(plan_argv(folder, first_inventory), "an inventory taken for another drawing issue", "deliv-s1")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = project / "inventory-without-run"
+    folder.mkdir(parents=True, exist_ok=True)
+    refused(plan_argv(folder, first_inventory), "an inventory taken for one issue in a folder with no run.json", "run.json")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = tagged_folder("inventory-of-no-issue", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i9"))
+    refused(plan_argv(folder, legacy / "inventory.json"), "an inventory of the current set in a pass on one issue", "deliv-s1")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = tagged_folder("inventory-read-from-more", _issue_run("deliv-s1", ["deliv-s1"], "i9"))
+    refused(plan_argv(folder, first_inventory), "an inventory read from deliveries run.json does not name", "deliv-a1")
+    shutil.rmtree(folder, ignore_errors=True)
+    # Window 2 plans off window 1's file, so a tag changed between the two would put the window's
+    # ids under another tag than the vocabulary's.
+    folder = tagged_folder("tag-changed-after-window-1", _issue_run("deliv-s1", ["deliv-s1", "deliv-a1"], "i5"))
+    write(folder / "plan" / "window-1.json", (first / "plan" / "window-1.json").read_text(encoding="utf-8"))
+    refused(
+        ["plan", "--window", "2", "--inventory", str(first_inventory), "--window-1",
+         str(folder / "plan" / "window-1.json"), "--out", str(folder / "read-plan.md")],
+        "window 2 under another tag than window 1's", "i1",
+    )
+    shutil.rmtree(folder, ignore_errors=True)
+    # Window 3 reads no inventory, so a pass folder that lost its run.json is found by what else it
+    # holds: an inventory taken for one issue, or a ledger whose unit ids carry a tag.
+    folder = root / "refusals" / "review-without-run"
+    write(folder / "inventory.json", first_inventory.read_text(encoding="utf-8"))
+    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(folder / "read-plan.md")],
+            "window 3 in a pass folder whose inventory names an issue and which holds no run.json", "run.json")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = root / "refusals" / "review-tagged-ledger"
+    write(folder / "ledger.md", "phase: plan approved\ndispatch 1 i1-A1 i1-A1-1 sheets A-0.01 purpose vocabulary\n")
+    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(folder / "read-plan.md")],
+            "window 3 in a pass folder whose ledger carries tagged ids and which holds no run.json", "run.json")
+    shutil.rmtree(folder, ignore_errors=True)
+    folder = tagged_folder("run-not-json", "{ not json")
+    refused(plan_argv(folder, first_inventory), "a run.json that does not parse", "run.json")
+    shutil.rmtree(folder, ignore_errors=True)
+
+    # ------------------------------------------------------------------ #
+    # Which pass the lead resumes or starts
+    # ------------------------------------------------------------------ #
+    def delivery(delivery_id: str, issue, set_id, sheets, reading: bool = False) -> dict:
+        return {
+            "id": delivery_id, "label": f"Label of {delivery_id}", "deliveryKind": "revision",
+            "issuedOn": None, "sequence": None, "issue": issue, "setId": set_id,
+            "sheetCount": sheets, "stillReading": reading,
+        }
+
+    deliveries = [
+        delivery("deliv-d1", "set", "deliv-d1", 400),
+        delivery("deliv-d2", "addendum", "deliv-d1", 40),
+        delivery("deliv-d3", "set", "deliv-d3", 420),
+        delivery("deliv-d4", "addendum", "deliv-d3", 12),
+    ]
+    closed = "phase: plan approved\nphase: window 1 complete\nphase: closed out\n"
+    open_ledger = "phase: plan approved\nphase: window 1 complete\n"
+
+    def choose(case: str, folders: dict[str, tuple[dict, str | None]] | None = None, root_ledger: str | None = None,
+               listed: list[dict] | None = None) -> tuple[int, str, str, Path]:
+        runs = root / "choose" / case
+        shutil.rmtree(runs, ignore_errors=True)
+        runs.mkdir(parents=True)
+        if root_ledger is not None:
+            write(runs / "ledger.md", root_ledger)
+        for folder_name, (run_json, ledger) in (folders or {}).items():
+            write(runs / folder_name / "run.json", run_json)
+            if ledger is not None:
+                write(runs / folder_name / "ledger.md", ledger)
+        listing = write(runs / "deliveries.json", {"count": len(listed or deliveries), "deliveries": listed if listed is not None else deliveries})
+        code, out, err = run(["issue", "--runs", str(runs), "--deliveries", str(listing)])
+        return code, out, err, runs
+
+    def verdict(case: str, want: str, *needles: str, **kwargs) -> None:
+        code, out, err, runs = choose(case, **kwargs)
+        if code != 0 or len(out.splitlines()) != 1:
+            errors.append(f"choosing a pass, {case}: exited {code} with {out!r} {err!r}, not one line")
+            return
+        if out.split()[0].rstrip(":") != want:
+            errors.append(f"choosing a pass, {case}: answered {out!r}, not {want}")
+        for needle in needles:
+            if needle.replace("<runs>", str(runs)) not in out:
+                errors.append(f"choosing a pass, {case}: answered {out!r}, which does not name {needle.replace('<runs>', str(runs))!r}")
+
+    run_d1 = _issue_run("deliv-d1", ["deliv-d1", "deliv-d2"], "i1")
+    run_d3 = _issue_run("deliv-d3", ["deliv-d3"], "i2")
+    verdict("a project with no pass", "start", "deliv-d3", "i1", "<runs>")
+    verdict("the first set's pass closed", "start", "deliv-d3", "i2", folders={"deliv-d1": (run_d1, closed)})
+    verdict("the first set's pass in flight", "resume", "deliv-d1", folders={"deliv-d1": (run_d1, open_ledger)})
+    verdict("the first set's pass planned and not yet approved", "resume", "deliv-d1", folders={"deliv-d1": (run_d1, None)})
+    verdict("a pass in the old layout in flight", "resume", "<runs>", root_ledger=open_ledger)
+    verdict("a pass in the old layout closed", "start", "deliv-d3", "i1", "names no drawing issue", root_ledger=closed)
+    verdict("a ledger whose phase line only starts like a close-out", "resume", "deliv-d1",
+            folders={"deliv-d1": (run_d1, open_ledger + "phase: closed outstanding\n")})
+    verdict("a pass in flight beside a delivery list the issue mode could not read", "resume", "deliv-d1",
+            folders={"deliv-d1": (run_d1, open_ledger)},
+            listed=deliveries + [delivery("deliv-d6", "baseline", None, 5)])
+    verdict("the latest set's pass closed with its addendum unread", "none", "deliv-d4",
+            folders={"deliv-d1": (run_d1, closed), "deliv-d3": (run_d3, closed)})
+    verdict("the latest set's pass closed with its addendum read in it", "none", "deliv-d3",
+            folders={"deliv-d3": (_issue_run("deliv-d3", ["deliv-d3", "deliv-d4"], "i2"), closed)})
+    verdict("a delivery still being read", "wait", "deliv-d5",
+            listed=deliveries + [delivery("deliv-d5", None, None, None, reading=True)])
+    verdict("a delivery still being read while a pass is in flight", "resume", "deliv-d1",
+            folders={"deliv-d1": (run_d1, open_ledger)},
+            listed=deliveries + [delivery("deliv-d5", None, None, None, reading=True)])
+    verdict("the tags already handed out", "start", "i4",
+            folders={"deliv-d1": (run_d1, closed), "deliv-d2": (_issue_run("deliv-d2", ["deliv-d2"], "i3"), closed)})
+    verdict("no delivery reads as a set", "none",
+            listed=[delivery("deliv-e1", None, None, 0)])
+
+    for case, kwargs, needle in (
+        ("two passes in flight", {"folders": {"deliv-d1": (run_d1, open_ledger), "deliv-d3": (run_d3, open_ledger)}}, "deliv-d3"),
+        ("a pass in the old layout and one on an issue both in flight", {"folders": {"deliv-d3": (run_d3, open_ledger)}, "root_ledger": open_ledger}, "deliv-d3"),
+    ):
+        refusals += 1
+        code, out, err, _runs = choose(case, **kwargs)
+        if code != 1 or out or len(err.splitlines()) != 1 or needle not in err:
+            errors.append(f"choosing a pass, {case}: exited {code} with {out!r} {err!r}, not one refusal naming {needle}")
+    stray_runs = root / "choose" / "ledger-without-run"
+    shutil.rmtree(stray_runs, ignore_errors=True)
+    write(stray_runs / "lost" / "ledger.md", open_ledger)
+    listing = write(stray_runs / "deliveries.json", {"count": len(deliveries), "deliveries": deliveries})
+    refused(["issue", "--runs", str(stray_runs), "--deliveries", str(listing)], "a run folder with a ledger and no run.json", "lost")
+    # The listing is read only once no pass is in flight, so its refusals run over a project with
+    # no pass yet.
+    no_runs = root / "choose" / "no-runs"
+    no_runs.mkdir(parents=True, exist_ok=True)
+    bad_listing = write(root / "choose" / "bad-listing.json", {"count": 1, "deliveries": [delivery("deliv-f1", "baseline", "deliv-f1", 10)]})
+    refused(["issue", "--runs", str(no_runs), "--deliveries", str(bad_listing)], "a delivery whose issue is neither set nor addendum", "baseline")
+    reading_word = write(root / "choose" / "reading-word.json", {"count": 1, "deliveries": [dict(delivery("deliv-g1", None, None, None), stillReading="false")]})
+    refused(["issue", "--runs", str(no_runs), "--deliveries", str(reading_word)],
+            "a delivery whose stillReading is not true or false", "deliv-g1")
+    no_array = write(root / "choose" / "no-array.json", {"count": 0})
+    refused(["issue", "--runs", str(no_runs), "--deliveries", str(no_array)], "a deliveries file with no deliveries array", "deliveries")
+
+    # ------------------------------------------------------------------ #
+    # The text the lead and the reader follow
+    # ------------------------------------------------------------------ #
+    skill_path = plugin_path / "skills" / "scope-run" / "SKILL.md"
+    reader_path = plugin_path / "agents" / "scope-reader.md"
+    try:
+        skill = skill_path.read_text(encoding="utf-8")
+        reader = reader_path.read_text(encoding="utf-8")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot read the skill or the reader: {e}")
+    reader_flat = " ".join(reader.split())
+    skill_flat = " ".join(skill.split())
+
+    # The lead's own command, fed to the script's arguments.
+    # Both fences sit inside a list item, so they may be indented.
+    command = re.search(r"python3 '<plugin root>/scripts/plan_inventory\.py' issue\b([^`]*?)\n *```", skill)
+    if command is None:
+        errors.append("the skill carries no fenced `plan_inventory.py' issue` command")
+    else:
+        lead_runs = root / "choose" / "lead-command"
+        shutil.rmtree(lead_runs, ignore_errors=True)
+        write(lead_runs / "deliveries.json", {"count": len(deliveries), "deliveries": deliveries})
+        tail = command.group(1).replace("\\\n", " ").replace("<project folder>", str(lead_runs).replace("\\", "/"))
+        try:
+            argv = ["issue", *shlex.split(tail)]
+        except ValueError as e:
+            argv = []
+            errors.append(f"the skill's issue command does not split as a shell line: {e}")
+        if argv:
+            code, out, err = run(argv)
+            if code != 0 or not out.startswith("start deliv-d3"):
+                errors.append(f"the skill's own issue command, run as written, exited {code}: {out or err}")
+
+    # The run.json the skill shows is one the script accepts.
+    shown = re.search(r"```json\n( *\{[^`]*?\"unitTag\"[^`]*?\})\n *```", skill)
+    if shown is None:
+        errors.append("the skill shows no run.json in a fenced json block")
+    else:
+        try:
+            example = json.loads(shown.group(1))
+            folder = root / "shown-run"
+            write(folder / "run.json", example)
+            module._read_run(folder)
+        except Exception as e:
+            errors.append(f"the run.json the skill shows is refused by the script: {e}")
+
+    for phrase, where in (
+        ('set_grid(projectId: "<projectId>", deliveryId: "<deliveryId>", limit: 500, offset: 0)', "the grid fetch"),
+        ("set_grid(projectId, deliveryId, limit: 0)", "the shape call"),
+        ("`scopeItem:<unit tag>-`", "the tag check"),
+        ("These are the only `set_grid` calls the run makes", "list of the set_grid calls it permits"),
+        ("the first sheet the inventory's bounds line names", "corpus probe"),
+        ("the earlier run did not record which set it read", "read plan check-in after a pass in the old layout"),
+    ):
+        if phrase not in skill_flat:
+            errors.append(f"the skill's {where} does not read {phrase!r}")
+    # A summary-only call carries no rows, so no sheet number can be read off it, and a second
+    # sentence calling one call the only one would contradict the list of the calls permitted.
+    for phrase in ("set_grid's limit: 0 summary", "This is the only `set_grid` call you make"):
+        if phrase in skill_flat:
+            errors.append(f"the skill still reads {phrase!r}")
+    paragraphs = [" ".join(p.split()) for p in re.split(r"\n\s*\n", skill)]
+    if not any("`deliveries.json`, the delivery list" in p and "Audience: machine" in p for p in paragraphs):
+        errors.append("the skill names deliveries.json with no `Audience: machine` clause beside it")
+    for phrase in (
+        '{ subject, kind: "sheet", sheet, pageInPdf, fileId }',
+        "`{ sheet, pageInPdf, fileId }`",
+        "`citesThisPage`",
+        # The answer leaves the sheet number null on a replaced page, and every row then reads
+        # false, so false alone does not say the row lacks this page.
+        "every row reads `citesThisPage: false` whatever it cites",
+        "a row is updated only where a write of yours landed on it",
+        "and the `fileId` your dispatch names for that page, so the pin lands",
+    ):
+        if phrase not in reader_flat:
+            errors.append(f"the reader does not document {phrase!r}")
+    if '{ subject, kind: "sheet", sheet, pageInPdf }' in reader_flat:
+        errors.append("the reader still documents a sheet citation with no fileId")
+
+    # A search of the current set finds a later issue's page in place of the pass's own once that
+    # issue lands, so the reader searches each delivery its pass reads from and keeps a hit only on
+    # a page its inventory carries; the line it matches is the shape inventory.md really writes.
+    # And a row's citations of a page are its live ones, the projected `drawingRefs`, since the raw
+    # record also carries superseded fields and removed citations.
+    for phrase in (
+        "search with `deliveryId` set to each of them in turn",
+        "ending `| <the hit's fileId> | <the hit's page>`",
+        'list_scope_items(subjectPrefix: "<subject>", full: true)',
+        "its `drawingRefs`, the live citations",
+    ):
+        if phrase not in reader_flat:
+            errors.append(f"the reader does not document {phrase!r}")
+    if 'read its citations with `search(subject: "<subject>", full: true)`' in reader_flat:
+        errors.append("the reader still reads a row's citations off the raw record")
+    try:
+        inventory_lines = (first / "inventory.md").read_text(encoding="utf-8").splitlines()
+    except Exception as e:
+        inventory_lines = []
+        errors.append(f"the first set's inventory.md: {e}")
+    first_row = rows[0]
+    if not any(
+        line.startswith(f"{first_row['discipline']} | {first_row['sheetNumber']} | ")
+        and line.endswith(f"| {first_row['fileId']} | {first_row['pageInPdf']}")
+        for line in inventory_lines
+    ):
+        errors.append(
+            f"inventory.md carries no sheet line for {first_row['sheetNumber']} ending "
+            f"`| {first_row['fileId']} | {first_row['pageInPdf']}`, the shape the reader matches a hit by"
+        )
+
+    # The runner checks a unit's sheets on the drawing file the unit read them on, so an earlier
+    # issue's citation of the same sheet never stands in for one on this page. The sheet shape it
+    # sends is the one verify_unit takes: an object of exactly `sheet` and `fileId`, or a number.
+    try:
+        runner_flat = " ".join((plugin_path / "agents" / "scope-round-runner.md").read_text(encoding="utf-8").split())
+    except Exception as e:
+        return Result(name, False, detail=f"cannot read the runner: {e}")
+    sheet_shape = '{ "sheet": "<sheet number>", "fileId": "<fileId>" }'
+    if sheet_shape not in runner_flat:
+        errors.append(f"the runner does not send verify_unit a sheet as {sheet_shape}")
+    elif set(json.loads(sheet_shape)) != {"sheet", "fileId"}:
+        errors.append("the runner's sheet shape is not the sheet and fileId verify_unit takes")
+    for phrase, where in (
+        ("each with the `fileId` its unit line names", "repeated lines unit"),
+        ("as the sheet number alone", "sheet with no file"),
+    ):
+        if phrase not in runner_flat:
+            errors.append(f"the runner's {where} does not read {phrase!r}")
+    if "sheets: [<the unit's sheet numbers>]" in runner_flat:
+        errors.append("the runner still verifies a unit by its sheet numbers alone")
+
+    shutil.rmtree(root / "choose", ignore_errors=True)
+    detail = (
+        f"two sets of one project and the old layout planned over the 39-sheet fixture, every unit "
+        f"id of a pass tagged with its own unit tag, numbered from 1 in each part, none a prefix of "
+        f"another pass's ({len(prefixes)} subject prefixes compared), a tagged replan keeping a "
+        f"dispatched id and retiring a cut one, and the summary script summing a tagged pass; "
+        f"{refusals} refusals each one line naming what is "
+        f"wrong (a tag taken, on the record, unchecked, misshapen or counted under another prefix, "
+        f"a second folder for one issue, a row from another issue, a grid fetched after a later "
+        f"delivery, short of one, for another issue or for the current set, an inventory of "
+        f"another issue, other deliveries or none, window 2 under another tag than window 1's, "
+        f"window 3 in a pass folder that lost its run.json, two passes in flight, a stray ledger, "
+        f"a bad listing, a stillReading that is not true or false), another pass's broken run.json "
+        f"never stopping a plan; the pass chosen over 14 project folders (a pass in flight resumed "
+        f"before any other and before the listing is read, the old layout resumed, a closed pass "
+        f"never resumed and only an exact close-out line closing one, the latest set started with "
+        f"the next tag and a closed old layout pass named on the line, a delivery still being read "
+        f"waited on, an addendum after its set's pass named); the "
+        f"skill's issue command and run.json fed to the script, its grid fetch by delivery, and the "
+        f"reader's citations naming the drawing file; bound: invented grids and listings, not a "
+        f"real set_grid or list_drawing_deliveries answer"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -5976,6 +6650,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_agent_model_pinned(plugin_path, marketplace_root),
         check_dispatch_foreground(plugin_path, marketplace_root),
         check_repeated_lines_text(plugin_path, marketplace_root),
+        check_drawing_issue_passes(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

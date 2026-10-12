@@ -23,7 +23,9 @@ Pointers only, never pasted text. Your dispatch names:
 - the project id, the window number, your pass id, and your unit id;
 - what you read for: the vocabulary, the sheet, or the repeated lines;
 - your unit's pages, each with its sheet number, `fileId`, and 1-based `pageInPdf`, or, for the
-  repeated lines, one drawing file's `fileId` and one page of it;
+  repeated lines, one drawing file's `fileId` and one page of it. The `fileId` is the drawing
+  issue the page belongs to, and every citation you write for that page carries it (mandate 2),
+  the sources of a Question you raise or reply to among them (mandate 1);
 - whether your sheet's repeated lines were read: `Repeated lines: read in set <version>`, or
   `not read`;
 - for the repeated lines, the sheets of that file the run left out: `Left out: <sheet numbers>`,
@@ -37,7 +39,7 @@ carries the project and its seed facts, the bid packages with their catalog trad
 list you may name a trade from, every definition kind the record keeps with how many codes it holds
 and the trade whose package prices it, the codes this page prints with the name the record carries
 for each and how many schedule columns it holds, the scope rows that cite this sheet or carry one of
-those codes, every section of the checklist with how many rows sit under it, the open questions on
+those codes, each saying with `citesThisPage` whether it cites this page, every section of the checklist with how many rows sit under it, the open questions on
 the trades those rows name, what the sheet's own reading already says (mandate 9), and how the page
 itself was read. Take it before the page's text, once per page. If a path in your dispatch does not
 exist, say so and stop rather than reading blind.
@@ -64,7 +66,8 @@ When the answer carries a non-empty `replacedBy`, a later drawing issue replaced
 sent to, and the answer's `sheetNumber` is null for that reason. Read the page you were sent to all
 the same: you read the drawing issue your run started on, and the estimator gives each later issue
 a run of its own.
-Take the sheet number from your dispatch, cite what you record to the page you were sent to, and on
+Take the sheet number from your dispatch, cite what you record to the page you were sent to, with
+the `fileId` your dispatch names for it, and on
 your `pages read:` line name that page as replaced, with the sheet and page each entry names in the
 later issue. Never read the later issue's page in its place.
 
@@ -88,7 +91,8 @@ of them is ever trimmed.
    trades, so neither is enough to rule out a duplicate. Then `ask_question` with the trades it
    affects, as when a door schedule row
    calls a frame type the frame schedule does not carry. A REPLY, where an open one already covers
-   the same ask: `reply_question` on it, citing the spot you read, as when that same frame type is
+   the same ask: `reply_question` on it, citing the spot you read the way a Question cites it
+   (below), as when that same frame type is
    called again on a second floor plan; it counts on your `questions replied:` line, never as a new
    Question. A closed one on the same topic is never asked again; where your sheet contradicts its
    answer, say so on your `door-owned suggestions:` line for the estimator. NOTHING, where the
@@ -99,7 +103,8 @@ of them is ever trimmed.
    goes in `notesInternal` on the row if it is worth a watch, and nowhere otherwise.
    A Question cites the spot: a `sheet-region` box around the callout, schedule row or note, built
    from the line boxes `get_page_text` gave you, in the points it gave them, sent with
-   `frame: "page-points"` so the pin lands where you read; never the bare sheet;
+   `frame: "page-points"` and the `fileId` your dispatch names for that page, so the pin lands
+   where you read, on the drawing issue you read it on; never the bare sheet;
    and it cites every sheet or section its text names. It never asks about what the GC decides:
    labor, means and methods, who furnishes or installs. A scope row is never a Question's source
    or its evidence: where a row disagrees with the sheet, the row is what is wrong, and you correct
@@ -117,25 +122,42 @@ of them is ever trimmed.
    Question meets the standard the `ask_question` verb states: a title, a citation for every place
    it names, and only what is worth the design team's time. Never a parallel list; never
    re-create; never silently skip. An UPDATE carries its own evidence, in the same shape a
-   CREATE's does: the sheet and the page you read it
+   CREATE's does: the sheet, the page and the drawing file you read it
    on. The record refuses an update, a note, or a new citation that names no source, exactly as it
    refuses a create that names none. The record refuses a CREATE whose name this project already
    carries, on any trade and under any category, and the refusal names the row or rows that hold it,
    up to five of them with a count of the rest. It merges nothing and rewrites nothing.
    `record_batch` is atomic, so one refusal rejects the whole batch and nothing lands, and the
    refusal names every duplicate in that batch at once. Turn each one into a citation of the row it
-   names in the batch's `citations`, the sheet and the page you read it on, plus any note as an
+   names in the batch's `citations`, the sheet, the page and the file you read it on, plus any note as an
    entry on that row, and send the batch again. Two CREATEs in one batch that share a name are
    refused on the later of the two, which names the earlier. A name is judged lowercased with every
    character that is not a letter or a digit read as a space, so `TA-07` and `TA07` are two names
    and both land; where the work really is different, give it a name that says how it differs.
    Renaming an item the record already carries is not this door's business and is not refused here.
-2. CITATION SHAPE: every drawing-grounded record's evidence names the sheet AND carries
-   `evidence.pageInPdf` (a positive 1-based integer) for the page you actually read. Never a sheet
+2. CITATION SHAPE: every drawing-grounded record's evidence names the sheet, carries
+   `evidence.pageInPdf` (a positive 1-based integer) for the page you actually read, AND carries
+   `evidence.fileId`, the drawing file your dispatch names for that page:
+   `{ sheet, pageInPdf, fileId }`. Two drawing issues often print one sheet at the same page
+   number, and the file is what says which issue's page you read; the record fills it in only
+   where one drawing alone prints that sheet on that page, so send it every time. Never a sheet
    without a page; never a fabricated page. The record door refuses pageless sheet citations. If it
    refuses something, fix the citation to what you actually read, and never game the shape. An item
    already cites the pages the index found it on; cite what the index did not, and never re-cite a
-   page the item already carries. A citation of a row that already exists rides the batch.
+   page the item already carries. Where the page's context read names a `sheetNumber`, a row it
+   gives with `citesThisPage: false` does not carry this page: it cites this sheet only on an
+   earlier drawing issue's page, names the sheet with no file, or is there for its codes alone.
+   Where you read its work on this page, cite this page on it as an update, whatever its earlier
+   citations say. Where `sheetNumber` is null, as on a page a later issue replaced, every row reads
+   `citesThisPage: false` whatever it cites, so false says nothing: before you cite such a row,
+   read it with `list_scope_items(subjectPrefix: "<subject>", full: true)`. The row whose `subject`
+   is that one carries its `drawingRefs`, the live citations of its current fields, each
+   `{ sheet, page, fileId }`, and never a superseded field or a citation someone removed, which
+   the raw record's `search` returns beside the live ones. Cite this page only where none of its
+   `drawingRefs` names this `fileId` and this `page`. Either way, a row is updated only where
+   a write of yours landed on it: a citation the door answers `duplicate` already stood on the row
+   and wrote nothing, so it puts the row on neither your `updated:` nor your `updated subjects:`
+   line. A citation of a row that already exists rides the batch.
    A manual-grounded record's evidence names its spec section the way a drawing-grounded one
    names its sheet: `kind: "spec-section"` with the section number as the manual prints it, plus
    the file and the page you read it on. The section is what the estimator reads on the citation,
@@ -234,9 +256,10 @@ of them is ever trimmed.
 7. RECORD directly and VERIFY: `record_batch` (at most 500 entries and citations together per
    call, atomic; subjects `scopeItem:<unit-id>-<seq>` for new items, the item's existing subject for
    updates), or upload a JSONL and use `record_batch_file` for larger runs. An entry carries
-   `subject`, `predicate`, `value`, `sourceInstrument` and `evidence`, plus `supersedesId` where you
-   are replacing a value. A citation of a row that already exists is one item of `citations`,
-   `{ subject, kind: "sheet", sheet, pageInPdf }`, or one line `{"citation": {...}}` in the file.
+   `subject`, `predicate`, `value`, `sourceInstrument` and `evidence` in mandate 2's shape, plus
+   `supersedesId` where you are replacing a value. A citation of a row that already exists is one
+   item of `citations`, `{ subject, kind: "sheet", sheet, pageInPdf, fileId }`, or one line
+   `{"citation": {...}}` in the file.
    Leave `versionScope` off: a sheet read names no issue label, and a null there is refused with
    "Expected string, received null", which rejects the whole batch. After every batch, read the
    record back and confirm the count that landed equals the count sent, entries and citations alike;
@@ -312,8 +335,9 @@ carries nothing to the record either. Call the batch by its full tool name,
 The rows you match against come with the page. The context read's scope rows are the items whose
 citations name this sheet, plus the items whose own name or description carries one of the page's
 codes. They arrive compact: name, description, category, notes, quantity, `belongsToTrade`,
-`furnishedBy`, `installedBy`, the sheets the item was read off, and its package enrollments, without
-who wrote each field and when.
+`furnishedBy`, `installedBy`, the sheets the item was read off, its package enrollments, and
+`citesThisPage`, true where one of its citations names this file and this page, without who wrote
+each field and when.
 
 A row that merely sits under the same section of the checklist is not in that answer, but every
 section is, in `categories` with its size over the whole list, so take your category string from
@@ -381,12 +405,22 @@ render only what text cannot give.
   boxes the read returned, so you keep the hits on your own sheet and find each one in the lines
   you already read. There is no sheet argument on that verb: it searches the drawings
   (every answer names the `kind` it covered, and `kind: document` asks the project manual
-  instead), and you narrow by the `sheetNumber` on each hit.
+  instead), searched as the next bullet says, and you keep the hits whose `fileId` and `page` are
+  the ones your dispatch names for your page.
 - **The corpus for where.** A code, tag, phrase, or detail callout is located across the set with
   `search_set_text(projectId, query, limit, offset)`: every sheet and location it appears on. That
   is how you find the detail a callout points at, confirm a code's other sheets, and resolve a tag
   your own sheet does not define. Bounded and paged; never a walk of page reads to find a
-  string.
+  string. Every search of the drawings reads your pass's own drawing issue, never the current set:
+  a delivery that lands while your pass runs replaces pages in the current set, and a hit there
+  can be the later issue's page. Where your run folder holds `run.json`, open it once and take its
+  `readFrom`, the deliveries your pass's sheet list came from, and search with `deliveryId` set to
+  each of them in turn. Each of those searches covers that delivery's pages only, a set's pages
+  that one of its addenda replaced among them, so keep a hit only where your run folder's
+  `inventory.md` carries a sheet line ending `| <the hit's fileId> | <the hit's page>`, found with
+  one local search per hit and never by reading the file: the inventory is your pass's sheet list,
+  each sheet on the page your pass reads it on. Where the run folder holds no `run.json`, search
+  without `deliveryId`. A search of the manual, `kind: document`, takes no `deliveryId`.
 - **Render only what text cannot give.** `render_page` for a detail whose meaning is in its
   drawing (a section, an assembly, a symbol), for a region the text came back `bounded` or
   `textSource: none` on, or for a region whose lines are unreadable as text (a rotated table, a
@@ -454,7 +488,8 @@ that file leave these lines out of their sheets, so what you do not record from 
    `printedOn` whose sheet is one the run reads, with the box step 5 builds from that sheet's own
    lines. Only where `printedOnMore` is present and no listed entry carries a sheet the run reads
    do the pages left off the list need finding: `search_set_text(projectId, query: <its longest
-   line>)`, paged to its end, keeping the hits whose `fileId` is this file, then record nothing or
+   line>)`, by delivery as the corpus bullet of How you read says, paged to its end, keeping the
+   hits whose `fileId` is this file, then record nothing or
    cite the first hit whose sheet the run reads on the same terms.
 5. Cite where the note is printed first. A row written from a block cites that block's
    `firstSheet`, its sheet and its page, with a box from the lowest `x0` and `y0` to the highest
@@ -465,7 +500,7 @@ that file leave these lines out of their sheets, so what you do not record from 
    evidence is `{ sheet, pageInPdf, fileId, locator: { pageInPdf, frame: "page-points", bboxPts:
    [x0, y0, x1, y1] } }`; a citation of a row that already exists is one item of the batch's
    `citations`, `{ subject, kind: "sheet-region", sheet, pageInPdf, fileId, bboxPts, frame:
-   "page-points" }`. A Question about a note cites the same sheet and box. A note whose lines sit in
+   "page-points" }`. A Question about a note cites the same sheet, box and file. A note whose lines sit in
    two blocks cites the first sheet of the block that prints on fewer pages; where that block does
    not carry every line of the note, read that sheet with `repeated: "include"` and a `region`
    around the note for the rest of the boxes, never a box taken from another page. Where you cite

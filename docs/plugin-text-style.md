@@ -310,6 +310,23 @@ Each of these is a harness check.
     dispatch, set and unread note lines, filled in, are read by the shipped plan script as it binds
     and marks. This cannot judge whether the record door takes the evidence shape or the scope
     surface draws the box; that is the api's to prove.
+24. A scope pass belongs to one drawing issue. The shipped `plan_inventory.py` plans two sets of
+    one project, each from a run folder whose `run.json` names its delivery, the deliveries its
+    sheet list comes from and a unit tag, and every unit id of each pass carries its tag, with no
+    pass's `scopeItem:<unit id>-` prefix equal to or starting another's, while a folder in the old
+    layout plans untagged. It refuses a tag taken by another run folder or on the record, a grid or
+    an inventory of another issue or of deliveries `run.json` does not name, a second run folder
+    for one issue, a window 2 under another tag than window 1's, any window in a pass folder that
+    lost its `run.json`, and two passes in flight. Its `issue` mode resumes the pass in flight before any other, the old layout's
+    included, never resumes a closed one, and starts only the latest set with no pass. The skill's
+    own `issue` command and `run.json` are fed to the script, the skill lists the `set_grid` calls
+    it permits in one place, and the reader's documented citations and Question sources carry
+    `fileId`, with an update counted only where a write landed, and the runner checks each sheet
+    of a unit on the file its plan line names. The reader searches its pass's own deliveries and
+    keeps a hit only on a page its inventory carries, and reads a row's live citations off
+    `drawingRefs`. This cannot judge whether a reader
+    sends the file on every citation;
+    that stays in review and the measured pass.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is
