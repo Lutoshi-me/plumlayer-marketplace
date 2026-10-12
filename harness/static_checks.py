@@ -4868,7 +4868,7 @@ CONNECTOR_VERBS = {
     "read_deliverables", "read_invitation_flow", "read_set_text", "read_sheet_context",
     "recognize_sheets", "recognize_sheets_status", "reconcile_index", "reconcile_set", "record",
     "record_additional_item", "record_batch", "record_batch_file", "register_file",
-    "register_files", "register_pages", "remove_project_date", "render_page",
+    "register_files", "register_pages", "remove_project_date", "render_page", "renumber_sheet",
     "reopen_question", "reply_question", "request_file_upload", "request_file_uploads",
     "restore_scope_item", "restore_source", "retire_scope_item", "retract_source",
     "rewrite_question", "search", "search_set_symbols", "search_set_symbols_status",

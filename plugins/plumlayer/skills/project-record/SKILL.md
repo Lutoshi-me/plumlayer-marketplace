@@ -170,6 +170,17 @@ cite every entry (an ungrounded entry is a guess; say so instead of writing it).
 - `restore_scope_item`: put a retired scope item back (`projectId`, `subject`, `basis`,
   optional `reason`). Same door for a person and an agent, and it takes effect whoever retired
   the item, so if a person retired it, ask them before you put it back.
+- `renumber_sheet`: give ONE sheet a new number (`projectId`, `sheetNumber` as `set_grid` lists it
+  now, `newSheetNumber`), the same renumber a person makes in Edit Sheet; the record shows it as
+  yours, and what was recorded on the sheet (title, discipline, marks, scale, packages) reads under
+  the new number. Refused when the new number already belongs to another sheet, when someone
+  renumbered the sheet after you read it (the refusal names its number now), and when a number is
+  typed with `sheet:` in front. To undo, renumber the sheet from its new number back to the one it
+  had. A page that bears the same printed number as another page is named by the `opensAs` value
+  `set_grid` lists for it in `pageOccurrences`; renumbering it takes that page alone out of the
+  shared number, and `formerNumbers` will not list the shared number for it, so keep it yourself
+  for the undo. Call it only for a number the user asked changed; a number you merely suspect is
+  misread is reported, not renumbered.
 - `close_question`: close ONE question (`projectId`, `questionId`, optional `note`,
   `sourceInstrument`), when the user has told you it's settled. It stops showing as open and its
   pins come off the sheets; nothing is deleted, and the ask, every reply, and your close all stay

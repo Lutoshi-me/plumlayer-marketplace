@@ -384,6 +384,9 @@ every page in that tail yourself:
     read govern: a bare competing entry loses to the machine value on authorship rank, which is the
     anti-hallucination anchor working as designed. If the slot is empty (the pass
     left this page blank), just author the entry fresh: there is nothing to supersede.
+    A misread sheet number itself is corrected with `renumber_sheet` (project-record skill), which
+    moves what was recorded on the sheet under the right number; never author a second sheet under
+    the right number beside the misread one.
   - **Genuinely unclear**: you honestly cannot tell which of two readings is right. Author your reading
     as a bare entry, cited to what you read, and name it to the user in the step 7 report, with both
     readings, so a person settles it; never silently pick. Which of two readings of our own sheet
