@@ -241,7 +241,9 @@ Each of these is a harness check.
     two parts of three or more, every folded unit keeps the id its own discipline gave it, and the
     bounds line names each fold and each small pass left alone. A unit verified under its part's
     own pass before a replan folds that part keeps its id and is counted once in the folded pass's
-    summary. A 209-sheet grid carrying a real
+    summary. Every pass block reads `summed: yes` only while the pass's summary on file names
+    exactly its unit ids and its last `pass:` line carries that summary, so a fold that leaves the
+    count the same still reads no. A 209-sheet grid carrying a real
     set's discipline and sheet type shape, with invented sheet numbers, plans its window 1 in three
     passes. Its bound is stated in the harness README entry and in the check's own detail line:
     the fixtures are invented, so this proves the script's arithmetic, its ordering, its fold and

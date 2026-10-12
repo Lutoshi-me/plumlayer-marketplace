@@ -99,6 +99,8 @@ Checks:
       naming each fold, with the fixtures' groupings pinned by hand, one sheet between two passes
       of twelve read alone and named as kept, a unit verified under its part's own pass before a
       replan folds that part kept, marked verified and counted once in the folded pass's summary,
+      every pass block reading `summed: yes` only while its summary on file names exactly its unit
+      ids and its last `pass:` line carries that summary, a fold at the same count included,
       and harness/fixtures/set-grid-fixture-209.json, a
       209-sheet grid with a real set's discipline and sheet type counts in grid order and invented
       sheet numbers, planning its window 1 of seventeen vocabulary sheets over eight disciplines in
