@@ -3380,6 +3380,160 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             f"[['A1'], ['B1'], ['C1']] with B1 named as kept: {full_bounds!r}"
         )
 
+    # --- a unit verified before a replan folds its pass ---------------- #
+    #
+    # Two sheets of G beside eleven of A make thirteen, so the first plan keeps G1 alone. G1-1 and
+    # A1-1 are dispatched and verified in that shape, then the user cuts one schedule and the replan
+    # folds G1 into A1. The folded pass keeps both ids and marks both verified, its runner skips
+    # them and reads the rest under A1, and its summary counts every unit it carries once, G1-1 off
+    # the line that names G1.
+    refold_dir = replan_root / "verified-then-folded"
+    refold_inventory = write_replan_inventory(
+        refold_dir,
+        [slice_row("G", f"G-0.0{i}", "notes", i) for i in (1, 2)]
+        + [slice_row("A", f"A-0.{i:02d}", "schedule", 2 + i) for i in range(1, 12)],
+    )
+    refold_label = "a unit verified before a replan folds its pass"
+    code, _bounds, err, refold_first = run_replan(refold_dir, 1, refold_inventory, [])
+    if code != 0 or _grouping(refold_first) != [["G1"], ["A1"]]:
+        errors.append(
+            f"{refold_label}: the first plan reads as {_grouping(refold_first)}, expected "
+            f"[['G1'], ['A1']]: {err}"
+        )
+    else:
+        first_ids = {sheet: unit_id for unit_id, sheet in planned_ids(refold_first)}
+        early = {
+            first_ids["G-0.01"]: ("G1", "G-0.01", 12),
+            first_ids["A-0.01"]: ("A1", "A-0.01", 20),
+        }
+        refold_ledger: list[str] = []
+        for unit_id, (pass_id, sheet, created) in early.items():
+            refold_ledger += [
+                f"dispatch 1 {pass_id} {unit_id} sheets {sheet} purpose the sheet",
+                f"verified 1 {pass_id} {unit_id} created {created} items 4 updated 1 questions 0 "
+                f"replied 0 sent {created} landed {created} conflicts 0 result ok",
+            ]
+        write_ledger(refold_dir, refold_ledger)
+        code, refold_bounds, err, refold_passes = run_replan(
+            refold_dir, 1, refold_inventory, ["--exclude", "A-0.11:the user cut one schedule"],
+        )
+        kept = len(first_ids) - 1
+        if code != 0 or _grouping(refold_passes) != [["G1", "A1"]]:
+            errors.append(
+                f"{refold_label}: the replan after one cut reads as {_grouping(refold_passes)}, "
+                f"expected [['G1', 'A1']]: {err}"
+            )
+        else:
+            expect_bounds(
+                refold_label, refold_bounds,
+                f"ids kept {kept} (ledger {len(early)}, plan file {kept - len(early)}), ids new 0, "
+                f"ids retired 1",
+            )
+            folded_pass = refold_passes[0]
+            if [(u, s) for u, s in planned_ids(refold_passes) if u in early] != [
+                (u, s) for u, (_p, s, _c) in early.items()
+            ]:
+                errors.append(f"{refold_label}: the folded pass does not keep the ids verified before the fold")
+            if (
+                folded_pass["id"], folded_pass["fields"].get("units"),
+                folded_pass["fields"].get("units verified"),
+            ) != ("A1", str(kept), str(len(early))):
+                errors.append(
+                    f"{refold_label}: the folded pass reads {folded_pass['id']} with units "
+                    f"{folded_pass['fields'].get('units')} and units verified "
+                    f"{folded_pass['fields'].get('units verified')}, expected A1, {kept} and "
+                    f"{len(early)}"
+                )
+            refold_marked = marked_units((refold_dir / "read-plan.md").read_text(encoding="utf-8"))
+            if refold_marked != set(early):
+                errors.append(
+                    f"{refold_label}: the folded plan marks {sorted(refold_marked)} verified, "
+                    f"expected {sorted(early)}"
+                )
+
+            # The folded pass's runner skips the two verified units and reads the rest under A1,
+            # each unit's trades going to the file of the pass that verified it.
+            trades_dir = refold_dir / "trades"
+            trades_dir.mkdir(parents=True, exist_ok=True)
+            trade_lines: dict[str, list[str]] = {"G1": [], "A1": []}
+            for unit_id, (pass_id, _sheet, _created) in early.items():
+                trade_lines[pass_id] += [f"{unit_id} trade 01 10 00 2", f"{unit_id} candidates 1"]
+            for unit_id, sheet, _page in folded_pass["units"]:
+                if unit_id in early:
+                    continue
+                refold_ledger += [
+                    f"dispatch 1 A1 {unit_id} sheets {sheet} purpose the sheet",
+                    f"verified 1 A1 {unit_id} created 4 items 4 updated 0 questions 0 replied 0 "
+                    f"sent 4 landed 4 conflicts 0 result ok",
+                ]
+                trade_lines["A1"] += [f"{unit_id} trade 09 21 16 1", f"{unit_id} candidates 0"]
+            write_ledger(refold_dir, refold_ledger)
+            for pass_id, lines_for_pass in trade_lines.items():
+                (trades_dir / f"{pass_id}.txt").write_text(
+                    "\n".join(lines_for_pass) + "\n", encoding="utf-8"
+                )
+
+            summary_module = _load_script_module(
+                plugin_path.joinpath(*PASS_SUMMARY_SCRIPT), "pass_summary"
+            )
+
+            def summarize_pass(pass_id: str) -> tuple[int, str, str]:
+                try:
+                    return _run_script_main(summary_module, [
+                        str(refold_dir / "ledger.md"), "1", pass_id,
+                        "--plan", str(refold_dir / "read-plan.md"),
+                        "--trades", str(trades_dir / f"{pass_id}.txt"),
+                    ])
+                except SystemExit as e:
+                    return (e.code if isinstance(e.code, int) else 2), "", ""
+
+            code, summary_out, summary_err = summarize_pass("A1")
+            summary_lines = summary_out.splitlines()
+            verified_lines = [line.split() for line in refold_ledger if line.startswith("verified ")]
+            read_order: list[str] = []
+            for line in refold_ledger:
+                if line.startswith("dispatch ") and line.split()[3] not in read_order:
+                    read_order.append(line.split()[3])
+            created = sum(int(parts[parts.index("created") + 1]) for parts in verified_lines)
+            by_trade: dict[str, int] = {}
+            candidates = 0
+            for lines_for_pass in trade_lines.values():
+                for line in lines_for_pass:
+                    fields = line.split()
+                    if fields[1] == "candidates":
+                        candidates += int(fields[2])
+                    else:
+                        trade = " ".join(fields[2:-1])
+                        by_trade[trade] = by_trade.get(trade, 0) + int(fields[-1])
+            wanted_trades = "trades: " + ", ".join(
+                f"{c} x{n}" for c, n in sorted(by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
+            ) + f"; candidates {candidates}"
+            g_unit = next(u for u, (p, _s, _c) in early.items() if p == "G1")
+            wanted_g = (
+                f"per unit: {g_unit} created 12 items 4 updated 1 questions 0 replied 0 verified yes"
+            )
+            if code != 0:
+                errors.append(f"{refold_label}: the folded pass's summary refused: exit {code}, {summary_err}")
+            elif (
+                f"units read: {', '.join(read_order)}" not in summary_lines
+                or summary_lines.count(wanted_g) != 1
+                or f"totals verified: created {created} (entry count" not in summary_out
+                or wanted_trades not in summary_lines
+            ):
+                errors.append(
+                    f"{refold_label}: the folded pass's summary does not count every unit it "
+                    f"carries once, {g_unit} under G1 included: expected units read "
+                    f"{read_order}, {wanted_g!r}, created {created} and {wanted_trades!r}, got "
+                    f"{summary_lines[1:4]} and "
+                    f"{[line for line in summary_lines if line.startswith('trades:')]}"
+                )
+            code, _out, gone_err = summarize_pass("G1")
+            if code != 1 or "carries no pass G1" not in gone_err:
+                errors.append(
+                    f"{refold_label}: a summary of G1, which the replan folded away, did not refuse "
+                    f"naming it: exit {code}, {gone_err!r}"
+                )
+
     # --- a planned id that changes pass is renumbered, not refused ----- #
     #
     # The whole window planned first, nothing dispatched, then the same slice: a slice unit whose
@@ -3846,7 +4000,15 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
     a1_fixture = fixtures / "ledger-fixture-a1.md"
     mixed_fixture = fixtures / "ledger-fixture-mixed.md"
     trades_fixture = fixtures / "trades-fixture.txt"
-    for fixture in (a1_fixture, mixed_fixture, trades_fixture):
+    w1_plan = fixtures / "read-plan-fixture-w1.md"
+    w3_plan = fixtures / "read-plan-fixture-w3.md"
+    folded_fixture = fixtures / "ledger-fixture-folded.md"
+    folded_plan = fixtures / "read-plan-fixture-folded.md"
+    folded_trades = fixtures / "trades-folded"
+    for fixture in (
+        a1_fixture, mixed_fixture, trades_fixture, w1_plan, w3_plan, folded_fixture, folded_plan,
+        folded_trades / "A1.txt", folded_trades / "G1.txt",
+    ):
         if not fixture.is_file():
             return Result(name, False, detail=f"fixture not found at {fixture}")
 
@@ -3855,14 +4017,22 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
     except Exception as e:
         return Result(name, False, detail=f"cannot import {script.name}: {e}")
 
+    def summarize(argv: list[str]) -> tuple[int, str, str]:
+        """The script's own main, with an invocation argparse refuses read as its exit code."""
+        try:
+            return _run_script_main(module, argv)
+        except SystemExit as e:
+            return (e.code if isinstance(e.code, int) else 2), "", ""
+
     errors: list[str] = []
     out_dir = Path(__file__).parent / ".test-results" / "pass-summary"
     out_dir.mkdir(parents=True, exist_ok=True)
+    w1_args = ["--plan", str(w1_plan)]
 
     # ------------------------------------------------------------------ #
     # The whole of one pass, against a tally computed here
     # ------------------------------------------------------------------ #
-    code, a1_out, a1_err = _run_script_main(module, [str(a1_fixture), "1", "A1"])
+    code, a1_out, a1_err = summarize([str(a1_fixture), "1", "A1", *w1_args])
     a1_lines = a1_out.splitlines()
     if code != 0:
         return Result(name, False, detail=f"the A1 fixture refused: {a1_err or a1_out}")
@@ -3980,7 +4150,7 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
     # ------------------------------------------------------------------ #
     # One pass only, and none of the lead's own numbers
     # ------------------------------------------------------------------ #
-    code, mixed_out, mixed_err = _run_script_main(module, [str(mixed_fixture), "1", "B1"])
+    code, mixed_out, mixed_err = summarize([str(mixed_fixture), "1", "B1", *w1_args])
     mixed_lines = mixed_out.splitlines()
     if code != 0:
         errors.append(f"the mixed fixture refused: {mixed_err or mixed_out}")
@@ -4021,8 +4191,8 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
     # ------------------------------------------------------------------ #
     # The trades file
     # ------------------------------------------------------------------ #
-    code, trades_out, _trades_err = _run_script_main(
-        module, [str(a1_fixture), "1", "A1", "--trades", str(trades_fixture)]
+    code, trades_out, _trades_err = summarize(
+        [str(a1_fixture), "1", "A1", *w1_args, "--trades", str(trades_fixture)]
     )
     if code != 0:
         errors.append("the trades fixture refused")
@@ -4048,6 +4218,182 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append("the trades fixture never ties on count, so it proves nothing about the tie break")
     if "trades: no trades file for this pass" not in a1_lines:
         errors.append("without a trades file the trades line does not say so")
+
+    # ------------------------------------------------------------------ #
+    # A pass a replan folded: every unit it carries, whatever pass verified it
+    # ------------------------------------------------------------------ #
+    #
+    # G1-1 was verified while G1 still read alone, and a replan then put G1 inside A1. The runner
+    # skips a unit verified under any pass, so the folded pass's summary has to count G1-1 off the
+    # line that names G1, and once. A1-4 was verified under A1 and the replan left it out, so its
+    # lines name A1 and still reach no total. Everything expected is tallied here off the files.
+    folded_block = [
+        plan_pass for plan_pass in _plan_passes(folded_plan.read_text(encoding="utf-8"))
+        if plan_pass["id"] == "A1"
+    ]
+    folded_units = [unit_id for block in folded_block for unit_id, _sheet, _page in block["units"]]
+    folded_in = [
+        part.strip() for block in folded_block
+        for part in block["fields"].get("folded in", "").split(",") if part.strip()
+    ]
+    folded_rows: list[list[str]] = []
+    for raw in folded_fixture.read_text(encoding="utf-8").splitlines():
+        parts = raw.split()
+        if len(parts) >= 4 and parts[0] in ("dispatch", "verified", "note") and parts[1] == "1":
+            folded_rows.append(parts)
+    member_rows = [
+        parts for parts in folded_rows
+        if parts[3] in folded_units or (parts[3] == "-" and parts[2] in ["A1", *folded_in])
+    ]
+    member_verified = [parts for parts in member_rows if parts[0] == "verified"]
+    read_order: list[str] = []
+    for parts in member_rows:
+        if parts[0] == "dispatch" and parts[3] not in read_order:
+            read_order.append(parts[3])
+    moved = [(parts[3], parts[2]) for parts in member_verified if parts[2] != "A1"]
+    left_behind: dict[str, int] = {}
+    for parts in folded_rows:
+        if parts[2] == "A1" and parts[3] != "-" and parts[3] not in folded_units:
+            left_behind[parts[3]] = left_behind.get(parts[3], 0) + 1
+    if not moved or not left_behind or not folded_in:
+        errors.append(
+            "the folded fixture no longer carries a unit verified under another pass, a unit the "
+            "plan left out and a folded-in part, which are the cases it exists for"
+        )
+
+    code, folded_out, folded_err = summarize([
+        str(folded_fixture), "1", "A1", "--plan", str(folded_plan),
+        "--trades", str(folded_trades / "A1.txt"),
+    ])
+    folded_lines = folded_out.splitlines()
+    if code != 0:
+        errors.append(f"the folded fixture refused: exit {code}, {folded_err or folded_out}")
+    else:
+        if f"units read: {', '.join(read_order)}" not in folded_lines:
+            errors.append(
+                f"the folded pass's units read are not every unit it carries, once each: "
+                f"{[l for l in folded_lines if l.startswith('units read:')]}, expected {read_order}"
+            )
+        for parts in member_verified:
+            counts = " ".join(
+                f"{field} {field_of(parts, field)}"
+                for field in ("created", "items", "updated", "questions", "replied")
+            )
+            wanted = f"per unit: {parts[3]} {counts} verified yes"
+            if folded_lines.count(wanted) != 1:
+                errors.append(f"the folded pass does not print {wanted!r} exactly once")
+        folded_totals = {
+            field: sum(field_of(parts, field) for parts in member_verified)
+            for field in ("created", "items", "updated", "questions", "replied", "conflicts")
+        }
+        wanted_folded = (
+            f"totals verified: created {folded_totals['created']} (entry count under the unit "
+            f"prefixes), items {folded_totals['items']} (reader's own item count), updated "
+            f"{folded_totals['updated']}, questions {folded_totals['questions']} replied "
+            f"{folded_totals['replied']}"
+        )
+        if wanted_folded not in folded_lines:
+            errors.append(
+                f"the folded pass's totals are not its units' verified lines, each once: "
+                f"{[l for l in folded_lines if l.startswith('totals verified:')]}, expected "
+                f"{wanted_folded!r}"
+            )
+        folded_conflicted = [parts[3] for parts in member_verified if field_of(parts, "conflicts")]
+        wanted_conflicts = (
+            f"conflicting rows: {folded_totals['conflicts']}, on units {', '.join(folded_conflicted)}"
+        )
+        if wanted_conflicts not in folded_lines:
+            errors.append(f"the folded pass's conflicting rows line is not {wanted_conflicts!r}")
+        for kind, label in (("anomaly", "anomalies"), ("deviation", "deviations and repairs")):
+            of_kind = [parts for parts in member_rows if parts[0] == "note" and parts[4] == kind]
+            printed = [line for line in folded_lines if line.startswith(f"{label}: ")]
+            wanted_lines = [
+                f"{label}: {'' if parts[3] == '-' else parts[3] + ' '}{' '.join(parts[5:])}"
+                for parts in of_kind
+            ]
+            if printed != wanted_lines:
+                errors.append(
+                    f"the folded pass's {label} lines are {printed}, expected {wanted_lines}: a "
+                    f"note follows its unit, and a note on no unit follows the part it names"
+                )
+        for unit in left_behind:
+            if unit in folded_out:
+                errors.append(f"{unit}, which the plan left out, reached the folded pass's summary")
+        if "9999" in folded_out:
+            errors.append("the lead's own `pass:` line reached the folded pass's totals")
+        named_moved = "verified under another pass: " + ", ".join(f"{u} ({p})" for u, p in moved)
+        if named_moved not in folded_err:
+            errors.append(f"the bounds line does not name `{named_moved}`: {folded_err!r}")
+        named_left = "for a unit its plan block does not carry: " + ", ".join(
+            f"{u} ({n} lines)" for u, n in left_behind.items()
+        )
+        if named_left not in folded_err:
+            errors.append(f"the bounds line does not name `{named_left}`: {folded_err!r}")
+
+        # Each unit's trades sit in the file of the pass whose runner verified it.
+        folded_by_trade: dict[str, int] = {}
+        folded_candidates = 0
+        files_of: dict[str, set[str]] = {}
+        for trades_file in sorted(folded_trades.glob("*.txt")):
+            for raw in trades_file.read_text(encoding="utf-8").splitlines():
+                if raw.split():
+                    files_of.setdefault(raw.split()[0], set()).add(trades_file.stem)
+        for parts in member_verified:
+            for raw in (folded_trades / f"{parts[2]}.txt").read_text(encoding="utf-8").splitlines():
+                fields = raw.split()
+                if not fields or fields[0] != parts[3]:
+                    continue
+                if fields[1] == "candidates":
+                    folded_candidates += int(fields[2])
+                else:
+                    trade = " ".join(fields[2:-1])
+                    folded_by_trade[trade] = folded_by_trade.get(trade, 0) + int(fields[-1])
+        for unit, verifying_pass in moved:
+            if files_of.get(unit) != {verifying_pass}:
+                errors.append(
+                    f"{unit}'s trades are not on the file of {verifying_pass}, the pass that "
+                    f"verified it, alone, so the fixture proves nothing about where they are read"
+                )
+        if not any(unit in files_of for unit in left_behind):
+            errors.append("the folded trades files carry no line for the unit the plan left out")
+        ordered = sorted(folded_by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
+        wanted_trades = (
+            "trades: " + ", ".join(f"{c} x{n}" for c, n in ordered)
+            + f"; candidates {folded_candidates}"
+        )
+        if wanted_trades not in folded_lines:
+            errors.append(
+                f"the folded pass's trades line is not its units' trades, each off the file of "
+                f"the pass that verified it: {[l for l in folded_lines if l.startswith('trades:')]}, "
+                f"expected {wanted_trades!r}"
+            )
+
+    # ------------------------------------------------------------------ #
+    # Window 3: the pass and its one unit share an id
+    # ------------------------------------------------------------------ #
+    code, w3_out, _w3_err = summarize(
+        [str(mixed_fixture), "3", "rev-099999-1", "--plan", str(w3_plan)]
+    )
+    if code != 0:
+        errors.append(f"the window 3 summary refused: exit {code}")
+    else:
+        w3_verified = [
+            parts for parts in _ledger_rows(mixed_fixture, 3, "rev-099999-1")
+            if parts[0] == "verified"
+        ]
+        w3_created = sum(field_of(parts, "created") for parts in w3_verified)
+        if "units read: rev-099999-1" not in w3_out.splitlines() or (
+            f"created {w3_created} (entry count" not in w3_out
+        ):
+            errors.append("the window 3 summary does not read its one review unit off the plan")
+        for stranger in ("9999", "777"):
+            if stranger in w3_out:
+                errors.append(f"a figure of another window reached the window 3 totals: {stranger}")
+
+    # The plan is what says which units a pass carries, so a summary without one is no summary.
+    code, _out, _err = summarize([str(a1_fixture), "1", "A1"])
+    if code != 2:
+        errors.append(f"a summary given no read plan exited {code}, not 2")
 
     # ------------------------------------------------------------------ #
     # Refusals, each exiting 1 with one line on stderr
@@ -4090,33 +4436,79 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
     for index, (what, text, must_name) in enumerate(broken, 1):
         path = out_dir / f"broken-{index}.md"
         path.write_text(text, encoding="utf-8")
-        refusals.append((what, [str(path), "1", "A1"], must_name))
+        refusals.append((what, [str(path), "1", "A1", *w1_args], must_name))
+    lonely_trades = out_dir / "lonely-trades"
+    lonely_trades.mkdir(parents=True, exist_ok=True)
     refusals.extend([
         (
             "a window and pass with no lines",
-            [str(a1_fixture), "2", "A1"],
+            [str(a1_fixture), "1", "B1", *w1_args],
             "carries no dispatch, verified or note line",
         ),
         (
             "a ledger that is not there",
-            [str(out_dir / "no-such-ledger.md"), "1", "A1"],
+            [str(out_dir / "no-such-ledger.md"), "1", "A1", *w1_args],
             "no ledger at",
         ),
         (
             "a trades file that is not there",
-            [str(a1_fixture), "1", "A1", "--trades", str(out_dir / "no-such-trades.txt")],
+            [str(a1_fixture), "1", "A1", *w1_args, "--trades", str(out_dir / "no-such-trades.txt")],
             "no trades file at",
         ),
         (
             "a trades file line in neither of its two shapes",
-            [str(a1_fixture), "1", "A1", "--trades", str(out_dir / "broken-trades.txt")],
+            [str(a1_fixture), "1", "A1", *w1_args, "--trades", str(out_dir / "broken-trades.txt")],
             "neither",
+        ),
+        (
+            "a read plan that is not there",
+            [str(a1_fixture), "1", "A1", "--plan", str(out_dir / "no-such-plan.md")],
+            "no read plan at",
+        ),
+        (
+            "a read plan of another window",
+            [str(a1_fixture), "1", "A1", "--plan", str(w3_plan)],
+            "is the read plan for window 3",
+        ),
+        (
+            "a pass the read plan does not carry",
+            [str(folded_fixture), "1", "G1", "--plan", str(folded_plan)],
+            "carries no pass G1",
+        ),
+        (
+            "a pass block listing fewer unit lines than its units count",
+            [str(a1_fixture), "1", "A1", "--plan", str(out_dir / "short-plan.md")],
+            "lists 10 unit lines",
+        ),
+        (
+            "one unit verified under two passes",
+            [str(out_dir / "twice-verified.md"), "1", "A1", "--plan", str(folded_plan)],
+            "under pass G1",
+        ),
+        (
+            "a moved unit whose verifying pass left no trades file",
+            [str(folded_fixture), "1", "A1", "--plan", str(folded_plan),
+             "--trades", str(lonely_trades / "A1.txt")],
+            "no trades file at",
         ),
     ])
     (out_dir / "broken-trades.txt").write_text("A1-1 trades 09 21 16\n", encoding="utf-8")
+    (out_dir / "short-plan.md").write_text(
+        w1_plan.read_text(encoding="utf-8").replace("A1-11. A-9.11, page 199: (no title)\n", ""),
+        encoding="utf-8",
+    )
+    (out_dir / "twice-verified.md").write_text(
+        folded_fixture.read_text(encoding="utf-8")
+        + "verified 1 A1 G1-1 created 1 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 "
+          "conflicts 0 result ok\n",
+        encoding="utf-8",
+    )
+    (lonely_trades / "A1.txt").write_text(
+        (folded_trades / "A1.txt").read_text(encoding="utf-8"), encoding="utf-8"
+    )
 
     for what, argv, must_name in refusals:
-        run_code, run_out, run_err = _run_script_main(module, argv)
+        run_code, run_out, run_err = summarize(argv)
         if run_code != 1:
             errors.append(f"{what}: exited {run_code}, not 1")
         elif len(run_err.splitlines()) != 1:
@@ -4135,7 +4527,11 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         f"dispatched unit with no verified line printing as unverified and named on the bounds "
         f"line, a mismatch result printing as unverified, the ledger line naming this pass's last "
         f"line, and the three note kinds with no summary line counted rather than dropped; the "
-        f"trades line summed from a trades file and said plainly to be absent without one; "
+        f"trades line summed from a trades file and said plainly to be absent without one; a "
+        f"folded pass counting every unit its plan block carries once, a unit verified under the "
+        f"part's own pass id included with its trades off that pass's file, and a unit the plan "
+        f"left out reaching no total and named on the bounds line; a window 3 pass whose one unit "
+        f"is its own id; a summary with no read plan refused by argparse; "
         f"{len(refusals)} broken invocations each refused in one line naming what is wrong, with "
         f"nothing on stdout"
     )

@@ -1,0 +1,2 @@
+G1-1 trade 01 10 00 4
+G1-1 candidates 1
