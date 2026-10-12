@@ -29,6 +29,7 @@ The three windows, and what each selects:
      selected and the unit keys it left out, so window 2 subtracts this window rather than
      recomputing it from arguments it might not be given identically, and the `--include` and
      `--exclude` patterns with their reasons, so a resume can run this plan again exactly.
+     Beside the vocabulary it plans the repeated lines (below): one unit per drawing file.
   2  every sheet once: every inventory row `plan/window-1.json` does not already name, grouped by
      discipline in inventory order and sorted inside a discipline by sheet type, composition ahead
      of extent, with a pass under three units folded as in window 1. The selection is a partition
@@ -50,6 +51,35 @@ The three windows, and what each selects:
      and the deferred unit keys with their count.
   3  one review per package: one pass per row of the packages file, in package order, with the
      packages of one trade kept together. It reads no sheets, so it takes no inventory.
+
+The repeated lines, in windows 1 and 2:
+
+  A drawing file prints some lines at the same spot on many of its pages: general and plan notes,
+  and the fixed part of the title block. `get_page_text` reads them once for the whole file with
+  `repeated: "only"`, and leaves them out of one page with `repeated: "omit"`, and it counts a
+  line as repeated only where five or more of the file's pages print it. So window 1 plans one
+  unit per drawing file holding five or more of the inventory rows the run reads (every row but
+  the ones `--exclude` left out), in its own pass `RS1`, split at twelve like every pass and never
+  folded: its units read a file, not a sheet. The unit line names the file and the first of those
+  rows' pages in inventory order, `RS1-<n>. file <fileId>, from page <page>: repeated lines`,
+  followed by `, sheets left out <numbers>` where `--exclude` left some of that file's sheets
+  out: the file's repeated lines are read whole, and its reader records nothing from a block
+  printed only on those sheets. `plan/window-1.json` carries the units as `repeatedSets`, each
+  with its file id, unit id, page and `sheetsLeftOut`, apart from `selected` so window 2's
+  subtraction and partition do not change. A discipline whose
+  window 1 pass id would be `RS1` is refused, since its unit ids would be the repeated lines'.
+  The unit ids keep across a replan as a sheet's do, bound by file id: a ledger line
+  `dispatch 1 <pass> RS1-<n> sheets none purpose repeated lines of file <fileId>`, then
+  `repeatedSets` in the previous window 1 file, then new numbers. The bounds line and the totals
+  block count these units in their own clause, so every sheet count reads as it always has.
+
+  Window 2 ends a unit line with `, repeated lines read in set <version>` where its file's repeated
+  lines unit carries a window 1 `verified` line whose last result is `ok`, a
+  `note ... set <version>` line naming the set version it read (the last one counts), and no
+  `note ... unread` line: a reader on that line leaves the file's repeated lines out of its page
+  where its answer names the same version, because they were read once already. Any other unit
+  line carries no mark and its reader reads the page whole, so no line a reader leaves out goes
+  unread.
 
 Unit ids across a replan, in windows 1 and 2:
 
@@ -154,9 +184,10 @@ an empty plan:
               is ordinary here: both plan a review, and the plan places them one after the
               other.
   --window-1  the file window 1 wrote: `selected` and `excluded`, both arrays of inventory unit
-              keys. Its other fields are this script's own bookkeeping and window 2 reads none. A
-              key the inventory does not hold is a refusal, since a file from some other run
-              would leave a sheet unread with nothing said about it.
+              keys, and `repeatedSets`, which may be absent. Its other fields are this script's own
+              bookkeeping and window 2 reads none. A key the inventory does not hold, or a
+              repeated lines unit naming a file the inventory does not hold, is a refusal, since a
+              file from some other run would leave a sheet unread with nothing said about it.
   ledger.md   found beside the plan file, never named by an argument, and absent on a first plan
               run. A flag would be a flag the lead can forget, and forgetting it is the failure
               this reading exists to prevent.
@@ -172,8 +203,11 @@ Exit codes:
      some other window takes, an input row with no `tradeCode`, a window 1 file naming a unit key
      the inventory does not hold or naming one as both selected and excluded, an `--include`,
      `--exclude` or `--only` with no colon or matching no sheet it may select, an inventory file
-     this script did not write, or a window 2 plan whose planned and deferred sheets are not a
-     partition of what window 1 left. Six of them are about
+     this script did not write, a window 2 plan whose planned and deferred sheets are not a
+     partition of what window 1 left, a discipline whose window 1 pass id would be `RS1`, and a
+     window 1 file whose `repeatedSets` is malformed or names a file the inventory does not hold.
+     Three more are about a repeated lines unit's dispatch line: one naming no file after
+     `of file`, one unit id bound to two files, and one file bound to two unit ids. Six are about
      a unit id already handed out: a ledger dispatch line for this window whose unit id is not
      `<pass>-<number>`, one sheet number bound to two unit ids, one unit id bound to two sheet
      sets, a bound sheet number matching more than one inventory row, a bound unit whose sheet set
@@ -238,6 +272,19 @@ WINDOW_2_SHEET_TYPE_ORDER = (
 _WINDOW_2_TYPE_RANK = {name: index for index, name in enumerate(WINDOW_2_SHEET_TYPE_ORDER)}
 
 SELECT_KEYS = {"discipline", "sheetTypes", "patterns"}
+
+# The repeated lines pass. `get_page_text` counts a line as repeated where five or more of its
+# file's pages print it, so a file with fewer rows than that plans no unit: no window 2 unit on it
+# is marked, and each of its sheets is read whole.
+REPEATED_PASS_ID = "RS1"
+REPEATED_MIN_ROWS = 5
+REPEATED_READS_FOR = "the repeated lines"
+REPEATED_MARK = ", repeated lines read"
+# A repeated lines unit id's pass component: the pass, or one lettered part of it.
+_REPEATED_PART_RE = re.compile(r"^RS1[a-z]?$")
+# The key a repeated lines unit binds under. A sheet's unit key always joins three fields with `@`
+# and `#`, so this one never meets a sheet's in the one binding it takes part in, which is its own.
+_REPEATED_KEY_PREFIX = "repeated lines@"
 
 WINDOW_1_FILE = ("plan", "window-1.json")
 
@@ -744,14 +791,45 @@ def _read_packages(path: Path) -> list[dict]:
     return packages
 
 
-def _read_window_1(path: Path, rows: list[dict]) -> tuple[set[str], int, int]:
+def _read_repeated_sets(path: Path, data: dict) -> list[dict]:
+    """
+    A window 1 file's `repeatedSets`: each repeated lines unit with its file id, unit id and page.
+    Absent is none, as on a file written before window 1 planned these units, so nothing on it is
+    marked and every sheet reads whole.
+    """
+    value = data.get("repeatedSets")
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise PlanError(f"{path}: `repeatedSets` is not a list of repeated lines units")
+    sets: list[dict] = []
+    for index, entry in enumerate(value, 1):
+        unit_id = entry.get("unitId") if isinstance(entry, dict) else None
+        parsed = _parse_unit_id(unit_id) if isinstance(unit_id, str) else None
+        if (
+            parsed is None
+            or not _REPEATED_PART_RE.match(parsed[0])
+            or not isinstance(entry.get("fileId"), str)
+            or not entry["fileId"]
+        ):
+            raise PlanError(
+                f"{path}: `repeatedSets` entry {index} carries no `fileId` and no repeated lines "
+                f"unit id of the shape RS1-<number>"
+            )
+        sets.append({"fileId": entry["fileId"], "unitId": unit_id, "page": entry.get("page")})
+    return sets
+
+
+def _read_window_1(path: Path, rows: list[dict]) -> tuple[set[str], int, int, list[dict]]:
     """
     The file window 1 wrote: the unit keys it selected and the unit keys its `--exclude` patterns
     left out. Window 2 subtracts both. An excluded sheet was left out by the lead with a reason
     recorded, and reading it in window 2 would override that judgment with nothing said about it.
+    It also carries the repeated lines units window 1 planned, which window 2 marks its units by.
 
     A key the inventory does not hold is a refusal rather than a key skipped: a window 1 file from
-    some other run would silently leave a sheet of this one unread.
+    some other run would silently leave a sheet of this one unread. So is a repeated lines unit on
+    a file the inventory does not hold, which would mark nothing it means to.
     """
     data = _read_json(path, "the window 1 file")
     if not isinstance(data, dict) or data.get("window") != 1:
@@ -782,7 +860,16 @@ def _read_window_1(path: Path, rows: list[dict]) -> tuple[set[str], int, int]:
             f"{path} names {len(strangers)} unit key(s) the inventory does not hold "
             f"({_named(strangers)}); it was written off some other inventory"
         )
-    return keys, len(lists["selected"]), len(lists["excluded"])
+
+    repeated_sets = _read_repeated_sets(path, data)
+    files = {_text(r.get("fileId")) for r in rows}
+    stranger_files = sorted({s["fileId"] for s in repeated_sets if s["fileId"] not in files})
+    if stranger_files:
+        raise PlanError(
+            f"{path} plans the repeated lines of {len(stranger_files)} file(s) the inventory does "
+            f"not hold ({_named(stranger_files)}); it was written off some other inventory"
+        )
+    return keys, len(lists["selected"]), len(lists["excluded"]), repeated_sets
 
 
 # --------------------------------------------------------------------------- #
@@ -830,6 +917,9 @@ def _read_ledger_units(path: Path, window: int) -> dict[str, tuple[str, ...]]:
         if parts[1] != want:
             continue
         unit_id = parts[3]
+        if window == 1 and _is_repeated_unit(unit_id):
+            # A repeated lines unit reads a file, not a sheet, and binds by its file id instead.
+            continue
         if parts[4] != "sheets":
             raise PlanError(
                 f"{path}: a window {window} dispatch line names no `sheets` field, so its unit id "
@@ -861,6 +951,99 @@ def _read_ledger_units(path: Path, window: int) -> dict[str, tuple[str, ...]]:
             f"{window} ({_named(two_owners)}); the record carries a subject prefix for each"
         )
     return by_unit
+
+
+def _is_repeated_unit(unit_id: str) -> bool:
+    """Whether a unit id is a repeated lines unit's: `RS1-<n>`, or one in a lettered part."""
+    parsed = _parse_unit_id(unit_id)
+    return parsed is not None and _REPEATED_PART_RE.match(parsed[0]) is not None
+
+
+def _read_ledger_repeated(path: Path) -> dict[str, str]:
+    """
+    Window 1's repeated lines dispatch lines, as unit id -> the file id the line names, read off
+    `dispatch 1 <pass> RS1-<n> sheets none purpose repeated lines of file <fileId>`. The pass field
+    is whatever pass the runner ran it under; the unit id is what binds. One unit id on two files,
+    or one file under two unit ids, is a refusal: the record carries rows under each id.
+    """
+    if not path.is_file():
+        return {}
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
+
+    file_of: dict[str, str] = {}
+    unit_of: dict[str, str] = {}
+    for raw in text.splitlines():
+        parts = raw.strip().split()
+        if len(parts) < 5 or parts[0] != "dispatch" or parts[1] != "1":
+            continue
+        unit_id = parts[3]
+        if not _is_repeated_unit(unit_id):
+            continue
+        purpose = parts[parts.index("purpose") + 1:] if "purpose" in parts else []
+        at = len(purpose) - 1 - purpose[::-1].index("file") if "file" in purpose else -1
+        if at < 0 or at + 2 != len(purpose):
+            raise PlanError(
+                f"{path}: the window 1 dispatch line for {unit_id} names no file after `of file`, "
+                f"so the repeated lines unit binds to nothing: {raw.strip()[:120]}"
+            )
+        file_id = purpose[at + 1]
+        if file_of.setdefault(unit_id, file_id) != file_id:
+            raise PlanError(
+                f"{path}: unit {unit_id} is dispatched on file {file_of[unit_id]} and on file "
+                f"{file_id}; one repeated lines unit reads one file"
+            )
+        if unit_of.setdefault(file_id, unit_id) != unit_id:
+            raise PlanError(
+                f"{path}: the repeated lines of file {file_id} are dispatched under "
+                f"{unit_of[file_id]} and {unit_id}; the record carries a subject prefix for each"
+            )
+    return file_of
+
+
+def _read_repeated_read(path: Path, repeated_sets: list[dict]) -> dict[str, str]:
+    """
+    The files whose repeated lines window 1 read, each with the set version its unit read: the
+    unit's last window 1 `verified` line reads `result ok`, its last `note ... set <version>` line
+    names the version, and no window 1 `note` line names it `unread`. A unit a runner could not
+    read the file's lines for is noted unread, and a unit with no version on the ledger gives a
+    window 2 reader nothing to compare its page against, so either file's sheets are read whole.
+    """
+    if not repeated_sets or not path.is_file():
+        return {}
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
+    last: dict[str, str | None] = {}
+    version: dict[str, str] = {}
+    unread: set[str] = set()
+    for raw in text.splitlines():
+        parts = raw.strip().split()
+        if len(parts) < 5 or parts[1] != "1":
+            continue
+        if parts[0] == "verified":
+            last[parts[3]] = _figure(parts, "result")
+        elif parts[0] == "note" and parts[4] == "unread":
+            unread.add(parts[3])
+        elif parts[0] == "note" and parts[4] == "set" and len(parts) > 5:
+            version[parts[3]] = parts[5]
+    return {
+        s["fileId"]: version[s["unitId"]] for s in repeated_sets
+        if last.get(s["unitId"]) == "ok" and s["unitId"] not in unread and s["unitId"] in version
+    }
+
+
+def _read_previous_repeated_sets(path: Path) -> list[dict]:
+    """The repeated lines units the last window 1 plan run wrote, or none where it wrote no file."""
+    if not path.is_file():
+        return []
+    data = _read_json(path, "the window 1 plan file")
+    if not isinstance(data, dict) or data.get("window") != 1:
+        raise PlanError(f"{path} is not a window 1 file written by this script")
+    return _read_repeated_sets(path, data)
 
 
 def _read_plan_file_units(path: Path, window: int) -> dict[str, str]:
@@ -1251,8 +1434,14 @@ def _fold_clause(runner_passes: list[list[dict]]) -> str:
 def _unit_line(label: str, row: dict, show_file: bool) -> str:
     """
     A planned unit's label is its unit id, which is what the runner puts on the ledger line and in
-    the `verify_unit` prefix. A left-out sheet has no unit, so its label is a plain ordinal.
+    the `verify_unit` prefix. A left-out sheet has no unit, so its label is a plain ordinal. A
+    repeated lines unit reads a file from any of its pages, so it names the file always.
     """
+    if row.get("repeatedSet"):
+        line = f"{label}. file {row['fileId']}, from page {row['pageInPdf']}: repeated lines"
+        if row.get("sheetsLeftOut"):
+            line += ", sheets left out " + ", ".join(row["sheetsLeftOut"])
+        return line
     title = _text(row["pageTitle"]) or "(no title)"
     where = f"page {row['pageInPdf']}"
     if show_file:
@@ -1351,6 +1540,12 @@ def _window_1(rows: list[dict], includes, excludes) -> dict:
 
     passes: list[dict] = []
     for discipline, group in _by_discipline(chosen):
+        if _pass_id_for_discipline(discipline, 1) == REPEATED_PASS_ID:
+            raise PlanError(
+                f"discipline {discipline} would read its window 1 sheets as pass "
+                f"{REPEATED_PASS_ID}, which is the repeated lines pass, so its unit ids would be "
+                f"theirs; nothing written"
+            )
         passes.append(
             {
                 "id": _pass_id_for_discipline(discipline, 1),
@@ -1366,6 +1561,10 @@ def _window_1(rows: list[dict], includes, excludes) -> dict:
     ]
     return {
         "passes": passes,
+        "repeatedPasses": _repeated_passes(
+            [r for r in rows if r["unitKey"] not in excluded_keys],
+            [r for r in rows if r["unitKey"] in excluded_keys],
+        ),
         "includes": include_blocks,
         "excludes": exclude_blocks,
         "excludedCount": len(excluded_keys),
@@ -1374,6 +1573,52 @@ def _window_1(rows: list[dict], includes, excludes) -> dict:
         "unassigned": unassigned,
         "notes": [],
     }
+
+
+def _repeated_passes(read_rows: list[dict], left_out_rows: list[dict]) -> list[dict]:
+    """
+    The repeated lines pass: one unit per file holding REPEATED_MIN_ROWS or more of the rows the
+    run reads, in the order each file first appears in the inventory, at the page of that first
+    row. A row with no file id names no file to read, so it counts toward none.
+
+    `repeated: "only"` reads the whole file, the sheets `--exclude` left out included, so each unit
+    carries its file's left-out sheet numbers: its reader records nothing from a block printed only
+    on those sheets.
+    """
+    by_file: dict[str, list[dict]] = {}
+    for row in read_rows:
+        file_id = _text(row.get("fileId"))
+        if file_id:
+            by_file.setdefault(file_id, []).append(row)
+    left_out: dict[str, list[str]] = {}
+    for row in left_out_rows:
+        left_out.setdefault(_text(row.get("fileId")), []).append(_text(row.get("sheetNumber")))
+    units = [
+        {
+            "unitKey": _REPEATED_KEY_PREFIX + file_id,
+            # The binding resolves a ledger line through the unit's sheet number, and a repeated
+            # lines line names a file, so the file id stands in that field.
+            "sheetNumber": file_id,
+            "fileId": file_id,
+            "pageInPdf": file_rows[0]["pageInPdf"],
+            "sheetsLeftOut": left_out.get(file_id, []),
+            "repeatedSet": True,
+        }
+        for file_id, file_rows in by_file.items()
+        if len(file_rows) >= REPEATED_MIN_ROWS
+    ]
+    if not units:
+        return []
+    return [
+        {
+            "id": REPEATED_PASS_ID,
+            "discipline": None,
+            "name": "Repeated lines, read once",
+            "readsFor": REPEATED_READS_FOR,
+            "units": units,
+            "repeatedSets": True,
+        }
+    ]
 
 
 # --------------------------------------------------------------------------- #
@@ -1611,6 +1856,36 @@ def _render_slice(plan: dict, show_file: bool) -> list[str]:
     return lines
 
 
+def _is_repeated_pass(runner_pass: list[dict]) -> bool:
+    """Whether a runner pass is a repeated lines pass, which reads files and never folds."""
+    return bool(runner_pass[0]["pass"].get("repeatedSets"))
+
+
+def _repeated_clause(plan: dict, units: int, runner_passes: list[list[dict]]) -> str:
+    """Window 1's account of its repeated lines units, the same on the bounds line and the totals."""
+    ids = plan["repeatedIds"]
+    passes = sum(1 for runner_pass in runner_passes if _is_repeated_pass(runner_pass))
+    return (
+        f"repeated lines read once: files {units}, passes {passes}, their ids kept {ids['kept']} "
+        f"(ledger {ids['ledger']}, plan file {ids['planFile']}), new {ids['new']}, retired "
+        f"{ids['retired']}"
+    )
+
+
+def _marked_clause(plan: dict) -> str:
+    """Window 2's account of the sheets whose readers leave their file's repeated lines out."""
+    marked = plan["repeatedRead"]
+    sheets = sum(
+        1 for plan_pass in plan["passes"] for row in plan_pass["units"]
+        if _text(row.get("fileId")) in marked
+    )
+    files = len({s["fileId"] for s in plan["repeatedSets"]})
+    return (
+        f"sheets read without their file's repeated lines {sheets}, files whose repeated lines "
+        f"were read {len(marked)} of {files} planned"
+    )
+
+
 def _render(
     window: int, plan: dict, rows: list[dict], show_file: bool, runner_passes: list[list[dict]]
 ) -> tuple[str, int, int]:
@@ -1626,14 +1901,20 @@ def _render(
     lines.append(f"## Window {window}")
     lines.append("")
 
+    # The repeated lines passes are counted on their own line, so every sheet count reads as it did.
     total_units = 0
-    total_passes = len(runner_passes)
+    total_passes = sum(1 for runner_pass in runner_passes if not _is_repeated_pass(runner_pass))
+    repeated_units = 0
+    marked = plan.get("repeatedRead", {})
 
     for runner_pass in runner_passes:
         host = _host(runner_pass)
         folded = [part for part in runner_pass if part is not host]
         pass_units = [unit for part in runner_pass for unit in part["units"]]
-        total_units += len(pass_units)
+        if _is_repeated_pass(runner_pass):
+            repeated_units += len(pass_units)
+        else:
+            total_units += len(pass_units)
         heading = f"### {host['id']}. {host['name']}"
         if folded:
             # The lead finds a discipline's passes by their headings, so a folded pass names every
@@ -1661,6 +1942,9 @@ def _render(
                 if window == 3
                 else _unit_line(unit_id, unit, show_file)
             )
+            if window == 2 and _text(unit.get("fileId")) in marked:
+                # The version the file's unit read, which the reader compares its page against.
+                line += f"{REPEATED_MARK} in set {marked[_text(unit.get('fileId'))]}"
             lines.append(line + (" verified" if unit_id in plan["verified"] else ""))
         lines.append("")
 
@@ -1705,6 +1989,10 @@ def _render(
             f"unit ids kept {ids['kept']}, new {ids['new']}, retired {ids['retired']}"
             + (f", ids held {ids['held']}" if ids["held"] else "")
         )
+    if window == 1:
+        lines.append(_repeated_clause(plan, repeated_units, runner_passes))
+    if window == 2:
+        lines.append(_marked_clause(plan))
     if window == 1:
         lines.append(
             f"sheets left out {plan['excludedCount']}, sheets this window does not read "
@@ -1824,9 +2112,11 @@ def plan(args) -> str:
         # than recomputing window 1's selection from arguments it might not be given identically.
         window_1_path = args.out.parent.joinpath(*WINDOW_1_FILE)
     elif window == 2:
-        keys, selected, excluded = _read_window_1(args.window_1, rows)
+        keys, selected, excluded, repeated_sets = _read_window_1(args.window_1, rows)
         only = [_split_pattern_argument(raw, "--only") for raw in (args.only or [])]
         result = _window_2(rows, keys, selected, excluded, only)
+        result["repeatedSets"] = repeated_sets
+        result["repeatedRead"] = _read_repeated_read(args.out.parent / LEDGER_FILE, repeated_sets)
     else:
         packages = _read_packages(args.packages)
         result = _window_3(packages)
@@ -1847,6 +2137,22 @@ def plan(args) -> str:
             {row["unitKey"] for row in result.get("deferred", [])},
             result["verified"],
         )
+    if window == 1:
+        # The same binding a sheet's id takes, over the repeated lines units alone, with the file
+        # id standing for the sheet: so their ids keep, number and retire as a sheet's do.
+        repeated_rows = [row for plan_pass in result["repeatedPasses"] for row in plan_pass["units"]]
+        result["repeatedIds"] = _bind_unit_ids(
+            result["repeatedPasses"],
+            repeated_rows,
+            {unit_id: (file_id,) for unit_id, file_id in _read_ledger_repeated(ledger_path).items()},
+            {
+                entry["unitId"]: _REPEATED_KEY_PREFIX + entry["fileId"]
+                for entry in _read_previous_repeated_sets(_window_file(args.out.parent, 1))
+            },
+            ledger_path,
+            set(),
+            set(),
+        )
     if window == 2:
         read_earlier_keys = {
             key for unit in result["unitIds"]["heldUnits"] if unit["verified"]
@@ -1860,7 +2166,12 @@ def plan(args) -> str:
             row for row in result["deferred"] if row["unitKey"] not in read_earlier_keys
         ]
 
-    runner_passes = _runner_passes(window, result)
+    # The repeated lines passes read after the vocabulary's, each part a runner pass of its own.
+    runner_passes = _runner_passes(window, result) + [
+        [part] for part in _window_parts({"passes": result.get("repeatedPasses", [])})
+    ]
+    sheet_passes = [p for p in runner_passes if not _is_repeated_pass(p)]
+    repeated_count = sum(len(p["units"]) for p in result.get("repeatedPasses", []))
     result["summed"] = _summed(
         window, runner_passes, args.out.parent, _read_ledger_pass_lines(ledger_path, window)
     )
@@ -1907,6 +2218,17 @@ def plan(args) -> str:
                         {"pattern": block["pattern"], "reason": block["reason"]}
                         for block in result["excludes"]
                     ],
+                    # Kept apart from `selected`: window 2 subtracts sheets, and these are files.
+                    "repeatedSets": [
+                        {
+                            "fileId": row["fileId"],
+                            "unitId": row["unitId"],
+                            "page": row["pageInPdf"],
+                            "sheetsLeftOut": row["sheetsLeftOut"],
+                        }
+                        for plan_pass in result["repeatedPasses"]
+                        for row in plan_pass["units"]
+                    ],
                 },
                 indent=2,
             )
@@ -1916,8 +2238,10 @@ def plan(args) -> str:
         written += len(window_1_payload)
         return (
             f"wrote {args.out} and {window_1_path}: window 1, units {total_units}, passes "
-            f"{total_passes}, {_fold_clause(runner_passes)}, excluded {result['excludedCount']}, "
-            f"unassigned {len(result['unassigned'])}{ids_clause}; {written:,} bytes"
+            f"{total_passes}, {_fold_clause(sheet_passes)}, excluded {result['excludedCount']}, "
+            f"unassigned {len(result['unassigned'])}{ids_clause}, "
+            f"{_repeated_clause(result, repeated_count, runner_passes)}; "
+            f"{written:,} bytes"
         )
 
     if window == 2:
@@ -1958,12 +2282,13 @@ def plan(args) -> str:
         )
         return (
             f"wrote {args.out} and {window_2_path}: window 2, sheets {total_units}, passes "
-            f"{total_passes}, {_fold_clause(runner_passes)}, disciplines {result['disciplines']}, "
+            f"{total_passes}, {_fold_clause(sheet_passes)}, disciplines {result['disciplines']}, "
             f"{_every_sheet_once(result)}"
             f"{deferred}, sheets window 1 selected "
             f"{result['window1Selected']}, sheets window 1 left out {result['window1Excluded']}, "
             f"sheets in the inventory {len(rows)}, sheets by type {by_type}, sheets typed other or "
-            f"untyped {result['otherOrUntyped']}{ids_clause}{unordered}; {written:,} bytes"
+            f"untyped {result['otherOrUntyped']}{ids_clause}, {_marked_clause(result)}{unordered}; "
+            f"{written:,} bytes"
         )
 
     return (

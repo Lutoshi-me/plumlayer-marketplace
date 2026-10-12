@@ -32,7 +32,10 @@ The three windows:
 
 1. **Vocabulary.** Schedules, legends, general notes, and cover and index sheets; the spec
    sections were read at orientation. Readers record what the marks mean (the definitions), the
-   scope the schedules themselves ground, and every item's trade. When the window closes, the
+   scope the schedules themselves ground, and every item's trade. Beside them, one reader per
+   drawing file reads the lines that file prints at the same spot on many of its sheets, its
+   general and plan notes and the fixed part of its title block, once for the whole file, so no
+   sheet reader in the next window reads them again. When the window closes, the
    record's citation index runs: a mechanical pass that locates every defined code and every
    item's tag on every page of the set and cites those pages onto the items and definitions. After
    this window every trade's page is usable.
@@ -317,8 +320,8 @@ any repo, never uploaded to the project except record files, never recorded as p
   retyped and never read by a model. `packages.json` (`solicitation_list_packages`) is the plan
   script's window 3 input, copied again at the start of window 3. `window-1.json` is what the window 1 plan run wrote, the unit keys it
   selected and the unit keys it left out with its `--include` and `--exclude` patterns and their
-  reasons, and it is the window 2 plan run's input, so that window subtracts window 1 rather than
-  recomputing it. `window-2.json` is what the last window 2 plan run wrote, the unit ids it
+  reasons, and its repeated lines units in `repeatedSets`, and it is the window 2 plan run's
+  input, so that window subtracts window 1 rather than recomputing it. `window-2.json` is what the last window 2 plan run wrote, the unit ids it
   assigned and, for a slice, each `--only` pattern, the unit keys it deferred and the unit keys an
   earlier slice already read and verified; the next window 2
   plan run reads its ids back, so a slice's ids stay where they are. A resume takes a window's
@@ -435,7 +438,9 @@ is the one without `--only` that stage 6 step 4 names. The script keeps every id
 plan file already hold and marks the units already verified. Then dispatch the first pass of the
 window that is not finished, found with a local filter on the pass headings and their `units:`,
 `units verified:` and `summed:` lines. A pass is finished when its block shows the same count on
-its `units:` and `units verified:` lines and shows `summed: yes`. The plan script writes that
+its `units:` and `units verified:` lines and shows `summed: yes`. Window 1's repeated lines pass is
+a pass like any other here: it carries the same three lines and is finished, or dispatched, the
+same way. The plan script writes that
 only while the pass's summary on file names exactly the unit ids the block now carries and the
 pass's last `pass:` line carries that summary's figures, so a replan that changes which units a
 pass carries, by a fold or a cut, leaves it unfinished even where the count comes out the same.
@@ -610,7 +615,15 @@ lines.
      --out '<run folder>/read-plan.md'
    ```
 
-   Read back only its bounds line: units, passes, folds, excluded, unassigned. Each fold reads
+   It also plans the repeated lines: one unit per drawing file holding five or more of the sheets
+   the run reads, in its own pass `RS1`, which never folds, each unit reading that file's repeated
+   lines once with `get_page_text` and `repeated: "only"`. Sheets an `--exclude` left out do not
+   count toward the five, and since that read covers the whole file, a unit line names its file's
+   left-out sheets (`, sheets left out <numbers>`): its reader records nothing from a block printed
+   only on them.
+
+   Read back only its bounds line: units, passes, folds, excluded, unassigned, and the repeated
+   lines clause, which counts those units apart from the sheets. Each fold reads
    `<part> into <pass>`, and a pass under three that fits beside no other is named as kept. It also
    writes `<run folder>/plan/window-1.json`, the unit keys it selected and the ones it left out,
    which is window 2's input and is what makes every sheet once provable rather than inferred. A
@@ -626,9 +639,9 @@ lines.
 <!-- user-facing -->
 Before any reading runs, tell the user, in a few plain sentences, not a table:
 
-- The order: schedules and legends first, by discipline, then every sheet once, then one package
-  at a time against what landed, in one sentence. No reasons; they know why schedules come before
-  plans.
+- The order: schedules and legends first, by discipline, and the notes each drawing file repeats
+  across its sheets, read once, then every sheet once, then one package at a time against what
+  landed, in one sentence. No reasons; they know why schedules come before plans.
 - What is deliberately left out, by sheet family or number. Say it plainly: anything here will not
   be scoped.
 - When the first check-in will be, roughly.
@@ -659,8 +672,10 @@ nothing else:
    runner skips the units already verified, and its new `pass:` line carries the whole pass.
    Passes that share no discipline
    start together, and a folded pass's heading names every discipline it carries; passes the plan
-   marks as seeing the same work start one after another. What a pass leaves in the lead's context
-   is its dispatch line and its summary, nothing else.
+   marks as seeing the same work start one after another. The repeated lines pass, `RS1` and any
+   lettered part of it, shares no discipline and starts alongside the vocabulary passes, with the
+   same runner dispatch. What a pass leaves in the lead's context is its dispatch line and its
+   summary, nothing else.
 2. **The runner owns the pass.** It writes the pass brief if it is not already on disk, runs the
    pass's units in reading order (one fresh
    `plumlayer:scope-reader` per unit, one unit at a time), appends each unit's dispatch line
@@ -754,6 +769,15 @@ On the go-ahead:
    earlier slice already read and verified; the deferred count leaves them out, and it is the
    number the paused line's `deferred <m>` carries. This window takes no packages and no kinds; the
    script refuses either in one line.
+
+   A unit line ends with `, repeated lines read in set <version>` where its file's repeated lines
+   unit carries a window 1 `verified` line whose last result is `ok`, a `set` note naming the set
+   version it read, and no `unread` note: that sheet's reader leaves the file's repeated lines out
+   of its page with `repeated: "omit"`, because they were read once already, but only where its
+   answer names that same set version, and reads the page whole otherwise. Every other sheet is
+   read whole. The bounds line counts the sheets read without
+   their file's repeated lines and the files whose repeated lines were read; a file planned in
+   window 1 and not read there is one whose sheets are all read whole.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 2 \
@@ -996,12 +1020,19 @@ have to guess one.
 subagent_type: plumlayer:scope-reader
 run_in_background: false
 Project: <projectId>. Window: <n>. Pass: <pass id>. Unit: <unit id>.
-Reading for: <"the vocabulary", or "the sheet">.
+Reading for: <"the vocabulary", "the sheet", or "the repeated lines">.
 Pages: <sheet number + fileId + 1-based pageInPdf, one per page>.
+Repeated lines: <"read in set <version>" or "not read">.
+Left out: <the sheet numbers on the unit line's "sheets left out", or "none">.
 Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>.
 Read your unit as your definition says, write your report to <run folder>/reports/<unit id>.md,
 then return it.
 ```
+
+`Reading for:` is `the repeated lines` on a unit of the repeated lines pass, whose `Pages:` line
+then carries the file's `fileId` and the page its unit line names, and whose `Left out:` line
+carries the file's left-out sheets. `Repeated lines:` is `read in set <version>` where the unit
+line ends with `, repeated lines read in set <version>`, and `not read` on every other unit.
 
 **Reviewer dispatch** (the runner writes this, once per review unit, in window 3):
 
@@ -1025,6 +1056,9 @@ are the ones the record holds when the review runs.
 unit: <unit id>   pass: <pass id>   window: <n>
 pages read: <sheet number + pageInPdf, renders taken and the reason for each, one per page>
 pages unread: <sheet number + pageInPdf + reason, or "none">
+cited sheets: <for the repeated lines, every sheet the unit's rows and citations name, comma separated; otherwise "none">
+page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
+set version: <for the repeated lines, the setVersion the unit's walk ended on; otherwise "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
 updated subjects: <the subject of every item updated or newly cited, or "none">
 questions raised ids: <the id of every Question raised, or "none">
@@ -1038,7 +1072,10 @@ grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 
-`created:` is the reader's own item count, not the entries under those items. `updated:` counts
+`cited sheets:` is what the runner verifies a repeated lines unit against, since that unit reads a
+file and has no sheet of its own; `page citations:` names the updates it cited to a page with no
+sheet number, which no sheet verifies, so the runner finds each back by its subject; and `set
+version:` is what the runner puts on the ledger for the window 2 plan to mark that file's sheets by. `created:` is the reader's own item count, not the entries under those items. `updated:` counts
 every pre-existing item the reader wrote anything onto, a note, a value, or a citation alike.
 `sent:` and `landed:` count every write the reader made for the unit, across every call, not only
 its first batch.

@@ -1563,7 +1563,7 @@ def check_question_plain_words_pointer(plugin_path: Path) -> Result:
 LEDGER_LINE_KINDS = {"dispatch", "verified", "note"}
 
 LEDGER_NOTE_KINDS = {
-    "anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet",
+    "anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet", "set",
 }
 
 LEDGER_PROHIBITION_PHRASE = "Nothing else goes in the ledger"
@@ -1799,9 +1799,16 @@ PLAN_INVENTORY_SCRIPT = ("scripts", "plan_inventory.py")
 _PLAN_PASS_RE = re.compile(r"^### (\S+?)\.\s")
 # A planned unit line leads with its own unit id (`A1-7.`) and the deliberately-left-out section
 # leads with a plain ordinal, so the label is read as whatever non-space token sits before the dot.
-_PLAN_UNIT_RE = re.compile(r"^(\S+)\. (\S+), page (\d+): (.*)$")
+# A set over more than one file names the file before the page.
+_PLAN_UNIT_RE = re.compile(r"^(\S+)\. (\S+), (?:file \S+, )?page (\d+): (.*)$")
 _PLAN_REVIEW_RE = re.compile(r"^(\d+)\. (rev-\S+): (.*)$")
 _PLAN_FIELD_RE = re.compile(r"^([a-z][a-z ]*): (.*)$")
+# A repeated lines unit reads a file from one of its pages, in its own pass, `RS1` or a part of it.
+_REPEATED_PASS_RE = re.compile(r"^RS1[a-z]?$")
+_PLAN_REPEATED_UNIT_RE = re.compile(
+    r"^(RS1[a-z]?-[1-9][0-9]*)\. file (\S+), from page (\d+): repeated lines"
+    r"(?:, sheets left out (.+?))?( verified)?$"
+)
 _LEFT_OUT_HEADING = "## Deliberately left out"
 # A window 2 slice lists what each `--only` pattern read and counts what it deferred under this
 # heading, after the left-out section, so no unit line in it is ever read as a planned unit.
@@ -1872,25 +1879,45 @@ def _fold_code(code: str) -> str:
     return "".join(code.split()).lower()
 
 
-def _plan_passes(read_plan: str) -> list[dict]:
+def _plan_passes(read_plan: str, repeated: bool = False) -> list[dict]:
     """
     The read plan's passes, read straight off the file: the pass id, the `key: value` lines of its
     block, its sheet unit lines as (unit id, sheet number, page), and its review unit lines as
     (unit id, name). Stops at the left-out section, whose entries share the sheet unit line's shape
     and carry a plain ordinal where a planned unit carries its id.
+
+    The repeated lines passes read files rather than sheets and never fold, so they are left out of
+    what this returns unless `repeated` asks for them alone, each unit then as (unit id, file id,
+    page, whether it is marked verified), and each pass's `leftOut` naming per unit the sheets of
+    its file the run left out.
     """
     passes: list[dict] = []
+    skipping = False
     for line in read_plan.splitlines():
         if line.strip() == _LEFT_OUT_HEADING:
             break
         heading = _PLAN_PASS_RE.match(line)
         if heading:
-            passes.append(
-                {"id": heading.group(1), "heading": line[4:], "fields": {}, "units": [], "reviews": []}
-            )
+            skipping = bool(_REPEATED_PASS_RE.match(heading.group(1))) != repeated
+            if not skipping:
+                passes.append(
+                    {"id": heading.group(1), "heading": line[4:], "fields": {}, "units": [], "reviews": []}
+                )
             continue
-        if not passes:
+        if not passes or skipping:
             continue
+        if repeated:
+            repeated_unit = _PLAN_REPEATED_UNIT_RE.match(line)
+            if repeated_unit:
+                passes[-1]["units"].append(
+                    (repeated_unit.group(1), repeated_unit.group(2), int(repeated_unit.group(3)),
+                     repeated_unit.group(5) is not None)
+                )
+                # The file's sheets the run left out, which the unit's reader records nothing from.
+                passes[-1].setdefault("leftOut", {})[repeated_unit.group(1)] = (
+                    repeated_unit.group(4).split(", ") if repeated_unit.group(4) else []
+                )
+                continue
         unit = _PLAN_UNIT_RE.match(line)
         if unit:
             passes[-1]["units"].append((unit.group(1), unit.group(2), int(unit.group(3))))
@@ -3977,6 +4004,426 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         encoding="utf-8",
     )
 
+    # ------------------------------------------------------------------ #
+    # The repeated lines: one unit per file in window 1, the mark in window 2
+    # ------------------------------------------------------------------ #
+    #
+    # `get_page_text` leaves a file's repeated lines out of a page only where five or more of its
+    # pages print them, and a reader may ask it to only where those lines were read once already.
+    # The ways the plan can get that wrong, each a case below:
+    #
+    #   1  no unit for a file holding exactly five of the rows the run reads, or one for four;
+    #   2  rows `--exclude` left out counted toward the five, so a run scopes notes off a file the
+    #      lead left out, or a unit not naming its file's left-out sheets, which its reader needs
+    #      because `repeated: "only"` reads the whole file;
+    #   3  the unit line, `repeatedSets`, or the page (the file's first row in inventory order)
+    #      disagreeing with each other;
+    #   4  a repeated lines unit folded into a discipline's pass, or counted among the sheets, in
+    #      `selected`, in `units`, or on the sheet ids clause;
+    #   5  a replan renumbering a dispatched or planned repeated lines unit, or reusing a retired
+    #      id, or the `sheets none` dispatch lines tripping the sheet binding's refusals;
+    #   6  a dispatch line naming no file, one id on two files, or one file under two ids, taken
+    #      in; a discipline whose window 1 pass id is RS1 taken in;
+    #   7  window 2 marking a unit with no ok `verified` line for its file's unit, after a
+    #      mismatch, after an ok followed by a mismatch, beside an `unread` note, with no `set`
+    #      note naming the version read, or on another file's sheets; or a mark carrying another
+    #      version than the unit's last `set` note, which is what the reader compares its page to;
+    #   8  window 2 taking a `repeatedSets` naming a file the inventory does not hold, or one
+    #      malformed;
+    #   9  the mark moving a unit id or changing the partition;
+    #  10  the pass summary script unable to read a repeated lines pass's block, or the plan never
+    #      reading that pass as summed.
+    #
+    # The expectations are built here off the fixture rows. The fixture spans four files, so its
+    # unit lines name their file, which is the shape a real multi-file set plans in.
+    repeated_root = replan_root / "repeated-lines"
+    repeated_label = "the repeated lines"
+    repeated_refusals: list[tuple[str, list[str], str]] = []
+
+    def file_row(file_id: str, discipline: str, number: str, sheet_type: str, page: int) -> dict:
+        return {
+            "unitKey": f"{number}@{file_id}#{page}",
+            "discipline": discipline,
+            "sheetNumber": number,
+            "pageTitle": f"{sheet_type} on {number}",
+            "sheetType": sheet_type,
+            "fileId": file_id,
+            "pageInPdf": page,
+        }
+
+    # file-a holds six rows; file-b five, its first row in inventory order on page 4 though page 1
+    # is lower; file-c four; file-d six, two of which the exclusion below leaves out.
+    repeated_rows = (
+        [file_row("file-a", "A", "A-0.01", "schedule", 1), file_row("file-a", "A", "A-0.02", "schedule", 2)]
+        + [file_row("file-a", "A", f"A-2.0{i}", "plan", 2 + i) for i in range(1, 5)]
+        + [file_row("file-b", "S", "S-0.01", "notes", 4)]
+        + [file_row("file-b", "S", f"S-2.0{i}", "plan", page) for i, page in ((1, 1), (2, 2), (3, 3), (4, 5))]
+        + [file_row("file-c", "M", "M-0.01", "legend", 1)]
+        + [file_row("file-c", "M", f"M-2.0{i}", "plan", 1 + i) for i in range(1, 4)]
+        + [file_row("file-d", "E", "E-0.01", "schedule", 1)]
+        + [file_row("file-d", "E", f"E-2.0{i}", "plan", 1 + i) for i in range(1, 6)]
+    )
+    file_of_sheet = {row["sheetNumber"]: row["fileId"] for row in repeated_rows}
+    leave_out_two = [
+        arg for sheet in ("E-2.01", "E-2.02")
+        for arg in ("--exclude", f"{sheet}:the user left these two sheets out")
+    ]
+
+    def repeated_units(folder: Path) -> list[tuple[str, str, int, bool]]:
+        text = (folder / "read-plan.md").read_text(encoding="utf-8")
+        return [unit for p in _plan_passes(text, repeated=True) for unit in p["units"]]
+
+    def repeated_sets_on_file(folder: Path) -> list:
+        try:
+            return json.loads((folder / "plan" / "window-1.json").read_text(encoding="utf-8")).get("repeatedSets")
+        except Exception as e:
+            return [f"unreadable: {e}"]
+
+    # --- 1 to 4: the first plan --------------------------------------- #
+    rs_first = repeated_root / "first"
+    rs_inventory = write_replan_inventory(rs_first, repeated_rows)
+    code, rs_bounds, err, rs_sheet_passes = run_replan(rs_first, 1, rs_inventory, leave_out_two)
+    if code != 0:
+        errors.append(f"{repeated_label}: the first window 1 plan refused: {err}")
+    else:
+        expected_units = [("RS1-1", "file-a", 1, False), ("RS1-2", "file-b", 4, False)]
+        if repeated_units(rs_first) != expected_units:
+            errors.append(
+                f"{repeated_label}: window 1 plans {repeated_units(rs_first)}, expected "
+                f"{expected_units}: a unit for each file holding five or more rows the run reads, "
+                f"at its first row's page"
+            )
+        if repeated_sets_on_file(rs_first) != [
+            {"fileId": "file-a", "unitId": "RS1-1", "page": 1, "sheetsLeftOut": []},
+            {"fileId": "file-b", "unitId": "RS1-2", "page": 4, "sheetsLeftOut": []},
+        ]:
+            errors.append(
+                f"{repeated_label}: window-1.json's repeatedSets are {repeated_sets_on_file(rs_first)}, "
+                f"not the units the plan lists"
+            )
+        rs_text = (rs_first / "read-plan.md").read_text(encoding="utf-8")
+        rs_passes = _plan_passes(rs_text, repeated=True)
+        if [(p["id"], p["fields"].get("reads for"), p["fields"].get("folded in"), p["fields"].get("units"))
+                for p in rs_passes] != [("RS1", "the repeated lines", None, "2")]:
+            errors.append(
+                f"{repeated_label}: the repeated lines pass reads {[(p['id'], p['fields']) for p in rs_passes]}, "
+                f"expected one pass RS1 of two units reading for the repeated lines, folding nothing in"
+            )
+        # The sheet passes fold among themselves: four parts of one or two sheets join into one
+        # pass of five, and the repeated lines pass of two stands apart though it would fit.
+        if _grouping(rs_sheet_passes) != [["A1", "S1", "M1", "E1"]]:
+            errors.append(
+                f"{repeated_label}: the sheet passes read as {_grouping(rs_sheet_passes)}, expected "
+                f"[['A1', 'S1', 'M1', 'E1']] with the repeated lines pass apart"
+            )
+        if any(_REPEATED_PASS_RE.match(unit_id.rsplit("-", 1)[0]) for unit_id, _s in planned_ids(rs_sheet_passes)):
+            errors.append(f"{repeated_label}: a repeated lines unit is read among the sheets")
+        try:
+            rs_window_1 = json.loads((rs_first / "plan" / "window-1.json").read_text(encoding="utf-8"))
+        except Exception as e:
+            rs_window_1 = {}
+            errors.append(f"{repeated_label}: window-1.json: {e}")
+        if any("RS1" in str(entry) for entry in rs_window_1.get("units", []) + rs_window_1.get("selected", [])):
+            errors.append(f"{repeated_label}: window-1.json carries a repeated lines unit among the sheets")
+        expect_bounds(repeated_label, rs_bounds, "ids kept 0 (ledger 0, plan file 0), ids new 5, ids retired 0")
+        expect_bounds(
+            repeated_label, rs_bounds,
+            "repeated lines read once: files 2, passes 1, their ids kept 0 (ledger 0, plan file 0), "
+            "new 2, retired 0",
+        )
+        if "repeated lines read once: files 2, passes 1," not in rs_text:
+            errors.append(f"{repeated_label}: the read plan's totals do not count the repeated lines units")
+
+    # Without the exclusion, file-d's six rows are all read, so it plans a unit too: the exclusion
+    # is what kept it out above, not something else about the file.
+    rs_whole = repeated_root / "whole"
+    code, _bounds, err, _passes = run_replan(
+        rs_whole, 1, write_replan_inventory(rs_whole, repeated_rows), []
+    )
+    if code != 0:
+        errors.append(f"{repeated_label}: the window 1 plan with nothing left out refused: {err}")
+    elif [unit[1] for unit in repeated_units(rs_whole)] != ["file-a", "file-b", "file-d"]:
+        errors.append(
+            f"{repeated_label}: with nothing left out, window 1 plans the repeated lines of "
+            f"{[unit[1] for unit in repeated_units(rs_whole)]}, expected file-a, file-b and file-d"
+        )
+
+    # A file the run reads five of with one of its sheets left out still plans a unit, and that
+    # unit names the sheet: `repeated: "only"` reads the whole file, the left-out sheet included,
+    # so its reader needs the number to record nothing from a block printed only there.
+    rs_one_out = repeated_root / "one-left-out"
+    code, _bounds, err, _passes = run_replan(
+        rs_one_out, 1, write_replan_inventory(rs_one_out, repeated_rows),
+        leave_out_two + ["--exclude", "A-2.04:the user left this sheet out"],
+    )
+    one_out_text = (rs_one_out / "read-plan.md").read_text(encoding="utf-8") if code == 0 else ""
+    one_out_left = {
+        unit_id: sheets
+        for p in _plan_passes(one_out_text, repeated=True) for unit_id, sheets in p.get("leftOut", {}).items()
+    }
+    if code != 0:
+        errors.append(f"{repeated_label}: the window 1 plan leaving one of file-a's sheets out refused: {err}")
+    elif one_out_left != {"RS1-1": ["A-2.04"], "RS1-2": []} or [
+        entry.get("sheetsLeftOut") for entry in repeated_sets_on_file(rs_one_out)
+    ] != [["A-2.04"], []]:
+        errors.append(
+            f"{repeated_label}: with A-2.04 left out, the unit lines name {one_out_left} and "
+            f"window-1.json {repeated_sets_on_file(rs_one_out)}; file-a's unit should name A-2.04 "
+            f"and file-b's none"
+        )
+
+    # --- 5: the ids across a replan ------------------------------------ #
+    # A new file listed first in the inventory, so its natural place is ahead of both kept units.
+    new_file_rows = [file_row("file-e", "G", "G-0.01", "cover-index", 1)] + [
+        file_row("file-e", "G", f"G-2.0{i}", "plan", 1 + i) for i in range(1, 5)
+    ]
+    grown_inventory = write_replan_inventory(rs_first, new_file_rows + repeated_rows)
+    code, grown_bounds, err, _passes = run_replan(rs_first, 1, grown_inventory, leave_out_two)
+    if code != 0:
+        errors.append(f"{repeated_label}: the replan with a new file refused: {err}")
+    else:
+        got = [(unit[0], unit[1]) for unit in repeated_units(rs_first)]
+        if got != [("RS1-1", "file-a"), ("RS1-2", "file-b"), ("RS1-3", "file-e")]:
+            errors.append(
+                f"{repeated_label}: the replan with a new file reads {got}; the plan file's two ids "
+                f"keep their files and the new file numbers after them"
+            )
+        expect_bounds(
+            repeated_label, grown_bounds,
+            "their ids kept 2 (ledger 0, plan file 2), new 1, retired 0",
+        )
+
+    # Both units dispatched, each on a `sheets none` line, beside one sheet's dispatch. Two units
+    # naming no sheet must not read as one sheet under two ids, nor count as retired sheet ids.
+    write_ledger(rs_first, [
+        "dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-a",
+        "dispatch 1 RS1 RS1-2 sheets none purpose repeated lines of file file-b",
+        "dispatch 1 A1 A1-1 sheets A-0.01 purpose a schedule this pass reads",
+    ])
+    code, dispatched_bounds, err, _passes = run_replan(rs_first, 1, grown_inventory, leave_out_two)
+    if code != 0:
+        errors.append(f"{repeated_label}: a replan over two dispatched repeated lines units refused: {err}")
+    else:
+        expect_bounds(
+            repeated_label, dispatched_bounds,
+            "their ids kept 3 (ledger 2, plan file 1), new 0, retired 0",
+        )
+        expect_bounds(
+            repeated_label, dispatched_bounds,
+            "ids kept 6 (ledger 1, plan file 5), ids new 0, ids retired 0",
+        )
+
+    # Leaving out one more of file-b's rows takes it under five: its dispatched id is retired, and
+    # no other file takes that number.
+    code, cut_bounds, err, _passes = run_replan(
+        rs_first, 1, grown_inventory, leave_out_two + ["--exclude", "S-2.01:the user left it out"]
+    )
+    if code != 0:
+        errors.append(f"{repeated_label}: the replan cutting file-b under five rows refused: {err}")
+    else:
+        got = [(unit[0], unit[1]) for unit in repeated_units(rs_first)]
+        if got != [("RS1-1", "file-a"), ("RS1-3", "file-e")]:
+            errors.append(
+                f"{repeated_label}: with file-b under five rows the plan reads {got}, expected "
+                f"RS1-1 on file-a and RS1-3 on file-e, with RS1-2 retired"
+            )
+        expect_bounds(
+            repeated_label, cut_bounds,
+            "their ids kept 2 (ledger 1, plan file 1), new 0, retired 1",
+        )
+
+    # --- 10: the pass summary reads the pass, and the plan reads it summed - #
+    rs_summary = repeated_root / "summary"
+    rs_summary_inventory = write_replan_inventory(rs_summary, repeated_rows)
+    run_replan(rs_summary, 1, rs_summary_inventory, leave_out_two)
+    write_ledger(rs_summary, [
+        "dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-a",
+        "verified 1 RS1 RS1-1 created 40 items 12 updated 2 questions 1 replied 0 sent 44 landed 44 conflicts 0 result ok",
+        "dispatch 1 RS1 RS1-2 sheets none purpose repeated lines of file file-b",
+        "verified 1 RS1 RS1-2 created 9 items 3 updated 0 questions 0 replied 0 sent 9 landed 9 conflicts 0 result ok",
+    ])
+    rs_summary_module = _load_script_module(plugin_path.joinpath(*PASS_SUMMARY_SCRIPT), "pass_summary")
+    try:
+        code, summary, err = _run_script_main(rs_summary_module, [
+            str(rs_summary / "ledger.md"), "1", "RS1", "--plan", str(rs_summary / "read-plan.md"),
+        ])
+    except SystemExit as e:
+        code, summary, err = e.code, "", ""
+    summary_lines = summary.splitlines()
+    for wanted in (
+        "units read: RS1-1, RS1-2",
+        "per unit: RS1-1 created 40 items 12 updated 2 questions 1 replied 0 verified yes",
+        "per unit: RS1-2 created 9 items 3 updated 0 questions 0 replied 0 verified yes",
+    ):
+        if code != 0 or wanted not in summary_lines:
+            errors.append(
+                f"{repeated_label}: the pass summary of RS1 does not read `{wanted}`: exit {code}, {err!r}"
+            )
+    if code == 0:
+        (rs_summary / "reports").mkdir(parents=True, exist_ok=True)
+        (rs_summary / "reports" / "RS1.md").write_text(summary + "\n", encoding="utf-8")
+        with (rs_summary / "ledger.md").open("a", encoding="utf-8") as ledger:
+            ledger.write(
+                "pass: 1 RS1 units 2 created 49 updated 2 questions 1 replied 0 candidates 0 "
+                "lead-verified yes\n"
+            )
+        run_replan(rs_summary, 1, rs_summary_inventory, leave_out_two)
+        summed_pass = _plan_passes((rs_summary / "read-plan.md").read_text(encoding="utf-8"), repeated=True)
+        got = [(p["fields"].get("units verified"), p["fields"].get("summed")) for p in summed_pass]
+        if got != [("2", "yes")] or not all(unit[3] for unit in repeated_units(rs_summary)):
+            errors.append(
+                f"{repeated_label}: a repeated lines pass verified and summed reads {got} with units "
+                f"{repeated_units(rs_summary)}, expected both units marked verified and the pass summed"
+            )
+
+    # --- 7 and 9: the window 2 mark ------------------------------------- #
+    rs_w2 = repeated_root / "window-2"
+    rs_w2_inventory = write_replan_inventory(rs_w2, repeated_rows)
+    run_replan(rs_w2, 1, rs_w2_inventory, leave_out_two)
+    rs_w2_window_1 = str(rs_w2 / "plan" / "window-1.json")
+    ok_line = "verified 1 RS1 {} created 5 items 2 updated 0 questions 0 replied 0 sent 5 landed 5 conflicts 0 result {}"
+    window_2_sheets = {
+        "file-a": 4, "file-b": 4,
+    }
+    # Each unit's `set` note names the set version it read; the mark carries it to the reader.
+    set_a = "note 1 RS1 RS1-1 set 1111aaaa2222bbbb file file-a"
+    set_b = "note 1 RS1 RS1-2 set 3333cccc4444dddd file file-b"
+    marked_cases: list[tuple[str, list[str], dict[str, str]]] = [
+        ("no verified line for either unit", [set_a, set_b], {}),
+        ("file-a verified ok", [ok_line.format("RS1-1", "ok"), set_a], {"file-a": "1111aaaa2222bbbb"}),
+        ("file-a verified ok with no set note", [ok_line.format("RS1-1", "ok")], {}),
+        ("file-a read twice, the second set note naming another version", [
+            ok_line.format("RS1-1", "ok"), set_a, "note 1 RS1 RS1-1 set 5555eeee6666ffff file file-a",
+        ], {"file-a": "5555eeee6666ffff"}),
+        ("file-b verified as a mismatch", [
+            ok_line.format("RS1-1", "ok"), set_a, ok_line.format("RS1-2", "mismatch"), set_b,
+        ], {"file-a": "1111aaaa2222bbbb"}),
+        ("file-a verified ok, then as a mismatch", [
+            ok_line.format("RS1-1", "ok"), set_a, ok_line.format("RS1-1", "mismatch"),
+        ], {}),
+        ("file-a verified ok beside an unread note", [
+            ok_line.format("RS1-1", "ok"), set_a,
+            "note 1 RS1 RS1-1 unread file file-a repeated lines not read, the check stopped",
+        ], {}),
+        ("both verified ok", [
+            ok_line.format("RS1-1", "ok"), set_a, ok_line.format("RS1-2", "ok"), set_b,
+        ], {"file-a": "1111aaaa2222bbbb", "file-b": "3333cccc4444dddd"}),
+    ]
+    unmarked_ids: list[tuple[str, str]] | None = None
+    for case, ledger_lines, wanted_files in marked_cases:
+        write_ledger(rs_w2, ledger_lines or ["phase: plan approved"])
+        code, w2_case_bounds, err, w2_case_passes = run_replan(
+            rs_w2, 2, rs_w2_inventory, ["--window-1", rs_w2_window_1]
+        )
+        if code != 0:
+            errors.append(f"{repeated_label}, {case}: window 2 refused: {err}")
+            continue
+        marked_files: dict[str, set[str]] = {}
+        marked_count = 0
+        for line in (rs_w2 / "read-plan.md").read_text(encoding="utf-8").splitlines():
+            if line.strip() == _LEFT_OUT_HEADING:
+                break
+            unit = _PLAN_UNIT_RE.match(line)
+            mark = re.search(r", repeated lines read(?: in set (\S+))?$", unit.group(4).removesuffix(" verified")) if unit else None
+            if mark:
+                marked_files.setdefault(file_of_sheet[unit.group(2)], set()).add(mark.group(1) or "")
+                marked_count += 1
+        if marked_files != {f: {v} for f, v in wanted_files.items()} or marked_count != sum(
+            window_2_sheets[f] for f in wanted_files
+        ):
+            errors.append(
+                f"{repeated_label}, {case}: window 2 marks {marked_count} sheets as {marked_files}, "
+                f"expected every window 2 sheet of {wanted_files}, each in its file's set version, and "
+                f"no other"
+            )
+        expect_bounds(
+            f"{repeated_label}, {case}", w2_case_bounds,
+            f"sheets read without their file's repeated lines {marked_count}, files whose repeated "
+            f"lines were read {len(wanted_files)} of 2 planned",
+        )
+        expect_bounds(
+            f"{repeated_label}, {case}", w2_case_bounds,
+            "every sheet once (units 14 equals distinct sheets 14)",
+        )
+        if unmarked_ids is None:
+            unmarked_ids = planned_ids(w2_case_passes)
+        elif planned_ids(w2_case_passes) != unmarked_ids:
+            errors.append(
+                f"{repeated_label}, {case}: the mark moved a unit id: {planned_ids(w2_case_passes)} "
+                f"against {unmarked_ids}"
+            )
+
+    # --- 6 and 8: refusals ---------------------------------------------- #
+    def broken_repeated(case: str, ledger_lines: list[str], inventory_rows: list[dict]) -> tuple[str, str]:
+        folder = repeated_root / "broken" / case
+        shutil.rmtree(folder, ignore_errors=True)
+        path = write_replan_inventory(folder, inventory_rows)
+        write_ledger(folder, ledger_lines)
+        return str(folder / "read-plan.md"), path
+
+    def broken_window_1_file(case: str, repeated_sets: list) -> tuple[str, str, str]:
+        out, path = broken_repeated(case, ["phase: plan approved"], repeated_rows)
+        window_1_file = Path(out).parent / "plan" / "window-1.json"
+        window_1_file.parent.mkdir(parents=True, exist_ok=True)
+        window_1_file.write_text(
+            json.dumps({"window": 1, "selected": [], "excluded": [], "repeatedSets": repeated_sets}) + "\n",
+            encoding="utf-8",
+        )
+        return out, path, str(window_1_file)
+
+    no_file_out, no_file_inventory = broken_repeated(
+        "no-file", ["dispatch 1 RS1 RS1-1 sheets none purpose repeated lines"], repeated_rows)
+    two_files_out, two_files_inventory = broken_repeated(
+        "id-on-two-files",
+        ["dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-a",
+         "dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-b"],
+        repeated_rows)
+    two_ids_rs_out, two_ids_rs_inventory = broken_repeated(
+        "file-under-two-ids",
+        ["dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-a",
+         "dispatch 1 RS1 RS1-2 sheets none purpose repeated lines of file file-a"],
+        repeated_rows)
+    rs_discipline_out, rs_discipline_inventory = broken_repeated(
+        "discipline-rs", [], repeated_rows + [file_row("file-a", "RS", "RS-0.01", "schedule", 7)])
+    stranger_out, stranger_inventory, stranger_window_1 = broken_window_1_file(
+        "stranger-file", [{"fileId": "file-zz", "unitId": "RS1-1", "page": 1}])
+    malformed_out, malformed_inventory, malformed_window_1 = broken_window_1_file(
+        "malformed", [{"fileId": "file-a", "unitId": "A1-1", "page": 1}])
+    repeated_refusals = [
+        (
+            "a repeated lines dispatch line naming no file",
+            ["plan", "--window", "1", "--inventory", no_file_inventory, "--out", no_file_out],
+            "names no file after `of file`",
+        ),
+        (
+            "one repeated lines unit dispatched on two files",
+            ["plan", "--window", "1", "--inventory", two_files_inventory, "--out", two_files_out],
+            "one repeated lines unit reads one file",
+        ),
+        (
+            "one file's repeated lines dispatched under two unit ids",
+            ["plan", "--window", "1", "--inventory", two_ids_rs_inventory, "--out", two_ids_rs_out],
+            "are dispatched under RS1-1 and RS1-2",
+        ),
+        (
+            "a discipline whose window 1 pass id is RS1",
+            ["plan", "--window", "1", "--inventory", rs_discipline_inventory, "--out", rs_discipline_out],
+            "which is the repeated lines pass",
+        ),
+        (
+            "a window 1 file planning the repeated lines of a file the inventory does not hold",
+            ["plan", "--window", "2", "--inventory", stranger_inventory, "--window-1", stranger_window_1,
+             "--out", stranger_out],
+            "file-zz",
+        ),
+        (
+            "a window 1 file whose repeatedSets entry is no repeated lines unit",
+            ["plan", "--window", "2", "--inventory", malformed_inventory, "--window-1", malformed_window_1,
+             "--out", malformed_out],
+            "`repeatedSets` entry 1",
+        ),
+    ]
+
     refused = str(out_dir / "refused.md")
     packages = str(ordinary_packages)
     refusals: list[tuple[str, list[str], str]] = [
@@ -4048,6 +4495,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     ]
     refusals.extend(replan_refusals)
     refusals.extend(slice_refusals)
+    refusals.extend(repeated_refusals)
     for what, argv, must_name in refusals:
         code, _refused_bounds, err = _run_script_main(module, argv)
         if code != 1:
@@ -4096,7 +4544,12 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"parts read in {len(w1_209_grouping)} passes with "
         f"{sum(len(group) - 1 for group in w1_209_grouping)} folds and its window 2 of "
         f"{len(w2_209_parts)} parts in {len(w2_209_grouping)} passes with "
-        f"{sum(len(group) - 1 for group in w2_209_grouping)} folds, "
+        f"{sum(len(group) - 1 for group in w2_209_grouping)} folds, the repeated lines over a "
+        f"four-file fixture (a unit per file of five or more rows the run reads, excluded rows not "
+        f"counted and named on the unit, in a pass that never folds; their ids kept by file across "
+        f"a replan and retired under five; the window 2 mark over {len(marked_cases)} ledgers, only "
+        f"on a file whose unit verified ok last with a set note and no unread note, carrying the "
+        f"last set version, moving no id; an RS1 pass summed), "
         f"{len(refusals)} broken invocations each refused in one line naming what is wrong"
     )
     # An honest bound, not a pass: the fixtures are invented and small. They carry the field names
@@ -5219,6 +5672,284 @@ def check_dispatch_foreground(plugin_path: Path, marketplace_root: Path) -> Resu
 # Public entry point
 # --------------------------------------------------------------------------- #
 
+# --------------------------------------------------------------------------- #
+# Check: the repeated lines, as the reader and the runner are told to read and cite them
+# --------------------------------------------------------------------------- #
+#
+# A repeated lines unit reads a drawing file's repeated lines once with `get_page_text` and
+# `repeated: "only"`, and a window 2 reader leaves them out of its sheet with `repeated: "omit"`
+# only where they were read. The citation is the part no run can repair afterwards: a row cites
+# the block's first sheet with a box built from that note's line boxes, and the box lands only in
+# the frame the boxes were measured in.
+#
+# The frame, settled off the api and worker code rather than assumed: the worker maps every word
+# box from PyMuPDF's unrotated page space through `page.rotation_matrix` into the rendered frame,
+# which is the frame of `page.rect` and of the SVG the sheet viewer draws with no scaling. A line
+# box is the min and max of its words' boxes with nothing converted, and the repeated set's lines
+# are copied verbatim from the first sheet's own lines. The contract's sheet locator reads both
+# frame labels as that one space, and names `page-points` for a box read off the page text and
+# `page-points-rendered` for one drawn on the canvas. So the reader sends the boxes as they are,
+# labelled `page-points`, which is also the label the citation index writes for the same boxes.
+#
+# The checks: the reader's repeated lines section states the walk, the box rule and that label,
+# and never `page-points-rendered`; its window 2 bullet asks for `omit` only on the dispatch's
+# `Repeated lines: read` and reads whole on `repeatedNotChecked`; the reader report published in
+# the agent and in the skill carries `cited sheets:`, which the runner names as what it verifies a
+# repeated lines unit against. And the join: the runner's own dispatch and unread note lines for a
+# repeated lines unit, filled in, are read by the shipped plan script exactly as it binds and
+# marks, so the text and the script cannot drift apart.
+#
+# Honest bound, stated in the detail line: this is text and the script's ledger reader. It does
+# not prove the record door takes the evidence shape or that the scope surface draws the box; the
+# api's batch citation smoke proves a `sheet-region` citation sent with `frame: "page-points"`
+# lands, and a new row's evidence locator is proved by no test here.
+
+_REPEATED_SECTION_HEADING = "## Reading a file's repeated lines"
+_REPEATED_SECTION_PHRASES = (
+    'repeated: "only"',
+    "`setVersion`",
+    "`nextOffset`",
+    "`firstSheet`",
+    "lowest `x0` and `y0` to the highest `x1` and `y1`",
+    'frame: "page-points"',
+    "never convert a number",
+    "`cited sheets:`",
+    # The set it read, which a window 2 reader compares its answer against.
+    "`set version:`",
+    # A file that prints nothing repeated, and a context read never taken off a null first sheet.
+    "`blockCount` is 0",
+    "whose `firstSheet` carries a sheet number",
+    # The sheets the run left out, which the whole-file read covers anyway, judged off each block's
+    # own page list, with the search kept for a list the answer cut.
+    "`Left out:`",
+    "printed only on sheets left out",
+    "its `printedOn`, every page that prints it as `[page, sheet number]`",
+    "where `printedOnMore` is absent, the list is every page",
+    "Only where `printedOnMore` is present",
+    # A box on another page that prints the block is read off that page, around the same spot. Each
+    # page sits within 2 points of the earliest page's spot, and the first sheet comes from the
+    # set's order, so two occurrences can sit 4 points apart.
+    "grown by 4 points on every side",
+    # A first sheet with no number: a box needs one, and a page cited with none carries no box.
+    'kind: "document-page"',
+    "name the box you could not send",
+    # An update cited to a page with no sheet number, which no sheet verifies.
+    "`page citations:`",
+    # `notListed` is one count for the whole set, read at that grain.
+    "`{ blocks, lines, why }`",
+)
+# Phrases the section must not carry: a 2 point region misses an occurrence 4 points off.
+_REPEATED_SECTION_FORBIDDEN = ("grown by 2 points",)
+_OMIT_PHRASES = (
+    'repeated: "omit"',
+    "`Repeated lines: read in set <version>`",
+    "`setVersion` equal to the version on your dispatch",
+    # Each `omit` call reads the set as it stands, so every answer of the walk is compared.
+    "compare on every answer of the walk",
+    "on the first answer or any later one, restart the page from offset 0",
+    "`repeatedOmitted`",
+    "`repeatedNotChecked`",
+    "never ask for `omit`",
+)
+# The omit answer names its set's version on every call, so the walk opens with no probe.
+_OMIT_FORBIDDEN_PHRASES = ("`limit: 1`",)
+# Every `verify_unit` call answers the whole prefix, so the prefix counts come off one call.
+_RUNNER_SPLIT_VERIFY_PHRASE = "never added across calls"
+_RUNNER_DISPATCH_RE = re.compile(
+    r"`(dispatch <window> <pass> <unit> sheets none purpose repeated lines of file <fileId>)`"
+)
+_RUNNER_SET_RE = re.compile(r"`(note <window> <pass> <unit> set <setVersion> file <fileId>)`")
+_RUNNER_UNREAD_RE = re.compile(
+    r"`(note <window> <pass> <unit> unread file <fileId> repeated lines not read, <the reason>)`"
+)
+_RUNNER_NOT_LISTED_RE = re.compile(
+    r"`(note <window> <pass> <unit> unread file <fileId> <blocks> blocks <lines> lines not listed, <why>)`"
+)
+# An update cited to a page with no sheet number is found back by its subject and that page.
+_RUNNER_PAGE_CITATION_PHRASE = 'search(subject: "<subject>", full: true)'
+
+
+def check_repeated_lines_text(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "repeated-lines-text"
+    reader = plugin_path / "agents" / "scope-reader.md"
+    runner = plugin_path / "agents" / "scope-round-runner.md"
+    skill = plugin_path / "skills" / "scope-run" / "SKILL.md"
+    script = plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT)
+    for path in (reader, runner, skill, script):
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+    reader_text = reader.read_text(encoding="utf-8")
+    runner_text = runner.read_text(encoding="utf-8")
+    skill_text = skill.read_text(encoding="utf-8")
+    errors: list[str] = []
+
+    if _REPEATED_SECTION_HEADING not in reader_text:
+        errors.append(f"scope-reader.md carries no `{_REPEATED_SECTION_HEADING}` section")
+        section = ""
+    else:
+        section = reader_text.split(_REPEATED_SECTION_HEADING, 1)[1].split("\n## ", 1)[0]
+    # Phrases wrap across lines in the file, so both sides are read with whitespace collapsed.
+    section = " ".join(section.split())
+    for phrase in _REPEATED_SECTION_PHRASES:
+        if phrase not in section:
+            errors.append(f"the reader's repeated lines section does not carry {phrase!r}")
+    for phrase in _REPEATED_SECTION_FORBIDDEN:
+        if phrase in section:
+            errors.append(
+                f"the reader's repeated lines section still carries {phrase!r}, a region that misses "
+                f"an occurrence up to 4 points from the first sheet's"
+            )
+    # `notListed` can ride an answer that lists no block, so it is handled before the empty-set
+    # step returns.
+    not_listed_at = section.find("`notListed`")
+    empty_at = section.find("`blockCount` is 0")
+    if not_listed_at < 0 or empty_at < 0 or not_listed_at > empty_at:
+        errors.append(
+            "the reader's repeated lines section does not handle `notListed` before an answer whose "
+            "`blockCount` is 0 sends it to report"
+        )
+    if "page-points-rendered" in reader_text:
+        errors.append(
+            "scope-reader.md names `page-points-rendered`, the label for a box drawn on the canvas, "
+            "where every box it sends was read off the page text"
+        )
+    omit_bullet = " ".join(next(
+        (block for block in reader_text.split("\n- ") if block.startswith("**Leave out what was read once.**")),
+        "",
+    ).split())
+    for phrase in _OMIT_PHRASES:
+        if phrase not in omit_bullet:
+            errors.append(f"the reader's leave-out bullet does not carry {phrase!r}")
+    for phrase in _OMIT_FORBIDDEN_PHRASES:
+        if phrase in omit_bullet:
+            errors.append(
+                f"the reader's leave-out bullet still carries {phrase!r}, a probe the answer's own "
+                f"set version made needless"
+            )
+
+    for label, text in (("scope-reader.md", reader_text), ("the scope-run skill", skill_text)):
+        report = next(
+            (body for body in _fenced_block_bodies(text.splitlines()) if any(l.startswith("unit: <unit id>") for l in body)),
+            [],
+        )
+        for wanted in ("cited sheets: ", "page citations: ", "set version: "):
+            if not any(line.startswith(wanted) for line in report):
+                errors.append(f"the reader report published in {label} carries no `{wanted.strip()}` line")
+    if "`cited sheets:`" not in runner_text:
+        errors.append("the runner does not say it verifies a repeated lines unit off `cited sheets:`")
+    if "`page citations:`" not in runner_text or _RUNNER_PAGE_CITATION_PHRASE not in " ".join(runner_text.split()):
+        errors.append(
+            "the runner does not verify an update cited to a page with no sheet number off "
+            "`page citations:`, by its subject and that page"
+        )
+    # Both places that split a verify over calls of 20 sheets, a repeated lines unit in pass mode
+    # and a review in review mode, take the prefix counts once; neither may sum them.
+    runner_sections = {
+        chunk.split("\n", 1)[0].strip(): " ".join(chunk.split("\n", 1)[-1].split())
+        for chunk in runner_text.split("\n## ")[1:]
+    }
+    for heading, unit in (("Pass mode", "a repeated lines unit"), ("Review mode", "a review")):
+        if _RUNNER_SPLIT_VERIFY_PHRASE not in runner_sections.get(heading, ""):
+            errors.append(
+                f"the runner's {heading.lower()} does not say {unit}'s prefix counts are taken once "
+                f"and never added across its verify calls, each of which answers the whole prefix"
+            )
+    if re.search(r"\bsum(?:med)? the counts\b", " ".join(runner_text.split())):
+        errors.append("the runner tells itself to sum counts across verify calls that each answer the whole prefix")
+
+    # The join: the runner's own lines, filled in, through the script's own ledger readers.
+    dispatch = _RUNNER_DISPATCH_RE.search(" ".join(runner_text.split()))
+    set_note = _RUNNER_SET_RE.search(" ".join(runner_text.split()))
+    unread = _RUNNER_UNREAD_RE.search(" ".join(runner_text.split()))
+    not_listed = _RUNNER_NOT_LISTED_RE.search(" ".join(runner_text.split()))
+    joined = 0
+    if dispatch is None or set_note is None or unread is None or not_listed is None:
+        errors.append(
+            "the runner does not spell the repeated lines dispatch line, set note, unread note and "
+            "not listed note in their fixed shapes"
+        )
+    else:
+        try:
+            module = _load_script_module(script, "plan_inventory")
+        except Exception as e:
+            return Result(name, False, detail=f"cannot import {script.name}: {e}")
+
+        def fill(template: str, unit: str, file_id: str) -> str:
+            return (
+                template.replace("<window>", "1").replace("<pass>", "RS1").replace("<unit>", unit)
+                .replace("<fileId>", file_id).replace("<the reason>", "the check stopped")
+                .replace("<setVersion>", "9f2c41d07ab3e815").replace("<blocks>", "2")
+                .replace("<lines>", "14").replace("<why>", "their pages were read again")
+            )
+
+        folder = Path(__file__).parent / ".test-results" / "repeated-lines-text"
+        shutil.rmtree(folder, ignore_errors=True)
+        folder.mkdir(parents=True, exist_ok=True)
+        ledger = folder / "ledger.md"
+        verified = "verified 1 RS1 {} created 3 items 1 updated 0 questions 0 replied 0 sent 3 landed 3 conflicts 0 result ok"
+        ledger.write_text(
+            "\n".join([
+                fill(dispatch.group(1), "RS1-1", "file-a"),
+                verified.format("RS1-1"),
+                fill(set_note.group(1), "RS1-1", "file-a"),
+                fill(dispatch.group(1), "RS1-2", "file-b"),
+                verified.format("RS1-2"),
+                fill(unread.group(1), "RS1-2", "file-b"),
+                fill(dispatch.group(1), "RS1-3", "file-c"),
+                verified.format("RS1-3"),
+                # Read and versioned, but some blocks not listed: read by nobody, so kept whole.
+                fill(dispatch.group(1), "RS1-4", "file-d"),
+                verified.format("RS1-4"),
+                fill(set_note.group(1), "RS1-4", "file-d"),
+                fill(not_listed.group(1), "RS1-4", "file-d"),
+            ]) + "\n",
+            encoding="utf-8",
+        )
+        try:
+            bound = module._read_ledger_repeated(ledger)
+            read = module._read_repeated_read(
+                ledger,
+                [
+                    {"fileId": "file-a", "unitId": "RS1-1"},
+                    {"fileId": "file-b", "unitId": "RS1-2"},
+                    {"fileId": "file-c", "unitId": "RS1-3"},
+                    {"fileId": "file-d", "unitId": "RS1-4"},
+                ],
+            )
+        except Exception as e:
+            bound, read = {}, {}
+            errors.append(f"the plan script refused the runner's own repeated lines lines: {e}")
+        if bound != {"RS1-1": "file-a", "RS1-2": "file-b", "RS1-3": "file-c", "RS1-4": "file-d"}:
+            errors.append(f"the plan script binds the runner's dispatch lines as {bound}, not each unit to its file")
+        if read != {"file-a": "9f2c41d07ab3e815"}:
+            errors.append(
+                f"the plan script reads the files whose repeated lines were read as {read}; the "
+                f"runner's set note should mark file-a in that version, its unread note keep file-b "
+                f"whole, file-c, with no set note, stay whole, and its not listed note keep file-d "
+                f"whole"
+            )
+        joined = 4
+
+    detail = (
+        f"the reader's repeated lines section checked for {len(_REPEATED_SECTION_PHRASES)} phrases "
+        f"(the `only` walk with its set version, each block's first sheet, the box from the note's "
+        f"line boxes, the `page-points` label sent unconverted, the set version kept, an empty set, "
+        f"the sheets left out judged off each block's `printedOn` with the search kept for a cut "
+        f"list, a first sheet with no number and its page citations, a box on another page read "
+        f"around the same spot grown by 4 points, `notListed` handled before an empty set returns, and "
+        f"`notListed` at its own grain), its leave-out bullet for {len(_OMIT_PHRASES)} (omit only on "
+        f"a matching set version, whole otherwise, with no probe call), no `page-points-rendered` "
+        f"anywhere in the reader, `cited sheets:` and `set version:` on the reader report in the "
+        f"agent and the skill, the runner verifying off `cited sheets:` with the prefix counts taken "
+        f"once in pass mode and review mode, and the runner's own dispatch, set and "
+        f"unread note lines read by the plan script over {joined} units; bound: text and the "
+        f"script's ledger reader, not the record door or the scope surface"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -5244,6 +5975,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_agent_tool_surface(plugin_path, marketplace_root),
         check_agent_model_pinned(plugin_path, marketplace_root),
         check_dispatch_foreground(plugin_path, marketplace_root),
+        check_repeated_lines_text(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

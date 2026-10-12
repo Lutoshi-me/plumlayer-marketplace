@@ -1,6 +1,6 @@
 ---
 name: scope-round-runner
-description: Runs one pass of a Plumlayer scope run, one package review, or a window boundary, end to end. Dispatches one scope-reader per sheet or one scope-reviewer per package, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
+description: Runs one pass of a Plumlayer scope run, one package review, or a window boundary, end to end. Dispatches one scope-reader per sheet, one per drawing file whose repeated lines the run reads once, or one scope-reviewer per package, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 model: sonnet
 tools: Agent(scope-reader, scope-reviewer), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
@@ -25,8 +25,10 @@ Pointers only, never pasted text: the project id, the window number, your pass i
 id>`, or `boundary`), the run folder path, the read plan path, and the scripts path, the plugin's
 own scripts directory, which your dispatch names on its `Scripts:` line. Read your own
 pass's section of the read plan and nothing else from it: what the pass reads for (the vocabulary,
-the sheet, or, in a review, one catalog trade id), and its units. In windows 1 and 2 a unit is one
-sheet with its sheet number, `fileId`, and 1-based `pageInPdf`; in window 3 a pass carries one
+the sheet, the repeated lines, or, in a review, one catalog trade id), and its units. In windows 1
+and 2 a unit is one sheet with its sheet number, `fileId`, and 1-based `pageInPdf`, except in a
+pass that reads for the repeated lines, whose units each name one drawing file and a page of it
+(`RS1-2. file <fileId>, from page <n>: repeated lines`); in window 3 a pass carries one
 review unit whose id is the pass id, with the package it reviews on the block's `package:` line. A
 unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
 line and in the `verify_unit` prefix; never rebuild it from the pass id and the line's position. A
@@ -91,6 +93,25 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    id, what the pass reads for, the unit's pages (sheet number, `fileId`, 1-based `pageInPdf`), the
    run folder path, and the pass brief path. Paste nothing from that file into it. The unit id is
    the unit's run-prefix, so concurrent readers can never collide on a created subject.
+   It also says `Repeated lines: read in set <version>`, the version copied off the unit line,
+   where the unit line ends with `, repeated lines read in set <version>`, and
+   `Repeated lines: not read` on every other unit, so a reader leaves a file's repeated lines out
+   of its sheet only where they were read once already, and only from the set that was read.
+   A repeated lines unit's pages are its file and the page its line names, and its dispatch also
+   carries `Left out: <sheet numbers>` copied off the unit line's `sheets left out`, or
+   `Left out: none`. Its `dispatch` line reads
+   `dispatch <window> <pass> <unit> sheets none purpose repeated lines of file <fileId>`, exactly,
+   since the plan script binds the unit id to its file off that line. After its `verified` line,
+   append `note <window> <pass> <unit> set <setVersion> file <fileId>` with the version on the
+   reader's `set version:` line: the window 2 plan marks that file's sheets only off this line.
+   Where the reader names the file on `pages unread:` because the file's repeated lines could not
+   be read, append `note <window> <pass> <unit> unread file <fileId> repeated lines not read, <the reason>`
+   instead, and no `set` line: the window 2 plan then reads that file's sheets whole. Where its
+   `pages unread:` line copies a `notListed` count, append
+   `note <window> <pass> <unit> unread file <fileId> <blocks> blocks <lines> lines not listed, <why>`
+   beside the `verified` line as well: those blocks were read by nobody, so the window 2 plan reads
+   that file's sheets whole too. Blocks the reader names as printed only on sheets left out are
+   the user's own cut and take no note.
 3. **Verify per unit, in one turn, before the next unit starts.** Take the reader's report and
    make one call: `verify_unit(projectId, subjectPrefix: "scopeItem:<unit-id>-", sheets: [<the
    unit's sheet numbers>])`, at most 20 sheets in one call. It returns `entryCount` and
@@ -109,7 +130,8 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    - **Updated, by sheet.** Every subject the reader's `updated subjects:` line names must appear
      among the subjects citing one of the unit's sheets in the `verify_unit` result. One it names
      that the result does not carry is a mismatch. A new citation on a pre-existing item counts as
-     an update and is found back the same way.
+     an update and is found back the same way, except one a repeated lines reader names on its
+     `page citations:` line, found back by subject as the bullet on that unit below says.
    - **Questions, by id.** One `search(subject: "<question id>")` per id on the reader's
      `questions raised ids:` line and one per id on its `questions replied ids:` line, and nothing
      wider. An id you cannot find back is a mismatch. A replied id must also carry a
@@ -122,6 +144,21 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
      record unnamed.
    - Never a row list of the whole project, never `list_scope_items`, and never a walk of `search`
      calls where one `verify_unit` answers.
+   - **A repeated lines unit has no sheet of its own.** Its `sheets` are the ones on its reader's
+     `cited sheets:` line, at most 20 in one call. Every call answers the whole prefix, so where
+     the line names more than 20, `created` and the trades come off the first call alone and are
+     never added across calls; each later call, against the same prefix with the next 20 sheets,
+     adds only its `sheets` rows, which is where the updated subjects are found back. Append
+     `note <window> <pass> <unit> deviation verify split over <n> calls` beside the `verified` line
+     where it took more than one. A reader that cited no sheet is verified with one
+     `search(subjectPrefix: "scopeItem:<unit id>-", limit: 1)`, reading `count`, and a
+     `note <window> <pass> <unit> deviation verified by count, no sheet cited` line beside its
+     `verified` line. An update its reader cited to a page with no sheet number cites no sheet any
+     call can name, so it is on the reader's `page citations:` line instead, with its subject, file
+     and page, and is found back by subject: one `search(subject: "<subject>", full: true)` per
+     line, paged with `offset` until it comes back whole, which must carry an entry whose evidence
+     names that `fileId` and `pageInPdf`. One it does not carry is a mismatch. A subject on that
+     line is not looked for among the sheets' subjects. Every other check here is the same.
 
    Append the unit's `verified` line. The reader's own verification and yours are two separate
    boundaries and neither replaces the other. Start the next unit only when this unit's counts
@@ -175,7 +212,7 @@ note <window> <pass> <unit-or-dash> <kind> <one clause, at most 200 characters>
 ```
 
 `<kind>` on a `note` line is one of exactly these: `anomaly`, `unread`, `kinds`, `deviation`,
-`overlap`, `grain`, `door`, `packet`. One fact per line. A fact that will not fit in
+`overlap`, `grain`, `door`, `packet`, `set`. One fact per line. A fact that will not fit in
 one clause of 200 characters is on the record already and is named, not narrated: name the sheet,
 the page, and the subject, and stop.
 
@@ -187,6 +224,8 @@ verified 1 A2 A2-3 created 126 items 34 updated 4 questions 2 replied 1 sent 140
 note 1 A2 A2-3 anomaly A-9.02 p61 two frame marks carry the same model number
 note 1 A2 - kinds doorType frameType finishType
 dispatch 2 A2 A2-7 sheets A-1.30 purpose roof plan read whole
+dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-1a2b3c
+note 1 RS1 RS1-1 set 9f2c41d07ab3e815 file file-1a2b3c
 dispatch 3 rev-075000-1 rev-075000-1 sheets none purpose review the roofing package
 ```
 
@@ -261,7 +300,10 @@ with one unit and three differences.
   is found back among the subjects citing one of those sheets, each Question id is found back with
   one `search(subject: "<question id>")`, and a created subject with no trade and no candidate is a
   mismatch. The call takes at most 20 sheets, so a review that opened more needs one call per 20
-  against the same prefix: sum the counts onto one `verified` line and append one
+  against the same prefix. Every call answers the whole prefix, so `created` and the trades come
+  off the first call alone and are never added across calls; each later call, with the next 20
+  sheets, adds only its `sheets` rows, which is where the updated subjects are found back. Write
+  one `verified` line and append one
   `note <window> <pass> <unit> deviation verify split over <n> calls` line beside it. The call also
   takes at least one sheet, so a review that opened no page is verified instead with one
   `search(subjectPrefix: "scopeItem:<unit id>-", limit: 1)`, reading `count`, with one

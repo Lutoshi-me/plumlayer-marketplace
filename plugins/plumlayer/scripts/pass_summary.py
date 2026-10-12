@@ -79,7 +79,7 @@ from pathlib import Path
 
 # The closed set the runner definition declares, copied here so a kind added in one place and not
 # the other is a refusal rather than a note with nowhere to go.
-NOTE_KINDS = ("anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet")
+NOTE_KINDS = ("anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet", "set")
 
 # Which summary line each note kind lands on, one line per note. The `kinds` notes land too, as
 # the union on the definitions line, so they are counted as placed alongside these four.
@@ -93,7 +93,9 @@ NOTE_LINES = {
 KINDS_LINE = "definitions kinds added"
 
 # The kinds `grain`, `door` and `packet` reach the lead in the unit reports and have no line in
-# this shape. The bounds line counts them rather than letting a note land nowhere in silence.
+# this shape, and `set` is the set version a repeated lines unit read, which the window 2 plan
+# reads off the ledger. The bounds line counts them rather than letting a note land nowhere in
+# silence.
 PLACED_KINDS = set(NOTE_LINES) | {"kinds"}
 
 # The `verified` line's count fields, in the order the shape names them.

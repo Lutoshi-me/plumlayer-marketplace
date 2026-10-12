@@ -245,7 +245,15 @@ Each of these is a harness check.
     exactly its unit ids and its last `pass:` line carries that summary, so a fold that leaves the
     count the same still reads no. A 209-sheet grid carrying a real
     set's discipline and sheet type shape, with invented sheet numbers, plans its window 1 in three
-    passes. Its bound is stated in the harness README entry and in the check's own detail line:
+    passes. A four-file fixture holds the repeated lines: window 1 plans one unit per file holding
+    five or more of the rows the run reads, rows `--exclude` left out not counted, in a pass `RS1`
+    that never folds and is counted apart from the sheets, each unit naming its file's sheets the
+    run left out; its ids keep across a replan by file, a `sheets none` dispatch line trips no
+    sheet refusal, and a file cut under five retires its id; window 2 marks a unit
+    `repeated lines read in set <version>` only where its file's unit verified ok last, carries a
+    `set` note, whose last version the mark carries, and no `unread` note, without moving an id;
+    and the pass summary script sums an `RS1` pass.
+    Its bound is stated in the harness README entry and in the check's own detail line:
     the fixtures are invented, so this proves the script's arithmetic, its ordering, its fold and
     its refusals, not how a real grid or packages read arrives.
 18. The pass summary script sums the ledger. The shipped `pass_summary.py` is run in-process over
@@ -280,6 +288,28 @@ Each of these is a harness check.
     is refused rather than skipped, so the block it swallowed cannot pass as a file with nothing to
     check. This cannot judge whether a running agent passes the parameter, only that the text tells
     it to.
+23. The repeated lines are read and cited as the server serves them. `agents/scope-reader.md`
+    carries a section that walks `repeated: "only"` to its end with `setVersion`, cites each
+    block's `firstSheet` with a box from the lowest `x0` and `y0` to the highest `x1` and `y1` of
+    the note's lines, sent with `frame: "page-points"` and never converted, and names nothing
+    `page-points-rendered`. The same section keeps the set version it read, reports a file with no
+    block as read with nothing to record, records nothing from a block whose `printedOn` lists only
+    sheets the run left out, searching only where `printedOnMore` says the list was cut, cites a
+    block whose first sheet carries no number on the first numbered sheet its `printedOn` lists or
+    as a page with no box, reads a box on another page around the same spot grown by 4 points,
+    since two pages of a block can sit 4 points apart, and copies `notListed` as the one count it
+    is, before an answer with no block sends it to report. Its window 2 bullet asks for `omit` on
+    every call only on `Repeated lines: read in set <version>`, with no probe call, compares the
+    set version on every answer of the walk, and restarts the page whole on any answer that names
+    no set version or another. The reader report in the agent and in the skill carries
+    `cited sheets:`, `page citations:` and `set version:`; the runner verifies an update cited to
+    a page with no sheet number by its subject and that page, and a repeated lines unit off the
+    first, taking the prefix counts once however many calls the sheets take, as review mode does
+    for a review that opened more than 20 pages, and no line of the runner sums the counts across
+    those calls; and the runner's own
+    dispatch, set and unread note lines, filled in, are read by the shipped plan script as it binds
+    and marks. This cannot judge whether the record door takes the evidence shape or the scope
+    surface draws the box; that is the api's to prove.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is
