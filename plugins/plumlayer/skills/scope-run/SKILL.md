@@ -419,7 +419,9 @@ approved; window 1 complete; index built; window 2 complete, or window 2 paused 
 deferred sheets; window 3 complete; packages amended; closed out. Inside a window the `pass:`
 lines are the boundaries: one per pass in windows 1 and 2, one per package in window 3. A pass run
 again to finish it carries a second `pass:` line, and its last one carries the whole pass: every
-total taken over a window, and the close-out report, counts that one. On every start this skill
+total taken over a window, and the close-out report, counts that one, for each pass the window's
+read plan now carries. A part a replan folded into another pass after its own `pass:` line was
+written is counted in the pass that took it in, and never twice. On every start this skill
 reads the ledger's `phase:` and `pass:` lines first, with a local filter, never the file: a run in
 flight resumes at the phase after the last line. Inside the window in flight, run that window's
 plan script again first, exactly as its stage wrote it, with the same arguments: window 1's
@@ -427,9 +429,11 @@ plan script again first, exactly as its stage wrote it, with the same arguments:
 `plan/window-<n>.json`, taken off it with a local filter, and after `phase: window 2 paused` the run
 is the one without `--only` that stage 6 step 4 names. The script keeps every id the ledger and the
 plan file already hold and marks the units already verified. Then dispatch the first pass of the
-window whose block shows `units verified` below `units`, found with a local filter on the pass
-headings and those two lines, whether or not a `pass:` line for it is on the ledger; a pass whose
-two numbers are equal is finished. A missing run folder for a
+window that is not finished, found with a local filter on the pass headings, those two lines and
+the ledger's `pass:` lines. A pass is finished when its `units verified` equals its `units` and its
+last `pass:` line counts that many units. One below, or one whose last `pass:` line counts another
+number, as a pass does once a replan folds in a part that already carries its own line, is
+dispatched whether or not a `pass:` line for it is on the ledger. A missing run folder for a
 project that already carries scope items is named plainly and the run re-plans against the record;
 the live-list mandate (non-negotiable 2) keeps a re-read from creating what is already there.
 Resumption is how a run continues after a stop at a boundary, and crash and multi-day hygiene. It
@@ -449,8 +453,8 @@ before going on.
    read the `phase:` and `pass:` lines of `ledger.md` from the run folder with a local filter on
    the line prefix; never open the file whole. A `phase:` line means a run is in flight: resume at
    the phase after the last one, and inside the window in flight run its plan script again and
-   dispatch the first pass whose `units verified` is below its `units`, as the windows section
-   above says, so nothing already verified is read again. A
+   dispatch the first pass that is not finished, as the windows section above says, so nothing
+   already verified is read again. A
    project that already carries scope items but has no run folder is named plainly and re-planned
    against the record; the live-list mandate (non-negotiable 2) is what keeps a re-read from
    creating what is already there. Where the last `phase:` line is `window 1 complete` with no
@@ -642,10 +646,12 @@ nothing else:
 1. **Start one runner per pass.** For each pass in the window, dispatch a fresh
    `plumlayer:scope-round-runner` with the runner dispatch below: pointers only, no pass brief and
    no read-plan text. Append that pass's dispatch line to the ledger before you
-   dispatch it, never after. A pass whose block shows `units verified` equal to `units` is finished
-   and is not dispatched. One below it is dispatched whole even when it already carries a `pass:`
-   line, as a pass does once a replan adds sheets to it: its runner skips the units already
-   verified, and its new `pass:` line carries the whole pass. Passes that share no discipline
+   dispatch it, never after. A finished pass, as the windows section above says, is not
+   dispatched. One whose block shows `units verified` below `units` is dispatched whole even when
+   it already carries a `pass:` line, as a pass does once a replan adds sheets to it, and so is one
+   whose last `pass:` line counts other than its block's `units`, as a pass does once a replan
+   folds in a part that carries its own line: its runner skips the units already verified, and its
+   new `pass:` line carries the whole pass. Passes that share no discipline
    start together, and a folded pass's heading names every discipline it carries; passes the plan
    marks as seeing the same work start one after another. What a pass leaves in the lead's context
    is its dispatch line and its summary, nothing else.
