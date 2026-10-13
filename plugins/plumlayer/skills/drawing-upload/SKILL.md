@@ -400,6 +400,13 @@ when the title you read differs from the number's current one, naming that entry
 When the page's own issue already places the number on another page, the verb refuses and names
 that page: the two pages print the same number, so report both to the user rather than picking one.
 
+**Two numbers on one page.** When `set_grid` shows a page carrying two numbers and you read the
+title block yourself, a number the page does not print is a misread: take it off that page with
+`remove_sheet_from_page(projectId, sheetNumber, fileId, pageInPdf, reason)`, the reason naming what
+the page prints. `renumber_sheet` refuses there, because the right number already stands on the
+page. Remove only a number you have read the page not to print, never one that also prints on that
+page, and report each removal; a number that stands on other pages stays on them.
+
 For every other page you resolve, author the **full bundle** of entries, mirroring the shape the
 server records for the pages the deterministic pass already recognized (matching predicate and value
 shapes keeps every sheet's entry set uniform regardless of which stage grounded it):
