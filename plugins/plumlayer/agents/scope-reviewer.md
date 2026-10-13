@@ -42,15 +42,17 @@ them is ever trimmed.
    nothing else, plus the manual pages mandate 9 reads to judge a section or a family.
    Never a set of words you associate with the trade, and never a word you supply because it
    sounds like this work.
-   - *The rows already on the package.* `list_scope_items(projectId, trade: <the package's catalog
-     id>)`, paged with `offset: nextOffset` until `truncated` comes back false. `truncated` is
-     always there and always a boolean, so its value is what says you are done, never its absence;
-     `nextOffset` is the field that goes away. That filter keeps a row
-     whose `belongsToTrade` is this trade and every row carrying an enrollment naming it, so home
-     rows and candidates arrive together and the `role` on each enrollment says which. Their `name`
-     and `category` strings are this project's own words for this work.
+   - *The rows already on the package.* `list_scope_items(projectId, packageId: <the package id
+     from your dispatch>)`, paged with `offset: nextOffset` until `truncated` comes back false.
+     `truncated` is always there and always a boolean, so its value is what says you are done,
+     never its absence; `nextOffset` is the field that goes away. That filter keeps every row
+     whose `belongsToTrade` is a trade the package covers (its own trade and every trade folded
+     into it) and every row carrying an enrollment naming one of them, so home rows and
+     candidates arrive together and the `role` on each enrollment says which. The answer's
+     `packageTradeCodes` lists the trades the package covers; "this trade" below means each of
+     them. Their `name` and `category` strings are this project's own words for this work.
    - *The codes of the definition kinds that resolve to this package.* `list_definition_kinds`,
-     keep the kinds whose `belongsToTrade` is this trade, that field being stated by the project
+     keep the kinds whose `belongsToTrade` is one of those trades, that field being stated by the project
      and null where unplaced, never inferred, then `list_definitions(kind)` paged for each. Those
      codes are the marks this set uses for this trade's work.
    - *The spec sections on this package.* `solicitation_get_package` for its `manualSections`,
@@ -67,8 +69,9 @@ them is ever trimmed.
      checked: no manual sections on this package`; the other harvests and the drawing review run
      as usual, and whether the project has a manual read in is a separate question you answer
      from the search above, never from this package's list.
-   - *The catalog name and its aliases.* `directory_list_trades(code: <the package's tradeCode>)`,
-     an exact lookup returning zero or one row with its `name` and `aliases`.
+   - *The catalog names and their aliases.* `directory_list_trades(code: <trade>)` for each trade
+     in `packageTradeCodes`, each an exact lookup returning zero or one row with its `name` and
+     `aliases`.
 
    A harvest read is for choosing what to search for. It is never evidence you cite, and nothing
    harvested is ever a Question's source, a row's own subject included. `search`
@@ -82,7 +85,11 @@ them is ever trimmed.
    never what the snippet showed. A citation taken off a snippet is an untraced record wearing a
    page number. Every row you cite or create on that page carries the hit's `fileId`, in reader
    mandate 2's shape `{ sheet, pageInPdf, fileId }`, so the citation names the drawing issue's page
-   you opened and your runner can check it there.
+   you opened and your runner can check it there. A row you create or cite off a schedule or a
+   legend cites a `sheet-region` box made from the line boxes `get_page_text` gave you for the
+   line it was read from, in the shape reader mandate 2 gives; two rows share a box only where
+   they name the same line, and a schedule or legend citation with no box is the exception, named
+   on your `anomalies:` line with its sheet, its page and why.
 3. THE QUERY BUDGET AND THE CAPS. One query string per call, no boolean, no list. Rank your
    harvested words most distinguishing first: a mark or a code, then a product or assembly name of
    several words, then the distinguishing noun of a section title, then the catalog name and its
@@ -119,9 +126,10 @@ them is ever trimmed.
      refuses a create whose name this project already carries, on any trade, and names the row that
      holds it; turn such a refusal into the citation and the note on that named row and send again,
      the way reader mandate 1 does.
-5. THE GENERAL GRAIN SHAPES WHAT YOU CREATE, AND NEVER RESHAPES WHAT EXISTS. You hold this
+5. THE GRAIN SHAPES WHAT YOU CREATE, AND NEVER RESHAPES WHAT EXISTS. You hold this
    package's whole row set, which is the only place in the run where it sits in one context. Use
-   the general grain of reader mandate 6 on the rows you create. Where that grain and the rows
+   reader mandate 6's grain, one row per product type and one per product the set names, on the
+   rows you create. Where that grain and the rows
    already on the record disagree, name the grain and the rows on your `grain questions:` line,
    and stop there. You never regroup the rows that exist: never retire, merge, split, or re-home
    one, and never rewrite a row to change what it covers. `retire_scope_item` is the door for a row
@@ -258,7 +266,8 @@ Read them where they live. Working from a summary of one of them, this one inclu
 mandate quietly loses a clause.
 
 Two of the reader's mandates read differently for you, and this is the whole of the difference.
-Mandate 6, how finely work splits into rows, is replaced for you by your mandate 5 above. Mandate
+Mandate 6, how finely work splits into rows, shapes only the rows you create, as your mandate 5
+above says. Mandate
 8, the vocabulary sheets, does not apply to you: every schedule in the set was read in window 1,
 and a schedule you open is one you are citing, not one you are transcribing.
 

@@ -248,7 +248,10 @@ amendments, stays in `scope-run`.
    usually-present families the TOC is silent on (site/civil, SOE, landscaping/exterior
    improvements), the same probe that already produces `missingScopeFamily` entries (step 6): a
    silent family becomes a `missingScopeFamily` entry AND, where a job of this kind would normally
-   carry the trade, a package. It raises no Question.
+   carry the trade, a package. It raises no Question. A package is what one sub bids: a section a
+   sub of another package carries goes on that package's `manualSections`, and its trade on that
+   package's `codes`, never a package of its own; a package's `tradeCode` is never a division
+   heading.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be

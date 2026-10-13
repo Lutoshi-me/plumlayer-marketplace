@@ -88,7 +88,7 @@ The three windows, and what each selects:
   3  one review per package: one pass per row of the packages file, in package order, with the
      packages of one trade kept together. It reads no sheets, so it takes no inventory. In a pass
      on an addendum, whose `run.json` reads `issue: "addendum"`, it reads the pass's own
-     `trades/` files beside the plan and plans only the packages whose trade the pass wrote on, a
+     `trades/` files beside the plan and plans only the packages covering a trade the pass wrote on, a
      row it created, updated or cited or a Question it raised, naming every other package as left
      out; a pass that wrote on no trade plans no review, and one with no `trades/` folder at all
      is refused.
@@ -1960,6 +1960,27 @@ def _window_2(
 # Window 3: one review per package
 # --------------------------------------------------------------------------- #
 
+def _code_covers(package_code: str, written: str) -> bool:
+    """
+    Whether a package's code covers a trade a pass wrote on, the way the server reads a package's
+    coverage: a code's trailing zeros say how broad it is. "AA 00 00" covers its division, "AA BC 00"
+    its section, "AA B0 00" every "AA Bx" section under it (09 60 00 covers 09 65 19), and any other
+    code only itself.
+    """
+    if _fold(package_code) == _fold(written):
+        return True
+    code = re.sub(r"\D", "", package_code)
+    target = re.sub(r"\D", "", written)
+    if not re.fullmatch(r"\d{4}00", code) or not re.fullmatch(r"\d{6}", target):
+        return False
+    aa, b, c = code[:2], code[2], code[3]
+    if b == "0" and c == "0":
+        return target.startswith(aa)
+    if c != "0":
+        return target.startswith(aa + b + c)
+    return target.startswith(aa + b)
+
+
 def _window_3(
     packages: list[dict], tag: str | None = None, written_on: set[str] | None = None
 ) -> dict:
@@ -1974,7 +1995,8 @@ def _window_3(
     over the same work are kept from doubling it.
 
     `written_on`, the folded trades an addendum's pass wrote on, keeps only the reviews of
-    those trades' packages, and every other package is named as left out. Ids are numbered over the
+    the packages covering those trades (as their own trade or one of their `codes`), and every
+    other package is named as left out. Ids are numbered over the
     whole list first, so a package's review id is the same whichever packages plan beside it.
     """
     ordinals: dict[str, int] = {}
@@ -1997,8 +2019,15 @@ def _window_3(
         )
     left_out: list[dict] = []
     if written_on is not None:
-        left_out = [review for review in reviews if review["tradeKey"] not in written_on]
-        reviews = [review for review in reviews if review["tradeKey"] in written_on]
+        # A package covers its own trade, every trade folded into its `codes`, and every trade
+        # under a broad code of either, so a pass that wrote only on one of those still reviews the
+        # package that bids it.
+        def covers(review: dict) -> bool:
+            own = [review["tradeCode"], *(_text(code) for code in review["codes"])]
+            return any(_code_covers(code, written) for code in own for written in written_on)
+
+        left_out = [review for review in reviews if not covers(review)]
+        reviews = [review for review in reviews if covers(review)]
 
     # Grouped by folded trade code in first-seen order, so two packages on one trade review one
     # after the other and everything else keeps the order the packages were bought in.
@@ -2319,14 +2348,14 @@ def _render(
     lines.append("## Nothing read for")
     lines.append("")
     if window == 3 and plan.get("unnamed"):
-        lines.append("Nothing. A pass on an addendum reviews only the packages whose trade it wrote on,")
+        lines.append("Nothing. A pass on an addendum reviews only the packages covering a trade it wrote on,")
         lines.append("but these units updated a row or raised a Question and named no trade they touched,")
         lines.append("so which packages the pass wrote on is not known and every package plans a review:")
         lines.append("")
         for number, unit_id in enumerate(plan["unnamed"], 1):
             lines.append(f"{number}. {unit_id}")
     elif window == 3 and plan.get("leftOut"):
-        lines.append("A pass on an addendum reviews only the packages whose trade it wrote on: a row it")
+        lines.append("A pass on an addendum reviews only the packages covering a trade it wrote on: a row it")
         lines.append("created, a row it updated or cited, or a Question it raised. It wrote on none of")
         lines.append("these, so no review reads for them:")
         lines.append("")

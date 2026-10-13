@@ -17,8 +17,9 @@ The production scope run: it reads the set in three windows, each of which leave
 record whole at its own depth, and the user reviews at every check-in. Orientation is the
 `learn-project` skill, which this skill dispatches first when orientation hasn't happened yet;
 orientation also drafts and creates the baseline package split off the spec table of contents, so
-a package exists for every trade before the first sheet is read, and readers name trades from that
-split. The shape, in the estimator's own order:
+a package exists for every trade the manual names before the first sheet is read. Readers name
+each row's trade by the work itself, and the run folds the packages into what a sub bids before the
+reviews. The shape, in the estimator's own order:
 
 > First assemble one massive singular list of all the scope line items across the entire job; then
 > sort through and decide which trade packages to create; assembling them is assigning one new meta
@@ -129,8 +130,8 @@ that relaxes any one of them reproduces a measured, named failure.
    (`search_set_text`), never for memory either.
 4. **Capture everything; name the trade as you write.** Capture is complete: everything seen goes
    into the one shared list, whatever trade it belongs to. The reader that writes the row sets its
-   trade right then, from the packages orientation
-   created, and moves on; a wrong trade is moved later by a person or a later read, never held
+   trade right then, the catalog trade that names the work (the row's trade, below), and moves on;
+   a wrong trade is moved later by a person or a later read, never held
    back. Where the reader cannot tell which of two or more trades owns the work, it names its best
    single trade as the home and tags every other candidate, and keeps moving. The record door
    refuses a new scope item with no trade and no candidate, and refuses a trade the catalog does
@@ -151,11 +152,21 @@ that relaxes any one of them reproduces a measured, named failure.
    asserting a check it did not run. The lead never calls the unfiltered `list_scope_items` during
    the run: that verb walks the whole scope list, and pulling it is how the lead's context stops
    being cheap. Counts only, `limit: 0`, is the one call the lead makes on it.
-6. **The grain bracket.** A scope item is the unit a subcontractor would include / exclude / price
-   as one thing (the floor: split by type / significant distinction, never by instance) and at most
-   one row on a trade's scope sheet (the ceiling: package headers are never the reader's). One
-   item per sheet is a ceiling violation; one item per instance is a floor violation. Where the
-   reader or the reviewer cannot tell how finely the work in front of it splits, it creates at best
+6. **Grain.** One row per product type, and one row per product where the set names the product. A
+   product type is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
+   medicine cabinet, a walk-off mat, an acoustic underlayment. Where the set names products by a
+   model number, or by a legend or schedule code that stands for one product, each product is its
+   own row, named with its code and what it is ("Towel bar TA-04, 24 inch", "Medicine cabinet
+   MC-2, 16 by 22 inch"), with the model in the description. Instances are never rows: one towel
+   bar TA-04 in twenty bathrooms is one row, and where the set counts them the count is its
+   quantity. A schedule of places, such as a room finish schedule or a door schedule, is read for
+   the products and types it calls for, one row each ("Luxury vinyl tile flooring, LVT"), never
+   one row for the whole schedule. A schedule of one assembly's types that differ only in size or
+   spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
+   written out. Never copy a schedule's columns into a row: the row names its product and cites
+   the schedule row that defines it, with a box on that schedule row. A row is never a whole sheet
+   and never a package header. Where the reader or the reviewer cannot tell how finely the work in
+   front of it splits, it creates at best
    judgment and names it on its `grain questions:` report line, which the check-in and the close
    out carry to the user; how finely our own scope sheet splits is ours to settle, and nobody on
    the design team answers it. Recall never drops to grain uncertainty.
@@ -202,17 +213,24 @@ A newly created scope item is a full row, not a name. Every new item writes:
   about twelve words, the way a sub would say it ("Repoint brick masonry at facade", "Install
   lintels above CMU openings"; not a recitation of every type mark). A mark or tag belongs here
   when it is how the sub finds the work.
-- **category** (required): the section heading on the checklist an estimator would use ("Metal
-  Stud Partitions", "Unit Casework", "Sealants & Firestopping"). Group like work under the same
-  category string; never invent a fresh category per item. The review surface groups by this: an
-  uncategorized list renders as a wall.
-- **trade** (required): the catalog trade id of the package that owns the work, read off the
-  packages orientation created (`solicitation_list_packages`), recorded as `belongsToTrade`. It is
-  the catalog id copied verbatim, exactly as the package prints it, spaces and all (`09 21 16`).
+- **category** (required): the heading the row sits under on its trade's scope sheet, naming what
+  its items are in the words a sub uses ("Toilet accessories", "Medicine cabinets", "Postal
+  specialties", "Kitchen casework", "Countertops", "Resilient flooring"). Never the sheet, room or
+  drawing it was read on, never another trade's name, and never two kinds of work joined into one
+  heading. Every row under one heading sits on the same trade. Take a heading from the page's
+  context read only where its rows are the same kind of work as yours. The review surface groups
+  by this: an uncategorized list renders as a wall.
+- **trade** (required), recorded as `belongsToTrade`: the catalog trade that names the work
+  itself, the finest the catalog carries. Where the manual specifies the work in a numbered
+  section, use the catalog trade for that section. Otherwise use the trade whose catalog name, not
+  an alias, says what the item is, found with `directory_list_trades(query: <the item's own
+  noun>)`. Never the trade a sheet's title names, never a trade because its package happens to
+  exist, never `01 11 13` because no package fits. Which sub bids the work is the package's
+  business, settled when the run folds packages before the reviews (stage 6 step 5). It is the
+  catalog id copied verbatim, exactly as the catalog prints it, spaces and all (`09 21 16`).
   Never a word for the trade, so `drywall` is refused, and never a
   respelling of the code either, so `09-21-16` and `092116` are refused too, with a hint naming the
-  exact id. Browse the codes with `directory_list_trades` where a package's own `tradeCode` does
-  not answer it. Where the work straddles packages, the best single
+  exact id. Where the work straddles trades, the best single
   home goes here and each other candidate gets a `packageRole:<trade>` record whose value is the
   object `{ role: "candidate", note: "confirm trade responsibility: could be <home> or <this
   trade>" }`, the note internal only and never bidder-facing, written in the same batch. The roles
@@ -223,9 +241,9 @@ A newly created scope item is a full row, not a name. Every new item writes:
 - **description** (optional, zero to three sentences): only what a bidder must know to price the
   line that the name and citation do not already say: the product or method the drawings call
   for, the extent or limits, a rated or special condition. A simple item has none. The citation
-  points at the sheet, and the doctrine is cite, don't rewrite: never transcribe the schedule,
-  the detail, or the bar sizes into the row, and when the scope is a schedule the row is the
-  schedule's name and its citation, not its contents.
+  points at the sheet, and the doctrine is cite, don't rewrite: never transcribe a schedule's
+  columns, the detail, or the bar sizes into the row. How a schedule becomes rows is
+  non-negotiable 6.
 - **notesExternal** (optional, one sentence): an instruction to the bidder about the line: what is
   by others, what to break out, what to confirm, what is an alternate.
 - **notesInternal** (optional, one sentence): either a watch item for the estimator, an open
@@ -471,7 +489,7 @@ reports, verified against the record with the lead's own count queries and writt
 Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
 approved; window 1 complete, or window 1 skipped where a pass on an addendum planned no window 1
 unit; index built; window 2 complete, or window 2 paused where a slice
-deferred sheets; window 3 complete; packages amended; closed out. Inside a window the `pass:`
+deferred sheets; packages folded; window 3 complete; packages amended; closed out. Inside a window the `pass:`
 lines are the boundaries: one per pass in windows 1 and 2, one per package in window 3. A pass run
 again to finish it carries a second `pass:` line, and its last one carries the whole pass: every
 total taken over a window, and the close-out report, counts that one, for each pass the window's
@@ -836,17 +854,20 @@ that was skipped has none, and a window 3 that planned no review has none:
    every item's tag or mark on the record and cites every page each appears on, onto the definition
    and onto the items that resolve to it, as the record's own text match. It writes citations only,
    never a value; an item that already cites a page is not cited there again; a match on a code of
-   two characters or fewer is left open rather than cited.
+   two characters or fewer, or with no digit and no hyphen between two letters or digits (a code
+   that prints as an ordinary word), is left open rather than cited.
 2. **Wait for it.** Poll `index_citations_status(projectId)` until its `state` is `succeeded` or
    `failed`, waiting between polls rather than polling back to back. On `succeeded` its `report`
    carries `codesTotal`, `codesMatched`, `citationsWritten` and the rest of the run's counts, and
    `leftoverCounts` carries the true count per kind of what it could not cite, with
    `truncatedKinds` naming the kinds whose rows were cut for size. Read the counts; never the
-   pages. `queued` and `stale` are both safe to wait through.
+   pages. `queued` and `stale` are both safe to wait through. Where `wordCodesSetAside` is false,
+   the report comes from a pass that ran before codes printing as ordinary words were set aside:
+   say so on the `phase: index built` line and in the close-out, since its counts include them.
 3. **Keep what it left open as counts.** No agent is dispatched for those rows and nothing is
    paged to disk: `leftoverCounts` is the whole of what the run keeps, and it rides onto the
    ledger's `phase: index built` line at step 4, where the close-out report reads it. The kinds are
-   `unmatchedTag`, `codeNoLocation`, `codeOnlyOnReplacedPages`, `codeTooShort`,
+   `unmatchedTag`, `codeNoLocation`, `codeOnlyOnReplacedPages`, `codeTooShort`, `codeIsAWord`,
    `fragmentUnresolvable`, `pageNotASheet`, `codeOverCap`, `hitNotDrawable` and `overRunCap`, and
    each is reported by its count alone. The two exceptions are `codeNoLocation` and
    `codeOnlyOnReplacedPages`: where either count is above zero, take one
@@ -858,8 +879,9 @@ that was skipped has none, and a window 3 that planned no review has none:
    are what the close-out reports as still open, by count and with those codes named. A tag no
    reader resolved on its own sheet is named as a loss rather than attached by guesswork to
    whichever package it might belong to.
-4. Append `phase: index built` to the ledger with the counts off the status. After window 1 and
-   window 2, check in (format below); after window 3 the close out is the next step.
+4. Append `phase: index built` to the ledger with the counts off the status. After window 1,
+   check in (format below); after window 2 complete, fold the packages first (stage 6 step 5),
+   then check in; after window 3 the close out is the next step.
 
 <!-- user-facing -->
 At this check-in, name the window you finished and what it covered, then say plainly that every
@@ -919,7 +941,8 @@ On the go-ahead:
    boundary and loses nothing.
 4. **Close the window** with a boundary runner, as in stage 4 step 4, then append
    `phase: window 2 complete` with the window's verified totals, run the index (stage 5, steps 1 to
-   4) so every row cites every page it appears on before any review reads it, and check in.
+   4) so every row cites every page it appears on before any review reads it, fold the packages
+   (step 5), and check in.
    When the plan deferred sheets, the window is not closed. After the slice's passes, run the
    boundary runner and the index the same way, but append
    `phase: window 2 paused units <n> ... deferred <m>` in place of `phase: window 2 complete`: the
@@ -931,13 +954,35 @@ On the go-ahead:
    in it that is not finished, as the windows section says and step 2 runs them, each with its own
    `pass:` line: their runners read nothing and write new summaries. Then the window closes from
    that plan with `phase: window 2 complete`, its totals taken over the passes that plan carries.
+5. **Fold the packages into what a sub bids.** This runs once the window is complete and its index
+   built, never after a paused line, and before the window 3 plan. A package is what one
+   subcontractor bids. Read `solicitation_list_packages(projectId)` and the `tradeRollup` of
+   `list_scope_items(projectId, limit: 0)`. For each package, ask whether a sub bids that work on
+   its own on a job this size. Where a sub of another package carries it, fold it in:
+   `solicitation_update_package` on the package that keeps it, with the folded package's
+   `tradeCode` and its `codes` added to `codes` and its `manualSections` added to
+   `manualSections`, then `solicitation_delete_package` on the folded one. That verb replaces each
+   list it is sent whole, so read the keeping package's current lists first and send them back with
+   the additions, each entry once, never repeating the keeping package's own `tradeCode` in its
+   `codes`. The rows keep their trade: a fold writes no `belongsToTrade`. Walk-off mats, acoustic
+   underlayment and floor prep go with the flooring sub; finish hardware and door operators with
+   doors, frames and hardware; reinforcing with cast-in-place concrete; steel deck with structural
+   steel. A package of one or two rows is the first to ask about, and its row count alone never
+   settles it. A package whose trade is a division heading (a code ending `00 00`, such as
+   `09 00 00`) is split into the packages its subs bid, and each of its rows goes to the catalog
+   trade that names its work, re-homed as stage 8 re-homes them. In a pass on an addendum, ask
+   only of the packages this pass made: those whose `id` is in no row of `plan/packages.json`,
+   the copy stage 2 made, found with a local comparison; where it made none, nothing folds. Then
+   append `phase: packages folded` to the ledger. Stage 8 stays for the splits and folds a review
+   surfaces.
 
 <!-- user-facing -->
 At this check-in, when nothing was deferred, say plainly that every sheet in the set has now been
 read, once each, and that nothing was left unread except what was deliberately left out at the
 start. Name what landed by trade, say each trade's page carries its items and shows every sheet
 each one appears on, and say what comes next in one sentence: one package at a time, against what
-landed. When sheets were deferred, say which sheets were read and what landed from them by trade,
+landed. Name each package you folded into another, with the reason in one sentence, and each
+package you split into the ones its subs bid. When sheets were deferred, say which sheets were read and what landed from them by trade,
 that the rest of the set, <m> sheets, is still waiting, and that the next go-ahead reads it. Never
 say every sheet has been read while any is waiting.
 <!-- /user-facing -->
@@ -959,7 +1004,8 @@ On the go-ahead:
    trades, and the packages sharing a trade.
 
    In a pass on an addendum, the script reads the pass's own `trades/` files beside the plan and
-   plans a review only for a package whose `tradeCode` this pass wrote on: a row it created, a row
+   plans a review only for a package covering a trade this pass wrote on (its `tradeCode`, a
+   trade in its `codes`, or a trade under a broad code of either): a row it created, a row
    that already existed and that it updated or cited, or a Question it raised naming that trade.
    Its bounds line counts the packages it left out, and the read plan names each. Where a unit's
    `verified` line shows a row updated or a Question raised and its reader named no trade it
@@ -1006,8 +1052,9 @@ the count is incomplete and is reported as incomplete.
 
 The estimator-judgment stage. Packages are bundles of spec sections grouped by how subcontractors
 actually split themselves in the market, not by the book's divisions. The baseline split was
-drafted and created at orientation (`learn-project`): read it fresh via
-`solicitation_list_packages(projectId)` rather than re-drafting it.
+drafted and created at orientation (`learn-project`) and folded into what a sub bids before the
+reviews (stage 6 step 5): read it fresh via `solicitation_list_packages(projectId)` rather than
+re-drafting it. This stage is for the splits and folds a review surfaces.
 
 In a pass on an addendum this stage runs only where the pass made a package: one whose `id` is in
 `plan/packages.json` and in no row of `plan/packages-start.json`, found with a local comparison of
@@ -1018,7 +1065,10 @@ close out; the split the earlier passes settled stands.
    specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
    package that should collapse into another once scale is understood), apply the amendment live:
    `solicitation_create_package` for a genuinely new package, `solicitation_update_package` to
-   fold, split, or rename an existing one. A trade an item already sits on has its package
+   fold, split, or rename an existing one. A fold here runs the same update-then-delete sequence as
+   stage 6's fold: the keeping package takes the folded package's trade, `codes` and
+   `manualSections`, then `solicitation_delete_package` removes the folded one, so no two packages
+   cover the same work. A trade an item already sits on has its package
    already, so amend that package rather than creating one. Resolve the amendment's trade the same way as
    orientation (`directory_list_trades`, exact `code` first then `query` by name/alias; the
    catalog trade id recorded verbatim, store-resolution, non-negotiable 3), set `codes` to the
@@ -1028,10 +1078,11 @@ close out; the split the earlier passes settled stands.
    `solicitation_update_package` replaces each list it is sent whole, so a fold or split rewrites
    both lists of every package involved, and a section moved off one package lands on another
    in the same amendment. A package with no reasonable catalog match cannot
-   be created or amended into one: name it "no catalog trade, not created" in the report. Where an
-   amendment moves work between packages, the items on the moved trade are re-homed in one
-   `record_batch` of `belongsToTrade` records, count-verified, and the move is named in the
-   report; never leave an item on a package that no longer exists.
+   be created or amended into one: name it "no catalog trade, not created" in the report. A fold
+   moves no row: the folded trade goes on the keeping package's `codes`, and its rows keep their
+   trade. A row is re-homed only where its trade is wrong, to the catalog trade that names its
+   work, in one `record_batch` of `belongsToTrade` records, count-verified, and the move is named
+   in the report; never leave a trade that carries rows on no package's `tradeCode` or `codes`.
 <!-- user-facing -->
 Show what you did in plain words, mirroring orientation's wording: name the amendments made
    (packages created, split, collapsed, or renamed), each with its one-line rationale. Say it as
@@ -1083,8 +1134,8 @@ Report to the user, in plain words:
   or that the count of them is incomplete when it was cut short. On a pass on an addendum, also
   name the packages you did not review, and say why: this pass wrote no row on their trade, so
   the addendum's sheets changed nothing they price that the readers found.
-- **The package split**: the amendments made this run (created / split / collapsed / renamed,
-  each with its rationale), the packages derived here from scratch only in the no-spec-book case,
+- **The package split**: the packages folded into another before the reviews, and the amendments
+  made this run (created / split / collapsed / renamed), each with its rationale, the packages derived here from scratch only in the no-spec-book case,
   and how many manual sections you placed on a package at the start of the run, if any.
 - **How long it took**: wall-clock from the read plan's approval to this report.
 <!-- /user-facing -->

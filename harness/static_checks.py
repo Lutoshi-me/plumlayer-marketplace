@@ -6565,6 +6565,25 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     # An addendum that only changes existing scope, a revised hardware row cited on its page or a
     # Question it raised, is the case where the estimator most needs that package reviewed. The
     # runner carries the trades the reader touched as `touched` lines beside the created ones.
+    # A trade folded into a package's `codes` is covered by that package: a pass that wrote only on
+    # it still reviews the package that bids it.
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 09 22 16 2\ni3-A1-1 candidates 0\n")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\n")
+    code, bounds, err, text = review_plan(addendum)
+    if code != 0 or sorted(_issue_ids(text)[1]) != ["i3-rev-092116-1"]:
+        errors.append(
+            f"window 3 of an addendum's pass that wrote only on a trade in a package's codes does not "
+            f"review that package: {err or sorted(_issue_ids(text)[1])}"
+        )
+    # A broad package code covers the trades under it, as the server reads coverage: 32 90 00
+    # covers 32 93 00, and the section 09 91 00 covers 09 91 23.
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 32 93 00 1\ni3-A1-1 trade 09 91 23 1\ni3-A1-1 candidates 0\n")
+    code, bounds, err, text = review_plan(addendum)
+    if code != 0 or sorted(_issue_ids(text)[1]) != ["i3-rev-099100-1", "i3-rev-329000-1"]:
+        errors.append(
+            f"window 3 of an addendum's pass that wrote only on trades under a package's broad code "
+            f"does not review those packages: {err or sorted(_issue_ids(text)[1])}"
+        )
     write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 candidates 0\ni3-A1-1 touched 08 50 00\n")
     write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\ni3-A2-2 candidates 0\ni3-A2-2 touched 32 90 00\n")
     code, bounds, err, text = review_plan(addendum)

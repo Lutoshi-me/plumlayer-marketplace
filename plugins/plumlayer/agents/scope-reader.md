@@ -35,8 +35,8 @@ Pointers only, never pasted text. Your dispatch names:
 Open your pass brief first, before you read a page: what this pass reads for, its content families,
 and the subject prefix scheme. Then take your orientation from the record, one call per page:
 `read_sheet_context(projectId, fileId, pageInPdf)` for the page you are about to read. One answer
-carries the project and its seed facts, the bid packages with their catalog trade ids, which is the
-list you may name a trade from, every definition kind the record keeps with how many codes it holds
+carries the project and its seed facts, the bid packages with their catalog trade ids, every
+definition kind the record keeps with how many codes it holds
 and the trade whose package prices it, the codes this page prints with the name the record carries
 for each and how many schedule columns it holds, the scope rows that cite this sheet or carry one of
 those codes, each saying with `citesThisPage` whether it cites this page, every section of the checklist with how many rows sit under it, the open questions on
@@ -158,11 +158,22 @@ of them is ever trimmed.
    a write of yours landed on it: a citation the door answers `duplicate` already stood on the row
    and wrote nothing, so it puts the row on neither your `updated:` nor your `updated subjects:`
    line. A citation of a row that already exists rides the batch.
+   A row read off a schedule or a legend, created or cited, cites a `sheet-region`: a box from the
+   lowest `x0` and `y0` to the highest `x1` and `y1` of the line boxes `get_page_text` gave you for
+   the schedule row or legend line it was read from, sent as they are with
+   `frame: "page-points"` and never converted. On a new row the evidence is `{ sheet, pageInPdf,
+   fileId, locator: { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }`; a citation
+   of a row that already exists is `{ subject, kind: "sheet-region", sheet, pageInPdf, fileId,
+   bboxPts, frame: "page-points" }`. Two rows share one box only where they name the same line. A
+   schedule or legend citation with no box is the exception: name each on your `anomalies:` line
+   with its sheet, its page and why no box could be built.
    A manual-grounded record's evidence names its spec section the way a drawing-grounded one
    names its sheet: `kind: "spec-section"` with the section number as the manual prints it, plus
    the file and the page you read it on. The section is what the estimator reads on the citation,
    and the page is where the app opens it. Never cite a manual page as a bare document page when
-   you know its section.
+   you know its section. Where the manual says the specifications are on the drawings, a row whose
+   product, method or extent rests on a specification sheet of the drawings cites that sheet and
+   page as well.
 3. STORE-RESOLUTION IS MANDATORY: resolve a mark, tag, or code by querying the record, never from
    memory, never inherited from another sheet's read, never assumed from a similar-looking mark. For
    a code this page prints, the page's context read has already done it: the answer names the code's
@@ -173,25 +184,32 @@ of them is ever trimmed.
    this page does not print, or the codes past the first two hundred on a page that prints more,
    which the codes section's own `matched` and `truncated` say. A mark of two characters or fewer is
    never matched into that section, and `codesTooShort` counts how many of this page's were left out
-   that way; resolve one of those the way you resolve any other. A code the page prints that the
-   answer does not carry, and that neither of those two exceptions explains, gets one
+   that way; resolve one of those the way you resolve any other. A code with no digit and no hyphen
+   between two letters or digits (one that prints as an ordinary word) is never matched into it
+   either, and `codesThatAreWords` counts this page's; resolve one of those with
+   `search(subject: "<kind>:<code>")` like a short one. A code the page prints that the
+   answer does not carry, and that none of those three exceptions explains, gets one
    `search(subject: "<kind>:<code>")` before you call it undefined; where that too answers nothing,
    the record does not define it, which is a reading, not a gap to fill from memory. Where a code or
    phrase appears in the set is a question for the corpus (`search_set_text(projectId, query)`),
    never for memory and never for a render. Items other units and other passes recorded are on the
    record; resolve them from there, not from anything you remember.
 4. CAPTURE EVERYTHING, AND NAME THE TRADE AS YOU WRITE: capture everything you see, whatever trade
-   it belongs to, at the grain of one row on a trade's scope
-   sheet. Split by type or significant distinction, never by instance (the floor); never one item
-   per sheet and never package headers (the ceiling). A distinction that does not earn a row is on
-   the sheet the row cites; it is not written into the row. Every row you write carries its trade,
-   right then: `belongsToTrade`, a catalog trade id off the packages, the package that would bid
-   the work; whatever the sheet in front of you is, each row goes to the trade that would bid it. A
-   trade is the catalog id copied verbatim off `solicitation_list_packages`, exactly as the package
-   prints it, spaces and all (`09 21 16`; `directory_list_trades` browses the catalog itself). It is
-   a package's `tradeCode`, never an entry of its `codes`: a row homed to an additional catalog
-   trade the package lists in `codes` is read by no package's review, since a read by trade matches the code exactly. It is
-   never a word for the trade, so a row written
+   it belongs to, at the grain of mandate 6. A distinction that does not earn a row is on the
+   sheet the row cites; it is not written into the row. Every row you write carries its trade,
+   right then: `belongsToTrade` is the catalog trade that names the work itself, the finest the
+   catalog carries. Where the manual specifies the work in a numbered section, use the catalog
+   trade for that section, `directory_list_trades(code: <the section number>)` with the number
+   spaced the way the catalog spaces it; where the catalog
+   does not carry that number, take the trade the section's title names, found the way the next
+   sentence says. Otherwise use the trade whose catalog name, not an alias, says what the item is,
+   found with `directory_list_trades(query: <the item's own noun>)`: a fire extinguisher cabinet
+   drawn on a partition plan goes to the catalog's fire protection specialties trade, never to the
+   partitions trade the sheet is titled for. Never the trade a sheet's title names, never a trade
+   because its package happens to exist, never `01 11 13` because no package fits. Which sub bids
+   the work is the package's business, settled when the run folds packages before the reviews. A
+   trade is the catalog id copied verbatim, exactly as the catalog prints it, spaces and all
+   (`09 21 16`). It is never a word for the trade, so a row written
    `drywall` is refused, and never a respelling of the code, so `09-21-16` and `092116` are refused
    too, with a hint naming the exact id. Where you cannot tell which of two or more trades owns
    it, write your best single trade as the home and one `packageRole:<trade>` record for each other
@@ -215,8 +233,13 @@ of them is ever trimmed.
 5. THE ROW: every new item writes the row the way it reads on a scope sheet, and the citation
    carries the detail. `name` (required: what is done, to what, where, under about twelve words,
    the way a sub would say it; a mark or tag belongs here when it is how the sub finds the work,
-   "Grab bar TA-07, 42 inch"), `category` (required: the section heading on the checklist an
-   estimator would use; reuse category strings across like work, never one per item),
+   "Grab bar TA-07, 42 inch"), `category` (required: the heading the row sits under on its
+   trade's scope sheet, naming what its items are in the words a sub uses ("Toilet accessories",
+   "Medicine cabinets", "Postal specialties", "Kitchen casework", "Countertops", "Resilient
+   flooring"); never the sheet, room or drawing it was read on, never another trade's name, and
+   never two kinds of work joined into one heading; every row under one heading sits on the same
+   trade; take a heading from the page's context read only where its rows are the same kind of
+   work as yours),
    `belongsToTrade` (required, mandate 4), `description` (optional, zero to three sentences: only
    what a bidder must know to price the line that the name and citation do not already say, such
    as the product or method the drawings call for, the extent or limits, a rated or special
@@ -233,11 +256,9 @@ of them is ever trimmed.
    never an id or a hand-written tag. That note is what lets a later reader correct the row rather
    than doubt the drawings. A correction is never a Question. Where a count or grouping is your
    own judgment rather than read off one place, say in the same note how it was reached. Never
-   transcribe a schedule, a detail, bar sizes, or connector parts into any field, and never
-   narrate the set sheet by sheet: when an item's scope
-   is a schedule, the row is the schedule's name and its citation, not its contents ("Wood shear
-   walls per schedule, 16 types", cited to the schedule sheet). Where a row covers some of a
-   schedule's types and not all of them, write each code out in the `name` or the `description`
+   transcribe a schedule's columns, a detail, bar sizes, or connector parts into any field, and
+   never narrate the set sheet by sheet; how a schedule becomes rows is mandate 6. Where a row
+   names a schedule's codes, write each code out in the `name` or the `description`
    ("Exhaust fans EF-1, EF-2, EF-3 and EF-4"), never as a range ("EF-1 through EF-4"): the citation
    index links a row to a type only where the row carries that code as a whole word, so a range
    links its two ends and misses every type between. Recorded text is what the bidder
@@ -247,9 +268,21 @@ of them is ever trimmed.
    never carries another item's subject id or a hand-written SUPERSEDED or date tag, per
    docs/plugin-text-style.md. Where an existing item needs to split into two, `retire_scope_item`
    names why and you CREATE each half fresh; never a tag typed into the description.
-6. GRAIN: follow the general grain. Split by type or significant distinction, never by instance;
-   a schedule is one row plus a count, never its contents transcribed; an attribute of a piece of
-   work rides the row it belongs to rather than becoming a row of its own. Where you cannot tell
+6. GRAIN: one row per product type, and one row per product where the set names the product. A
+   product type is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
+   medicine cabinet, a walk-off mat, an acoustic underlayment. Where the set names products by a
+   model number, or by a legend or schedule code that stands for one product, each product is its
+   own row, named with its code and what it is ("Towel bar TA-04, 24 inch", "Medicine cabinet
+   MC-2, 16 by 22 inch"), with the model in the description. Instances are never rows: one towel
+   bar TA-04 in twenty bathrooms is one row, and where the set counts them the count is its
+   quantity. A schedule of places, such as a room finish schedule or a door schedule, is read for
+   the products and types it calls for, one row each ("Luxury vinyl tile flooring, LVT"), never
+   one row for the whole schedule. A schedule of one assembly's types that differ only in size or
+   spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
+   written out. Never copy a schedule's columns into a row: the row names its product and cites
+   the schedule row that defines it (mandate 2). A row is never a whole sheet and never a package
+   header. An attribute of a piece of work, a finish or a mounting height, rides the row
+   it belongs to rather than becoming a row of its own. Where you cannot tell
    how finely the work in front of you splits, create at best judgment and name it on your `grain
    questions:` line. How finely our own scope sheet splits is ours to settle, and nobody on the
    design team answers it. Recall never drops to grain uncertainty.
@@ -258,7 +291,8 @@ of them is ever trimmed.
    updates), or upload a JSONL and use `record_batch_file` for larger runs. An entry carries
    `subject`, `predicate`, `value`, `sourceInstrument` and `evidence` in mandate 2's shape, plus
    `supersedesId` where you are replacing a value. A citation of a row that already exists is one
-   item of `citations`, `{ subject, kind: "sheet", sheet, pageInPdf, fileId }`, or one line
+   item of `citations`, `{ subject, kind: "sheet", sheet, pageInPdf, fileId }`, or for a row read
+   off a schedule or a legend the `sheet-region` shape mandate 2 gives, or one line
    `{"citation": {...}}` in the file.
    Leave `versionScope` off: a sheet read names no issue label, and a null there is refused with
    "Expected string, received null", which rejects the whole batch. After every batch, read the
@@ -269,8 +303,8 @@ of them is ever trimmed.
 8. VOCABULARY SHEETS (a schedule, legend, or notes sheet, in any window): also record what the
    schedules define, extending the kinds the record already knows (`list_definition_kinds`) and
    never creating a parallel vocabulary, AND own the scope items the schedules themselves ground.
-   A schedule row family that is real priced work becomes scope items at the grain bracket, on
-   their trade, cited to the schedule sheet and page.
+   A schedule row family that is real priced work becomes scope items at mandate 6's grain, on
+   their trade, each cited with a box on the schedule row it was read from (mandate 2).
    A definition is a subject `<kind>:<code>`, and the record knows a kind only once it is declared:
    before the first entry under a kind the record does not carry, record `definitionKind:<kind>`
    with predicate `name` and the kind's plain label the way an estimator says it (`Equipment
@@ -340,8 +374,8 @@ codes. They arrive compact: name, description, category, notes, quantity, `belon
 each field and when.
 
 A row that merely sits under the same section of the checklist is not in that answer, but every
-section is, in `categories` with its size over the whole list, so take your category string from
-there instead of inventing one. Take one filtered `list_scope_items` on `category` only where you
+section is, in `categories` with its size over the whole list. Take one filtered
+`list_scope_items` on `category` only where you
 need a section's rows, or where `truncatedParts` named the scope rows. Pass `full: true` only when
 you need a specific item's records, and filter that call down to the items you need. A call returns
 30 rows by default; `limit` up to 500 is accepted, but a large explicit limit can outrun what the
