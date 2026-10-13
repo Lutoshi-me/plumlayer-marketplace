@@ -218,7 +218,7 @@ the system is labeled but the floor count is not, or the count is there and the 
 from what the details look like, leave the value alone.
 
 There is nothing to ask about here and this step raises no Question: an unfilled structure value is
-a blank a person fills in a moment from Edit info, not a disagreement between sources.
+a blank the estimator can fill later.
 
 When both halves are stated, call `update_project(projectId, structureDiagram: {...})`, and name in
 the report the sheet that grounded each half.
