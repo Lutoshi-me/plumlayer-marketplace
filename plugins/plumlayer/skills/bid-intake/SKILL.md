@@ -565,8 +565,11 @@ is having a response, a coverage, or a summary entry on it. Record an item first
 record it after the batch and the bidder exists. A bidder whose proposal answered no rows at all is
 still fine; their coverage entry alone establishes them.
 
-**Check what already stands before each call.** This door has **no idempotency key**: two identical
-calls create two separate items, silently. Against the `additionalItems[]` you captured in stage 3, for
+**Check what already stands before each call.** Send each `record_additional_item` call with a fresh
+`idempotencyKey`, and when a call times out or fails with no answer, send it again with the same key:
+if the first landed, you get its answer back and nothing is written twice. The key covers only a
+resend of the same call; two separate calls for the same item still create two items, silently, so
+a re-run of this skill must check first. Against the `additionalItems[]` you captured in stage 3, for
 this bidder:
 
 - **Nothing like it there** → record fresh (no `supersedesId`).
@@ -704,8 +707,8 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - Additional items go through `record_additional_item` one at a time, never `record_batch` (which
   refuses the predicate), and only after the response batch has landed (the door refuses a party who
   is not yet a bidder).
-- No item is recorded without first checking the package's existing `additionalItems[]` for it; this
-  door has no idempotency key, so an unchecked re-run duplicates silently. A derived item (non-null
+- No item is recorded without first checking the package's existing `additionalItems[]` for it; an
+  `idempotencyKey` covers only a resend of the same call, so an unchecked re-run duplicates silently. A derived item (non-null
   `migratedFrom`) and a reconciled one (non-null `resolution`) are never touched.
 - Writes are verified by reading the package back in **summary view** (`get_bid_package` with
   `view: "summary"`) and matching the rise in per-bidder counts against the stage-3 baseline; a

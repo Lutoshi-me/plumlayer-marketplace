@@ -294,8 +294,10 @@ marks summed, so the marks are the takeoff.
   - **refused near human-touched work**, since that spot is now theirs: skip it,
     count it, name it in the report;
   - **transport or auth error** (a timeout, an expired-token error; the call returned an error,
-    not a landed record): retry that one write once; the stage-8 verification is what proves no
-    duplicate resulted either way;
+    not a landed record): retry that one write once with the same `idempotencyKey` it carried, so
+    a write that did land comes back as its first answer and lands nothing twice (send every
+    `takeoff_record` and `takeoff_condition` call with a fresh `idempotencyKey` for this reason);
+    the stage-8 verification is what proves no duplicate resulted either way;
   - **a refusal you cannot explain**: stop the run rather than retrying blind.
 - **Judgment calls ride the evidence.** A border-case instance you counted carries the call in its
   own evidence; exclusions shaped by judgment are recorded with the census reconciliation. (A
