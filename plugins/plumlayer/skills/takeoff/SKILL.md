@@ -179,6 +179,15 @@ Per target sheet:
   cannot be measured yet.
 - A scale disagreement you cannot resolve (label says one thing, the datums say another) is a
   judgment call: go with what the geometry proves, and put the discrepancy in the report.
+- **Each printed page measures under its own scale.** In the `hasScale` rows `takeoff_read`
+  returns for a sheet, the one with `measuresOpenPage: true` measures the page the sheet opens on
+  now, and its subject is where a revision of that scale goes. Superseding any other scale row
+  recalibrates the page that row belongs to and moves every length on it, so revise another row
+  only when the user asked you to correct that page's scale. With none, record the scale on the
+  subject the door names for that page: when it refuses a subject, its message names the one to
+  use. A sheet a later drawing issue reprinted starts with no scale of its own: ground it as a
+  sheet with none, and never copy the earlier page's scale onto it, since the earlier page's
+  lengths keep reading through their own.
 
 ## 5. Read and judge (the method, not the answers)
 
@@ -279,7 +288,9 @@ marks summed, so the marks are the takeoff.
 - **Geometry is the census's own coordinates** (PDF points, the `get_page_text` frame): a count
   mark's `point` is the instance's location (center of its tag/box); vertices for lengths and
   areas trace what you measured. Scaled quantities cite the scale they were computed under
-  (`scaledUnder`).
+  (`scaledUnder`): for a new length or area, the scale that measures the page you drew it on;
+  for a revision of an existing one, the scale the existing one already names, so its quantity
+  stays what it was measured at.
 - **Every record carries `conditionId`** (from stage 6) and evidence: `method`: how this
   instance was read (census + visual confirmation, render-only on image sheets, and the judgment
   that included it when it was a border case); `source`: sheet and page. A mark you cannot cite
@@ -333,7 +344,7 @@ Check, with a fresh recount against your stage-7 canonical list (never an echoed
 
 - member count per sheet equals what you sent per sheet;
 - the condition's base total matches the arithmetic of its members;
-- each scale you recorded is live on its sheet.
+- each scale you recorded is live on its sheet and carries `measuresOpenPage: true`.
 
 A mismatch stops the run and is reported as a discrepancy with both numbers: never patched by
 re-sending, never rounded into "close enough". The verification result is the only ground for telling
