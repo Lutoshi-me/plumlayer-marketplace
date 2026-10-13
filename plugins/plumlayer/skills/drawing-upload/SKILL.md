@@ -372,8 +372,8 @@ every page in that tail yourself:
     bare competing entry: `search(projectId, subject: "sheet:<n>", predicate:
     "hasTitle"|"discipline"|"appearsOnPage")` to get the live entry's `id`, then author your corrected
     entry with `supersedesId` set to that id, cited to the crop you read. The edge is what makes your
-    read govern: a bare competing entry loses to the machine value on authorship rank, which is the
-    anti-hallucination anchor working as designed. If the slot is empty (the pass
+    read the current value: the record refuses a write onto a filled slot that names nothing, which is the
+    record's own rule for an occupied field. If the slot is empty (the pass
     left this page blank), just author the entry fresh: there is nothing to supersede.
     A misread sheet number itself is corrected with `renumber_sheet` (project-record skill), which
     moves what was recorded on the sheet under the right number; never author a second sheet under
@@ -388,7 +388,19 @@ every page in that tail yourself:
   `page:<fileId>:<pageInPdf>`, never `subject: null`, and never add an OCR dependency (deferred).
   Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
 
-For every one of those pages you *do* resolve, author the **full bundle** of entries, mirroring the shape the
+**A number another drawing issue already prints.** Before you write a bundle, look the number up
+(`set_grid`, or `search(projectId, subject: "sheet:<n>", predicate: "locatedAt")`). When an earlier or
+later drawing issue already places that number, do not write `appearsOnPage`, `locatedAt` or
+`partOfIssue` for it with `record`, and never name the other issue's location as the entry your write
+replaces: that takes the other issue's page off the record. Call `renumber_sheet` with
+`sheetNumber` set to the page row's number from `set_grid` and `newSheetNumber` set to the number
+you read. The page becomes that number's page in its own drawing issue: the newest issue's page is
+the current one, and the other issue's page stays on record as replaced. Then write `hasTitle` only
+when the title you read differs from the number's current one, naming that entry in `supersedesId`.
+When the page's own issue already places the number on another page, the verb refuses and names
+that page: the two pages print the same number, so report both to the user rather than picking one.
+
+For every other page you resolve, author the **full bundle** of entries, mirroring the shape the
 server records for the pages the deterministic pass already recognized (matching predicate and value
 shapes keeps every sheet's entry set uniform regardless of which stage grounded it):
 
