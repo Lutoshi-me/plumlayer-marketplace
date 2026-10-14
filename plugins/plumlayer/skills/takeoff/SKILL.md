@@ -183,7 +183,9 @@ Per target sheet:
   returns for a sheet, the one with `measuresOpenPage: true` measures the page the sheet opens on
   now, and its subject is where a revision of that scale goes. Superseding any other scale row
   recalibrates the page that row belongs to and moves every length on it, so revise another row
-  only when the user asked you to correct that page's scale. With none, record the scale on the
+  only when the user asked you to correct that page's scale. A scale whose `filedUnder` names an
+  earlier drawing issue's page measures that page, and superseding it there moves only the
+  lengths and areas drawn on that page. With none, record the scale on the
   subject the door names for that page: when it refuses a subject, its message names the one to
   use. A sheet a later drawing issue reprinted starts with no scale of its own: ground it as a
   sheet with none, and never copy the earlier page's scale onto it, since the earlier page's
