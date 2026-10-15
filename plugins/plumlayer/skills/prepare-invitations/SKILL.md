@@ -1,13 +1,13 @@
 ---
 name: prepare-invitations
 description: >
-  Get a job's invitations ready without waiting for the scope run: read the bidding requirements
-  and set only what the documents state (labor condition, the job's state, dates, address), each
-  reported with its section. Trigger on "prepare the invitations", "get the invites ready",
-  "/prepare-invitations". Drives read_invitation_flow, search_set_text, get_page_text,
-  set_invitation_labor, set_invitation_places, set_project_date, update_project. Does not send, save
-  the invite list, or put the plan room up (the site does), build the scope list (scope-run), or set
-  up the project (project-setup).
+  Get a job's invitations ready before the scope run: set only what the bidding requirements state
+  (labor, the job's state, dates, address), each with its section. Trigger on "prepare
+  the invitations", "get the invites ready", "/prepare-invitations". Drives read_invitation_flow,
+  search_set_text, get_page_text, set_invitation_labor, follow_invitation_labor_default,
+  set_invitation_include_missing, set_invitation_places, set_project_date, update_project. Does
+  not send, save the list or put the plan room up (the site does), build the scope list
+  (scope-run) or set up the project (project-setup).
 ---
 
 # Prepare invitations: read the bidding requirements into the invitations
@@ -186,8 +186,10 @@ What the first `read_invitation_flow` can and cannot tell:
   condition stands and spells one of them. Null means none stands, more than one stands, or the one standing
   spells none of the three; the read does not say which, so null never means the job asks nothing.
   While more than one stands, every whole-job write is refused.
-- A trade whose `labor.source` is `project` reads a condition set on this project, its own or the
-  whole job's, and the read does not say which. Only its own stays when the job-wide one changes.
+- A trade whose `labor.own` is true carries a condition of its own, which stays when the job-wide
+  one changes. A trade whose `labor.own` is false follows `labor.defaultCondition`: the job-wide
+  condition when one stands, else the account's usual for that trade, else `"any"`; `labor.source`
+  reads `project` for both a trade's own condition and the job's.
 - A trade whose `labor.condition` is null reads a rule or a usual none of the four conditions
   spell: leave it out of every write and name it. A trade with `labor.source: "none"` reads
   `"any"`, which is nothing asked of it, never a condition someone set. `"open shop"` is a
@@ -209,7 +211,17 @@ The decisions:
 - Every trade a requirement reaches that reads a different condition set on this project, its own
   or the job's alike, is a disagreement with the record for step 4's labor item.
 - Step 5's read after the whole-job write settles which trades carry their own: there, a trade with
-  `labor.source: "project"` reading anything but the job-wide condition carries its own.
+  `labor.own: true` carries its own.
+- A trade that should follow the job's condition again goes back on it with
+  `follow_invitation_labor_default(projectId, code)`, which withdraws that trade's own rule and
+  answers `changed: false` when it had none. A trade a rule on a list of trades covers is refused
+  with that rule named: withdraw the rule on its whole list with `set_invitation_labor`, never one
+  code of it.
+- Whether companies with no service area, or no labor condition, on file stay in the invitations
+  is the estimator's word, never the documents': `set_invitation_include_missing(projectId,
+  family, include)` with `family` `"service area"` or `"labor"`, only when he says so. The read's
+  `includeMissingServiceArea` and `includeMissingLabor` carry `included` and whether the answer is
+  this project's or the account's usual.
 - The verb answers `written`, one row per named code with `code`, `ruleId` and `changed`, or for
   the whole job one `ruleId` and `changed`. `changed: false` means nothing was written: the trade's
   own rule or the job-wide condition already held it, or any found no job-wide condition to take
