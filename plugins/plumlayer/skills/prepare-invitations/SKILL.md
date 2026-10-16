@@ -44,7 +44,7 @@ one exception is places in step 3, and only to add the job's state.
 ## The boundary
 
 This skill works the project the way the estimator would, through the same doors, and every write
-it makes is marked as the agent's. It does not save the invite list, and no verb it drives does.
+it makes is credited to the person who asked for it. It does not save the invite list, and no verb it drives does.
 Sending the invitations, putting the plan room up, and changing which files the plan room shows are
 signature acts: they create an obligation outside the company or publish to it, so they are the
 person's to sign on the site, and this skill never does them. Every write goes through the verbs
@@ -426,8 +426,9 @@ gives the before numbers and the last read the after numbers, and the report pri
 - **What is still missing**: for example no subcontractor bid due date, no project address stated,
   no labor requirement stated. No places filter is not missing: say once, under the trades, that
   every state goes out.
-- **What I asked, and any Questions I raised**: each Question by its number, any one already open
-  named instead of raised again, and whether the check for one already open was incomplete.
+- **What I asked, and any Questions I raised**: each Question by its title, or by its RFI number
+  ("RFI 22") once it holds one, any one already open named instead of raised again, and whether
+  the check for one already open was incomplete.
 - **What I did not read**: pages past the reading budget, pages of the manual not read yet, and
   pages read only in part or not at all, and that running this again later picks them up.
 - **Next**: review and send from the invitations on plumlayer.com, through the project's Coverage

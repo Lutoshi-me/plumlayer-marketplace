@@ -884,8 +884,12 @@ nothing earlier on the board to re-read, so skip it.
      "locatedAt")`), with `get_page_text` on the part the ask is about, and search the ask's words
      with `search_set_text` and `kind: document`.
 5. **Three outcomes, and no fourth.**
-   - The new paper answers it: `reply_question` saying what the revised sheet or section shows,
-     and tell the user it may be answered.
+   - The new paper answers it: work it as project-record's "When an answer arrives" says.
+     `reply_question` saying what the revised sheet or section shows, citing it; tell the user
+     what changed and that the reply may answer it, so he can have it pinned; and name the scope
+     rows that cite the Question (`questions` on each `list_scope_items` row). Update
+     those rows' values, citing the Question, only when he asks in this session; otherwise they
+     are the scope pass's in step 10, which reads this delivery's sheets.
    - The new paper changed on the point without answering it: `reply_question` saying what
      changed.
    - Unchanged on the point: no reply, and it is counted in the report, unless point 3 added a
@@ -900,9 +904,10 @@ nothing earlier on the board to re-read, so skip it.
 
 <!-- user-facing -->
 Report: how many open Questions cite a changed sheet or section, how many got a reply, the ones
-the new paper may answer, by number, the ones you pointed at the new paper too, by number, any
-with no room for another place on it, by number, and how many were unchanged on the point. Say
-plainly that none was closed and that settling one is theirs.
+the new paper may answer with the scope rows each one moves, the ones you pointed at the new paper
+too, any with no room for another place on it, and how many were unchanged on the point. Name each
+Question by its title, or by its RFI number ("RFI 22") once it holds one. Say plainly that none
+was closed and that settling one is theirs.
 <!-- /user-facing -->
 
 ## 10. Close out

@@ -77,7 +77,7 @@ record each bidder's bid entries against that package's existing scope rows. It 
   intake. When the user asks for one, `set_bid_plug` plugs a cell (you carry an amount, another
   bidder's price stands in, or the plug comes off) and `reconcile_additional_item` attaches,
   promotes, routes, or dismisses an item. Both go through the same doors the bid comparison uses and
-  record as yours. Never make either move on your own judgment during intake;
+  are credited to the person who asked for them. Never make either move on your own judgment during intake;
 - sign or submit anything: submitting the bid stays with the user, on plumlayer.com.
 
 The pipeline: **preflight → upload/register → fetch rows + context → two-pass read (blind, then peer) →
