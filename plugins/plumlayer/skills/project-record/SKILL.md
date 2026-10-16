@@ -278,7 +278,9 @@ number ("RFI 22") once it holds one, and names one Question per call.
 - Give it a short title naming the ask. Write the text in the shape "this is what you meant,
   right?": state the assumption you would price on and ask the design team to confirm it, or to
   say what replaces it. Cite the exact spots: a box around the callout, schedule row or note, and
-  the spec section where one bears on it.
+  the spec section where one bears on it. Put a Question's citations in `sources`, shaped the way
+  `ask_question` describes them; the `evidence` shape under "How to shape a citation" is for scope
+  rows and facts only.
 - Say which trades it affects with `trades` (the codes, one or several), `trade` (one code) or
   `everyTrade: true` for the whole job; with none of the three it sits at not known yet rather than
   being guessed into a package. `set_question_trades` answers that later, when somebody knows, and
