@@ -252,14 +252,15 @@ amendments, stays in `scope-run`.
    silent family becomes a `missingScopeFamily` entry AND, where a job of this kind would normally
    carry the trade, a package. It raises no Question. A package is what one sub bids: a section a
    sub of another package carries goes on that package's `manualSections`, and its trade on that
-   package's `codes`, never a package of its own. Walk-off mats, acoustic underlayment and floor
-   prep go on the flooring package; finish hardware and door operators on doors, frames and
+   package's `codes`, never a package of its own. Walk-off mats, an acoustic underlayment laid
+   under the finish floor, and floor prep go on the flooring package; a poured gypsum topping and
+   the sound mat under it on the package of the sub who pours it; finish hardware and door operators on doors, frames and
    hardware; reinforcing on cast-in-place concrete; steel deck on structural steel. A package's
    `tradeCode` is never a heading no sub bids here, such as `09 00 00` Finishes; a broad code one
    sub bids on this job, such as `22 00 00` Plumbing, is a package's trade like any other. Work
-   the owner contracts for directly gets no package: where Division 01 says the owner hires the
-   agency (special inspections, testing), or the owner furnishes and installs the item, draft no
-   package for it.
+   the owner contracts for directly gets no package: where the manual says the owner hires the
+   agency (special inspections, testing), in Division 01 or in a technical section's quality
+   control article, or the owner furnishes and installs the item, draft no package for it.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be
