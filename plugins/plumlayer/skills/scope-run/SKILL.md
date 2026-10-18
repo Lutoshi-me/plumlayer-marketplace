@@ -84,7 +84,8 @@ is a change on the site or a tool call.
 
 Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
 untraced.** Everything a reader records is its own reading, cited, carrying who wrote it and when;
-it becomes working truth the moment it lands; anything a person changes wins. The project record
+it becomes the field's current value the moment it lands; anyone replaces it later by naming it.
+The project record
 is what every agent in the run reads from and writes to: definitions, sheet readings, orientation
 facts, open Questions. No agent keeps its own copy of what the record already holds.
 

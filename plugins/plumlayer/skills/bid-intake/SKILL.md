@@ -406,9 +406,9 @@ These are gates. Write them into every read:
   it never becomes a coverage label, a summary note, or an Additional item.
 - **No receipt, no write.** A value you cannot cite to a `fileId` and page is not recorded. If you
   believe a fact but cannot point at where you read it, it does not become an entry.
-- **Nothing you write is a person's own entry.** Every entry records as your reading of the document;
-  this door cannot record one as human-authored. A later correction from a person on the same row
-  supersedes yours the same way any write does, naming what it replaces.
+- **Every entry is your reading of the document.** It is credited to the person you work for and
+  cited to the page you read. A later correction on the same row, from a person or from you,
+  replaces yours the same way any write does, naming what it replaces.
 
 ## 5. Assemble and audit confidence
 

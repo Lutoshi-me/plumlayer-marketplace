@@ -13,7 +13,7 @@ description: >
 # Working a Plumlayer project record
 
 **The project record** is the cloud, entry-based model of a
-construction project's *current governing truth*. Each Plumlayer **project has one project record**.
+construction project as it currently stands. Each Plumlayer **project has one project record**.
 You interact with it through the `plumlayer` MCP tools (every tool is scoped to the
 signed-in user's own projects).
 
@@ -23,22 +23,22 @@ signed-in user's own projects).
 - `door:103 — count — 6`
 
 ## Who wrote it, when, and from what
-An entry you write takes effect immediately as provisional working truth, with your citation.
-There is no promotion step to wait for. What makes it trustworthy is that the record carries who
-wrote it, when, and the evidence it came from, so cite every entry (an ungrounded entry is a
-guess; say so instead of writing it).
+An entry you write becomes the field's current value the moment it lands, with your citation.
+There is no promotion step to wait for. The record carries who wrote each entry, when, and the
+evidence it came from, so cite every entry (an ungrounded entry is a guess; say so instead of
+writing it).
 - Every write you make is credited to the person who asked for it, by name, and that name is what
   a person reads. When you tell anyone who wrote, sent, pinned or closed something, name the
   person ("you", or a colleague by name), never "your agent" or "the agent". Nothing you write on
   the record, a Question, a reply or a note names an agent as its author.
-- The server stamps the authorship from your identity, never from what you declare. An
-  agent's judgment records as `agent-stated`, a reproducible machine transcription as
-  `machine-read`, a value the deterministic layer confirmed as `tool-verified`, a person's
-  own gesture as `human-stated`. This door can never record an entry as human-authored or
-  tool-verified.
-- A field holds the latest write, by anyone, with who wrote it, when, and from what. Supersede freely, naming what your
-  entry replaces with `supersedesId`, whether it's your own prior read or something a person set;
-  if you're not sure your read should stand over what's there, ask instead of overwriting it blind.
+- The server records who wrote an entry from your sign-in, never from what you declare, and
+  nothing about who wrote it ranks it above or below any other entry.
+- A field holds one current value: the latest write, by anyone, with who wrote it, when, and from
+  what. A write onto a field that already holds a value names the record it replaces with
+  `supersedesId`, whether that is your own prior read, the server's recognition pass, or something
+  a person set; a write onto an occupied field that names nothing is refused, and the refusal names
+  the current record. If you're not sure your read should replace what's there, ask the user
+  instead of overwriting it.
 - Raise a Question only for a draft RFI that meets the standard the `ask_question` verb
   states; what you are unsure of in your own reading goes on the record as your reading, with its
   sources, or to the user in the conversation. Human sign-off still gates what leaves the
@@ -133,7 +133,7 @@ guess; say so instead of writing it).
   and on an update alike: their `evidence` has to name what you read, a sheet with the 1-based page
   you read it on, a file, or a spec section, and evidence that names none of the three is refused.
   The two derived trade tags (`belongsToTrade`, `packageRole:<trade>`) need no citation. It is
-  credited to the person you work for and takes effect immediately as provisional working truth.
+  credited to the person you work for and becomes the field's current value immediately.
   `supersedesId` is the correction edge: see "Correcting a machine misread" below. Recorded text
   (name, description, note, value prose) is plain estimator words, per
   docs/plugin-text-style.md: never another entry's subject id or a hand-written supersede or date
@@ -233,20 +233,19 @@ person you work for.
 ### Correcting a machine misread (a mis-bound title or discipline)
 
 The deterministic recognizer grounds the tokens it reads, but *which* cell fills a semantic slot
-(`hasTitle`, `discipline`) is its fallible positional guess, recorded as `machine-read`. When you read
-a sheet and can see it grabbed the wrong cell (a boxed drawing note recorded as the title, say),
-correct it with a supersession **edge**, not a bare competing entry:
+(`hasTitle`, `discipline`) is its fallible positional guess. When you read a sheet and can see it
+grabbed the wrong cell (a boxed drawing note recorded as the title, say), correct it with a
+supersession **edge** that names the recognized entry:
 
 1. `search(projectId, subject: "sheet:<n>", predicate: "hasTitle")` (or `"discipline"`) → the live
    entry's `id`.
 2. `record` (or a `record_batch` entry) with `supersedesId` set to that id, `value` = what you read,
    cited to the sheet you read it from.
 
-The edge is what makes your read govern the grid: an agent edge onto a `machine-read` value is honored
-regardless of who or what originally produced it, as long as it names what it replaces with
-`supersedesId`. If a person already set the value and you think it's wrong, ask them rather than
-overwrite it. A **bare** competing entry (no `supersedesId`) does not win; it stays a candidate
-beneath the machine value, which is the anti-hallucination anchor working as intended. A reading
+Your entry becomes the sheet's title or discipline the moment it lands, the same as any write
+that names what it replaces, whoever wrote the value before it. The recognizer's entry stays in
+the record beneath yours, with who wrote it and when. An entry with no `supersedesId` onto a field
+that already holds a value is refused, so the edge is the one path. A reading
 of a sheet's title or discipline you cannot resolve is named to the user in the conversation, not
 raised as a Question, and a title you already read correctly is never put to anyone (that is the
 "go set it on the site" dead end).
@@ -399,9 +398,9 @@ Drawn
 - Question text is plain estimator words, and every Question meets the standard the
   `ask_question` verb states: a title, a citation for every place it names, and only what is worth
   the design team's time.
-- Be honest about your own entries: they govern provisionally as your reading, not as a
-  person's own entry, and a later correction from a person supersedes them the same way any
-  write does.
+- Be honest about your own entries: each is your reading of what you cited, and you say so when
+  you tell the user about it. Anyone can replace it later the same way any write does, by naming
+  it.
 - Always cite, and shape the citation so it actually renders (see "How to shape a citation").
   Separate what's grounded from what's inferred.
 - One project = one project record; always act within the correct `projectId`.

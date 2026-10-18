@@ -13,8 +13,8 @@ Plugin text serves two readers, and confusing them is the most expensive mistake
 **Agent-facing text** is the instructional body of a skill, and the whole body of an agent
 definition under `agents/`, which a dispatched agent reads as its system prompt. The agent reads it
 to do the work.
-Machinery vocabulary belongs here and is load-bearing: `entry`, `predicate`, `trust class`,
-`supersede`, real verb names, real field names. Do not "de-jargon" this text. Precision here is
+Machinery vocabulary belongs here and is load-bearing: `entry`, `predicate`, `supersede`, real
+verb names, real field names. Do not "de-jargon" this text. Precision here is
 what makes the product reliable.
 
 **User-facing text** is anything a human reads: the README, the manifest descriptions, the skill
@@ -164,12 +164,13 @@ Each of these is a harness check.
    layer: it checks a fixed, curated list of names that a past sweep already retired (most recently
    the D6 rewrite, commit `8096333`), not "is this word acceptable" in general. Two scopes:
    - A **whole-file** list (e.g. `residue`, `roster`, `checkpoint`, `mint`, `enrich`, `operator` as
-     the name for the person, `deposit`, `proposed`, `trade-packages`) must not appear anywhere in a
+     the name for the person, `deposit`, `proposed`, `trade-packages`, the authorship stamps
+     `agent-stated` and `machine-read`, `trust class`, `working truth`) must not appear anywhere in a
      shipped skill, an agent definition, the README, or a manifest. A literal, current identifier that happens to share
      the retired word — the `operator.json` filename, the JSON key
      `"operator"` — is exempt; it is a real name, not the retired concept.
    - A **scoped** list (e.g. `supersede`/`supersession`, `fan-out`, `idempotency`, `census`,
-     `grain`, `trust class`) is legitimate agent-facing machinery vocabulary everywhere else in a
+     `grain`) is legitimate agent-facing machinery vocabulary everywhere else in a
      skill, and is banned only inside a `<!-- user-facing -->` span or an `Audience: user` artifact
      clause — the places the file itself has already declared the text user-facing.
    Every shipped file takes the same scan. There is no lenient population and no exemption list:

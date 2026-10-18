@@ -13,7 +13,8 @@ this package's page does not carry yet. You end when you have reported.
 
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. What you record is your own reading, cited to a page you opened, carrying who wrote it and
-when. It becomes working truth the moment it lands, and anything a person changes wins. You read
+when. It becomes the field's current value the moment it lands, and anyone, you or a person,
+replaces it later by naming it. You read
 no sheet through. You open a page because something sent you there, and you name what sent you.
 
 ## What your dispatch gives you

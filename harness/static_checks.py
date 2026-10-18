@@ -804,7 +804,7 @@ def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# Check — Retired vocabulary regression guard (PLU-1346)
+# Check — Retired vocabulary regression guard
 # --------------------------------------------------------------------------- #
 #
 # The estimator-block enumeration and its byte-identical harness check were
@@ -848,18 +848,16 @@ def check_banned_strings(plugin_path: Path, marketplace_root: Path) -> Result:
 #   QA, grounding - electrical grounding is real trade vocabulary
 #   projection, drift, backstop, wave, bundle
 #
-# Deviation from the issue brief: "trust class" is NOT whole-file banned.
-# It is live, current, agent-facing machinery vocabulary —
-# docs/plugin-text-style.md §1 itself names it as a load-bearing example of
-# what should NOT be de-jargoned ("claim, predicate, trust class,
-# supersede"), and plugins/plumlayer/skills/project-record/SKILL.md uses it
-# correctly and currently. Only the trust-class VALUE "proposed" was
-# retired (renamed to "recorded", commit 92e8243) — the field/concept name
-# itself was never deleted. A whole-file ban on the phrase would fail the
-# harness on real, correct, current text. It is instead added to
-# RETIRED_SCOPED_TERMS below: the user should never read "trust class" (this
-# repo's own estimator-words rule), but the agent legitimately reads and
-# writes it.
+# The record no longer ranks one entry above another by who wrote it. A field
+# holds one current value, the latest write by anyone, and a write onto an
+# occupied field names what it replaces or is refused. So the authorship
+# stamps (`agent-stated`, `machine-read`, `tool-verified`, `human-stated`),
+# the trust classes, levels and tiers, an entry called human-authored,
+# agent-authored or machine-authored, and the phrases that taught precedence between them
+# ("working truth", "governing truth", "governs provisionally",
+# "provisional working", "a candidate beneath the machine value") are
+# whole-file retired: an agent that reads one reasons from a ranking the
+# server does not apply.
 
 RETIRED_WHOLE_FILE_TERMS: list[tuple[str, re.Pattern, bool]] = [
     (
@@ -885,7 +883,7 @@ RETIRED_WHOLE_FILE_TERMS: list[tuple[str, re.Pattern, bool]] = [
     ("'mint'/'minting' (renamed to 'create')", re.compile(r"\bmint(?:ing|s|ed)?\b", re.IGNORECASE), False),
     ("'enrich'/'enriching' (renamed to 'update')", re.compile(r"\benrich(?:ing|es|ed)?\b", re.IGNORECASE), False),
     (
-        "'operator' as the retired name for the person (renamed to 'user', PLU-1361; "
+        "'operator' as the retired name for the person (renamed to 'user'; "
         "the literal `operator.json` filename and the JSON key \"operator\" are real, "
         "current identifiers and are exempt)",
         re.compile(r'(?<!")\boperator\b(?!\.json)(?!")', re.IGNORECASE),
@@ -896,10 +894,41 @@ RETIRED_WHOLE_FILE_TERMS: list[tuple[str, re.Pattern, bool]] = [
     ("'deposit' (renamed to 'record' as a verb)", re.compile(r"\bdeposit(?:s|ing|ed)?\b", re.IGNORECASE), False),
     ("'trade-packages' (a retired directory name)", re.compile(r"\btrade-packages\b", re.IGNORECASE), False),
     # Token cost vocabulary retired (cost is measured outside the plugin, from
-    # harness transcripts, never narrated by a skill; PLU-1345).
+    # harness transcripts, never narrated by a skill).
     (
         "token cost vocabulary (cost is measured outside the plugin)",
         re.compile(r"\btoken (cost|totals?|usage|budget)s?\b", re.IGNORECASE),
+        False,
+    ),
+    (
+        "an authorship stamp (`agent-stated`, `machine-read`, `tool-verified`, `human-stated`); "
+        "who wrote an entry ranks nothing",
+        re.compile(r"\b(?:agent-stated|machine-read|tool-verified|human-stated)\b", re.IGNORECASE),
+        False,
+    ),
+    (
+        "a trust class, level or tier, or an entry ranked by tier ('higher tier', "
+        "'instrument tier', 'bottom-tier'); no entry outranks another",
+        re.compile(
+            r"\btrust[- ](?:class|level|tier)(?:es|s)?\b|\b(?:higher|instrument|bottom)[- ]tiers?\b",
+            re.IGNORECASE,
+        ),
+        False,
+    ),
+    (
+        "'human-authored', 'agent-authored' or 'machine-authored' as a kind of entry; "
+        "who wrote an entry ranks nothing",
+        re.compile(r"\b(?:human|agent|machine)-authored\b", re.IGNORECASE),
+        False,
+    ),
+    (
+        "precedence wording ('working truth', 'governing truth', 'governs provisionally', "
+        "'provisional working', 'candidate beneath'); a field holds the latest write by anyone",
+        re.compile(
+            r"\b(?:working|governing) truth\b|\bgoverns? provisionally\b|\bprovisional working\b"
+            r"|\bcandidate beneath\b",
+            re.IGNORECASE,
+        ),
         False,
     ),
 ]
@@ -917,7 +946,6 @@ RETIRED_SCOPED_TERMS: list[tuple[str, re.Pattern]] = [
     ("'grain bracket'", re.compile(r"\bgrain bracket\b", re.IGNORECASE)),
     ("'census'", re.compile(r"\bcensus\b", re.IGNORECASE)),
     ("'grain'", re.compile(r"\bgrain\b", re.IGNORECASE)),
-    ("'trust class'", re.compile(r"\btrust class\b", re.IGNORECASE)),
 ]
 
 
@@ -1055,8 +1083,8 @@ def check_retired_vocabulary(plugin_path: Path, marketplace_root: Path) -> Resul
 # first-use term definition ("**edge**", "**identity**"), neither of which
 # happens to end in a colon but neither of which is "emphasis on an ordinary
 # word" either. This narrower denylist is the subset actually verified
-# against the shipped text: every current hit (20, listed in the PLU-1346
-# report) was a genuine emphasis violation, not a mislabeled genuine label.
+# against the shipped text: every hit when the check was built (20) was a
+# genuine emphasis violation, not a mislabeled genuine label.
 # It will not catch every possible emphasis-bolding — favor false negatives,
 # per the issue brief — but what it does flag is real.
 BOLD_EMPHASIS_WORDS = {
@@ -1233,7 +1261,7 @@ def check_no_absolute_paths(plugin_path: Path, marketplace_root: Path) -> Result
 
 
 # --------------------------------------------------------------------------- #
-# Check — Question/failure boundary (PLU-1524)
+# Check — Question/failure boundary
 # --------------------------------------------------------------------------- #
 #
 # A project Question is a construction-project artifact: the user reads it as an open item
@@ -1491,7 +1519,7 @@ def check_question_rfi_bar(plugin_path: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# Check — Question plain-words pointer (PLU-1526)
+# Check — Question plain-words pointer
 # --------------------------------------------------------------------------- #
 #
 # A Question an agent raises reaches the user as project text, read on the site exactly like any
@@ -5227,7 +5255,7 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# Check: no shipped text names `fork` as a subagent type (PLU-1557)
+# Check: no shipped text names `fork` as a subagent type
 # --------------------------------------------------------------------------- #
 #
 # A pass runner invented a wait primitive by dispatching fork agents -- one told to wait for a

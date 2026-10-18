@@ -329,7 +329,7 @@ did not observe that. What the server says on each poll:
   the run-level counts from `report`: `pagesScanned`, `sheetsGrounded`, `highConfCount`, `flaggedCount`,
   `extractionWarningCount`, `calibrated`, `capHit`. Never assume "N pages scanned = N sheets recognized":
   state both numbers. `confidence` on individual entries (visible later via `search`/`set_grid`) is
-  triage/review-priority metadata only, never a trust tier.
+  triage/review-priority metadata only: it tells you which sheets to check first and ranks nothing.
 - On a `succeeded` pass, `written.enteredValuesKept` lists the pages where the pass read nothing but a
   sheet number, title, discipline, or type that a person or an agent entered still stands. The pass
   left each one as it is. When `pages` is above zero, name those pages to the user with the value
@@ -368,8 +368,8 @@ every page in that tail yourself:
   differently:
   - **A confident correction of a machine misread**: you can see the reader grabbed the wrong cell (a
     tag instead of the sheet number, a boxed note instead of the title). If the recognizer already
-    stored a value for that slot, write your corrected value as a supersession **edge** onto it, not a
-    bare competing entry: `search(projectId, subject: "sheet:<n>", predicate:
+    stored a value for that slot, write your corrected value as a supersession **edge** onto it:
+    `search(projectId, subject: "sheet:<n>", predicate:
     "hasTitle"|"discipline"|"appearsOnPage")` to get the live entry's `id`, then author your corrected
     entry with `supersedesId` set to that id, cited to the crop you read. The edge is what makes your
     read the current value: the record refuses a write onto a filled slot that names nothing, which is the
@@ -438,7 +438,7 @@ unreadable); never silently dropped. State how many you read, corrected, and fla
 Recognition itself now types most of the set: at `recognize_sheets` finalize, the server runs a
 deterministic rule pass over every newly recognized sheet, matching its sheet-number prefix or
 recognized title against the 13-value vocabulary below. A match writes a `sheetType` entry
-server-side, authored as `machine-read`, cited to the matched title words, with a `confidence` of
+server-side, written by the recognition pass, cited to the matched title words, with a `confidence` of
 `high` or `medium`. A sheet the rules can't place gets nothing: those leftover sheets, never `other` (the
 rule pass never writes `other`), is what you read here. So this step is the backstop to the
 server's typing, not the whole of it: type the leftover sheets the rules left untyped, plus any rule-typed
@@ -462,7 +462,8 @@ you'd correct any recognizer-set value (step 6c): never a bare re-record. A bare
 `supersedesId` onto an occupied slot is refused, naming the record it would have to replace.
 `search(projectId, subject: "sheet:<n>", predicate: "sheetType")`, take the id of the current row
 (the most recent one search returns for that slot), and author your corrected entry with
-`supersedesId` set to it, cited to what you actually read. That edge is what makes your read govern.
+`supersedesId` set to it, cited to what you actually read. With that edge, your read becomes the
+sheet's type the moment it lands.
 
 This step runs on every door this skill supports: a fresh baseline, a bulletin or revision, and the
 cloud-resident re-recognition branch (1c) all converge here before the skill reports done. If this
@@ -554,11 +555,10 @@ When you are confident a recognized title or discipline is a mis-grab, correct i
 3. Author the corrected entry with `supersedesId` set to that id, cited to the crop you read, and pool
    it into your step 7 write.
 
-The edge is what makes your read govern the grid: the recognizer's binding is `machine-read`, and an
-agent edge onto it is honored regardless of who wrote the value it corrects, as long as your entry
-names what it replaces with `supersedesId`. If a person already set the value and you think it's
-wrong, ask them rather than overwrite it. A **bare** corrected entry with no `supersedesId` does NOT
-win; it sits as a candidate beneath the machine value. Never raise this as a question: a reading
+A write onto a field that already holds a value names the record it replaces. Your corrected entry
+becomes the sheet's title or discipline the moment it lands, whoever wrote the value it corrects,
+and the recognizer's entry stays in the record beneath it. A corrected entry with no `supersedesId`
+is refused, and the refusal names the current record. Never raise this as a question: a reading
 you cannot resolve is named to the user, and asking about a title you already read correctly is
 the "go set it on the site" dead end this step exists to close.
 
@@ -645,7 +645,7 @@ corrections from step 6c, and any discipline corrections from step 6d, the edges
    number of entries you sent. If it doesn't, stop and report the discrepancy rather than retrying
    with a guessed correction.
 
-   **For a large agent-authored bundle (a deep set with thousands of page and type entries), use
+   **For a large bundle you write (a deep set with thousands of page and type entries), use
    `record_batch_file` instead of chaining many `record_batch` calls.** The path: write the full
    entry array as JSONL, `request_file_upload(projectId, filename)` for a signed URL, PUT the JSONL
    bytes to it, `register_file(projectId, fileId, filename, contentType: "application/jsonl", kind:
@@ -992,7 +992,7 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
   re-record over a rule-typed sheet (correct it by supersession edge, per 6b); unsure stays untyped.
 - A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
   already-recognized sheet) is a supersession **edge** onto the stored entry (`supersedesId` from
-  `search`), never a bare competing entry and never a question raised with `ask_question`. A
+  `search`), never an entry that names nothing and never a question raised with `ask_question`. A
   reading you cannot resolve is named to the user.
 - The page entries and your own type entries (the leftover sheets and any correction) are your own reading,
   cited to the page you read; never present them as the deterministic pass's confirmed output, and

@@ -24,11 +24,15 @@ window tag or a cladding callout?) is your reading of the sheet, recorded as you
 citation. There is no counting algorithm in this skill and none behind the verbs; a fixed rule
 table would replace your reading with a guess that happens to be repeatable.
 
-Your work lands as working truth immediately, carrying who wrote it, when, and from what. There is no waiting pile and no
-review step to narrate: the user corrects anything they disagree with directly in the editor,
-and anything a person touches or has said belongs to them from then on: the verbs refuse a write
-there; you never need to police it, only to expect refusals near human-touched work and to
-treat them as information, not errors.
+Your work becomes the current value immediately, carrying who wrote it, when, and from what. There
+is no waiting pile and no review step to narrate: the user corrects anything they disagree with
+directly in the editor, and that edit replaces yours like any later write. A revision of yours
+names the live record it replaces, so when the user has moved or changed that record since you
+read it, the verb refuses the revision and names the current record; a mark filed under a
+condition the user deleted is refused as not a live condition. Read a mark again with
+`takeoff_read` right before you revise it: one the user deleted is gone from that read, and you
+leave it gone. Expect refusals where the user is working and treat them as information, not
+errors.
 
 ## Confidentiality (non-negotiable)
 
@@ -49,9 +53,9 @@ names. It does **not**:
 - upload or register drawings (`drawing-upload`) or create the project (`project-setup`);
 - run scope identification or trade derivation (`scope-run`; a takeoff is quantities, not
   scope);
-- delete, approve, or reorganize existing takeoff work: corrections to standing work belong to the
-  user in the editor; you may add to it and may revise your own prior work, never remove
-  another author's;
+- delete, approve, or reorganize existing takeoff work on your own: you may add to standing work
+  and revise what you placed in this run; anything else you change only when the user asks you
+  to, and removals belong to the user in the editor;
 - derive quantities the sheets do not show (no "typical floor times 12" extrapolation unless the
   user asks for exactly that, and then it is named as arithmetic in the report, never placed as
   marks on sheets you did not read).
@@ -164,10 +168,9 @@ Interior elevations,
 Counts do not need a scale; lengths and areas do, and a correct standing scale helps either way.
 Per target sheet:
 
-- **A scale already stands** (from the stage 2 read): use it. If it was set by a person, it is
-  theirs: never replace it, even if you read the title block differently; note the disagreement
-  in the report instead. If your own earlier run set it and it is wrong, revise it (the record
-  names what it replaces).
+- **A scale already stands** (from the stage 2 read, before this run wrote anything): use it. If you read the sheet differently,
+  whoever set it, do not replace it on your own: note the disagreement in the report and ask the
+  user. Revise it only when the user says to, naming the scale record it replaces.
 - **No scale stands:** read the stated scale off the sheet (title block or the view labels), then
   **verify it against something the sheet itself dimensions**: level datums on an elevation
   (two labeled levels and their pixel distance), a dimension string on a plan, a graphic scale
@@ -177,8 +180,9 @@ Per target sheet:
   against. If the sheet states no scale and dimensions nothing you can calibrate on, record
   no-scale only if the request needs no scale; otherwise stop and tell the user that sheet
   cannot be measured yet.
-- A scale disagreement you cannot resolve (label says one thing, the datums say another) is a
-  judgment call: go with what the geometry proves, and put the discrepancy in the report.
+- On a sheet with no scale standing, a disagreement you cannot resolve (label says one thing, the
+  datums say another) is a judgment call: go with what the geometry proves, and put the
+  discrepancy in the report.
 - **Each printed page measures under its own scale.** In the `hasScale` rows `takeoff_read`
   returns for a sheet, the one with `measuresOpenPage: true` measures the page the sheet opens on
   now, and its subject is where a revision of that scale goes. Superseding any other scale row
@@ -275,8 +279,9 @@ never invent one.
   `takeoff-editor`: that name belongs to the human editor and the door refuses it.
 - Extending a person's existing condition (they defined "Windows", you are filling it) is allowed
   and is the intended shape: reuse their conditionId from stage 2; do not create a duplicate. Only
-  revise a condition definition (`supersedesId`) when it is your own and the revision is real
-  (rename, note); type and unit are immutable: a different kind is a new condition.
+  revise a condition definition (`supersedesId`) when the revision is real (rename, note) and the
+  condition is one you defined in this run or the user asked you to change it; type and unit are
+  immutable: a different kind is a new condition.
 - A revision replaces the whole value. Read the condition back with `takeoff_read` first (it
   returns folder, color, notes, dimensions and `outputs`) and send every field you mean to keep,
   or a person's color and notes are lost. A field the door does not know is refused.
@@ -304,8 +309,8 @@ marks summed, so the marks are the takeoff.
   list is how a duplicate or a gap happens at this volume. Record sheet by sheet, keeping a
   per-sheet sent count against the canonical list.
 - **Triage a failed call into one of three shapes:**
-  - **refused near human-touched work**, since that spot is now theirs: skip it,
-    count it, name it in the report;
+  - **refused because the record moved since you read it** (the user changed what your write
+    names, or deleted the condition it files under): skip it, count it, name it in the report;
   - **transport or auth error** (a timeout, an expired-token error; the call returned an error,
     not a landed record): retry that one write once with the same `idempotencyKey` it carried, so
     a write that did land comes back as its first answer and lands nothing twice (send every
@@ -365,10 +370,11 @@ The report is the manifest:
   thing after the totals, not a footnote.
 - **The count check:** candidates found → counted → excluded (named) per sheet, and the
   verification result.
-- **Anything left alone:** human-set scales you disagreed with, refusals near human work, sheets
-  skipped and why.
+- **Anything left alone:** scales already set that you read differently, writes refused because
+  the user had changed that spot, sheets skipped and why.
 - **Where to look:** the sheet in the takeoff editor on plumlayer.com: the condition is in the
-  Measurements panel; every mark is clickable, movable, deletable; anything they change wins.
+  Measurements panel; every mark is clickable, movable, deletable, and whatever the user changes
+  there becomes the current value.
 
 **If the run stopped at stage 2**, the report is a different, shorter shape, and it is a
 successful run, not an apology: what stands (named, with whether it is visible in the editor or
@@ -389,12 +395,12 @@ the moment they lean on the standing number, so they are part of the answer, not
 - Census, placed marks, and named exclusions reconcile exactly; nothing is silently dropped. On
   image-only sheets the render-based count says it is render-based.
 - A scale is verified against the sheet's own dimensioned features before it is recorded;
-  a person's scale is never replaced, only noted.
+  a scale that stood before this run is never replaced without the user's say, only noted.
 - Marks land only on sheets the request names; context sheets inform, they do not receive marks.
 - Every write cites what was read (sheet, page, method) and carries its conditionId; no
   citation, no write.
 - One record per instance; no rollups, no multi-point payloads.
-- A refusal near human-touched work is skipped and named, never fought; a transport/auth error
+- A refusal because the record moved since you read it is skipped and named, never fought; a transport/auth error
   is retried once with the verification read as the duplicate-proof; an unexplained refusal stops the
   run.
 - The landed result is verified by a fresh recount read before the user is told it
@@ -402,8 +408,8 @@ the moment they lean on the standing number, so they are part of the answer, not
   for each scale; a mismatch is reported, never patched silently.
 - Judgment calls are named in the evidence and led with in the report: never silently resolved,
   never buried.
-- Nothing this skill writes is a person's own entry, and nothing it does deletes, approves, or signs;
-  corrections and removals belong to the user in the editor.
+- Everything this skill writes is your cited reading, and nothing it does deletes, approves, or
+  signs; corrections and removals belong to the user in the editor.
 
 ## Bundled vs. config
 

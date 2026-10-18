@@ -12,7 +12,8 @@ where that unit's reading differs from a sheet's.
 
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. What you record is your own reading, cited, carrying who wrote it and when. It becomes
-working truth the moment it lands, and anything a person changes wins. The record is what you read
+the field's current value the moment it lands, and anyone, you or a person, replaces it later by
+naming it. The record is what you read
 from as much as what you write to: what the project is, what the marks mean, what a sheet is, and
 where a code appears in the set are all there, and you ask it rather than keeping your own copy.
 
@@ -607,6 +608,6 @@ but an update lands on a subject that already existed, a Question you raise on i
 reply on the id of a Question somebody else raised, so nothing else in your report lets the runner
 find them back. Name every one.
 
-An unread page is named, never silently skipped. Your reading is your word: it lands under your
-authorship and governs provisionally, so name what you are unsure of on the row, and raise a
+An unread page is named, never silently skipped. Your reading is your word: it lands as the row's
+current value the moment you write it, so name what you are unsure of on the row, and raise a
 Question only where it clears the bar in mandate 1.

@@ -11,18 +11,17 @@ description: >
 
 # Project setup: stand up a new pursuit, end to end
 
-A Plumlayer **project has one project record**, the cloud, entry-based model of that project's current
-governing truth. This skill **stands the pursuit up**: it creates the project, turns what the user
+A Plumlayer **project has one project record**, the cloud, entry-based model of that project as it
+currently stands. This skill **stands the pursuit up**: it creates the project, turns what the user
 knows (or can hand you in a file) into **cited entries**, reads the drawing delivery and the project
 manual in, and orients on what came back.
 
 > **Doctrine (binds every step):** you read and judge; deterministic tooling grounds; nothing leaves
 > unsigned and nothing enters untraced. What you seed here takes effect right away as the project's
-> starting frame, recorded as agent-stated with your citation, and it is user-asserted at the
-> source: someone *told you*, you didn't read it off a stamped drawing. That makes it the weakest
-> thing in the ledger, so when real drawings and specs are read later, better-grounded entries
-> supersede or corroborate it. **Cite every entry, never invent a fact, and name what's uncertain
-> to the user rather than seeding it.**
+> starting frame, credited to the user with your citation, and its source is what someone *told
+> you*, not a drawing you read. When the drawings and specs are read later, an entry read off them
+> replaces a seed by naming it, or agrees with it. **Cite every entry, never invent a fact, and
+> name what's uncertain to the user rather than seeding it.**
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud project record
 > (project isolation + private bucket + RLS), that's fine. They must never land in tracked or
@@ -41,12 +40,12 @@ later (a bulletin, an addendum, a re-issue), that is a different process and its
 `drawing-upload` on its own.
 
 **The load-bearing consequence, don't interrogate for what the set is about to tell you.** Almost
-everything about a project is **read off the drawings later in this same session, at a far higher
-instrument tier** than anything the user can recite here. A user answering from memory produces
-the **weakest entry there is**, your restatement of what someone told you; a cover-sheet /
-title-block read produces a value confirmed off the drawing itself, which **supersedes it minutes
-later, naming the restatement as what it replaces.** So asking the user to guess the project type, the engineers, the trades, or the square footage
-isn't just slow, it seeds bottom-tier entries the set read overwrites, cluttering the ledger.
+everything about a project is read off the drawings later in this same session, cited to the
+sheet it came from. A user answering from memory gives you a restatement of what someone recalls;
+a cover-sheet / title-block read gives you the value printed on the drawing, which replaces the
+restatement minutes later, naming it as what it replaces. So asking the user to guess the project
+type, the engineers, the trades, or the square footage isn't just slow, it seeds entries the set
+read replaces, cluttering the ledger.
 <!-- user-facing -->
 **Ask
 only for what no drawing will ever carry; for the rest, say "I'll read that off the set next" and move
@@ -114,8 +113,8 @@ place it names, and only what is worth the design team's time.
 Anything the user volunteers beyond this, an exclusion, a date, a strategy note, is still recorded
 per step 4, but nothing of the kind is asked for.
 
-**Defer to the read, do NOT interrogate.** Step 5 reads each of these off the set at a higher
-tier. Note in one line that you'll read it, then move on:
+**Defer to the read, do NOT interrogate.** Step 5 reads each of these off the set, cited to the
+sheet. Note in one line that you'll read it, then move on:
 - Project **type** (cover sheet + index).
 - **Parties** beyond any the user volunteers, owner, architect, structural EOR, MEP / civil engineers
   (title blocks + cover stamps). If an engineer is stamped nowhere, that's an **upload-time finding / RFI**,
@@ -294,7 +293,7 @@ message).
 
 > At this point the table is **often mostly empty, a sparse shell is the correct early state**, not a
 > failure. Seed only what the user volunteered or a handed-over document supports; the set read fills the
-> rest, at a higher tier. Never ask a question just to populate a row.
+> rest. Never ask a question just to populate a row.
 
 | Fact | subject | predicate | value |
 |---|---|---|---|
@@ -309,10 +308,10 @@ message).
 | MEP engineer | `party:<slug>` | `hasRole` | `mep-engineer` |
 | GC / CM | `party:<slug>` | `hasRole` | `gc` / `cm` |
 | Party name | `party:<slug>` | `name` | the firm name |
-| Trade in scope | `project` | `tradeInScope` | one entry per trade |
+| Trade in scope | `project` | `tradeInScope` | one entry listing every trade |
 | Known set | `set:<id>` | `issueStatus` | `conformed` / `permit` / `bulletin-02` / … |
 | Set date | `set:<id>` | `issueDate` | ISO date |
-| Known exclusion | `project` | `knownExclusion` | the exclusion text |
+| Known exclusion | `project` | `knownExclusion` | one entry listing every exclusion the user named |
 
 Use short, stable slugs for party subjects (`party:smma`, `party:owner`). Keep values literal and
 sourced. **Every entry carries a `sourceInstrument` and evidence, no exceptions.**
@@ -375,8 +374,8 @@ rather than restating it from what an earlier step said:
 - **Orientation:** what it learned, and the baseline packages that now exist.
 - **What a person should look at on plumlayer.com:** any Question raised for two documents that
   disagree, among the project's Questions, and the seeded facts, each carrying your name, the time, and
-  what you read it from. What you seeded is the project's starting frame now, carrying your name and what you were told, and anything a person
-  changes, or a drawing read later replaces, wins.
+  what you read it from. What you seeded is the project's starting frame now, carrying your name and
+  what you were told; anyone who changes a value later, by hand or from a drawing read, replaces it.
 - **Next:** when the job is going out to bid, offer `/prepare-invitations` as the next step in this
   same session: it reads the bidding requirements into the invitations in about a minute and does
   not wait for the scope run, and the user starts it by typing it now or any time later. Then name
@@ -396,9 +395,9 @@ rather than restating it from what an earlier step said:
 - **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. An
   uncertain fact is named to the user and a conflicting one between two documents is one Question
   with `ask_question`; neither is silently resolved, seeded as fact, or dropped.
-- **Seeds are the weakest entries in the ledger.** They take effect as the starting frame, recorded as
-  agent-stated from what the user told you, and a drawing read supersedes them. Never present one
-  as a fact read off the documents.
+- **Seeds come from what the user told you.** They take effect as the starting frame, cited to what
+  the user said, and a drawing read later replaces them by naming them. Never present one as a fact
+  read off the documents.
 - **One project = one project record.** Always seed within the correct `projectId` returned by `create_project`.
 - **An existing project is read, never re-created.** Step 1's branch reports where the project
   stands and ends there; it writes nothing.

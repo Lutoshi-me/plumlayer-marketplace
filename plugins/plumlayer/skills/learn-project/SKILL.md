@@ -61,9 +61,10 @@ the project record.
 2. **Read the `project-setup` seed entries verbatim, never re-create them.** For each of `projectType`,
    `deliveryMethod`, `location`, `grossArea`, `floorCount`, `bidDueDate`, `tradeInScope`,
    `knownExclusion`, call `search(projectId, predicate: "<predicate>")` and read what's there. These
-   feed the packet's Identity section directly; where a seed is thin or missing, orientation may add a
-   document-grounded entry on the same predicate later (competing entries on one slot resolve at review,
-   no bespoke merge here).
+   feed the packet's Identity section directly. Where a seed is missing, orientation may record a
+   document-grounded entry on that predicate later; where a seed is thin and a document says more,
+   the document-grounded entry names the seed with `supersedesId` as the record it replaces, since a
+   write onto a field that already holds a value names what it replaces or is refused.
 3. **Sheet inventory.** Call `list_drawing_deliveries(projectId)` for the registered deliveries, then
    attempt `set_grid(projectId)` once. A set_grid payload on a set of real size can be large enough to
    file-redirect instead of returning inline, if that happens, fall back to sampled
@@ -160,13 +161,14 @@ unusually deep set), say so explicitly in the report rather than quietly renderi
 ## 6. Emit orientation entries
 
 All net-new, subject `project` unless noted, recorded via **one** `record_batch(projectId, entries)`
-call:
+call. Each predicate holds one value on the project, so a batch carries at most one entry per
+predicate, and a second one is refused:
 
 | Predicate | Value shape |
 |---|---|
-| `structuralSystem` | free text, one entry per system (e.g. "post-tensioned concrete flat plate") |
-| `envelopeSystem` | free text, one entry per system (e.g. "unitized curtain wall") |
-| `scopeArea` | free text, one entry per area (e.g. "below-grade parking", "amenity terrace") |
+| `structuralSystem` | free text, one entry naming every system (e.g. "post-tensioned concrete flat plate over a cast-in-place podium") |
+| `envelopeSystem` | free text, one entry naming every system (e.g. "unitized curtain wall; brick veneer at the podium") |
+| `scopeArea` | free text, one entry naming every area (e.g. "below-grade parking; amenity terrace") |
 | `phasingNote` | free text (e.g. "occupied renovation, phased by wing") |
 | `setShapeObservation` | free text (e.g. "schedules live on the A-10 series") |
 | `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC"), cited to the table of contents |
@@ -360,7 +362,7 @@ Tell the user, in plain terms:
   which.
 - **What was recorded**, how many facts were recorded, and any Question raised for a disagreement
   between documents. What you recorded is the project's working context now, carrying your name
-  and citations; anything a person changes wins.
+  and citations; anyone who changes a value later replaces it.
 - **The package split**, packages created, packages already present on the project, any package
   named "no catalog trade, not created," how many of the manual's sections outside Divisions 00
   and 01 you placed on a package out of how many the manual has (or that the count is incomplete,
