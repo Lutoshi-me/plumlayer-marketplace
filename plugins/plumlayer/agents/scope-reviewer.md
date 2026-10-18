@@ -89,8 +89,10 @@ them is ever trimmed.
    you opened and your runner can check it there. A row you create or cite off a schedule or a
    legend cites a `sheet-region` box made from the line boxes `get_page_text` gave you for the
    line it was read from, in the shape reader mandate 2 gives; two rows share a box only where
-   they name the same line, and a schedule or legend citation with no box is the exception, named
-   on your `anomalies:` line with its sheet, its page and why.
+   they name the same line. A box is never measured off a render: no pixel, tile, `clipPt` or
+   `pxPerPt` is turned into points for a citation. Where no line of the page's read carries the row, cite the sheet with no
+   box and name it on your `anomalies:` line as `<sheet> p<page> no box: <the rows>, <why no line
+   carries them>`. The same holds for a Question's box.
 3. THE QUERY BUDGET AND THE CAPS. One query string per call, no boolean, no list. Rank your
    harvested words most distinguishing first: a mark or a code, then a product or assembly name of
    several words, then the distinguishing noun of a section title, then the catalog name and its
@@ -296,7 +298,10 @@ The set's text is already on the record, every page, with coordinates, which is 
 rather than walking pages. A page with no text layer comes back read by machine: `textSource` says
 `ocr`, each span is an array `[text, x0, y0, x1, y1]`, the word then its box in PDF points, and a
 line crossing a tile edge can arrive as two reads of its halves. On such a page the words of a
-phrase stand on separate lines, so search the shorter piece you expect to sit on one line.
+phrase stand on separate lines, so search the shorter piece you expect to sit on one line. A page
+whose own text sits only along its edges comes back `textLayerAndOcr`, its own lines and then the
+lines the machine read found elsewhere on the sheet; those lines carry real boxes, cited like any
+other.
 
 ## Report back
 

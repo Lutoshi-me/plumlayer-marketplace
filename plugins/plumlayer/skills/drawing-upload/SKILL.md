@@ -422,7 +422,8 @@ Alongside `appearsOnPage`, add `hasTitle` (value = the title text you read), `lo
 `discipline` (value = the sheet number's leading letter run, uppercased, e.g. `A-101` → `"A"`,
 `AD-101` → `"AD"`), and
 `partOfIssue` (value = the delivery's ref: `{id, label, deliveryKind, issuedOn, sequence}`). Each
-evidence block cites the render or text span you actually read; never a fabricated bbox.
+evidence block cites the render or text span you actually read. A bbox is a text span's own box,
+never one measured off a render; a read that came off a render alone carries `locator: null`.
 
 **Discipline convention:** derive strictly from the sheet number's own leading letter run, matching the
 server's `disciplineFromSheetNumber` logic (all letters before the first digit/dash, uppercased);
@@ -518,7 +519,8 @@ One `sheetType` entry per sheet you classify, matching the step 6 bundle's shape
 ```
 
 Use `evidence.method: "agent-read"` when the number/title alone decided it (no new render); use
-`"agent-vision-read"` with a `locator` bbox when you rendered the page to decide. `value` must be one
+`"agent-vision-read"` when you rendered the page to decide, its `locator` as the full bundle above
+says. `value` must be one
 of the 13 literal strings above; never invent a fourteenth value, and never write a discipline name,
 a partial phrase, or a full title as the value.
 
@@ -869,8 +871,12 @@ nothing earlier on the board to re-read, so skip it.
    pageNum: <that pageInPdf>, region: <around the hit>)`. A whole-page `render_page(fileId,
    pageNum: <that pageInPdf>)` answers with `pageWidthPt` and `pageHeightPt`, for rendering a
    region where the callout is in the linework. Then `add_question_source` a `sheet-region` box
-   around the callout there, with this delivery's `fileId`, so the Question opens on the new paper
-   as well as the page it was raised on; the reply in point 5 says so.
+   around the callout there, built from the boxes `get_page_text` gave you for the callout's words,
+   with `frame: "page-points"` and this delivery's `fileId`, so the Question opens on the new paper
+   as well as the page it was raised on; the reply in point 5 says so. A render shows you where the
+   callout is and never gives the box: where no word of the page's read carries the callout, add
+   the sheet with no box (`{ "type": "sheet", "sheet": "sheet:<n>" }` with this delivery's
+   `fileId`) and tell the user that sheet's text did not carry the callout.
    `add_question_source` is refused once a Question holds ten places. Never take one off to make
    room: cite the new box in the reply instead, and name that Question to the user as one with no
    room for another place on it.
@@ -895,7 +901,7 @@ nothing earlier on the board to re-read, so skip it.
    - Unchanged on the point: no reply, and it is counted in the report, unless point 3 added a
      box, when a reply says only where the callout sits on the new paper.
    A reply on a sheet cites a `sheet-region` box around what it read there, with this delivery's
-   `fileId`. A reply on a section cites the section, `{ "type": "spec", "section":
+   `fileId`, built as point 3 builds one, or the sheet with no box where point 3 says. A reply on a section cites the section, `{ "type": "spec", "section":
    "specSection:<packed code>" }`.
 6. **Never close one, and never raise one here.** Closing is the estimator's: `close_question`
    only when the user settles it in this session, with their reason in `note`. No new Question

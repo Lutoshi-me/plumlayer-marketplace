@@ -199,7 +199,7 @@ it like this:
     "source": "A-746 — millwork elevation at leasing desk",
     "locator": {
       "pageInPdf": 165,
-      "frame": "page-points-rendered",
+      "frame": "page-points",
       "bboxPts": [1180, 640, 1890, 1120]
     }
   }
@@ -220,9 +220,12 @@ it like this:
 - `locator.pageInPdf` is required wherever the reference is a sheet: the 1-based page you
   actually read it on. A sheet named with no page is refused on a scope item and on a definition,
   so there is no pageless chip to fall back to.
-- `locator.bboxPts` with `frame: "page-points-rendered"` is what makes the chip land on the
-  **region** you actually read instead of the top of the sheet. Supply them whenever you know
-  where on the page you looked. Omit them and the chip still works, at page level.
+- `locator.bboxPts` with `frame: "page-points"` is what makes the chip land on the
+  **region** you actually read instead of the top of the sheet. Take them from the boxes
+  `get_page_text` gave you for the words you read, so every number is one a word or line carries.
+  Never measure a box off a render or place one where you judge the words sit on the picture:
+  where no line of the page's read carries what you read, omit them and the chip still works, at
+  page level.
 - A `citedRegion` entry needs its **own** item in `evidence`. Putting the sheet and box only in
   the entry's `value` records the region but cites nothing, so no chip appears for it.
 

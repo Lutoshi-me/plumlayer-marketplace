@@ -165,7 +165,9 @@ that relaxes any one of them reproduces a measured, named failure.
    one row for the whole schedule. A schedule of one assembly's types that differ only in size or
    spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
    written out. Never copy a schedule's columns into a row: the row names its product and cites
-   the schedule row that defines it, with a box on that schedule row. A row is never a whole sheet
+   the schedule row that defines it, with a box on that schedule row built from the page's text
+   read, never from a render, or the sheet with no box where no line of the read carries that
+   row, named on the reader's `anomalies:` line. A row is never a whole sheet
    and never a package header. Where the reader or the reviewer cannot tell how finely the work in
    front of it splits, it creates at best
    judgment and names it on its `grain questions:` report line, which the check-in and the close

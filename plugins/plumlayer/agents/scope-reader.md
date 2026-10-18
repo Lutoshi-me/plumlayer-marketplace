@@ -105,7 +105,8 @@ of them is ever trimmed.
    A Question cites the spot: a `sheet-region` box around the callout, schedule row or note, built
    from the line boxes `get_page_text` gave you, in the points it gave them, sent with
    `frame: "page-points"` and the `fileId` your dispatch names for that page, so the pin lands
-   where you read, on the drawing issue you read it on; never the bare sheet;
+   where you read, on the drawing issue you read it on; never the bare sheet, except where no line
+   of the page's read carries the spot, as mandate 2 says;
    and it cites every sheet or section its text names. It never asks about what the GC decides:
    labor, means and methods, who furnishes or installs. A scope row is never a Question's source
    or its evidence: where a row disagrees with the sheet, the row is what is wrong, and you correct
@@ -165,9 +166,14 @@ of them is ever trimmed.
    `frame: "page-points"` and never converted. On a new row the evidence is `{ sheet, pageInPdf,
    fileId, locator: { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }`; a citation
    of a row that already exists is `{ subject, kind: "sheet-region", sheet, pageInPdf, fileId,
-   bboxPts, frame: "page-points" }`. Two rows share one box only where they name the same line. A
-   schedule or legend citation with no box is the exception: name each on your `anomalies:` line
-   with its sheet, its page and why no box could be built.
+   bboxPts, frame: "page-points" }`. Two rows share one box only where they name the same line.
+   A box is never measured off a render: no pixel, tile, `clipPt` or `pxPerPt` is ever turned into
+   points for a citation, and no box is drawn where you judge the row sits on the picture. Where no line of the page's
+   read carries the row you read (the read came back bounded or `workerCapped`, or it missed that
+   line), cite the sheet with no box, `{ sheet, pageInPdf, fileId }` on a new row and `{ subject,
+   kind: "sheet", sheet, pageInPdf, fileId }` on a row that already exists, and name it on your
+   `anomalies:` line as `<sheet> p<page> no box: <the rows>, <why no line carries them>`. The same
+   holds for every box this file asks for, a Question's included.
    A manual-grounded record's evidence names its spec section the way a drawing-grounded one
    names its sheet: `kind: "spec-section"` with the section number as the manual prints it, plus
    the file and the page you read it on. The section is what the estimator reads on the citation,
@@ -405,7 +411,12 @@ render only what text cannot give.
   this read of the page carries no line grouping, so each entry is one word; read it the same way.
   A page with no text layer comes back read by OCR: the answer's `textSource` is `ocr`, each entry
   is already one detected line, and a line crossing a tile edge can arrive as two reads of its
-  halves, both kept. Ask with `form: "words"` and a `region` (an `[x0, y0, x1, y1]` rectangle in
+  halves, both kept. A page whose own text sits only along its edges, a title block around
+  schedules or notes printed as a picture, comes back `textLayerAndOcr`: its own lines first, then
+  each line the OCR read found where none of its own text sits. Those OCR lines are the page's
+  text like any other, and their boxes are the boxes you cite. Where the answer carries
+  `ocr.bounded`, the read did not cover the whole page: read the rest from a render, and what you
+  read only there cites with no box, as mandate 2 says. Ask with `form: "words"` and a `region` (an `[x0, y0, x1, y1]` rectangle in
   the same PDF points) only when you need the box of one word inside a line.
 - **Leave out what was read once.** Where your dispatch says `Repeated lines: read in set
   <version>`, every call of the walk adds `repeated: "omit"`. The lines it leaves out are the ones
@@ -463,11 +474,12 @@ render only what text cannot give.
   render to orient yourself: the record, the sheet's own reading, and the text are the
   orientation. A page that would take more than three renders is reported on that line as needing
   more, rather than rendered on.
-- **A whole sheet that must be read visually is one tiled call, not a crop walk.** When the page
-  has no usable text layer, or the work you are after is in the linework across the sheet, call
-  `render_page` with `tiles: {maxPx: 2000, dpi: 120}`: one call returns a small orientation
-  overview plus a grid of tiles that covers the whole page with no gap, each tile carrying its own
-  `clipPt` and `pxPerPt` so text boxes overlay per tile with the same formula. On an E-size sheet
+- **A whole sheet that must be read visually is one tiled call, not a crop walk.** When the page's
+  text read came back bounded or `workerCapped`, or the work you are after is in the linework
+  across the sheet, call `render_page` with `tiles: {maxPx: 2000, dpi: 120}`: one call returns a
+  small orientation overview plus a grid of tiles that covers the whole page with no gap, each
+  tile carrying its own `clipPt` and `pxPerPt` so you can find a text line's box on the tile, and
+  never the other way (mandate 2). On an E-size sheet
   that is about 9 tiles and costs roughly what 8 hand-picked crops cost, in one turn instead of
   eight, with nothing skipped. 120 is the default; when a dense region resists reading at 120,
   call again at `dpi: 150` before falling back to region crops. A tiled call counts as one render
