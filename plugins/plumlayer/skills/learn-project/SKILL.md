@@ -252,8 +252,14 @@ amendments, stays in `scope-run`.
    silent family becomes a `missingScopeFamily` entry AND, where a job of this kind would normally
    carry the trade, a package. It raises no Question. A package is what one sub bids: a section a
    sub of another package carries goes on that package's `manualSections`, and its trade on that
-   package's `codes`, never a package of its own; a package's `tradeCode` is never a division
-   heading.
+   package's `codes`, never a package of its own. Walk-off mats, acoustic underlayment and floor
+   prep go on the flooring package; finish hardware and door operators on doors, frames and
+   hardware; reinforcing on cast-in-place concrete; steel deck on structural steel. A package's
+   `tradeCode` is never a heading no sub bids here, such as `09 00 00` Finishes; a broad code one
+   sub bids on this job, such as `22 00 00` Plumbing, is a package's trade like any other. Work
+   the owner contracts for directly gets no package: where Division 01 says the owner hires the
+   agency (special inspections, testing), or the owner furnishes and installs the item, draft no
+   package for it.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be
@@ -288,7 +294,7 @@ amendments, stays in `scope-run`.
    section. Re-read the package before each later change to it. Re-list until `onNoPackage` is
    empty, or every section left on it is one of two kinds, each named in the report with its
    reason: work you leave off on purpose because no subcontractor bids it here, such as
-   owner-furnished work with no installer, or a section whose buying trade has no catalog
+   owner-furnished work with no installer or an agency the owner hires, or a section whose buying trade has no catalog
    match, named with the trade you looked for. Always read `manualSectionPlacement.truncated`:
    when it is true the count is incomplete, even with `onNoPackage` empty, and the report says
    so. When it is false, the sections placed are `sectionsOutsideFrontEnd` less the length of

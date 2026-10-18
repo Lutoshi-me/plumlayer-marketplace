@@ -965,13 +965,28 @@ On the go-ahead:
    `manualSections`, then `solicitation_delete_package` on the folded one. That verb replaces each
    list it is sent whole, so read the keeping package's current lists first and send them back with
    the additions, each entry once, never repeating the keeping package's own `tradeCode` in its
-   `codes`. The rows keep their trade: a fold writes no `belongsToTrade`. Walk-off mats, acoustic
-   underlayment and floor prep go with the flooring sub; finish hardware and door operators with
-   doors, frames and hardware; reinforcing with cast-in-place concrete; steel deck with structural
-   steel. A package of one or two rows is the first to ask about, and its row count alone never
-   settles it. A package whose trade is a division heading (a code ending `00 00`, such as
-   `09 00 00`) is split into the packages its subs bid, and each of its rows goes to the catalog
-   trade that names its work, re-homed as stage 8 re-homes them. In a pass on an addendum, ask
+   `codes`. The rows keep their trade: a fold writes no `belongsToTrade`. Ask the same of every
+   trade on a package's `codes`, since a trade can sit inside a package whose sub does not carry
+   it: where the sub of another package carries it, move it. Send the package that takes it its
+   `codes` and `manualSections` with that trade and its sections added, then send the package it
+   leaves its lists without them, in that order so the trade is never on no package. Walk-off mats, acoustic underlayment and floor prep go with the flooring sub, whichever
+   package they sit on; finish hardware and door operators with doors, frames and hardware;
+   reinforcing with cast-in-place concrete; steel deck with structural steel. A package of one or
+   two rows is the first to ask about, and its row count alone never settles it. A package whose
+   trade is a heading no sub bids here, such as `09 00 00` Finishes, is split into the packages
+   its subs bid, and each of its rows goes to the catalog trade that names its work, re-homed as
+   stage 8 re-homes them. A broad code that one sub bids on this job, such as `22 00 00` Plumbing
+   or `10 00 00` Specialties, stays whole: a broad code covers every trade under it. Work the
+   owner contracts for directly is no sub's bid. Where the manual's Division 01 says the owner
+   hires the agency (special inspections, testing), or the owner furnishes and installs the item,
+   delete that work's package with `solicitation_delete_package` and fold it into no other. Its
+   rows keep their trade. Where a package you keep lists that trade in its `codes`, take it off the
+   way a move takes a trade off; where a kept package covers it through a broad code, that
+   package's review reads those rows. A later
+   write that leaves a live, named row on that trade while no package covers it makes the package
+   again: a new row on the trade, a row moved onto it, a rename, or a restore, in any window. A
+   citation does not. Delete it again the same way. Where Division 01 says the
+   contractor hires the agency, or says nothing, the package stays. In a pass on an addendum, ask
    only of the packages this pass made: those whose `id` is in no row of `plan/packages.json`,
    the copy stage 2 made, found with a local comparison; where it made none, nothing folds. Then
    append `phase: packages folded` to the ledger. Stage 8 stays for the splits and folds a review
@@ -983,7 +998,9 @@ read, once each, and that nothing was left unread except what was deliberately l
 start. Name what landed by trade, say each trade's page carries its items and shows every sheet
 each one appears on, and say what comes next in one sentence: one package at a time, against what
 landed. Name each package you folded into another, with the reason in one sentence, and each
-package you split into the ones its subs bid. When sheets were deferred, say which sheets were read and what landed from them by trade,
+package you split into the ones its subs bid, each trade you moved from one package to another,
+and each package you deleted because the owner hires that work, with the manual section that
+says so. Name as the owner's work any of its items a package you kept still covers. When sheets were deferred, say which sheets were read and what landed from them by trade,
 that the rest of the set, <m> sheets, is still waiting, and that the next go-ahead reads it. Never
 say every sheet has been read while any is waiting.
 <!-- /user-facing -->
@@ -1083,10 +1100,12 @@ close out; the split the earlier passes settled stands.
    moves no row: the folded trade goes on the keeping package's `codes`, and its rows keep their
    trade. A row is re-homed only where its trade is wrong, to the catalog trade that names its
    work, in one `record_batch` of `belongsToTrade` records, count-verified, and the move is named
-   in the report; never leave a trade that carries rows on no package's `tradeCode` or `codes`.
+   in the report; never leave a trade that carries rows on no package's `tradeCode` or `codes`,
+   except work the owner contracts for directly, which stage 6 step 5 leaves on no package.
 <!-- user-facing -->
 Show what you did in plain words, mirroring orientation's wording: name the amendments made
-   (packages created, split, collapsed, or renamed), each with its one-line rationale. Say it as
+   (packages created, split, collapsed, or renamed, and any package for the owner's own work
+   deleted again), each with its one-line rationale. Say it as
    what you did, not as a question: "I amended the split: two packages, here's why. Change any of
    them on the site or tell me and I will redo it."
 <!-- /user-facing -->
