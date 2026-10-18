@@ -988,8 +988,11 @@ On the go-ahead:
    article, or a sheet's general notes say it, or the owner furnishes and installs the item,
    delete that work's package with `solicitation_delete_package` and fold it into no other. First
    read its rows: one the contractor's own sub carries, such as mix testing the concrete sub
-   engages, is re-homed to that sub's trade as stage 8 re-homes a row whose trade is wrong. The
-   rest keep their trade. Where the delete is refused because bidders have bid that package, it
+   engages, is re-homed to that sub's trade as stage 8 re-homes a row whose trade is wrong, and
+   one several subs carry, such as a statement of responsibility each structural sub submits,
+   goes to the main one with a `candidate` role for each other. Where the manual and a sheet
+   disagree on who hires the agency for a row, that is a Question with both citations, and the row
+   keeps its trade; the answer decides where it goes. The rest keep their trade. Where the delete is refused because bidders have bid that package, it
    stays. Where a package you keep lists that trade in its `codes`, take it off the
    way a move takes a trade off; where a kept package covers it through a broad code, that
    package's review reads those rows. A later
@@ -1110,7 +1113,8 @@ close out; the split the earlier passes settled stands.
    be created or amended into one: name it "no catalog trade, not created" in the report. A fold
    moves no row: the folded trade goes on the keeping package's `codes`, and its rows keep their
    trade. A row is re-homed only where its trade is wrong, to the catalog trade that names its
-   work, in one `record_batch` of `belongsToTrade` records, count-verified, and the move is named
+   work, in one `record_batch` of `belongsToTrade` records, each naming the trade record it
+   replaces in `supersedesId` (the id `list_scope_items(full: true)` returns), count-verified, and the move is named
    in the report; never leave a trade that carries rows on no package's `tradeCode` or `codes`,
    except work the owner contracts for directly, which stage 6 step 5 leaves on no package.
 <!-- user-facing -->
