@@ -745,9 +745,11 @@ disk the whole time.
    confirmed count and never dropped. An outline specification with no footers at all, common at
    schematic and design development, comes back as `sectionsFound` 0 with every section in
    `tocOnlyCount`; that is a complete read of that manual, not a failure. `tocBackstop.requested`
-   true means the table of contents could not be read as a list and `tocRejectedCount` says how
-   many lines were refused: say so, and read the table of contents pages yourself with
-   `render_page` before trusting any section count. A section declared solely in the PDF bookmark
+   true means no page footer printed a section number and no table of contents was found in the
+   opening pages: say so, and read the opening pages yourself with `render_page` before reporting
+   any section count. A table of contents the read could not take whole ends the job `failed`,
+   with the reason in `error` naming its pages, and saves no section from that file: report the
+   reason as a finding and do not retry, since a second read fails the same way. A section declared solely in the PDF bookmark
    tree, with no confirming footer, does NOT add to any count; it surfaces through the completeness
    findings, never as a silent gap in the number you report.
 <!-- /user-facing -->
