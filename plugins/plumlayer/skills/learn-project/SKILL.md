@@ -17,19 +17,19 @@ recognized builds the project's **context**: what it is, its structural and enve
 scope areas, the shape of the set, and what's missing. Every later pass in the scope run
 gets this context instead of orienting from scratch, which is where reads get unreliable.
 
-Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
-untraced.** This is an *orientation* pass, not comprehension, it reads what upload already
-recognized, takes a handful of bounded renders, and stops. Everything it emits is **your own reading**,
+Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
+untraced. This is an *orientation* pass, not comprehension, it reads what upload already
+recognized, takes a handful of bounded renders, and stops. Everything it emits is your own reading,
 cited, and it becomes the project's working context the moment it lands, so an inferred value says
 it was inferred and cites what it was read from. Examples in this file are generic, never put a
 real project name, client data, or a real extracted value here.
 
 ## What this is, and the boundary
 
-`learn-project` reads an already-uploaded set, records **net-new** project-level orientation entries,
+`learn-project` reads an already-uploaded set, records net-new project-level orientation entries,
 compiles a packet from them, and drafts and creates the baseline trade-package split off the spec
 table of contents (Phase 1 of package derivation). So it does
-**not**: upload a drawing delivery (precondition, owned by `drawing-upload`); extract spec sections
+not: upload a drawing delivery (precondition, owned by `drawing-upload`); extract spec sections
 itself (it reads the spec-section index if `drawing-upload`'s later spec-reading work has already
 recorded one, it never extracts specs); or run any of the later scope-run stages, reading the set in
 rounds, building the one scope list, amending the package split, or tagging items to a trade (all
@@ -75,16 +75,16 @@ the project record.
 
 ## 3. Read the spec-section index, if present
 
-Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects, **paging through
-every result to the real total** rather than a sample: this is the anchor step 8's package split
+Call `search(projectId, predicate: "inDivision")` for `specSection:<csi>` subjects, paging through
+every result to the real total rather than a sample: this is the anchor step 8's package split
 drafts from, and a partial read under-declares the job the same way a silent TOC does. When spec
 reading has run for a project, these entries are real and cited, `hasTitle`, `locatedAt`, `inDivision`,
 and `partOfIssue` on each section (verified on at least one live project). Extraction now ships as
 `drawing-upload`'s spec-TOC leg (its step 8, wired to `extract_spec_toc` / `extract_spec_toc_status`),
 a project whose drawing-upload pass has run that leg will have these entries. What's still true is that
 not every project has run it yet, a set uploaded before the leg shipped, or a manual that arrived
-after the drawings and hasn't been filed and extracted, so **some projects won't have these entries
-yet**, that is a gap in what's been run for this project, not a missing capability.
+after the drawings and hasn't been filed and extracted, so some projects won't have these entries
+yet, that is a gap in what's been run for this project, not a missing capability.
 
 - **A section the table of contents lists but no page footer confirmed** is on the record too,
   with a `hasCompletenessStatus` saying no section text was found. It anchors the split like any
@@ -105,7 +105,7 @@ anything reads the set for scope. Its findings are orientation-grade facts, a sh
 that never arrived, or a sheet in the set the index never mentioned, changes what "the set" means
 before you read a single plan.
 
-Call `reconcile_set(projectId)` **report-only** (never pass `record`), this step reads the gate's
+Call `reconcile_set(projectId)` report-only (never pass `record`), this step reads the gate's
 findings, it never records those findings itself, and recording is not this skill's decision to make. The
 bare call (no `deliveryId`) runs the ORIENTATION check: the index of record, the newest delivery
 that actually has a read drawing index, against the current compiled set across every delivery,
@@ -145,7 +145,7 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
    Whenever you use a fallback, record a `setShapeObservation` entry naming the substitution (e.g. "no
    hasTitle match for a cover/title sheet; used the lowest G-series sheet instead").
 2. **Drawing-index page (1 render).** Find it via `search(projectId, predicate: "hasTitle", text:
-   "index")`, `"drawing list"`, or `"sheet list"`. If none of these match, **skip the render** and note
+   "index")`, `"drawing list"`, or `"sheet list"`. If none of these match, skip the render and note
    the absence in the report, never synthesize an index page that isn't there.
 3. **Key plans (up to 4 renders).** For each series in this order, **A**, then **S**, then **M/P/E**
    (one representative render for whichever of M, P, E exists first, in that order, it counts as one
@@ -160,7 +160,7 @@ unusually deep set), say so explicitly in the report rather than quietly renderi
 
 ## 6. Emit orientation entries
 
-All net-new, subject `project` unless noted, recorded via **one** `record_batch(projectId, entries)`
+All net-new, subject `project` unless noted, recorded via one `record_batch(projectId, entries)`
 call. Each predicate holds one value on the project, so a batch carries at most one entry per
 predicate, and a second one is refused:
 
@@ -332,8 +332,8 @@ once, after the entries above are recorded and before the report.
 
 ## 10. Compile the run-context packet
 
-A projection compiled fresh from the entries read in step 2 and recorded in step 6, **never itself
-recorded as an entry, never stored as truth.** Sections, in order:
+A projection compiled fresh from the entries read in step 2 and recorded in step 6, never itself
+recorded as an entry, never stored as truth. Sections, in order:
 
 1. **Identity**, name, type, delivery method, location, size, key dates (from the seed entries).
 2. **Systems**, structural and envelope systems.

@@ -16,7 +16,7 @@ personalized to you without ever baking your company's details into shared, vers
 code. The interview is the scrub: the plugin ships generic; your specifics live only in a local
 config file in your environment. Re-run it any time to review or update.
 
-> **Doctrine:** confidential user/company details go in your **local** `~/.plumlayer/operator.json`
+> **Doctrine:** confidential user/company details go in your local `~/.plumlayer/operator.json`
 > and never into a tracked or committed file, and never into the plugin itself. This skill writes
 > exactly one local file and nothing else.
 

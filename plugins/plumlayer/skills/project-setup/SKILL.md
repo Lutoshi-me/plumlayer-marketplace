@@ -11,8 +11,8 @@ description: >
 
 # Project setup: stand up a new pursuit, end to end
 
-A Plumlayer **project has one project record**, the cloud, entry-based model of that project as it
-currently stands. This skill **stands the pursuit up**: it creates the project, turns what the user
+A Plumlayer project has one project record, the cloud, entry-based model of that project as it
+currently stands. This skill stands the pursuit up: it creates the project, turns what the user
 knows (or can hand you in a file) into **cited entries**, reads the drawing delivery and the project
 manual in, and orients on what came back.
 
@@ -20,8 +20,8 @@ manual in, and orients on what came back.
 > unsigned and nothing enters untraced. What you seed here takes effect right away as the project's
 > starting frame, credited to the user with your citation, and its source is what someone *told
 > you*, not a drawing you read. When the drawings and specs are read later, an entry read off them
-> replaces a seed by naming it, or agrees with it. **Cite every entry, never invent a fact, and
-> name what's uncertain to the user rather than seeding it.**
+> replaces a seed by naming it, or agrees with it. Cite every entry, never invent a fact, and
+> name what's uncertain to the user rather than seeding it.
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud project record
 > (project isolation + private bucket + RLS), that's fine. They must never land in tracked or
@@ -33,7 +33,7 @@ manual in, and orients on what came back.
 
 A skill is a step; what a user runs is a process. This skill is **New pursuit, session 1**, and it
 runs that session end to end: the shell, the seed facts, the delivery read in, and the orientation
-pass. The **scope run is session 2**, its own skill (`scope-run`), and it wants its own session; do
+pass. The scope run is session 2, its own skill (`scope-run`), and it wants its own session; do
 not start it from here. Getting the invitations ready is its own step too (`prepare-invitations`),
 callable any time after this session; it does not wait for the scope run. When new paper arrives
 later (a bulletin, an addendum, a re-issue), that is a different process and its first step is
@@ -47,9 +47,9 @@ restatement minutes later, naming it as what it replaces. So asking the user to 
 type, the engineers, the trades, or the square footage isn't just slow, it seeds entries the set
 read replaces, cluttering the ledger.
 <!-- user-facing -->
-**Ask
+Ask
 only for what no drawing will ever carry; for the rest, say "I'll read that off the set next" and move
-on.**
+on.
 <!-- /user-facing -->
 
 **One turn, start to finish.** With the drawing set and the project manual in hand, and the user able
@@ -66,7 +66,7 @@ and `learn-project` are unchanged, and they are the only reasons to stop this se
    the `setup` skill), use its `defaults` to pre-fill and avoid re-asking. If it's missing and the
    user wants personalization, suggest running `/setup` first (optional, not required).
 3. **The project may already exist.** Call `list_projects`. When the project the user names is
-   already there, **create nothing**. Read where they are and tell them, then stop:
+   already there, create nothing. Read where they are and tell them, then stop:
    - `list_drawing_deliveries(projectId)`: which deliveries are registered, if any.
    - `search(projectId, predicate: "appearsOnPage", limit: 1)`: whether any sheet has been
      recognized yet.
@@ -85,8 +85,8 @@ and `learn-project` are unchanged, and they are the only reasons to stop this se
 
 ## 2. Ask for what only the user carries
 
-The goal is **a named shell plus only the facts the drawings won't supply**, not a complete project
-record. **Never invent a fact.** Mark each one `confirmed`, `uncertain`, or `conflicting` as you go.
+The goal is a named shell plus only the facts the drawings won't supply, not a complete project
+record. Never invent a fact. Mark each one `confirmed`, `uncertain`, or `conflicting` as you go.
 A confirmed fact seeds as a record entry. An uncertain one, where the user is unsure or a document
 is unclear, is not seeded and is not a Question: when it is one of the ask-now facts below, put it
 forward in that group; otherwise name it in the closing report as left unseeded, and why. A
@@ -117,7 +117,7 @@ per step 4, but nothing of the kind is asked for.
 sheet. Note in one line that you'll read it, then move on:
 - Project **type** (cover sheet + index).
 - **Parties** beyond any the user volunteers, owner, architect, structural EOR, MEP / civil engineers
-  (title blocks + cover stamps). If an engineer is stamped nowhere, that's an **upload-time finding / RFI**,
+  (title blocks + cover stamps). If an engineer is stamped nowhere, that's an upload-time finding / RFI,
   not an interview question.
 - **Size**, gross area, floor / unit counts (the drawings, often a code-summary sheet).
 - **Location** (cover sheet).
@@ -127,11 +127,11 @@ sheet. Note in one line that you'll read it, then move on:
 ### How the ask-now questions are put
 
 Run, or stop and report; never create a consent step. The user's decisions in this skill are the
-ask-now set above and nothing else. Ask them once, conversationally, in **one short group**. Where
+ask-now set above and nothing else. Ask them once, conversationally, in one short group. Where
 you already hold an answer, put it forward as the answer with its source named (the profile, a
 document they handed you, a cover sheet you can see), so the user corrects it rather than composes
-it; a pre-filled answer is how their own context earns its keep. **Only `name` is required;
-everything else is "skip if you don't have it handy."** Everything else this skill does is its own
+it; a pre-filled answer is how their own context earns its keep. Only `name` is required;
+everything else is "skip if you don't have it handy." Everything else this skill does is its own
 work, recorded with who did it and when, and editable on plumlayer.com: never ask whether to proceed with it,
 never ask the user to confirm a summary of what you are about to do, and never put your own next
 step to them as a choice. Do not reconcile the user's saved defaults against this project here.
@@ -247,18 +247,18 @@ Seed what a handed-over document plainly states, cited to that document (it is t
 source, never a bare fact), and say what you seeded from where. Do not ask the user to confirm a
 fact the document states. Anything the source leaves unclear is `uncertain`, and anything two
 sources disagree on is `conflicting`; neither is ever a seed, and each is handled as the top of
-this step says. **Defer the gaps to the read rather than interrogating** for them.
+this step says. Defer the gaps to the read rather than interrogating for them.
 
 ---
 
 ## 3. Create the project record shell
 
-Call the **`create_project`** MCP tool with the confirmed `name` (required) and optional
-`description`. **Capture the returned `projectId`**: every entry in the seed step below is
+Call the `create_project` MCP tool with the confirmed `name` (required) and optional
+`description`. Capture the returned `projectId`: every entry in the seed step below is
 scoped to it.
 
 > **Fallback if `create_project` isn't available** (older plugin/server without the verb): ask the
-> user to create the project on **plumlayer.com** (one click), then call `list_projects` and resolve
+> user to create the project on plumlayer.com (one click), then call `list_projects` and resolve
 > the new `projectId` from the list. The rest of the skill is unchanged.
 >
 > **If the client refuses the call** (its permission check, or the user declining it), nothing was
@@ -275,14 +275,14 @@ One project = one project record.
 ## 4. Seed the facts only the user carries
 
 Map the confirmed facts to entries and record them; an uncertain or conflicting fact is never
-seeded (step 2). **Prefer the `record_batch` MCP tool**, one call with
+seeded (step 2). Prefer the `record_batch` MCP tool, one call with
 `projectId=<the new project>` and an `entries` array of all the confirmed-fact seed entries (it's
 atomic: one bad entry rejects the batch and names the index). **Fallback:** if `record_batch` isn't
-available (older server), call the **`record`** tool once per entry, batched in parallel (many per
+available (older server), call the `record` tool once per entry, batched in parallel (many per
 message).
 
 **Entry shape** (matches the entry atom: `subject — predicate — value` + evidence):
-- `sourceInstrument` = `project-setup-interview` (interview) or the **uploaded file name** (read-in).
+- `sourceInstrument` = `project-setup-interview` (interview) or the uploaded file name (read-in).
   This correctly marks the entry as low-instrument / user-asserted.
 - `evidence` = `{ source: "<user-interview | filename>", method: "human", snippet: "<what was
   said / the source line>" }`.
@@ -291,7 +291,7 @@ message).
 
 **What to seed** (skip any the user didn't give, never fabricate):
 
-> At this point the table is **often mostly empty, a sparse shell is the correct early state**, not a
+> At this point the table is often mostly empty, a sparse shell is the correct early state, not a
 > failure. Seed only what the user volunteered or a handed-over document supports; the set read fills the
 > rest. Never ask a question just to populate a row.
 
@@ -314,13 +314,13 @@ message).
 | Known exclusion | `project` | `knownExclusion` | one entry listing every exclusion the user named |
 
 Use short, stable slugs for party subjects (`party:smma`, `party:owner`). Keep values literal and
-sourced. **Every entry carries a `sourceInstrument` and evidence, no exceptions.**
+sourced. Every entry carries a `sourceInstrument` and evidence, no exceptions.
 
 ---
 
 ## 5. Read the delivery in
 
-Run the **`drawing-upload`** skill now, in full, with this `projectId` and the local paths the user
+Run the `drawing-upload` skill now, in full, with this `projectId` and the local paths the user
 gave you in step 2. It owns the whole read: what kind of delivery this is, registration, the cloud
 upload, sheet-number recognition, the pages the pass could not name, sheet typing, the project
 manual's table of contents, and the reconciliation gate. Every gate in it applies unchanged.
@@ -339,7 +339,7 @@ manual's table of contents, and the reconciliation gate. Every gate in it applie
 
 ## 6. Orient and draft the baseline packages
 
-Run the **`learn-project`** skill now, in full, then return here for the closing report. It reads
+Run the `learn-project` skill now, in full, then return here for the closing report. It reads
 the seeded facts and the sheet inventory, takes a small number of bounded renders, records cited
 project-level facts, and drafts and creates the baseline trade-package split off the spec table of
 contents.

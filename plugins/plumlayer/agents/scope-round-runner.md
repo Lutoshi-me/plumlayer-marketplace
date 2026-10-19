@@ -57,8 +57,8 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    nothing for it, append nothing, and go to the next unit. Its counts still reach your summary:
    the script sums the `verified` line of every unit your pass carries, matched the same way on
    window and unit id whatever pass it names, each unit once. A unit with a `dispatch` line and no
-   `verified` line is re-run as below. **Append the unit's
-   `dispatch` line first, in one append, then dispatch the reader.** Never the other way round and
+   `verified` line is re-run as below. Append the unit's
+   `dispatch` line first, in one append, then dispatch the reader. Never the other way round and
    never in a batch at the end: the line is what a resume reads to know the unit was started, and a
    run that batched them reported six units as nothing-landed when their work was on the record.
    Dispatching a reader is one Agent tool call with `run_in_background: false`, and that call is the

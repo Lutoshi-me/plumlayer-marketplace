@@ -175,11 +175,20 @@ Each of these is a harness check.
      clause — the places the file itself has already declared the text user-facing.
    Every shipped file takes the same scan. There is no lenient population and no exemption list:
    a shipped file is the plugin's own prose, in the plugin's own voice, and a hit in one is drift.
-8. Bold used for emphasis on a short, high-precision denylist of ordinary words (`not`, `never`,
-   `only`, `must`, `no`, `exactly`, and similar) when the bold span is not immediately followed by a
-   colon (the `**Label**:` convention that marks a genuine label). This is deliberately narrower than
-   "any bold not followed by a colon": that broader rule flags the bulk of this codebase's own
-   legitimate bolded-lead-in and first-use-term conventions, not just emphasis.
+8. Bold used for emphasis: a mid-sentence bold span made only of words on a short denylist of
+   ordinary words (`not`, `never`, `only`, `must`, `no`, `exactly`, `each`, `both`, `before`,
+   `once`, and similar), one word (`**not**`) or several (`**must never**`). Position decides, not
+   a colon: a span that is the first thing on its line, after optional indentation, an optional
+   blockquote `>` and an optional list marker (`-`, `*`, `N.`), or that sits in a table row written
+   with a leading pipe, is a label and passes whatever its words (`- **No**: the bidder excluded it.`), while
+   `It does **not**:` fails. A span with any word off the list passes anywhere, which keeps the
+   check narrower than "any bold not followed by a colon": that broader rule flags the bulk of this
+   codebase's own legitimate bolded-lead-in and first-use-term conventions, not just emphasis.
+   Words are split on whitespace, compared case-insensitively, and stripped of `.,;:!?` at both
+   ends. Bounds: it reads one line at a time, so a span that wraps a line is not seen; it skips
+   fenced code; and emphasis on a word off the list (`**new**`, `**local**`), or a span that opens
+   a line partway through a wrapped sentence, is left to review. A table written without a leading
+   pipe reads as prose, so write tables with leading pipes.
 9. Title-Case pseudo-heading lines — a standalone line of 2+ consecutive Title-Case words that isn't
    a real `#`/`##` heading, a table row, a list item, a blockquote, or code — are reported as a WARN.
    This check is advisory only (it never fails the release): an inline version was tested against

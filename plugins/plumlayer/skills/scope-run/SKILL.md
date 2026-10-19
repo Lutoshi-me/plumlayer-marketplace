@@ -82,8 +82,8 @@ this run reads the baseline packages orientation created, amends them as the sco
 what the spec TOC could not see, shows what it did, and stops; they stay editable, and a correction
 is a change on the site or a tool call.
 
-Doctrine binds every step: **agents read and judge; deterministic tooling grounds; nothing enters
-untraced.** Everything a reader records is its own reading, cited, carrying who wrote it and when;
+Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
+untraced. Everything a reader records is its own reading, cited, carrying who wrote it and when;
 it becomes the field's current value the moment it lands; anyone replaces it later by naming it.
 The project record
 is what every agent in the run reads from and writes to: definitions, sheet readings, orientation

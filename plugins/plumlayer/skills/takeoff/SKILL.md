@@ -17,8 +17,8 @@ individual marks placed at true locations on the sheets, totaled, editable, and 
 who counted what, when, and from where. The user opens the takeoff editor and sees a takeoff,
 not a data import.
 
-Doctrine binds every stage: **you read and judge; deterministic tooling grounds; nothing enters
-untraced.** The tag census, the coordinates, the rendered legend are the anti-hallucination anchors:
+Doctrine binds every stage: you read and judge; deterministic tooling grounds; nothing enters
+untraced. The tag census, the coordinates, the rendered legend are the anti-hallucination anchors:
 they ground what you place, but they never decide what counts. Deciding what counts (is this token a
 window tag or a cladding callout?) is your reading of the sheet, recorded as your word with a
 citation. There is no counting algorithm in this skill and none behind the verbs; a fixed rule
@@ -38,7 +38,7 @@ errors.
 
 Drawing sheets, tag conventions, counts, and project names are a client's confidential project
 data. They live in the cloud project record (project isolation) and in the run's own evidence and report:
-**never in this file, never in a committed plugin or repo file, never quoted into a durable note.**
+never in this file, never in a committed plugin or repo file, never quoted into a durable note.
 The examples in this skill are generic; a real project's specifics never replace them. Reading the
 sheets you were pointed at is the job; writing what they contain into tracked source is the leak.
 (Oversized tool results can spill to harness-managed local files outside your control; that is
@@ -46,9 +46,9 @@ outside the repo and acceptable: the rule you own is what you write into tracked
 
 ## What this is, and the boundary
 
-One run of this skill produces **one condition** (or a small named set of them, when the request
+One run of this skill produces one condition (or a small named set of them, when the request
 genuinely spans kinds, a count plus a linear measure) with its marks, on the sheets the request
-names. It does **not**:
+names. It does not:
 
 - upload or register drawings (`drawing-upload`) or create the project (`project-setup`);
 - run scope identification or trade derivation (`scope-run`; a takeoff is quantities, not
@@ -60,8 +60,8 @@ names. It does **not**:
   user asks for exactly that, and then it is named as arithmetic in the report, never placed as
   marks on sheets you did not read).
 
-The pipeline: **preflight → what already stands → find the sheets → ground the scale → read and
-judge → define the condition → place the marks → verify by reading back → report.** Each stage has
+The pipeline: preflight → what already stands → find the sheets → ground the scale → read and
+judge → define the condition → place the marks → verify by reading back → report. Each stage has
 gates, collected at the end.
 
 ## 1. Preflight: resolve the sentence
@@ -81,8 +81,8 @@ gates, collected at the end.
 
 ## 2. What already stands (before anything else writes)
 
-Call `takeoff_read(projectId)` and read the **whole summary, not only the conditions list**:
-`summary.conditions` (every live condition, its type, unit, member count, total, sheets) **and**
+Call `takeoff_read(projectId)` and read the whole summary, not only the conditions list:
+`summary.conditions` (every live condition, its type, unit, member count, total, sheets) and
 `summary.byPredicate` (live counts per family). Overlapping standing work comes in two shapes, and
 only one of them is a condition:
 
@@ -92,7 +92,7 @@ only one of them is a condition:
   records (`hasTakeoffCount`, visible in `byPredicate`, returned flagged `legacy: true`). These
   render nowhere in the editor and can no longer be written (the write door refuses the family),
   but they are standing counted work all the same: a count of the same item on the same sheet
-  **is** overlap even though no condition exists.
+  is overlap even though no condition exists.
 
 **Either shape → stop and put the choice to the user** before reading a single sheet.
 <!-- user-facing -->
@@ -114,7 +114,7 @@ honest options with their real costs:
 <!-- /user-facing -->
 
 Be honest about removal: you cannot remove standing work, and a legacy per-sheet count is not in
-the editor for the user to delete either. Whatever is added lands **alongside** it. Never
+the editor for the user to delete either. Whatever is added lands alongside it. Never
 silently count the same thing onto the same sheets twice; never present a new condition as if it
 replaced anything.
 
@@ -134,8 +134,8 @@ records: never from filename guesses.
    (`search(projectId, predicate: "sheetType")`, but beware: on a large set that unfiltered pull
    can exceed the tool's output limit; filter or paginate deliberately). Use both, because each
    misses alone: a sheet titled "EXTERIOR ELEVATIONS" can be missing its type record, and a
-   combo sheet ("PLANS, RCPS & ELEVATIONS") can be typed as something else. **Always pair
-   subject with predicate in a `search`**: a bare subject query returns every record on the
+   combo sheet ("PLANS, RCPS & ELEVATIONS") can be typed as something else. Always pair
+   subject with predicate in a `search`: a bare subject query returns every record on the
    sheet, including enormous ones. And know the failure shape: a mistyped predicate returns
    `count: 0` silently, exactly like real absence: an empty result for a predicate you expected
    to exist means check your spelling before concluding the data is missing. When the surface is
@@ -143,7 +143,7 @@ records: never from filename guesses.
    which sheets carry it directly, before `get_page_text` or `render_page` on those sheets. It
    answers for the drawings by default and says so in `kind`; `kind: document` asks the project
    manual instead.
-2. Resolve each candidate's **fileId and page** from its location records: predicates
+2. Resolve each candidate's fileId and page from its location records: predicates
    `locatedAt` (fileId, page, source PDF, delivery) and `appearsOnPage`, with a paired
    subject+predicate query per candidate. If the project's sheets carry no type records at all
    (an old or partial upload), fall back honestly: read the drawing index sheet or titles, and
@@ -172,7 +172,7 @@ Per target sheet:
   whoever set it, do not replace it on your own: note the disagreement in the report and ask the
   user. Revise it only when the user says to, naming the scale record it replaces.
 - **No scale stands:** read the stated scale off the sheet (title block or the view labels), then
-  **verify it against something the sheet itself dimensions**: level datums on an elevation
+  verify it against something the sheet itself dimensions: level datums on an elevation
   (two labeled levels and their pixel distance), a dimension string on a plan, a graphic scale
   bar. The stated label is a starting point; the verification is what earns the record. Record
   `hasScale` with `method: "auto-detected"`, the display label as read, the derived
@@ -257,7 +257,7 @@ it pre-decides what a tag means on this project's sheets. Every project's legend
 ## 6. Define the condition
 
 One `takeoff_condition` call per condition. The server creates the identity and returns it as the
-landed record's `subject`: **that string is the conditionId every mark in stage 7 carries.** You
+landed record's `subject`: that string is the conditionId every mark in stage 7 carries. You
 never invent one.
 
 - `value`: `name` is the user's own words for the item, qualified by surface when it helps
@@ -304,7 +304,7 @@ marks summed, so the marks are the takeoff.
   to a location you actually read is not recorded.
 - **Expect volume, and bookkeep for it.** One record per instance is the doctrine, and a normal
   elevation takeoff is hundreds of sequential calls with verbose responses. Before the first
-  write, fix **one canonical ordered list** of every mark to place and track sent/remaining
+  write, fix one canonical ordered list of every mark to place and track sent/remaining
   against it by index, programmatically, not by eye. Two differently-ordered copies of the same
   list is how a duplicate or a gap happens at this volume. Record sheet by sheet, keeping a
   per-sheet sent count against the canonical list.
@@ -339,7 +339,7 @@ Two reads, because they answer different questions:
    `no-base`). Report an absent quantity with its reason; never fill it in. Two traps: the row list includes the condition's own definition row
    (so raw row totals run one higher than the member count), and paging with `nextCursor` can
    repeat a boundary row: if you walk rows across pages, dedupe by entry id before counting.
-2. **Per-sheet counts, the cheap way:** the summary always describes the **whole filtered set**,
+2. **Per-sheet counts, the cheap way:** the summary always describes the whole filtered set,
    so `takeoff_read(projectId, sheet: "sheet:<number>", predicate: "hasTakeoffCountMark",
    limit: 1)` returns a definitive count for that sheet in one tiny call: one per sheet
    beats walking hundreds of rows.
@@ -385,7 +385,7 @@ the moment they lean on the standing number, so they are part of the answer, not
 
 ## Gates (non-negotiable)
 
-- `takeoff_read` runs before any write, and the overlap check covers **both** shapes of standing
+- `takeoff_read` runs before any write, and the overlap check covers both shapes of standing
   work: conditions and legacy per-sheet counts (`summary.byPredicate`, not only
   `summary.conditions`); either stops the run for the user's choice. Re-running never
   silently duplicates and never claims to have replaced work it cannot remove.

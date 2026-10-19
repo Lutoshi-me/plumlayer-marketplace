@@ -18,8 +18,8 @@ they included or excluded per scope row, the dollars they attached, their covera
 Each entry cites the page of the proposal it was read from. The estimator levels the package, on
 plumlayer.com or by asking you, and signs the bid on plumlayer.com.
 
-Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing enters
-untraced.** Every entry this skill writes records as your reading of one bidder's document, cited to
+Doctrine binds every stage: agents read and judge; deterministic tooling grounds; nothing enters
+untraced. Every entry this skill writes records as your reading of one bidder's document, cited to
 the page it came from. You are the reader; the MCP tools
 (`render_page`, `get_page_text` for reading; `get_bid_package` for the rows and peer context;
 `record_batch` and `record_additional_item` for the write) are the anti-hallucination anchor and
@@ -32,9 +32,9 @@ project, or bidder name in this file.
 
 ## Confidentiality (non-negotiable)
 
-Proposal PDFs are confidential sub pricing. They are supplied to this skill by **local path** and are
-**never committed, never copied to a tracked path, and never quoted verbatim into any file the plugin
-or repo tracks.** The bytes upload to the project's private cloud bucket (project isolation + RLS) and
+Proposal PDFs are confidential sub pricing. They are supplied to this skill by local path and are
+never committed, never copied to a tracked path, and never quoted verbatim into any file the plugin
+or repo tracks. The bytes upload to the project's private cloud bucket (project isolation + RLS) and
 the entries live in the cloud project record; that is fine. What must never happen is a bidder's number or name
 landing in a plugin file, a commit, or a note. Reading a proposal you were handed is the job; writing
 its contents into tracked source is the leak.
@@ -61,13 +61,13 @@ page it came from.
 
 ## What this is, and the boundary
 
-`bid-intake` does one thing: read the proposals for **one bid package** (one trade, one project) and
-record each bidder's bid entries against that package's existing scope rows. It does **not**:
+`bid-intake` does one thing: read the proposals for one bid package (one trade, one project) and
+record each bidder's bid entries against that package's existing scope rows. It does not:
 
 - create the project (`project-setup`) or read drawings (`drawing-upload`);
 - create the bid packages, or invite / manage bidders: the baseline packages are created by
   orientation and amended by the scope run, and a person edits them on plumlayer.com; this skill
-  reads an **existing** package's rows and adds bidder responses to them;
+  reads an existing package's rows and adds bidder responses to them;
 - create a new scope row for proposal content that matches no known row: that content lands as an
   **Additional item** on the package, the bidder's own word for an unlisted item cited to the page it came
   from, never a created `scopeItem:` subject (see the hard read rules and stage 7b);
@@ -80,9 +80,9 @@ record each bidder's bid entries against that package's existing scope rows. It 
   are credited to the person who asked for them. Never make either move on your own judgment during intake;
 - sign or submit anything: submitting the bid stays with the user, on plumlayer.com.
 
-The pipeline: **preflight → upload/register → fetch rows + context → two-pass read (blind, then peer) →
+The pipeline: preflight → upload/register → fetch rows + context → two-pass read (blind, then peer) →
 assemble + confidence audit → declare supersession mode → record the responses → record the
-additional items → report.** Each stage has gates; they are non-negotiable and collected at the end.
+additional items → report. Each stage has gates; they are non-negotiable and collected at the end.
 
 ## 1. Preflight
 
@@ -93,7 +93,7 @@ additional items → report.** Each stage has gates; they are non-negotiable and
    verbatim, spaces included, no slugging. That trade code keys the package subject and every read
    below. If no package exists for this trade, stop: this skill reads into an existing package; the
    package is defined through the plumlayer.com solicitation flow first.
-3. **Take the proposal paths.** The user supplies the proposal PDFs by **local path** (one or more,
+3. **Take the proposal paths.** The user supplies the proposal PDFs by local path (one or more,
    one per bidder, or several from one bidder if a base plus revisions). Confirm which bidder each
    path is for when the filename does not make it obvious; do not guess a bidder from a filename.
 4. **Sanity-check each PDF before upload.** The corpus contains at least one 0-byte file. For each
@@ -125,14 +125,14 @@ sanity check:
    curl -X PUT "$SIGNED_URL" -H "Content-Type: application/pdf" --data-binary @"$LOCAL_PDF_PATH"
    ```
 3. `register_file(projectId, fileId, filename, contentType: "application/pdf", kind: "proposal")`.
-   A proposal is not a drawing delivery: pass `kind: "proposal"` and **no `deliveryId`** (the
+   A proposal is not a drawing delivery: pass `kind: "proposal"` and no `deliveryId` (the
    `deliveryId` argument is for drawing deliveries only). Idempotent: a retried call for the same
    `fileId` returns the existing row. If it rejects `not_found` / `empty` / `oversize`, stop and report
    rather than retrying blindly.
 
 `render_page` and `get_page_text` gate on file ownership only, so a registered proposal is immediately
-readable. Keep the `fileId` for each proposal: **every entry you record from it cites that `fileId`
-and the page** in its evidence.
+readable. Keep the `fileId` for each proposal: every entry you record from it cites that `fileId`
+and the page in its evidence.
 
 You do not need `register_pages` for proposals. A file registered as `kind: "proposal"` is
 deliberately neither sheet-recognized nor page-registered, so the call probes only the project's
@@ -142,14 +142,14 @@ file ownership, not on page rows, so your proposals are readable the moment they
 ## 3. Fetch the rows and the peer context
 
 `get_bid_package(projectId, trade)` is your one source for the package's checklist. If the live call
-fails, **stop and report it; do not reconstruct the rows or the package from raw `search`.** That
+fails, stop and report it; do not reconstruct the rows or the package from raw `search`. That
 fallback is expressly rejected: raw-entry reconstruction re-implements supersession and the scope-item
 pivot client-side and drifts from the surface.
 
 **A second failure mode looks like success and is not: an empty checklist.** `get_bid_package` can
 return normally with a defined package and `lines: []`: the package exists but no scope items are
 enrolled in it yet. This is not an error the tool raises; you have to check for it. If `lines` comes
-back empty, **stop and report**: "package scope not yet populated, enroll scope items via
+back empty, stop and report: "package scope not yet populated, enroll scope items via
 plumlayer.com first." Never proceed to read and record proposals against an empty checklist: a
 profile/summary-only write with no response entries to anchor it is a degenerate run, not a partial
 one, and it hides the real blocker (no rows to answer) behind what looks like a normal intake.
@@ -159,14 +159,14 @@ one, and it hides the real blocker (no rows to answer) behind what looks like a 
   a `scopeItem:` subject and the row identity you answer against, never created by you), every current
   bidder (`bidders[].partySubject`, name, laborType, coverage), the head response per cell
   (`lines[].responses[]`, each with `partySubject`, the resolved response, and `receipt.id`: the
-  current head entry id for that bidder × row), and the divergence view. **These `lines[]` are the
-  checklist**: a bidder responds to these, and only these; do not derive package membership by hand
+  current head entry id for that bidder × row), and the divergence view. These `lines[]` are the
+  checklist: a bidder responds to these, and only these; do not derive package membership by hand
   from any other read. This is also your **pass-two peer context** and your **supersession head source**
   for existing bidders. It errors "bid package not found" if no package definition entry exists yet for
   the trade; if it does, stop and report (the package definition is a plumlayer.com step), do not fall
   back to `search`.
   It also returns **`additionalItems[]`**: the package's existing unlisted items, per bidder,
-  each with its `subject`, `label`, `citation`, and `receipt.id`. **Read this now and keep it**, before
+  each with its `subject`, `label`, `citation`, and `receipt.id`. Read this now and keep it, before
   you read a single proposal. It is what stage 7b checks against so a re-run never records the same
   unlisted item twice, and it tells you what a prior run already captured for a bidder you are
   about to re-read. This full read is a stage-3 instrument only. For the post-write check, stage 7
@@ -189,8 +189,8 @@ this takes in the real corpus:
   signature names the sub who actually carries the contract. The contracting party is the bidder; the
   vendor branding is just where their pricing came from.
 - **One submission, several embedded quotes**: a single bidder's package can bundle two or more
-  embedded vendor-system quotes covering complementary halves of the scope. That is **one bidder and
-  one entry bundle**, with each value cited to the page of the embedded quote it was read from;
+  embedded vendor-system quotes covering complementary halves of the scope. That is one bidder and
+  one entry bundle, with each value cited to the page of the embedded quote it was read from;
   never two bidders.
 
 If the document leaves the contracting party genuinely ambiguous, stop and ask the user; never
@@ -204,13 +204,13 @@ Then place each proposal's resolved bidder, in this order:
    package and read the invited companies. If the proposal's contracting party is plainly one of
    them, use that company's directory id as the party: **`party:<companyId>`**. This is the identity
    the rest of the system already knows the company by, and it is what lets a filed proposal move
-   that company to Bid received on the coverage board by itself. **Only the exact company id does
-   that**: a name-shaped party never will.
+   that company to Bid received on the coverage board by itself. Only the exact company id does
+   that: a name-shaped party never will.
 3. **No invited company matches** → create a stable `party:<slug>` from the bidder's company name (a
    short, stable slug, e.g. `party:acme-drywall`). A bidder who was never invited is still a real
    bidder and files normally; their proposal simply moves no funnel it was never part of.
 
-The matching in step 2 is **your judgment, and you say so**: names differ from legal entities, a
+The matching in step 2 is your judgment, and you say so: names differ from legal entities, a
 proposal may come from a division or a DBA, and two invited companies can look alike. Match only
 when you are actually confident, name the company you matched and why in your report, and fall to
 step 3 rather than forcing a doubtful match. A wrong match files a real proposal against the wrong
@@ -223,20 +223,20 @@ are plausible, stop and ask the user; never break the tie yourself.
 
 ## 4. The two-pass read (the anti-anchoring discipline)
 
-Read each proposal in **two passes in the same session**. The order is the discipline: pass one reads
+Read each proposal in two passes in the same session. The order is the discipline: pass one reads
 each proposal **blind** so a bidder's numbers are never anchored to a peer's; pass two adds peer context
 only to flag divergence, never to revise a value.
 
 ### Pass one: blind, per proposal
 
-For each proposal, read it against **only the scope rows (stage 3) and that one proposal**: no peer
+For each proposal, read it against only the scope rows (stage 3) and that one proposal: no peer
 proposal, no other bidder's numbers in view. Use `render_page` (returns the page image inline; pass a
 normalized `region` to zoom a table or a signature block) and `get_page_text` (exact text spans; a
 page without a text layer is read by OCR and `textSource` says so, and spans are empty only when
 `textSource` is `none`). Produce, for this bidder:
 
 - **The bidder profile**: name, labor type (one of `Open Shop` / `Union` / `Prevailing Wage` /
-  `Supplier`), contact, **proposal date read from the document itself**, and a revision marker if the
+  `Supplier`), contact, proposal date read from the document itself, and a revision marker if the
   document carries one (R1 / R2 / "Revised"). Never use upload time for the date.
 
   **The contact is read into its parts.** The signature block, the letterhead, or the cover email
@@ -252,7 +252,7 @@ page without a text layer is read by OCR and `textSource` says so, and spans are
   on that invitation (its `contactId`), put that id in `contactPerson.directoryContactId`. That case
   and no other. A contact id you settled by matching a name puts a real proposal against the wrong
   person's record; leave the field off and let the name on the proposal stand by itself.
-- **Per-row responses**: for each scope row the proposal **addresses**, the response along the three
+- **Per-row responses**: for each scope row the proposal addresses, the response along the three
   axes plus amount, note, and substitution, per the response value shape (stage 7):
   - **inclusion**: `base` (in the base bid), `adder` (a priced add), or `excluded` (not carried).
   - **routing**: `self` / `by-others` / `NIC`, when the proposal says who carries it. Distinguishes a
@@ -280,8 +280,8 @@ page without a text layer is read by OCR and `textSource` says so, and spans are
   that adds them up. It is one bidder (stage 3), but there is one summary subject per bidder per
   package and no document figure to put in it. Do not add the quotes together: a summary is only ever
   what the document states, and a total you computed is your arithmetic wearing the bidder's name.
-  Record the profile, the coverage, and every row response as normal, and simply **omit the
-  `bidSummary`**. The leveling projection already handles a bidder with no summary by totalling their
+  Record the profile, the coverage, and every row response as normal, and simply omit the
+  `bidSummary`. The leveling projection already handles a bidder with no summary by totalling their
   own row responses and additional items: that is the designed path, not a degraded one, and it
   reaches the same number without anyone inventing it. Say in the report that the bidder carries no
   stated total and name the separate quote figures and their pages, so a person can see what you saw.
@@ -311,14 +311,14 @@ pass one for everything here.
 ### Pass two: peer-aware, flags only
 
 Now, with `get_bid_package`'s peer responses in view, make a second pass over the same proposals. Pass
-two may **only**:
+two may only:
 
 - add or adjust **ambiguity flags**: a row you now see every peer priced but this bidder left blank is
   a sharper scope-gap signal; a token you read as plain may now read as `OSV` against the peer pattern;
 - run the **miss-direction checks**: is this bidder an outlier low because they excluded a row the
   peers all carried? Flag it for review.
 
-Pass two **must never** revise a pass-one `amount` or `inclusion` to move a bidder toward the peers.
+Pass two must never revise a pass-one `amount` or `inclusion` to move a bidder toward the peers.
 The whole point of reading blind first is that a bidder's price stands on their own document. In the
 report, state which pass produced which flag.
 
@@ -326,8 +326,8 @@ report, state which pass produced which flag.
 
 These are gates. Write them into every read:
 
-- **Not addressed is not a response.** A scope row the proposal does not address gets **no response
-  entry** at all. Count it as not addressed for that bidder in the report. Never record a
+- **Not addressed is not a response.** A scope row the proposal does not address gets no response
+  entry at all. Count it as not addressed for that bidder in the report. Never record a
   `base`/`excluded`/zero to represent it: a row not addressed is unknown, and a bare grid that treats
   it as answered is the exact conflation coverage exists to prevent.
 - **Proposal content matching no known row becomes an Additional item, never a created row.** If a
@@ -359,13 +359,13 @@ These are gates. Write them into every read:
   statement about work and passes test one; not one is about *this* building. Without the anchor the
   section fills with another project's boilerplate.
 
-  Two consequences to hold honestly. The peer anchor is **not available during a blind pass one**: it
+  Two consequences to hold honestly. The peer anchor is not available during a blind pass one: it
   is a pass-two admission, and admitting an item on peer evidence is not the same as revising a value
-  toward a peer, so it does not breach the pass-two rule. And the **first or only bidder on a package
-  gets the weaker filter**, with only the document anchor available; say so in the report when that is
+  toward a peer, so it does not breach the pass-two rule. And the first or only bidder on a package
+  gets the weaker filter, with only the document anchor available; say so in the report when that is
   the situation, rather than implying the same bar was applied.
 
-  The reason the gate is this tight: the Additional items section is read by its **mere presence**.
+  The reason the gate is this tight: the Additional items section is read by its mere presence.
   Anything sitting in it is awaiting the estimator's judgment. Five bidders' worth of boilerplate would
   drown the three real ones and destroy exactly the property that makes the section useful. When a
   piece of content genuinely sits on the line after both tests, record it and say in the report that
@@ -384,7 +384,7 @@ These are gates. Write them into every read:
 
   **The reverse case: one proposal line covering several rows.** A bidder often prices a single
   combined type against what the schedule splits into two or more marks. Do not silently attach it to
-  the likeliest one. Record a response on **each** row the line genuinely covers, flag every one of
+  the likeliest one. Record a response on each row the line genuinely covers, flag every one of
   them `unclear`, and say in each note that they share one undivided proposal figure and which line it
   was, so a person can see the split is yours and not the bidder's. Never divide the money between
   rows by your own arithmetic.
@@ -414,7 +414,7 @@ These are gates. Write them into every read:
 
 Assemble the full entry bundle per bidder (profile, coverage, summary, one response per answered
 row, and the additional items this proposal earned under the stage-4 gate). Before recording, run a
-**confidence audit**: collect every read whose `evidence.confidence` is **below 0.7** and list it in
+**confidence audit**: collect every read whose `evidence.confidence` is below 0.7 and list it in
 the report for human attention. A low-confidence read is still recorded, carrying its confidence and its
 receipt, but it is called out, not buried in a count. State the per-bidder counts by predicate, the
 not-addressed count per bidder, and the additional-item count per bidder, so the write manifest is
@@ -422,17 +422,17 @@ honest.
 
 ## 6. Declare the supersession mode (before recording)
 
-If a bidder is **new** to this package (no prior entries in `get_bid_package`), there is no
+If a bidder is new to this package (no prior entries in `get_bid_package`), there is no
 supersession: record fresh entries, and skip to stage 7.
 
-If a bidder **already has entries** on this package, classify the new document from **its own framing**,
+If a bidder already has entries on this package, classify the new document from its own framing,
 not from a guess:
 
 - **A "revised proposal" / "revised bid" / a higher revision marker → wholesale.** The revised document
   restates the bidder's whole position. Record a fresh response entry for every row you read from it,
-  each with `supersedesId` set to that row's **current head response entry id** (from
+  each with `supersedesId` set to that row's current head response entry id (from
   `get_bid_package`'s `lines[].responses[]`: the cell for this `partySubject` on that row, its
-  `receipt.id`). Rows the revised proposal now does not address get **no re-assertion**: their prior
+  `receipt.id`). Rows the revised proposal now does not address get no re-assertion: their prior
   entry simply lapses (silence lapses; you do not carry a stale prior forward). Also supersede the
   bidder's profile, coverage, and summary entries (see the head-id note below).
 
@@ -443,14 +443,14 @@ not from a guess:
   changes only the rows it names. Record new entries only for those named rows, each with
   `supersedesId` set to that row's current head entry id; everything else the bidder previously said is
   left untouched.
-- **Ambiguous framing** (you cannot tell whether it restates or amends) → **stop and ask the user.**
+- **Ambiguous framing** (you cannot tell whether it restates or amends) → stop and ask the user.
   Never guess the mode. Guessing wholesale drops rows that should stand; guessing surgical strands a
   stale prior position.
 
-State the declared mode in the report and confirm it with the user **before** you record.
+State the declared mode in the report and confirm it with the user before you record.
 
 > **Head-id note (a real detail the proving run should confirm).** `get_bid_package` exposes the head
-> entry id only for **response cells** (`lines[].responses[].receipt.id`). It does not expose the
+> entry id only for response cells (`lines[].responses[].receipt.id`). It does not expose the
 > head ids for a bidder's `bidderProfile`, `bidSummary`, or `bidCoverage` entries. To supersede those
 > three on a wholesale revision, resolve each head with a targeted `search` on its deterministic subject
 > (e.g. `search(projectId, subject: "bidCoverage:<party>:<pkg>", predicate: "bidCoverage")`) and take
@@ -525,7 +525,7 @@ Value rules that the schema enforces, honor them at authoring time:
 - `inclusion` ∈ `base | adder | excluded`; `routing` ∈ `self | by-others | NIC`; `ambiguity` ∈
   `OSV | TV | unclear`; `laborType` ∈ `Open Shop | Union | Prevailing Wage | Supplier`; coverage
   `basis` ∈ `full | partial`. No other values, ever.
-- Optional fields are **omitted** when absent, never set to `null`. Every optional field in the bid
+- Optional fields are omitted when absent, never set to `null`. Every optional field in the bid
   schemas is `.optional()`, not `.nullable()`: an explicit `null` is rejected, not treated as "none."
   Omission is the only correct encoding of "not stated."
 - `substitution` is free text, 1 to 2000 characters, the bidder's own words verbatim. Like every other
@@ -536,15 +536,15 @@ Value rules that the schema enforces, honor them at authoring time:
   one reading.
 - `sourceInstrument` equals `evidence.instrument` (the builder sets it from there).
 - `evidence.page` requires `evidence.fileId`: a page pointer with no file is rejected.
-- For a **surgical or wholesale supersession**, add `"supersedesId": "<current head entry id>"` to the
+- For a surgical or wholesale supersession, add `"supersedesId": "<current head entry id>"` to the
   entry, resolved per stage 6.
-- Bid entries carry **no `versionScope`** (the bid builders do not set one); omit it.
+- Bid entries carry no `versionScope` (the bid builders do not set one); omit it.
 
 **Batch and verify.** Pool the authored entries and call `record_batch(projectId, entries)` in batches
-of **≤50** entries (the door accepts up to 500, but ≤50 keeps each read faithful and count-verifiable).
+of ≤50 entries (the door accepts up to 500, but ≤50 keeps each read faithful and count-verifiable).
 It is atomic: one bad entry rejects the whole batch and names the index. Transport every entry
-**verbatim**; never re-type a value from memory. **Verify:** the returned `count` must equal the number
-of entries you sent in that batch. If it does not, **stop and report** the discrepancy; never retry
+verbatim; never re-type a value from memory. **Verify:** the returned `count` must equal the number
+of entries you sent in that batch. If it does not, stop and report the discrepancy; never retry
 with a reconstructed or guessed correction.
 
 **Recount before you confirm.** Any count you are about to restate as checked (rows answered, rows
@@ -555,9 +555,9 @@ is earned by the recount that precedes it, every time.
 
 ## 7b. Record the additional items (a different door, after the batch)
 
-The unlisted content you gathered under the stage-4 gate lands here. **This does not ride
-`record_batch`.** The generic write door refuses the `additionalItem` predicate outright: the only
-way in is `record_additional_item`, **one call per item**.
+The unlisted content you gathered under the stage-4 gate lands here. This does not ride
+`record_batch`. The generic write door refuses the `additionalItem` predicate outright: the only
+way in is `record_additional_item`, one call per item.
 
 **Order is a gate, not a preference. Run this stage only after stage 7's batch has landed.** The door
 refuses a `partySubject` that is not already a bidder on this package, and what makes a party a bidder
@@ -574,9 +574,9 @@ this bidder:
 
 - **Nothing like it there** → record fresh (no `supersedesId`).
 - **You are correcting an item a prior run of this skill recorded** → pass `supersedesId` set to that
-  item's **`receipt.id`** from `additionalItems[]`. It must be the item's current head; a stale id is
+  item's `receipt.id` from `additionalItems[]`. It must be the item's current head; a stale id is
   refused rather than landed, which is the door protecting you.
-- **The item has a non-null `migratedFrom`** → **leave it alone entirely.** That is not your record.
+- **The item has a non-null `migratedFrom`** → leave it alone entirely. That is not your record.
   It is a response of this bidder's whose scope row stopped projecting, presented here by the
   projection itself, and it recomputes on every read. Never supersede one, and never re-record its
   content as a fresh item: that would double-count the bidder's money.
@@ -607,10 +607,10 @@ record_additional_item(
 ```
 
 Shape notes that will bite otherwise: `label` is required and capped at 200 characters; the enums are
-exact and there is **no `ambiguity` axis on this door** (unlike a response, carry an ambiguous
-qualifier in the `note` instead), and **no `substitution` field either** (an additional item answers no
+exact and there is no `ambiguity` axis on this door (unlike a response, carry an ambiguous
+qualifier in the `note` instead), and no `substitution` field either (an additional item answers no
 checklist row, so nothing the documents specify exists for it to depart from; a substitution belongs on
-the row response it modifies, stage 4, never here); optional fields are **omitted** when absent, never `null`;
+the row response it modifies, stage 4, never here); optional fields are omitted when absent, never `null`;
 `trade` is the CSI code exactly as the package was created with, spaces kept and never slugged,
 the same string `get_bid_package` reads with (a different spelling creates the item on a package subject
 nothing reads, so it lands and then renders nowhere); and `evidenceFileId` is refused if missing,
@@ -643,7 +643,7 @@ enormous: three bidders against a nineteen-row checklist measured roughly 165,00
 overran the tool output limit outright, and that is a small job. The full read is the stage-3 context
 call, made once; it is not a verification instrument.
 
-Verify with **`get_bid_package(projectId, trade, view: "summary")`** instead. That returns the bounded
+Verify with `get_bid_package(projectId, trade, view: "summary")` instead. That returns the bounded
 verification projection: per bidder, `responseCount` (that bidder's response cells with a non-null
 receipt), `additionalItemCount` (all of the package's additional items for that bidder, reconciled or
 not), and the carried totals and ranks. No per-line grid, no receipts: a couple of thousand
@@ -652,21 +652,21 @@ characters on a real package.
 Check, for each bidder you recorded for:
 
 - **`responseCount`** equals that bidder's stage-3 baseline (their `lines[].responses[]` cells with a
-  non-null `receipt` in the read you kept) plus the **fresh** rows you answered. A new bidder's
+  non-null `receipt` in the read you kept) plus the fresh rows you answered. A new bidder's
   baseline is zero. A correction supersedes in place and raises no count.
-- **`additionalItemCount`** equals that bidder's stage-3 `additionalItems[]` count plus the **fresh**
+- **`additionalItemCount`** equals that bidder's stage-3 `additionalItems[]` count plus the fresh
   items you recorded (same in-place rule for corrections). Baseline and check come from the same
   projection, so derived (`migratedFrom`) items appear in both and cancel out of the comparison.
 
 Each `record_additional_item` call also returns the item's `subject`: keep them for the report. If
-any number disagrees, **stop and report**: do not record again to "fix" it, and do not reconcile the
+any number disagrees, stop and report: do not record again to "fix" it, and do not reconcile the
 difference by reasoning. A duplicate you can see is recoverable in one move by a person; a duplicate
 you papered over is not.
 
 ## 8. Report and hand off
 
 <!-- user-facing -->
-The run report **is** the manifest. State, plainly:
+The run report is the manifest. State, plainly:
 
 - **Per bidder:** the bidder identity you used, entry counts by type (profile / responses / coverage /
   summary), whether this was a fresh bid, a full revision, or a partial update, and what it replaced,
@@ -675,7 +675,7 @@ The run report **is** the manifest. State, plainly:
 - **Additional items:** how many unlisted scope items you recorded per bidder, and where they now live
   (the package's Additional items section on plumlayer.com), a pointer to what landed, not a
   re-listing of it. The items carry their own descriptions and citations; restating them here would
-  make the report a second, staler copy of the record. Do name any you judged **borderline** under the
+  make the report a second, staler copy of the record. Do name any you judged borderline under the
   stage-4 gate, and anything you deliberately left out of the section as a commercial term, so the
   judgment call is visible rather than silent.
 - **Low-confidence reads:** every value below 0.7 confidence, called out for review.
@@ -684,7 +684,7 @@ The run report **is** the manifest. State, plainly:
   the additional-items check (the count before, the count after, and the rise), confirmed to match
   what you recorded.
 
-Then point the user at the **package view on plumlayer.com** to review and level. The numbers are
+Then point the user at the package view on plumlayer.com to review and level. The numbers are
 readable there now, each with the proposal page behind it; the bid itself is theirs to sign.
 <!-- /user-facing -->
 
@@ -710,7 +710,7 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - No item is recorded without first checking the package's existing `additionalItems[]` for it; an
   `idempotencyKey` covers only a resend of the same call, so an unchecked re-run duplicates silently. A derived item (non-null
   `migratedFrom`) and a reconciled one (non-null `resolution`) are never touched.
-- Writes are verified by reading the package back in **summary view** (`get_bid_package` with
+- Writes are verified by reading the package back in summary view (`get_bid_package` with
   `view: "summary"`) and matching the rise in per-bidder counts against the stage-3 baseline; a
   mismatch stops the run and is reported, never recorded over. The full read is never re-called for
   verification.
@@ -747,12 +747,12 @@ readable there now, each with the proposal page behind it; the bid itself is the
 ## Bundled vs. config
 
 This skill generalizes once. The per-job delta (which project, which trade package, which proposal
-folder) is **data** the user supplies at run time, never an edit to the skill. A new intake job never
+folder) is data the user supplies at run time, never an edit to the skill. A new intake job never
 edits `SKILL.md`; it runs the same pipeline against new paths.
 
 ## Deferred / for the proving run to decide (named, not skipped silently)
 
-- **The Additional-items gate: still open.** The statement-about-work test alone runs **too loose** on
+- **The Additional-items gate: still open.** The statement-about-work test alone runs too loose on
   its own: a vendor's boilerplate exclusion list can pass it while naming work the project does not
   contain. That is why the anchoring test above exists. Still open for the next run: how the weaker
   single-bidder filter behaves when there is no peer to anchor against, and whether the anchoring test

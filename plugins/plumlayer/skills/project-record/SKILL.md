@@ -13,7 +13,7 @@ description: >
 # Working a Plumlayer project record
 
 **The project record** is the cloud, entry-based model of a
-construction project as it currently stands. Each Plumlayer **project has one project record**.
+construction project as it currently stands. Each Plumlayer project has one project record.
 You interact with it through the `plumlayer` MCP tools (every tool is scoped to the
 signed-in user's own projects).
 
@@ -188,7 +188,7 @@ to write a measurement, a count, or a sheet scale through `record`.
 ### How to shape a citation
 
 Your citation becomes a clickable chip on the scope surface, parsed deterministically from
-`evidence`. An entry the parser cannot read renders **nothing**, silently and with no error:
+`evidence`. An entry the parser cannot read renders nothing, silently and with no error:
 an unreadable reference is treated as no citation rather than as a fake one. So an entry can
 land perfectly well and still show no source, purely from a malformed `evidence` entry. Shape
 it like this:
@@ -206,10 +206,10 @@ it like this:
 ]
 ```
 
-- `evidence` may be one entry or an array of them; both are read. What fails is an **empty**
+- `evidence` may be one entry or an array of them; both are read. What fails is an empty
   `{}`: it carries no source, so on a scope item or a definition the record refuses it outright,
   and on any other entry it cites nothing.
-- `source` **must lead with the document reference**: a sheet number (`A-746`, `S-201.1`) or
+- `source` must lead with the document reference: a sheet number (`A-746`, `S-201.1`) or
   a spec section (`09 21 16`). That leading reference is what becomes the chip. An internal id
   like `bidPackage:proj-…`, or a prose sentence, is not a document reference and renders
   nothing by design.
@@ -221,12 +221,12 @@ it like this:
   actually read it on. A sheet named with no page is refused on a scope item and on a definition,
   so there is no pageless chip to fall back to.
 - `locator.bboxPts` with `frame: "page-points"` is what makes the chip land on the
-  **region** you actually read instead of the top of the sheet. Take them from the boxes
+  region you actually read instead of the top of the sheet. Take them from the boxes
   `get_page_text` gave you for the words you read, so every number is one a word or line carries.
   Never measure a box off a render or place one where you judge the words sit on the picture:
   where no line of the page's read carries what you read, omit them and the chip still works, at
   page level.
-- A `citedRegion` entry needs its **own** item in `evidence`. Putting the sheet and box only in
+- A `citedRegion` entry needs its own item in `evidence`. Putting the sheet and box only in
   the entry's `value` records the region but cites nothing, so no chip appears for it.
 
 Cite the sheet you genuinely read. A citation is a document reference, never a warrant that

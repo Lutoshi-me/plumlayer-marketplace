@@ -31,8 +31,12 @@ Checks:
      scoped terms (e.g. `supersede`, `fan-out`, `census`) are legitimate
      agent-facing machinery and are banned only inside a
      `<!-- user-facing -->` span or an `Audience: user` artifact clause.
-  8. Bold-for-emphasis on a short, high-precision denylist of ordinary words
-     (`not`, `never`, `only`, ...) not immediately followed by a colon.
+  8. Bold-for-emphasis: a mid-sentence bold span made only of words on a
+     short denylist of ordinary words (`not`, `never`, `only`, `each`, ...),
+     one word or several, with or without a colon after it. A span that opens
+     its line (after indentation, `>`, or a list marker) or sits in a table
+     row that starts with a pipe is a label and passes. One line at a time,
+     outside fenced code.
   9. Title-Case pseudo-heading lines (advisory only — reported as a WARN,
      never fails the release; see the check's own docstring for why).
   10. MCP-URL: .mcp.json `plumlayer` server url == EXPECTED_MCP_URL exactly.
@@ -1074,27 +1078,43 @@ def check_retired_vocabulary(plugin_path: Path, marketplace_root: Path) -> Resul
 # Check — Bold-for-emphasis (docs/plugin-text-style.md §4)
 # --------------------------------------------------------------------------- #
 #
-# A short, high-precision denylist of single ordinary words, rather than a
-# generic "any bold span not immediately followed by a colon" rule. The
-# broader rule was tested against the real shipped corpus (499 bold spans
-# total) and flagged 408 of them (82%) — almost all of them this codebase's
-# own established, legitimate conventions: a bolded imperative lead-in on a
-# numbered step ("1. **Confirm the account and project.** Call ...") and a
-# first-use term definition ("**edge**", "**identity**"), neither of which
-# happens to end in a colon but neither of which is "emphasis on an ordinary
-# word" either. This narrower denylist is the subset actually verified
-# against the shipped text: every hit when the check was built (20) was a
-# genuine emphasis violation, not a mislabeled genuine label.
-# It will not catch every possible emphasis-bolding — favor false negatives,
-# per the issue brief — but what it does flag is real.
+# A bold span is flagged when two things hold. Every word in it is on a short
+# denylist of ordinary words (`**not**`, `**only**:`, `**must never**`), where
+# words split on whitespace, compare case-insensitively, and have .,;:!?
+# stripped from both ends. And it sits mid-sentence: a span that is the first
+# thing on its line, after optional indentation, an optional blockquote `>`
+# and an optional list marker (`-`, `*`, `N.`), or that sits in a table row
+# written with a leading pipe (quoted or not), is a label and passes, whatever its words (`| **Before** |`,
+# `1. **One** ...`, `> **Also:**`, `- **No**: the bidder excluded it.`).
+#
+# Position decides, the colon does not: `It does **not**:` stresses a word in
+# front of a list and fails, while `- **No**:` labels a case and passes. A
+# span with any word off the list passes anywhere, because that is what the
+# rest of this codebase's genuine bold looks like: a bolded lead-in on a
+# numbered step, a first-use term definition ("**edge**", "**receipt**").
+# A generic "any bold not followed by a colon" rule flags those conventions
+# wholesale, so the check stays this narrow and favors a missed emphasis over
+# a flagged label.
+#
+# Bounds: one line at a time, so a span that wraps a line is not seen; lines
+# inside fenced code are skipped; emphasis on a word off the list, or a span
+# that opens a line in the middle of a wrapped sentence, passes; a table row
+# written without a leading pipe reads as prose, so its later cell labels can
+# be flagged (every table this plugin ships uses leading pipes).
 BOLD_EMPHASIS_WORDS = {
     "not", "never", "always", "only", "must", "no", "none", "any", "every",
     "all", "exactly", "actually", "really", "truly", "genuinely", "definitely",
     "certainly", "absolutely", "literally", "especially", "particularly",
     "explicitly", "precisely", "strictly", "solely",
+    "before", "after", "each", "both", "either", "neither", "is", "are",
+    "once", "twice", "nothing", "one", "and", "or", "own", "alongside",
+    "also", "still", "ever", "whole",
 }
 
 _BOLD_RE = re.compile(r"\*\*([^*\n]+)\*\*")
+# What may stand before a span that opens its line: indentation, blockquote
+# markers, and one list marker.
+_BOLD_LINE_LEAD_RE = re.compile(r"\s*(?:>\s*)*(?:(?:[-*]|\d+\.)\s+)?")
 
 
 def _scan_file_for_bold_emphasis(path: Path) -> list[str]:
@@ -1110,17 +1130,16 @@ def _scan_file_for_bold_emphasis(path: Path) -> list[str]:
     for i, line in enumerate(lines, 1):
         if fence_mask[i - 1]:
             continue
+        if line.lstrip().lstrip("> ").startswith("|"):
+            continue  # a table row's bold is a cell label
         for m in _BOLD_RE.finditer(line):
+            if _BOLD_LINE_LEAD_RE.fullmatch(line[:m.start()]):
+                continue  # the span opens its line: a lead-in label, not emphasis
             content = m.group(1).strip()
-            if " " in content:
-                continue  # multi-word spans are out of this check's scope
-            after = line[m.end():m.end() + 1]
-            if after == ":":
-                continue  # genuine label, per the `**Label**:` convention
-            word = content.strip(".,;!?").lower()
-            if word in BOLD_EMPHASIS_WORDS:
+            words = [w.strip(".,;:!?").lower() for w in content.split()]
+            if words and all(w in BOLD_EMPHASIS_WORDS for w in words):
                 hits.append(
-                    f"{path.name}:{i}: bold-for-emphasis on ordinary word {content!r} in: {line.strip()[:160]}"
+                    f"{path.name}:{i}: bold-for-emphasis on ordinary words {content!r} in: {line.strip()[:160]}"
                 )
     return hits
 

@@ -15,8 +15,8 @@ Take whatever the architect actually sent, in whatever shape, and turn it into t
 recognized set of **cited sheet entries** in the project's project record. This is **Stage 0**: the first
 thing that touches a delivery, before anything is split by discipline, routed, or deep-read.
 
-Doctrine binds every stage: **agents read and judge; deterministic tooling grounds; nothing enters
-untraced.** Every entry in this pipeline takes effect as soon as it lands, carrying who wrote it and
+Doctrine binds every stage: agents read and judge; deterministic tooling grounds; nothing enters
+untraced. Every entry in this pipeline takes effect as soon as it lands, carrying who wrote it and
 what they read from: the recognition pass records what it confirmed off the page, and what you judge
 yourself records as your own reading, cited to the page you read it on. You are the reader; the MCP
 recognition verbs (`recognize_sheets`, `recognize_sheets_status`, `render_page`, `get_page_text`) are
@@ -72,7 +72,7 @@ How to say each thing as it happens:
 `drawing-upload` does one thing: take a drawing delivery and register every sheet in it as
 cited entries in the project's project record. The canonical form is entries + provenance over the
 untouched original delivery. Discipline organization, by-discipline PDFs, and page labels
-are all **projections** of that form, rendered on demand by other skills, never the foundation. So this skill does **not**: physically split files by discipline (discipline is derived
+are all **projections** of that form, rendered on demand by other skills, never the foundation. So this skill does not: physically split files by discipline (discipline is derived
 per sheet, never from a filename); produce a CSV (the deliverable is entries in the project record;
 the app keeps discipline PDFs fresh on its own under Assembled set on Documents); scope, take off, or comprehend the sheets (`scope-run` / `takeoff` / `learn-project`); or create
 the project (`project-setup`).
@@ -205,20 +205,20 @@ dense body text and no corner title block.
 **A non-drawing file is not automatically dead weight.** Judge each one: a project manual / spec book
 (a bound, CSI-numbered document, often named "Project Manual", "Specifications", or "Spec Book", with
 a Division 00-49 table of contents, whether it's one combined PDF or a folder of per-division PDFs) is
-**filed into the project and read by step 8 below, not simply excluded.** Genuinely out-of-scope files
+filed into the project and read by step 8 below, not simply excluded. Genuinely out-of-scope files
 (geotech reports, RFP boilerplate, transmittal emails, meeting minutes) stay excluded.
 
 **Dual-source repackaging:** when a delivery contains both a combined PDF and a full set of per-sheet
 PDFs, check page totals first. If the per-sheet PDFs' combined page count equals the combined PDF's page
-count, that's duplicate repackaging of the same set, not two sources: **prefer the single combined file
-and don't recognize both**; recognizing both wastes a full pass and risks recording the same sheets
+count, that's duplicate repackaging of the same set, not two sources: prefer the single combined file
+and don't recognize both; recognizing both wastes a full pass and risks recording the same sheets
 twice under different `fileId`s. Only treat it as genuinely unclear when the totals disagree or
 there's no clean 1:1 correspondence.
 
 For any other genuinely unclear packaging (a mixed bag, or a dual-source case the page-total check
-didn't resolve), use the **Read tool** directly on a few local candidate pages of each file to judge
+didn't resolve), use the Read tool directly on a few local candidate pages of each file to judge
 title-block grammar vs spec-prose and pick which one to use. This local sampling is
-**file-selection judgment only**: it decides which local files you upload next; it never grounds an
+file-selection judgment only: it decides which local files you upload next; it never grounds an
 entry, and no entry's evidence ever cites a local read (every entry's evidence comes from the cloud
 recognition tools in steps 5–6).
 
@@ -238,9 +238,9 @@ reuse it rather than registering a duplicate. Otherwise call `create_drawing_del
   as step 1b says; never put the question to the user.
 - `label`: the human issue label from step 1.
 - `issuedOn` (`YYYY-MM-DD`) and `sequence`: read these off the documents themselves (a cover sheet, a
-  bulletin header). **Never substitute upload time**: chronology drives supersession resolution.
+  bulletin header). Never substitute upload time: chronology drives supersession resolution.
   **When issue-date signals disagree** (the filename says one date, a cover sheet or transmittal says
-  another), the **drawing set's own revision table governs** `issuedOn`: it's the
+  another), the drawing set's own revision table governs `issuedOn`: it's the
   architect's own record of the issue, ahead of a filename someone typed or a transmittal cover letter.
   Note the disagreement in the packaging report rather than silently picking one.
 
@@ -295,10 +295,10 @@ record.
 
 ## 5. Recognize sheets (async, start then poll)
 
-Call `register_pages(projectId)` **once** for the project: it registers viewable page rows for every
+Call `register_pages(projectId)` once for the project: it registers viewable page rows for every
 uploaded PDF (not entries, just renderable pages) and only needs to run once per project, not per file.
 
-Then, **once per file**, call `recognize_sheets(projectId, fileId, deliveryId)` to start the
+Then, once per file, call `recognize_sheets(projectId, fileId, deliveryId)` to start the
 deterministic server-side pass over that PDF. It returns immediately (it does not scan inline) with
 `{jobId, status: "queued"|"succeeded", deliveryId, alreadyActive?}`. `alreadyActive: true` means a job
 for this file+delivery is already in flight or done; poll the returned `jobId` rather than starting a
@@ -324,7 +324,7 @@ did not observe that. What the server says on each poll:
   written into the project as a Question: a Question is about the project, never about a
   Plumlayer failure.
 - `succeeded`: the recognized sheet entries (`appearsOnPage`, `hasTitle`, `locatedAt`, `discipline`,
-  `partOfIssue`) are **already recorded server-side.** This result never carries
+  `partOfIssue`) are already recorded server-side. This result never carries
   those entries and you never `record_batch` them yourself: that would double-write every sheet. Report
   the run-level counts from `report`: `pagesScanned`, `sheetsGrounded`, `highConfCount`, `flaggedCount`,
   `extractionWarningCount`, `calibrated`, `capHit`. Never assume "N pages scanned = N sheets recognized":
@@ -407,7 +407,7 @@ the page prints. `renumber_sheet` refuses there, because the right number alread
 page. Remove only a number you have read the page not to print, never one that also prints on that
 page, and report each removal; a number that stands on other pages stays on them.
 
-For every other page you resolve, author the **full bundle** of entries, mirroring the shape the
+For every other page you resolve, author the full bundle of entries, mirroring the shape the
 server records for the pages the deterministic pass already recognized (matching predicate and value
 shapes keeps every sheet's entry set uniform regardless of which stage grounded it):
 
@@ -549,7 +549,7 @@ step 6b, where a recognized "title" that reads like a note, a general instructio
 rather than a sheet name is the tell, or when the user points one out.
 
 When you are confident a recognized title or discipline is a mis-grab, correct it with a supersession
-**edge**, exactly like a confident step 6 correction:
+edge, exactly like a confident step 6 correction:
 
 1. `search(projectId, subject: "sheet:<n>", predicate: "hasTitle")` (or `"discipline"`) → the live
    machine entry's `id`.
@@ -646,7 +646,7 @@ corrections from step 6c, and step 6d's discipline names and corrections, the ed
 
    **For a small bundle, call `record_batch(projectId, entries)` directly.** It accepts 1–500
    entries and is atomic (one bad entry rejects the whole batch, naming the index); transport every
-   entry **verbatim**, never re-typed from memory. **Verify**: the returned `count` must equal the
+   entry verbatim, never re-typed from memory. **Verify**: the returned `count` must equal the
    number of entries you sent. If it doesn't, stop and report the discrepancy rather than retrying
    with a guessed correction.
 
@@ -668,8 +668,8 @@ corrections from step 6c, and step 6d's discipline names and corrections, the ed
    grid.** Compare the succeeded job's `write` summary (`{written, alreadyWritten, byPredicate}`)
    against its `report` (`sheetsGrounded` and the rest) for rough correspondence, then spot-check
    with a handful of targeted `search(projectId, predicate: "appearsOnPage", text: "<a sheet number
-   you saw>")` calls. That spot-check is this step's verify. **What to avoid here is a bare,
-   unpaged `set_grid` call**: on a set with hundreds of sheet rows it returns on the order of 600 KB
+   you saw>")` calls. That spot-check is this step's verify. What to avoid here is a bare,
+   unpaged `set_grid` call: on a set with hundreds of sheet rows it returns on the order of 600 KB
    of JSON, large enough that you get a file redirect back instead of the payload inline, and its
    default first page is not the set anyway. A paged read is a different thing and is fine:
    `set_grid(projectId, limit: 0)` for the counts, then pages with `discipline` + `limit`/`offset`,
@@ -988,7 +988,7 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
   where `recognize_sheets` came back already-succeeded with nothing new to write. Step 6b is where
   every door converges before this skill calls a delivery done, not an optional refinement bolted
   onto recognition.
-- Every entry's evidence is grounded **cloud-side**: a succeeded `recognize_sheets` job (recorded by
+- Every entry's evidence is grounded cloud-side: a succeeded `recognize_sheets` job (recorded by
   the server) or a `render_page`/`get_page_text` read you just made. A local read (step 2) may inform
   the packaging report; it never grounds an entry.
 - Discipline is derived from the sheet's own number prefix, never a filename or folder. A prefix
@@ -1002,7 +1002,7 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
   the 13-value vocabulary; never assigned to a sheet you're not confident about; never a bare
   re-record over a rule-typed sheet (correct it by supersession edge, per 6b); unsure stays untyped.
 - A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
-  already-recognized sheet) is a supersession **edge** onto the stored entry (`supersedesId` from
+  already-recognized sheet) is a supersession edge onto the stored entry (`supersedesId` from
   `search`), never an entry that names nothing and never a question raised with `ask_question`. A
   reading you cannot resolve is named to the user.
 - The page entries and your own type entries (the leftover sheets and any correction) are your own reading,
