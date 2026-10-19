@@ -63,8 +63,8 @@ How to say each thing as it happens:
 - "N sections found" (step 8, on job success)
 - "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
 - "re-reading the N open questions on the changed sheets" (step 9b)
-- "N sheets were sitting in Other because their numbers didn't say which discipline they belong
-  to; I read the pages and sorted K of them, and J need you" (step 6d)
+- "the set uses N discipline codes outside the standard list; I found the set's own name for K of
+  them" (step 6d)
 <!-- /user-facing -->
 
 ## What this is, and the boundary
@@ -427,9 +427,9 @@ never one measured off a render; a read that came off a render alone carries `lo
 
 **Discipline convention:** derive strictly from the sheet number's own leading letter run, matching the
 server's `disciplineFromSheetNumber` logic (all letters before the first digit/dash, uppercased);
-never a full NCS discipline name. A prefix outside the standard designator set, or no readable
-prefix at all, is not left as-is: step 6d below reads the page itself and places the sheet on a
-standard code.
+never a full NCS discipline name. A prefix outside the standard list stays as its letters, and
+step 6d reads the set for that code's name; a sheet with no readable prefix at all is read from
+its page in step 6d.
 
 **Gate:** every page in that tail ends up judged (a full entry bundle) or flagged (image-only or genuinely
 unreadable); never silently dropped. State how many you read, corrected, and flagged.
@@ -569,57 +569,60 @@ Say it the way it happened: "the automatic scan grabbed the wrong text on N shee
 and set them right".
 <!-- /user-facing -->
 
-## 6d. Sort the sheets the prefix could not place
+## 6d. Name the discipline codes off the standard list
 
-The discipline convention above derives strictly from the sheet number's own leading letter run.
-Most sheets carry one of the standard designators; some don't, either because the number uses a
-prefix the recognizer was never taught (`FT-1`, `TT-1`, `EX-G`, `OS-1`, a whole civil PDF numbered
-its own way) or because no letter run reads at all. Those land in the record with that raw prefix,
-or `Unknown`, and the web sheet browser groups every one of them into an Other bucket. This step
-reads those sheets and places each on a standard discipline code, the same move as 6c: the number
-told the recognizer what it could, and you finish the read from the page.
+The server holds one standard discipline list (the letters the trade uses, each with its word: `A`
+Architectural, `D` Demolition, `LT` Lighting, and so on), and every sheet list heading reads that
+word. A code off the list (`ES`, `SI`, `X`, `FD`) reads its bare letters until the set names it.
+This step reads the set for those names. A sheet whose number carries letters keeps its letters as
+its discipline: never supersede it onto a standard code. Only a sheet whose number carries no
+letters at all gets a per-sheet read.
 
-1. **Find them.** `set_grid(projectId, limit: 0)` and read `disciplineCounts`. Every key that
-   isn't one of the standard designators (`A, AD, C, G, D, S, M, MD, H, HD, P, PD, E, ED, FP, FPD,
-   FA, LS, L, LA, I, ID, T, AV, VT, EL, FS, DATA`) and isn't `Pages` is a leftover code, plus the
-   key `Unknown` when it appears. That's the set the web sheet browser itself names as a
-   discipline group; anything outside it lands in Other, which is exactly the sheets this step is
-   for. Page each one with `set_grid(projectId, discipline: "<code>")`.
+1. **Find the codes.** `set_grid(projectId, limit: 0)` and read `offListLetters`: the codes the
+   set's sheets carry that the standard list has no word for and that nobody has named yet. The
+   list comes from the server; carry no copy of the standard list here.
+2. **Read the set's word for each code.** Read the drawing index (`get_page_text` or `render_page`
+   on the index sheet) and that series' sheet titles off `set_grid(projectId, discipline:
+   "<code>")`. The set's word is the index heading printed directly over that series' rows. When
+   the index has no heading over them, it is a discipline word every title in the series opens
+   with ("SECURITY ...", "LIGHTING PLAN ..."). Otherwise leave the code unnamed. When the index
+   heading and the titles disagree, take the index heading; which heading our own sheet list uses
+   is ours to settle, not a Question for the design team.
+3. **Record each word.** One entry per code, pooled into the step 7 batch write: subject
+   `project`, predicate `disciplineName:<the code>`, value the word in sentence case (SECURITY is
+   recorded as Security), `sourceInstrument: "drawing-delivery:<deliveryId>"`, and evidence
+   `{"method": "agent-read", "fileId": "<fileId>", "pageInPdf": <the page that prints the word>,
+   "snippet": "<the words exactly as printed>"}` (a `sheet` in place of `fileId` also cites the
+   page). To change a name already recorded, name the entry it replaces with `supersedesId`. The
+   record refuses a name for a code on the standard list and a name with no page. A word that
+   matches a standard word ("ARCHITECTURAL" over `EX` sheets) is recorded all the same; the heading
+   then joins the standard one.
+4. **Never invent a name.** No write for a code the set does not name, and never a name worked
+   out from the letters. An unnamed code reads its letters, and the estimator can name it.
+5. **Sheets with no letters.** For each sheet `set_grid` files under `Unknown` (its number starts
+   with no letter, or carries none), read the page, never the PDF file name or folder:
+   `render_page` the title-block corner and/or `get_page_text` the page (`fileId` + `pageInPdf` off
+   the row). Evidence that settles a discipline, strongest first: a discipline caption printed in
+   the title block itself (e.g. "CIVIL"); the sheet's own title and content (a turning plan or an
+   overall site plan is civil); the drawing index listing the sheet under a discipline heading,
+   cited to the index page. Write a standard code (`C`, `L`, and so on): `search(projectId,
+   subject: "sheet:<n>", predicate: "discipline")` for the live entry's id, then a `discipline`
+   entry with `supersedesId` set to that id, `sourceInstrument: "drawing-delivery:<deliveryId>"`
+   and `versionScope: "<issue label>"` (both off the row: this tag is mandatory, a write without it
+   is ignored by the grid and can blank the field), and evidence `{"source":
+   "<fileId>/page/<pageInPdf>", "method": "agent-vision-read", "snippet": "<the words you read>",
+   "locator": {"frame": "pdf-points", "bboxPts": [...]}}` when the read came off a text span you can
+   box, `locator: null` when it came off a rendered crop you judged by eye. When nothing on the
+   page or in the index settles it, leave `discipline` alone and name the sheet to the user with
+   what you read.
+
+**Gate:** every code in `offListLetters` ends the step named with a citation or reported as one the
+set does not name, and every sheet with no letters ends recorded with a citation or named to the
+user. State the counts.
 <!-- user-facing -->
-   State the count: this many sheets are sitting in Other because their number doesn't say which
-   discipline they belong to.
-<!-- /user-facing -->
-2. **Read each sheet from the page, never from the PDF file name or folder.** `render_page` the
-   title-block corner and/or `get_page_text` the page (`fileId` + `pageInPdf` off the row).
-   Evidence that settles a discipline, strongest first: a discipline caption printed in the title
-   block itself (e.g. "CIVIL"); the sheet's own title and content (a turning plan, an overall site
-   plan, a site improvements plan are civil); the cover sheet's index, listing the sheet under a
-   discipline heading, read via `render_page` or `get_page_text` on the index page and cited to
-   it. The value you write is always a standard discipline code (`C` for civil, `L` for landscape,
-   and so on), never a full discipline name and never the raw prefix you started from: that's what
-   puts the sheet in with its real peers in the browser.
-3. **Write it.** `search(projectId, subject: "sheet:<n>", predicate: "discipline")` for the live
-   entry's id, then `record` with predicate `discipline`, `supersedesId` set to that id,
-   `sourceInstrument: "drawing-delivery:<deliveryId>"` and `versionScope: "<issue label>"` (both
-   off the row: this tag is mandatory, a write without it is ignored by the grid and can blank the
-   field), and evidence naming what you read: `{"source": "<fileId>/page/<pageInPdf>", "method":
-   "agent-vision-read", "snippet": "<the words you read>", "locator": {"frame": "pdf-points",
-   "bboxPts": [...]}}` when the read came off a text span you can box, `locator: null` when it came
-   off a rendered crop you judged by eye. Pool this into the step 7 batch write alongside 6, 6b,
-   and 6c's entries; it is the same write, not a second one.
-4. **Not settled: no write, no guess.** When neither the title block, the sheet's own content, nor
-   the index says which discipline the sheet belongs to, leave `discipline` alone and name the
-   sheet to the user, with what you read and the disciplines it could be, e.g. "Sheet OS-1 has no
-   discipline caption on the page or in the index; it reads like site work, so civil or
-   landscape". Which discipline our own sheet list files a sheet under is ours to settle, not a
-   Question for the design team.
-
-**Gate:** every leftover sheet this step finds ends the step either recorded with a citation or
-named to the user, never left sitting in Other with nothing said about it. State the counts:
-found, sorted, named to the user.
-<!-- user-facing -->
-"N sheets were sitting in Other because their numbers didn't say which discipline they belong to;
-I read the pages and sorted K of them, and J need you."
+"The set uses N discipline codes outside the standard list; I found the set's own name for K of
+them, and J show as their letters until you name them. M sheets had no letters in their number; I
+read the pages and filed K of them, and J need you."
 <!-- /user-facing -->
 
 ## 7. Record the pages and types, then verify
@@ -630,7 +633,7 @@ file+delivery is safe by construction: the concurrency guard returns the existin
 write itself is idempotent (`alreadyWritten: true` on a poll means a prior run already wrote this
 delivery's sheet entries, no duplicate was written). You still make exactly one write of your own
 (pooling the step 6 bundle, the sheetType entries from step 6b, any mis-bind
-corrections from step 6c, and any discipline corrections from step 6d, the edges carrying their
+corrections from step 6c, and step 6d's discipline names and corrections, the edges carrying their
 `supersedesId`), plus one verification pass:
 
 1. **Record the page + type bundle.** Before recording, check whether you've already recorded
@@ -988,10 +991,10 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
 - Every entry's evidence is grounded **cloud-side**: a succeeded `recognize_sheets` job (recorded by
   the server) or a `render_page`/`get_page_text` read you just made. A local read (step 2) may inform
   the packaging report; it never grounds an entry.
-- Discipline is derived from the sheet's own number prefix, never a filename or folder. When that
-  prefix isn't one of the standard designators, or reads as nothing at all, 6d reads the page
-  itself to place it, still never a filename or folder guess, and never left sitting as the raw
-  prefix or `Unknown`.
+- Discipline is derived from the sheet's own number prefix, never a filename or folder. A prefix
+  off the standard list keeps its letters and 6d records the set's own name for it, cited to the
+  page that prints it, or leaves it unnamed; a number with no letters is read from its page in 6d,
+  still never a filename or folder guess.
 - Every page the pass could not name is judged or flagged, never silently dropped; image-only pages
   are named, not guessed.
 - `sheetType` typing splits across two authors: the server's deterministic rule pass types with a
