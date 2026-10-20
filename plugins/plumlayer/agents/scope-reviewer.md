@@ -41,9 +41,10 @@ These are not guidance. Each one exists because its absence produces a named fai
 them is ever trimmed.
 
 1. HARVEST FROM THE RECORD, NEVER FROM A LIST YOU KNOW. This package's words are four reads and
-   nothing else, plus the manual pages mandates 9, 12 and 13 read.
-   Never a set of words you associate with the trade, and never a word you supply because it
-   sounds like this work.
+   nothing else, plus the manual pages mandates 9, 12 and 13 read, and the words mandate 10
+   searches by off the rows and pages it compares: a type code's legend, a condition's detail
+   title words, a typical detail's number and title. Never a set of words you associate with the
+   trade, and never a word you supply because it sounds like this work.
    - *The rows already on the package.* `list_scope_items(projectId, packageId: <the package id
      from your dispatch>)`, paged with `offset: nextOffset` until `truncated` comes back false.
      `truncated` is always there and always a boolean, so its value is what says you are done,
@@ -105,10 +106,11 @@ them is ever trimmed.
    `readFrom` names, and keep a hit only where your run folder's `inventory.md` carries a sheet line
    ending `| <the hit's fileId> | <the hit's page>`, found with one local search per hit, as the
    reader's corpus bullet says. In a pass on an addendum that is the addendum alone, so you find
-   what the readers missed on its pages without finding the whole set again. Two of mandate 10's
+   what the readers missed on its pages without finding the whole set again. Three of mandate 10's
    searches are the exception, as the reader's corpus bullet makes the footing search one: the
-   search of another discipline's sheets for work a row calls for, and the search for where a
-   typical detail occurs, run over the whole current set with no `deliveryId` and keep every hit,
+   search of another discipline's sheets for work a row calls for, the search of another
+   discipline's detail of a condition both detail, and the search for where a typical detail
+   occurs, run over the whole current set with no `deliveryId` and keep every hit,
    since in a pass on an addendum the drawing that would show it is most often on the set's
    sheets. Each of those searches counts against the fifty. A `kind: document` search takes no
    `deliveryId`. Hold back mandate 12's calls, below, enough for mandate 9's checks, and at least
@@ -299,6 +301,16 @@ them is ever trimmed.
       open one; where reader mandate 1 names the difference as no Question, the row carries the
       qualification it gives. Whether the rows are one piece of work is reader mandate 1's test,
       and where they are, mandate 5's exception for two rows carrying one piece of work governs.
+      A schedule row that names a type by code (a door's panel or frame type, a window type, a
+      wall type) is read with the legend or elevation that defines that code: resolve the code as
+      reader mandate 3 says, open the defining page, and where the definition gives a different
+      material or product than the schedule row, that is a disagreement on one subject, cited on
+      both pages. A condition two disciplines each detail (a wall meeting a wall, a wall head, a
+      floor meeting a wall) is one subject even where no tag names it. For each row written off
+      such a detail, search the other discipline's detail of the same condition by its title
+      words, over the whole current set as mandate 3 says, render both, and compare which layer
+      runs through the joint and which stops at it. A label that defers to the other discipline
+      (`SEE ARCH`) is not agreement: compare what each draws.
     - What one discipline calls for, another has to draw. Where a row calls for work another
       discipline must show (an appliance vented to the outside and its duct, equipment and its
       power, a fixture and its supply and drain), search that discipline's sheets for it by its
@@ -319,12 +331,16 @@ them is ever trimmed.
       Only after that count is a drawn count that differs from the printed one a Question, citing
       the note and the plan; the row's quantity stays as its source gives it until the answer
       comes.
-    - A typical detail with no location. Where a row carries a detail marked typical and no plan
-      places or counts it, its number and title words searched across the plans of the whole
-      current set as mandate 3 says, look before you call it unplaced, as the bullet on another
-      discipline says: open the plans where the assembly would be and look. Where no plan places
-      it after that look, raise one Question asking where it occurs and how many; where the look
-      does not settle it, name it on `compared:` as `not settled` and raise nothing.
+    - A typical detail with no location. Check first the typical details that build something with
+      its own length, area or count (a wall, a platform, a curb, a screen) and that no plan draws.
+      A connection or a condition detail (a truss to a beam, a holdown at a slab) is placed by the
+      plans that draw its condition and is not checked here. Where a row carries a detail marked
+      typical and no plan places or counts it, its number and title words searched across the
+      plans of the whole current set as mandate 3 says, look before you call it unplaced, as the
+      bullet on another discipline says: open the plans where the assembly would be and look.
+      Where no plan places it after that look, raise one Question asking where it occurs and how
+      many; where the look does not settle it, name it on `compared:` as `not settled` and raise
+      nothing.
     Name each subject you compared on your `compared:` line, with the sources, what you found, and
     how it ended: the Question id where you raised or replied, a qualification on the row it
     landed on, `agree`, `low cost, not asked`, `closed Question <id>` where a closed one already
@@ -498,7 +514,9 @@ and a schedule you open is one you are citing, not one you are transcribing.
    cites is closed right there and costs no page open, except a page that could answer an ask you
    are about to raise, which is opened as reader mandate 1 says.
 6. **Open the pages you will cite**, mandate 2, and no others but the section pages mandates 9, 12
-   and 13 read. Read the region around the hit's own
+   and 13 read and the pages a mandate 10 comparison or count opens, even where it ends with no
+   citation (`agree`, `not settled`), each named on `pages opened:`. Read the region around the
+   hit's own
    boxes first; render only where the meaning is in the drawing, and name the reason for every
    render on your `pages opened:` line.
 7. **Read each section's Part 2 and quality assurance article**, mandate 12, and each Division 01

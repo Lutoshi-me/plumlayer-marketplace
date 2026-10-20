@@ -426,7 +426,17 @@ of them is ever trimmed.
    defines it. The kind name is one camel-case word with no colon (`equipmentTag`, `damperType`,
    `mountingHeight`); check `list_definition_kinds` first and reuse a kind that exists. An
    undeclared kind is invisible to the Definitions page and to the citation index, and the record
-   treats its entries as ordinary rows, not definitions.
+   treats its entries as ordinary rows, not definitions. In the same batch as a declaration, record
+   `definitionKind:<kind>` with predicate `belongsToTrade` too: the catalog trade whose package
+   prices that schedule or legend, the same judgment mandate 4 makes for a row, its value the
+   catalog id alone as a string, copied verbatim (`08 71 00`), since the door refuses an object and
+   any other spelling. Where you read the schedule or legend of a kind `list_definition_kinds`
+   lists with a null `belongsToTrade`, record it the same way, once, and never over a trade
+   already recorded; where that kind shows `declared: false`, as a kind listed only by its `*Type`
+   name does, declare it in the same batch as above, with its trade. That is how a package's
+   review finds the codes its trade uses. A kind
+   that spans trades, such as abbreviations or general symbols, or that belongs to none, gets no
+   `belongsToTrade` and stays unplaced.
    A definition is one entry per schedule column, whatever columns this schedule has. The
    predicate is the column's own header, lowercased with spaces removed: a header reading "Fire
    Rating" is `fireRating`, "Stud Size" is `studSize`, "Common Name" is `commonName`. The value is

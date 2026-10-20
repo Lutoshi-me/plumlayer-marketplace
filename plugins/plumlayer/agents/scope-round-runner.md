@@ -265,7 +265,8 @@ When your dispatch names `boundary` instead of a pass, you close a window and yo
    `note <window> boundary - kinds named not written <kind>` line and declare nothing for it. A
    nonzero count is the record's own proof the kind is in use: record `definitionKind:<kind>` for
    it, predicate `name`, the kind's plain label the way an estimator says it, cited to the legend
-   or schedule sheet and page its first entry cites. Append one
+   or schedule sheet and page its first entry cites, and no `belongsToTrade`, since you read no
+   page and cannot tell whose package prices it, so the kind stays unplaced. Append one
    `note <window> boundary - kinds declared <kind> <count>` line per kind declared this way.
 3. Append one `note` line per cross-pass overlap, write the boundary summary to
    `<run folder>/reports/boundary-<window>.md`, return it, and end.
@@ -318,9 +319,12 @@ with one unit and three differences.
   Everything else is pass mode's step 3 unchanged: the entry count under the prefix is `created`,
   the reviewer's own item count travels as `items`, every subject on its `updated subjects:` line
   is found back among the subjects citing one of those sheets, except one its `manual updates:`
-  line names, written off manual pages alone, which is found back with one
-  `search(subject: "<that subject>")` as a Question id is, each Question id is found back with
-  one `search(subject: "<question id>")`, and a created subject with no trade and no candidate is a
+  line names, written off manual pages alone, which is found back by subject as a page citation
+  is in pass mode: one `search(subject: "<that subject>", full: true)` per line, paged with
+  `offset` until it comes back whole, which must carry an entry that no other entry's
+  `supersedesId` names and whose evidence names that section (`specSection:<packed code>`) and
+  that page; one it does not carry is a mismatch. Each Question id is found back with one
+  `search(subject: "<question id>")`, and a created subject with no trade and no candidate is a
   mismatch. The call takes at most 20 sheets, so a review that opened more needs one call per 20
   against the same prefix. Every call answers the whole prefix, so `created` and the trades come
   off the first call alone and are never added across calls; each later call, with the next 20
