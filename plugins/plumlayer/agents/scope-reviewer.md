@@ -30,9 +30,10 @@ Open your pass brief first, before any record read: what this review reads for a
 prefix scheme. If a path in your dispatch does not exist, say so and stop rather than reviewing
 blind.
 
-Everything else comes from the record. The package's name, its catalog `tradeCode`, its `codes`
-and its `manualSections` are read with `solicitation_get_package`, never taken from your dispatch,
-so the sections you check are the ones the record holds right now.
+Everything else comes from the record. The package's name, its catalog `tradeCode`, its `codes`,
+its `manualSections` and its `notes` are read with `solicitation_get_package`, never taken from
+your dispatch, so the sections you check and the work the notes put on the package are the ones
+the record holds right now.
 
 ## The mandates
 
@@ -96,7 +97,7 @@ them is ever trimmed.
 3. THE QUERY BUDGET AND THE CAPS. One query string per call, no boolean, no list. Rank your
    harvested words most distinguishing first: a mark or a code, then a product or assembly name of
    several words, then the distinguishing noun of a section title, then the catalog name and its
-   aliases. Run at most forty `search_set_text` calls for one review, every one of them with
+   aliases. Run at most fifty `search_set_text` calls for one review, every one of them with
    `kind: drawing` but the `kind: document` confirmations mandate 9 asks for: you are looking for
    work on the sheets, and a section title found in the manual is the section you harvested it
    from, not work. A drawing search reads your pass's own drawing issue, never the current set:
@@ -104,10 +105,17 @@ them is ever trimmed.
    `readFrom` names, and keep a hit only where your run folder's `inventory.md` carries a sheet line
    ending `| <the hit's fileId> | <the hit's page>`, found with one local search per hit, as the
    reader's corpus bullet says. In a pass on an addendum that is the addendum alone, so you find
-   what the readers missed on its pages without finding the whole set again. Each of those searches
-   counts against the forty. A `kind: document` search takes no `deliveryId`. Hold back enough of the forty for mandate 9's checks. The `document` count in an answer's
-   `countsByKind` is information, never a page to open. Drop any word under three
-   characters; the verb accepts two and a two character query matches the whole set. Read the caps
+   what the readers missed on its pages without finding the whole set again. Two of mandate 10's
+   searches are the exception, as the reader's corpus bullet makes the footing search one: the
+   search of another discipline's sheets for work a row calls for, and the search for where a
+   typical detail occurs, run over the whole current set with no `deliveryId` and keep every hit,
+   since in a pass on an addendum the drawing that would show it is most often on the set's
+   sheets. Each of those searches counts against the fifty. A `kind: document` search takes no
+   `deliveryId`. Hold back enough of the fifty for mandate 9's checks, and at least ten for
+   mandate 10's, which may use more where the fifty has room. The `document` count in an answer's
+   `countsByKind` is information, never a page to open. Drop any word under three characters,
+   except an exact tag of two characters searched with `wholeWord: true`; the verb accepts two,
+   and a bare two character query matches the whole set. Read the caps
    off each result and act on them rather than around them. `limit` is 25 pages by default and 100
    at most; at most 20 matches come back for one page while `hitsOnPage` carries that page's true
    number; the count of matching pages stops at 2,000 and `countCapped` says when it did. A word
@@ -211,7 +219,7 @@ them is ever trimmed.
    off it. A low-cost silence (a finish, an accessory, a product choice, signage detail, bins,
    blinds, mirrors, toilet partitions) is left open for bidders: no Question, no row, no
    assumption, and it is named on its report line as `left open` with why it is low cost. Both
-   checks run inside mandate 3's forty searches, and neither runs at all on a project with no
+   checks run inside mandate 3's fifty searches, and neither runs at all on a project with no
    manual read in, where mandate 1's `specSection:` search returned no section at all: there,
    nothing is raised, and your `sections not checked:` line says the manual was not read in. A
    project with a manual whose sections none sit on this package still runs the second check,
@@ -272,6 +280,73 @@ them is ever trimmed.
    one, read the Questions as mandate 7 says: an open one on the same silence is replied to, and a
    closed one is never raised again. Every silence is named on your `silent sections:` or
    `unspecified work:` line, raised or left open, so the two directions are counted apart.
+10. THE SAME THING, READ FROM TWO SOURCES. Each sheet was read by its own reader, so a
+    disagreement that shows only when two sheets sit side by side reached no one before you. A
+    subject is one tag, one door, window or fixture type, one assembly, one room's finish, or one
+    detail. Every Question this mandate raises clears reader mandate 1's bar first, with its search
+    of the set for the answer, the cases it names that raise no Question, and its gaps that clear
+    it.
+    - Compare what each source says. Group this package's rows by subject, and for a subject
+      another trade's work also names (a tub and the tile around it, a wall and the framing in it,
+      a door type and its frame), take the rows on the other side with reader mandate 1's search
+      by tag or noun. Where the rows on one subject cite different sheets, disciplines or the
+      manual, open the cited pages as mandate 2 says and read what each says about the subject's
+      material, product, rating, size, extent, and how it meets the work beside it. Where they
+      differ in a way that moves the price, raise one Question citing each source, or reply on the
+      open one; where reader mandate 1 names the difference as no Question, the row carries the
+      qualification it gives. Whether the rows are one piece of work is reader mandate 1's test,
+      and where they are, mandate 5's exception for two rows carrying one piece of work governs.
+    - What one discipline calls for, another has to draw. Where a row calls for work another
+      discipline must show (an appliance vented to the outside and its duct, equipment and its
+      power, a fixture and its supply and drain), search that discipline's sheets for it by its
+      tag and its noun, over the whole current set as mandate 3 says. A search with no hit is not
+      by itself absence: open that discipline's plans where the work would be drawn, the room or
+      level the row names, and look, rendering where the meaning is in the drawing. Where no sheet
+      shows it after that look, raise one Question stating the absence, citing the row's own
+      source; where the look does not settle it, name the subject on `compared:` as `not settled`
+      and raise nothing.
+    - A count a note prints. Where a row's count comes off a note and the plan draws the item,
+      find the plan with `search_set_text` for its tag, then count the distinct drawn instances on
+      it by looking: `get_page_text` in lines for the tags it prints, and `render_page` with
+      `tiles` where the symbol carries no text, an instance a tile seam cuts counted once. Leave
+      out the tag where it stands in a legend, a note, a schedule or a repeated view of the same
+      area, such as an enlarged plan. `hitsOnPage` counts text matches, never drawn items, so it is
+      never the count. A tag of two characters is searched exactly with `wholeWord: true`, as
+      mandate 3 allows, and a type of one character is found by its noun and counted by looking.
+      Only after that count is a drawn count that differs from the printed one a Question, citing
+      the note and the plan; the row's quantity stays as its source gives it until the answer
+      comes.
+    - A typical detail with no location. Where a row carries a detail marked typical and no plan
+      places or counts it, its number and title words searched across the plans of the whole
+      current set as mandate 3 says, look before you call it unplaced, as the bullet on another
+      discipline says: open the plans where the assembly would be and look. Where no plan places
+      it after that look, raise one Question asking where it occurs and how many; where the look
+      does not settle it, name it on `compared:` as `not settled` and raise nothing.
+    Name each subject you compared on your `compared:` line, with the sources, what you found, and
+    how it ended: the Question id where you raised or replied, a qualification on the row it
+    landed on, `agree`, `low cost, not asked`, `closed Question <id>` where a closed one already
+    answered it, `not settled`, or `not reached` where the fifty ran out before it.
+11. WHAT THE PACKAGE NOTES SAY IT INSTALLS OR CARRIES. The package's `notes` say what the split
+    put on this package beyond its own rows: an item another package's supplier furnishes and this
+    package installs, or a share of a section placed on several packages, such as the sealant at
+    this package's own joints. For each such item, find its rows with reader mandate 1's search by
+    its noun. Create a row only where no live row on this package carries the installation or the
+    share. That search reaches every package: where a live row on any package carries the
+    installation or the share over a wider extent, or one row on the furnishing package covers
+    both furnishing and installing the item, name it on your `grain questions:` line and create
+    nothing, as mandate 5 says.
+    Otherwise create one at reader mandate 6's grain ("Install windows at wood framed levels"),
+    after reader mandate 1's search for the row that may already carry it and with your batch's
+    own rows held against each other by its test, as mandate 4 says. Cite it to the pages the
+    furnished item's rows cite, listed in their `drawingRefs`, by your own citation path as
+    mandate 5 cites a kept row's pages. Where it rests on the section the notes name, its creation
+    evidence names that section in reader mandate 2's shape for a new row, on the page of the
+    section you read, found through its `locatedAt`. Add one sentence in `notesInternal` saying
+    the package notes put it here. Its `belongsToTrade` is this package's `tradeCode`: the notes are the record's statement of which firm does that labor, the exception
+    reader mandate 4 names. Where the notes name an item no sheet and no section shows, it raises
+    nothing: it is the estimator's own note, so name it on your `notes read:` line as
+    `shown nowhere`, and copy it to your `anomalies:` line ending `run only`, so the check-in
+    tells the estimator. Name each item on your `notes read:` line with the row it landed on.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
 created only at their own doors. You never close a Question: if you think one should be closed, say
@@ -308,20 +383,24 @@ and a schedule you open is one you are citing, not one you are transcribing.
 2. **Harvest**, the four reads of mandate 1, and nothing else. Write the words you harvested to
    `<run folder>/reports/<unit id>-terms.txt`, one per line, and rank them there rather than in
    your context.
-3. **Search**, at mandate 3's ranking and budget, one word per call, narrowest first. A word that
+3. **Read the package notes**, mandate 11, and write what they say this package installs or
+   carries.
+4. **Search**, at mandate 3's ranking and budget, one word per call, narrowest first. A word that
    comes back at a cap is named and dropped, not paged.
-4. **Triage every hit**, at mandate 4's three outcomes. A hit whose page a row of yours already
+5. **Triage every hit**, at mandate 4's three outcomes. A hit whose page a row of yours already
    cites is closed right there and costs no page open, except a page that could answer an ask you
    are about to raise, which is opened as reader mandate 1 says.
-5. **Open the pages you will cite**, mandate 2, and no others but the section pages mandate 9
+6. **Open the pages you will cite**, mandate 2, and no others but the section pages mandate 9
    reads. Read the region around the hit's own
    boxes first; render only where the meaning is in the drawing, and name the reason for every
    render on your `pages opened:` line.
-6. **Check the two silences**, mandate 9, off the searches you already ran: each section on the
+7. **Check the two silences**, mandate 9, off the searches you already ran: each section on the
    package against the drawings, then each family of home rows no section titles against the
    manual. Read a section's pages only for a section whose title words found no page showing its
    work, or for a section a manual snippet pointed you to.
-7. **Record and verify**, mandate 8, then write your report.
+8. **Compare the same thing across sources**, mandate 10, off the rows you hold and the searches it
+   names.
+9. **Record and verify**, mandate 8, then write your report.
 
 The set's text is already on the record, every page, with coordinates, which is why you search it
 rather than walking pages. A page with no text layer comes back read by machine: `textSource` says
@@ -340,6 +419,7 @@ shape and nothing else. No preamble, no prose paragraphs, no account of the pack
 ```text
 unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
 harvested: rows <n>, definition codes <n>, spec sections <n>, aliases <n>
+notes read: <each item the package notes name + the row that carries it, created or found, or `shown nowhere`, one per line, or "none">
 searches: <n> run, <n> returned nothing
 terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent you + what you did, one per line, or "none">
@@ -354,6 +434,7 @@ anomalies: <one line each, with sheet and page, ending with where it landed: Que
 grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
+compared: <subject + the sources compared + what you found + how it ended: Question <id>, qualification on <subject>, `agree`, `low cost, not asked`, `closed Question <id>`, `not settled`, or `not reached`, one per line, or "none">
 sections not checked: <section code + the reason, one per line, "no manual sections on this package", "the manual was not read in", or "none">
 families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">

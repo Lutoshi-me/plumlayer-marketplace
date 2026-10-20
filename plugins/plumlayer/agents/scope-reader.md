@@ -94,7 +94,9 @@ of them is ever trimmed.
    sits on, under, beside or serves: the underlayment beneath LVT-1 and the LVT-1 flooring are two
    pieces of work. A model number is the item's own model, never a part it shares with other items:
    a rough-in valve, a trim set, a faucet or a disposer repeats across fixtures, so a tub and a
-   shower on one valve model are two fixtures. The same place is the room, room type or area both
+   shower on one valve model are two fixtures. Furnishing an item and installing it are two pieces
+   of work only where a package's `notes` put them on two packages; otherwise they are one row.
+   The same place is the room, room type or area both
    rows name, and a tag holds within one place: two rows naming one tag in two places are two
    rows, and a row the set or a reader keeps per level (posts, holdowns, headers counted per level)
    is its own place. Before you send a batch, hold its own rows against each other by this same
@@ -222,7 +224,9 @@ of them is ever trimmed.
    `reading` (mandate 9, whose one exception covers a reading already written) where it bears on
    no row, as with a title that disagrees with the index.
    Only a matter of the tools or the citation itself, a box you sent without lines or a read that
-   came back in part, stays on that line alone, marked `run only`, and never as a Question.
+   came back in part, or a package note naming work no sheet or section shows (the estimator's own
+   note, as the reviewer's mandate 11 names it), stays on that line alone, marked `run only`, and
+   never as a Question.
 2. CITATION SHAPE: every drawing-grounded record's evidence names the sheet, carries
    `evidence.pageInPdf` (a positive 1-based integer) for the page you actually read, AND carries
    `evidence.fileId`, the drawing file your dispatch names for that page:
@@ -261,10 +265,13 @@ of them is ever trimmed.
    `anomalies:` line as `<sheet> p<page> no box: <the rows>, <why no line carries them>, run only`.
    The same holds for every box this file asks for, a Question's included.
    A manual-grounded record's evidence names its spec section the way a drawing-grounded one
-   names its sheet: `kind: "spec-section"` with the section number as the manual prints it, plus
-   the file and the page you read it on. The section is what the estimator reads on the citation,
-   and the page is where the app opens it. Never cite a manual page as a bare document page when
-   you know its section. Where the manual says the specifications are on the drawings, a row whose
+   names its sheet, with the section number, the file and the page you read it on. On a new row
+   the section rides in `source`, never in a field of its own, which the door refuses:
+   `{ source: "specSection:<packed number> — <the section's title>", fileId, locator: { pageInPdf } }`;
+   a citation of a row that already exists is `{ subject, kind: "spec-section", specSection,
+   fileId, pageInPdf }`, the section number as the manual prints it. The section is what the
+   estimator reads on the citation, and the page is where the app opens it. Never cite a manual
+   page as a bare document page when you know its section. Where the manual says the specifications are on the drawings, a row whose
    product, method or extent rests on a specification sheet of the drawings cites that sheet and
    page as well.
 3. STORE-RESOLUTION IS MANDATORY: resolve a mark, tag, or code by querying the record, never from
@@ -299,7 +306,10 @@ of them is ever trimmed.
    found with `directory_list_trades(query: <the item's own noun>)`: a fire extinguisher cabinet
    drawn on a partition plan goes to the catalog's fire protection specialties trade, never to the
    partitions trade the sheet is titled for. Never the trade a sheet's title names, never a trade
-   because its package happens to exist, never `01 11 13` because no package fits. Which sub bids
+   because its package happens to exist, never `01 11 13` because no package fits. The one
+   exception is work a package's `notes` say that package installs or carries, an item another
+   package's supplier furnishes or a share of a section placed on several packages: that row's
+   trade is the package's `tradeCode`, as the reviewer's mandate 11 writes it. Which sub bids
    the work is the package's business, settled when the run folds packages before the reviews. A
    trade is the catalog id copied verbatim, exactly as the catalog prints it, spaces and all
    (`09 21 16`). It is never a word for the trade, so a row written

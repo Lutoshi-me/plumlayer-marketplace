@@ -101,8 +101,9 @@ that relaxes any one of them reproduces a measured, named failure.
    index wrote is the index's own, recorded as a text match; a reader cites what the index did
    not already cite and never re-cites a page the item already carries.
    A manual-grounded record cites its spec section the way a drawing-grounded one cites its
-   sheet: `kind: "spec-section"` with the section number as the manual prints it, plus the file
-   and the page read. The section is what the estimator reads; the page is where the app opens
+   sheet, with the section number, the file and the page read: in `source` on a new row and as
+   `kind: "spec-section"` on a row that already exists, in the two shapes the reader's mandate 2
+   gives. The section is what the estimator reads; the page is where the app opens
    it. Never a bare document page for a manual whose section is known.
 2. **Create / update / question against the live list.** Every reader holds the current scope list
    for its trade or content families as match-or-create context: for each thing seen, create a new
@@ -228,7 +229,8 @@ A newly created scope item is a full row, not a name. Every new item writes:
   section, use the catalog trade for that section. Otherwise use the trade whose catalog name, not
   an alias, says what the item is, found with `directory_list_trades(query: <the item's own
   noun>)`. Never the trade a sheet's title names, never a trade because its package happens to
-  exist, never `01 11 13` because no package fits. Which sub bids the work is the package's
+  exist, except work a package's `notes` say it installs or carries, which takes the package's
+  `tradeCode`, never `01 11 13` because no package fits. Which sub bids the work is the package's
   business, settled when the run folds packages before the reviews (stage 6 step 5). It is the
   catalog id copied verbatim, exactly as the catalog prints it, spaces and all (`09 21 16`).
   Never a word for the trade, so `drywall` is refused, and never a
@@ -1335,9 +1337,10 @@ Review your package as your definition says, write your report to
 <run folder>/reports/<unit id>.md, then return it.
 ```
 
-The package's `codes` and `manualSections` are not in that dispatch: the reviewer reads them off
-the record with `solicitation_get_package`, so the manual sections it checks have one source and
-are the ones the record holds when the review runs.
+The package's `codes`, `manualSections` and `notes` are not in that dispatch: the reviewer reads
+them off the record with `solicitation_get_package`, so the manual sections it checks and the work
+the notes put on the package have one source and are the ones the record holds when the review
+runs.
 
 **The reader's report** comes back in this shape, counts and named anomalies only:
 
@@ -1401,6 +1404,7 @@ two extra fields come from:
 ```text
 unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
 harvested: rows <n>, definition codes <n>, spec sections <n>, aliases <n>
+notes read: <each item the package notes name + the row that carries it, created or found, or `shown nowhere`, one per line, or "none">
 searches: <n> run, <n> returned nothing
 terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent it + what it did, one per line, or "none">
@@ -1415,6 +1419,7 @@ anomalies: <one line each, with sheet and page, ending with where it landed: Que
 grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
+compared: <subject + the sources compared + what you found + how it ended: Question <id>, qualification on <subject>, `agree`, `low cost, not asked`, `closed Question <id>`, `not settled`, or `not reached`, one per line, or "none">
 sections not checked: <section code + the reason, one per line, "no manual sections on this package", "the manual was not read in", or "none">
 families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
