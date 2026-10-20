@@ -41,7 +41,7 @@ These are not guidance. Each one exists because its absence produces a named fai
 them is ever trimmed.
 
 1. HARVEST FROM THE RECORD, NEVER FROM A LIST YOU KNOW. This package's words are four reads and
-   nothing else, plus the manual pages mandate 9 reads to judge a section or a family.
+   nothing else, plus the manual pages mandates 9, 12 and 13 read.
    Never a set of words you associate with the trade, and never a word you supply because it
    sounds like this work.
    - *The rows already on the package.* `list_scope_items(projectId, packageId: <the package id
@@ -98,7 +98,7 @@ them is ever trimmed.
    harvested words most distinguishing first: a mark or a code, then a product or assembly name of
    several words, then the distinguishing noun of a section title, then the catalog name and its
    aliases. Run at most fifty `search_set_text` calls for one review, every one of them with
-   `kind: drawing` but the `kind: document` confirmations mandate 9 asks for: you are looking for
+   `kind: drawing` but the `kind: document` searches mandates 9 and 12 ask for: you are looking for
    work on the sheets, and a section title found in the manual is the section you harvested it
    from, not work. A drawing search reads your pass's own drawing issue, never the current set:
    where your run folder holds `run.json`, search with `deliveryId` set to each delivery its
@@ -111,8 +111,9 @@ them is ever trimmed.
    typical detail occurs, run over the whole current set with no `deliveryId` and keep every hit,
    since in a pass on an addendum the drawing that would show it is most often on the set's
    sheets. Each of those searches counts against the fifty. A `kind: document` search takes no
-   `deliveryId`. Hold back enough of the fifty for mandate 9's checks, and at least ten for
-   mandate 10's, which may use more where the fifty has room. The `document` count in an answer's
+   `deliveryId`. Hold back mandate 12's calls, below, enough for mandate 9's checks, and at least
+   ten for mandate 10's, which may use more where the fifty has room. The `document` count in an
+   answer's
    `countsByKind` is information, never a page to open. Drop any word under three characters,
    except an exact tag of two characters searched with `wholeWord: true`; the verb accepts two,
    and a bare two character query matches the whole set. Read the caps
@@ -122,7 +123,9 @@ them is ever trimmed.
    whose `count` is at that cap, or whose pages are more than a third of the set, is too general to
    walk: name it on your `terms too general:` line and move to a narrower one. Never page a general
    word to its end to be thorough. That is how a review spends its whole budget proving a word is
-   common.
+   common. Mandate 12's two searches for the manual's own headings are the one exception: they are
+   paged, at most eight calls between them, held back from the fifty, and named on no
+   `terms too general:` line.
 4. WHAT COUNTS AS WORK NO ROW CARRIES. A hit is new work only when both hold: the page it names is
    on no citation of any row you harvested for this package, and the words around it are not the
    work of a row that already exists. Three outcomes and no fourth.
@@ -182,8 +185,8 @@ them is ever trimmed.
 6. EVERY PAGE YOU OPEN IS NAMED WITH ITS REASON. One line per page on your `pages opened:` line:
    the sheet number, the hit's `fileId`, the page, the word whose hit sent you there, and what you
    did with it. A
-   manual page mandate 9 sent you to is named the same way, with `section <code>` in place of the
-   sheet number. A
+   manual page mandates 9, 12 or 13 sent you to is named the same way, with `section <code>` in
+   place of the sheet number. A
    review that opens twenty pages and names two leaves the other eighteen with no reason given.
 7. QUESTIONS, AT THE SAME BAR. Reader mandate 1 governs the bar and its three shapes, whole and
    unrestated here, the read before a new Question among them: every Question on the project,
@@ -224,24 +227,24 @@ them is ever trimmed.
    nothing is raised, and your `sections not checked:` line says the manual was not read in. A
    project with a manual whose sections none sit on this package still runs the second check,
    work the manual never names, off this package's rows.
-   - A SECTION THE DRAWINGS NEVER SHOW. A section on this package specifies something a bidder
-     would have to locate and count on the sheets to price, a product, an assembly, a piece of
-     equipment, and no sheet shows it. It is silent only when all three hold. Its distinguishing
-     title words, searched with `kind: drawing`, found no page showing that work; a page whose
-     words only point at the section, a "see specification" note, shows nothing. Its own product
-     words found none either: the `locatedAt` value a `search(subject: "specSection:<code>",
-     predicate: "locatedAt")` returns names the section's file and page range, read at most two of
-     those pages with `get_page_text` for the product part, and search the one or two names a sheet
-     would carry. And no row on this package names that work with a sheet cited. Then raise one
-     Question citing `{ type: "spec", section: "specSection:<packed code>" }`, which opens at the
-     start of the section, and a `sheet-region` box around the schedule or plan legend where the
-     item would sit when the set has one, with this package's trade. It states the absence as a
-     fact after those searches ("No sheet shows the dimensional letters Section 10 14 19
-     specifies"), never "we could not find it, please confirm it exists". A section that governs how work shown elsewhere is done raises nothing: common work
-     results, hangers and supports, identification, testing and balancing, closeout, and every
-     Division 00 or 01 section. A section is judged only off the searches you ran for it. One the
-     budget did not reach, or whose two pages gave no product words, is named with its reason on
-     your `sections not checked:` line and raises nothing.
+   - A PRODUCT THE DRAWINGS NEVER SHOW. A product or system a section on this package specifies in
+     its Part 2, something a bidder would have to locate and count on the sheets to price, a
+     product, an assembly, a piece of equipment, is silent when all three hold, even where the
+     sheets show the section's other work. Its one or two names a sheet would carry, taken off the
+     Part 2 pages mandate 12 reads and searched with `kind: drawing`, found no page showing it; a
+     page whose words only point at the section, a "see specification" note, shows nothing. Where
+     the section's title names it, the title's distinguishing words found none either. And no row
+     on this package names it with a sheet cited. Then raise one Question citing
+     `{ type: "spec", section: "specSection:<packed code>" }`, which opens at the start of the
+     section, and a `sheet-region` box around the schedule or plan legend where the item would sit
+     when the set has one, with this package's trade; every silent product of one section goes into
+     that one Question, as mandate 7 says. It states the absence as a fact after those searches
+     ("No sheet shows the dimensional letters Section 10 14 19 specifies"), never "we could not
+     find it, please confirm it exists". A section that governs how work shown elsewhere is done
+     raises nothing: common work results, hangers and supports, identification, testing and
+     balancing, closeout, and every Division 00 or 01 section. A product is judged only off the
+     searches you ran for it. A section the budget did not reach, or whose Part 2 gave no product
+     words, is named with its reason on your `sections not checked:` line and raises nothing.
    - WORK THE MANUAL NEVER NAMES. A family of this package's home rows, the rows one section would
      cover, carries work no section on this package titles, and a bidder would need a
      specification to price it: a product, a material, a piece of equipment, never incidental
@@ -347,6 +350,110 @@ them is ever trimmed.
     nothing: it is the estimator's own note, so name it on your `notes read:` line as
     `shown nowhere`, and copy it to your `anomalies:` line ending `run only`, so the check-in
     tells the estimator. Name each item on your `notes read:` line with the row it landed on.
+12. EACH SECTION'S PRODUCTS, AND WHO MAY BID IT. A section's Part 2 says what is bought, and the
+    article that limits who may bid sits in its Part 1 quality assurance. Read both for every
+    section on this package outside Division 01, whose sections mandate 13 reads whole.
+    - Where each section sits. Read every entry on the section with
+      `search(projectId, subject: "specSection:<packed code>", full: true)`, paged. Its locations
+      are the `locatedAt` entries that no other entry's `supersedesId` names, less each one a
+      standing removal names: a `retractedBy` entry whose `value.retracts` is that location's id,
+      which deleting the manual's file writes, unless a `retractionReversal` entry lists that
+      `retractedBy` entry's id in its `value.reverses`. The latest location left gives the
+      section's `fileId`, `pageStart` and `pageEnd`. A section that had a location and lost every
+      one to a removal left the manual with its file: name it on `sections not checked:` as
+      `manual removed` and read nothing of it. A compact read's preview is cut at 200 characters
+      and can lose the page numbers, so only the full value says a section has no page range.
+    - Where its articles start. Find the pages once per review with the two searches mandate 3
+      allows: `search_set_text(projectId, query: "PART 2", kind: "document", limit: 100)` paged
+      with `offset`, and the same for `QUALITY ASSURANCE`, keeping the hits whose `fileId` and page
+      sit inside a section's range. A hit is the heading only where its line starts with `PART 2`,
+      or with the article's number and title (`1.6 QUALITY ASSURANCE`), as the match's snippet or
+      the page's lines show, never a mention inside a sentence. Each article falls back on its
+      own. A section with no Part 2 heading among the hits is read with `get_page_text` from its
+      `pageStart` forward to its Part 2 heading, inside the page cap below, and where that walk does
+      not find it, the section is `Part 2 not found`. A section with no quality assurance heading
+      among the hits is read the same way through its Part 1, one walk serving both where both are
+      missing, and a Part 1 with no such article has none to read.
+    - How far to read. Read Part 2 in lines with `get_page_text` from the page its heading is on,
+      and stop at the page that starts Part 3 or at the section's `pageEnd`, whichever comes
+      first, at most twelve pages. Read the quality assurance article through its end, onto the
+      next page where it continues, inside the section's range. Every distinct manual page you read
+      under this mandate and mandate 13, quality assurance pages and a walk's pages included, counts
+      toward one cap for the review, forty pages, or eighty on the general requirements package,
+      the one whose `tradeCode` is `01 11 13`; a page read twice counts once, and the cap is spent
+      on the sections in the order the package's `manualSections` lists them.
+    - A material, product or system Part 2 names that a bidder prices and no row on this package
+      carries, the pipe and fittings for each piping service, a product line, a system, is a row at
+      reader mandate 6's grain, cited to its section in reader mandate 2's shape for a new row, on
+      the Part 2 page that names it. Where it is something a bidder locates and counts on the
+      sheets and no sheet shows it, it is mandate 9's first silence instead, a Question and no row.
+      Where a row carries the work and not its material, the material goes in that row's
+      `description`, as reader mandate 5 says for a field already written. Where it does not fit
+      there, it goes as one sentence in the row's `notesExternal`, which bidders read, after any
+      text already there and kept whole, as reader mandate 5 keeps a note; where that has no room
+      either, it goes on your `anomalies:` line as
+      `section <code> p<page> no room: <the material> for <the row's name>, run only`. Work an
+      existing row carries never gets a second row for its material. Off a section several
+      packages share, the package `notes` and this package's trade limit what you record: only the
+      products or the part of the work this package carries, its installation or its own joints,
+      never another package's share.
+    - A requirement that is its own service, fee, test or deliverable, the documentation and
+      submittals of a green building rating, chain of custody certificates delivered, the
+      contractor's share of a test, is a row, placed on a trade as mandate 13 places one. A
+      requirement on who may supply or install the work, a certified steel fabricating plant and
+      erector, a certified wood supplier, a manufacturer's approval of the installer, is a
+      qualification. Where it governs every row the section covers, it is one row on this package
+      naming it, cited to its article; where it governs only some, it is one sentence in
+      `notesExternal` on those rows, as reader mandate 5 says. Where a row it governs sits on
+      another package, as when a section on this package governs work whose row is on another,
+      write it on that row, found by reader mandate 1's search. Testing or inspection the section
+      says the owner pays for, shop testing in its Part 2 among it, is no row, as mandate 13 says,
+      and what the section has the contractor do for that test is still a row.
+    - A section whose Part 2 runs past twelve pages is read for its first twelve and named on
+      `sections not checked:` as `Part 2 read in part`, with the pages left. A section the page cap
+      did not reach, or reached only in part, is named there as `not reached`, with the
+      pages left, and one the walk did not find as `Part 2 not found`. Each of these three is a
+      limit of reading, so name it on your `anomalies:` line too, as
+      `section <code> p<page> not read: <the reason and the pages left>, run only`, the page being
+      the first one left unread, which your runner copies to the ledger for the close-out. A
+      section whose `locatedAt` names no page range was listed in the table of contents only: name
+      it on `sections not checked:` with that reason, and on `anomalies:` as
+      `section <code> not read: no page range, run only`.
+    A row this mandate or mandate 13 creates is created as mandate 4 says, after reader mandate 1's
+    search and with your batch's own rows held against each other by its test. A Question either
+    one raises clears reader mandate 1's bar, as mandate 7 says.
+13. THE GENERAL REQUIREMENTS. Every Division 01 section on this package, whether it sits on the
+    general requirements package or on any other, is read whole, from the range mandate 12 reads
+    and inside its page cap, for what costs the contractor money: certification and its
+    documentation (a green building rating, a chain of custody), mockups, a test the section has
+    the contractor engage, the contractor's share of a test the owner's agent runs (preparing the
+    building or a mockup unit, power for test equipment, resealing and a retest after a failure),
+    the sealing a test result depends on, waste management, air quality during construction,
+    commissioning support, temporary facilities, allowances, unit prices and alternates. Each is a
+    row, cited to its section as mandate 12 cites one, on the page that names it, and placed on the
+    trade of whoever the section says carries it. A cost a trade carries goes on that trade, named
+    as reader mandate 4 says, as power for test equipment goes on the electrical trade: where a sub
+    pays, or the section names only the sub who performs it, the sub's trade, and where a clause
+    names one party to pay and another to perform, the payer's. A cost the estimator carries,
+    temporary facilities, layout, cleaning, waste management, documentation, goes on `01 11 13`,
+    the general requirements package's `tradeCode`, by the exception reader mandate 4 names for
+    work a package's `notes` say it carries, and never on the catalog trade its section resolves
+    to, so no package of one row is made and nothing lands on a package that carries that trade in
+    its `codes`. Where the owner pays, it is no row: work the section says the owner contracts for,
+    testing or inspection the owner pays for among it, goes on `sections not checked:` as the
+    owner's work. What the same section has the contractor do for that test is still a row. An
+    allowance carries its amount and what it covers in `description`; a unit price names its unit;
+    an alternate names its number in `notesExternal`, and whether it is an alternate stays the
+    estimator's call at the package. A schedule, checklist, rating level or section that a section
+    says it carries or attaches and the manual does not (an allowance, unit price or alternate
+    schedule left for the architect to define, a rating checklist, a section listed in the contents
+    and not bound) is one Question across those sections, citing each, under reader mandate 1's
+    bar. A form, a bid form, a bond form, an agreement form, carries no scope cost and is not read.
+    A submittal procedure is read for its cost alone, and most have none. A section the page cap
+    did not reach, or reached only in part, and one whose `locatedAt` names no page range or whose
+    manual was removed, is named as mandate 12 says.
+    Mandate 12's Part 2 reading and mandate 9's silences do not run on Division 01 sections, since
+    reading each whole covers its Part 2.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
 created only at their own doors. You never close a Question: if you think one should be closed, say
@@ -390,17 +497,19 @@ and a schedule you open is one you are citing, not one you are transcribing.
 5. **Triage every hit**, at mandate 4's three outcomes. A hit whose page a row of yours already
    cites is closed right there and costs no page open, except a page that could answer an ask you
    are about to raise, which is opened as reader mandate 1 says.
-6. **Open the pages you will cite**, mandate 2, and no others but the section pages mandate 9
-   reads. Read the region around the hit's own
+6. **Open the pages you will cite**, mandate 2, and no others but the section pages mandates 9, 12
+   and 13 read. Read the region around the hit's own
    boxes first; render only where the meaning is in the drawing, and name the reason for every
    render on your `pages opened:` line.
-7. **Check the two silences**, mandate 9, off the searches you already ran: each section on the
-   package against the drawings, then each family of home rows no section titles against the
-   manual. Read a section's pages only for a section whose title words found no page showing its
-   work, or for a section a manual snippet pointed you to.
-8. **Compare the same thing across sources**, mandate 10, off the rows you hold and the searches it
+7. **Read each section's Part 2 and quality assurance article**, mandate 12, and each Division 01
+   section whole, mandate 13.
+8. **Check the two silences**, mandate 9, off the searches you already ran: each section on the
+   package against the drawings, with the product words its Part 2 gave, then each family of home
+   rows no section titles against the manual. Read a section's pages beyond its Part 2 only for a
+   section a manual snippet pointed you to.
+9. **Compare the same thing across sources**, mandate 10, off the rows you hold and the searches it
    names.
-9. **Record and verify**, mandate 8, then write your report.
+10. **Record and verify**, mandate 8, then write your report.
 
 The set's text is already on the record, every page, with coordinates, which is why you search it
 rather than walking pages. A page with no text layer comes back read by machine: `textSource` says
@@ -425,6 +534,7 @@ terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent you + what you did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
 updated subjects: <the subject of every row you updated or newly cited, or "none">
+manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
 questions raised ids: <the id of every Question you raised, or "none">
 questions replied ids: <the id of every Question you replied to, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
@@ -435,7 +545,7 @@ grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 compared: <subject + the sources compared + what you found + how it ended: Question <id>, qualification on <subject>, `agree`, `low cost, not asked`, `closed Question <id>`, `not settled`, or `not reached`, one per line, or "none">
-sections not checked: <section code + the reason, one per line, "no manual sections on this package", "the manual was not read in", or "none">
+sections not checked: <section code + the reason, one per line, "Part 2 read in part" or "not reached" with the pages left, "Part 2 not found", "manual removed", "the owner's work", "no manual sections on this package", "the manual was not read in", or "none">
 families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
@@ -449,7 +559,10 @@ The `updated subjects:`, `questions raised ids:` and `questions replied ids:` li
 load-bearing, not bookkeeping. Your creates are findable by their `scopeItem:<unit id>-` prefix,
 but an update lands on a subject that already existed, a Question you raise on its own id, and a
 reply on the id of a Question somebody else raised, so nothing else in your report lets the runner
-find them back. Name every one.
+find them back. Name every one. The runner finds an update back among the rows citing the sheets
+on your `pages opened:` line, so a row you wrote onto off manual pages alone, a material in its
+`description` or a qualification in its `notesExternal`, is named on `manual updates:` too, with
+the section and page, and found back there instead.
 
 The `pages opened:` line is what your runner verifies you against, so it carries every page and not
 a sample. A page you opened and did nothing with is still named, with what you found there.

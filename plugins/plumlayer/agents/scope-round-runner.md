@@ -304,7 +304,7 @@ with one unit and three differences.
   those off the record, so the sections it checks have one source.
 - **Verify against the pages the review opened.** The reviewer names every page it opened on its
   `pages opened:` line, and those sheets are what you check. A line naming `section <code>` is a
-  manual page the review read to judge a section, not a sheet, and never goes into the call; a
+  manual page the review read, not a sheet, and never goes into the call; a
   review whose only pages were manual pages is one that opened no page, below. Each sheet goes as
   `{ "sheet": "<sheet number>", "fileId": "<fileId>" }` with the `fileId` the reviewer's line names
   for it, the file of the page it opened, and as the sheet number alone where the line names none:
@@ -317,7 +317,9 @@ with one unit and three differences.
 
   Everything else is pass mode's step 3 unchanged: the entry count under the prefix is `created`,
   the reviewer's own item count travels as `items`, every subject on its `updated subjects:` line
-  is found back among the subjects citing one of those sheets, each Question id is found back with
+  is found back among the subjects citing one of those sheets, except one its `manual updates:`
+  line names, written off manual pages alone, which is found back with one
+  `search(subject: "<that subject>")` as a Question id is, each Question id is found back with
   one `search(subject: "<question id>")`, and a created subject with no trade and no candidate is a
   mismatch. The call takes at most 20 sheets, so a review that opened more needs one call per 20
   against the same prefix. Every call answers the whole prefix, so `created` and the trades come

@@ -308,17 +308,19 @@ of them is ever trimmed.
    partitions trade the sheet is titled for. Never the trade a sheet's title names, never a trade
    because its package happens to exist, never `01 11 13` because no package fits. The one
    exception is work a package's `notes` say that package installs or carries, an item another
-   package's supplier furnishes or a share of a section placed on several packages: that row's
-   trade is the package's `tradeCode`, as the reviewer's mandate 11 writes it. Which sub bids
-   the work is the package's business, settled when the run folds packages before the reviews. A
-   trade is the catalog id copied verbatim, exactly as the catalog prints it, spaces and all
-   (`09 21 16`). It is never a word for the trade, so a row written
-   `drywall` is refused, and never a respelling of the code, so `09-21-16` and `092116` are refused
-   too, with a hint naming the exact id. Where you cannot tell which of two or more trades owns
-   it, write your best single trade as the home and one `packageRole:<trade>` record for each other
-   trade, the `<trade>` in that predicate the same catalog code, in the same batch, and keep
-   moving; never hold a row back for its trade and never raise a Question for it. That record's
-   value is an object, never a bare word. The door takes
+   package's supplier furnishes, a share of a section placed on several packages, or a general
+   cost the estimator carries, which the general requirements package's notes put on it: that
+   row's trade is the package's `tradeCode`, `01 11 13` on the general requirements package, as
+   the reviewer's mandates 11 and 13 write it. Which sub bids the work is the package's business,
+   settled when the run folds packages before the reviews. A trade is the catalog id copied
+   verbatim, exactly as the catalog prints it, spaces and all (`09 21 16`). It is never a word for
+   the trade, so a row written `drywall` is refused, and never a respelling of the code, so
+   `09-21-16` and `092116` are refused too, with a hint naming the exact id. Where you cannot
+   tell which of two or more trades owns it, write your best single trade as the home and one
+   `packageRole:<trade>` record for each other trade, the `<trade>` in that predicate the same
+   catalog code, in the same batch, and keep moving; never hold a row back for its trade and
+   never raise a Question for it. That record's value is an object, never a bare word. The door
+   takes
    `{ role: "exclusion" | "general-requirement" | "ve-alternate" | "candidate", counterparty?,
    note? }`, or `{ retracted: true, reason? }` to put the row back out of that package, and nothing
    else. So a candidate is written

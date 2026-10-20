@@ -1086,7 +1086,28 @@ On the go-ahead:
 
 1. **Write the window 3 plan.** The packages may have changed since window 1: a scope item written
    on a trade with no package makes that trade's package as it lands, so windows 1 and 2 can have
-   made packages the plan has not seen. In a pass on an addendum, first move the copy stage 2 made
+   made packages the plan has not seen. In a pass on a set, first place the general requirements:
+   the Division 01 sections are on no package, since orientation places only the sections outside
+   Divisions 00 and 01, and what they require still costs money. Read them with one paged
+   `search(projectId, subjectPrefix: "specSection:01", predicate: "hasTitle")`. Where the project
+   has no Division 01 section, skip this. Otherwise `solicitation_create_package` one package
+   named `General requirements` whose `tradeCode` is `01 11 13`, the catalog's General Contractor
+   trade, since the catalog carries no general requirements code and this is the estimator's own
+   work; whose `manualSections` are every Division 01 section on no package on a fresh
+   `solicitation_list_packages`, except forms, so no section sits on two packages, and none where
+   every one is placed already; and whose `codes` are those sections' own trades
+   (`directory_list_trades(code: <the number spaced as the catalog spaces it>)`, then by its
+   title's noun), leaving out each trade stage 6 step 5 kept off as the owner's work and each
+   trade another package carries as its `tradeCode` or in its `codes`. Its `notes` say the
+   estimator carries the general costs the Division 01 sections require, so every review puts
+   them on this package's `tradeCode`. The package is made even where it holds no section, so an
+   estimator cost read on any package has it to land on. A project holds one live package per
+   trade, so where one with `tradeCode` `01 11 13` already exists, `solicitation_update_package`
+   it instead, sending its `manualSections`, `codes` and `notes` whole with these added, since the
+   door replaces each list it is sent. The `hasTitle` read still lists a section whose manual file
+   was deleted, and the door holds a list to the sections the record keeps, so it refuses such a
+   section by number: take each one it names off and send again. Its review reads its sections
+   for their cost. In a pass on an addendum, first move the copy stage 2 made
    to `<run folder>/plan/packages-start.json` with a local command, since stage 8 compares the two.
    Then send one fresh agent to copy a fresh
    `solicitation_list_packages` response over `<run folder>/plan/packages.json`, byte for byte,
@@ -1232,29 +1253,35 @@ Report to the user, in plain words:
   issue dropped, each with the earlier sheets that printed it, and say that any scope item still
   naming one is work the revision may have taken out, for you to check. Also the sheets left out of the read
   plan at the start, and the manual sections on no package, each with the reason it is on none,
-  or that the count of them is incomplete when it was cut short. On a pass on an addendum, also
-  name the packages you did not review, and say why: this pass wrote no row on their trade, so
-  the addendum's sheets changed nothing they price that the readers found.
+  or that the count of them is incomplete when it was cut short. Name each manual section a
+  review left unread or read only in part, with the reason and the pages left unread. On a pass
+  on an addendum, also name the packages you did not review, and say why: this pass wrote no row
+  on their trade, so the addendum's sheets changed nothing they price that the readers found.
 - **The package split**: the packages folded into another before the reviews, and the amendments
   made this run (created / split / collapsed / renamed), each with its rationale, the packages derived here from scratch only in the no-spec-book case,
-  and how many manual sections you placed on a package at the start of the run, if any.
+  and how many manual sections you placed on a package at the start of the run, if any, and the
+  general requirements package with the Division 01 sections it carries.
 - **How long it took**: wall-clock from the read plan's approval to this report.
 <!-- /user-facing -->
 
-The report is written off the ledger's `pass:` and `phase:` lines, and the `same work:` notes named
-below, read with a local filter, never
-off memory and never off the whole file. Everything the report needs is on those lines: the
+The report is written off the ledger's `pass:` and `phase:` lines, and the `same work:` and
+`not read:` notes named below, read with a local filter, and the one package read named below,
+never off memory and never off the whole file. Everything the report needs is on those lines: the
 wall-clock between the first and last of them, the counts, the deviations, and what is still open.
 Read them with one filter each and count them locally: the sheet reads are the `dispatch` lines,
 the distinct sheets are the sheet numbers on them, the rows created and the items are the `created`
 and `items` fields of the `verified` lines, and the candidates, the pages a review re-opened and
 the searches it ran are the `candidates`, `pages-opened` and `searches` fields of the `pass:`
 lines, the last one of a pass that carries two. The pairs of rows carrying the same work are the
-window 3 `note` lines of kind `anomaly` that carry `same work:`, each pair named once. What the index left open comes off the
+window 3 `note` lines of kind `anomaly` that carry `same work:`, each pair named once, and the
+manual sections a review left unread or read in part are the window 3 `anomaly` notes that carry
+`not read:`, each section named once. What the index left open comes off the
 `phase: index built` lines, which carry its counts, and the codes found nowhere and the codes a
 later issue dropped are the `codeNoLocation` and `codeOnlyOnReplacedPages` reads the index step
-took, the only leftover rows the run holds. When the report
-has been given, append `phase: closed out`.
+took, the only leftover rows the run holds. The general requirements package's Division 01
+sections come off one fresh `solicitation_get_package` of the package whose `tradeCode` is
+`01 11 13`, its id taken from `<run folder>/plan/packages.json` with a local filter. When the
+report has been given, append `phase: closed out`.
 
 ## The dispatches and the report shapes
 
@@ -1410,6 +1437,7 @@ terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent it + what it did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
 updated subjects: <the subject of every row updated or newly cited, or "none">
+manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
 questions raised ids: <the id of every Question raised, or "none">
 questions replied ids: <the id of every Question replied to, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
@@ -1420,7 +1448,7 @@ grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 compared: <subject + the sources compared + what you found + how it ended: Question <id>, qualification on <subject>, `agree`, `low cost, not asked`, `closed Question <id>`, `not settled`, or `not reached`, one per line, or "none">
-sections not checked: <section code + the reason, one per line, "no manual sections on this package", "the manual was not read in", or "none">
+sections not checked: <section code + the reason, one per line, "Part 2 read in part" or "not reached" with the pages left, "Part 2 not found", "manual removed", "the owner's work", "no manual sections on this package", "the manual was not read in", or "none">
 families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
