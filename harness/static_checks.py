@@ -6925,6 +6925,130 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# Check: the runner copies each worker's anomalies onto the ledger
+# --------------------------------------------------------------------------- #
+#
+# pass_summary.py builds the summary's `anomalies:` line from the ledger's `anomaly` notes alone,
+# and the close-out names the same work pairs off those notes. The runner once carried the note
+# kind and a worked example and no step telling it to write one, so every summary's anomalies line
+# could come back empty with every other check passing. The check holds the step itself, not only
+# its words: the append sentence in pass mode, which review mode inherits, placed before the
+# `verified` line so that line still means the unit is complete, and no sentence there that
+# negates an append of the notes; and in the ledger rule, the one exception to its ban on
+# re-telling a report, without which the ban forbids the notes, and the exemption from the
+# 200-character clause, without which a long line is cut.
+
+_ANOMALY_ACTION_PHRASE = (
+    "Append the unit's `anomaly` notes first: one `note <window> <pass> <unit> anomaly <the line>` "
+    "per line on the report's `anomalies:` line"
+)
+_ANOMALY_COPY_PHRASES = (
+    _ANOMALY_ACTION_PHRASE,
+    "each copied whole",
+    "review mode copies the reviewer's line the same way",
+)
+_ANOMALY_VERIFIED_PHRASE = "Then append the unit's `verified` line"
+_ANOMALY_NEGATION_RE = re.compile(
+    r"\b(?:never|not|don't|no longer)\s+(?:\w+\s+){0,2}append\b[^.]{0,120}\banomaly\b", re.IGNORECASE
+)
+_ANOMALY_LEDGER_PHRASES = (
+    "An `anomaly` note is the one exception, a line of the report copied whole",
+    "An `anomaly` note is exempt from that limit",
+)
+
+
+def _runner_section(text: str, heading: str) -> str | None:
+    """One `##` section of the runner, whitespace collapsed, or None where it is absent."""
+    parts = text.split(f"\n## {heading}\n", 1)
+    if len(parts) < 2:
+        return None
+    return " ".join(parts[1].split("\n## ", 1)[0].split())
+
+
+def _anomaly_copy_errors(pass_mode: str | None, ledger_rule: str | None) -> list[str]:
+    errors: list[str] = []
+    if pass_mode is None:
+        errors.append("scope-round-runner.md has no `## Pass mode` section")
+    else:
+        for phrase in _ANOMALY_COPY_PHRASES:
+            if phrase not in pass_mode:
+                errors.append(
+                    f"the runner's pass mode does not carry {phrase!r}, so no step copies a "
+                    f"report's `anomalies:` lines onto the ledger as `anomaly` notes"
+                )
+        action_at = pass_mode.find(_ANOMALY_ACTION_PHRASE)
+        verified_at = pass_mode.find(_ANOMALY_VERIFIED_PHRASE)
+        if action_at >= 0 and (verified_at < 0 or verified_at < action_at):
+            errors.append(
+                f"the runner's pass mode does not append the `anomaly` notes before "
+                f"{_ANOMALY_VERIFIED_PHRASE!r}, so a `verified` line can stand for a unit whose "
+                f"notes never landed"
+            )
+        negation = _ANOMALY_NEGATION_RE.search(pass_mode)
+        if negation:
+            errors.append(
+                f"the runner's pass mode carries {negation.group(0)!r}, which negates the append "
+                f"of the `anomaly` notes"
+            )
+    if ledger_rule is None:
+        errors.append("scope-round-runner.md has no `## The ledger lines` section")
+    else:
+        for phrase in _ANOMALY_LEDGER_PHRASES:
+            if phrase not in ledger_rule:
+                errors.append(
+                    f"the runner's ledger rule does not carry {phrase!r}, so its ban on re-telling "
+                    f"a report or its 200-character clause keeps an anomaly line off the ledger "
+                    f"whole"
+                )
+    return errors
+
+
+def check_anomaly_notes(plugin_path: Path) -> Result:
+    name = "anomaly-notes-copied"
+    runner = plugin_path / "agents" / "scope-round-runner.md"
+    if not runner.is_file():
+        return Result(name, False, detail=f"not found: {runner}")
+    text = runner.read_text(encoding="utf-8")
+    pass_mode = _runner_section(text, "Pass mode")
+    ledger_rule = _runner_section(text, "The ledger lines")
+    errors = _anomaly_copy_errors(pass_mode, ledger_rule)
+
+    # The helper is run over the shipped text with each guarded part taken out, the action negated
+    # and the order reversed, so every refusal is shown rather than assumed.
+    mutations: list[tuple[str, str, str]] = []
+    if pass_mode is not None and ledger_rule is not None and not errors:
+        for phrase in _ANOMALY_COPY_PHRASES:
+            mutations.append((f"pass mode with {phrase!r} taken out", pass_mode.replace(phrase, ""), ledger_rule))
+        mutations.append((
+            "pass mode with the append negated",
+            pass_mode.replace(_ANOMALY_ACTION_PHRASE, "Never a" + _ANOMALY_ACTION_PHRASE[1:]),
+            ledger_rule,
+        ))
+        mutations.append((
+            "pass mode with the `verified` line appended before the notes",
+            pass_mode.replace(_ANOMALY_VERIFIED_PHRASE, "").replace(
+                _ANOMALY_ACTION_PHRASE, _ANOMALY_VERIFIED_PHRASE + ". " + _ANOMALY_ACTION_PHRASE
+            ),
+            ledger_rule,
+        ))
+        for phrase in _ANOMALY_LEDGER_PHRASES:
+            mutations.append((f"the ledger rule with {phrase!r} taken out", pass_mode, ledger_rule.replace(phrase, "")))
+        for label, mutated_pass, mutated_ledger in mutations:
+            if not _anomaly_copy_errors(mutated_pass, mutated_ledger):
+                errors.append(f"the check passed {label}")
+
+    detail = (
+        f"the runner's pass mode appends each `anomalies:` line as an `anomaly` note before the "
+        f"`verified` line, review mode's included, with no sentence negating it, and its ledger "
+        f"rule carries the one exception and the exemption from the 200-character clause; "
+        f"{len(mutations)} mutations refused; bound: text only, not whether a runner writes the notes"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -6952,6 +7076,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_dispatch_foreground(plugin_path, marketplace_root),
         check_repeated_lines_text(plugin_path, marketplace_root),
         check_drawing_issue_passes(plugin_path, marketplace_root),
+        check_anomaly_notes(plugin_path),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

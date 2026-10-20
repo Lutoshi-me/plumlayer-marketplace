@@ -343,6 +343,17 @@ Each of these is a harness check.
     before calling it silent; and drawing-upload's re-read of the open Questions reads the uploaded
     delivery by its id and cites its file. This cannot judge whether a reader sends the file on
     every citation; that stays in review and the measured pass.
+25. The runner copies each worker's anomalies onto the ledger. The summary script builds the
+    summary's `anomalies:` line from the ledger's `anomaly` notes alone, and the close-out names
+    the pairs of rows carrying the same work off them, so `agents/scope-round-runner.md` carries,
+    in pass mode, the step that appends one `anomaly` note per line of a report's `anomalies:`
+    line, copied whole, with review mode copying the reviewer's the same way, before the unit's
+    `verified` line and with no sentence there negating the append; and in its ledger rule, the one
+    exception that lets those notes past its ban on re-telling a report and their exemption from
+    the 200-character clause. The check runs its own helper over the shipped text with each part
+    taken out, the append negated and the order reversed, so the refusals are shown rather than
+    assumed. This cannot judge whether a running runner writes the notes; that stays in
+    review and the measured pass.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

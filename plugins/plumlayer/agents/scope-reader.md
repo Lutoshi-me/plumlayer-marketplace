@@ -78,7 +78,45 @@ These are not guidance. Each one exists because its absence produced a measured 
 of them is ever trimmed.
 
 1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
-   resolved reference) for work already listed; QUESTION only what clears the bar. A Question is a
+   resolved reference) for work already listed; QUESTION only what clears the bar. One piece of
+   work is one live row however many sheets show it, so before you create, find the row that may
+   already carry it under another name. For each tag, model number or code the work carries, one
+   `search(projectId, subjectPrefix: "scopeItem:", text: <it>)` with the tag as printed, and where
+   it carries a space or a hyphen, one more with its number part alone, paged to its end, keeping
+   only the hits whose letters match, since one schedule prints `AB 120` where another prints `AB-120`; and for
+   the kind of thing it is, one filtered `list_scope_items(category: <each section
+   of the page's context read whose rows are that kind of thing>)` per page, not per row. `search`
+   returns raw entries, live and replaced alike, so read a hit's current row with
+   `list_scope_items(subjectPrefix: <its subject>)` before you rely on it. A live row naming the
+   same tag, model or code within one tag system, or the same product in the same place, is the
+   row: cite your sheet on it as an UPDATE. A leading zero makes no other tag: LVT-1 and LVT-01 are
+   one. The tag, model or code has to name the item the row carries, never something the work
+   sits on, under, beside or serves: the underlayment beneath LVT-1 and the LVT-1 flooring are two
+   pieces of work. A model number is the item's own model, never a part it shares with other items:
+   a rough-in valve, a trim set, a faucet or a disposer repeats across fixtures, so a tub and a
+   shower on one valve model are two fixtures. The same place is the room, room type or area both
+   rows name, and a tag holds within one place: two rows naming one tag in two places are two
+   rows, and a row the set or a reader keeps per level (posts, holdowns, headers counted per level)
+   is its own place. Before you send a batch, hold its own rows against each other by this same
+   test: a schedule row and a plan row for one item in one batch are one row. A row that names no
+   place, a door type or a typical detail, covers wherever its type is used, so a plan showing that
+   type in a named room is cited on the type row, never a new one. Two rows that both name places
+   are one piece of work only where they cover the same extent, every place one names the other
+   names too; where one covers more (the units, against the units and the corridors), they are
+   not. Two rows that each claim the whole of one surface or one fixture in one place are one piece
+   of work even under different codes, which is the disagreement below, while the layers or parts
+   of one assembly under their own codes stay separate rows. Two schedules that number their tags
+   apart (a fixture list on an architectural sheet and the plumbing schedule) are two tag systems,
+   so a tag both print is not by itself the same work, and the same fixture under two tags is found
+   by what it is and where it goes. Where your sheet and that row disagree about
+   the work, two products for one fixture in one room or two finishes for one floor, it is still
+   one row: cite your sheet on it, raise or reply on the Question that settles it, name that
+   Question in the row's `notesInternal`, and name both products in its `description`, each with
+   the sheet or section that calls for it, and where they do not fit its 400 characters, shorten
+   the description's other words, never dropping either product or its source; where the row's
+   `name` names one side's product, also
+   write the name over to name the work alone, with `supersedesId`. Never a second live row for
+   the other side, and never a value chosen between them. A Question is a
    draft RFI: one the estimator would pick up, read, and send on to the design team, because
    the answer could move the price materially or stop a bidder pricing the work, or because two
    documents disagree about it, except the three cases below, each of which names both documents
@@ -306,7 +344,10 @@ of them is ever trimmed.
    two documents, which is a Question. Where a row's `notesInternal` already holds text that asks
    something or names an open Question, every sentence you add to it, a correction, an anomaly
    mandate 1 lands there, or the sheet an answer was found on, goes after that text, kept whole,
-   never in its place; where your sheet answers what that text asks, cite what your sheet shows
+   never in its place. Where the two do not fit the field's 300 characters, shorten yours and never
+   the earlier text, and where even a short sentence will not fit, it goes as a reply on the
+   Question the earlier text names, or on your `anomalies:` line ending `run only` where it names
+   none. Where your sheet answers what that text asks, cite what your sheet shows
    on the row, and reply on the Question it names, or raise one where it clears the bar),
    `quantity` only where the sheet carries one, as `{value,
    unit}`. A correction of a value on the record is two things: the write onto that field naming
@@ -408,7 +449,8 @@ page, one `get_page_text` in lines for the same page, walked on `nextOffset` to 
 citations of rows that already exist, with the count check mandate 7 asks for, one resend of that
 batch where the door refuses a name, and one report. A page whose `pageRead` came back null costs a
 second context read, after `get_page_text` has had the page read. Anything past that shape is a
-named fallback for a list the answer said it cut, the corpus search of mandate 3, or the checks
+named fallback for a list the answer said it cut, the corpus search of mandate 3, the searches
+mandate 1 makes before a create for the row that may already carry the work, or the checks
 mandate 1 makes before a new Question.
 
 Five reads the page's context answer has already made, and you do not make again. A trade-filtered

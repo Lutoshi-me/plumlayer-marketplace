@@ -125,7 +125,9 @@ them is ever trimmed.
      is the object `{ role: "candidate", note: "<why this package might price it>" }`, the
      candidate rule reader mandate 4 gives. Never the bare word: the door refuses it, and
      `record_batch` is atomic, so it costs the whole batch. It is not a create.
-   - The hit is work no row carries. Create it, at the grain of your own mandate 5. The record
+   - The hit is work no row carries. Create it, at the grain of your own mandate 5, after reader
+     mandate 1's search for the row that may already carry it under another name, and with your
+     batch's own rows held against each other by its test, as a reader's are. The record
      refuses a create whose name this project already carries, on any trade, and names the row that
      holds it; turn such a refusal into the citation and the note on that named row and send again,
      the way reader mandate 1 does.
@@ -135,8 +137,34 @@ them is ever trimmed.
    rows you create. Where that grain and the rows
    already on the record disagree, name the grain and the rows on your `grain questions:` line,
    and stop there. You never regroup the rows that exist: never retire, merge, split, or re-home
-   one, and never rewrite a row to change what it covers. `retire_scope_item` is the door for a row
-   the user asked removed, and a split you judged is not that. Correcting a value that is wrong on
+   one, and never rewrite a row to change what it covers. Two live rows that carry one piece of
+   work are the one exception you act on, found among this package's rows or between one of them
+   and another package's row by reader mandate 1's search, and judged one piece of work by the
+   test reader mandate 1 states for an UPDATE. A similar name alone is never a pair, and neither
+   are two rows where one covers more than the other: that is a grouping you would change, named
+   on your `grain questions:` line as this mandate says above, never as `same work`. The row
+   created first, by the earliest `assertedAt` among its entries, keeps the work; a row whose
+   `notesInternal` already says it is left for the estimator to retire is never the one kept, and
+   where a review before yours already named the pair, add only the citations the kept row is
+   missing and nothing else. Cite on the kept row each page the other row's `drawingRefs` lists
+   (`list_scope_items(subjectPrefix: <its subject>, full: true)`), by your own citation path:
+   open the page on its `fileId` and `page` as mandate 2 says, name it on your `pages opened:`
+   line, and cite it with your own box around the line that carries the work, or with no box in
+   mandate 2's no-box shape where no line of the page's read carries it. Where the two disagree
+   about the work, raise or reply on the Question that settles it, name it in the kept row's
+   `notesInternal`, and name both products in the kept row's `description`, each with the sheet or
+   section that calls for it, as reader mandate 1 says. Then write one sentence, with a page the
+   row it lands on cites as the evidence and under reader mandate 5's rule for a note already
+   there, saying which row carries the work and that the estimator retires the other ("The row
+   named Lavatory L-2 carries this work; the estimator retires this one"), in this order: on the
+   other row's `notesInternal`; where it has no room, on the kept row's, naming the other row;
+   where neither has room, as reader mandate 5's fallback says. Name the pair on your `anomalies:`
+   line as `<sheet> p<page> same work: <kept row's name> and <other row's name>, <the tag, model
+   or code they share, or the product and place>, <where the sentence landed>`, the sheet and page
+   being one the other row cites, and the landing in the report line's own words: `note on
+   <subject>`, `reply <id>`, or `run only`. The other row stays standing until the estimator retires
+   it: `retire_scope_item` is the door for a row the user asked removed, and neither a pair nor a
+   split you judged is that. Correcting a value that is wrong on
    a row, a quantity or a size the sheet you opened shows otherwise, is a different act and is
    required: it goes onto that field as reader mandate 5 says, as when a silence in mandate 9
    exists only because a row is wrong. Where you

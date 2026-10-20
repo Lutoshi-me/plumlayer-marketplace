@@ -374,10 +374,12 @@ record files, never recorded as project entries:
 - `ledger.md`: the run ledger, appended as the run proceeds, one line per entry in the fixed shapes
   the `scope-round-runner` definition gives, plus the lead's own `pass:` and `phase:` lines.
   Nothing else goes in the ledger: no headings, no bullets, no paragraphs, no re-telling of a
-  report. It is appended, never rewritten and never reformatted, and never read whole by anyone:
+  report, except the `anomaly` notes, each a report's line copied whole, as the runner definition
+  says. It is appended, never rewritten and never reformatted, and never read whole by anyone:
   the lead reads its `phase:` lines with a local command (a filter on the line prefix), the
-  close-out report is written off its `pass:` and `phase:` lines the same way, and a runner reads
-  none of it. Audience: agent, and it feeds the close-out report, so whatever crosses into that
+  close-out report is written off its `pass:` and `phase:` lines the same way, and off the window 3
+  `anomaly` notes that carry `same work:` (stage 9), and a runner reads only its own filtered look
+  for a unit's `verified` line and `anomaly` notes, as the runner definition says. Audience: agent, and it feeds the close-out report, so whatever crosses into that
   report becomes user-facing at the crossing and is translated there.
 
   The lead's own two line shapes, which the runner never writes:
@@ -1121,8 +1123,10 @@ On the go-ahead:
 
 <!-- user-facing -->
 At each of these check-ins, name the packages you finished, say their pages are ready to look at,
-and name what you raised on them and what you would like them to look at. Then say which packages
-come next, in one sentence. A pause here loses nothing.
+and name what you raised on them and what you would like them to look at. Name each pair of rows
+the reviews found carrying the same work, the row that now carries every sheet and the one left
+to retire, and say they retire it on the site or tell you to. Then say which packages come next,
+in one sentence. A pause here loses nothing.
 <!-- /user-facing -->
 
 4. **Close the window** with a boundary runner, then run the index once more (stage 5, steps 1 to
@@ -1210,7 +1214,9 @@ Report to the user, in plain words:
   sheet it appears on, plans included.
 - **What you would like them to look at**: the items you weren't sure how finely to split, the
   document defects found (contradictions, missing schedule rows, duplicate sheets), and the
-  assumed items that don't fit this job, each counted by kind and the leading ones named.
+  assumed items that don't fit this job, each counted by kind and the leading ones named. Name
+  each pair of rows the reviews found carrying the same work, the row that now carries every sheet
+  and the one left to retire, and say they retire it on the site or tell you to.
   Document defects worth sending to the design team are the open Questions, by the trades they
   name, with the every-trade ones and the not-known-yet ones apart, among them the sections of the manual no sheet shows and the work on the sheets the manual never
   names, and the silences left open for bidders, by count.
@@ -1233,14 +1239,16 @@ Report to the user, in plain words:
 - **How long it took**: wall-clock from the read plan's approval to this report.
 <!-- /user-facing -->
 
-The report is written off the ledger's `pass:` and `phase:` lines, read with a local filter, never
+The report is written off the ledger's `pass:` and `phase:` lines, and the `same work:` notes named
+below, read with a local filter, never
 off memory and never off the whole file. Everything the report needs is on those lines: the
 wall-clock between the first and last of them, the counts, the deviations, and what is still open.
 Read them with one filter each and count them locally: the sheet reads are the `dispatch` lines,
 the distinct sheets are the sheet numbers on them, the rows created and the items are the `created`
 and `items` fields of the `verified` lines, and the candidates, the pages a review re-opened and
 the searches it ran are the `candidates`, `pages-opened` and `searches` fields of the `pass:`
-lines, the last one of a pass that carries two. What the index left open comes off the
+lines, the last one of a pass that carries two. The pairs of rows carrying the same work are the
+window 3 `note` lines of kind `anomaly` that carry `same work:`, each pair named once. What the index left open comes off the
 `phase: index built` lines, which carry its counts, and the codes found nowhere and the codes a
 later issue dropped are the `codeNoLocation` and `codeOnlyOnReplacedPages` reads the index step
 took, the only leftover rows the run holds. When the report

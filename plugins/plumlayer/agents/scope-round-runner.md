@@ -51,9 +51,9 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    `plumlayer:scope-reader`, and never any other. The parenthesized list on your `tools` line
    records that intent and does not enforce it, since a type list inside `Agent(...)` is ignored
    for an agent running as a subagent, so keeping to it is yours to do. Before each unit, look for
-   a `verified` line carrying your window and that unit id, whatever pass it names, with a local
-   filter on the ledger (the one read of it you ever make): a replan can put a unit in another pass,
-   and its unit id is what stays. A unit whose line carries `result ok` is finished, so dispatch
+   a `verified` line carrying your window and that unit id, whatever pass it names, and that unit's
+   `anomaly` notes, with a local filter on the ledger (the one read of it you ever make): a replan
+   can put a unit in another pass, and its unit id is what stays. A unit whose line carries `result ok` is finished, so dispatch
    nothing for it, append nothing, and go to the next unit. Its counts still reach your summary:
    the script sums the `verified` line of every unit your pass carries, matched the same way on
    window and unit id whatever pass it names, each unit once. A unit with a `dispatch` line and no
@@ -167,9 +167,13 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
      names that `fileId` and `pageInPdf`. One it does not carry is a mismatch. A subject on that
      line is not looked for among the sheets' subjects. Every other check here is the same.
 
-   Append the unit's `verified` line. The reader's own verification and yours are two separate
-   boundaries and neither replaces the other. Start the next unit only when this unit's counts
-   confirm. A mismatch stops the pass and gets investigated, never papered over.
+   Append the unit's `anomaly` notes first: one `note <window> <pass> <unit> anomaly <the line>`
+   per line on the report's `anomalies:` line, each copied whole, and nothing where it reads "none";
+   review mode copies the reviewer's line the same way. On a unit run again after a stop, append
+   only the lines step 2's look did not already find among that unit's `anomaly` notes. Then
+   append the unit's `verified` line, last, so a `verified` line still means its unit is complete.
+   The reader's own verification and yours are two separate boundaries and neither replaces the
+   other. Start the next unit only when this unit's counts confirm. A mismatch stops the pass and gets investigated, never papered over.
 
    Also append the kinds off the unit's `definitions kinds added:` line, one per line, to
    `<run folder>/kinds/<pass-id>.txt`, creating the folder the first time it is needed. Where that
@@ -211,11 +215,12 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
 
 Every line you append to the ledger is one of these three shapes, on one line, appended in one
 operation, never wrapped and never re-read. Nothing else goes in the ledger: no heading, no bullet,
-no paragraph, no sentence of narration, no re-telling of a reader's report. What a reader saw is on
-the record; what the lead needs is in your summary; the ledger carries what a resume and the
+no paragraph, no sentence of narration, no re-telling of a reader's report. An `anomaly` note is
+the one exception, a line of the report copied whole, so the summary and the close-out read it
+off the ledger. What a reader saw is on the record; what the lead needs is in your summary; the ledger carries what a resume and the
 close-out report need and not one word more. You append; you never rewrite or reformat a line that
 is already there, yours or anyone's, and you never read the file beyond the one filtered look for a
-unit's own `verified` line that pass mode step 2 makes.
+unit's own `verified` line and `anomaly` notes that pass mode step 2 makes.
 
 ```text
 dispatch <window> <pass> <unit> sheets <sheet numbers, comma separated> purpose <up to eight words>
@@ -226,7 +231,8 @@ note <window> <pass> <unit-or-dash> <kind> <one clause, at most 200 characters>
 `<kind>` on a `note` line is one of exactly these: `anomaly`, `unread`, `kinds`, `deviation`,
 `overlap`, `grain`, `door`, `packet`, `set`. One fact per line. A fact that will not fit in
 one clause of 200 characters is on the record already and is named, not narrated: name the sheet,
-the page, and the subject, and stop.
+the page, and the subject, and stop. An `anomaly` note is exempt from that limit: it is the
+report's line copied whole, whatever its length.
 
 Worked shapes, invented, never from a real project:
 
@@ -336,7 +342,7 @@ with one unit and three differences.
   suggestion toward one travels up in your summary; a person acts at the door.
 - Append a `phase:` line, decide whether the run continues, start the index, or amend packages.
 - Write anything in the ledger that is not one of the three fixed line shapes, or read the ledger
-  beyond the filtered look for a unit's own `verified` line. You append your own lines; you never
+  beyond the filtered look for a unit's own `verified` line and `anomaly` notes. You append your own lines; you never
   read back what other passes wrote.
 - Supervise more than one pass, or more than twelve units. A pass longer than that is a plan defect
   and you stop before running it, rather than absorbing it.
