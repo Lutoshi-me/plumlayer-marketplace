@@ -128,7 +128,14 @@ of them is ever trimmed.
    detail is empty; and a rock or groundwater elevation in a boring log or table that sits above an
    excavation, a bottom of footing or a slab the set prints, which you find with `search_set_text`
    for the footing and slab elevations whenever your sheet carries borings, over the whole current
-   set, as "The corpus for where" says. A definition you
+   set, as "The corpus for where" says. Rock or water above an excavation is also a row whether or
+   not it reaches a Question: one row for rock removal and one for dewatering where both apply,
+   each on the trade mandate 4 gives it, its `description` naming each boring, its elevation and
+   the footing, slab or invert it sits above, cited to the boring sheet, and each held to one row
+   by the same-work test above. The set answers that gap where a sheet or the manual says how the
+   removal is paid (unclassified excavation, a unit price, an allowance); then you cite that page
+   on the row and raise no Question. Which subcontractor carries it is mandate 4's call, never a
+   Question. A definition you
    record for such a code or table is your reading, and the gap in it is the Question. Past the
    bar there are three shapes and no fourth. A NEW Question,
    where nothing covers the ask. Check first, in this order. Search the set for the answer, by the

@@ -281,7 +281,9 @@ could move the price materially or stop a bidder pricing the work, or when two d
 about the work: a schedule row with no matching plan tag, a detail called where none is drawn, a
 spec section and a sheet naming different products for one assembly, a dimension the sheets
 contradict, a tag the set defines nowhere, a product a schedule leaves TBD, a rock elevation above
-the excavation. A follow-up reply adds sources and never argues which document governs. It does
+the excavation where neither the sheets nor the manual say how its removal is paid (unclassified
+excavation, a unit price, an allowance). Rock or water above an excavation is a row either way. A
+follow-up reply adds sources and never argues which document governs. It does
 not clear the bar:
 
 - when the answer is elsewhere in the set or the manual, on a sheet the run has not read among
