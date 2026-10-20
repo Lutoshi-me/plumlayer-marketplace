@@ -991,6 +991,13 @@ On the go-ahead:
    orientation reads it. A section with none, read from the table of contents alone, moves by its
    title, and its package's `notes` say the manual's text for it was not read in.
 
+   Where the project's `structuralSystem` entry states wood-framed floors over a concrete or steel
+   podium, read the default carries in `learn-project` step 8,
+   `<plugin root>/skills/learn-project/SKILL.md`. Each default applies to every package
+   orientation did not draw, a package the record made as a row landed included: that package
+   goes where its line puts it, and its `notes` name that default. A default never moves work the
+   estimator has placed, by his own word, back to where the default puts it.
+
    Walk-off mats, an acoustic underlayment laid under the finish floor, and floor prep (leveling
    and patching under the finish) go with the flooring sub, whichever package they sit on; a poured
    gypsum topping and the sound mat laid under it go with the sub who pours it; finish hardware and
@@ -1048,7 +1055,8 @@ landed. Name each package you folded into another, with the reason in one senten
 package you split into the ones its subs bid, each package a supplier furnishes with the package
 that installs its items, each sealant or firestopping package you kept with the packages whose
 work its rows seal or pass through, and that the estimator can keep it or have its rows moved to
-those trades, each trade you moved from one package to another,
+those trades, each trade you moved from one package to another, each default you used with the
+package that follows it, and that the estimator can change any of them in chat,
 and each package you deleted because the owner hires that work, with the manual section or the
 sheet and note that says so. Name as the owner's work any of its items a package you kept still covers. When sheets were deferred, say which sheets were read and what landed from them by trade,
 that the rest of the set, <m> sheets, is still waiting, and that the next go-ahead reads it. Never
@@ -1166,10 +1174,11 @@ Show what you did in plain words, mirroring orientation's wording: name the amen
    project has no spec sections (precondition 5), orientation could draft no split and readers
    named trades off the catalog alone. Every trade an item landed on already has a package under
    its catalog name, made as the item was written, so this stage shapes that split from the
-   finished scope list instead of amending a baseline: same bundling logic as orientation, same
-   catalog resolution, `solicitation_update_package` to fold, bundle and rename those packages with
-   the same `codes`/`notes` usage, and `solicitation_create_package` only for a package whose trade
-   no item carries. Say so plainly in the
+   finished scope list instead of amending a baseline: same bundling logic as orientation, its
+   default carries under the same condition included, same catalog resolution,
+   `solicitation_update_package` to fold, bundle and rename those packages with the same
+   `codes`/`notes` usage, and `solicitation_create_package` only for a package whose trade no item
+   carries. Say so plainly in the
    report: the split was derived here, from the scope list, because there was no spec book to
    anchor an earlier baseline.
 

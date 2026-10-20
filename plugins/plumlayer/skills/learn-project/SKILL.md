@@ -292,6 +292,31 @@ amendments, stays in `scope-run`.
    other. Work the owner contracts for directly gets no package: where the manual says the owner
    hires the agency (special inspections, testing), in Division 01 or in a technical section's
    quality control article, or the owner furnishes and installs the item, draft no package for it.
+
+   On a wood-over-podium job, start the split from what the common subs normally carry on one.
+   That is a job where the set states wood-framed floors over a concrete or steel podium, on the
+   cover or code sheet's construction type (Type III or V over Type I) or on the structural
+   sheets, as your `structuralSystem` entry from step 6 records it. On any other job, or where the
+   set does not state both, use none of these lines. Each is a default the estimator can change in
+   chat, and the set or the manual overrides any of them: where the manual has the window supplier
+   install its windows, the windows package installs them. Where a package follows a line, its
+   `notes` name it as the default for this kind of job, as in this note:
+<!-- user-facing -->
+   "Wood framing, sheathing and trusses, with the air barrier and the window installation at the
+   wood levels, the default for a wood-over-podium job."
+<!-- /user-facing -->
+
+   - The wood framer carries the air barrier or WRB and the window installation, both at the
+     wood levels.
+   - The electrician carries fire alarm, tel/data, the intercom and the radio amplifier. CCTV and
+     access control can stand apart.
+   - On an urban site where the building covers most of the lot, one site contractor carries
+     earthwork, utilities, paving and curb, and the landscape is its own package. The site
+     package's `notes` name the breakouts to ask for on the bid form.
+   - The drywaller does not carry the acoustical ceilings or the sprayed acoustic finish.
+   - Spray fireproofing is its own sub on a steel podium.
+   - Cabinets are bought supply only, countertops furnished and installed, and the finish
+     carpenter installs the cabinets, the doors, the hardware and the accessories.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be
@@ -402,7 +427,8 @@ Tell the user, in plain terms:
   between documents. What you recorded is the project's working context now, carrying your name
   and citations; anyone who changes a value later replaces it.
 - **The package split**, packages created, packages already present on the project, each package
-  a supplier furnishes with the package that installs its items, any package
+  a supplier furnishes with the package that installs its items, each default you used with the
+  package that follows it and that the user can change any of them in chat, any package
   named "no catalog trade, not created," how many of the manual's sections outside Divisions 00
   and 01 you placed on a package out of how many the manual has (or that the count is incomplete,
   when it was cut short), each section you left on no package with its reason, or the "spec reading hasn't run for this project" note when no spec
