@@ -92,7 +92,7 @@ them is ever trimmed.
    they name the same line. A box is never measured off a render: no pixel, tile, `clipPt` or
    `pxPerPt` is turned into points for a citation. Where no line of the page's read carries the row, cite the sheet with no
    box and name it on your `anomalies:` line as `<sheet> p<page> no box: <the rows>, <why no line
-   carries them>`. The same holds for a Question's box.
+   carries them>, run only`. The same holds for a Question's box.
 3. THE QUERY BUDGET AND THE CAPS. One query string per call, no boolean, no list. Rank your
    harvested words most distinguishing first: a mark or a code, then a product or assembly name of
    several words, then the distinguishing noun of a section title, then the catalog name and its
@@ -322,7 +322,7 @@ questions replied ids: <the id of every Question you replied to, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
-anomalies: <one line each, with sheet and page, or "none">
+anomalies: <one line each, with sheet and page, ending with where it landed: Question <id>, reply <id>, note on <subject>, sheet reading, or run only; or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">

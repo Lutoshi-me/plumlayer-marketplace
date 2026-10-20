@@ -255,7 +255,9 @@ A newly created scope item is a full row, not a name. Every new item writes:
   documents: that is a Question. A correction of a value on the record is two things: the write
   onto that field naming what it replaces (`supersedesId`), cited to a box around what shows the
   right value with the words read there as the evidence snippet; and this note, one plain sentence
-  saying how the value was reached and what it replaced, never an id or a hand-written tag. That
+  saying how the value was reached and what it replaced, never an id or a hand-written tag,
+  placed after any text there that asks something or names an open Question, as the reader's
+  definition says for every sentence added to `notesInternal`. That
   note is what lets a later reader correct the row rather than doubt the drawings. A correction is
   never a Question.
 - **quantity**: only where the sheet itself carries one, as `{value, unit}`.
@@ -276,7 +278,9 @@ run adds to that standard is where it applies here. A Question clears the bar wh
 could move the price materially or stop a bidder pricing the work, or when two documents disagree
 about the work: a schedule row with no matching plan tag, a detail called where none is drawn, a
 spec section and a sheet naming different products for one assembly, a dimension the sheets
-contradict. It does not clear the bar:
+contradict, a tag the set defines nowhere, a product a schedule leaves TBD, a rock elevation above
+the excavation. A follow-up reply adds sources and never argues which document governs. It does
+not clear the bar:
 
 - when the answer is elsewhere in the set or the manual, on a sheet the run has not read among
   them: `search_set_text` first, across the drawings and with `kind: document` across the manual,
@@ -1345,7 +1349,7 @@ trades: <trade id + item count, one per trade; candidates <n>>
 trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
-anomalies: <one line each, with sheet and page, or "none">
+anomalies: <one line each, with sheet and page, ending with where it landed: Question <id>, reply <id>, note on <subject>, sheet reading, or run only; or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
@@ -1399,7 +1403,7 @@ questions replied ids: <the id of every Question replied to, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
-anomalies: <one line each, with sheet and page, or "none">
+anomalies: <one line each, with sheet and page, ending with where it landed: Question <id>, reply <id>, note on <subject>, sheet reading, or run only; or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">

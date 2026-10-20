@@ -82,7 +82,15 @@ of them is ever trimmed.
    draft RFI: one the estimator would pick up, read, and send on to the design team, because
    the answer could move the price materially or stop a bidder pricing the work, or because two
    documents disagree about it, except the three cases below, each of which names both documents
-   on the row. Past the bar there are three shapes and no fourth. A NEW Question,
+   on the row. Four gaps clear it wherever the set does not answer them and the gap is more than
+   the low-cost kind below: a tag, type or code the set uses and defines nowhere; a product,
+   manufacturer or model a schedule leaves TBD or blank; a type the set calls whose schedule row or
+   detail is empty; and a rock or groundwater elevation in a boring log or table that sits above an
+   excavation, a bottom of footing or a slab the set prints, which you find with `search_set_text`
+   for the footing and slab elevations whenever your sheet carries borings, over the whole current
+   set, as "The corpus for where" says. A definition you
+   record for such a code or table is your reading, and the gap in it is the Question. Past the
+   bar there are three shapes and no fourth. A NEW Question,
    where nothing covers the ask. Check first, in this order. Search the set for the answer, by the
    tag, code, product or assembly the ask turns on, across the drawings with `search_set_text` and
    across the manual with `kind: document`, and open each hit on a sheet that defines, schedules or
@@ -103,13 +111,16 @@ of them is ever trimmed.
    finish legend, one assembly) even where your ask differs: `reply_question` on it, citing the
    spot you read the way a Question cites it (below), as when that same frame type is
    called again on a second floor plan; it counts on your `questions replied:` line, never as a new
-   Question. A closed one on the same topic is never asked again; where your sheet contradicts its
-   answer, say so on your `door-owned suggestions:` line for the estimator. NOTHING, where the
+   Question. A reply adds what you read and where you read it, with its citation. It never argues
+   which document governs or which answer is right: the design team decides that, and the Question
+   already says the two disagree. A closed one on the same topic is never asked again; where your
+   sheet contradicts its answer, say so on your `door-owned suggestions:` line for the estimator.
+   NOTHING, where the
    sheets or the manual answer it, or another trade's item already carries it, as when a plan calls
    a partition type the partition schedule defines, or where the gap is low cost in a small trade (a
    finish, an accessory, a product choice, signage detail) that bidders price however they price
    it: no Question, and no assumption written into the row for bidders either. What you noticed
-   goes in `notesInternal` on the row if it is worth a watch, and nowhere otherwise. Three more
+   goes in `notesInternal` on the row if it is worth a watch. Three more
    cases raise no Question, and each writes one sentence in the row's `notesExternal`, a
    qualification the bidder reads, naming each document and what it says:
    - REQUIREMENTS THAT STACK. Limits stack when meeting the strictest meets them all: a tighter
@@ -167,6 +178,13 @@ of them is ever trimmed.
    character that is not a letter or a digit read as a space, so `TA-07` and `TA07` are two names
    and both land; where the work really is different, give it a name that says how it differs.
    Renaming an item the record already carries is not this door's business and is not refused here.
+   Every anomaly you name on your `anomalies:` line that is about the project lands on the record
+   before you report, and the line says where: a Question or a reply where it clears the bar above;
+   one sentence in `notesInternal` or `notesExternal` on the row it bears on; or the sheet's
+   `reading` (mandate 9, whose one exception covers a reading already written) where it bears on
+   no row, as with a title that disagrees with the index.
+   Only a matter of the tools or the citation itself, a box you sent without lines or a read that
+   came back in part, stays on that line alone, marked `run only`, and never as a Question.
 2. CITATION SHAPE: every drawing-grounded record's evidence names the sheet, carries
    `evidence.pageInPdf` (a positive 1-based integer) for the page you actually read, AND carries
    `evidence.fileId`, the drawing file your dispatch names for that page:
@@ -202,8 +220,8 @@ of them is ever trimmed.
    read carries the row you read (the read came back bounded or `workerCapped`, or it missed that
    line), cite the sheet with no box, `{ sheet, pageInPdf, fileId }` on a new row and `{ subject,
    kind: "sheet", sheet, pageInPdf, fileId }` on a row that already exists, and name it on your
-   `anomalies:` line as `<sheet> p<page> no box: <the rows>, <why no line carries them>`. The same
-   holds for every box this file asks for, a Question's included.
+   `anomalies:` line as `<sheet> p<page> no box: <the rows>, <why no line carries them>, run only`.
+   The same holds for every box this file asks for, a Question's included.
    A manual-grounded record's evidence names its spec section the way a drawing-grounded one
    names its sheet: `kind: "spec-section"` with the section number as the manual prints it, plus
    the file and the page you read it on. The section is what the estimator reads on the citation,
@@ -285,12 +303,18 @@ of them is ever trimmed.
    alternate), `notesInternal` (optional, one sentence: either a watch item for the estimator, an
    open Question on the row or an assumption to check, or how the row's count or grouping was
    reached and what a correction replaced; never a citation audit, and never a conflict between
-   two documents, which is a Question), `quantity` only where the sheet carries one, as `{value,
+   two documents, which is a Question. Where a row's `notesInternal` already holds text that asks
+   something or names an open Question, every sentence you add to it, a correction, an anomaly
+   mandate 1 lands there, or the sheet an answer was found on, goes after that text, kept whole,
+   never in its place; where your sheet answers what that text asks, cite what your sheet shows
+   on the row, and reply on the Question it names, or raise one where it clears the bar),
+   `quantity` only where the sheet carries one, as `{value,
    unit}`. A correction of a value on the record is two things: the write onto that field naming
    what it replaces (`supersedesId`), cited to the sheet and page with a box around what shows the
    right value and the words you read there as the evidence snippet; and the row's
    `notesInternal`, one plain sentence saying how the value was reached and what it replaced,
-   never an id or a hand-written tag. That note is what lets a later reader correct the row rather
+   never an id or a hand-written tag, placed as the `notesInternal` text above says. That note is
+   what lets a later reader correct the row rather
    than doubt the drawings. A correction is never a Question. Where a count or grouping is your
    own judgment rather than read off one place, say in the same note how it was reached. Never
    transcribe a schedule's columns, a detail, bar sizes, or connector parts into any field, and
@@ -365,7 +389,10 @@ of them is ever trimmed.
    shows), `resolvesTo` (the sheet number of one legend or schedule its tags resolve to) and
    `references` (one sheet or detail number it calls out), one record per value and never a list.
    The page's context read answers that check: where its sheet reading carries a `reading`, read it
-   instead of writing another; it lists every `resolvesTo` and `references` already recorded, so
+   instead of writing another. The one exception is an anomaly mandate 1 sends to the sheet's
+   `reading` because it bears on no row: write the `reading` again with `supersedesId` set to the
+   `entryId` the context read gives it, its earlier text kept whole and word for word, and one
+   sentence naming the anomaly appended. The context read lists every `resolvesTo` and `references` already recorded, so
    record only a value it does not list, since a value already there is refused and the batch with
    it. Where it says it cut either list to fit, `search(subject: "sheet:<sheet number>")` reads
    them all before you add one.
@@ -496,7 +523,11 @@ render only what text cannot give.
   `inventory.md` carries a sheet line ending `| <the hit's fileId> | <the hit's page>`, found with
   one local search per hit and never by reading the file: the inventory is your pass's sheet list,
   each sheet on the page your pass reads it on. Where the run folder holds no `run.json`, search
-  without `deliveryId`. A search of the manual, `kind: document`, takes no `deliveryId`.
+  without `deliveryId`. One drawing search is the exception: the footing and slab elevation
+  search mandate 1 asks for where your sheet carries borings runs over the whole current set,
+  with no `deliveryId`, and keeps every hit, since a pass on an addendum holds only its own sheets
+  and the footings and slabs a boring is held against are most often on the set's. A search of the
+  manual, `kind: document`, takes no `deliveryId`.
 - **Render only what text cannot give.** `render_page` for a detail whose meaning is in its
   drawing (a section, an assembly, a symbol), for a region the text came back `bounded` or
   `textSource: none` on, or for a region whose lines are unreadable as text (a rotated table, a
@@ -596,7 +627,7 @@ that file leave these lines out of their sheets, so what you do not record from 
    step 4 does for the pages left off the list. Where no page carries one, cite the page with no
    box, a `document-page` citation `{ subject, kind: "document-page", fileId, pageInPdf }` or, on a
    new row, evidence `{ fileId, pageInPdf }`, and name the box you could not send on `anomalies:`
-   with the file and page. A page with no sheet number names no sheet your runner can verify by,
+   with the file and page, ending `run only`. A page with no sheet number names no sheet your runner can verify by,
    so every row that existed before and that you cite this way also goes on your `page citations:`
    line, with its subject, the file and the page.
 7. A block whose `firstSheet` is null prints only on pages the set no longer shows: name each on
@@ -627,7 +658,7 @@ trades: <trade id + item count, one per trade; candidates <n>>
 trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
-anomalies: <one line each, with sheet and page, or "none">
+anomalies: <one line each, with sheet and page, ending with where it landed: Question <id>, reply <id>, note on <subject>, sheet reading, or run only; or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
