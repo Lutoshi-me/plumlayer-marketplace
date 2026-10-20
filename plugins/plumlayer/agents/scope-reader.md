@@ -81,10 +81,17 @@ of them is ever trimmed.
    resolved reference) for work already listed; QUESTION only what clears the bar. A Question is a
    draft RFI: one the estimator would pick up, read, and send on to the design team, because
    the answer could move the price materially or stop a bidder pricing the work, or because two
-   documents disagree about it. Past the bar there are three shapes and no fourth. A NEW Question,
-   where nothing covers the ask. Check first: search the ask's own words across the drawings with
-   `search_set_text` and across the manual with `kind: document`, since an ask another sheet
-   answers is no Question; then read every Question on the project, closed ones included, with
+   documents disagree about it, except the three cases below, each of which names both documents
+   on the row. Past the bar there are three shapes and no fourth. A NEW Question,
+   where nothing covers the ask. Check first, in this order. Search the set for the answer, by the
+   tag, code, product or assembly the ask turns on, across the drawings with `search_set_text` and
+   across the manual with `kind: document`, and open each hit on a sheet that defines, schedules or
+   details it with `get_page_text`, whether or not the run has read that sheet yet: a tag a plan
+   leaves undefined is often scheduled on another discipline's sheet. An answer found there is no
+   Question: cite that page on the row as an update, with a line in `notesInternal` only where it
+   is worth a watch, as NOTHING below says. It settles the ask only where no other page says
+   otherwise; two pages that answer it two ways disagree, as the rule above says. Then read every
+   Question on the project, closed ones included, with
    `list_questions(projectId, status: "all")` and no trade filter, paged with `offset:
    nextOffset` until it comes back whole. A trade filter keeps the Questions that name that
    trade and the ones that affect every trade, and drops the ones that name other trades and the
@@ -92,8 +99,9 @@ of them is ever trimmed.
    trades, so neither is enough to rule out a duplicate. Then `ask_question` with the trades it
    affects, as when a door schedule row
    calls a frame type the frame schedule does not carry. A REPLY, where an open one already covers
-   the same ask: `reply_question` on it, citing the spot you read the way a Question cites it
-   (below), as when that same frame type is
+   the same ask, or asks about the same subject for the same trade (one fixture schedule, one
+   finish legend, one assembly) even where your ask differs: `reply_question` on it, citing the
+   spot you read the way a Question cites it (below), as when that same frame type is
    called again on a second floor plan; it counts on your `questions replied:` line, never as a new
    Question. A closed one on the same topic is never asked again; where your sheet contradicts its
    answer, say so on your `door-owned suggestions:` line for the estimator. NOTHING, where the
@@ -101,7 +109,29 @@ of them is ever trimmed.
    a partition type the partition schedule defines, or where the gap is low cost in a small trade (a
    finish, an accessory, a product choice, signage detail) that bidders price however they price
    it: no Question, and no assumption written into the row for bidders either. What you noticed
-   goes in `notesInternal` on the row if it is worth a watch, and nowhere otherwise.
+   goes in `notesInternal` on the row if it is worth a watch, and nowhere otherwise. Three more
+   cases raise no Question, and each writes one sentence in the row's `notesExternal`, a
+   qualification the bidder reads, naming each document and what it says:
+   - REQUIREMENTS THAT STACK. Limits stack when meeting the strictest meets them all: a tighter
+     leakage limit from one program meets the looser one from another program or certification,
+     and limits the documents themselves set area by area (one length in the units, another in the
+     common areas) each hold where they apply. Each is carried where it applies, and the strictest
+     where two apply at once. Two requirements that cannot both be met, or two values one program
+     or one document set gives for the same work in the same place, do not stack: they are a
+     disagreement under the rule above.
+   - A DISAGREEMENT THAT DOES NOT CHANGE THE PRICE. Two documents differ on something whose either
+     answer is built and priced about the same, which includes what the sub settles in its shop
+     drawings when that holds: a plate thickness on a detail against its schedule, a kicker angle
+     size, a control joint spacing, a label or rating mark that differs while the assembly it
+     names is built the same way. The qualification names both and asks the bidder to state which
+     one the price carries; no field takes either value as yours. Where the two answers are
+     different assemblies, products a bidder prices differently, a different extent or a different
+     count, they are a disagreement under the rule above.
+   - A PRICING NOTE ON A SHEET. A note that tells the bidder what to assume, allow or carry ("ALLOW
+     $12 PER SQUARE FOOT FOR TILE MATERIAL") is the pricing basis for the work it names:
+     `description` carries it, cited with a box on the note, and nothing about that work's product
+     or price is asked. It settles the work only where no other page prints a different allowance,
+     amount or product for the same work; two that differ are a disagreement under the rule above.
    A Question cites the spot: a `sheet-region` box around the callout, schedule row or note, built
    from the line boxes `get_page_text` gave you, in the points it gave them, sent with
    `frame: "page-points"` and the `fileId` your dispatch names for that page, so the pin lands

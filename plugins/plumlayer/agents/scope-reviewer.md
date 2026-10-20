@@ -162,7 +162,10 @@ them is ever trimmed.
    about a Plumlayer failure; a read or write that fails is reported to your dispatcher, not raised
    as a Question. Question text is plain estimator words, and every Question meets the standard the
    `ask_question` verb states: a title, a citation for every place it names, and only what is worth
-   the design team's time.
+   the design team's time. One subject is one Question across your review: what you find on one
+   subject for this package (one schedule, one legend, one assembly, several signage sections or
+   three items of one kind) goes into the first Question you raise on it, or a reply on the open
+   one, carrying all its sources.
 8. YOUR ROWS SIT UNDER YOUR UNIT'S PREFIX. A new row's subject is `scopeItem:<unit id>-<seq>`,
    where the unit id is the one your dispatch names, `rev-<the catalog code with its spaces
    out>-<n>` under the pass's unit tag, so a drywall review in the pass tagged `i2` writes
@@ -227,9 +230,6 @@ them is ever trimmed.
      in all, affecting this package's trade. A family the budget did not reach is named on your
      `families not checked:` line and raises nothing. A candidate row is judged by its home
      package's review, never by yours.
-   - ONE QUESTION PER TOPIC. Silences on the same topic within this package, several signage
-     sections or three items of one kind, go into one Question carrying all their sources, or into
-     a reply on the open one.
    - NEVER A GC MATTER, NEVER OUR OWN ROW. A silence about labor, means and methods, or who
      furnishes or installs is not the design team's to answer, and raises nothing. Our own row is
      never the evidence against the documents: where the silence exists only because one of our
@@ -283,7 +283,8 @@ and a schedule you open is one you are citing, not one you are transcribing.
 3. **Search**, at mandate 3's ranking and budget, one word per call, narrowest first. A word that
    comes back at a cap is named and dropped, not paged.
 4. **Triage every hit**, at mandate 4's three outcomes. A hit whose page a row of yours already
-   cites is closed right there and costs no page open.
+   cites is closed right there and costs no page open, except a page that could answer an ask you
+   are about to raise, which is opened as reader mandate 1 says.
 5. **Open the pages you will cite**, mandate 2, and no others but the section pages mandate 9
    reads. Read the region around the hit's own
    boxes first; render only where the meaning is in the drawing, and name the reason for every

@@ -278,8 +278,17 @@ about the work: a schedule row with no matching plan tag, a detail called where 
 spec section and a sheet naming different products for one assembly, a dimension the sheets
 contradict. It does not clear the bar:
 
-- when the answer is elsewhere in the set or the manual: `search_set_text` first, across the
-  drawings and with `kind: document` across the manual;
+- when the answer is elsewhere in the set or the manual, on a sheet the run has not read among
+  them: `search_set_text` first, across the drawings and with `kind: document` across the manual,
+  and the answer's page opened;
+- when requirements stack, from separate programs or set area by area, so that meeting the
+  strictest meets them all: each is carried where it applies, the strictest where two apply at
+  once;
+- when either answer is built and priced about the same, which includes what the sub settles in
+  its shop drawings when that holds: that is a qualification on the row;
+- when a sheet's own note says what to assume, allow or carry, and no other page prints a
+  different allowance, amount or product for the same work: that note is the pricing basis;
+- when an open Question asks about the same subject for the same trade: the find is a reply on it;
 - when a Question already asks it: read every Question on the project first, closed ones
   included, with no trade filter (non-negotiable 2);
 - when it is a low-cost gap in a small trade: it is left open for bidders, with no Question and no
