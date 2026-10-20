@@ -243,24 +243,55 @@ amendments, stays in `scope-run`.
    (the remedy is to upload the project manual through `drawing-upload`'s spec-book leg and re-run
    this skill); if the project genuinely has no spec book, the scope run derives the packages from
    the finished scope list instead. No question asked, no branch beyond this sentence.
-3. **Draft the split** from the spec TOC (step 3), by how subcontractors actually split
-   themselves in this market: which sections bundle into which package, which get carved out, a
-   primary CSI section per package. Every section step 3 read outside Divisions 00 and 01 goes to
-   the package whose bidder buys it: you place the manual section by section. Probe the
-   usually-present families the TOC is silent on (site/civil, SOE, landscaping/exterior
+3. **Draft the split** from the spec TOC (step 3), by how the firms that bid this work split it in
+   this market: which sections bundle into which package, which get carved out, a primary CSI
+   section per package. A package is what one kind of firm bids: a supplier who furnishes the item,
+   an installer who installs what another firm furnishes, or a sub who furnishes and installs it.
+   Work two kinds of firm bid goes on two packages. Where the set or the manual shows an item
+   furnished by one firm and installed by another, its section goes on both packages'
+   `manualSections`, the furnishing package's `notes` name the package that installs it, and the
+   installing package's `notes` name what it installs. A supplier's item never sits on a package
+   with no installer: where no document says who installs it, the furnishing package's `notes` name
+   the package you judge does, and that package takes the section on its `manualSections` and names
+   the item in its own `notes`, as for a documented pair. Toilet accessories a specialties supplier
+   furnishes and the finish carpenter installs, for example, are two packages, each naming the
+   other. Where the supplier and the installer resolve to the same catalog trade, keep one package,
+   and its `notes` name the furnish and install split, for the bid form.
+
+   Every section step 3 read outside Divisions 00 and 01 goes to the package whose bidder buys it:
+   you place the manual section by section, by what its Part 1 summary says it covers. A section's
+   title never settles where it goes, except a section the manual carries only in its table of
+   contents, placed by its title as below. Before you place a section, read its first page:
+   `search(projectId, subjectPrefix: "specSection:", predicate: "locatedAt", full: true, limit: 100)`,
+   paged with `offset` to the end, gives each section's `fileId` and `pageStart`, and
+   `get_page_text` on that page carries the summary article; read the next page only where the
+   summary runs onto it. These are page text reads, not renders, and step 5's budget does not count
+   them. A section read from the table of contents alone carries `declaredOnPage` and no page
+   range: place it by its title, and its package's `notes` say the manual's text for it was not
+   read in.
+
+   Probe the usually-present families the TOC is silent on (site/civil, SOE, landscaping/exterior
    improvements), the same probe that already produces `missingScopeFamily` entries (step 6): a
    silent family becomes a `missingScopeFamily` entry AND, where a job of this kind would normally
-   carry the trade, a package. It raises no Question. A package is what one sub bids: a section a
-   sub of another package carries goes on that package's `manualSections`, and its trade on that
-   package's `codes`, never a package of its own. Walk-off mats, an acoustic underlayment laid
-   under the finish floor, and floor prep go on the flooring package; a poured gypsum topping and
-   the sound mat under it on the package of the sub who pours it; finish hardware and door operators on doors, frames and
-   hardware; reinforcing on cast-in-place concrete; steel deck on structural steel. A package's
-   `tradeCode` is never a heading no sub bids here, such as `09 00 00` Finishes; a broad code one
-   sub bids on this job, such as `22 00 00` Plumbing, is a package's trade like any other. Work
-   the owner contracts for directly gets no package: where the manual says the owner hires the
-   agency (special inspections, testing), in Division 01 or in a technical section's quality
-   control article, or the owner furnishes and installs the item, draft no package for it.
+   carry the trade, a package. It raises no Question.
+
+   A section a firm of another package carries goes on that package's `manualSections`, and its
+   trade on that package's `codes`, never a package of its own. Walk-off mats, an acoustic
+   underlayment laid under the finish floor, and floor prep go on the flooring package; a poured
+   gypsum topping and the sound mat under it on the package of the sub who pours it; finish
+   hardware and door operators on doors, frames and hardware; reinforcing on cast-in-place
+   concrete; steel deck on structural steel. Joint sealants and penetration firestopping go with
+   the work they seal or pass through: the sealant section on the `manualSections` of every
+   package whose joints it seals, the firestopping section on every package whose pipe, duct or
+   conduit passes through a rated wall or floor, and neither on a package of its own unless the
+   estimator asks for one, for the building envelope joints or for a firestop specialist. Where
+   the catalog has no trade for an item, ask the same question, which kind of firm bids it, and
+   put it on that firm's package, never on the package of its nearest neighbor in the division. A
+   package's `tradeCode` is never a heading no sub bids here, such as `09 00 00` Finishes; a broad
+   code one sub bids on this job, such as `22 00 00` Plumbing, is a package's trade like any
+   other. Work the owner contracts for directly gets no package: where the manual says the owner
+   hires the agency (special inspections, testing), in Division 01 or in a technical section's
+   quality control article, or the owner furnishes and installs the item, draft no package for it.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be
@@ -370,7 +401,8 @@ Tell the user, in plain terms:
 - **What was recorded**, how many facts were recorded, and any Question raised for a disagreement
   between documents. What you recorded is the project's working context now, carrying your name
   and citations; anyone who changes a value later replaces it.
-- **The package split**, packages created, packages already present on the project, any package
+- **The package split**, packages created, packages already present on the project, each package
+  a supplier furnishes with the package that installs its items, any package
   named "no catalog trade, not created," how many of the manual's sections outside Divisions 00
   and 01 you placed on a package out of how many the manual has (or that the count is incomplete,
   when it was cut short), each section you left on no package with its reason, or the "spec reading hasn't run for this project" note when no spec

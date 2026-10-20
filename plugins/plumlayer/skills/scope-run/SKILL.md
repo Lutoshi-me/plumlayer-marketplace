@@ -18,8 +18,8 @@ record whole at its own depth, and the user reviews at every check-in. Orientati
 `learn-project` skill, which this skill dispatches first when orientation hasn't happened yet;
 orientation also drafts and creates the baseline package split off the spec table of contents, so
 a package exists for every trade the manual names before the first sheet is read. Readers name
-each row's trade by the work itself, and the run folds the packages into what a sub bids before the
-reviews. The shape, in the estimator's own order:
+each row's trade by the work itself, and the run folds the packages into what one kind of firm
+bids before the reviews. The shape, in the estimator's own order:
 
 > First assemble one massive singular list of all the scope line items across the entire job; then
 > sort through and decide which trade packages to create; assembling them is assigning one new meta
@@ -957,28 +957,61 @@ On the go-ahead:
    in it that is not finished, as the windows section says and step 2 runs them, each with its own
    `pass:` line: their runners read nothing and write new summaries. Then the window closes from
    that plan with `phase: window 2 complete`, its totals taken over the passes that plan carries.
-5. **Fold the packages into what a sub bids.** This runs once the window is complete and its index
-   built, never after a paused line, and before the window 3 plan. A package is what one
-   subcontractor bids. Read `solicitation_list_packages(projectId)` and the `tradeRollup` of
-   `list_scope_items(projectId, limit: 0)`. For each package, ask whether a sub bids that work on
-   its own on a job this size. Where a sub of another package carries it, fold it in:
-   `solicitation_update_package` on the package that keeps it, with the folded package's
-   `tradeCode` and its `codes` added to `codes`, its `manualSections` added to `manualSections`,
-   and `notes` rewritten to say what the package now carries, then `solicitation_delete_package`
-   on the folded one. That verb replaces each
-   list it is sent whole, so read the keeping package's current lists first and send them back with
-   the additions, each entry once, never repeating the keeping package's own `tradeCode` in its
-   `codes`. The rows keep their trade: a fold writes no `belongsToTrade`. Ask the same of every
-   trade on a package's `codes`, since a trade can sit inside a package whose sub does not carry
-   it: where the sub of another package carries it, move it. Send the package that takes it its
-   `codes` and `manualSections` with that trade and its sections added, then send the package it
-   leaves its lists without them, in that order so the trade is never on no package, rewriting
-   `notes` on each the same way. Walk-off mats, an acoustic
-   underlayment laid under the finish floor, and floor prep (leveling and patching under the
-   finish) go with the flooring sub, whichever package they sit on; a poured gypsum topping and
-   the sound mat laid under it go with the sub who pours it; finish hardware and door operators with doors, frames and hardware;
-   reinforcing with cast-in-place concrete; steel deck with structural steel. A package of one or
-   two rows is the first to ask about, and its row count alone never settles it. A package whose
+5. **Fold the packages into what one kind of firm bids.** This runs once the window is complete and
+   its index built, never after a paused line, and before the window 3 plan. A package is what one
+   kind of firm bids: a supplier, an installer, or a sub who furnishes and installs, as
+   `learn-project` step 8 draws them. Read `solicitation_list_packages(projectId)` and the
+   `tradeRollup` of `list_scope_items(projectId, limit: 0)`. For each package, ask which kind of
+   firm bids that work on a job this size, and with what else. Where a firm of another package
+   carries it, fold it in: `solicitation_update_package` on the package that keeps it, with the
+   folded package's `tradeCode` and its `codes` added to `codes`, its `manualSections` added to
+   `manualSections`, and `notes` rewritten to say what the package now carries, then
+   `solicitation_delete_package` on the folded one. That verb replaces each list it is sent whole,
+   so read the keeping package's current lists first and send them back with the additions, each
+   entry once, never repeating the keeping package's own `tradeCode` in its `codes`. The rows keep
+   their trade: a fold writes no `belongsToTrade`. Ask the same of every trade on a package's
+   `codes`, since a trade can sit inside a package whose firm does not carry it: where the firm of
+   another package carries it, move it. Send the package that takes it its `codes` and
+   `manualSections` with that trade and its sections added, then send the package it leaves its
+   lists without them, in that order so the trade is never on no package, rewriting `notes` on each
+   the same way. A sealant or firestopping section stays on the `manualSections` of each package
+   whose work it still seals or passes through, whichever package its trade moves to.
+
+   A fold never puts two kinds of firm on one package: a supplier's package and the package that
+   installs its items stay two, the item's section on both. Where a row shows an item a supplier
+   furnishes and no package's `notes` name who installs it, name the package you judge does in the
+   supplier package's `notes` and the item in the installing package's `notes`, and add the section
+   to the installing package's `manualSections`. Who bids the work never comes from where the
+   catalog files a trade or from a section's title, except a section with no page range, as below.
+   A package of one or two rows is the first to ask about, and its row count never settles it. A
+   trade the catalog files beside another trade's work folds there only where that firm bids it
+   here. Where the catalog has no trade for an item, ask which kind of firm bids it and put it on
+   that firm's package, never on its nearest neighbor in the division. A section with a page range
+   moves by what its Part 1 summary covers, read on its first page with `get_page_text` as
+   orientation reads it. A section with none, read from the table of contents alone, moves by its
+   title, and its package's `notes` say the manual's text for it was not read in.
+
+   Walk-off mats, an acoustic underlayment laid under the finish floor, and floor prep (leveling
+   and patching under the finish) go with the flooring sub, whichever package they sit on; a poured
+   gypsum topping and the sound mat laid under it go with the sub who pours it; finish hardware and
+   door operators with doors, frames and hardware; reinforcing with cast-in-place concrete; steel
+   deck with structural steel. Joint sealants and penetration firestopping go with the work they
+   seal or pass through, and neither folds into another firm's package because the catalog files
+   them together. Add the sealant or firestopping section to the `manualSections` of every package
+   whose work it seals or passes through. A sealant or firestopping trade that carries rows keeps a
+   package of its own, whose `notes` say each trade carries the sealant at its own joints, or the
+   firestopping at its own penetrations, and name those packages. For each of its rows whose name,
+   description or citation says whose work it seals or passes through, write one
+   `packageRole:<that trade>` record,
+   `{ role: "candidate", note: "confirm trade responsibility: could be <home> or <this trade>" }`,
+   for each such trade, since a row can name several, all in one `record_batch` whose returned
+   `count` must equal the entries sent, so that package's review reads the row. On a pass over an
+   addendum, each trade that gains a candidate here is added to the trades that pass reviews:
+   append one line `fold touched <catalog id>` for each such trade to
+   `<run folder>/trades/fold.txt`, which the window 3 plan reads with the passes' own trades files.
+   The estimator can keep that package for the building envelope joints or for a firestop
+   specialist, or have its rows moved to those trades, and that move is the estimator's own write,
+   made on his word. A package whose
    trade is a heading no sub bids here, such as `09 00 00` Finishes, is split into the packages
    its subs bid, and each of its rows goes to the catalog trade that names its work, re-homed as
    stage 8 re-homes them. A broad code that one sub bids on this job, such as `22 00 00` Plumbing
@@ -1012,7 +1045,10 @@ read, once each, and that nothing was left unread except what was deliberately l
 start. Name what landed by trade, say each trade's page carries its items and shows every sheet
 each one appears on, and say what comes next in one sentence: one package at a time, against what
 landed. Name each package you folded into another, with the reason in one sentence, and each
-package you split into the ones its subs bid, each trade you moved from one package to another,
+package you split into the ones its subs bid, each package a supplier furnishes with the package
+that installs its items, each sealant or firestopping package you kept with the packages whose
+work its rows seal or pass through, and that the estimator can keep it or have its rows moved to
+those trades, each trade you moved from one package to another,
 and each package you deleted because the owner hires that work, with the manual section or the
 sheet and note that says so. Name as the owner's work any of its items a package you kept still covers. When sheets were deferred, say which sheets were read and what landed from them by trade,
 that the rest of the set, <m> sheets, is still waiting, and that the next go-ahead reads it. Never
@@ -1084,9 +1120,9 @@ the count is incomplete and is reported as incomplete.
 
 The estimator-judgment stage. Packages are bundles of spec sections grouped by how subcontractors
 actually split themselves in the market, not by the book's divisions. The baseline split was
-drafted and created at orientation (`learn-project`) and folded into what a sub bids before the
-reviews (stage 6 step 5): read it fresh via `solicitation_list_packages(projectId)` rather than
-re-drafting it. This stage is for the splits and folds a review surfaces.
+drafted and created at orientation (`learn-project`) and folded into what one kind of firm bids
+before the reviews (stage 6 step 5): read it fresh via `solicitation_list_packages(projectId)`
+rather than re-drafting it. This stage is for the splits and folds a review surfaces.
 
 In a pass on an addendum this stage runs only where the pass made a package: one whose `id` is in
 `plan/packages.json` and in no row of `plan/packages-start.json`, found with a local comparison of
