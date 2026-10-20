@@ -158,7 +158,24 @@ of them is ever trimmed.
    finish legend, one assembly) even where your ask differs: `reply_question` on it, citing the
    spot you read the way a Question cites it (below), as when that same frame type is
    called again on a second floor plan; it counts on your `questions replied:` line, never as a new
-   Question. A reply adds what you read and where you read it, with its citation. It never argues
+   Question. After either one, cite the Question on every live row it affects, so the estimator
+   sees it on that row on the trade's scope page. A row is affected when the answer could change
+   what the row carries: its product, its extent, its count, or whether the work is in the job.
+   That is the row you wrote or cited for the ask, and each row on any trade that the page and the
+   searches before asking showed you and that the answer would change, the tile around a tub as
+   well as the tub; the same-work test above decides which rows are one piece of work, and this
+   test is wider than it. A Question on every trade is cited only on the rows its answer would
+   change, never on every row of every trade, and one whose answer would change no row you saw
+   stands alone. Each citation is one `citations` item, `{ subject, kind: "question", questionId
+   }`, with the id `ask_question` or `reply_question` returned. A citation lands only on a row
+   that already exists, so a row this page creates takes its Question in one more `record_batch`
+   after the batch that creates it. Name the Question by its title in that row's `notesInternal`
+   where it fits under mandate 5's keep-whole rule; where it does not fit, the citation alone
+   carries it, and the citation is never skipped. A row whose only write in your unit is a
+   Question citation goes on your `questions linked:` line, never on `updated subjects:`. Never
+   write an assumption, a value or a basis to price to for an open Question, in any field: what to
+   carry until it is answered is the estimator's call. A reply adds what you read and where you
+   read it, with its citation. It never argues
    which document governs or which answer is right: the design team decides that, and the Question
    already says the two disagree. A closed one on the same topic is never asked again; where your
    sheet contradicts its answer, say so on your `door-owned suggestions:` line for the estimator.
@@ -358,7 +375,7 @@ of them is ever trimmed.
    condition; a simple item has none), `notesExternal` (optional, one sentence: an instruction to
    the bidder about the line, what is by others, what to break out, what to confirm, what is an
    alternate), `notesInternal` (optional, one sentence: either a watch item for the estimator, an
-   open Question on the row or an assumption to check, or how the row's count or grouping was
+   open Question on the row, or how the row's count or grouping was
    reached and what a correction replaced; never a citation audit, and never a conflict between
    two documents, which is a Question. Where a row's `notesInternal` already holds text that asks
    something or names an open Question, every sentence you add to it, a correction, an anomaly
@@ -479,7 +496,8 @@ citations of rows that already exist, with the count check mandate 7 asks for, o
 batch where the door refuses a name, and one report. A page whose `pageRead` came back null costs a
 second context read, after `get_page_text` has had the page read. Anything past that shape is a
 named fallback for a list the answer said it cut, the corpus search of mandate 3, the searches
-mandate 1 makes before a create for the row that may already carry the work, or the checks
+mandate 1 makes before a create for the row that may already carry the work, the `record_batch`
+that cites a Question on a row this page created, or the checks
 mandate 1 makes before a new Question.
 
 Five reads the page's context answer has already made, and you do not make again. A trade-filtered
@@ -721,9 +739,10 @@ cited sheets: <for the repeated lines, every sheet your rows and citations name,
 page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
 set version: <for the repeated lines, the setVersion your walk ended on; otherwise "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
-updated subjects: <the subject of every item you updated or newly cited, or "none">
+updated subjects: <the subject of every item you updated or newly cited, except a row cited only to a Question, or "none">
 questions raised ids: <the id of every Question you raised, or "none">
 questions replied ids: <the id of every Question you replied to, or "none">
+questions linked: <the id of every Question raised or replied to + the subject of every row you cited it on, one Question per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names, one per line, or "none">

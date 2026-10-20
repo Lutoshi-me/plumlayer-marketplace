@@ -145,6 +145,12 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
      subject, so the one call proves both that the id is real and that a reply stands on it. The
      reader's `questions raised:` and `questions replied:` counts go on the `verified` line as
      `questions` and `replied`.
+   - **Questions linked, by the first row.** For each line on the reader's `questions linked:`
+     line, one `search(subject: "<the first row subject it names>", full: true)`, paged with
+     `offset` until it comes back whole, which must carry a `citedRegion` entry whose value names
+     that Question's id; one it does not carry is a mismatch. A raised or replied id with no
+     `questions linked:` line is no mismatch: a Question whose answer would change no row stands
+     alone.
    - **Trades.** A created subject with no trade and no candidate in the `verify_unit` result is a
      mismatch: the door should have refused it, and a row without a trade never stays on the
      record unnamed.
@@ -324,7 +330,8 @@ with one unit and three differences.
   `offset` until it comes back whole, which must carry an entry that no other entry's
   `supersedesId` names and whose evidence names that section (`specSection:<packed code>`) and
   that page; one it does not carry is a mismatch. Each Question id is found back with one
-  `search(subject: "<question id>")`, and a created subject with no trade and no candidate is a
+  `search(subject: "<question id>")`, each `questions linked:` line by its first row as in pass
+  mode, and a created subject with no trade and no candidate is a
   mismatch. The call takes at most 20 sheets, so a review that opened more needs one call per 20
   against the same prefix. Every call answers the whole prefix, so `created` and the trades come
   off the first call alone and are never added across calls; each later call, with the next 20

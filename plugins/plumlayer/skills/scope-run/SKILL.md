@@ -123,7 +123,11 @@ that relaxes any one of them reproduces a measured, named failure.
    never about a Plumlayer failure; a read or write that fails is reported and handled in the run's
    own failure path, not raised as a Question. Question text is plain estimator words, and every
    Question meets the standard the `ask_question` verb states: a title, a citation for every place
-   it names, and only what is worth the design team's time.
+   it names, and only what is worth the design team's time. Every Question raised or replied to,
+   by a reader, a reviewer or this run itself, is cited on each live row its answer would change,
+   as the reader's mandate 1 decides those rows, so the estimator sees it on the trade's scope
+   page, and it never carries an assumption, a value or a basis to price to: what to carry until
+   it is answered is the estimator's call.
 3. **Store-resolution is mandatory.** A mark, tag, or code is resolved by querying the project
    record, never from memory, never inherited from another sheet's read, never assumed from a
    similar-looking mark. For a code the page in front of a reader prints, its own
@@ -252,7 +256,7 @@ A newly created scope item is a full row, not a name. Every new item writes:
 - **notesExternal** (optional, one sentence): an instruction to the bidder about the line: what is
   by others, what to break out, what to confirm, what is an alternate.
 - **notesInternal** (optional, one sentence): either a watch item for the estimator, an open
-  Question on the row or an assumption to check, or how the row's count or grouping was reached
+  Question on the row, or how the row's count or grouping was reached
   and what a correction replaced. Never a citation audit, and never a conflict between two
   documents: that is a Question. A correction of a value on the record is two things: the write
   onto that field naming what it replaces (`supersedesId`), cited to a box around what shows the
@@ -1050,8 +1054,8 @@ On the go-ahead:
    engages, is re-homed to that sub's trade as stage 8 re-homes a row whose trade is wrong, and
    one several subs carry, such as a statement of responsibility each structural sub submits,
    goes to the main one with a `candidate` role for each other. Where the manual and a sheet
-   disagree on who hires the agency for a row, that is a Question with both citations, and the row
-   keeps its trade; the answer decides where it goes. The rest keep their trade. Where the delete is refused because bidders have bid that package, it
+   disagree on who hires the agency for a row, that is a Question with both citations, cited on
+   that row with `cite_source(kind: "question", questionId)`, and the row keeps its trade; the answer decides where it goes. The rest keep their trade. Where the delete is refused because bidders have bid that package, it
    stays. Where a package you keep lists that trade in its `codes`, take it off the
    way a move takes a trade off; where a kept package covers it through a broad code, that
    package's review reads those rows. A later
@@ -1381,9 +1385,10 @@ cited sheets: <for the repeated lines, every sheet the unit's rows and citations
 page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
 set version: <for the repeated lines, the setVersion the unit's walk ended on; otherwise "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
-updated subjects: <the subject of every item updated or newly cited, or "none">
+updated subjects: <the subject of every item updated or newly cited, except a row cited only to a Question, or "none">
 questions raised ids: <the id of every Question raised, or "none">
 questions replied ids: <the id of every Question replied to, or "none">
+questions linked: <the id of every Question raised or replied to + the subject of every row it was cited on, one Question per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names, one per line, or "none">
@@ -1438,10 +1443,11 @@ searches: <n> run, <n> returned nothing
 terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent it + what it did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
-updated subjects: <the subject of every row updated or newly cited, or "none">
+updated subjects: <the subject of every row updated or newly cited, except a row cited only to a Question, or "none">
 manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
 questions raised ids: <the id of every Question raised, or "none">
 questions replied ids: <the id of every Question replied to, or "none">
+questions linked: <the id of every Question raised or replied to + the subject of every row it was cited on, one Question per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">

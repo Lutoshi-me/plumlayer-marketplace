@@ -206,7 +206,14 @@ them is ever trimmed.
    the design team's time. One subject is one Question across your review: what you find on one
    subject for this package (one schedule, one legend, one assembly, several signage sections or
    three items of one kind) goes into the first Question you raise on it, or a reply on the open
-   one, carrying all its sources.
+   one, carrying all its sources. Every Question you raise or reply to is cited on each live row
+   its answer would change, on this package or another, as reader mandate 1 decides which rows are
+   affected: a `citations` item `{ subject, kind: "question", questionId }` once the row exists,
+   or `cite_source(kind: "question", questionId)`, and its title in the row's `notesInternal`
+   where mandate 5's keep-whole rule leaves room, the citation never skipped. A row whose only
+   write in your review is that citation goes on your `questions linked:` line, never on `updated
+   subjects:`. A silence with no row to carry it is the exception, and its Question stands alone.
+   Never write an assumption, a value or a basis to price to for an open Question.
 8. YOUR ROWS SIT UNDER YOUR UNIT'S PREFIX. A new row's subject is `scopeItem:<unit id>-<seq>`,
    where the unit id is the one your dispatch names, `rev-<the catalog code with its spaces
    out>-<n>` under the pass's unit tag, so a drywall review in the pass tagged `i2` writes
@@ -551,10 +558,11 @@ searches: <n> run, <n> returned nothing
 terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent you + what you did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
-updated subjects: <the subject of every row you updated or newly cited, or "none">
+updated subjects: <the subject of every row you updated or newly cited, except a row cited only to a Question, or "none">
 manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
 questions raised ids: <the id of every Question you raised, or "none">
 questions replied ids: <the id of every Question you replied to, or "none">
+questions linked: <the id of every Question raised or replied to + the subject of every row you cited it on, one Question per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">

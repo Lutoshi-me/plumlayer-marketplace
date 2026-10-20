@@ -298,12 +298,15 @@ number ("RFI 22") once it holds one, and names one Question per call.
 
 ### Keep the work moving
 
-Write the assumption into the scope item it governs and cite the Question on that row, so the
-scope list carries a line a bidder can price while the Question is open. The assumption is the
-value the row carries, or one plain sentence in `notesExternal` when bidders price to it and in
-`notesInternal` when it is the estimator's to watch. Cite the Question with `cite_source(kind:
-"question", questionId)`, or in `record_batch`'s citations for several rows at once; the row keeps
-its sheet or section citation beside it.
+Cite the Question on every scope row it affects, so the estimator sees it on that row on the
+trade's scope page, and name it by its title in the row's `notesInternal`. Cite it with
+`cite_source(kind: "question", questionId)`, or in `record_batch`'s citations for several rows at
+once; the row keeps its sheet or section citation beside it. While nobody has answered a Question,
+never write an assumption, a value or a basis to price to for it unless the estimator gives you
+one: cost impacts vary too much for a rule to choose, and what to carry until the answer comes is
+his call. When he gives you an assumption, write it as he said it, in the field he names, and cite
+the Question beside it. An answer that has arrived, from the design team or an addendum, is no
+assumption: update the rows it moves as "When an answer arrives" says.
 
 ### The thread
 
