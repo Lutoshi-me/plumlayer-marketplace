@@ -440,11 +440,13 @@ run, not left for later.
 
 1. **Check for an earlier run's entries first.** The server's idempotency covers the entries the
    recognition pass recorded, not the ones an agent authored, and an earlier run may have been on
-   another machine, so the upload folder alone never answers it. Dispatch one earlier unit. Confirm
-   with the user before checking the pages again where the upload folder already holds unit
-   reports for this delivery, where the earlier unit found any `sheetType` or `partOfIssue` entry
-   an agent wrote on this delivery, or where its read says `finished: no`: a read that did not
-   finish never stands for no earlier run.
+   another machine, so the upload folder alone never answers it. Before this run dispatches any
+   unit for this delivery, look in the upload folder's `reports/` with a local command (`ls`):
+   any report already there is an earlier run's, since this run has written none yet. Then
+   dispatch one earlier unit. Confirm with the user before checking the pages again where that
+   look found a report, where the earlier unit found any `sheetType` or `partOfIssue` entry an
+   agent wrote on this delivery, or where its read says `finished: no`: a read that did not finish
+   never stands for no earlier run.
 2. **The set unit.** Dispatch one, naming each recognition job id of this delivery with the
    `fileId` of the drawing file it reads, and the delivery's `issue`. It reads the
    pages the pass could not name off the jobs, reads the whole sheet list, types every leftover
@@ -462,9 +464,13 @@ run, not left for later.
    deliveries'.
 4. **The left unit.** After the last pages unit, dispatch one left unit. Its two lists are the
    sheets still without a type and the sheets still filed under no discipline letters, read back
-   from the record. A sheet on its untyped list that no pages unit named on its `left untyped:`
-   line was never reached: write it to a small pages file of its own with the reason `type` and
-   dispatch one more pages unit over it, then the left unit again.
+   from the record. A sheet on its `this delivery:` untyped list that no pages unit named on its
+   `left untyped:` line was never reached: write it to a small pages file of its own with the
+   reason `type` and dispatch one more pages unit over it, then the left unit again. On an
+   addendum, the same goes for a sheet on its `earlier deliveries:` untyped list that no pages unit
+   named on its `earlier deliveries:` line. On a new set, the earlier deliveries' rows are the
+   sheets this set does not print: they are left alone, never sent for typing, and step 10 names
+   them.
 
 **Gate:** every page in the tail ends up judged (a full entry bundle) or flagged (image-only or
 genuinely unreadable), never silently dropped; every code on the off-list ends named with a
@@ -508,10 +514,14 @@ unit that read it, in one count-verified write per unit. You verify:
    "appearsOnPage", text: "<a sheet number you saw>")` calls. That spot-check is this step's verify.
    The sheet list's rows are the units' to read, never this conversation's.
 3. **Typing coverage against the recognized count.** Sum `sheetsGrounded` across every file's
-   succeeded job for this delivery (from step 5) for the recognized sheet count in scope. It must
-   equal the left unit's `this delivery:` typed count plus its untyped count, both counted off the
-   record, so a unit sent again is counted once. The sheets the units typed are that typed count
-   less the server's rule-typed count (`written.sheetTyping.typed`). A gap means step 6 did not
+   succeeded job for this delivery (from step 5) for the recognized sheet count. That is the count
+   recognition stored, so it never moves when the sheet checker names a page recognition left
+   unnamed or takes a misread number off one: add every pages unit's `sheets added:` count and
+   take away every pages unit's `sheets gone:` count, each read off the record by the unit that
+   made the change, for the sheet count in scope. It must equal the left unit's `this delivery:`
+   typed count plus its untyped count, both counted off the record, so a unit sent again is counted
+   once. The sheets the units typed are that typed count less the server's rule-typed count
+   (`written.sheetTyping.typed`). A gap means step 6 did not
    reach every sheet in scope: go back and close it before this run reports done, the same way a
    count mismatch in point 1 stops the run. The left unit's `earlier deliveries:` counts are
    reported on their own line, never folded into this delivery's.
