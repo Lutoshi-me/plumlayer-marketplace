@@ -1,10 +1,10 @@
 ---
 name: learn-project
 description: >
-  A cheap orientation pass over an already-uploaded drawing set: reads seed facts and sheet
-  inventory, takes a few bounded renders (cover, index, key plans), records cited facts, writes the
-  project description, and drafts and creates the baseline trade-package split off the spec table of
-  contents. Trigger on "learn the project", "orient on this set", "orientation pass",
+  A cheap orientation pass over an already-uploaded drawing set, run in a fresh agent: reads seed
+  facts and sheet inventory, takes a few bounded renders (cover, index, key plans), records cited
+  facts, writes the project description, and drafts and creates the baseline trade-package split
+  off the spec table of contents. Trigger on "learn the project", "orient on this set", "orientation pass",
   "/learn-project". Drives search, set_grid, render_page, get_page_text, record_batch,
   update_project, directory_list_trades, solicitation_list_packages, solicitation_create_package.
   Does not upload drawings or run scope-run.
@@ -40,11 +40,92 @@ The run-context packet this skill compiles is a **projection**, never stored as 
 pattern as a trade package. It lives in the user's local run folder only, never a repo, never
 the project record.
 
+## Running one level down
+
+The steps below run in a fresh agent, never in the session that starts this skill. That agent's
+renders, spec page reads, package lists and package creates would otherwise stay in the session
+the user talks to for the rest of it, and on a set of a few hundred sheets with its manual they
+once filled most of that session. A user typing /learn-project, `project-setup`, and `scope-run`'s
+orientation stage all start it the same way:
+
+1. Know the project. `project-setup` and `scope-run` hand you its `projectId`. When a user typed
+   /learn-project, call `list_projects` and confirm with the user which project record this
+   orientation pass is for. If there is no project yet, hand off to `project-setup` first, the same
+   way `drawing-upload` step 1 does, and dispatch nothing.
+2. Dispatch one fresh general agent with the orientation dispatch below. The call is the wait.
+3. Read back only its summary. Never relay the agent's own wording to the user and never open the
+   packet to retell it: what orientation learned is on the record, and the summary says where.
+   Where the summary did not arrive in the message, its summary file is the summary: open that
+   file rather than dispatching again.
+
+```text
+run_in_background: false
+Project: <projectId>. Project folder: <~/.plumlayer/runs/<project-slug>/>.
+You are the orientation agent. Run the `learn-project` skill for this project from step 1, in
+full, exactly as it is written. Write your summary to <project folder>/learn-project-summary.md
+in the shape its "Running one level down" section gives, then return it and end.
+```
+
+An agent whose dispatch names it the orientation agent skips this section and starts at step 1,
+with the project its dispatch names. A client with no agent tool runs steps 1 to 11 itself, in the
+conversation, and at step 11 tells the user what the block below says rather than returning a
+summary.
+
+The summary, written to the path the dispatch names and returned in this shape, counts and named
+items only (Audience: agent; the session that started the skill words it for the user):
+
+```text
+sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>
+stopped: <the precondition that failed and why, or "no">
+learned: <each fact recorded in step 6, its predicate and its value as recorded, cut at 200 characters, one per line>
+reconciliation: <the gate's counts, or "not run for this set">
+spec reading: <sections confirmed + listed in the table of contents only, or "not run for this project">
+structure: <filled, the sheet that grounded the system + the sheet that grounded the floor counts; or blank, the half the set does not state>
+description: <written, or a person's left in place>
+packages: created <n>, already on the project <n>, no catalog trade <names, or "none">
+furnish and install: <the supplier's package + the package that installs its items, one per line, or "none">
+defaults: <package + the default it follows, one per line, or "none">
+sections placed: <n> of <n>, or "count incomplete"
+on no package: <section code + its reason, one per line, or "none">
+questions raised: <the id of each Question raised, or "none">
+renders: <n> of 6, <"covered" or "the set is too large for six">
+packet: <path>
+```
+
+`questions` on the first line counts the Questions raised; `packages drafted` counts the packages
+created this run.
+
+<!-- user-facing -->
+Where a user typed /learn-project, tell them, in plain terms, off that summary:
+- **What was read**, the project's identity, which of the seeded project facts were present, the
+  disciplines covered, and whether the project manual's table of contents was read.
+- **What was learned**, by kind: systems, scope areas, set shape, hazards.
+- **What the index check found**, or that it hasn't run yet for this set, never silent on which.
+- **What was recorded**, how many facts, and any Question raised for a disagreement between
+  documents. What was recorded is the project's working context now, carrying your name and its
+  citations; anyone who changes a value later replaces it.
+- **The package split**, in these words: "I split the job into N packages; here they are. Change
+  any of them on the site or tell me and I will redo it." Then the packages already on the project,
+  each package a supplier furnishes with the package that installs its items, each default used
+  with the package that follows it and that the user can change any of them in chat, any package
+  with no catalog trade and so not created, how many of the manual's sections outside Divisions 00
+  and 01 are placed on a package out of how many the manual has (or that the count is incomplete),
+  and each section left on no package with its reason. No approval is collected.
+- **The structure**, the sheet that grounded the system and the sheet that grounded the floor
+  counts when it was filled, or that it was left blank and which half the set does not state.
+- **The description**, whether one was written or a person's was already in place and left alone.
+- **Where the packet landed**, the full path.
+- **What a person should look at**, the facts recorded, visible on plumlayer.com with the page each
+  one was read from, and any Question raised for a disagreement between documents.
+
+Close by saying orientation is done and everything it made is on the project record.
+<!-- /user-facing -->
+
 ## 1. Preconditions
 
-1. **Project exists.** Call `list_projects` and confirm with the user which project record this orientation pass
-   is for, get its `projectId`. If there is no project yet, hand off to `project-setup` first, the
-   same way `drawing-upload` step 1 does.
+1. **Project exists.** It is the one your dispatch names, confirmed by the session that started
+   you, so take its `projectId` from there and call no project list. Where `get_project` refuses
+   it, stop and return your summary with `stopped:` naming why.
 2. **The baseline set is recognized.** Orientation reads the base set shape, it does not need revisions
    or bulletins to have landed, and spec-TOC presence is optional/best-effort, not a precondition.
    What it does need is a delivery that has actually been through `recognize_sheets`. There is normally no
@@ -53,7 +134,8 @@ the project record.
    `list_drawing_deliveries(projectId)`, if none exist, stop plainly and hand off to `drawing-upload`.
    If a delivery exists, spot-check with a small `search(projectId, predicate: "appearsOnPage", limit:
    1)`, zero rows means recognition hasn't actually recorded anything yet; stop and hand off to
-   `drawing-upload` rather than orienting on an empty set.
+   `drawing-upload` rather than orienting on an empty set. Either stop returns your summary with
+   `stopped:` naming it, and the session that started you hands off.
 
 ## 2. Read the entries (identity, seeds, sheet inventory)
 
@@ -146,7 +228,7 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
    hasTitle match for a cover/title sheet; used the lowest G-series sheet instead").
 2. **Drawing-index page (1 render).** Find it via `search(projectId, predicate: "hasTitle", text:
    "index")`, `"drawing list"`, or `"sheet list"`. If none of these match, skip the render and note
-   the absence in the report, never synthesize an index page that isn't there.
+   the absence in your summary, never synthesize an index page that isn't there.
 3. **Key plans (up to 4 renders).** For each series in this order, **A**, then **S**, then **M/P/E**
    (one representative render for whichever of M, P, E exists first, in that order, it counts as one
    slot, not three), then **C**, render the lowest-numbered sheet you judge, from its title and
@@ -156,7 +238,7 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
    step 6, don't force a render to fill the slot.
 
 If the set is large enough that six renders plainly can't cover it (many buildings, many phases, an
-unusually deep set), say so explicitly in the report rather than quietly rendering more.
+unusually deep set), say so explicitly in your summary rather than quietly rendering more.
 
 ## 6. Emit orientation entries
 
@@ -223,7 +305,7 @@ There is nothing to ask about here and this step raises no Question: an unfilled
 a blank the estimator can fill later.
 
 When both halves are stated, call `update_project(projectId, structureDiagram: {...})`, and name in
-the report the sheet that grounded each half.
+your summary the sheet that grounded each half.
 
 The `structuralSystem` entries from step 6 are not replaced by this. They stay as the cited
 evidence; this step reads them and writes the one structured value the surfaces draw from.
@@ -239,7 +321,7 @@ amendments, stays in `scope-run`.
    project. Report existing packages as "already on the project" rather than re-drafting them.
 2. **No spec sections, no split.** If step 3 found no `inDivision` entries for this project, create
    no packages. Drawing disciplines are never used as an anchor for a split. Say plainly, in the
-   packet and the report: spec reading hasn't run for this project
+   packet and your summary: spec reading hasn't run for this project
    (the remedy is to upload the project manual through `drawing-upload`'s spec-book leg and re-run
    this skill); if the project genuinely has no spec book, the scope run derives the packages from
    the finished scope list instead. No question asked, no branch beyond this sentence.
@@ -320,7 +402,7 @@ amendments, stays in `scope-run`.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). A package with no reasonable catalog match cannot be
-   created (the verb requires a catalog code): name it in the report as "no catalog trade, not
+   created (the verb requires a catalog code): name it in your summary as "no catalog trade, not
    created," never force a wrong code.
 
    A package carries two lists, and they hold different things. `codes` holds catalog trades: the
@@ -349,31 +431,29 @@ amendments, stays in `scope-run`.
    manualSections)` with that list plus the new sections, each number once:
    `solicitation_update_package` replaces the whole list, and it refuses two spellings of one
    section. Re-read the package before each later change to it. Re-list until `onNoPackage` is
-   empty, or every section left on it is one of two kinds, each named in the report with its
+   empty, or every section left on it is one of two kinds, each named in your summary with its
    reason: work you leave off on purpose because no subcontractor bids it here, such as
    owner-furnished work with no installer or an agency the owner hires, or a section whose buying trade has no catalog
    match, named with the trade you looked for. Always read `manualSectionPlacement.truncated`:
-   when it is true the count is incomplete, even with `onNoPackage` empty, and the report says
+   when it is true the count is incomplete, even with `onNoPackage` empty, and your summary says
    so. When it is false, the sections placed are `sectionsOutsideFrontEnd` less the length of
    `onNoPackage`. This sub-step is also how a project whose packages predate the manual, or were
    drafted without placing every section, gets its sections placed; `scope-run` runs it before
    any package review reads.
-<!-- user-facing -->
-7. **Report the split**, mirroring `scope-run`'s wording: "I split the job into N packages; here
-   they are. Change any of them on the site or tell me and I will redo it." No approval is
-   collected.
-<!-- /user-facing -->
+7. **Put the split in your summary.** Its `packages:`, `furnish and install:`, `defaults:`,
+   `sections placed:` and `on no package:` lines carry it, and the session that started you says
+   it to the user in the words "Running one level down" gives. No approval is collected.
 
 ## 9. Write the project description
 
 `get_project`'s `description` field answers "what is this job?" for someone opening the project
 cold. This is the first pass with enough of a read on the set to write one, so it writes it here,
-once, after the entries above are recorded and before the report.
+once, after the entries above are recorded and before the summary.
 
 1. **Leave a person's description alone.** Re-check the `description` read in step 2.
    `get_project` carries no author and no write time for this field, so a Learn run cannot
    tell its own past write from a person's edit. Treat any non-empty description as a person's:
-   leave it as is and say so in the report. Only an empty description gets written below.
+   leave it as is and say so in your summary. Only an empty description gets written below.
 2. **Write what the job is.** What the building is, what work is being done, for whom, where, and
    whatever makes this job different from a typical one, in plain estimator prose. Every statement
    traces to something read this run, a render, a page, a seed entry, or an entry recorded in step
@@ -412,41 +492,24 @@ hyphens) or fall back to the `projectId` if the name doesn't produce a clean slu
 into a repo, and never record it as an entry. Regenerate it in full the next time this skill runs for the project, it is a projection,
 not a document to patch. Audience: agent. Its path is handed to the user at run end (step 11) and
 its content orients later readers; whatever crosses from it into user-facing text becomes
-user-facing at the crossing and is translated there.
+user-facing at the crossing and is translated there. The session that started you reads its path
+off your summary and never its content.
 
-## 11. Report
+## 11. Return the summary
 
-<!-- user-facing -->
-Tell the user, in plain terms:
-- **What was read**, identity, which of the seeded project facts were present, the sheet-inventory
-  scope (disciplines covered, set_grid vs. sampled search), and the spec-TOC status.
-- **What was learned**, per checklist category, systems, scope areas, set shape, hazards.
-- **What the reconciliation gate found**, or that it hasn't run yet for this set, never silent on
-  which.
-- **What was recorded**, how many facts were recorded, and any Question raised for a disagreement
-  between documents. What you recorded is the project's working context now, carrying your name
-  and citations; anyone who changes a value later replaces it.
-- **The package split**, packages created, packages already present on the project, each package
-  a supplier furnishes with the package that installs its items, each default you used with the
-  package that follows it and that the user can change any of them in chat, any package
-  named "no catalog trade, not created," how many of the manual's sections outside Divisions 00
-  and 01 you placed on a package out of how many the manual has (or that the count is incomplete,
-  when it was cut short), each section you left on no package with its reason, or the "spec reading hasn't run for this project" note when no spec
-  sections exist.
-- **The structure**, the sheet that grounded the system and the sheet that grounded the floor
-  counts when you filled it, or that you left it blank and which half the set does not state.
-- **The description**, whether you wrote one or found a person's already in place and left it, say
-  which.
-- **Where the packet landed**, the full path.
-- **The placeholder note**, the definitions-as-context section is a stub, not yet designed.
-- **What a person should look at**, the facts you recorded, visible on plumlayer.com with the page
-  each one was read from, and any Question raised for a disagreement between documents.
-
-Close by saying orientation is done and everything it made is on the project record.
-<!-- /user-facing -->
+Write your summary to the path your dispatch names, in the shape "Running one level down" gives,
+then return it and end. Every count on it is read from what this run did and the record holds:
+the facts step 6 recorded and the count `record_batch` returned, the packages step 8 created and
+the re-list's `manualSectionPlacement`, the structure and description steps 7 and 9 wrote. Where
+no spec sections exist, `spec reading:` says spec reading hasn't run for this project and
+`packages:` says none were created. The packet's definitions-as-context section is a stub, not yet
+designed, and the summary does not name it.
 
 ## Gates (non-negotiable)
 
+- **The steps run one level down.** The session that starts this skill dispatches the orientation
+  agent and reads its summary; it never runs a render, a page read, or a package call of steps 1 to
+  11 itself, except on a client with no agent tool.
 - **Cite everything.** No citation → don't emit the entry.
 - **Net-new facts only.** Never re-create a seed entry `project-setup` already recorded, or a sheet /
   spec-section entry `drawing-upload` already recorded.
@@ -457,14 +520,14 @@ Close by saying orientation is done and everything it made is on the project rec
 - **Say it is your reading.** These entries become the project's working context immediately, so an
   inferred value that reads as a documented one is the failure to avoid.
 - **Orientation, not comprehension.** Respect the ≤6 render budget, if the set is too large for it to
-  cover meaningfully, say so in the report rather than silently exceeding it.
+  cover meaningfully, say so in your summary rather than silently exceeding it.
 - **The reconciliation gate is read, never run or recorded, by this skill.** Step 4 reads
   `reconcile_set` report-only; a gate that hasn't run for this set is named as not having run, never
   paraphrased into "no discrepancies."
 - **The packet is a projection only.** Never recorded as an entry, never written to the repo, always
   regenerated in full on the next run rather than patched.
 - **The split anchors on the spec table of contents, never on drawing disciplines.** No spec
-  sections on the project means no packages, and the report says so plainly.
+  sections on the project means no packages, and your summary says so plainly.
 - **Complete step 8's placement check before reporting the split.**
 - **Packages are match-or-create; a re-run never duplicates one.** Read `solicitation_list_packages`
   first and skip any catalog trade id already represented on the project.
