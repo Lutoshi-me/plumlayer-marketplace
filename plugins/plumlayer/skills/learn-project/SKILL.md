@@ -1,7 +1,7 @@
 ---
 name: learn-project
 description: >
-  A cheap orientation pass, in a fresh agent, over an uploaded drawing set: reads seed facts and
+  A cheap orientation pass, in a fresh agent, over an uploaded set: reads seed facts and
   sheet inventory, takes a few bounded renders (cover, index, key plans), records cited
   facts, writes the project description, and drafts and creates the baseline trade-package split
   off the spec table of contents. Trigger on "learn the project", "orient on this set", "orientation pass",

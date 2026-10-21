@@ -71,8 +71,11 @@ and `learn-project` are unchanged, and they are the only reasons to stop this se
    - `search(projectId, predicate: "appearsOnPage", limit: 1)`: whether any sheet has been
      recognized yet.
    - `search(projectId, predicate: "inDivision", limit: 1)`: whether a project manual has been read.
-   - `solicitation_list_packages(projectId)`: whether the baseline packages exist.
-   - `list_scope_items(projectId)`: whether the scope run has produced anything.
+   - `solicitation_list_packages(projectId, limit: 1)`, reading `total`: whether the baseline
+     packages exist.
+   - `search(projectId, subjectPrefix: "scopeItem:", limit: 1)`, reading `count`: whether the scope
+     run has produced anything.
+   Each read is a count, never the rows: this branch only says where the project stands.
 <!-- user-facing -->
    Say where the project stands and what the next step is, in plain terms: the set is in and sorted
    by type but nothing is scoped yet, or a delivery is registered but was never read, or nothing has
@@ -327,26 +330,31 @@ manual's table of contents, and the reconciliation gate. Every gate in it applie
 
 - **Run it, don't restate it.** None of its steps are copied here, condensed here, or run partially
   from here. When a step in it calls for a decision, make that decision there, on its own terms.
-- **Run it here, in this conversation.** Never hand it, or any part of it, to a background agent or
-  a subagent, and never answer its questions on the user's behalf in a brief so that an agent will
-  not need them. The user stays in the loop for the whole read, and every report of a job's state
-  is first-hand.
-- **The one piece of context this skill supplies:** this is the project's first delivery. What
-  follows from that is stated once, in `drawing-upload` step 1b, the file that owns the rule.
+- **Run it here, in this conversation.** Its questions are put to the user here and its jobs are
+  polled here, so the user stays in the loop for the whole read and every report of a job's state
+  is first-hand. The one part that runs one level down is the page reading it sends to its sheet
+  checker, as its "Who reads the pages" says. Never hand a question or a job to an agent, and never
+  answer its questions on the user's behalf in a brief so that an agent will not need them.
+- **The context this skill supplies:** the `projectId` from step 3, so its step 1 lists no
+  projects, and that this is the project's first delivery. What follows from that is stated once,
+  in `drawing-upload` step 1b, the file that owns the rule.
 - **Come back here** once it has emitted its closing report, and carry on at step 6.
 
 ---
 
 ## 6. Orient and draft the baseline packages
 
-Run the `learn-project` skill now, in full, then return here for the closing report. It reads
+Run the `learn-project` skill now, in full, then return here for the closing report. It runs one
+level down: start it as its own "Running one level down" section says, handing its orientation
+dispatch the `projectId` from step 3, and read back only its summary. The orientation agent reads
 the seeded facts and the sheet inventory, takes a small number of bounded renders, records cited
 project-level facts, and drafts and creates the baseline trade-package split off the spec table of
-contents.
+contents; its renders, its spec page reads and its package calls stay in that agent.
 
 Its preconditions 1 and 2 (a project exists, the set is recognized) hold by construction on this
-path: step 3 created the project and step 5 read the set in. If either check fails anyway, that is a
-real finding out of step 5, not a precondition to wave through.
+path: step 3 created the project and step 5 read the set in. If either check fails anyway, its
+summary's `stopped:` line names it, and that is a real finding out of step 5, not a precondition
+to wave through.
 
 ---
 
@@ -368,10 +376,16 @@ rather than restating it from what an earlier step said:
 - **Not seeded:** each fact left off the record and why (the user was unsure, or a document was
   unclear), listed here in the conversation. These are not on the site, since nothing was recorded
   for them; this list is the one place they are named.
-- **The set:** the delivery that was read in, how many sheets were recognized, how many pages you
-  read yourself, how many sheets carry a type and how many you left for a closer look, how many
-  spec sections were found (or that no project manual came with it), and what the index check found.
-- **Orientation:** what it learned, and the baseline packages that now exist.
+- **The set:** the delivery that was read in, how many sheets were recognized, how many pages were
+  read for a closer look, how many sheets carry a type and how many were left for a closer look, how
+  many spec sections were found (or that no project manual came with it), and what the index check
+  found.
+- **Orientation:** off its summary, in your own words: what it learned, any Question it raised,
+  the baseline packages that now exist (their count is `solicitation_list_packages(projectId,
+  limit: 1)`'s `total`), each package a supplier furnishes with the package that installs its
+  items, each default used, how many of the manual's sections are placed on a package and each
+  left on no package with its reason, whether the structure and the description were written, and
+  where the packet landed.
 - **What a person should look at on plumlayer.com:** any Question raised for two documents that
   disagree, among the project's Questions, and the seeded facts, each carrying your name, the time, and
   what you read it from. What you seeded is the project's starting frame now, carrying your name and
@@ -401,9 +415,10 @@ rather than restating it from what an earlier step said:
 - **One project = one project record.** Always seed within the correct `projectId` returned by `create_project`.
 - **An existing project is read, never re-created.** Step 1's branch reports where the project
   stands and ends there; it writes nothing.
-- **The two sub-skills run in full, in this conversation.** `drawing-upload` and `learn-project`
-  are run as written, never restated here, never run partially, never swapped for a shortcut
-  through their tools, and never handed to a background agent.
+- **The two sub-skills run in full, where each says.** `drawing-upload` runs in this conversation
+  and sends its page reads to its sheet checker; `learn-project` runs one level down, as its
+  "Running one level down" says, and its summary is all this session reads of it. Neither is
+  restated here, run partially, or swapped for a shortcut through its tools.
 - **Run, or stop and report; never create a consent step.** The user's decisions are the ask-now
   set in step 2, put once with a pre-filled answer and its source where you hold one. Nothing else
   is put to the user as a question or a confirmation.

@@ -32,7 +32,7 @@ upload has been read, and a `scope-run` or `takeoff` pass starting right after a
 check it before searching the set's text, since a page nobody has read yet cannot be found there.
 
 This skill runs the read cloud-first: recognition and every recorded entry come from the server or
-your own read of the cloud-hosted pages, never from a local pass. Examples in this file are generic;
+the sheet checker's read of the cloud-hosted pages, never from a local pass. Examples in this file are generic;
 never put a real client or project name here.
 
 This skill runs in the conversation, start to finish: every question to the user is put here, and
@@ -125,7 +125,7 @@ Delivery: <deliveryId>, label <issue label>, kind <deliveryKind>, issued <issued
 Jobs: <for set, every recognition jobId of this delivery, one per drawing file; otherwise "none">.
 Pages file: <for pages, the path and the lines <a>-<b>; otherwise "none">.
 Index pages: <for index, the fileId and page of each index page you know, or "none">.
-Upload folder: <path>. Report: <upload folder>/reports/<mode>[-<a>-<b>].md.
+Upload folder: <path>. Report: <upload folder>/reports/<mode>[-<pages file name>-<a>-<b>].md.
 Check your unit as your definition says, write your report to that path, then return it.
 ```
 
