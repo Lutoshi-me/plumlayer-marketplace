@@ -11,7 +11,7 @@ Checks:
   4. Agents: every agents/*.md has frontmatter that actually parses as YAML
      and a non-empty `name` and `description`; the shipped agent set matches
      EXPECTED_AGENTS exactly, in both directions (`scope-reader`,
-     `scope-reviewer`, `scope-round-runner`); and no agent declares a
+     `scope-reviewer`, `scope-round-runner`, `sheet-checker`); and no agent declares a
      frontmatter field the runtime ignores for plugin-shipped agents
      (`hooks`, `mcpServers`, `permissionMode`). Checks 3 and 4 both validate
      the frontmatter block with PyYAML when it is importable, falling back to
@@ -126,7 +126,7 @@ Checks:
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
   20. Agent tool surface: no agents/*.md tools line takes the whole connector as a wildcard;
       every connector verb an agent's body names is on its tools line; every declared connector
-      verb is one of the 113 the connector registers; and the prohibition-only exception table
+      verb is one of the 122 the connector registers; and the prohibition-only exception table
       stays honest, each entry still named in that agent's text and still off its tools line.
   21. Agent model pinned: every agents/*.md frontmatter carries a non-empty `model`, so a
       dispatched agent does not run on whatever model the session happens to be on. Checks 20 and
@@ -200,14 +200,16 @@ EXPECTED_SKILLS = {
     "takeoff",
 }
 
-# The agent definitions the plugin ships under agents/. All three are dispatched
-# by the scope run: the lead starts one runner per pass, and that runner starts
-# one reader per sheet in windows 1 and 2, or one reviewer per package in
-# window 3.
+# The agent definitions the plugin ships under agents/. Three are dispatched by
+# the scope run: the lead starts one runner per pass, and that runner starts one
+# reader per sheet in windows 1 and 2, or one reviewer per package in window 3.
+# The fourth, the sheet checker, is dispatched by drawing-upload for every page
+# read an upload makes.
 EXPECTED_AGENTS = {
     "scope-reader",
     "scope-reviewer",
     "scope-round-runner",
+    "sheet-checker",
 }
 
 # Frontmatter fields the runtime ignores for plugin-shipped agents. Declaring
@@ -5409,6 +5411,7 @@ CONNECTOR_VERBS = {
     "recognize_sheets", "recognize_sheets_status", "reconcile_index", "reconcile_set", "record",
     "record_additional_item", "record_batch", "record_batch_file", "register_file",
     "register_files", "register_pages", "remove_project_date", "remove_question_communication",
+    "remove_sheet_from_page",
     "render_page", "renumber_sheet",
     "reopen_question", "reply_question", "request_file_upload", "request_file_uploads",
     "restore_question_communication", "restore_scope_item", "restore_source", "retire_scope_item",

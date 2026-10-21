@@ -17,32 +17,35 @@ thing that touches a delivery, before anything is split by discipline, routed, o
 
 Doctrine binds every stage: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. Every entry in this pipeline takes effect as soon as it lands, carrying who wrote it and
-what they read from: the recognition pass records what it confirmed off the page, and what you judge
-yourself records as your own reading, cited to the page you read it on. You are the reader; the MCP
-recognition verbs (`recognize_sheets`, `recognize_sheets_status`, `render_page`, `get_page_text`) are
-the anti-hallucination anchor, not the inference engine. There is no local pipeline and no
-server-side autonomous *reader*: the server runs the deterministic bulk pass, which also types most
-sheets by a rule match, and records its own output, but you still drive every job, judge every page
-the pass could not name, type the sheets the rule pass left untyped, and author every entry that
-isn't the deterministic pass's own grounded output.
+what they read from: the recognition pass records what it confirmed off the page, and what the
+sheet checker judges records as its own reading, cited to the page it read it on. The recognition
+verbs and the page reads are the anti-hallucination anchor, not the inference engine. There is no
+local pipeline and no server-side autonomous *reader*: the server runs the deterministic bulk pass,
+which also types most sheets by a rule match, and records its own output. You drive every job and
+put every decision to the user; the plugin's `sheet-checker` agent, which you dispatch, judges every
+page the pass could not name, types the sheets the rule pass left untyped, and authors every entry
+that isn't the deterministic pass's own grounded output.
 
 Independent of recognition, every PDF this skill uploads starts having its own text read the
 moment it registers; there is nothing to trigger. `set_text_status` says how much of a fresh
 upload has been read, and a `scope-run` or `takeoff` pass starting right after an upload should
-check it before leaning on `search_set_text`, since a page nobody has read yet cannot be found there.
+check it before searching the set's text, since a page nobody has read yet cannot be found there.
 
 This skill runs the read cloud-first: recognition and every recorded entry come from the server or
 your own read of the cloud-hosted pages, never from a local pass. Examples in this file are generic;
 never put a real client or project name here.
 
-This skill runs in the conversation, start to finish. No step of it is handed to a background
-agent or a subagent: there is no named agent for this work, and an improvised one cannot take the
-user's answers or report a job's state first-hand. A long recognition job is waited on here, in
-the open, with the poll loop in step 5.
+This skill runs in the conversation, start to finish: every question to the user is put here, and
+every job is waited on here, in the open, with the poll loop in step 5, so each report of a job's
+state is first-hand. The one part that runs one level down is reading pages, which takes neither an
+answer from the user nor a job's state: it goes to the plugin's `sheet-checker` agent, as "Who
+reads the pages" says. Never hand a question, a job, or a decision to an agent, and never improvise
+an agent for any of them.
 
 Run, or stop and report; never create a consent step. The user's decisions in this skill are:
 which project this delivery belongs to, its issue label, which files are the drawings when the packaging leaves it
-genuinely unclear, and whether to send a page and type bundle again when a prior one is on file.
+genuinely unclear, and whether to check the pages again when an earlier run's page and type entries
+are on file.
 Ask each of those once, in plain words, and where you already have a reading (off a cover sheet,
 off the file list) put it forward as the answer with its source named, so the user corrects it
 rather than composes it. Everything else the skill does is its own work, recorded with who did it
@@ -58,13 +61,13 @@ How to say each thing as it happens:
 - "uploading" (steps 3–4)
 - "recognizing sheet numbers" (step 5, while a job is running)
 - "N sheets recognized" (step 5, on job success)
-- "M pages need review" (the step 6/6b unnamed pages and untyped sheets)
+- "M pages need review" (step 6's unnamed pages and untyped sheets)
 - "reading the spec book's table of contents" (step 8, while the extraction job is running)
 - "N sections found" (step 8, on job success)
 - "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
 - "re-reading the N open questions on the changed sheets" (step 9b)
 - "the set uses N discipline codes outside the standard list; I found the set's own name for K of
-  them" (step 6d)
+  them" (step 6)
 <!-- /user-facing -->
 
 ## What this is, and the boundary
@@ -86,10 +89,62 @@ reading (hand-split into discipline PDFs, then parsed a master list), which comm
 before any read confirms it and depends on a master list that failed on 3 of 4 characterized projects.
 This skill reads first; a master list is corroboration only, never the bootstrap.
 
+## Who reads the pages
+
+Every page this skill reads, it reads through the plugin's `sheet-checker` agent, one fresh
+instance per unit. A page image or a page's text read in this conversation stays in it for the
+rest of the session, and a set of a few hundred sheets once filled most of a session's context
+that way. The agent's definition holds how a page is read, judged and recorded; none of it is
+restated here, and you never read a page yourself. A unit runs in one of four modes:
+
+- `set`, once per delivery after recognition (step 6): reads the pages the pass could not name off
+  the recognition jobs, reads the whole sheet list, types what the titles decide, names the codes
+  off the standard discipline list, and writes the pages file, one line per page that needs a look.
+- `pages`, one per twelve lines of a pages file: reads those pages and records what it reads. A
+  pages file you write yourself, for the file sampling in 1c or a manual's opening pages in step 8,
+  takes the same line shape, which the agent's definition gives.
+- `index`, at step 9: reads the drawing index.
+- `left`, after the last pages unit: reads back what is still untyped.
+
+The upload folder is `~/.plumlayer/runs/<project-slug>/upload/<deliveryId>/`, or
+`.../upload/manual/` for a project manual that came on its own (slug from the project name,
+lowercase, spaces to hyphens; fall back to the `projectId`). It holds the pages file `pages.txt`,
+written by the set unit, which you count with `wc -l` and never read (Audience: agent), any small
+pages file of your own, and `reports/`, one report per unit, written by the unit before it returns
+(Audience: agent). It is never committed to any repo, never uploaded, and never recorded as
+project entries.
+
+A dispatch is one Agent call with `run_in_background: false`, and the call is the wait. It carries
+pointers and nothing else:
+
+```text
+subagent_type: plumlayer:sheet-checker
+run_in_background: false
+Project: <projectId>. Mode: <set, pages, index, or left>.
+Delivery: <deliveryId>, label <issue label>, kind <deliveryKind>, issued <issuedOn>, sequence <sequence>.
+Jobs: <for set, every recognition jobId of this delivery, one per drawing file; otherwise "none">.
+Pages file: <for pages, the path and the lines <a>-<b>; otherwise "none">.
+Index pages: <for index, the fileId and page of each index page you know, or "none">.
+Upload folder: <path>. Report: <upload folder>/reports/<mode>[-<a>-<b>].md.
+Check your unit as your definition says, write your report to that path, then return it.
+```
+
+Read the report that comes back and nothing else: the record holds what the unit wrote. Dispatch
+units one after another, never two at once, since two units can reach the same sheet. Where a
+unit's report did not arrive in the message, its report file is the report: open that file rather
+than dispatching the unit again. Where the file is absent too, dispatch that unit once more,
+against the live record; a second miss stops the run here, reported with the pages it covered.
+
+A client that ships this plugin's skills without its agents has no agent to dispatch. There, read
+`agents/sheet-checker.md` from the plugin's own folder, beside its `skills/` folder, and run each
+unit yourself in this conversation, exactly as the definition says, writing the same report file.
+Say once in the closing report that the pages were read in this conversation.
+
 ## 1. Pick the project
 
 Call `list_projects` and confirm with the user which project record this delivery belongs to (a project is one
-project record); get its `projectId`. If there is no project yet, hand off to `project-setup` first; this
+project record); get its `projectId`. When `project-setup` runs this skill it hands you the
+`projectId` it just created: that project is confirmed, so skip `list_projects`. If there is no project yet, hand off to `project-setup` first; this
 skill does not create projects. Confirm you also know the **issue label** for this delivery (e.g. a
 generic "2025-12-22 CD Set" or "Bulletin 01"): ask the user, or plan to read it off the cover sheet
 during recognition. It is load-bearing for supersession later.
@@ -143,8 +198,9 @@ The branch substitutes the local-only stages and reuses everything else unchange
 - **Enumerate instead of recognize packaging (replaces step 2).** `list_files(projectId)` is your
   source list: each row carries `fileId`, `filename`, `sizeBytes`, and its `deliveryId` (or null).
   Apply step 2's judgment to that list: which files are drawings and which aren't. When a filename
-  doesn't decide, sample a page or two with `render_page` / `get_page_text`: on this branch even the
-  file-selection sampling is cloud-side, since there are no local bytes.
+  doesn't decide, write a small pages file naming the file's first page or two with the reason
+  `file` and dispatch a pages unit over it: on this branch even the file-selection sampling is
+  cloud-side, since there are no local bytes, and the unit's `files:` line says what each page is.
 <!-- user-facing -->
 Emit the same packaging
   report: which files you will recognize, which you're excluding and why.
@@ -154,8 +210,8 @@ Emit the same packaging
   - **Attributed**: the file already carries its delivery. Reuse it; never register a duplicate
     delivery for the same issue.
   - **Unattributed** (`deliveryId: null`): surface the gap to the user; never invent attribution.
-    Establish which issue the files belong to (ask, or read it off a cover sheet via
-    `render_page`), register the delivery per step 3 if it doesn't exist yet, and pass its id as
+    Establish which issue the files belong to (ask, or have a pages unit read the cover sheet with
+    the reason `file`), register the delivery per step 3 if it doesn't exist yet, and pass its id as
     `recognize_sheets.deliveryId` in step 5: that is the supported attach mechanism for an
     already-registered file (a `register_file` retry returns the existing row; it does not
     re-attribute). Chronology still comes from the documents: `issuedOn` off a cover sheet or
@@ -166,10 +222,9 @@ Emit the same packaging
     (the server refuses the mismatch).
 
 From here the pipeline is identical: step 5 (`register_pages` once, then `recognize_sheets` per file,
-pass `deliveryId` explicitly for any file whose registration doesn't carry it), step 6 (read the
-pages the pass could not name), step 6b (sheet-type classification), step 7 (page + type write,
-verify). Every gate
-applies unchanged.
+pass `deliveryId` explicitly for any file whose registration doesn't carry it), step 6 (the sheet
+checker's units: the pages the pass could not name, the sheet typing, the corrections), step 7
+(verify). Every gate applies unchanged.
 
 **Re-recognize semantics (the honest limits).** Re-running `recognize_sheets` on a file+delivery is
 always safe: a `stale` or `failed` job restarts; a `succeeded` one returns the existing job and the
@@ -178,7 +233,7 @@ that already succeeded: a corrected re-read after a bad run needs a force-re-rec
 is not built yet. Say so plainly rather than re-running and implying new output.
 
 **Idempotent recognition is not evidence of typing coverage.** A `succeeded` job returning
-unchanged tells you nothing about whether step 6b ever ran for these sheets. A delivery recognized
+unchanged tells you nothing about whether step 6 ever ran for these sheets. A delivery recognized
 before this skill carried a typing stage, or one whose earlier run stopped short of it, looks
 identical from `recognize_sheets_status` alone to a fully typed one. Before this branch reports
 done, check typing coverage directly (as in step 7's verify) rather than inferring it from the
@@ -328,8 +383,9 @@ did not observe that. What the server says on each poll:
   those entries and you never `record_batch` them yourself: that would double-write every sheet. Report
   the run-level counts from `report`: `pagesScanned`, `sheetsGrounded`, `highConfCount`, `flaggedCount`,
   `extractionWarningCount`, `calibrated`, `capHit`. Never assume "N pages scanned = N sheets recognized":
-  state both numbers. `confidence` on individual entries (visible later via `search`/`set_grid`) is
-  triage/review-priority metadata only: it tells you which sheets to check first and ranks nothing.
+  state both numbers. `confidence` on individual entries (visible later on the sheet list) is
+  triage/review-priority metadata only: it tells the sheet checker which sheets to look at first and
+  ranks nothing.
 - On a `succeeded` pass, `written.enteredValuesKept` lists the pages where the pass read nothing but a
   sheet number, title, discipline, or type that a person or an agent entered still stands. The pass
   left each one as it is. When `pages` is above zero, name those pages to the user with the value
@@ -339,7 +395,8 @@ did not observe that. What the server says on each poll:
   When it is above zero, tell the user this issue was read after a newer one and that the newer
   issue's values stand on those sheets. Do not record this issue's values over them.
 - `report.pagesUnread` lists pages the pass did not read at all (each such `unnamedPages` row says
-  why in `unread`). Those pages are not in `enteredValuesKept`; read them yourself in step 6.
+  why in `unread`). Those pages are not in `enteredValuesKept`; the set unit in step 6 sends them
+  to be read.
 
 For a multi-file delivery, start and poll a separate job per file; there is no merge step and no
 `SET_TAG`: each file's recognized entries land under the shared `deliveryId` as soon as its own job
@@ -353,347 +410,102 @@ two polls you hold, and never a state you inferred. "Last poll at 19:33:10, runn
 pages scanned" is a report; "it has been hanging for an hour" is not.
 <!-- /user-facing -->
 
-## 6. Read the pages the pass could not name
+## 6. Check the pages, one level down
 
-A `succeeded` `recognize_sheets_status` result carries `unnamedPages`: the tail where the deterministic
-pass is least sure (low confidence, no sheet number found, or a degraded text layer). Read and judge
-every page in that tail yourself:
-
-- Use `unnamedPages[].pageNum` or `pageInPdf` (both 1-based) with `render_page` and `get_page_text`; never
-  the legacy 0-based `unnamedPages[].page` field. `render_page` returns the PNG inline (pass a normalized
-  `region` like `{x0:0.74, y0:0.80, x1:1.0, y1:1.0}` to zoom the title-block corner at higher DPI);
-  `get_page_text` returns exact spans with PDF-point bboxes; a page without a text layer is read by
-  OCR and `textSource` says so, and spans are empty only when `textSource` is `none`.
-- Judge the sheet number, title, and discipline from what you actually see, and handle the two cases
-  differently:
-  - **A confident correction of a machine misread**: you can see the reader grabbed the wrong cell (a
-    tag instead of the sheet number, a boxed note instead of the title). If the recognizer already
-    stored a value for that slot, write your corrected value as a supersession **edge** onto it:
-    `search(projectId, subject: "sheet:<n>", predicate:
-    "hasTitle"|"discipline"|"appearsOnPage")` to get the live entry's `id`, then author your corrected
-    entry with `supersedesId` set to that id, cited to the crop you read. The edge is what makes your
-    read the current value: the record refuses a write onto a filled slot that names nothing, which is the
-    record's own rule for an occupied field. If the slot is empty (the pass
-    left this page blank), just author the entry fresh: there is nothing to supersede.
-    A misread sheet number itself is corrected with `renumber_sheet` (project-record skill), which
-    moves what was recorded on the sheet under the right number; never author a second sheet under
-    the right number beside the misread one.
-  - **Genuinely unclear**: you honestly cannot tell which of two readings is right. Author your reading
-    as a bare entry, cited to what you read, and name it to the user in the step 7 report, with both
-    readings, so a person settles it; never silently pick. Which of two readings of our own sheet
-    title is right is our reading of the set, not a Question for the design team. Name only a real
-    toss-up; never a correction you are confident about (that just hands a person a title you
-    already read correctly).
-- **Image-only / scanned pages**: flag them honestly. Create the page as its own subject:
-  `page:<fileId>:<pageInPdf>`, never `subject: null`, and never add an OCR dependency (deferred).
-  Report the flagged page list; an honest "could not recognize these N pages" beats a guess.
-
-**A number another drawing issue already prints.** Before you write a bundle, look the number up
-(`set_grid`, or `search(projectId, subject: "sheet:<n>", predicate: "locatedAt")`). When an earlier or
-later drawing issue already places that number, do not write `appearsOnPage`, `locatedAt` or
-`partOfIssue` for it with `record`, and never name the other issue's location as the entry your write
-replaces: that takes the other issue's page off the record. Call `renumber_sheet` with
-`sheetNumber` set to the page row's number from `set_grid` and `newSheetNumber` set to the number
-you read. The page becomes that number's page in its own drawing issue: the newest issue's page is
-the current one, and the other issue's page stays on record as replaced. Then write `hasTitle` only
-when the title you read differs from the number's current one, naming that entry in `supersedesId`.
-When the page's own issue already places the number on another page, the verb refuses and names
-that page: the two pages print the same number, so report both to the user rather than picking one.
-
-**Two numbers on one page.** When `set_grid` shows a page carrying two numbers and you read the
-title block yourself, a number the page does not print is a misread: take it off that page with
-`remove_sheet_from_page(projectId, sheetNumber, fileId, pageInPdf, reason)`, the reason naming what
-the page prints. `renumber_sheet` refuses there, because the right number already stands on the
-page. Remove only a number you have read the page not to print, never one that also prints on that
-page, and report each removal; a number that stands on other pages stays on them.
-
-For every other page you resolve, author the full bundle of entries, mirroring the shape the
-server records for the pages the deterministic pass already recognized (matching predicate and value
-shapes keeps every sheet's entry set uniform regardless of which stage grounded it):
-
-```json
-{"subject": "sheet:S-501", "predicate": "appearsOnPage", "value": 412,
- "sourceInstrument": "drawing-delivery:<deliveryId>", "versionScope": "<issue label>",
- "evidence": {"source": "<fileId>/page/412", "method": "agent-vision-read", "snippet": "S-501",
-   "locator": {"frame": "pdf-points", "bboxPts": [2890.1, 2080.4, 2986.2, 2132.1]}}}
-```
-Alongside `appearsOnPage`, add `hasTitle` (value = the title text you read), `locatedAt` (value =
-`{pdf, sourcePdf, fileId, page, pageInPdf, deliveryId, issueLabel, issuedOn, deliveryKind}`),
-`discipline` (value = the sheet number's leading letter run, uppercased, e.g. `A-101` → `"A"`,
-`AD-101` → `"AD"`), and
-`partOfIssue` (value = the delivery's ref: `{id, label, deliveryKind, issuedOn, sequence}`). Each
-evidence block cites the render or text span you actually read. A bbox is a text span's own box,
-never one measured off a render; a read that came off a render alone carries `locator: null`.
-
-**Discipline convention:** derive strictly from the sheet number's own leading letter run, matching the
-server's `disciplineFromSheetNumber` logic (all letters before the first digit/dash, uppercased);
-never a full NCS discipline name. A prefix outside the standard list stays as its letters, and
-step 6d reads the set for that code's name; a sheet with no readable prefix at all is read from
-its page in step 6d.
-
-**Gate:** every page in that tail ends up judged (a full entry bundle) or flagged (image-only or genuinely
-unreadable); never silently dropped. State how many you read, corrected, and flagged.
-
-## 6b. Type the sheets
-
-Recognition itself now types most of the set: at `recognize_sheets` finalize, the server runs a
-deterministic rule pass over every newly recognized sheet, matching its sheet-number prefix or
-recognized title against the 13-value vocabulary below. A match writes a `sheetType` entry
-server-side, written by the recognition pass, cited to the matched title words, with a `confidence` of
-`high` or `medium`. A sheet the rules can't place gets nothing: those leftover sheets, never `other` (the
-rule pass never writes `other`), is what you read here. So this step is the backstop to the
-server's typing, not the whole of it: type the leftover sheets the rules left untyped, plus any rule-typed
-sheet you judge to be wrong; an unclear sheet still stays untyped rather than getting a guess.
-
-Start from `recognize_sheets_status`'s `written.sheetTyping` summary: `{sheetsConsidered, typed,
-highConfidence, mediumConfidence, untyped, typedWritten}`. `typed` is how many the rules placed on
-this run; `untyped` is the leftover set you're about to read.
-<!-- user-facing -->
-Narrate the split in estimator words: "the recognition pass sorted N of M sheets by type; I'm
-looking at the K it left."
-<!-- /user-facing -->
-
-Find the leftover sheets from `set_grid` rows carrying no `sheetType`, or `search(projectId, predicate:
-"sheetType")` against the recognized set to see what's already covered. Apply the keyword/judgment
-guidance and render-only-when-unclear rule below to those leftover sheets only, and record an entry per sheet
-you can confidently place.
-
-**Correcting a rule-typed sheet.** When you judge a rule-typed sheet wrong, correct it the same way
-you'd correct any recognizer-set value (step 6c): never a bare re-record. A bare entry with no
-`supersedesId` onto an occupied slot is refused, naming the record it would have to replace.
-`search(projectId, subject: "sheet:<n>", predicate: "sheetType")`, take the id of the current row
-(the most recent one search returns for that slot), and author your corrected entry with
-`supersedesId` set to it, cited to what you actually read. With that edge, your read becomes the
-sheet's type the moment it lands.
+The recognition pass grounds the tokens it reads, but it leaves a tail: pages it could not name,
+sheets its rule pass could not type, titles where it grabbed the wrong cell (a boxed note in place
+of the title-block cell), discipline codes off the standard list, and sheet numbers with no
+letters. The sheet checker reads all of it, unit by unit, as "Who reads the pages" says, and you
+hold only what each unit returns. How a page is read, judged and recorded is in the agent's
+definition and is not restated here.
 
 This step runs on every door this skill supports: a fresh baseline, a bulletin or revision, and the
-cloud-resident re-recognition branch (1c) all converge here before the skill reports done. If this
-delivery, or an earlier delivery in the same project, already went through recognition but was
-never typed (from a session that predates the server-side rule pass, or one that stopped short),
-closing that gap is this run's job, not something to leave for later. A recognized sheet with no
-`sheetType` entry, whether rule-typed or agent-typed, and no honest skip-count is never a valid
-resting state for any path through this skill.
+cloud-resident branch (1c) all converge here before the skill reports done. A delivery, or an
+earlier delivery in the same project, that went through recognition and was never typed, from a
+session that predates the server-side rule pass or one that stopped short, is closed out by this
+run, not left for later.
 
-### The vocabulary
-
-Exactly these 13 values, no others:
-
-```
-schedule, plan, overall-plan, enlarged-plan, section, elevation, detail, RCP, schematic, legend,
-notes, cover-index, other
-```
-
-### Efficiency
-
-An 850-sheet set must not require 850 renders. Classify from the sheet number and title you already
-have from steps 5-6 wherever the mapping is unambiguous, no new render needed, citing the recognized
-title as your evidence:
-
-- Title contains "FLOOR PLAN" / "SITE PLAN" / "FOUNDATION PLAN" → `plan`
-- Title contains "OVERALL" and "PLAN" → `overall-plan`
-- Title contains "ENLARGED" and "PLAN" → `enlarged-plan`
-- Title contains "ELEVATION" → `elevation`
-- Title contains "SECTION" → `section`
-- Title contains "SCHEDULE" → `schedule`
-- Title contains "DETAIL" / "DETAILS" → `detail`
-- Title contains "REFLECTED CEILING" or the sheet reads "RCP" → `RCP`
-- Title contains "SCHEMATIC" or "DIAGRAM" → `schematic`
-- Title contains "LEGEND" / "SYMBOLS" / "ABBREVIATIONS" → `legend`
-- Title contains "GENERAL NOTES" / "NOTES" → `notes`
-- The sheet is the set's cover page or a sheet index → `cover-index`
-- A real sheet that doesn't map to any of the above → `other`
-
-Only reach for `render_page` when the number and title genuinely leave the type unclear (a sparse or
-cryptic title, a discipline whose naming convention you haven't seen yet): render that one sheet,
-judge it, move on. Do not render sheets whose type is already obvious from what recognition gave you.
-
-### Entry shape
-
-One `sheetType` entry per sheet you classify, matching the step 6 bundle's shape:
-
-```json
-{"subject": "sheet:S-501", "predicate": "sheetType", "value": "schedule",
- "sourceInstrument": "drawing-delivery:<deliveryId>", "versionScope": "<issue label>",
- "evidence": {"source": "<fileId>/page/412", "method": "agent-read",
-   "snippet": "DOOR SCHEDULE", "locator": null}}
-```
-
-Use `evidence.method: "agent-read"` when the number/title alone decided it (no new render); use
-`"agent-vision-read"` when you rendered the page to decide, its `locator` as the full bundle above
-says. `value` must be one
-of the 13 literal strings above; never invent a fourteenth value, and never write a discipline name,
-a partial phrase, or a full title as the value.
-
-### Unsure sheets
-
-Do not record a `sheetType` entry for a sheet you can't confidently place in the vocabulary; skip it
-and count it. Build the skipped list from the record, not from memory: `search(projectId,
-predicate: "sheetType")` against the recognized sheet list gives the exact set with no type entry.
+1. **Check for an earlier run's entries first.** The server's idempotency covers the entries the
+   recognition pass recorded, not the ones an agent authored. Where the upload folder already holds
+   unit reports for this delivery, or `search(projectId, predicate: "partOfIssue", text:
+   "<deliveryId or label>", limit: 1)` shows entries for it beyond the recognition pass's own,
+   confirm with the user before checking the pages again.
+2. **The set unit.** Dispatch one, naming every recognition job id of this delivery. It reads the
+   pages the pass could not name off the jobs, reads the whole sheet list, types every leftover
+   sheet whose title decides it, names the codes off the standard list from the set's own index,
+   and writes the pages file: one line per page that needs a look, with its reason. Start from
+   `recognize_sheets_status`'s `written.sheetTyping` summary, `{sheetsConsidered, typed,
+   highConfidence, mediumConfidence, untyped, typedWritten}`, which you already hold from step 5.
 <!-- user-facing -->
-Narrate: "N sheets sorted by type, M I left for a closer look"; never imply full
-coverage when some sheets were skipped. Name the M by sheet number and say what the list is: the
-sheets left without a type. It is a different list from the title disagreements in the index check,
-even when most numbers repeat; if you mention that earlier list, say which sheets are in both and
-which are in only one, never "the same".
+   Narrate the split in estimator words: "the recognition pass sorted N of M sheets by type; I'm
+   looking at the K it left."
 <!-- /user-facing -->
+3. **The pages units.** Count the pages file's lines with `wc -l`, and dispatch one pages unit per
+   twelve lines, in order (lines 1 to 12, then 13 to 24, and so on), one after another, until the
+   last line is covered. Sum each unit's counts as it returns.
+4. **The left unit.** After the last pages unit, dispatch one left unit. Its two lists are the
+   sheets still without a type and the sheets still filed under no discipline letters, read back
+   from the record. A sheet on its untyped list that no pages unit named on its `left untyped:`
+   line was never reached: write it to a small pages file of its own with the reason `type` and
+   dispatch one more pages unit over it, then the left unit again.
 
-## 6c. Correct a mis-bound recognized title or discipline
-
-The deterministic pass grounds the *tokens* it reads, but *which* cell fills the title or discipline
-slot is its reproducible-but-fallible guess: it can grab a boxed drawing note instead of the
-title-block cell. So a sheet can come through recognition "successfully" and still carry a wrong title.
-(For example, a sheet recognized with the title "SEE NOTE 3 FOR TYPICAL MOUNTING HEIGHT" instead of
-"PLUMBING ENLARGED RESTROOM PLANS - LEVEL 3 PART A".) You are not re-reading every recognized title: recognition is
-trusted for the bulk. This is for the mis-grabs you actually notice: you will usually catch them in
-step 6b, where a recognized "title" that reads like a note, a general instruction, or a bare fragment
-rather than a sheet name is the tell, or when the user points one out.
-
-When you are confident a recognized title or discipline is a mis-grab, correct it with a supersession
-edge, exactly like a confident step 6 correction:
-
-1. `search(projectId, subject: "sheet:<n>", predicate: "hasTitle")` (or `"discipline"`) → the live
-   machine entry's `id`.
-2. `render_page` the title-block corner and read the real title yourself.
-3. Author the corrected entry with `supersedesId` set to that id, cited to the crop you read, and pool
-   it into your step 7 write.
-
-A write onto a field that already holds a value names the record it replaces. Your corrected entry
-becomes the sheet's title or discipline the moment it lands, whoever wrote the value it corrects,
-and the recognizer's entry stays in the record beneath it. A corrected entry with no `supersedesId`
-is refused, and the refusal names the current record. Never raise this as a question: a reading
-you cannot resolve is named to the user, and asking about a title you already read correctly is
-the "go set it on the site" dead end this step exists to close.
+**Gate:** every page in the tail ends up judged (a full entry bundle) or flagged (image-only or
+genuinely unreadable), never silently dropped; every code on the off-list ends named with a
+citation or reported as one the set does not name; and every sheet with no letters ends recorded
+with a citation or named to the user. State the counts.
 
 <!-- user-facing -->
-Say it the way it happened: "the automatic scan grabbed the wrong text on N sheets, so I read them
-and set them right".
+Say what the units found the way it happened:
+
+- Corrections: "the automatic scan grabbed the wrong text on N sheets, so I read them and set them
+  right".
+- Toss-ups: name each sheet with both readings, so a person settles it. Which of two readings of
+  our own sheet title is right is ours to settle, not a question for the design team.
+- Two pages printing one number: name both pages rather than picking one.
+- The discipline codes: "The set uses N discipline codes outside the standard list; I found the
+  set's own name for K of them, and J show as their letters until you name them. M sheets had no
+  letters in their number; I read the pages and filed K of them, and J need you."
+- The untyped sheets: "N sheets sorted by type, M I left for a closer look"; never imply full
+  coverage when some sheets were skipped. Name the M by sheet number, off the left unit's list, and
+  say what the list is: the sheets left without a type. It is a different list from the title
+  disagreements in the index check, even when most numbers repeat; if you mention that earlier
+  list, say which sheets are in both and which are in only one, never "the same".
+- Flagged pages: name them by page number, "could not recognize these N pages", in the
+  conversation rather than as Questions on the project record.
 <!-- /user-facing -->
 
-## 6d. Name the discipline codes off the standard list
+## 7. Verify
 
-The server holds one standard discipline list (the letters the trade uses, each with its word: `A`
-Architectural, `D` Demolition, `LT` Lighting, and so on), and every sheet list heading reads that
-word. A code off the list (`ES`, `SI`, `X`, `FD`) reads its bare letters until the set names it.
-This step reads the set for those names. A sheet whose number carries letters keeps its letters as
-its discipline: never supersede it onto a standard code. Only a sheet whose number carries no
-letters at all gets a per-sheet read.
+The recognized portion needs no write from you. `recognize_sheets` already wrote it server-side
+once its job succeeded (step 5), and re-running `recognize_sheets` on the same file+delivery is
+safe by construction: the concurrency guard returns the existing job, and the write itself is
+idempotent (`alreadyWritten: true` on a poll means a prior run already wrote this delivery's sheet
+entries, and no duplicate was written). Every entry the sheet checker authored was written by the
+unit that read it, in one count-verified write per unit. You verify:
 
-1. **Find the codes.** `set_grid(projectId, limit: 0)` and read `offListLetters`: the codes the
-   set's sheets carry that the standard list has no word for and that nobody has named yet. The
-   list comes from the server; carry no copy of the standard list here.
-2. **Read the set's word for each code.** Read the drawing index (`get_page_text` or `render_page`
-   on the index sheet) and that series' sheet titles off `set_grid(projectId, discipline:
-   "<code>")`. The set's word is the index heading printed directly over that series' rows. When
-   the index has no heading over them, it is a discipline word every title in the series opens
-   with ("SECURITY ...", "LIGHTING PLAN ..."). Otherwise leave the code unnamed. When the index
-   heading and the titles disagree, take the index heading; which heading our own sheet list uses
-   is ours to settle, not a Question for the design team.
-3. **Record each word.** One entry per code, pooled into the step 7 batch write: subject
-   `project`, predicate `disciplineName:<the code>`, value the word in sentence case (SECURITY is
-   recorded as Security), `sourceInstrument: "drawing-delivery:<deliveryId>"`, and evidence
-   `{"method": "agent-read", "fileId": "<fileId>", "pageInPdf": <the page that prints the word>,
-   "snippet": "<the words exactly as printed>"}` (a `sheet` in place of `fileId` also cites the
-   page). To change a name already recorded, name the entry it replaces with `supersedesId`. The
-   record refuses a name for a code on the standard list and a name with no page. A word that
-   matches a standard word ("ARCHITECTURAL" over `EX` sheets) is recorded all the same; the heading
-   then joins the standard one.
-4. **Never invent a name.** No write for a code the set does not name, and never a name worked
-   out from the letters. An unnamed code reads its letters, and the estimator can name it.
-5. **Sheets with no letters.** For each sheet `set_grid` files under `Unknown` (its number starts
-   with no letter, or carries none), read the page, never the PDF file name or folder:
-   `render_page` the title-block corner and/or `get_page_text` the page (`fileId` + `pageInPdf` off
-   the row). Evidence that settles a discipline, strongest first: a discipline caption printed in
-   the title block itself (e.g. "CIVIL"); the sheet's own title and content (a turning plan or an
-   overall site plan is civil); the drawing index listing the sheet under a discipline heading,
-   cited to the index page. Write a standard code (`C`, `L`, and so on): `search(projectId,
-   subject: "sheet:<n>", predicate: "discipline")` for the live entry's id, then a `discipline`
-   entry with `supersedesId` set to that id, `sourceInstrument: "drawing-delivery:<deliveryId>"`
-   and `versionScope: "<issue label>"` (both off the row: this tag is mandatory, a write without it
-   is ignored by the grid and can blank the field), and evidence `{"source":
-   "<fileId>/page/<pageInPdf>", "method": "agent-vision-read", "snippet": "<the words you read>",
-   "locator": {"frame": "pdf-points", "bboxPts": [...]}}` when the read came off a text span you can
-   box, `locator: null` when it came off a rendered crop you judged by eye. When nothing on the
-   page or in the index settles it, leave `discipline` alone and name the sheet to the user with
-   what you read.
-
-**Gate:** every code in `offListLetters` ends the step named with a citation or reported as one the
-set does not name, and every sheet with no letters ends recorded with a citation or named to the
-user. State the counts.
-<!-- user-facing -->
-"The set uses N discipline codes outside the standard list; I found the set's own name for K of
-them, and J show as their letters until you name them. M sheets had no letters in their number; I
-read the pages and filed K of them, and J need you."
-<!-- /user-facing -->
-
-## 7. Record the pages and types, then verify
-
-**The recognized portion needs no write call from you.** `recognize_sheets` already wrote it
-server-side once its job succeeded (step 5), and re-running `recognize_sheets` on the same
-file+delivery is safe by construction: the concurrency guard returns the existing job, and the
-write itself is idempotent (`alreadyWritten: true` on a poll means a prior run already wrote this
-delivery's sheet entries, no duplicate was written). You still make exactly one write of your own
-(pooling the step 6 bundle, the sheetType entries from step 6b, any mis-bind
-corrections from step 6c, and step 6d's discipline names and corrections, the edges carrying their
-`supersedesId`), plus one verification pass:
-
-1. **Record the page + type bundle.** Before recording, check whether you've already recorded
-   these pages or types for this delivery in a prior run of this skill (e.g. `search(projectId,
-   predicate: "partOfIssue", text: <deliveryId or label>)` and `search(projectId, predicate:
-   "sheetType")`), and confirm with the user before sending it again; the server's recognized-entry
-   idempotency does not cover entries you authored and sent yourself. Once clear, pool the full entry
-   bundles you authored in steps 6, 6b, and 6c (recognized pages you did not correct contribute
-   nothing here: do not re-send them) into one array per project.
-
-   **For a small bundle, call `record_batch(projectId, entries)` directly.** It accepts 1–500
-   entries and is atomic (one bad entry rejects the whole batch, naming the index); transport every
-   entry verbatim, never re-typed from memory. **Verify**: the returned `count` must equal the
-   number of entries you sent. If it doesn't, stop and report the discrepancy rather than retrying
-   with a guessed correction.
-
-   **For a large bundle you write (a deep set with thousands of page and type entries), use
-   `record_batch_file` instead of chaining many `record_batch` calls.** The path: write the full
-   entry array as JSONL, `request_file_upload(projectId, filename)` for a signed URL, PUT the JSONL
-   bytes to it, `register_file(projectId, fileId, filename, contentType: "application/jsonl", kind:
-   "batch")`, then call `record_batch_file(projectId, fileId)` to write straight from the
-   registered file. Verify the same way: read back a count and confirm it matches what you wrote to
-   the file, never assume the upload landed intact. Keep `record_batch` for small inline batches;
-   reach for `record_batch_file` only once a single bundle is large enough that chaining
-   `record_batch` calls would be the wrong shape.
-
-   **A freshly-shipped verb may not appear until the session reloads the plugin / reconnects MCP.**
-   If `record_batch_file` (or any verb you expect) is missing from your tool list, reload the
-   session before concluding it doesn't exist.
-
-2. **Verify the recognized portion against the report, with a targeted check rather than the whole
-   grid.** Compare the succeeded job's `write` summary (`{written, alreadyWritten, byPredicate}`)
-   against its `report` (`sheetsGrounded` and the rest) for rough correspondence, then spot-check
-   with a handful of targeted `search(projectId, predicate: "appearsOnPage", text: "<a sheet number
-   you saw>")` calls. That spot-check is this step's verify. What to avoid here is a bare,
-   unpaged `set_grid` call: on a set with hundreds of sheet rows it returns on the order of 600 KB
-   of JSON, large enough that you get a file redirect back instead of the payload inline, and its
-   default first page is not the set anyway. A paged read is a different thing and is fine:
-   `set_grid(projectId, limit: 0)` for the counts, then pages with `discipline` + `limit`/`offset`,
-   which is exactly what step 10 does when it needs every row. Reach for that when you genuinely
-   need the whole grid, not to verify this write.
-3. **Verify typing coverage against the recognized count, not just pages.** Sum `sheetsGrounded`
-   across every file's succeeded job for this delivery (from step 5) to get the recognized sheet
-   count in scope. Compare it against the sum of the server's rule-typed count (`written.sheetTyping.
-   typed` from step 6b's status read) plus your own agent-typed-plus-skipped count from step 6b: the
-   sheets you assigned a `sheetType` entry to, plus the ones you counted as honestly unsure. The
-   three should reconcile: recognized count = rule-typed + agent-typed + honestly-skipped. A gap
-   between them, sheets neither typed by either author nor counted as skipped, means step 6b did not
-   actually reach every sheet in scope: go back and close it before this run reports done, the same
-   way a count mismatch in point 1 stops the run rather than getting waved through.
+1. **Each unit's write.** Its `sent:` equals its `landed:`. A mismatch stops the run and gets
+   reported, never retried with a guessed correction.
+2. **The recognized portion, with a targeted check.** Compare the succeeded job's `write` summary
+   (`{written, alreadyWritten, byPredicate}`) against its `report` (`sheetsGrounded` and the rest)
+   for rough correspondence, then spot-check with a handful of `search(projectId, predicate:
+   "appearsOnPage", text: "<a sheet number you saw>")` calls. That spot-check is this step's verify.
+   The sheet list's rows are the units' to read, never this conversation's.
+3. **Typing coverage against the recognized count.** Sum `sheetsGrounded` across every file's
+   succeeded job for this delivery (from step 5) for the recognized sheet count in scope. It must
+   equal the server's rule-typed count (`written.sheetTyping.typed`), plus the sheets the units
+   typed (the set unit's `typed by title:` and every pages unit's `typed:`), plus the left unit's
+   untyped count. A gap means step 6 did not reach every sheet in scope: go back and close it before
+   this run reports done, the same way a count mismatch in point 1 stops the run.
 
 Report any pages still unresolved or flagged image-only, by page number, in the conversation
-rather than raising them as Questions on the project record, and report the plain untyped
-count: a person resolves them, not something this skill resolves itself.
+rather than raising them as Questions on the project record, and report the plain untyped count:
+a person resolves them, not something this skill resolves itself.
 <!-- user-facing -->
 Report: the
 project and delivery; the recognition run's counts (pages scanned, sheets recognized, how many were
 high-confidence, how many were flagged for a closer look); how many sheet records were saved and how
-many were already on file; the count of sheet records you added yourself for the sheets you reviewed and
-typed, confirmed against what you sent; whether every recognized sheet in this delivery now carries a
+many were already on file; the count of sheet records added for the sheets reviewed and typed,
+confirmed against what was sent; whether every recognized sheet in this delivery now carries a
 type or an honest skip-count, naming the gap plainly if there is one; any sheet title left between
 two readings, with both readings and the sheet named, for them to settle; and that the set is now readable
 on plumlayer.com with each sheet's source page behind it.
@@ -749,8 +561,10 @@ disk the whole time.
    schematic and design development, comes back as `sectionsFound` 0 with every section in
    `tocOnlyCount`; that is a complete read of that manual, not a failure. `tocBackstop.requested`
    true means no page footer printed a section number and no table of contents was found in the
-   opening pages: say so, and read the opening pages yourself with `render_page` before reporting
-   any section count. A table of contents the read could not take whole ends the job `failed`,
+   opening pages: say so, and before reporting any section count, write a small pages file naming
+   the manual's opening pages with the reason `opening pages` and dispatch a pages unit over it;
+   its `files:` line says whether those pages print a table of contents and how many sections it
+   lists. A table of contents the read could not take whole ends the job `failed`,
    with the reason in `error` naming its pages, and saves no section from that file: report the
    reason as a finding and do not retry, since a second read fails the same way. A section declared solely in the PDF bookmark
    tree, with no confirming footer, does NOT add to any count; it surfaces through the completeness
@@ -765,9 +579,9 @@ disk the whole time.
    predicate (`hasCompletenessStatus`) and never appear in this read. A mismatch stops the run and
    gets reported, never a guessed correction.
 
-**If `extract_spec_toc` / `extract_spec_toc_status` don't appear in your tool list**, the same
-session-reload rule from step 7 applies. Start a fresh session rather than
-assuming the manual can't be read.
+**If `extract_spec_toc` / `extract_spec_toc_status` don't appear in your tool list**, a
+freshly-shipped verb may not appear until the session reloads the plugin or reconnects to the
+server. Start a fresh session rather than assuming the manual can't be read.
 
 **No project manual in this delivery?** Say so plainly in the report and move on to step 9: nothing
 here blocks the reconciliation gate; it only means the gate's spec leg reports as not having run (step
@@ -780,13 +594,13 @@ one deterministic check: does the delivery's own drawing index agree with what a
 recognized, and with the spec sections read from the project
 manual. Catching a set-level mismatch here keeps it from poisoning every read that follows.
 
-1. **Read the index as stated.** Call `reconcile_index(projectId)` to parse the delivery's drawing
-   index page(s) and record each listed sheet as a cited `declaredInIndex` entry. It reads from
-   sheets the set grid classified `cover-index` in step 6b; if none were classified, pass `pages`
-   yourself, pointing at the index page(s) you know about. Report `declaredCount`, and whether
-   `backstop.requested` came back true: that means the parse could not stand as the declared
-   register (no text layer, too few sheets found, a column structure that did not resolve), and you
-   should read the rendered index page yourself with `render_page` before trusting the count.
+1. **Read the index as stated.** Dispatch one index unit. It runs the parse of the delivery's
+   drawing index page(s), which records each listed sheet as a cited `declaredInIndex` entry,
+   reading from the sheets typed `cover-index` in step 6; where none were typed, name the index
+   page(s) you know about in its dispatch. Report its `declared:` count, and whether its backstop
+   came back: that means the parse could not stand as the declared register (no text layer, too
+   few sheets found, a column structure that did not resolve), and the unit rendered the index
+   page and counted the sheets it lists. Say both counts before trusting either.
 2. **Run the diff, report-only.** Call `reconcile_set(projectId)` without `record`. The bare call
    runs the ORIENTATION check: the index of record (the newest delivery that actually has a read
    drawing index) against the current compiled set across every delivery, not just one. Pass
@@ -969,9 +783,10 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
 
 ## Gates (non-negotiable)
 
-- **The whole skill runs in the conversation.** No step is handed to a background agent or a
-  subagent; a job is polled here until the server ends it, and every report of a job's state
-  quotes the last payload received and its time.
+- **The questions and the jobs stay in the conversation.** Every question to the user is put
+  here, every job is polled here until the server ends it, and every report of a job's state
+  quotes the last payload received and its time. Page reads go to the sheet checker, one unit at a
+  time, and nothing else leaves this conversation.
 - **Run, or stop and report; never create a consent step.** The user's decisions are the ones
   named at the top of this file; everything else is the skill's own work. A failure is reported
   with its error, retried only when the error names what a retry changes, and never put to the
@@ -985,34 +800,35 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
   1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing
   report while a recognized sheet in scope has had no typing attempt at all. "Unsure, so left
   untyped and counted" is a valid outcome; "never looked at" is not, on any path, including one
-  where `recognize_sheets` came back already-succeeded with nothing new to write. Step 6b is where
+  where `recognize_sheets` came back already-succeeded with nothing new to write. Step 6 is where
   every door converges before this skill calls a delivery done, not an optional refinement bolted
   onto recognition.
 - Every entry's evidence is grounded cloud-side: a succeeded `recognize_sheets` job (recorded by
-  the server) or a `render_page`/`get_page_text` read you just made. A local read (step 2) may inform
-  the packaging report; it never grounds an entry.
+  the server) or a page read the sheet checker made in the unit that writes the entry. A local read
+  (step 2) may inform the packaging report; it never grounds an entry.
 - Discipline is derived from the sheet's own number prefix, never a filename or folder. A prefix
-  off the standard list keeps its letters and 6d records the set's own name for it, cited to the
-  page that prints it, or leaves it unnamed; a number with no letters is read from its page in 6d,
-  still never a filename or folder guess.
+  off the standard list keeps its letters and the set unit records the set's own name for it, cited
+  to the page that prints it, or leaves it unnamed; a number with no letters is read from its page
+  by a pages unit, still never a filename or folder guess.
 - Every page the pass could not name is judged or flagged, never silently dropped; image-only pages
   are named, not guessed.
 - `sheetType` typing splits across two authors: the server's deterministic rule pass types with a
-  citation at recognition, and the agent types the sheets it left untyped. Never a value outside
-  the 13-value vocabulary; never assigned to a sheet you're not confident about; never a bare
-  re-record over a rule-typed sheet (correct it by supersession edge, per 6b); unsure stays untyped.
+  citation at recognition, and the sheet checker types the sheets it left untyped. Never a value
+  outside the 13-value vocabulary; never assigned to a sheet the checker is not confident about;
+  never a bare re-record over a rule-typed sheet (it is corrected by a supersession edge, as the
+  checker's definition says); unsure stays untyped.
 - A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
   already-recognized sheet) is a supersession edge onto the stored entry (`supersedesId` from
   `search`), never an entry that names nothing and never a question raised with `ask_question`. A
   reading you cannot resolve is named to the user.
-- The page entries and your own type entries (the leftover sheets and any correction) are your own reading,
-  cited to the page you read; never present them as the deterministic pass's confirmed output, and
-  never present a rule-typed sheet as your own read.
-- Your own write (the page + type bundle) is verbatim, count-verified transport: a count
-  mismatch stops the run, never triggers a reconstructed or invented entry.
-- Before recording your page/type bundle, check for a prior write on this delivery and confirm
-  with the user rather than double-recording; the recognized portion is server-idempotent by
-  construction (re-running `recognize_sheets` on the same file+delivery is always safe).
+- The page entries and type entries the sheet checker writes (the leftover sheets and any
+  correction) are its own reading, cited to the page it read; never present them as the
+  deterministic pass's confirmed output, and never present a rule-typed sheet as the checker's read.
+- Each unit's write is verbatim, count-verified transport: a count mismatch stops the run, never
+  triggers a reconstructed or invented entry.
+- Before the set unit, check for an earlier run's entries on this delivery and confirm with the
+  user rather than double-recording; the recognized portion is server-idempotent by construction
+  (re-running `recognize_sheets` on the same file+delivery is always safe).
 - Honest coverage at every stage: pages skipped, files excluded, unnamed pages left unread, or sheets left
   untyped are named, not buried in a total.
 - Every list of sheets you put in front of the user names the criterion that produced it (left
@@ -1044,8 +860,8 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
 
 ## Deferred (named, not skipped silently)
 
-- **OCR for image-only/scanned pages.** No text layer means both the bulk pass and your own read come
-  up empty; flag, don't guess.
+- **OCR for image-only/scanned pages.** No text layer means both the bulk pass and the sheet
+  checker's read come up empty; flag, don't guess.
 - **Scale auto-detect at intake.** Not built into this skill yet.
 - **Master-list reconciliation as corroboration only.** A full diff against an architect drawing list
   (to surface RFI-worthy discrepancies) is a corroboration layer, never the bootstrap for this skill.
