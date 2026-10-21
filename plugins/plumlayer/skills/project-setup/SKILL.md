@@ -381,8 +381,9 @@ rather than restating it from what an earlier step said:
   many spec sections were found (or that no project manual came with it), and what the index check
   found.
 - **Orientation:** off its summary, in your own words: what it learned, any Question it raised,
-  the baseline packages that now exist (their count is `solicitation_list_packages(projectId,
-  limit: 1)`'s `total`), each package a supplier furnishes with the package that installs its
+  the baseline packages that now exist by name, the ones it created and the ones already on the
+  project (their count is `solicitation_list_packages(projectId, limit: 1)`'s `total`, which the
+  two lists of names add up to), each package a supplier furnishes with the package that installs its
   items, each default used, how many of the manual's sections are placed on a package and each
   left on no package with its reason, whether the structure and the description were written, and
   where the packet landed.

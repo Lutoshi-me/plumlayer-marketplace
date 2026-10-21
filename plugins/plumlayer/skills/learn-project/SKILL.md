@@ -77,12 +77,16 @@ items only (Audience: agent; the session that started the skill words it for the
 ```text
 sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>
 stopped: <the precondition that failed and why, or "no">
+seeds present: <each seed predicate step 2 found on the record, or "none">; seeds absent: <each one it did not, or "none">
+disciplines: <each discipline code the sheet inventory covered + its sheet count>; inventory read by <set_grid or sampled search>
 learned: <each fact recorded in step 6, its predicate and its value as recorded, cut at 200 characters, one per line>
 reconciliation: <the gate's counts, or "not run for this set">
 spec reading: <sections confirmed + listed in the table of contents only, or "not run for this project">
 structure: <filled, the sheet that grounded the system + the sheet that grounded the floor counts; or blank, the half the set does not state>
 description: <written, or a person's left in place>
 packages: created <n>, already on the project <n>, no catalog trade <names, or "none">
+packages created: <name + catalog trade id, one per line, or "none">
+packages already on the project: <name + catalog trade id, one per line, or "none">
 furnish and install: <the supplier's package + the package that installs its items, one per line, or "none">
 defaults: <package + the default it follows, one per line, or "none">
 sections placed: <n> of <n>, or "count incomplete"
@@ -105,7 +109,8 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
   documents. What was recorded is the project's working context now, carrying your name and its
   citations; anyone who changes a value later replaces it.
 - **The package split**, in these words: "I split the job into N packages; here they are. Change
-  any of them on the site or tell me and I will redo it." Then the packages already on the project,
+  any of them on the site or tell me and I will redo it." Then name each package created, off the
+  summary's `packages created:` line, then the packages already on the project, by name,
   each package a supplier furnishes with the package that installs its items, each default used
   with the package that follows it and that the user can change any of them in chat, any package
   with no catalog trade and so not created, how many of the manual's sections outside Divisions 00
