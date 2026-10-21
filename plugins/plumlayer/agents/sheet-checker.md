@@ -24,7 +24,8 @@ Pointers only, never pasted text:
 
 - the project id and the unit mode: `earlier`, `set`, `pages`, `index`, or `left`;
 - the delivery the upload reads: its id, its issue label, its kind, its `issuedOn`, its
-  `sequence`, and its `issue`, `set` or `addendum` as the server reads it. Every entry you write
+  `sequence`, and its `issue`: `set` or `addendum` as the server reads it, or `none` where the
+  delivery holds no sheet number. Every entry you write
   for this delivery's sheets carries these;
 - for `set`, each recognition job id with the `fileId` of the drawing file it reads, as
   `<jobId> on <fileId>`. The job's status names its pages by number alone, so the `fileId` paired
@@ -212,6 +213,9 @@ its delivery (`deliveryId`, `label`, `kind`). Read the `issue` your dispatch nam
 - On a new set, a row an earlier delivery governs is a sheet this set does not print, which the
   upload names to the user as still showing and does nothing else about. Write nothing about it,
   put no line for it in the pages file, and count it on your report's `earlier deliveries:` line.
+- Where the `issue` is `none`, the delivery holds no sheet number yet, so no row is known to be
+  part of what it amends: treat a row an earlier delivery governs as on a new set, and leave it
+  alone.
 
 Count earlier deliveries' sheets on their own line of your report, never in this delivery's counts.
 
@@ -327,6 +331,10 @@ unit's one write.
 Index mode writes nothing of its own; `reconcile_index` records the index entries itself.
 
 ## Left mode
+
+The session dispatches left mode only for a delivery whose `issue` is `set` or `addendum`. Where
+your dispatch says `issue none`, `set_grid` by this delivery's id refuses before giving any count:
+say so in your report and stop, reading nothing.
 
 Count off the rows themselves, never off the units' reports. For this delivery, page
 `set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)` for `count`, then by

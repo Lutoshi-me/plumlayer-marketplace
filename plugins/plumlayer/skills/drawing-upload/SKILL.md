@@ -124,7 +124,7 @@ pointers and nothing else:
 subagent_type: plumlayer:sheet-checker
 run_in_background: false
 Project: <projectId>. Mode: <earlier, set, pages, index, or left>.
-Delivery: <deliveryId>, label <issue label>, kind <deliveryKind>, issued <issuedOn>, sequence <sequence>, issue <set or addendum>.
+Delivery: <deliveryId>, label <issue label>, kind <deliveryKind>, issued <issuedOn>, sequence <sequence>, issue <set, addendum, or none>.
 Jobs: <for set, each recognition jobId with the fileId of the drawing file it reads, as "<jobId> on <fileId>", one per drawing file; otherwise "none">.
 Pages file: <for pages, the path and the lines <a>-<b>; otherwise "none">.
 Index pages: <for index, the fileId and page of each index page you know, or "none">.
@@ -447,8 +447,11 @@ run, not left for later.
    look found a report, where the earlier unit found any `sheetType` or `partOfIssue` entry an
    agent wrote on this delivery, or where its read says `finished: no`: a read that did not finish
    never stands for no earlier run.
-2. **The set unit.** Dispatch one, naming each recognition job id of this delivery with the
-   `fileId` of the drawing file it reads, and the delivery's `issue`. It reads the
+2. **The set unit.** First read this delivery's `issue` off `list_drawing_deliveries(projectId)`,
+   the read step 1b names, now that its jobs have ended: the recognition status carries no
+   `issue`, so the delivery list is where you read it, and a null `issue` with `stillReading`
+   false goes in the dispatch as `none`. Dispatch one set unit, naming each recognition job id of
+   this delivery with the `fileId` of the drawing file it reads, and that `issue`. It reads the
    pages the pass could not name off the jobs, reads the whole sheet list, types every leftover
    sheet whose title decides it, names the codes off the standard list from the set's own index,
    and writes the pages file: one line per page that needs a look, with its reason. Start from
@@ -462,7 +465,11 @@ run, not left for later.
    twelve lines, in order (lines 1 to 12, then 13 to 24, and so on), one after another, until the
    last line is covered. Sum each unit's counts as it returns, this delivery's apart from earlier
    deliveries'.
-4. **The left unit.** After the last pages unit, dispatch one left unit. Its two lists are the
+4. **The left unit.** After the last pages unit, look at the `issue` point 2 read. Where it is
+   null with `stillReading` false, the delivery holds no sheet number, and the sheet list read by
+   its `deliveryId` refuses it before giving any count: dispatch no left unit, skip step 7's coverage
+   comparison, and go on to step 10, whose handoff names a delivery with no sheet number. Otherwise
+   dispatch one left unit. Its two lists are the
    sheets still without a type and the sheets still filed under no discipline letters, read back
    from the record. A sheet on its `this delivery:` untyped list that no pages unit named on its
    `left untyped:` line was never reached: write it to a small pages file of its own with the
@@ -513,7 +520,9 @@ unit that read it, in one count-verified write per unit. You verify:
    for rough correspondence, then spot-check with a handful of `search(projectId, predicate:
    "appearsOnPage", text: "<a sheet number you saw>")` calls. That spot-check is this step's verify.
    The sheet list's rows are the units' to read, never this conversation's.
-3. **Typing coverage, from two reads of the record.** Right after the left unit returns, call
+3. **Typing coverage, from two reads of the record.** Only where step 6 point 4 read an `issue`
+   for this delivery and dispatched the left unit; a delivery with no sheet number skips this
+   point. Right after the left unit returns, call
    `set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)` and read its `count`. The left
    unit's `this delivery:` typed count plus its untyped count must equal it. Both read the same
    grid at the same time, so a unit sent again, an earlier run's corrections and a page the checker
