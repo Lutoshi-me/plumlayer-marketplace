@@ -373,8 +373,9 @@ Each of these is a harness check.
     to 774k tokens. No page read verb (`render_page`, `get_page_text`, `search_set_text`,
     `reconcile_index`), and no `set_grid` other than a summary call with `limit: 0`, sits on a line
     a lead runs: project-setup whole, drawing-upload outside its steps 9b and 10, and
-    learn-project's `## Running one level down`. drawing-upload carries its
-    `plumlayer:sheet-checker` dispatch, learn-project its orientation dispatch and the first line
+    learn-project's `## Running one level down`, and no line there reads a PDF's pages with the
+    Read tool. drawing-upload carries its `plumlayer:sheet-checker` dispatch, pairing each
+    recognition job with its `fileId`, learn-project its orientation dispatch and the first line
     of its summary, scope-run neither of its own copies, project-setup and scope-run point at
     learn-project's section, and the retired sentences forbidding any agent in the upload are gone.
     The check runs its scan over fixtures and its shape arms over the shipped text with each part

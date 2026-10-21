@@ -155,8 +155,9 @@ Checks:
   27. Setup reads stay out of the lead: no page read verb (`render_page`, `get_page_text`,
       `search_set_text`, `reconcile_index`) and no `set_grid` other than a `limit: 0` summary call
       on a line a lead session runs, which is project-setup whole, drawing-upload outside its
-      steps 9b and 10, and learn-project's `## Running one level down`; drawing-upload carries its
-      `plumlayer:sheet-checker` dispatch, learn-project its orientation dispatch and the first
+      steps 9b and 10, and learn-project's `## Running one level down`, and no Read tool on a
+      PDF's pages there either; drawing-upload carries its `plumlayer:sheet-checker` dispatch,
+      with each recognition job paired with its `fileId` on its `Jobs:` line, learn-project its orientation dispatch and the first
       line of its summary, scope-run neither of its own, project-setup and scope-run point at
       learn-project's section, and the retired sentences forbidding any agent in the upload are
       gone. Runs its scan over the lead-reads fixtures under harness/fixtures/ and its shape arms

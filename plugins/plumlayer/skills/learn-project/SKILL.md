@@ -78,7 +78,7 @@ items only (Audience: agent; the session that started the skill words it for the
 sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>
 stopped: <the precondition that failed and why, or "no">
 seeds present: <each seed predicate step 2 found on the record, or "none">; seeds absent: <each one it did not, or "none">
-disciplines: <each discipline code the sheet inventory covered + its sheet count>; inventory read by <set_grid or sampled search>
+disciplines: <each discipline code the sheet inventory covered + its sheet count>; inventory read <whole, or by sampled searches per discipline>
 learned: <each fact recorded in step 6, its predicate and its value as recorded, cut at 200 characters, one per line>
 reconciliation: <the gate's counts, or "not run for this set">
 spec reading: <sections confirmed + listed in the table of contents only, or "not run for this project">
