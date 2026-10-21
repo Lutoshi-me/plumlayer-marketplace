@@ -118,13 +118,6 @@ the page prints. `renumber_sheet` refuses there, because the right number alread
 page. Remove only a number you have read the page not to print, never one that also prints on
 that page, and count each removal; a number that stands on other pages stays on them.
 
-A fresh bundle, a renumbering and a removal change which sheet numbers this delivery's pages
-carry, and the session's coverage check adds and takes those away from recognition's count. After
-each one, `search(projectId, subject: "sheet:<n>", predicate: "locatedAt")` for the numbers it
-touched: a number this delivery's pages now carry that recognition never had goes on your report's
-`sheets added:` line, and a number recognition had that none of this delivery's pages carries any
-longer goes on `sheets gone:`.
-
 ## The entries you write
 
 For a page you resolve, write the full bundle, mirroring the shape the server records for the
@@ -335,10 +328,14 @@ Index mode writes nothing of its own; `reconcile_index` records the index entrie
 
 ## Left mode
 
-Page the grid as set mode step 2 does, and count off the rows themselves, never off the units'
-reports: for this delivery's rows, how many carry a `sheetType` and which carry none. For the rows
-an earlier delivery governs, do the same on an addendum; on a new set those are the sheets it does
-not print, so count them as left alone and name none of them as untyped, since nothing types them.
+Count off the rows themselves, never off the units' reports. For this delivery, page
+`set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)` for `count`, then by
+`discipline` + `limit`/`offset` until the rows you hold cover it, and count how many rows carry a
+`sheetType` and which carry none: the session compares your typed plus untyped with that same
+grid's `count`, so read every row of it. For the rows an earlier delivery governs, page the
+current set as set mode step 2 does and do the same on an addendum; on a new set those are the
+sheets it does not print, so count them as left alone and name none of them as untyped, since
+nothing types them.
 Name every sheet with no `sheetType`, and every sheet still under `Unknown`, by number. These are
 the lists the session puts in front of the user and the counts its coverage check sums, read back
 from the record, so a unit sent again counts once. Left mode writes nothing.
@@ -369,8 +366,6 @@ sent: <n>   landed: <n>
 unit: pages <a>-<b>
 pages read: <n>   renders: <n>
 recorded fresh: <n>   titles corrected: <n>   disciplines corrected: <n>   renumbered: <n>   taken off a page: <n>
-sheets added: <n>: <the sheet numbers this unit put on this delivery's pages that recognition never had, or "none">
-sheets gone: <n>: <the sheet numbers recognition had on this delivery's pages that no page of it carries after this unit, or "none">
 typed: <n>   left untyped: <sheet numbers, or "none">
 earlier deliveries: <typed <n>, titles corrected <n>, left untyped <sheet numbers>; or "none">
 toss-ups: <sheet + both readings, one per line, or "none">

@@ -513,18 +513,15 @@ unit that read it, in one count-verified write per unit. You verify:
    for rough correspondence, then spot-check with a handful of `search(projectId, predicate:
    "appearsOnPage", text: "<a sheet number you saw>")` calls. That spot-check is this step's verify.
    The sheet list's rows are the units' to read, never this conversation's.
-3. **Typing coverage against the recognized count.** Sum `sheetsGrounded` across every file's
-   succeeded job for this delivery (from step 5) for the recognized sheet count. That is the count
-   recognition stored, so it never moves when the sheet checker names a page recognition left
-   unnamed or takes a misread number off one: add every pages unit's `sheets added:` count and
-   take away every pages unit's `sheets gone:` count, each read off the record by the unit that
-   made the change, for the sheet count in scope. It must equal the left unit's `this delivery:`
-   typed count plus its untyped count, both counted off the record, so a unit sent again is counted
-   once. The sheets the units typed are that typed count less the server's rule-typed count
-   (`written.sheetTyping.typed`). A gap means step 6 did not
-   reach every sheet in scope: go back and close it before this run reports done, the same way a
-   count mismatch in point 1 stops the run. The left unit's `earlier deliveries:` counts are
-   reported on their own line, never folded into this delivery's.
+3. **Typing coverage, from two reads of the record.** Right after the left unit returns, call
+   `set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)` and read its `count`. The left
+   unit's `this delivery:` typed count plus its untyped count must equal it. Both read the same
+   grid at the same time, so a unit sent again, an earlier run's corrections and a page the checker
+   named all count once. Where the two differ, the left unit's read was incomplete: dispatch it once
+   more and compare again, and where they still differ, tell the user both counts and stop. Name
+   every sheet on the left unit's untyped list to the user, which is what keeps a sheet from being
+   skipped silently. The left unit's `earlier deliveries:` counts are reported on their own line,
+   never folded into this delivery's.
 
 Report any pages still unresolved or flagged image-only, by page number, in the conversation
 rather than raising them as Questions on the project record, and report the plain untyped count:
