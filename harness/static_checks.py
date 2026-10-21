@@ -7634,7 +7634,12 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
 #      the first line of its summary, scope-run takes its own copy of either back, or project-setup
 #      or scope-run stops pointing at learn-project's section;
 #   4. one of the two retired sentences forbidding any agent in the upload comes back, so the text
-#      contradicts itself.
+#      contradicts itself;
+#   5. a lead line reads a local PDF's pages with the Read tool, which puts the page images in the
+#      session as surely as a render does;
+#   6. the sheet-checker dispatch's `Jobs:` line stops pairing each recognition job with its
+#      `fileId`, so with several drawing files a set unit cannot tell which file an unnamed page
+#      is in.
 #
 # Honest bound: this reads the shipped text, not a session. Whether a lead session in fact stays
 # small is measured from its transcript.
@@ -7642,6 +7647,10 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
 _LEAD_READ_VERBS = ("render_page", "get_page_text", "search_set_text", "reconcile_index")
 _LEAD_READ_VERB_RE = re.compile(r"\b(" + "|".join(_LEAD_READ_VERBS) + r")\b")
 _LEAD_GRID_RE = re.compile(r"\bset_grid\b(\([^)]*\))?")
+# The Read tool named on a line that also names a PDF or its pages. Case-sensitive on purpose:
+# "Read the report" is a verb in a sentence, "the Read tool" and "`Read`" are the tool.
+_LEAD_LOCAL_READ_RE = re.compile(r"\bRead tool\b|`Read`")
+_LEAD_PDF_WORD_RE = re.compile(r"\b(?:PDFs?|pages?)\b")
 _LEAD_SECTION = "Running one level down"
 _ORIENTATION_SUMMARY_LINE = (
     "sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>"
@@ -7693,6 +7702,8 @@ def _lead_read_errors(text: str, label: str, only: str | None = None, exempt: tu
         for m in _LEAD_GRID_RE.finditer(line):
             if not m.group(1) or "limit: 0" not in m.group(1):
                 errors.append(f"{label}:{at}: the lead names `set_grid` other than as a summary call with `limit: 0`")
+        if _LEAD_LOCAL_READ_RE.search(line) and _LEAD_PDF_WORD_RE.search(line):
+            errors.append(f"{label}:{at}: the lead reads a PDF's pages with the Read tool, a page read that goes to an agent")
     return errors
 
 
@@ -7702,8 +7713,16 @@ def _lead_shape_errors(texts: dict[str, str]) -> list[str]:
     flat = {k: " ".join(v.split()) for k, v in texts.items()}
     upload_lines = texts["drawing-upload"].splitlines()
     blocks, _ = _fenced_blocks(upload_lines)
-    if not any(any(_SHEET_CHECKER_LINE_RE.match(l) for l in body) for _, body in blocks):
+    checker_blocks = [body for _, body in blocks if any(_SHEET_CHECKER_LINE_RE.match(l) for l in body)]
+    if not checker_blocks:
         errors.append("drawing-upload carries no dispatch block naming `subagent_type: plumlayer:sheet-checker`")
+    for body in checker_blocks:
+        jobs = [l for l in body if l.strip().startswith("Jobs:")]
+        if len(jobs) != 1 or "fileId" not in jobs[0]:
+            errors.append(
+                "drawing-upload's sheet-checker dispatch does not pair each recognition job with its "
+                "`fileId` on one `Jobs:` line"
+            )
     lead = _lead_lines(texts["learn-project"], _LEAD_SECTION, ())
     lead_flat = " ".join(" ".join(line for _, line in lead).split())
     summary = " ".join(_ORIENTATION_SUMMARY_LINE.split())
@@ -7751,6 +7770,7 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
         ("lead-reads-fixture-clean.md", None),
         ("lead-reads-fixture-render.md", "the lead names `render_page`"),
         ("lead-reads-fixture-grid-rows.md", "the lead names `set_grid` other than as a summary call"),
+        ("lead-reads-fixture-local-read.md", "the lead reads a PDF's pages with the Read tool"),
     ]
     for fixture_name, wanted in expected:
         fixture = fixtures / fixture_name
@@ -7772,6 +7792,8 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
 
         mutations.append(("drawing-upload with its sheet-checker dispatch line taken out", mutated(
             "drawing-upload", re.sub(r"(?m)^\s*subagent_type\s*:\s*plumlayer:sheet-checker\s*$", "", texts["drawing-upload"]))))
+        mutations.append(("drawing-upload with its `Jobs:` line naming no fileId", mutated(
+            "drawing-upload", re.sub(r"(?m)^Jobs:.*$", "Jobs: <every recognition jobId>.", texts["drawing-upload"]))))
         mutations.append(("learn-project with its orientation dispatch taken out", mutated(
             "learn-project", texts["learn-project"].replace(_ORIENTATION_AGENT_PHRASE, ""))))
         mutations.append(("learn-project with its summary's first line taken out", mutated(
@@ -7788,8 +7810,9 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
 
     detail = (
         f"{lead_lines} lines a lead runs scanned for {len(_LEAD_READ_VERBS)} page read verbs and "
-        f"`set_grid` with rows (project-setup whole, drawing-upload outside steps 9b and 10, "
-        f"learn-project's `## {_LEAD_SECTION}`), the sheet-checker and orientation dispatches and "
+        f"`set_grid` with rows and for the Read tool on a PDF's pages (project-setup whole, "
+        f"drawing-upload outside steps 9b and 10, learn-project's `## {_LEAD_SECTION}`), the "
+        f"sheet-checker dispatch with each job paired with its fileId, the orientation dispatch and "
         f"their pointers checked, {len(_RETIRED_GATES)} retired gate sentences absent, "
         f"{len(expected)} fixtures, {len(mutations)} mutations refused; bound: text only, not a "
         f"session's context"
