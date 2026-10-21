@@ -105,7 +105,9 @@ them is ever trimmed.
    where your run folder holds `run.json`, search with `deliveryId` set to each delivery its
    `readFrom` names, and keep a hit only where your run folder's `inventory.md` carries a sheet line
    ending `| <the hit's fileId> | <the hit's page>`, found with one local search per hit, as the
-   reader's corpus bullet says. In a pass on an addendum that is the addendum alone, so you find
+   reader's corpus bullet says. A hit whose `sheetNumber` is null on a page `inventory.md` lists,
+   as on a further page of a number printed on more than one page, is cited with the sheet number
+   on that inventory line. In a pass on an addendum that is the addendum alone, so you find
    what the readers missed on its pages without finding the whole set again. Three of mandate 10's
    searches are the exception, as the reader's corpus bullet makes the footing search one: the
    search of another discipline's sheets for work a row calls for, the search of another

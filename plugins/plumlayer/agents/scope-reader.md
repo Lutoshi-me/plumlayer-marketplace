@@ -29,6 +29,8 @@ Pointers only, never pasted text. Your dispatch names:
   the sources of a Question you raise or reply to among them (mandate 1);
 - whether your sheet's repeated lines were read: `Repeated lines: read in set <version>`, or
   `not read`;
+- whether your page is a further page of a number printed on more than one page:
+  `Opens as: <key>`, the key the page opens as, or `Opens as: none`;
 - for the repeated lines, the sheets of that file the run left out: `Left out: <sheet numbers>`,
   or `none`;
 - the run folder path and your pass brief path.
@@ -71,6 +73,15 @@ Take the sheet number from your dispatch, cite what you record to the page you w
 the `fileId` your dispatch names for it, and on
 your `pages read:` line name that page as replaced, with the sheet and page each entry names in the
 later issue. Never read the later issue's page in its place.
+
+When your dispatch says `Opens as: <key>`, your page is a further page: its number prints on more
+than one page of the drawing issue, the number's own sheet is the first of them, and this page is a
+sheet of its own under that key. Its `read_sheet_context` answer gives `sheetNumber: null` for that
+reason, so it carries no row for citing the number and no sheet reading. Take the sheet number
+from your dispatch and cite what you record with it, on this page and with the `fileId` your
+dispatch names, as mandate 2 says. The rows that already cite the number reach you through mandate
+1's searches before a create, never through this answer, and the page's own reading is mandate 9's
+on `sheet:<opens as>`.
 
 ## The mandates
 
@@ -264,7 +275,8 @@ of them is ever trimmed.
    gives with `citesThisPage: false` does not carry this page: it cites this sheet only on an
    earlier drawing issue's page, names the sheet with no file, or is there for its codes alone.
    Where you read its work on this page, cite this page on it as an update, whatever its earlier
-   citations say. Where `sheetNumber` is null, as on a page a later issue replaced, every row reads
+   citations say. Where `sheetNumber` is null, as on a page a later issue replaced or on a further
+   page your dispatch names with `Opens as: <key>`, every row reads
    `citesThisPage: false` whatever it cites, so false says nothing: before you cite such a row,
    read it with `list_scope_items(subjectPrefix: "<subject>", full: true)`. The row whose `subject`
    is that one carries its `drawingRefs`, the live citations of its current fields, each
@@ -483,6 +495,11 @@ of them is ever trimmed.
    record only a value it does not list, since a value already there is refused and the batch with
    it. Where it says it cut either list to fit, `search(subject: "sheet:<sheet number>")` reads
    them all before you add one.
+   On a further page, where your dispatch says `Opens as: <key>`, the subject is
+   `sheet:<opens as>`, that key, and never `sheet:<sheet number>`, which is the number's first
+   page. The context read carries no sheet reading for a page whose `sheetNumber` is null, so take
+   `search(subject: "sheet:<opens as>")` first, read a `reading` it carries instead of writing
+   another, and record only a `resolvesTo` or `references` value it does not list.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
 created only at their own doors. You never close a Question: if you think one should be closed, say
@@ -611,7 +628,9 @@ render only what text cannot give.
   that one of its addenda replaced among them, so keep a hit only where your run folder's
   `inventory.md` carries a sheet line ending `| <the hit's fileId> | <the hit's page>`, found with
   one local search per hit and never by reading the file: the inventory is your pass's sheet list,
-  each sheet on the page your pass reads it on. Where the run folder holds no `run.json`, search
+  each sheet on the page your pass reads it on. A hit whose `sheetNumber` is null on a page
+  `inventory.md` lists, as on a further page of a number printed on more than one page, is cited
+  with the sheet number on that inventory line. Where the run folder holds no `run.json`, search
   without `deliveryId`. One drawing search is the exception: the footing and slab elevation
   search mandate 1 asks for where your sheet carries borings runs over the whole current set,
   with no `deliveryId`, and keeps every hit, since a pass on an addendum holds only its own sheets

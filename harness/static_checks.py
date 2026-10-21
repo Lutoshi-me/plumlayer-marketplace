@@ -144,6 +144,14 @@ Checks:
       deliveries run.json does not name, and two passes in flight; its `issue` mode resumes the
       pass in flight first and starts only the latest set with no pass; and the skill's own
       `issue` command and run.json, and the reader's citation shapes, are checked against it.
+  26. Pages one number prints twice: the shipped scripts/plan_inventory.py makes each further page
+      of a number printed on more than one page, listed under a grid row's `pageOccurrences`, a
+      sheet of its own right after its number's row, counted and named, bound across a replan by
+      the key it opens as, and left out with the number by `--exclude`; it names and never plans
+      a page of an earlier issue, refuses a missing or malformed page list, and binds the runner's
+      own worked dispatch line for a further page. A window 1 file an earlier plugin wrote keeps
+      its left-out number out on both pages, and a dispatched pass a further page takes past
+      twelve keeps its part.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -2263,6 +2271,14 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         return Result(name, False, detail=f"the inventory mode refused the fixture: {err or bounds}")
     if f"{expected_rows} rows" not in bounds:
         errors.append(f"the inventory bounds line does not name its row count: {bounds!r}")
+    # Every fixture row lists no further page, as `set_grid` gives a number printed on one page, so
+    # the inventory reads exactly the grid's rows and says so.
+    inert = (
+        f"0 further pages of a number printed on more than one page, 0 pages of an earlier issue "
+        f"left out, {expected_rows} sheets to read"
+    )
+    if inert not in bounds:
+        errors.append(f"the inventory bounds line does not name `{inert}`: {bounds!r}")
 
     try:
         written = json.loads((out_dir / "inventory.json").read_text(encoding="utf-8"))
@@ -3968,8 +3984,11 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         "partly-cut", [f"dispatch 1 A1 A1-1 sheets A-1.01,A-1.02 {read_line}"], vocabulary_rows)
     split_out, split_inventory = broken_replan(
         "split-units", [f"dispatch 1 A1 A1-1 sheets A-1.01,A-1.02 {read_line}"], vocabulary_rows)
+    # Dispatched under the second lettered part, the unit sorts to the front of the pass and lands in
+    # A1a. A unit dispatched under the pass's own unlettered id keeps that part when the pass grows
+    # past twelve, which check 26 holds, so this case dispatches under a lettered one.
     moved_out, moved_inventory = broken_replan(
-        "moved-pass", [f"dispatch 1 A1 A1-1 sheets A-1.01 {read_line}"], wide_rows)
+        "moved-pass", [f"dispatch 1 A1b A1b-1 sheets A-1.01 {read_line}"], wide_rows)
 
     replan_refusals: list[tuple[str, list[str], str]] = [
         (
@@ -4049,9 +4068,11 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                 "offset": 0,
                 "sheets": [
                     {"discipline": "A", "sheetNumber": "A@1", "sheetType": "plan",
-                     "pageTitle": "One of the two", "fileId": "", "pageInPdf": 2},
+                     "pageTitle": "One of the two", "fileId": "", "pageInPdf": 2,
+                     "pageOccurrences": []},
                     {"discipline": "A", "sheetNumber": "A", "sheetType": "plan",
-                     "pageTitle": "The other", "fileId": "1@", "pageInPdf": 2},
+                     "pageTitle": "The other", "fileId": "1@", "pageInPdf": 2,
+                     "pageOccurrences": []},
                 ],
             }
         )
@@ -7049,6 +7070,539 @@ def check_anomaly_notes(plugin_path: Path) -> Result:
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# Check: pages one number prints twice
+# --------------------------------------------------------------------------- #
+#
+# A drawing issue can print one sheet number on two of its pages. `set_grid` gives the number one
+# row, on its first page, and lists every page it prints on under the row's `pageOccurrences`: the
+# row's own page with `selected: true`, each further page of the row's own delivery with
+# `selected: false`, `deliveryId: null` and the key it opens as, and a page an earlier issue printed
+# that the current set keeps beside them, with that issue's `deliveryId`. The plan script once made
+# one unit per grid row, so a further page was never read and nothing said so. This runs the
+# shipped script over an invented grid holding both kinds of page.
+#
+# What can fail, one case each below:
+#   1. a further page gets no inventory row, or its counts, its place right after its number's row,
+#      its fields, or `--expect-count` held against the grid's rows come out wrong;
+#   2. a further page takes its number's sheet type rather than its own, so a schedule printed on
+#      the second page of a plan's number reads in the wrong window;
+#   3. its plan line drops the file or the key it opens as;
+#   4. a replan moves the id a dispatch line bound to it under the key it opens as, or an old
+#      ledger naming the number stops binding the number's own page;
+#   5. `--exclude` on the number leaves one page in, or the repeated lines unit names the further
+#      page by the number;
+#   6. a page of an earlier issue gets a unit, or is dropped with nothing said;
+#   7. a page list that is missing or malformed is planned rather than refused;
+#   8. the runner's own dispatch line for a further page does not bind through the ledger reader.
+#
+# Honest bound: the grids are invented and built here, so this proves the script's expansion, its
+# counts, its binding and its refusals, not how a real `set_grid` answer arrives.
+
+_SHARED_FILE = "file-0001"
+_SHARED_EARLIER_FILE = "file-0000"
+# A plan unit line: id, number, the file where shown, the page, the key a further page opens as.
+_SHARED_UNIT_RE = re.compile(
+    r"^(\S+)\. (\S+), (?:file (\S+), )?page (\d+)(?:, opens as (\S+))?: (.*?)( verified)?$"
+)
+_SHARED_DISPATCH_RE = re.compile(
+    r"^dispatch ([12]) (\S+) (\S+-[1-9][0-9]*) sheets (\S+-p[0-9]+) purpose \S.*$"
+)
+
+
+def _shared_occurrence(
+    file_id: str, page: int, opens_as: str | None, title: str | None, sheet_type: str | None,
+    selected: bool = False, delivery_id: str | None = None,
+) -> dict:
+    """One `pageOccurrences` entry in the shape `set_grid` gives it."""
+    return {
+        "fileId": file_id, "pdfFile": f"{file_id}.pdf", "pageInPdf": page, "title": title,
+        "selected": selected, "opensAs": opens_as, "sheetType": sheet_type,
+        "deliveryId": delivery_id,
+        "deliveryLabel": None if delivery_id is None else f"Label of {delivery_id}",
+    }
+
+
+def _shared_key(file_id: str, page: int) -> str:
+    """The key a page opens as, `<fileId>-p<page>`, padded to three digits as the api pads it."""
+    return f"{file_id}-p{page:03d}" if page <= 999 else f"{file_id}-p{page}"
+
+
+def _shared_row(
+    discipline: str, number: str, sheet_type: str, page: int, title: str,
+    further: tuple = (), carried: tuple = (), file_id: str = _SHARED_FILE,
+) -> dict:
+    """
+    One grid row. `further` holds (page, title, sheet type) for each further page of the row's own
+    delivery, and `carried` holds (file, page) for each page an earlier issue printed.
+    """
+    occurrences: list[dict] = []
+    if further or carried:
+        occurrences.append(_shared_occurrence(file_id, page, number, title, sheet_type, selected=True))
+        for further_page, further_title, further_type in further:
+            occurrences.append(
+                _shared_occurrence(
+                    file_id, further_page, _shared_key(file_id, further_page), further_title, further_type
+                )
+            )
+        for carried_file, carried_page in carried:
+            occurrences.append(
+                _shared_occurrence(
+                    carried_file, carried_page, _shared_key(carried_file, carried_page), title,
+                    sheet_type, delivery_id="deliv-s0",
+                )
+            )
+    return {
+        "discipline": discipline, "sheetNumber": number, "pageTitle": title,
+        "sheetType": sheet_type, "fileId": file_id, "pageInPdf": page,
+        "pageOccurrences": occurrences,
+    }
+
+
+def _shared_units(text: str) -> list[tuple]:
+    """Every unit line of a read plan's passes, ahead of the left-out section."""
+    units: list[tuple] = []
+    for line in text.split(_LEFT_OUT_HEADING, 1)[0].splitlines():
+        m = _SHARED_UNIT_RE.match(line)
+        if m:
+            units.append(m.groups())
+    return units
+
+
+def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "pages-one-number-prints-twice"
+    script = plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT)
+    runner_path = plugin_path / "agents" / "scope-round-runner.md"
+    reader_path = plugin_path / "agents" / "scope-reader.md"
+    for path in (script, runner_path, reader_path):
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+    try:
+        module = _load_script_module(script, "plan_inventory")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import {script.name}: {e}")
+
+    root = Path(__file__).parent / ".test-results" / "shared-number-pages"
+    shutil.rmtree(root, ignore_errors=True)
+    errors: list[str] = []
+    refusals = 0
+
+    def run(argv: list[str]) -> tuple[int, str, str]:
+        try:
+            return _run_script_main(module, argv)
+        except SystemExit as e:
+            return int(e.code or 0), "", "argparse exit"
+        except Exception as e:
+            return 99, "", f"raised {type(e).__name__}: {e}"
+
+    def write_grid(folder: Path, rows: list[dict]) -> Path:
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / "grid.json"
+        path.write_text(
+            json.dumps({"count": len(rows), "offset": 0, "sheets": rows}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def inventory(folder: Path, rows: list[dict], expect: int | None = None) -> tuple[int, str, str]:
+        grid = write_grid(folder, rows)
+        count = len(rows) if expect is None else expect
+        return run(["inventory", "--grid", str(grid), "--expect-count", str(count), "--out-dir", str(folder)])
+
+    def plan(folder: Path, window: int, inventory_path: Path, *extra: str) -> tuple[int, str, str, str]:
+        out = folder / "read-plan.md"
+        argv = ["plan", "--window", str(window), "--inventory", str(inventory_path), *extra, "--out", str(out)]
+        code, bounds, err = run(argv)
+        text = out.read_text(encoding="utf-8") if code == 0 and out.is_file() else ""
+        if code != 0:
+            errors.append(f"{folder.name}: window {window} refused: {err or bounds}")
+        return code, bounds, err, text
+
+    # The set: one file, so a sheet line names its file only where it is a further page. C-5.02
+    # prints a detail on a further page, C-7.01 a schedule on the further page of a plan, and C-2.01
+    # carries a page an earlier issue printed.
+    rows = [
+        _shared_row("A", "A-1.01", "plan", 1, "FIRST FLOOR PLAN"),
+        _shared_row("A", "A-6.01", "schedule", 2, "DOOR SCHEDULE"),
+        _shared_row("C", "C-5.02", "detail", 3, "SITE DETAILS", further=((4, "SITE DETAILS CONTINUED", "detail"),)),
+        _shared_row("C", "C-1.01", "plan", 5, "SITE PLAN"),
+        _shared_row("C", "C-7.01", "plan", 6, "PAVING PLAN", further=((7, "PAVING SCHEDULE", "schedule"),)),
+        _shared_row("C", "C-2.01", "plan", 8, "GRADING PLAN", carried=((_SHARED_EARLIER_FILE, 8),)),
+        _shared_row("A", "A-2.01", "plan", 9, "SECOND FLOOR PLAN"),
+    ]
+    p4_key, p7_key = _shared_key(_SHARED_FILE, 4), _shared_key(_SHARED_FILE, 7)
+    key = {
+        "A-1.01": f"A-1.01@{_SHARED_FILE}#1", "A-6.01": f"A-6.01@{_SHARED_FILE}#2",
+        "C-5.02": f"C-5.02@{_SHARED_FILE}#3", "C-5.02 p4": f"C-5.02@{_SHARED_FILE}#4",
+        "C-1.01": f"C-1.01@{_SHARED_FILE}#5", "C-7.01": f"C-7.01@{_SHARED_FILE}#6",
+        "C-7.01 p7": f"C-7.01@{_SHARED_FILE}#7", "C-2.01": f"C-2.01@{_SHARED_FILE}#8",
+        "A-2.01": f"A-2.01@{_SHARED_FILE}#9",
+    }
+    inventory_order = list(key.values())
+    set_dir = root / "set"
+    inventory_path = set_dir / "inventory.json"
+
+    # --- 1: the further pages are sheets of their own, counted and placed --- #
+    code, bounds, err = inventory(set_dir, rows)
+    sheets: list[dict] = []
+    if code != 0:
+        return Result(name, False, detail=f"the inventory refused the shared number grid: {err or bounds}")
+    try:
+        written = json.loads(inventory_path.read_text(encoding="utf-8"))
+        sheets = written["sheets"]
+    except Exception as e:
+        return Result(name, False, detail=f"inventory.json: {e}")
+    counts = written.get("counts", {})
+    if (counts.get("rows"), counts.get("furtherPages"), counts.get("sheets")) != (7, 2, 9):
+        errors.append(
+            f"counts read rows {counts.get('rows')}, further pages {counts.get('furtherPages')}, "
+            f"sheets {counts.get('sheets')}, expected 7 grid rows, 2 further pages and 9 sheets"
+        )
+    if [s.get("unitKey") for s in sheets] != inventory_order:
+        errors.append(
+            f"the inventory reads {[s.get('unitKey') for s in sheets]}, expected each further page "
+            f"right after its number's row: {inventory_order}"
+        )
+    by_key = {s.get("unitKey"): s for s in sheets}
+    for label, want in (
+        ("C-5.02 p4", {"discipline": "C", "sheetNumber": "C-5.02", "pageTitle": "SITE DETAILS CONTINUED",
+                       "sheetType": "detail", "fileId": _SHARED_FILE, "pageInPdf": 4, "opensAs": p4_key}),
+        ("C-7.01 p7", {"discipline": "C", "sheetNumber": "C-7.01", "pageTitle": "PAVING SCHEDULE",
+                       "sheetType": "schedule", "fileId": _SHARED_FILE, "pageInPdf": 7, "opensAs": p7_key}),
+    ):
+        got = {field: by_key.get(key[label], {}).get(field) for field in want}
+        if got != want:
+            errors.append(f"the further page {label} reads {got}, expected {want}")
+    not_null = [
+        s.get("unitKey") for s in sheets
+        if s.get("unitKey") not in (key["C-5.02 p4"], key["C-7.01 p7"])
+        and ("opensAs" not in s or s["opensAs"] is not None)
+    ]
+    if not_null:
+        errors.append(f"these inventory rows are no further page and carry no `opensAs` of null: {not_null}")
+    for fragment in (
+        "7 rows from 1 grid file",
+        "2 further pages of a number printed on more than one page (C-5.02 page 4; C-7.01 page 7)",
+        "1 page of an earlier issue left out (C-2.01 page 8 of delivery deliv-s0)",
+        "9 sheets to read",
+    ):
+        if fragment not in bounds:
+            errors.append(f"the inventory bounds line does not name `{fragment}`: {bounds!r}")
+    md = (set_dir / "inventory.md").read_text(encoding="utf-8")
+    if f"C | C-5.02 | SITE DETAILS CONTINUED | detail | {_SHARED_FILE} | 4" not in md.splitlines():
+        errors.append("inventory.md carries no sheet line for C-5.02's further page ending in its file and page")
+    table = md.split("## Sheets by discipline\n", 1)[-1].split("\n## ", 1)[0].splitlines()
+    for want_line in (
+        "C | 6 | not reported",
+        "total | 9 |",
+        "The counts take each further page of a number printed on more than one page as a sheet of its own: 2 further pages.",
+    ):
+        if want_line not in table:
+            errors.append(f"inventory.md's sheets by discipline table does not carry `{want_line}`")
+    code, _bounds, err = inventory(root / "expect-sheets", rows, expect=9)
+    if code != 1 or len(err.splitlines()) != 1 or "--expect-count says 9" not in err:
+        errors.append(
+            f"--expect-count 9, the sheets with the further pages, exited {code} with {err!r}; it "
+            f"holds against the grid's 7 rows"
+        )
+
+    # --- 2: the schedule printed on a plan's further page reads in window 1 --- #
+    w1_dir = set_dir
+    code, w1_bounds, _err, w1_text = plan(w1_dir, 1, inventory_path)
+    w1_units = _shared_units(w1_text)
+    try:
+        window_1 = json.loads((w1_dir / "plan" / "window-1.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        window_1 = {}
+        errors.append(f"window-1.json: {e}")
+    if set(window_1.get("selected", [])) != {key["A-6.01"], key["C-7.01 p7"]}:
+        errors.append(
+            f"window 1 selected {window_1.get('selected')}, expected the door schedule and the "
+            f"schedule on C-7.01's further page, and never C-7.01's own page"
+        )
+    w2_dir = root / "window-2"
+    w2_dir.mkdir(parents=True, exist_ok=True)
+    window_1_path = w1_dir / "plan" / "window-1.json"
+    code, w2_bounds, _err, w2_text = plan(w2_dir, 2, inventory_path, "--window-1", str(window_1_path))
+    w2_units = _shared_units(w2_text)
+    w2_keys = {f"{u[1]}@{u[2] or _SHARED_FILE}#{u[3]}" for u in w2_units}
+    want_w2 = set(inventory_order) - {key["A-6.01"], key["C-7.01 p7"]}
+    if w2_keys != want_w2 or len(w2_units) != len(want_w2):
+        errors.append(f"window 2 reads {sorted(w2_keys)} over {len(w2_units)} lines, expected {sorted(want_w2)}")
+    if "every sheet once (units 7 equals distinct sheets 7)" not in w2_bounds:
+        errors.append(f"the window 2 bounds line does not state its partition over 7 sheets: {w2_bounds!r}")
+
+    # --- 3: a further page's line names its file and the key it opens as --- #
+    w2_lines = w2_text.splitlines()
+    for want_line in (
+        "C2-1. C-5.02, page 3: SITE DETAILS",
+        f"C2-2. C-5.02, file {_SHARED_FILE}, page 4, opens as {p4_key}: SITE DETAILS CONTINUED",
+    ):
+        if want_line not in w2_lines:
+            errors.append(f"window 2 carries no line `{want_line}`")
+    if f"C1-1. C-7.01, file {_SHARED_FILE}, page 7, opens as {p7_key}: PAVING SCHEDULE" not in w1_text.splitlines():
+        errors.append("window 1 carries no line naming C-7.01's further page with its file and the key it opens as")
+
+    # --- 4: a replan binds a further page by the key it opens as --- #
+    for case, ledger_lines, want_lines, fragment in (
+        (
+            "replan-by-key",
+            [f"dispatch 2 C2 C2-4 sheets {p4_key} purpose further page of a shared number",
+             "dispatch 2 C2 C2-2 sheets C-5.02 purpose site details"],
+            ["C2-2. C-5.02, page 3: SITE DETAILS",
+             f"C2-4. C-5.02, file {_SHARED_FILE}, page 4, opens as {p4_key}: SITE DETAILS CONTINUED"],
+            "ids kept 2 (ledger 2, plan file 0)",
+        ),
+        (
+            "replan-old-ledger",
+            ["dispatch 2 C2 C2-3 sheets C-5.02 purpose site details"],
+            ["C2-3. C-5.02, page 3: SITE DETAILS",
+             f"C2-4. C-5.02, file {_SHARED_FILE}, page 4, opens as {p4_key}: SITE DETAILS CONTINUED"],
+            "ids kept 1 (ledger 1, plan file 0)",
+        ),
+    ):
+        folder = root / case
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "ledger.md").write_text("\n".join(["phase: plan approved", *ledger_lines]) + "\n", encoding="utf-8")
+        code, replan_bounds, _err, replan_text = plan(folder, 2, inventory_path, "--window-1", str(window_1_path))
+        for want_line in want_lines:
+            if code == 0 and want_line not in replan_text.splitlines():
+                errors.append(f"{case}: the replan carries no line `{want_line}`")
+        if code == 0 and fragment not in replan_bounds:
+            errors.append(f"{case}: the bounds line does not name `{fragment}`: {replan_bounds!r}")
+
+    # --- 5: leaving out the number leaves out both its pages --- #
+    excl_dir = root / "exclude"
+    excl_dir.mkdir(parents=True, exist_ok=True)
+    code, _bounds, _err, excl_text = plan(
+        excl_dir, 1, inventory_path, "--exclude", "C-5.02:the user left the site details out"
+    )
+    try:
+        excl_window_1 = json.loads((excl_dir / "plan" / "window-1.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        excl_window_1 = {}
+        errors.append(f"the exclude case's window-1.json: {e}")
+    if excl_window_1.get("excluded") != [key["C-5.02"], key["C-5.02 p4"]]:
+        errors.append(f"--exclude C-5.02 left out {excl_window_1.get('excluded')}, expected both of its pages")
+    left_out = excl_text.split(_LEFT_OUT_HEADING, 1)[-1].splitlines()
+    for want_line in (
+        "1. C-5.02, page 3: SITE DETAILS",
+        f"2. C-5.02, file {_SHARED_FILE}, page 4, opens as {p4_key}: SITE DETAILS CONTINUED",
+    ):
+        if want_line not in left_out:
+            errors.append(f"the exclude case's left out section carries no line `{want_line}`")
+    repeated_sets = excl_window_1.get("repeatedSets") or [{}]
+    if repeated_sets[0].get("sheetsLeftOut") != ["C-5.02", p4_key]:
+        errors.append(
+            f"the repeated lines unit names {repeated_sets[0].get('sheetsLeftOut')} left out, expected "
+            f"C-5.02 and its further page by the key it opens as"
+        )
+    if f"RS1-1. file {_SHARED_FILE}, from page 1: repeated lines, sheets left out C-5.02, {p4_key}" not in excl_text.splitlines():
+        errors.append("the exclude case's repeated lines unit line does not name both pages left out")
+    excl_w2_dir = root / "exclude-window-2"
+    excl_w2_dir.mkdir(parents=True, exist_ok=True)
+    code, _bounds, _err, excl_w2_text = plan(
+        excl_w2_dir, 2, inventory_path, "--window-1", str(excl_dir / "plan" / "window-1.json")
+    )
+    if any(u[1] == "C-5.02" for u in _shared_units(excl_w2_text)):
+        errors.append("window 2 after --exclude C-5.02 still plans a page of C-5.02")
+
+    # --- 9: a window 1 file an earlier plugin wrote keeps its number left out whole --- #
+    # A run resumed on a newer plugin can hold a window 1 file written when the number had one unit
+    # key; the further page the inventory now adds stays out with the number it printed.
+    upgrade_dir = root / "upgrade-exclude"
+    (upgrade_dir / "plan").mkdir(parents=True, exist_ok=True)
+    old_window_1_path = upgrade_dir / "plan" / "window-1.json"
+    old_window_1_path.write_text(
+        json.dumps(dict(excl_window_1, excluded=[key["C-5.02"]]), indent=2) + "\n", encoding="utf-8"
+    )
+    code, upgrade_bounds, _err, upgrade_text = plan(
+        upgrade_dir, 2, inventory_path, "--window-1", str(old_window_1_path)
+    )
+    if code == 0:
+        if any(u[1] == "C-5.02" for u in _shared_units(upgrade_text)):
+            errors.append("window 2 over an earlier window 1 file that left C-5.02 out plans its further page")
+        for fragment in (
+            "sheets window 1 left out 2",
+            "further pages left out with their number 1 (C-5.02 page 4)",
+        ):
+            if fragment not in upgrade_bounds:
+                errors.append(f"the upgraded window 2 bounds line does not name `{fragment}`: {upgrade_bounds!r}")
+
+    # --- 10: a further page past twelve keeps the ids a dispatched pass already carries --- #
+    # D had twelve sheets and D2-1 and D2-2 were dispatched; the further page makes thirteen, and the
+    # dispatched part keeps its id, the page numbered in a part after it.
+    grow_dir = root / "twelve-to-thirteen"
+    grow_rows = [_shared_row("D", f"D-1.{n:02d}", "plan", n, f"PLAN {n}") for n in range(1, 12)]
+    grow_rows.append(
+        _shared_row("D", "D-1.12", "plan", 12, "PLAN 12", further=((13, "PLAN 12 CONTINUED", "plan"),))
+    )
+    code, _bounds, err = inventory(grow_dir, grow_rows)
+    if code != 0:
+        errors.append(f"the twelve to thirteen grid refused: {err}")
+    else:
+        grow_inventory = grow_dir / "inventory.json"
+        grow_w1 = root / "twelve-to-thirteen-w1"
+        grow_w1.mkdir(parents=True, exist_ok=True)
+        plan(grow_w1, 1, grow_inventory)
+        (grow_dir / "ledger.md").write_text(
+            "phase: plan approved\n"
+            + "".join(f"dispatch 2 D2 D2-{n} sheets D-1.{n:02d} purpose plan read whole\n" for n in (1, 2)),
+            encoding="utf-8",
+        )
+        code, grow_bounds, _err, grow_text = plan(
+            grow_dir, 2, grow_inventory, "--window-1", str(grow_w1 / "plan" / "window-1.json")
+        )
+        if code == 0:
+            for want_line in (
+                "D2-1. D-1.01, page 1: PLAN 1",
+                "D2-2. D-1.02, page 2: PLAN 2",
+                "D2-12. D-1.12, page 12: PLAN 12",
+                f"D2b-1. D-1.12, file {_SHARED_FILE}, page 13, opens as {_shared_key(_SHARED_FILE, 13)}: PLAN 12 CONTINUED",
+            ):
+                if want_line not in grow_text.splitlines():
+                    errors.append(f"the twelve to thirteen replan carries no line `{want_line}`")
+            if "ids kept 2 (ledger 2, plan file 0)" not in grow_bounds:
+                errors.append(f"the twelve to thirteen bounds line does not keep both dispatched ids: {grow_bounds!r}")
+
+    # --- 6: a page of an earlier issue is named and left out --- #
+    if any(s.get("fileId") == _SHARED_EARLIER_FILE for s in sheets):
+        errors.append("the inventory holds the page an earlier issue printed as a sheet to read")
+    if any(u[2] == _SHARED_EARLIER_FILE for u in w1_units + w2_units):
+        errors.append("a plan reads the page an earlier issue printed")
+    if any(line.endswith(f"| {_SHARED_EARLIER_FILE} | 8") for line in md.splitlines()):
+        errors.append("inventory.md carries a sheet line for the page an earlier issue printed")
+
+    # --- 7: a page list that is missing or malformed is refused --- #
+    def refused(case: str, broken_rows: list[dict], needles: list[str]) -> None:
+        nonlocal refusals
+        refusals += 1
+        code, out, err = inventory(root / "refusals" / case, broken_rows)
+        if code != 1 or out or len(err.splitlines()) != 1:
+            errors.append(f"{case}: exited {code} with stdout {out[:120]!r} and stderr {err[:160]!r}, not one refusal line")
+            return
+        missing = [needle for needle in needles if needle not in err]
+        if missing:
+            errors.append(f"{case}: refused without naming {missing}: {err[:240]}")
+
+    def broken(occurrences: list[dict] | None, page: int = 3, number: str = "C-5.02") -> list[dict]:
+        row = _shared_row("C", number, "detail", page, "SITE DETAILS")
+        if occurrences is None:
+            del row["pageOccurrences"]
+        else:
+            row["pageOccurrences"] = occurrences
+        return [_shared_row("A", "A-1.01", "plan", 1, "FIRST FLOOR PLAN"), row]
+
+    own = _shared_occurrence(_SHARED_FILE, 3, "C-5.02", "SITE DETAILS", "detail", selected=True)
+    further = _shared_occurrence(_SHARED_FILE, 4, p4_key, "SITE DETAILS CONTINUED", "detail")
+    refused("no-page-list", broken(None), ["C-5.02", "carries no `pageOccurrences`"])
+    refused("no-own-page", broken([dict(own, selected=False), further]), ["C-5.02", "none of them as its own page"])
+    refused("two-own-pages", broken([own, dict(further, selected=True)]), ["C-5.02", "2 of them as its own page"])
+    refused(
+        "own-page-elsewhere", broken([dict(own, pageInPdf=5), further]),
+        ["C-5.02", "page 3", "names file file-0001, page 5 as its own page"],
+    )
+    refused("further-no-file", broken([own, dict(further, fileId=None)]), ["C-5.02", "with no file"])
+    refused("further-no-key", broken([own, dict(further, opensAs=None)]), ["C-5.02", "with no key it opens as"])
+    refused("further-no-page", broken([own, dict(further, pageInPdf=None)]), ["C-5.02", "with no page number"])
+    refused("page-twice", broken([own, further, dict(further)]), ["C-5.02", "file file-0001, page 4 twice"])
+    refused(
+        "page-of-another-row", broken([own, dict(further, pageInPdf=1, opensAs=_shared_key(_SHARED_FILE, 1))]),
+        ["C-5.02", "file file-0001, page 1", "already the page of sheet A-1.01"],
+    )
+    refused(
+        "further-no-delivery-field",
+        broken([own, {field: value for field, value in further.items() if field != "deliveryId"}]),
+        ["C-5.02", "file file-0001, page 4", "with no `deliveryId`"],
+    )
+    refused(
+        "further-empty-delivery", broken([own, dict(further, deliveryId="")]),
+        ["C-5.02", "file file-0001, page 4", "neither null nor a delivery id"],
+    )
+
+    # --- 8: the runner's own dispatch line binds a further page --- #
+    runner = runner_path.read_text(encoding="utf-8")
+    worked = [m for m in (_SHARED_DISPATCH_RE.match(line.strip()) for line in runner.splitlines()) if m]
+    if not worked:
+        errors.append(
+            "the runner carries no worked dispatch line whose `sheets` names a further page by the "
+            "key it opens as (`dispatch <window> <pass> <unit> sheets <fileId>-p<page> purpose ...`)"
+        )
+    else:
+        window, pass_id, unit_id, opens_as = worked[0].groups()
+        file_id, page_text = re.match(r"^(.+)-p([0-9]+)$", opens_as).groups()
+        page = int(page_text)
+        discipline = pass_id[:-1]
+        if not pass_id.endswith(window) or not discipline.isalpha():
+            errors.append(f"the runner's worked line names pass {pass_id}, not a discipline pass of window {window}")
+        else:
+            join_dir = root / "runner-line"
+            sheet_type = "schedule" if window == "1" else "detail"
+            base_page = page - 1 if page > 1 else page + 1
+            join_rows = [
+                _shared_row(discipline, f"{discipline}-4.30", sheet_type, base_page, "DETAILS",
+                            further=((page, "DETAILS CONTINUED", sheet_type),), file_id=file_id),
+            ]
+            code, _bounds, err = inventory(join_dir, join_rows)
+            if code != 0:
+                errors.append(f"the runner line's grid refused: {err}")
+            else:
+                (join_dir / "ledger.md").write_text(
+                    f"phase: plan approved\n{worked[0].group(0)}\n", encoding="utf-8"
+                )
+                bound = module._read_ledger_units(join_dir / "ledger.md", int(window))
+                if bound != {unit_id: (opens_as,)}:
+                    errors.append(f"the ledger reader binds the runner's worked line as {bound}, expected {unit_id} on {opens_as}")
+                join_inventory = join_dir / "inventory.json"
+                if window == "1":
+                    code, _b, _e, join_text = plan(join_dir, 1, join_inventory)
+                else:
+                    first = root / "runner-line-w1"
+                    first.mkdir(parents=True, exist_ok=True)
+                    plan(first, 1, join_inventory)
+                    code, _b, _e, join_text = plan(
+                        join_dir, 2, join_inventory, "--window-1", str(first / "plan" / "window-1.json")
+                    )
+                want_line = (
+                    f"{unit_id}. {discipline}-4.30, file {file_id}, page {page}, opens as {opens_as}: "
+                    f"DETAILS CONTINUED"
+                )
+                if code == 0 and want_line not in join_text.splitlines():
+                    errors.append(f"the plan after the runner's worked line carries no line `{want_line}`")
+    reader = reader_path.read_text(encoding="utf-8")
+    reviewer = (plugin_path / "agents" / "scope-reviewer.md").read_text(encoding="utf-8")
+    # A corpus hit on another number's further page names no sheet number, and both searchers keep
+    # hits off the inventory, so both cite it with the number on its inventory line.
+    hit_rule = "is cited with the sheet number on that inventory line"
+    for where, text, phrases in (
+        ("the runner", runner, ["`Opens as:", "`Opens as: none`"]),
+        ("the reader", reader, ["`Opens as: <key>`", "`Opens as: none`", "`sheet:<opens as>`", hit_rule]),
+        ("the reviewer", reviewer, [hit_rule]),
+    ):
+        for phrase in phrases:
+            if phrase not in " ".join(text.split()):
+                errors.append(f"{where} does not carry {phrase}")
+
+    detail = (
+        "a grid of 7 rows printing two numbers on a further page each and carrying one page of an "
+        "earlier issue: each further page a sheet of its own right after its number's row, with its "
+        "own title and type and the key it opens as, counted apart and named on the bounds line, "
+        "--expect-count held against the grid's rows, a schedule on a plan's further page read in "
+        "window 1 and the plan in window 2, the further page's line naming its file and key, a "
+        "replan binding it by its key and an old ledger's number still binding the number's own "
+        "page, --exclude on the number leaving out both pages and the repeated lines unit naming the "
+        "further page by its key, a window 1 file an earlier plugin wrote keeping its left-out "
+        "number out on both pages, a further page past twelve keeping a dispatched part's ids, the "
+        "earlier issue's page named and never planned, the runner's worked dispatch line bound "
+        "through the ledger reader, the corpus hit rule in the reader and the reviewer; "
+        f"{refusals} refusals each one line "
+        "naming what is wrong; bound: invented grids, not a real set_grid answer"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -7077,6 +7631,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_repeated_lines_text(plugin_path, marketplace_root),
         check_drawing_issue_passes(plugin_path, marketplace_root),
         check_anomaly_notes(plugin_path),
+        check_shared_number_pages(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

@@ -741,7 +741,10 @@ lines.
    planning off a partial grid, and where the refusal names a delivery `run.json` does not, take
    step 1 again first. Read only its bounds line, which names the drawing issue and the first
    sheet, then read from `inventory.md` only the count tables and the sheet number digest at its
-   tail. Never the sheet lines above them.
+   tail. Never the sheet lines above them. The inventory can list more sheets than the grid's
+   `count`: where one number prints on more than one page of the issue, each further page is a
+   sheet of its own, and the bounds line names those pages and any page of an earlier issue the
+   grid keeps beside a number, which the pass leaves out.
 
    Then confirm the corpus: `search_set_text(projectId, query: "<the first sheet the inventory's
    bounds line names>", limit: 1)`. A corpus that answers nothing for a sheet number the set

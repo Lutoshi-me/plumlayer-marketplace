@@ -354,6 +354,20 @@ Each of these is a harness check.
     taken out, the append negated and the order reversed, so the refusals are shown rather than
     assumed. This cannot judge whether a running runner writes the notes; that stays in
     review and the measured pass.
+26. A number printed on more than one page is read on every page. The shipped `plan_inventory.py`
+    is run in-process over an invented grid whose rows list their pages under `pageOccurrences`,
+    and each further page of a row's own delivery has to come out a sheet of its own right after
+    its number's row, with its own title, sheet type, file, page and the key it opens as, counted
+    apart from the grid's rows that `--expect-count` holds to, and named on the bounds line; a page
+    of an earlier issue is named and never planned. Its unit line names its file and that key, a
+    replan binds it by the key while a line naming the number binds the number's first page,
+    `--exclude` on the number leaves out both pages, a missing or malformed page list is refused,
+    a page whose `deliveryId` is absent or neither null nor a delivery id among them, and the
+    runner's own worked dispatch line for a further page binds through the script's ledger
+    reader. A run resumed on a newer plugin keeps what it already planned: a window 1 file that
+    left a number out by its first page keeps its further page out, and a pass dispatched under
+    its own unlettered id that a further page takes past twelve keeps that part. This cannot judge whether a reader cites a further page as its text says, or
+    how a real `set_grid` answer arrives; that stays in review and the measured pass.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

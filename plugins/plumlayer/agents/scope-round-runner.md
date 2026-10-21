@@ -26,9 +26,12 @@ id>`, or `boundary`), the run folder path, the read plan path, and the scripts p
 own scripts directory, which your dispatch names on its `Scripts:` line. Read your own
 pass's section of the read plan and nothing else from it: what the pass reads for (the vocabulary,
 the sheet, the repeated lines, or, in a review, one catalog trade id), and its units. In windows 1
-and 2 a unit is one sheet with its sheet number, `fileId`, and 1-based `pageInPdf`, except in a
-pass that reads for the repeated lines, whose units each name one drawing file and a page of it
-(`RS1-2. file <fileId>, from page <n>: repeated lines`); in window 3 a pass carries one
+and 2 a unit is one sheet with its sheet number, `fileId`, and 1-based `pageInPdf`. Where one
+number prints on more than one page of the drawing issue, each page after its first is a further
+page and a unit of its own, and its line also names the key it opens as
+(`L2-6. L-4.30, file <fileId>, page 108, opens as <fileId>-p108: <title>`). A pass that reads for
+the repeated lines is the exception: its units each name one drawing file and a page of it
+(`RS1-2. file <fileId>, from page <n>: repeated lines`). In window 3 a pass carries one
 review unit whose id is the pass id, with the package it reviews on the block's `package:` line. A
 unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
 line and in the `verify_unit` prefix; never rebuild it from the pass id and the line's position. A
@@ -97,6 +100,12 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    where the unit line ends with `, repeated lines read in set <version>`, and
    `Repeated lines: not read` on every other unit, so a reader leaves a file's repeated lines out
    of its sheet only where they were read once already, and only from the set that was read.
+   It also says `Opens as: <key>`, the key copied off the unit line, where the unit line names one
+   (`, opens as <key>`), and `Opens as: none` on every other unit, so the reader of a further page
+   knows it reads a page of its number other than the first. A further page's `dispatch` line
+   names it in `sheets` by that key, never by its number, since the number names its first page
+   and the plan script binds the unit id to the name the line gives; the worked shapes below carry
+   one.
    A repeated lines unit's pages are its file and the page its line names, and its dispatch also
    carries `Left out: <sheet numbers>` copied off the unit line's `sheets left out`, or
    `Left out: none`. Its `dispatch` line reads
@@ -118,8 +127,9 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    `{ "sheet": "<sheet number>", "fileId": "<fileId>" }`, with the file its unit line names, the one
    your dispatch carried to the reader: a subject then counts on that sheet only where one of its
    citations names that file, so a row that cites the sheet only on an earlier drawing issue's page
-   is never found back as this unit's update. A sheet whose unit line names no file goes as the
-   sheet number alone, which counts every citation of the sheet. It returns `entryCount` and
+   is never found back as this unit's update. A further page goes as the number its unit line
+   prints, with its own file, never as the key it opens as. A sheet whose unit line names no file
+   goes as the sheet number alone, which counts every citation of the sheet. It returns `entryCount` and
    `subjectCount` under the prefix, `subjects`, every distinct subject under it with its
    `belongsToTrade` and its `candidateTrades` (`subjectsTruncated` says when there are more than
    the call carries), and `sheets`, one row per sheet you asked about carrying the `fileId` it was
@@ -248,6 +258,7 @@ verified 1 A2 A2-3 created 126 items 34 updated 4 questions 2 replied 1 sent 140
 note 1 A2 A2-3 anomaly A-9.02 p61 two frame marks carry the same model number, note on scopeItem:A2-3-14
 note 1 A2 - kinds doorType frameType finishType
 dispatch 2 A2 A2-7 sheets A-1.30 purpose roof plan read whole
+dispatch 2 L2 L2-6 sheets file-1a2b3c-p108 purpose further page of a shared number
 dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-1a2b3c
 note 1 RS1 RS1-1 set 9f2c41d07ab3e815 file file-1a2b3c
 dispatch 3 rev-075000-1 rev-075000-1 sheets none purpose review the roofing package

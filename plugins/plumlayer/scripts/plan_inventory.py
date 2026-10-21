@@ -56,6 +56,30 @@ One pass per drawing issue:
   started over a later one. Once the latest set has its pass, the earliest addendum of it no pass
   read is started, one at a time in the order they landed, each a partial pass of its own.
 
+A number printed on more than one page:
+
+  A drawing issue can print one sheet number on two of its pages. The grid gives the number one
+  row, on its first page, and lists every page it prints on under the row's `pageOccurrences`: the
+  row's own page marked `selected`, each further page of the row's own delivery with
+  `deliveryId: null` and the key it opens as, `opensAs`, and each page an earlier issue printed
+  that the current set keeps beside the number, with that issue's `deliveryId`. The inventory makes
+  each further page a sheet of its own, right after its number's row: the row's discipline and
+  number, and the page's own file, page, title, sheet type and `opensAs`, under the unit key
+  `<sheet>@<fileId>#<page>`. A page of an earlier issue gets no row, since the pass reads its own
+  issue; the bounds line counts and names it, as it counts and names each further page.
+  `--expect-count` is the grid's `count`, which counts the number once, so it holds against the
+  grid's rows. Every window reads a further page as any other sheet, and `--include`, `--exclude`
+  and `--only` match the number it prints, so a pattern naming the number takes both pages. Its
+  unit line names its file always, then the key it opens as
+  (`A2-6. C-5.02, file <fileId>, page 4, opens as <fileId>-p004: <title>`). A dispatch line and a
+  left-out list name it by that key, since the number names its first page, so a ledger written
+  before further pages were read still binds the number to its first page.
+
+  A run resumed on this script can hold files an earlier one wrote, when the number had one row.
+  A window 1 file that left the number out holds its first page's unit key alone, so window 2
+  leaves each further page of that number out with it and its bounds line names them, and a pass
+  dispatched before a further page took it past twelve keeps its part, as the next section says.
+
 The three windows, and what each selects:
 
   1  the vocabulary: every sheet whose type is schedule, legend, notes or cover-index, plus what
@@ -149,6 +173,11 @@ Unit ids across a replan, in windows 1 and 2:
   the front of the part in the order it was read and new work is appended after it. New units are
   placed in the window's natural order before ids are assigned, so composition still precedes
   extent among the sheets not yet read.
+
+  A pass the ledger dispatched under its own unlettered id (`A2-1`) and that a replan takes past
+  twelve, as a further page can, keeps that part: its first twelve units, the bound ones in
+  front, stay under `A2`, and the rest split evenly into parts lettered from `b` (`A2b`), so no
+  dispatched id changes part. Any other pass over twelve splits into `A2a`, `A2b` and on.
 
   A window 2 slice and the whole window: on the next full plan the slice's units are bound, so they
   sort to the front of their discipline's pass and keep the part their ids name, as long as the
@@ -266,7 +295,11 @@ Exit codes:
      `stillReading` is not true or false; window 3 of a pass on an addendum with no `trades/`
      folder, or a trades line of neither known shape; two passes in flight; and a run folder holding a ledger
      and no `run.json`, or a `run.json` the issue mode cannot read. Another pass's broken
-     `run.json` never stops a plan.
+     `run.json` never stops a plan. Seven are about a number printed on more than one page: a
+     grid row with no `pageOccurrences` list, a list naming no page or more than one as the row's
+     own, an own page that is not the row's file and page, a page with no `deliveryId` field or one
+     that is neither null nor a delivery id, a further page with no file, key or page, one file and
+     page listed twice, and a further page that is already another row's page.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A file that does not parse whole is a refusal,
@@ -286,7 +319,8 @@ import sys
 from pathlib import Path
 
 # The six grid fields the plan needs. A grid row carries about thirty; the rest are dropped here so
-# nothing downstream can quietly come to depend on a field the plan never reasoned about.
+# nothing downstream can quietly come to depend on a field the plan never reasoned about. Its
+# `pageOccurrences` is read once, for its further pages, and dropped with the rest.
 ROW_FIELDS = ("discipline", "sheetNumber", "pageTitle", "sheetType", "fileId", "pageInPdf")
 
 # The `scope-round-runner` stops a pass above twelve units, so a plan that emits a bigger pass is a
@@ -417,6 +451,15 @@ def _named(items: list[str]) -> str:
 
 def _text(value) -> str:
     return "" if value is None else str(value)
+
+
+def _sheet_name(row: dict) -> str:
+    """
+    The name a ledger line and a left-out list give a sheet: its sheet number, or for a further
+    page of a number printed on more than one page, the key it opens as. An inventory written
+    before further pages were read carries no `opensAs`, and every row of it is named by number.
+    """
+    return _text(row.get("opensAs")) or _text(row.get("sheetNumber"))
 
 
 def _fold(code: str) -> str:
@@ -678,9 +721,121 @@ def _check_unit_keys(rows: list[dict], where: str) -> None:
         )
 
 
-def _normalize_rows(pages: list) -> tuple[list[dict], list[str]]:
+def _further_pages(
+    path: Path, row: dict, raw: dict, owner: dict[tuple[str, str], str]
+) -> tuple[list[dict], list[dict]]:
+    """
+    A grid row's further pages, each a row of its own, and the pages of an earlier issue it lists.
+
+    `pageOccurrences` lists every page the row's number prints on, the row's own page marked
+    `selected`, once the number prints on more than one. A further page of the row's own delivery
+    carries `deliveryId: null` and is a sheet of its own: it takes the row's discipline and number,
+    and its own file, page, title, sheet type and the key it opens as. A page an earlier issue
+    printed carries that issue's `deliveryId`; the pass reads its own issue, so that page gets no
+    row and is named instead. `owner` maps each page some row already stands on to who stands on
+    it, and takes in each further page as it is placed.
+    """
+    number = _text(row["sheetNumber"]) or "(no sheet number)"
+    occurrences = raw.get("pageOccurrences")
+    if not isinstance(occurrences, list) or not all(isinstance(o, dict) for o in occurrences):
+        raise PlanError(
+            f"{path}: sheet {number} carries no `pageOccurrences` list, so nothing says whether its "
+            f"number prints on another page"
+        )
+    if not occurrences:
+        return [], []
+    own = [o for o in occurrences if o.get("selected") is True]
+    if len(own) != 1:
+        raise PlanError(
+            f"{path}: sheet {number} lists {len(occurrences)} pages under `pageOccurrences` and "
+            f"{len(own) or 'none'} of them as its own page; one page is the number's own"
+        )
+    here = (_text(row["fileId"]), _text(row["pageInPdf"]))
+    named = (_text(own[0].get("fileId")), _text(own[0].get("pageInPdf")))
+    if named != here:
+        raise PlanError(
+            f"{path}: sheet {number} is on file {here[0] or '(none)'}, page {here[1] or '(none)'}, and "
+            f"`pageOccurrences` names file {named[0] or '(none)'}, page {named[1] or '(none)'} as its "
+            f"own page"
+        )
+
+    listed = {here}
+    further: list[dict] = []
+    carried: list[dict] = []
+    for occurrence in occurrences:
+        if occurrence is own[0]:
+            continue
+        file_id = occurrence.get("fileId")
+        page = occurrence.get("pageInPdf")
+        # The field says whose page this is, so it is read and never defaulted: null is the row's
+        # own issue, a delivery id is an earlier issue's, and anything else names neither.
+        where = f"file {_text(file_id) or '(none)'}, page {_text(page) or '(none)'}"
+        if "deliveryId" not in occurrence:
+            raise PlanError(
+                f"{path}: sheet {number} lists {where} under `pageOccurrences` with no `deliveryId`, "
+                f"so nothing says whether that page is of this issue or an earlier one"
+            )
+        delivery = occurrence["deliveryId"]
+        if delivery is not None and (not isinstance(delivery, str) or not delivery.strip()):
+            raise PlanError(
+                f"{path}: sheet {number} lists {where} under `pageOccurrences` with a `deliveryId` "
+                f"that is neither null nor a delivery id: {delivery!r}"
+            )
+        if delivery is None:
+            missing = [
+                what for what, ok in (
+                    ("file", isinstance(file_id, str) and file_id != ""),
+                    ("key it opens as", isinstance(occurrence.get("opensAs"), str) and occurrence["opensAs"] != ""),
+                    # A JSON true reads as a number in Python, and it is no page.
+                    ("page number", isinstance(page, int) and not isinstance(page, bool) and page > 0),
+                ) if not ok
+            ]
+            if missing:
+                raise PlanError(
+                    f"{path}: sheet {number} prints on a further page with no "
+                    f"{' and no '.join(missing)}, so that page cannot be read as a sheet of its own"
+                )
+        place = (_text(file_id), _text(page))
+        if place in listed:
+            raise PlanError(
+                f"{path}: sheet {number} lists file {place[0] or '(none)'}, page {place[1] or '(none)'} "
+                f"twice under `pageOccurrences`"
+            )
+        listed.add(place)
+        if delivery is not None:
+            carried.append(
+                {"sheetNumber": number, "fileId": file_id, "pageInPdf": page, "deliveryId": delivery}
+            )
+            continue
+        if place in owner:
+            raise PlanError(
+                f"{path}: sheet {number} prints on file {place[0]}, page {place[1]}, which is already "
+                f"the page of {owner[place]}; a page is read once"
+            )
+        owner[place] = f"a further page of sheet {number}"
+        further.append(
+            {
+                "discipline": row["discipline"],
+                "sheetNumber": row["sheetNumber"],
+                "pageTitle": occurrence.get("title"),
+                "sheetType": occurrence.get("sheetType"),
+                "fileId": file_id,
+                "pageInPdf": page,
+                "unitKey": f"{_text(row['sheetNumber'])}@{file_id}#{page}",
+                "opensAs": occurrence["opensAs"],
+            }
+        )
+    return further, carried
+
+
+def _normalize_rows(pages: list) -> tuple[list[dict], list[str], list[dict], list[dict]]:
+    """
+    The grid's rows in grid order with duplicates dropped, each further page of a number printed on
+    more than one page right after its number's row (`_further_pages`). Returns the rows, the
+    duplicates, the further pages, and the pages of an earlier issue left out.
+    """
     seen: set[tuple[str, str, str]] = set()
-    rows: list[dict] = []
+    grid_rows: list[tuple[Path, dict, dict]] = []
     duplicates: list[str] = []
     for path, page_rows, _offset, _reported, _issue in pages:
         for raw in page_rows:
@@ -693,9 +848,28 @@ def _normalize_rows(pages: list) -> tuple[list[dict], list[str]]:
                 continue
             seen.add(key)
             row["unitKey"] = f"{key[0]}@{key[1]}#{key[2]}"
-            rows.append(row)
+            row["opensAs"] = None
+            grid_rows.append((path, row, raw))
+
+    # Every page a grid row stands on, so a further page that is already a row's page is refused
+    # rather than read twice under two unit keys.
+    owner: dict[tuple[str, str], str] = {}
+    for _path, row, _raw in grid_rows:
+        place = (_text(row["fileId"]), _text(row["pageInPdf"]))
+        if all(place):
+            owner.setdefault(place, f"sheet {_text(row['sheetNumber']) or '(no sheet number)'}")
+
+    rows: list[dict] = []
+    further: list[dict] = []
+    carried: list[dict] = []
+    for path, row, raw in grid_rows:
+        rows.append(row)
+        row_further, row_carried = _further_pages(path, row, raw, owner)
+        rows.extend(row_further)
+        further.extend(row_further)
+        carried.extend(row_carried)
     _check_unit_keys(rows, "the grid on disk")
-    return rows, duplicates
+    return rows, duplicates, further, carried
 
 
 def _placeable(row: dict) -> bool:
@@ -774,6 +948,7 @@ def _inventory_markdown(
     digest: list[dict],
     capped: bool,
     ungrouped: list[str],
+    further: int,
 ) -> str:
     counts = _ordered_counts(rows)
     table, types = _cross_tab(rows)
@@ -832,6 +1007,12 @@ def _inventory_markdown(
         said_text = "not reported" if not said else " / ".join(str(v) for v in said)
         lines.append(f"{discipline} | {n} | {said_text}")
     lines.append(f"total | {len(rows)} |")
+    # The grid counts a number printed on more than one page once, so the two columns differ by
+    # these pages, and this line says how many.
+    lines.append(
+        "The counts take each further page of a number printed on more than one page as a sheet of "
+        f"its own: {further} further page{'' if further == 1 else 's'}."
+    )
     lines.append("")
     lines.append("Where the two columns differ, both are shown. Nothing here reconciles them.")
 
@@ -870,11 +1051,14 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
     files = _grid_files(grid)
     pages, order_rule = _order_pages(_read_grid_pages(files))
     issue = _grid_issue(pages, _read_run(out_dir), out_dir)
-    rows, duplicates = _normalize_rows(pages)
+    rows, duplicates, further, carried = _normalize_rows(pages)
 
-    if len(rows) != expect_count:
+    # `--expect-count` is the grid's own `count`, which counts a number printed on more than one
+    # page once, so it is held against the grid's rows and never against the further pages.
+    grid_rows = len(rows) - len(further)
+    if grid_rows != expect_count:
         raise PlanError(
-            f"the grid on disk holds {len(rows):,} rows after dedupe and --expect-count says "
+            f"the grid on disk holds {grid_rows:,} rows after dedupe and --expect-count says "
             f"{expect_count:,}; nothing written. The fetch dropped a page, truncated one, or "
             f"copied a stale file"
         )
@@ -898,7 +1082,9 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
     md_path = out_dir / "inventory.md"
     json_path = out_dir / "inventory.json"
 
-    md = _inventory_markdown(placeable, unplaceable, order_rule, reported, digest, capped, ungrouped)
+    md = _inventory_markdown(
+        placeable, unplaceable, order_rule, reported, digest, capped, ungrouped, len(further)
+    )
     counts = _ordered_counts(placeable)
     table, _types = _cross_tab(placeable)
     untyped = sum(1 for r in placeable if not _text(r["sheetType"]))
@@ -908,8 +1094,9 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
         "gridFiles": [p.name for p in files],
         "gridOrder": order_rule,
         "counts": {
-            "rows": len(rows),
+            "rows": grid_rows,
             "sheets": len(placeable),
+            "furtherPages": len(further),
             "duplicates": len(duplicates),
             "unplaceable": len(unplaceable),
             "untyped": untyped,
@@ -926,6 +1113,9 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
                 "sheetType": _text(r["sheetType"]) or None,
                 "fileId": _text(r["fileId"]) or None,
                 "pageInPdf": r["pageInPdf"],
+                # The key a further page opens as, and the name its dispatch line gives it; null on
+                # every other row, which a dispatch line names by its sheet number.
+                "opensAs": r["opensAs"],
             }
             for r in placeable
         ],
@@ -953,10 +1143,26 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
     )
     # The lead reads no sheet line, so the sheet number it probes the set's text with is named here.
     first_text = f"first sheet {placeable[0]['sheetNumber']}, " if placeable else ""
+    # Each further page and each page of an earlier issue is named, so neither is a page that left
+    # the plan or joined it with nothing said.
+    further_named = [_text(r["sheetNumber"]) + " page " + _text(r["pageInPdf"]) for r in further]
+    carried_named = [
+        c["sheetNumber"] + " page " + _text(c["pageInPdf"]) + " of delivery " + c["deliveryId"]
+        for c in carried
+    ]
+    further_text = (
+        f"{len(further)} further page{'' if len(further) == 1 else 's'} of a number printed on more "
+        f"than one page" + (f" ({_named(further_named)})" if further else "")
+    )
+    carried_text = (
+        f"{len(carried)} page{'' if len(carried) == 1 else 's'} of an earlier issue left out"
+        + (f" ({_named(carried_named)})" if carried else "")
+    )
     return (
-        f"wrote {md_path} and {json_path}: {issue_text}{len(rows):,} rows from {len(files)} grid "
+        f"wrote {md_path} and {json_path}: {issue_text}{grid_rows:,} rows from {len(files)} grid "
         f"file{'' if len(files) == 1 else 's'}, {duplicate_text}, {len(unplaceable)} rows the grid "
-        f"could not place, {len(counts)} disciplines, {len(digest)} sheet number stems "
+        f"could not place, {further_text}, {carried_text}, {len(placeable):,} sheets to read, "
+        f"{len(counts)} disciplines, {len(digest)} sheet number stems "
         f"({cap_text}), {untyped} untyped, {first_text}{len(md_bytes) + len(json_bytes):,} bytes written"
     )
 
@@ -1061,10 +1267,10 @@ def _read_repeated_sets(path: Path, data: dict) -> list[dict]:
 
 def _read_window_1(
     path: Path, rows: list[dict], tag: str | None = None
-) -> tuple[set[str], int, int, list[dict]]:
+) -> tuple[set[str], int, int, list[dict], list[dict]]:
     """
     The file window 1 wrote: the unit keys it selected and the unit keys its `--exclude` patterns
-    left out. Window 2 subtracts both. An excluded sheet was left out by the lead with a reason
+    left out, with the further pages of a number it left out by its first page alone. Window 2 subtracts both. An excluded sheet was left out by the lead with a reason
     recorded, and reading it in window 2 would override that judgment with nothing said about it.
     It also carries the repeated lines units window 1 planned, which window 2 marks its units by.
 
@@ -1117,7 +1323,29 @@ def _read_window_1(
             f"{path} plans the repeated lines of {len(stranger_files)} file(s) the inventory does "
             f"not hold ({_named(stranger_files)}); it was written off some other inventory"
         )
-    return keys, len(lists["selected"]), len(lists["excluded"]), repeated_sets
+
+    # A window 1 file written before further pages were read left a number out by its first page's
+    # unit key alone, since that was the number's one row. `--exclude` matches the number, so each
+    # further page of a number it left out stays out with it rather than reading in window 2. The
+    # inventory puts every further page right after its number's row.
+    excluded = set(lists["excluded"])
+    left_with_number: list[dict] = []
+    first_page: dict | None = None
+    for row in rows:
+        if not _text(row.get("opensAs")):
+            first_page = row
+        elif (
+            first_page is not None
+            and first_page["unitKey"] in excluded
+            and _text(first_page.get("sheetNumber")) == _text(row.get("sheetNumber"))
+            and row["unitKey"] not in keys
+        ):
+            left_with_number.append(row)
+    keys |= {row["unitKey"] for row in left_with_number}
+    return (
+        keys, len(lists["selected"]), len(lists["excluded"]) + len(left_with_number), repeated_sets,
+        left_with_number,
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -1453,9 +1681,11 @@ def _bind_unit_ids(
     """
     planned_keys = {row["unitKey"] for plan_pass in passes for row in plan_pass["units"]}
 
+    # A dispatch line names a further page by the key it opens as, since its number is its first
+    # page's; so a line naming the number binds that first page, as it did before further pages.
     rows_by_sheet: dict[str, list[dict]] = {}
     for row in rows:
-        rows_by_sheet.setdefault(_text(row.get("sheetNumber")), []).append(row)
+        rows_by_sheet.setdefault(_sheet_name(row), []).append(row)
 
     key_of_id: dict[str, str] = {}
     id_of_key: dict[str, str] = {}
@@ -1531,9 +1761,18 @@ def _bind_unit_ids(
         unbound = [row for row in units if row["unitKey"] not in id_of_key]
         bound.sort(key=lambda row: _parse_unit_id(id_of_key[row["unitKey"]]))
         plan_pass["units"] = bound + unbound
+        # A unit dispatched under the pass's own unlettered id keeps that part, so a pass that grew
+        # past twelve after it was dispatched, as one does when a further page joins it, keeps its
+        # first part's id and reads what does not fit in parts after it (`_split_pass`).
+        plan_pass["keepsPart"] = any(
+            source_of_id[id_of_key[row["unitKey"]]] == "ledger"
+            and _parse_unit_id(id_of_key[row["unitKey"]])[0] == plan_pass["id"]
+            for row in bound
+        )
 
         for part_id, part_units in _split_pass(
-            plan_pass["id"], plan_pass["units"], plan_pass.get("lettered", False)
+            plan_pass["id"], plan_pass["units"], plan_pass.get("lettered", False),
+            plan_pass["keepsPart"],
         ):
             next_number = high_water.get(part_id, 0) + 1
             for row in part_units:
@@ -1573,7 +1812,7 @@ def _bind_unit_ids(
 # --------------------------------------------------------------------------- #
 
 def _split_pass(
-    pass_id: str, units: list[dict], lettered: bool = False
+    pass_id: str, units: list[dict], lettered: bool = False, keeps_part: bool = False
 ) -> list[tuple[str, list[dict]]]:
     """
     A pass over twelve units is split into parts of as even a size as possible, earlier parts taking
@@ -1583,8 +1822,27 @@ def _split_pass(
     `lettered` names even a single part with its letter. A window 2 slice sets it where the whole
     window would split the discipline, so the slice's part is `A2a` rather than `A2`: its unit ids
     then name the part they sit at the front of when the whole window is planned.
+
+    `keeps_part` is set where the ledger dispatched a unit under the pass's own unlettered id. The
+    record already carries rows under `<pass>-<n>`, so the first twelve units, the bound ones at
+    their front, stay in the part `<pass>`, and the rest split evenly into parts lettered from `b`,
+    the part `<pass>` standing first. A pass that never grew past twelve reads as it always did.
     """
     n = len(units)
+    if keeps_part:
+        head, rest = units[:UNITS_PER_PASS], units[UNITS_PER_PASS:]
+        parts = [(pass_id, head)]
+        if rest:
+            count = math.ceil(len(rest) / UNITS_PER_PASS)
+            if count + 1 > len(string.ascii_lowercase):
+                raise PlanError(f"pass {pass_id} holds {n} units, more parts than single letters to name them")
+            base, extra = divmod(len(rest), count)
+            start = 0
+            for index in range(count):
+                size = base + (1 if index < extra else 0)
+                parts.append((f"{pass_id}{string.ascii_lowercase[index + 1]}", rest[start:start + size]))
+                start += size
+        return parts
     if n <= UNITS_PER_PASS and not lettered:
         return [(pass_id, units)]
     count = math.ceil(n / UNITS_PER_PASS)
@@ -1607,7 +1865,10 @@ def _window_parts(plan: dict) -> list[dict]:
     """
     parts: list[dict] = []
     for plan_pass in plan["passes"]:
-        split = _split_pass(plan_pass["id"], plan_pass["units"], plan_pass.get("lettered", False))
+        split = _split_pass(
+            plan_pass["id"], plan_pass["units"], plan_pass.get("lettered", False),
+            plan_pass.get("keepsPart", False),
+        )
         for index, (part_id, part_units) in enumerate(split, 1):
             name = plan_pass["name"]
             if len(split) > 1:
@@ -1692,10 +1953,14 @@ def _unit_line(label: str, row: dict, show_file: bool) -> str:
         return line
     title = _text(row["pageTitle"]) or "(no title)"
     where = f"page {row['pageInPdf']}"
-    if show_file:
+    opens_as = _text(row.get("opensAs"))
+    if show_file or opens_as:
         # The file id only earns its place where the set spans more than one file and the page
-        # number alone would not say which document to open.
+        # number alone would not say which document to open, or on a further page, which its
+        # number alone never names.
         where = f"file {_text(row.get('fileId')) or '(no file)'}, " + where
+    if opens_as:
+        where += f", opens as {opens_as}"
     return f"{label}. {row['sheetNumber']}, {where}: {title}"
 
 
@@ -1846,7 +2111,7 @@ def _repeated_passes(
             by_file.setdefault(file_id, []).append(row)
     left_out: dict[str, list[str]] = {}
     for row in left_out_rows:
-        left_out.setdefault(_text(row.get("fileId")), []).append(_text(row.get("sheetNumber")))
+        left_out.setdefault(_text(row.get("fileId")), []).append(_sheet_name(row))
     units = [
         {
             "unitKey": _REPEATED_KEY_PREFIX + file_id,
@@ -2235,6 +2500,18 @@ def _render_slice(plan: dict, show_file: bool) -> list[str]:
     return lines
 
 
+def _left_with_number_clause(plan: dict) -> str:
+    """
+    The further pages window 2 leaves out because an earlier window 1 file left their number out by
+    its first page alone, named, or nothing where there are none.
+    """
+    rows = plan.get("leftWithNumber") or []
+    if not rows:
+        return ""
+    named = [_text(row["sheetNumber"]) + " page " + _text(row["pageInPdf"]) for row in rows]
+    return f", further pages left out with their number {len(rows)} ({_named(named)})"
+
+
 def _is_repeated_pass(runner_pass: list[dict]) -> bool:
     """Whether a runner pass is a repeated lines pass, which reads files and never folds."""
     return bool(runner_pass[0]["pass"].get("repeatedSets"))
@@ -2400,7 +2677,8 @@ def _render(
             lines.append(f"sheets deferred {len(plan['deferred'])} by --only")
         lines.append(
             f"sheets window 1 selected {plan['window1Selected']}, sheets window 1 left out "
-            f"{plan['window1Excluded']}, sheets in the inventory {len(rows)}"
+            f"{plan['window1Excluded']}{_left_with_number_clause(plan)}, sheets in the inventory "
+            f"{len(rows)}"
         )
         lines.append(
             "sheets by type: " + ", ".join(f"{name} {count}" for name, count in plan["byType"])
@@ -2579,10 +2857,13 @@ def plan(args) -> str:
         # than recomputing window 1's selection from arguments it might not be given identically.
         window_1_path = args.out.parent.joinpath(*WINDOW_1_FILE)
     elif window == 2:
-        keys, selected, excluded, repeated_sets = _read_window_1(args.window_1, rows, tag)
+        keys, selected, excluded, repeated_sets, left_with_number = _read_window_1(
+            args.window_1, rows, tag
+        )
         only = [_split_pattern_argument(raw, "--only") for raw in (args.only or [])]
         result = _window_2(rows, keys, selected, excluded, only, tag)
         result["repeatedSets"] = repeated_sets
+        result["leftWithNumber"] = left_with_number
         result["repeatedRead"] = _read_repeated_read(args.out.parent / LEDGER_FILE, repeated_sets)
     else:
         packages = _read_packages(args.packages)
@@ -2764,7 +3045,8 @@ def plan(args) -> str:
             f"{total_passes}, {_fold_clause(sheet_passes)}, disciplines {result['disciplines']}, "
             f"{_every_sheet_once(result)}"
             f"{deferred}, sheets window 1 selected "
-            f"{result['window1Selected']}, sheets window 1 left out {result['window1Excluded']}, "
+            f"{result['window1Selected']}, sheets window 1 left out {result['window1Excluded']}"
+            f"{_left_with_number_clause(result)}, "
             f"sheets in the inventory {len(rows)}, sheets by type {by_type}, sheets typed other or "
             f"untyped {result['otherOrUntyped']}{ids_clause}, {_marked_clause(result)}{unordered}; "
             f"{written:,} bytes"

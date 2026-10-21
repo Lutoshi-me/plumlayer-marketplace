@@ -20,7 +20,8 @@
       "pageTitle": "Cover sheet and drawing index",
       "sheetType": "cover-index",
       "fileId": "file-0001",
-      "pageInPdf": 1
+      "pageInPdf": 1,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -28,7 +29,8 @@
       "pageTitle": "General notes and legends 1",
       "sheetType": "legend",
       "fileId": "file-0001",
-      "pageInPdf": 2
+      "pageInPdf": 2,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -36,7 +38,8 @@
       "pageTitle": "Partition schedule",
       "sheetType": "schedule",
       "fileId": "file-0001",
-      "pageInPdf": 3
+      "pageInPdf": 3,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -44,7 +47,8 @@
       "pageTitle": "General notes 2",
       "sheetType": "notes",
       "fileId": "file-0001",
-      "pageInPdf": 4
+      "pageInPdf": 4,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -52,7 +56,8 @@
       "pageTitle": "Window schedule",
       "sheetType": "schedule",
       "fileId": "file-0001",
-      "pageInPdf": 5
+      "pageInPdf": 5,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -60,7 +65,8 @@
       "pageTitle": "Floor plan level 1",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 6
+      "pageInPdf": 6,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -68,7 +74,8 @@
       "pageTitle": "Floor plan level 2",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 7
+      "pageInPdf": 7,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -76,7 +83,8 @@
       "pageTitle": "Floor plan level 3",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 8
+      "pageInPdf": 8,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -84,7 +92,8 @@
       "pageTitle": "Floor plan level 4",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 9
+      "pageInPdf": 9,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -92,7 +101,8 @@
       "pageTitle": "Floor plan level 5",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 10
+      "pageInPdf": 10,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -100,7 +110,8 @@
       "pageTitle": "Floor plan level 6",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 11
+      "pageInPdf": 11,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -108,7 +119,8 @@
       "pageTitle": "Floor plan level 7",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 12
+      "pageInPdf": 12,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -116,7 +128,8 @@
       "pageTitle": "Floor plan level 8",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 13
+      "pageInPdf": 13,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -124,7 +137,8 @@
       "pageTitle": "Floor plan level 9",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 14
+      "pageInPdf": 14,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -132,7 +146,8 @@
       "pageTitle": "Exterior elevations",
       "sheetType": "elevation",
       "fileId": "file-0001",
-      "pageInPdf": 15
+      "pageInPdf": 15,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -140,7 +155,8 @@
       "pageTitle": "Interior detail 1",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 16
+      "pageInPdf": 16,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -148,7 +164,8 @@
       "pageTitle": "Interior detail 2",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 17
+      "pageInPdf": 17,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -156,7 +173,8 @@
       "pageTitle": "Interior detail 3",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 18
+      "pageInPdf": 18,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -164,7 +182,8 @@
       "pageTitle": "Interior detail 4",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 19
+      "pageInPdf": 19,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -172,7 +191,8 @@
       "pageTitle": "Interior detail 5",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 20
+      "pageInPdf": 20,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -180,7 +200,8 @@
       "pageTitle": "Interior detail 6",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 21
+      "pageInPdf": 21,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -188,7 +209,8 @@
       "pageTitle": "Interior detail 7",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 22
+      "pageInPdf": 22,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -196,7 +218,8 @@
       "pageTitle": "Interior detail 8",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 23
+      "pageInPdf": 23,
+      "pageOccurrences": []
     },
     {
       "discipline": "A",
@@ -204,7 +227,8 @@
       "pageTitle": "Interior detail 9",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 24
+      "pageInPdf": 24,
+      "pageOccurrences": []
     },
     {
       "discipline": "S",
@@ -212,7 +236,8 @@
       "pageTitle": "Structural general notes and schedules",
       "sheetType": "schedule",
       "fileId": "file-0001",
-      "pageInPdf": 25
+      "pageInPdf": 25,
+      "pageOccurrences": []
     },
     {
       "discipline": "S",
@@ -220,7 +245,8 @@
       "pageTitle": "Foundation plan",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 26
+      "pageInPdf": 26,
+      "pageOccurrences": []
     },
     {
       "discipline": "S",
@@ -228,7 +254,8 @@
       "pageTitle": "Framing plan",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 27
+      "pageInPdf": 27,
+      "pageOccurrences": []
     },
     {
       "discipline": "P",
@@ -236,7 +263,8 @@
       "pageTitle": "Plumbing plan level 1",
       "sheetType": "plan",
       "fileId": "file-0001",
-      "pageInPdf": 28
+      "pageInPdf": 28,
+      "pageOccurrences": []
     },
     {
       "discipline": "P",
@@ -244,7 +272,8 @@
       "pageTitle": "Plumbing details",
       "sheetType": "detail",
       "fileId": "file-0001",
-      "pageInPdf": 29
+      "pageInPdf": 29,
+      "pageOccurrences": []
     },
     {
       "discipline": "E",
@@ -252,7 +281,8 @@
       "pageTitle": "Electrical legend and abbreviations",
       "sheetType": null,
       "fileId": "file-0001",
-      "pageInPdf": 30
+      "pageInPdf": 30,
+      "pageOccurrences": []
     },
     {
       "discipline": null,
@@ -260,7 +290,8 @@
       "pageTitle": "Symbols legend, discipline not placed",
       "sheetType": "legend",
       "fileId": "file-0001",
-      "pageInPdf": 31
+      "pageInPdf": 31,
+      "pageOccurrences": []
     },
     {
       "discipline": "C",
@@ -268,7 +299,8 @@
       "pageTitle": "Overall site plan",
       "sheetType": "overall-plan",
       "fileId": "file-0001",
-      "pageInPdf": 32
+      "pageInPdf": 32,
+      "pageOccurrences": []
     },
     {
       "discipline": "C",
@@ -276,7 +308,8 @@
       "pageTitle": "Survey control diagram",
       "sheetType": "other",
       "fileId": "file-0001",
-      "pageInPdf": 33
+      "pageInPdf": 33,
+      "pageOccurrences": []
     },
     {
       "discipline": "C",
@@ -284,7 +317,8 @@
       "pageTitle": "Canopy reflected ceiling plan",
       "sheetType": "RCP",
       "fileId": "file-0001",
-      "pageInPdf": 34
+      "pageInPdf": 34,
+      "pageOccurrences": []
     },
     {
       "discipline": "C",
@@ -292,7 +326,8 @@
       "pageTitle": "Site sections",
       "sheetType": "section",
       "fileId": "file-0001",
-      "pageInPdf": 35
+      "pageInPdf": 35,
+      "pageOccurrences": []
     },
     {
       "discipline": "C",
@@ -300,7 +335,8 @@
       "pageTitle": "Storm riser schematic",
       "sheetType": "schematic",
       "fileId": "file-0001",
-      "pageInPdf": 36
+      "pageInPdf": 36,
+      "pageOccurrences": []
     },
     {
       "discipline": "C",
@@ -308,7 +344,8 @@
       "pageTitle": "Enlarged plan at the plaza",
       "sheetType": "enlarged-plan",
       "fileId": "file-0001",
-      "pageInPdf": 37
+      "pageInPdf": 37,
+      "pageOccurrences": []
     },
     {
       "discipline": "C",
@@ -316,7 +353,8 @@
       "pageTitle": "Retaining wall sections",
       "sheetType": "section",
       "fileId": "file-0001",
-      "pageInPdf": 38
+      "pageInPdf": 38,
+      "pageOccurrences": []
     },
     {
       "discipline": "C",
@@ -324,7 +362,8 @@
       "pageTitle": "Site wall elevations",
       "sheetType": "elevation",
       "fileId": "file-0001",
-      "pageInPdf": 39
+      "pageInPdf": 39,
+      "pageOccurrences": []
     }
   ]
 }
