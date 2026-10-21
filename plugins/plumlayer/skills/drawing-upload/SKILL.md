@@ -95,14 +95,17 @@ Every page this skill reads, it reads through the plugin's `sheet-checker` agent
 instance per unit. A page image or a page's text read in this conversation stays in it for the
 rest of the session, and a set of a few hundred sheets once filled most of a session's context
 that way. The agent's definition holds how a page is read, judged and recorded; none of it is
-restated here, and you never read a page yourself. A unit runs in one of four modes:
+restated here, and you never read a page yourself, a local PDF's included. A unit runs in one of
+five modes:
 
+- `earlier`, once per delivery before the set unit (step 6): reads the record for entries an
+  earlier run already wrote on this delivery's sheets.
 - `set`, once per delivery after recognition (step 6): reads the pages the pass could not name off
   the recognition jobs, reads the whole sheet list, types what the titles decide, names the codes
   off the standard discipline list, and writes the pages file, one line per page that needs a look.
 - `pages`, one per twelve lines of a pages file: reads those pages and records what it reads. A
-  pages file you write yourself, for the file sampling in 1c or a manual's opening pages in step 8,
-  takes the same line shape, which the agent's definition gives.
+  pages file you write yourself, for the local sampling in step 2, the file sampling in 1c or a
+  manual's opening pages in step 8, takes the same line shape, which the agent's definition gives.
 - `index`, at step 9: reads the drawing index.
 - `left`, after the last pages unit: reads back what is still untyped.
 
@@ -120,20 +123,24 @@ pointers and nothing else:
 ```text
 subagent_type: plumlayer:sheet-checker
 run_in_background: false
-Project: <projectId>. Mode: <set, pages, index, or left>.
-Delivery: <deliveryId>, label <issue label>, kind <deliveryKind>, issued <issuedOn>, sequence <sequence>.
-Jobs: <for set, every recognition jobId of this delivery, one per drawing file; otherwise "none">.
+Project: <projectId>. Mode: <earlier, set, pages, index, or left>.
+Delivery: <deliveryId>, label <issue label>, kind <deliveryKind>, issued <issuedOn>, sequence <sequence>, issue <set or addendum>.
+Jobs: <for set, each recognition jobId with the fileId of the drawing file it reads, as "<jobId> on <fileId>", one per drawing file; otherwise "none">.
 Pages file: <for pages, the path and the lines <a>-<b>; otherwise "none">.
 Index pages: <for index, the fileId and page of each index page you know, or "none">.
+Since: <for a unit sent again, the time its first dispatch was sent; otherwise "none">.
 Upload folder: <path>. Report: <upload folder>/reports/<mode>[-<pages file name>-<a>-<b>].md.
 Check your unit as your definition says, write your report to that path, then return it.
 ```
 
 Read the report that comes back and nothing else: the record holds what the unit wrote. Dispatch
-units one after another, never two at once, since two units can reach the same sheet. Where a
-unit's report did not arrive in the message, its report file is the report: open that file rather
-than dispatching the unit again. Where the file is absent too, dispatch that unit once more,
-against the live record; a second miss stops the run here, reported with the pages it covered.
+units one after another, never two at once, since two units can reach the same sheet. Before each
+dispatch, note the time with a local command (`date -u +%Y-%m-%dT%H:%M:%SZ`). Where a unit's
+report did not arrive in the message, its report file is the report: open that file rather than
+dispatching the unit again. Where the file is absent too, dispatch that unit once more, against the
+live record, with `Since:` set to the time you noted before its first dispatch: the first copy's
+writes may already have landed, and the second copy counts them off the record as its own, so its
+report carries the whole unit. A second miss stops the run here, reported with the pages it covered.
 
 A client that ships this plugin's skills without its agents has no agent to dispatch. There, read
 `agents/sheet-checker.md` from the plugin's own folder, beside its `skills/` folder, and run each
@@ -211,7 +218,9 @@ Emit the same packaging
     delivery for the same issue.
   - **Unattributed** (`deliveryId: null`): surface the gap to the user; never invent attribution.
     Establish which issue the files belong to (ask, or have a pages unit read the cover sheet with
-    the reason `file`), register the delivery per step 3 if it doesn't exist yet, and pass its id as
+    the reason `file`: its `files:` line gives the issue label, date and sequence the cover prints,
+    each with its page and the words as printed, and says which it does not print), register the
+    delivery per step 3 if it doesn't exist yet, and pass its id as
     `recognize_sheets.deliveryId` in step 5: that is the supported attach mechanism for an
     already-registered file (a `register_file` retry returns the existing row; it does not
     re-attribute). Chronology still comes from the documents: `issuedOn` off a cover sheet or
@@ -271,11 +280,13 @@ twice under different `fileId`s. Only treat it as genuinely unclear when the tot
 there's no clean 1:1 correspondence.
 
 For any other genuinely unclear packaging (a mixed bag, or a dual-source case the page-total check
-didn't resolve), use the Read tool directly on a few local candidate pages of each file to judge
-title-block grammar vs spec-prose and pick which one to use. This local sampling is
-file-selection judgment only: it decides which local files you upload next; it never grounds an
-entry, and no entry's evidence ever cites a local read (every entry's evidence comes from the cloud
-recognition tools in steps 5–6).
+didn't resolve), write a small pages file naming a few local candidate pages of each file, each
+line with `local` first, the file's local path, the page and the reason `local file`, and dispatch
+a pages unit over it. Its `files:` line says for each page whether it carries title-block grammar
+or spec prose, and what a cover sheet prints for the issue, so you pick which file to use without a
+page in this conversation. This local sampling is file-selection judgment only: it decides which
+local files you upload next; it never grounds an entry, and no entry's evidence ever cites a local
+read (every entry's evidence comes from the cloud reads in steps 5 and 6).
 
 <!-- user-facing -->
 Emit a short packaging report before uploading: the class, which file(s) are the drawings and why,
@@ -293,7 +304,9 @@ reuse it rather than registering a duplicate. Otherwise call `create_drawing_del
   as step 1b says; never put the question to the user.
 - `label`: the human issue label from step 1.
 - `issuedOn` (`YYYY-MM-DD`) and `sequence`: read these off the documents themselves (a cover sheet, a
-  bulletin header). Never substitute upload time: chronology drives supersession resolution.
+  bulletin header), as a `local file` or `file` unit's `files:` line gives them with the page and
+  the words printed; a value it says is not printed is asked of the user, never guessed. Never
+  substitute upload time: chronology drives supersession resolution.
   **When issue-date signals disagree** (the filename says one date, a cover sheet or transmittal says
   another), the drawing set's own revision table governs `issuedOn`: it's the
   architect's own record of the issue, ahead of a filename someone typed or a transmittal cover letter.
@@ -426,11 +439,14 @@ session that predates the server-side rule pass or one that stopped short, is cl
 run, not left for later.
 
 1. **Check for an earlier run's entries first.** The server's idempotency covers the entries the
-   recognition pass recorded, not the ones an agent authored. Where the upload folder already holds
-   unit reports for this delivery, or `search(projectId, predicate: "partOfIssue", text:
-   "<deliveryId or label>", limit: 1)` shows entries for it beyond the recognition pass's own,
-   confirm with the user before checking the pages again.
-2. **The set unit.** Dispatch one, naming every recognition job id of this delivery. It reads the
+   recognition pass recorded, not the ones an agent authored, and an earlier run may have been on
+   another machine, so the upload folder alone never answers it. Dispatch one earlier unit. Confirm
+   with the user before checking the pages again where the upload folder already holds unit
+   reports for this delivery, where the earlier unit found any `sheetType` or `partOfIssue` entry
+   an agent wrote on this delivery, or where its read says `finished: no`: a read that did not
+   finish never stands for no earlier run.
+2. **The set unit.** Dispatch one, naming each recognition job id of this delivery with the
+   `fileId` of the drawing file it reads, and the delivery's `issue`. It reads the
    pages the pass could not name off the jobs, reads the whole sheet list, types every leftover
    sheet whose title decides it, names the codes off the standard list from the set's own index,
    and writes the pages file: one line per page that needs a look, with its reason. Start from
@@ -442,7 +458,8 @@ run, not left for later.
 <!-- /user-facing -->
 3. **The pages units.** Count the pages file's lines with `wc -l`, and dispatch one pages unit per
    twelve lines, in order (lines 1 to 12, then 13 to 24, and so on), one after another, until the
-   last line is covered. Sum each unit's counts as it returns.
+   last line is covered. Sum each unit's counts as it returns, this delivery's apart from earlier
+   deliveries'.
 4. **The left unit.** After the last pages unit, dispatch one left unit. Its two lists are the
    sheets still without a type and the sheets still filed under no discipline letters, read back
    from the record. A sheet on its untyped list that no pages unit named on its `left untyped:`
@@ -492,10 +509,12 @@ unit that read it, in one count-verified write per unit. You verify:
    The sheet list's rows are the units' to read, never this conversation's.
 3. **Typing coverage against the recognized count.** Sum `sheetsGrounded` across every file's
    succeeded job for this delivery (from step 5) for the recognized sheet count in scope. It must
-   equal the server's rule-typed count (`written.sheetTyping.typed`), plus the sheets the units
-   typed (the set unit's `typed by title:` and every pages unit's `typed:`), plus the left unit's
-   untyped count. A gap means step 6 did not reach every sheet in scope: go back and close it before
-   this run reports done, the same way a count mismatch in point 1 stops the run.
+   equal the left unit's `this delivery:` typed count plus its untyped count, both counted off the
+   record, so a unit sent again is counted once. The sheets the units typed are that typed count
+   less the server's rule-typed count (`written.sheetTyping.typed`). A gap means step 6 did not
+   reach every sheet in scope: go back and close it before this run reports done, the same way a
+   count mismatch in point 1 stops the run. The left unit's `earlier deliveries:` counts are
+   reported on their own line, never folded into this delivery's.
 
 Report any pages still unresolved or flagged image-only, by page number, in the conversation
 rather than raising them as Questions on the project record, and report the plain untyped count:
