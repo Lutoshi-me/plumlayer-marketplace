@@ -644,13 +644,14 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    it yet (`solicitation_list_packages(projectId)` empty): orientation owns the baseline split, and
    a spec book with no packages means it hasn't drafted one yet. Readers name every item's trade
    off that split, so a run never reads before it exists.
-2. **Orientation runs one level down.** Where step 1 finds orientation needs to run, dispatch one
-   fresh general agent with the orientation dispatch below, the way a pass is dispatched to a
-   runner: pointers only, no seed facts, no inventory rows, no spec-section text. It runs the
-   `learn-project` skill exactly as written and returns one fixed-shape line. Read back only that
-   line: sheets seen, index findings, spec sections, packages drafted, questions raised. Never
-   relay the dispatched agent's own user-facing report text. What orientation learned is on the
-   record, which is where every reader reads it.
+2. **Orientation runs one level down.** Where step 1 finds orientation needs to run, start it as
+   `learn-project`'s own "Running one level down" section says, with the orientation dispatch it
+   gives, the way a pass is dispatched to a runner: pointers only, no seed facts, no inventory rows,
+   no spec-section text. The agent runs the `learn-project` skill exactly as written and returns its
+   summary in the shape that section gives. Read back only that summary: its first line (sheets
+   seen, index findings, spec sections, packages drafted, questions raised) and the lines under it.
+   Never relay the dispatched agent's own user-facing report text. What orientation learned is on
+   the record, which is where every reader reads it.
 <!-- user-facing -->
    Tell the user what orientation found, in a few plain sentences, in your own words off that line:
    roughly what was learned, any Question it raised, and the package split it drafted. Say it as what happened, not as a question.
@@ -1306,21 +1307,9 @@ The mandates are not in these templates. They live in the three agent definition
 them fresh. They are never trimmed there and never restated here: a run that relaxes one reproduces
 a measured failure.
 
-**Orientation dispatch** (the lead writes this, once, only when stage 2 finds orientation needs to
-run):
-
-```text
-run_in_background: false
-Project: <projectId>.
-Run the `learn-project` skill for this project, in full, exactly as it is written. Then return
-your summary and end.
-```
-
-**The orientation summary** comes back in this shape, and is all the lead reads:
-
-```text
-sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>
-```
+The orientation dispatch and its summary are `learn-project`'s own, in its "Running one level
+down" section, since every session that starts orientation sends the same one; stage 2 sends it
+once, only when it finds orientation needs to run.
 
 **Runner dispatch** (the lead writes this, once per pass and once per window boundary):
 
