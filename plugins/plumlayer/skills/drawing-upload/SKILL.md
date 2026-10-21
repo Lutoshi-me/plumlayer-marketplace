@@ -465,11 +465,15 @@ run, not left for later.
    twelve lines, in order (lines 1 to 12, then 13 to 24, and so on), one after another, until the
    last line is covered. Sum each unit's counts as it returns, this delivery's apart from earlier
    deliveries'.
-4. **The left unit.** After the last pages unit, look at the `issue` point 2 read. Where it is
-   null with `stillReading` false, the delivery holds no sheet number, and the sheet list read by
-   its `deliveryId` refuses it before giving any count: dispatch no left unit, skip step 7's coverage
-   comparison, and go on to step 10, whose handoff names a delivery with no sheet number. Otherwise
-   dispatch one left unit. Its two lists are the
+4. **The left unit.** After the last pages unit, read this delivery's `issue` off
+   `list_drawing_deliveries(projectId)` again and decide on that read, never on point 2's: a page
+   a pages unit gave a number to can turn a delivery recognition left with no number into a set or
+   an addendum. Where this read gives `issue` null with `stillReading` false, the delivery still
+   holds no sheet number, and the sheet list read by its `deliveryId` refuses it before giving any
+   count. Skip only what needs that read: dispatch no left unit and skip step 7's coverage
+   comparison. Every other step runs as usual, step 7's other points, the project manual in step 8
+   and the index check in step 9 among them, and step 10's handoff names the delivery with no sheet
+   number. Otherwise dispatch one left unit, with the `issue` this read gave. Its two lists are the
    sheets still without a type and the sheets still filed under no discipline letters, read back
    from the record. A sheet on its `this delivery:` untyped list that no pages unit named on its
    `left untyped:` line was never reached: write it to a small pages file of its own with the
@@ -520,9 +524,10 @@ unit that read it, in one count-verified write per unit. You verify:
    for rough correspondence, then spot-check with a handful of `search(projectId, predicate:
    "appearsOnPage", text: "<a sheet number you saw>")` calls. That spot-check is this step's verify.
    The sheet list's rows are the units' to read, never this conversation's.
-3. **Typing coverage, from two reads of the record.** Only where step 6 point 4 read an `issue`
-   for this delivery and dispatched the left unit; a delivery with no sheet number skips this
-   point. Right after the left unit returns, call
+3. **Typing coverage, from two reads of the record.** Only where step 6 point 4's second read of
+   the delivery list gave this delivery an `issue` and the left unit was dispatched; a delivery
+   that still holds no sheet number skips this point and goes on to step 8. Right after the left
+   unit returns, call
    `set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)` and read its `count`. The left
    unit's `this delivery:` typed count plus its untyped count must equal it. Both read the same
    grid at the same time, so a unit sent again, an earlier run's corrections and a page the checker
