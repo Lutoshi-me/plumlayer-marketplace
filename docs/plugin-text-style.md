@@ -368,6 +368,18 @@ Each of these is a harness check.
     left a number out by its first page keeps its further page out, and a pass dispatched under
     its own unlettered id that a further page takes past twelve keeps that part. This cannot judge whether a reader cites a further page as its text says, or
     how a real `set_grid` answer arrives; that stays in review and the measured pass.
+27. Setup reads stay out of the lead. A page image or a page's text read in the session the user
+    talks to stays there, and a setup on a set of about 240 sheets once took that session from 58k
+    to 774k tokens. No page read verb (`render_page`, `get_page_text`, `search_set_text`,
+    `reconcile_index`), and no `set_grid` other than a summary call with `limit: 0`, sits on a line
+    a lead runs: project-setup whole, drawing-upload outside its steps 9b and 10, and
+    learn-project's `## Running one level down`. drawing-upload carries its
+    `plumlayer:sheet-checker` dispatch, learn-project its orientation dispatch and the first line
+    of its summary, scope-run neither of its own copies, project-setup and scope-run point at
+    learn-project's section, and the retired sentences forbidding any agent in the upload are gone.
+    The check runs its scan over fixtures and its shape arms over the shipped text with each part
+    broken, so the refusals are shown. This cannot judge whether a session stays small; that is
+    measured from its transcript.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is
