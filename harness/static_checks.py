@@ -152,6 +152,15 @@ Checks:
       own worked dispatch line for a further page. A window 1 file an earlier plugin wrote keeps
       its left-out number out on both pages, and a dispatched pass a further page takes past
       twelve keeps its part.
+  27. Setup reads stay out of the lead: no page read verb (`render_page`, `get_page_text`,
+      `search_set_text`, `reconcile_index`) and no `set_grid` other than a `limit: 0` summary call
+      on a line a lead session runs, which is project-setup whole, drawing-upload outside its
+      steps 9b and 10, and learn-project's `## Running one level down`; drawing-upload carries its
+      `plumlayer:sheet-checker` dispatch, learn-project its orientation dispatch and the first
+      line of its summary, scope-run neither of its own, project-setup and scope-run point at
+      learn-project's section, and the retired sentences forbidding any agent in the upload are
+      gone. Runs its scan over the lead-reads fixtures under harness/fixtures/ and its shape arms
+      over the shipped text with each guarded part broken, so every refusal is shown.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -7603,6 +7612,190 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# Check: setup reads stay out of the lead
+# --------------------------------------------------------------------------- #
+#
+# A project setup on a set of about 240 sheets once took the lead session from 58k to 774k tokens:
+# the title block renders, the spec first pages, the package creates and the sheet grid all landed
+# in the session the user talks to. The page reads now go to the plugin's `sheet-checker` agent and
+# orientation runs one level down, as learn-project's own section says. This holds the text that
+# drives the lead to that shape.
+#
+# What can fail, one case each below:
+#   1. a page read verb (`render_page`, `get_page_text`, `search_set_text`, `reconcile_index`)
+#      comes back into a section the lead runs: project-setup whole, drawing-upload outside its
+#      steps 9b and 10, or learn-project's "Running one level down";
+#   2. `set_grid` comes back there as anything but a summary call carrying `limit: 0`;
+#   3. drawing-upload loses its sheet-checker dispatch, learn-project its orientation dispatch or
+#      the first line of its summary, scope-run takes its own copy of either back, or project-setup
+#      or scope-run stops pointing at learn-project's section;
+#   4. one of the two retired sentences forbidding any agent in the upload comes back, so the text
+#      contradicts itself.
+#
+# Honest bound: this reads the shipped text, not a session. Whether a lead session in fact stays
+# small is measured from its transcript.
+
+_LEAD_READ_VERBS = ("render_page", "get_page_text", "search_set_text", "reconcile_index")
+_LEAD_READ_VERB_RE = re.compile(r"\b(" + "|".join(_LEAD_READ_VERBS) + r")\b")
+_LEAD_GRID_RE = re.compile(r"\bset_grid\b(\([^)]*\))?")
+_LEAD_SECTION = "Running one level down"
+_ORIENTATION_SUMMARY_LINE = (
+    "sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>"
+)
+_ORIENTATION_AGENT_PHRASE = "You are the orientation agent."
+_SCOPE_RUN_OWN_DISPATCH = "Run the `learn-project` skill for this project, in full, exactly as it is written. Then return your summary and end."
+_SHEET_CHECKER_LINE_RE = re.compile(r"^\s*subagent_type\s*:\s*plumlayer:sheet-checker\s*$")
+_RETIRED_GATES = (
+    ("drawing-upload", "No step of it is handed to a background agent or a subagent"),
+    ("drawing-upload", "No step is handed to a background agent or a subagent"),
+    ("project-setup", "Never hand it, or any part of it, to a background agent or a subagent"),
+    ("project-setup", "never handed to a background agent"),
+)
+
+
+def _sections(text: str) -> list[tuple[str, int, list[str]]]:
+    """Every `## ` section as (its heading, the 1-based line it opens on, its lines), the text
+    above the first heading carried as a section with no heading."""
+    sections: list[tuple[str, int, list[str]]] = [("", 1, [])]
+    for i, line in enumerate(text.splitlines(), 1):
+        if line.startswith("## "):
+            sections.append((line[3:].strip(), i, []))
+        sections[-1][2].append(line)
+    return sections
+
+
+def _lead_lines(text: str, only: str | None, exempt: tuple[str, ...]) -> list[tuple[int, str]]:
+    """The lines a lead session runs, with their line numbers: the one section `only` names, or
+    every section whose heading starts with none of `exempt`."""
+    lines: list[tuple[int, str]] = []
+    for heading, at, body in _sections(text):
+        if only is not None and heading != only:
+            continue
+        if only is None and any(heading.startswith(prefix) for prefix in exempt):
+            continue
+        lines.extend((at + offset, line) for offset, line in enumerate(body))
+    return lines
+
+
+def _lead_read_errors(text: str, label: str, only: str | None = None, exempt: tuple[str, ...] = ()) -> list[str]:
+    """One refusal per page read verb, and per `set_grid` that is not a summary call, on a line a
+    lead runs; one more where `only` names a section the text does not carry."""
+    if only is not None and not any(heading == only for heading, _, _ in _sections(text)):
+        return [f"{label}: no `## {only}` section"]
+    errors: list[str] = []
+    for at, line in _lead_lines(text, only, exempt):
+        for m in _LEAD_READ_VERB_RE.finditer(line):
+            errors.append(f"{label}:{at}: the lead names `{m.group(1)}`, a page read that goes to an agent")
+        for m in _LEAD_GRID_RE.finditer(line):
+            if not m.group(1) or "limit: 0" not in m.group(1):
+                errors.append(f"{label}:{at}: the lead names `set_grid` other than as a summary call with `limit: 0`")
+    return errors
+
+
+def _lead_shape_errors(texts: dict[str, str]) -> list[str]:
+    """The dispatches and pointers that carry the reads away, and the retired gates."""
+    errors: list[str] = []
+    flat = {k: " ".join(v.split()) for k, v in texts.items()}
+    upload_lines = texts["drawing-upload"].splitlines()
+    blocks, _ = _fenced_blocks(upload_lines)
+    if not any(any(_SHEET_CHECKER_LINE_RE.match(l) for l in body) for _, body in blocks):
+        errors.append("drawing-upload carries no dispatch block naming `subagent_type: plumlayer:sheet-checker`")
+    lead = _lead_lines(texts["learn-project"], _LEAD_SECTION, ())
+    lead_flat = " ".join(" ".join(line for _, line in lead).split())
+    summary = " ".join(_ORIENTATION_SUMMARY_LINE.split())
+    for phrase, what in ((summary, "the first line of the orientation summary"), (_ORIENTATION_AGENT_PHRASE, "the orientation dispatch")):
+        if phrase not in lead_flat:
+            errors.append(f"learn-project's `## {_LEAD_SECTION}` does not carry {what}")
+    for phrase, what in ((summary, "its own copy of the orientation summary"), (" ".join(_SCOPE_RUN_OWN_DISPATCH.split()), "its own copy of the orientation dispatch")):
+        if phrase in flat["scope-run"]:
+            errors.append(f"scope-run carries {what}, which learn-project states")
+    for skill in ("project-setup", "scope-run"):
+        if f"Running one level down" not in flat[skill]:
+            errors.append(f"{skill} does not point at learn-project's `Running one level down`")
+    for skill, sentence in _RETIRED_GATES:
+        if sentence in flat[skill]:
+            errors.append(f"{skill} still reads {sentence!r}")
+    return errors
+
+
+def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "setup-reads-out-of-the-lead"
+    skills = plugin_path / "skills"
+    texts: dict[str, str] = {}
+    for skill in ("project-setup", "learn-project", "drawing-upload", "scope-run"):
+        path = skills / skill / "SKILL.md"
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[skill] = path.read_text(encoding="utf-8")
+
+    scans = (
+        ("project-setup", None, ()),
+        ("learn-project", _LEAD_SECTION, ()),
+        ("drawing-upload", None, ("9b.", "10.")),
+    )
+    errors: list[str] = []
+    lead_lines = 0
+    for skill, only, exempt in scans:
+        lead_lines += len(_lead_lines(texts[skill], only, exempt))
+        errors.extend(_lead_read_errors(texts[skill], f"{skill}/SKILL.md", only, exempt))
+    errors.extend(_lead_shape_errors(texts))
+
+    # The scan over fixtures, so a refusal is shown rather than assumed: a clean lead with a page
+    # read under an exempt heading passes, and each broken one is refused in one line.
+    fixtures = marketplace_root / "harness" / "fixtures"
+    expected = [
+        ("lead-reads-fixture-clean.md", None),
+        ("lead-reads-fixture-render.md", "the lead names `render_page`"),
+        ("lead-reads-fixture-grid-rows.md", "the lead names `set_grid` other than as a summary call"),
+    ]
+    for fixture_name, wanted in expected:
+        fixture = fixtures / fixture_name
+        if not fixture.is_file():
+            errors.append(f"fixture not found at {fixture}")
+            continue
+        got = _lead_read_errors(fixture.read_text(encoding="utf-8"), fixture_name, None, ("9b.", "10."))
+        if wanted is None:
+            if got:
+                errors.append(f"{fixture_name}: clean fixture refused: {'; '.join(got)}")
+        elif len(got) != 1 or wanted not in got[0]:
+            errors.append(f"{fixture_name}: expected one refusal naming '{wanted}', got {got}")
+
+    # The shape arms over the shipped text with each guarded part broken, so every refusal is shown.
+    mutations: list[tuple[str, dict[str, str]]] = []
+    if not errors:
+        def mutated(skill: str, new_text: str) -> dict[str, str]:
+            return {**texts, skill: new_text}
+
+        mutations.append(("drawing-upload with its sheet-checker dispatch line taken out", mutated(
+            "drawing-upload", re.sub(r"(?m)^\s*subagent_type\s*:\s*plumlayer:sheet-checker\s*$", "", texts["drawing-upload"]))))
+        mutations.append(("learn-project with its orientation dispatch taken out", mutated(
+            "learn-project", texts["learn-project"].replace(_ORIENTATION_AGENT_PHRASE, ""))))
+        mutations.append(("learn-project with its summary's first line taken out", mutated(
+            "learn-project", re.sub(r"sheets seen <n>\s+index findings", "sheets <n> index findings", texts["learn-project"]))))
+        mutations.append(("scope-run with the summary's first line put back", mutated(
+            "scope-run", texts["scope-run"] + "\n" + _ORIENTATION_SUMMARY_LINE + "\n")))
+        mutations.append(("project-setup with its pointer taken out", mutated(
+            "project-setup", texts["project-setup"].replace("Running one level down", "running below"))))
+        for skill, sentence in _RETIRED_GATES:
+            mutations.append((f"{skill} with {sentence!r} put back", mutated(skill, texts[skill] + "\n" + sentence + ".\n")))
+        for label, broken in mutations:
+            if not _lead_shape_errors(broken):
+                errors.append(f"the check passed {label}")
+
+    detail = (
+        f"{lead_lines} lines a lead runs scanned for {len(_LEAD_READ_VERBS)} page read verbs and "
+        f"`set_grid` with rows (project-setup whole, drawing-upload outside steps 9b and 10, "
+        f"learn-project's `## {_LEAD_SECTION}`), the sheet-checker and orientation dispatches and "
+        f"their pointers checked, {len(_RETIRED_GATES)} retired gate sentences absent, "
+        f"{len(expected)} fixtures, {len(mutations)} mutations refused; bound: text only, not a "
+        f"session's context"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -7632,6 +7825,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_drawing_issue_passes(plugin_path, marketplace_root),
         check_anomaly_notes(plugin_path),
         check_shared_number_pages(plugin_path, marketplace_root),
+        check_setup_lead_reads(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed
