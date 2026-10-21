@@ -217,7 +217,7 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
 5. **Sum the pass with the script; add no number of your own.** Run
    `python3 '<scripts path>/pass_summary.py' '<run folder>/ledger.md' <window> <pass id>
    --plan '<read plan path>' --trades '<run folder>/trades/<pass-id>.txt'` with the Bash tool,
-   single quoted, taking the scripts path and the read plan path off your dispatch. It reads the
+   single quoted (`python` in place of `python3` on a seat that has only that name), taking the scripts path and the read plan path off your dispatch. It reads the
    `dispatch` and `verified` lines of every unit your pass's block in the read plan carries,
    whatever pass they name, and prints the summary filled in: the units in reading order, each
    unit's counts, the totals, and every note line placed on the summary line it belongs to. Write
