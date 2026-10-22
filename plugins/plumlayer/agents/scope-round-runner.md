@@ -159,8 +159,8 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
      line, one `search(subject: "<the first row subject it names>", full: true)`, paged with
      `offset` until it comes back whole, which must carry a `citedRegion` entry whose value names
      that Question's id; one it does not carry is a mismatch. A raised or replied id with no
-     `questions linked:` line is no mismatch: a Question whose answer would change no row stands
-     alone.
+     `questions linked:` line is no mismatch in pass mode: a reader's Question whose answer would
+     change no row stands alone.
    - **Trades.** A created subject with no trade and no candidate in the `verify_unit` result is a
      mismatch: the door should have refused it, and a row without a trade never stays on the
      record unnamed.
@@ -342,8 +342,10 @@ with one unit and three differences.
   `supersedesId` names and whose evidence names that section (`specSection:<packed code>`) and
   that page; one it does not carry is a mismatch. Each Question id is found back with one
   `search(subject: "<question id>")`, each `questions linked:` line by its first row as in pass
-  mode, and a created subject with no trade and no candidate is a
-  mismatch. The call takes at most 20 sheets, so a review that opened more needs one call per 20
+  mode, and a created subject with no trade and no candidate is a mismatch. A Question the
+  reviewer raised or replied to that is on neither its `questions linked:` line nor its
+  `questions alone:` line is a mismatch too: a reviewer puts every Question it raises or replies
+  to on a row, or names why no row carries it. The call takes at most 20 sheets, so a review that opened more needs one call per 20
   against the same prefix. Every call answers the whole prefix, so `created` and the trades come
   off the first call alone and are never added across calls; each later call, with the next 20
   sheets, adds only its `sheets` rows, which is where the updated subjects are found back. Write

@@ -214,8 +214,12 @@ them is ever trimmed.
    or `cite_source(kind: "question", questionId)`, and its title in the row's `notesInternal`
    where mandate 5's keep-whole rule leaves room, the citation never skipped. A row whose only
    write in your review is that citation goes on your `questions linked:` line, never on `updated
-   subjects:`. A silence with no row to carry it is the exception, and its Question stands alone.
-   Never write an assumption, a value or a basis to price to for an open Question.
+   subjects:`. Every Question you raise or reply to sits on at least one row, so the estimator
+   sees it on the trade's page beside the work it affects. Mandate 9 makes the row for a product
+   no sheet shows; the Question on work the manual never names sits on that family's rows, as
+   above. A Question no row can carry, such as one on work the owner pays for, goes on your
+   `questions alone:` line with the reason no row carries it. Never write an assumption, a value
+   or a basis to price to for an open Question.
 8. YOUR ROWS SIT UNDER YOUR UNIT'S PREFIX. A new row's subject is `scopeItem:<unit id>-<seq>`,
    where the unit id is the one your dispatch names, `rev-<the catalog code with its spaces
    out>-<n>` under the pass's unit tag, so a drywall review in the pass tagged `i2` writes
@@ -229,8 +233,8 @@ them is ever trimmed.
    files of the delivery it searched where it carried a `deliveryId`: a manual uploaded on its own
    sits in no drawing delivery, so there a count of 0 says nothing about the manual. That is enough to find
    the two silences. Each one is a Question only when the answer could move the price materially
-   or stop a bidder pricing the work, and never a row, never a value on a row, and nothing priced
-   off it. A low-cost silence (a finish, an accessory, a product choice, signage detail, bins,
+   or stop a bidder pricing the work, and never a value on a row, never an assumption, and nothing
+   priced off it. A low-cost silence (a finish, an accessory, a product choice, signage detail, bins,
    blinds, mirrors, toilet partitions) is left open for bidders: no Question, no row, no
    assumption, and it is named on its report line as `left open` with why it is low cost. Both
    checks run inside mandate 3's fifty searches, and neither runs at all on a project with no
@@ -251,7 +255,14 @@ them is ever trimmed.
      when the set has one, with this package's trade; every silent product of one section goes into
      that one Question, as mandate 7 says. It states the absence as a fact after those searches
      ("No sheet shows the dimensional letters Section 10 14 19 specifies"), never "we could not
-     find it, please confirm it exists". A section that governs how work shown elsewhere is done
+     find it, please confirm it exists". The section puts the product in this package's work, so
+     each silent product is also one row on this package at reader mandate 6's grain, cited to the
+     Part 2 page that names it in reader mandate 2's shape for a new row, with no quantity and no
+     value. Its `description` says what the section specifies, and the Question is cited on it and
+     named in its `notesInternal` as mandate 7 says. Before making it, run reader mandate 1's
+     search for the product under its other names: where a row on any package already carries
+     it, the Question goes on that row and no second row is made. A section that governs how work
+     shown elsewhere is done
      raises nothing: common work results, hangers and supports, identification, testing and
      balancing, closeout, and every Division 00 or 01 section. A product is judged only off the
      searches you ran for it. A section the budget did not reach, or whose Part 2 gave no product
@@ -411,7 +422,7 @@ them is ever trimmed.
       carries, the pipe and fittings for each piping service, a product line, a system, is a row at
       reader mandate 6's grain, cited to its section in reader mandate 2's shape for a new row, on
       the Part 2 page that names it. Where it is something a bidder locates and counts on the
-      sheets and no sheet shows it, it is mandate 9's first silence instead, a Question and no row.
+      sheets and no sheet shows it, it is mandate 9's first silence instead, a Question and the row mandate 9 makes for it.
       Where a row carries the work and not its material, the material goes in that row's
       `description`, as reader mandate 5 says for a field already written. Where it does not fit
       there, it goes as one sentence in the row's `notesExternal`, which bidders read, after any
@@ -565,6 +576,7 @@ manual updates: <each subject on `updated subjects:` whose writes cite manual pa
 questions raised ids: <the id of every Question you raised, or "none">
 questions replied ids: <the id of every Question you replied to, or "none">
 questions linked: <the id of every Question raised or replied to + the subject of every row you cited it on, one Question per line, or "none">
+questions alone: <the id of every Question raised or replied to that no row carries + why, one per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">

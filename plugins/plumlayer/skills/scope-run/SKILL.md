@@ -56,8 +56,10 @@ The three windows:
    it. The same review finds where the manual and the drawings are silent on each other: a
    section on the package whose work no sheet shows, and work on the package's rows that no page
    of the manual names. Each that could move the price materially or stop a bidder pricing the
-   work is a Question, cited to the start of the section or a box around the callout; a low-cost
-   one is left open for bidders. A package's page is finished when its review is.
+   work is a Question, cited to the start of the section or a box around the callout, and cited
+   on the rows it affects; a product the manual specifies and no sheet shows also gets its own
+   row with no value, so the Question shows on the trade's page. A low-cost one is left open for
+   bidders. A package's page is finished when its review is.
 
 A run can stop at the end of any window, inside window 2 at any pass boundary, and inside window 3
 at any package boundary, and resume later with nothing lost.
@@ -1440,6 +1442,7 @@ manual updates: <each subject on `updated subjects:` whose writes cite manual pa
 questions raised ids: <the id of every Question raised, or "none">
 questions replied ids: <the id of every Question replied to, or "none">
 questions linked: <the id of every Question raised or replied to + the subject of every row it was cited on, one Question per line, or "none">
+questions alone: <the id of every Question raised or replied to that no row carries + why, one per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
