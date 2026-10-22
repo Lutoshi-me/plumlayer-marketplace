@@ -58,7 +58,7 @@ unless Claude compatibility is handled separately.
 ## What's in the plugin
 
 A hosted MCP connector to your Plumlayer project record
-(`api-production-0a7b.up.railway.app/mcp`), auto-wired on install with no manual `claude mcp add`,
+(`api.plumlayer.com/mcp`), auto-wired on install with no manual `claude mcp add`,
 and nine skills that use it.
 
 A skill is a step; what you run is a process. There are five:

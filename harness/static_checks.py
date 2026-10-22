@@ -187,7 +187,7 @@ from pathlib import Path
 # --------------------------------------------------------------------------- #
 
 EXPECTED_PLUGIN_NAME = "plumlayer"
-EXPECTED_MCP_URL = "https://api-production-0a7b.up.railway.app/mcp"
+EXPECTED_MCP_URL = "https://api.plumlayer.com/mcp"
 
 EXPECTED_SKILLS = {
     "bid-intake",
