@@ -334,10 +334,13 @@ a Question. Then:
 
 1. Put the answer on the Question. The design team's own words go on with
    `log_question_reply_received`, as close to verbatim as you have them, with who sent them in
-   `from` and when in `at`; his handing you their answer is the ask to log it. An answer the new
+   `from` and when in `at`; his handing you their answer is the ask to log it. When one email
+   answers several Questions, log it once, naming each in `questionIds`: each Question gets its
+   own reply, and `replies` in the answer lists each one's entry. An answer the new
    documents give goes on with `reply_question`, saying what the revised sheet or section shows and
    citing it.
-2. Pin that reply with `pin_question_reply` when the estimator says it is the answer.
+2. Pin that reply with `pin_question_reply` when the estimator says it is the answer. A reply
+   logged on several Questions is pinned, corrected or removed on each Question by its own entry.
 3. Update the scope values the answer moves: write each new value naming what it replaces
    (`supersedesId`), cited to where the answer came from, and cite the Question on the row with
    `cite_source(kind: "question")`.
@@ -370,7 +373,8 @@ did himself, each only when he asks:
   when it went out under one. A send to a second party is a second call.
 - `set_question_rfi_number`: set or correct its RFI number.
 - `follow_up_question`: he chased it after it went out.
-- `log_question_reply_received`: the design team answered.
+- `log_question_reply_received`: the design team answered, on every Question named in
+  `questionIds`.
 
 A send, follow-up or reply received logged wrong is corrected with `edit_question_send`,
 `edit_question_follow_up` or `edit_question_reply_received`, naming only the fields that change,
