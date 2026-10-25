@@ -261,7 +261,13 @@ of them is ever trimmed.
    Only a matter of the tools or the citation itself, a box you sent without lines or a read that
    came back in part, or a package note naming work no sheet or section shows (the estimator's own
    note, as the reviewer's mandate 11 names it), stays on that line alone, marked `run only`, and
-   never as a Question.
+   never as a Question. Each anomaly line ends with a comma and where it landed, in one of the five
+   forms your report shape gives, as its last words: the Question named by the full id
+   `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned,
+   a row by its full subject, never shortened, since the lead counts a note only where its ending
+   names one of them whole. At the check-in the lead gives a note that
+   landed on a Question, a reply or a row as a count, since the estimator reads it on the trade's
+   page, and names in full every note that ends any other way.
 2. CITATION SHAPE: every drawing-grounded record's evidence names the sheet, carries
    `evidence.pageInPdf` (a positive 1-based integer) for the page you actually read, AND carries
    `evidence.fileId`, the drawing file your dispatch names for that page:
@@ -767,7 +773,7 @@ trades: <trade id + item count, one per trade; candidates <n>>
 trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
-anomalies: <one line each, with sheet and page, ending with where it landed: Question <id>, reply <id>, note on <subject>, sheet reading, or run only; or "none">
+anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```

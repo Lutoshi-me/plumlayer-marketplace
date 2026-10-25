@@ -52,7 +52,13 @@ orientation stage all start it the same way:
    /learn-project, call `list_projects` and confirm with the user which project record this
    orientation pass is for. If there is no project yet, hand off to `project-setup` first, the same
    way `drawing-upload` step 1 does, and dispatch nothing.
-2. Dispatch one fresh general agent with the orientation dispatch below. The call is the wait.
+2. Dispatch one fresh general agent with the orientation dispatch below. Where the Agent tool takes
+   `run_in_background`, as in a headless session, send it `false`, as the dispatch does: the call
+   is then the wait, because a headless session stops a background agent after ten idle minutes.
+   Where the call comes back with an agent id instead, the agent's report arrives later as its own
+   message: end the turn with one line naming what is running, and take the report when it
+   arrives. Here its report is the summary. Wait by ending the turn and nothing else: no sleep, no
+   shell loop, and no look at the summary file while the agent runs.
 3. Read back only its summary. Never relay the agent's own wording to the user and never open the
    packet to retell it: what orientation learned is on the record, and the summary says where.
    Where the summary did not arrive in the message, its summary file is the summary: open that

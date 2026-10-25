@@ -62,7 +62,7 @@ The three windows:
    bidders. A package's page is finished when its review is.
 
 A run can stop at the end of any window, inside window 2 at any pass boundary, and inside window 3
-at any package boundary, and resume later with nothing lost.
+at any pass boundary, and resume later with nothing lost.
 
 A run is one pass over one drawing issue. A project goes through several sets before it is built,
 and each new set gets a full pass of its own over every sheet it prints, the way a new project
@@ -154,10 +154,11 @@ that relaxes any one of them reproduces a measured, named failure.
    distinct subject count under the unit's prefix, and for each of the unit's sheets the subjects
    whose citations name it, which is how an update and a new citation on a pre-existing subject
    are found back. A reader's report that its batches landed is verified at both its own boundary
-   and the runner's; neither replaces the other. The lead adds a third, count-only check at the
-   check-in: `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)`, reading `count`, per unit,
-   never a row list. Updates and Questions the lead reports as runner-verified rather than
-   asserting a check it did not run. The lead never calls the unfiltered `list_scope_items` during
+   and the runner's; neither replaces the other. The lead adds a third, count-only check when each
+   pass reports: one `count_entries` call for the pass, its `subjectPrefixes` the
+   `scopeItem:<unit id>-` of each unit id that pass's block in the read plan carries, never built
+   from the runner's report, reading each `entryCount`, never a row list. Updates and Questions the
+   lead reports as runner-verified rather than asserting a check it did not run. The lead never calls the unfiltered `list_scope_items` during
    the run: that verb walks the whole scope list, and pulling it is how the lead's context stops
    being cheap. Counts only, `limit: 0`, is the one call the lead makes on it.
 6. **Grain.** One row per product type, and one row per product where the set names the product. A
@@ -396,15 +397,17 @@ record files, never recorded as project entries:
 
   ```text
   pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified <yes|no>
-  pass: 3 <pass id> units 1 created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified <yes|no>
+  pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified <yes|no>
   phase: <boundary name>
   ```
 
-  `candidates <n>` comes off the runner's `trades: ... candidates <n>` line and is on every
-  `pass:` line, in every window. A window 3 line carries two fields more, `pages-opened` and
-  `searches`, taken off the reviewer's `pages opened:` and `searches:` lines through the runner's
-  summary. Those three fields are what make the run countable from the ledger afterwards, so a
-  `pass:` line written without one is a line that cannot be counted later.
+  Every figure on a `pass:` line is written by `lead_pass.py record` (stage 4 step 3) off the
+  pass's summary file and your own count call, never typed by hand: `created` is the sum of your
+  counts, and `updated`, `questions`, `replied` and `candidates` come off the summary's totals and
+  trades lines, in every window. A window 3 line carries two fields more, `pages-opened` and
+  `searches`, off the summary's `review:` line, which the summary script reads off the reviewer's
+  own `pages opened:` and `searches:` lines. Those fields are what make the run countable from the
+  ledger afterwards.
 
 - `grid/`, `inventory.md`, `inventory.json`: the sheet grid as the fetch agent put it on disk, and
   the plan script's counts off it. The lead reads the count tables and the sheet number digest,
@@ -418,7 +421,10 @@ record files, never recorded as project entries:
   assigned and, for a slice, each `--only` pattern, the unit keys it deferred and the unit keys an
   earlier slice already read and verified; the next window 2
   plan run reads its ids back, so a slice's ids stay where they are. A resume takes a window's
-  patterns off its file to run that plan again exactly.
+  patterns off its file to run that plan again exactly. `packages-at-fold.json` is the package
+  list as the package folder found it at the fold's first start, written by the folder before any
+  act; a folder sent again after a stop compares the record with it, since windows 1 and 2 can make
+  packages `packages.json` never held, and you never read it.
   Nothing else is copied here: the definitions are on the record and no window plans off them.
   Audience: machine.
 - `read-plan.md`: the read plan, one per window, written by the plan script, never by hand: the
@@ -429,11 +435,15 @@ record files, never recorded as project entries:
   slot values (what the pass reads for, its content families, the subject prefix scheme). It is the
   whole of what a reader or a reviewer opens off disk. The mandates are never in the brief.
   Audience: agent.
-- `reports/`: one file per read unit, per review and per pass, the report in its fixed shape,
-  written by the reader, reviewer or runner before it returns, so a dispatch that returns without
-  the report in hand loses nothing. A review also writes `<unit id>-terms.txt` here, the words it
-  harvested, so it ranks them on disk rather than in its context. In window 3 the pass runner's own
-  summary takes `<pass id>-pass.md`, since the review already holds `<pass id>.md`. Audience: agent.
+- `reports/`: one file per read unit and per review, the report in its fixed shape, written by the
+  reader or reviewer before it returns, so a dispatch that returns without the report in hand loses
+  nothing. A review also writes `<unit id>-terms.txt` here, the words it harvested, so it ranks
+  them on disk rather than in its context. One file per pass holds the pass summary, written by
+  the summary script the runner runs, and the runner returns only the hand-back; `lead_pass.py`
+  and the plan script read the summary here. The package folder writes `fold.md` here, one act
+  of the fold per line, which you read only through `fold_report.py print`. Audience: agent, and
+  `fold.md` feeds the check-in that ends window 2 and the close-out, so whatever crosses from it
+  into those becomes user-facing at the crossing and is translated there.
 - `names/`: one file per pass, the new item names each unit created, one per line, matched
   against themselves and each other with a local command for overlaps. Audience: machine.
 - `kinds/`: one file per pass, the definition kinds each unit's reader named, one per line,
@@ -458,21 +468,27 @@ The run executes at three levels. Each level is a separate agent context, bounde
 
 - **The lead** is this skill, running in the user's session. It does the cheap work only:
   preconditions, orientation, the read plan, starting the index and waiting on its status, the
-  check-ins, amending, close out. For each pass it starts one runner and receives one fixed-shape
-  summary; what it keeps per pass is the dispatch line and, once it has taken its own counts, one
-  `pass:` line in the ledger. It never holds a pass brief, a reader's report,
-  the sheet grid, the index report, or a page of the set.
+  check-ins, amending, close out. For each pass it starts one runner and receives one short
+  hand-back; what it keeps per pass is that hand-back and, once it has taken its own count, the
+  one `pass:` line `lead_pass.py` writes to the ledger. It never holds a pass summary, a pass
+  brief, a reader's report, the sheet grid, the index report, or a page of the set.
 - **The pass runner** (the plugin's `scope-round-runner` agent, one fresh instance per pass) owns
   one pass: it writes the pass brief, runs the pass's units exactly as the window's stage defines
   them, verifies every unit with one `verify_unit` call, notes overlaps inside the pass, appends
-  the ledger in its fixed line shapes, returns its summary, and ends. Its context is bounded to one
-  pass of at most twelve units, and it never grows with the size of the window. Two further
+  the ledger in its fixed line shapes, writes its summary to disk, returns its hand-back, and
+  ends. Its context is bounded to one pass of at most twelve units, and it never grows with the
+  size of the window. Two further
   instances run in their own modes: one closes each window at its boundary (the cross-pass overlap
   scan and the declaration of any kind a reader named and did not declare), and in window 3 each
-  pass runner runs its one review unit.
+  pass runner runs up to four review units, or every package of one trade where that trade has
+  more, one at a time.
 - **The reader** (the plugin's `scope-reader` agent, one fresh instance per read unit) reads one
   sheet, for the vocabulary or for the sheet itself, over the corpus, and records, as the window's
   stage and the pass brief define. It writes its report to `reports/` and ends.
+- **The package folder** (the plugin's `scope-package-folder` agent, one fresh instance per
+  dispatch) folds the packages into what one kind of firm bids once window 2 is read and indexed,
+  writes each act to `reports/fold.md`, and returns a five-line hand-back; dispatched again, it
+  deletes a package for the owner's own work that a later write made again.
 - **The reviewer** (the plugin's `scope-reviewer` agent, one fresh instance per package) reviews
   one package in window 3: it harvests that package's own words off the record, searches the set's
   text for them, opens only the pages a hit sends it to, and records what no row carries. It writes
@@ -485,19 +501,37 @@ everything else from the record; the runner opens the read plan for its
 own pass and appends the ledger without reading it. Nothing from those files is pasted into a
 dispatch, because whatever is pasted stays in the dispatcher's context for the rest of the run.
 
-A dispatch is one Agent tool call with `run_in_background: false`, and the call is the wait. Named
-that way the call does not return until the agent has ended and reported, which is the whole shape:
-a background dispatch lets the caller end its turn with work still in flight, and in a headless
-session an ended turn is an exited process that takes everything under it with it. A report arriving
-from an agent you did not dispatch yourself, such as a reader your runner dispatched, is not your
-report: never relay its counts, and wait for your own dispatch to return. On the rare seat where the
-call still comes back at once with an agent id instead of the report, the report arrives later as
-its own message: wait for it, making no other call in between, and never dispatch a second agent to
-wait for the first, and never a placeholder agent to fill a turn. Where a reader, a reviewer or a
-runner has ended and its report did not arrive in the message, its report file under `reports/` is
-the report, written before it returned; open that file rather than re-running the unit. A unit whose
-report file is also absent is re-run on its own unit, against the live list, so nothing is created
-twice.
+A dispatch is one Agent tool call, and how you wait on it depends on the session. Where the Agent
+tool takes `run_in_background`, as in a headless session, send it `false`, as every template below
+does: the call is then the wait and returns only once the agent has ended and reported, because a
+headless session stops a background agent after ten idle minutes. Where the call comes back with an
+agent id instead, the agent's report arrives later as its own message: end the turn with one line
+naming what is running, and take the report when it arrives. That is the case in a terminal, the
+desktop app or an editor. There, make every dispatch the plan allows now, then end the turn with
+that one line. Wait on an agent by ending the turn and nothing else: no sleep, no shell loop, no
+look in `reports/` or at an agent's output file, no Monitor, no message to the agent, never a second
+agent to wait for the first, and never a placeholder agent to fill a turn.
+
+Match each report that arrives to a dispatch of yours: a runner's hand-back by its `pass:` field,
+the package folder's by its `fold:` line, and any other by the one dispatch of its kind you have
+running. A hand-back, a notice or a message from an agent you did not dispatch, such as a reader
+your runner dispatched or another session, is not your report: never relay its counts, answer it
+where it asks something, then end the turn again. One turn can carry several hand-backs: take each
+in turn. A completion notice for an agent whose hand-back you already took changes nothing. Where
+the user writes while agents run, answer them and end the turn again. A turn ends with nothing
+running only where you speak to the user and wait on their answer: a check-in, the read plan's
+among them, a question this skill puts to them, or the close-out.
+
+Several dispatches sit partway through a stage: the copy of the delivery list (precondition 3),
+orientation (stage 2 step 2), the copy of the packages (stage 2 step 4), the grid fetch and a fetch
+sent again (stage 3 step 2), the package folder (stage 6 step 5), and the copy of the packages at
+window 3 (stage 7 step 1). Where the call comes back with an agent id, end the turn after that
+dispatch and continue at the next step when its report arrives.
+
+Where a reader, a reviewer or a runner has ended and its report did not arrive in the message, as
+with a completion notice that carries no hand-back, its report file under `reports/` is the report,
+written before it returned; open that file rather than re-running the unit. A unit whose report
+file is also absent is re-run on its own unit, against the live list, so nothing is created twice.
 
 An agent that stops answering partway is ended by the client within about ten minutes, and its
 dispatch comes back as an error whose whole text is `[Request interrupted by user for tool use]`.
@@ -510,15 +544,17 @@ go-ahead, dispatch that pass again; its runner skips every unit already verified
 read of a sheet that stopped waits for the user's go-ahead.
 
 Reports travel upward in a fixed short shape, counts and named anomalies only (the shapes are
-given with the dispatch templates below). A runner's summary is what the lead reads when that pass
-reports, verified against the record with the lead's own count queries and written down as one
-`pass:` line, never relayed as-is and never held past that line.
+given with the dispatch templates below). A runner returns its hand-back, a few lines of counts
+naming its summary file, and the summary stays on disk. When the hand-back arrives the lead takes
+its own count off the record, and `lead_pass.py record` compares that count with the summary file
+and writes the pass's `pass:` line, so the lead never reads a summary, never relays one, and works
+from that line once it is written.
 
 Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
 approved; window 1 complete, or window 1 skipped where a pass on an addendum planned no window 1
 unit; index built; window 2 complete, or window 2 paused where a slice
 deferred sheets; packages folded; window 3 complete; packages amended; closed out. Inside a window the `pass:`
-lines are the boundaries: one per pass in windows 1 and 2, one per package in window 3. A pass run
+lines are the boundaries: one per pass in every window. A pass run
 again to finish it carries a second `pass:` line, and its last one carries the whole pass: every
 total taken over a window, and the close-out report, counts that one, for each pass the window's
 read plan now carries. A part a replan folded into another pass after its own `pass:` line was
@@ -530,8 +566,9 @@ plan script again first, exactly as its stage wrote it, with the same arguments:
 `plan/window-<n>.json`, taken off it with a local filter, and after `phase: window 2 paused` the run
 is the one without `--only` that stage 6 step 4 names. The script keeps every id the ledger and the
 plan file already hold and marks the units already verified. Then dispatch the first pass of the
-window that is not finished, found with a local filter on the pass headings and their `units:`,
-`units verified:` and `summed:` lines. A pass is finished when its block shows the same count on
+window that is not finished, found with the one `lead_pass.py passes` call stage 4 step 1 gives,
+which reads the pass headings and their `units:`, `units verified:` and `summed:` lines and names
+the passes to dispatch on its last line. A pass is finished when its block shows the same count on
 its `units:` and `units verified:` lines and shows `summed: yes`. Window 1's repeated lines pass is
 a pass like any other here: it carries the same three lines and is finished, or dispatched, the
 same way. The plan script writes that
@@ -627,8 +664,9 @@ before going on.
 6. **The user is present.**
 <!-- user-facing -->
 Tell them what the run will do: you read the set in three windows, the schedules and legends
-   first, then every sheet once, then one package at a time against what landed, and you stop for
-   a check-in after the first window and every few packages after that; after the first window
+   first, then every sheet once, then each package reviewed on its own against what landed,
+   several at a time, and you stop for a check-in after the first window and at regular points
+   through the sheets and the packages after that; after the first window
    every trade's page already has its items. They can stop or change course at any check-in. Give a
    rough sense of how long this set will take from its size, and confirm they are staying for the
    check-ins.
@@ -794,8 +832,8 @@ lines.
 Before any reading runs, tell the user, in a few plain sentences, not a table:
 
 - The order: schedules and legends first, by discipline, and the notes each drawing file repeats
-  across its sheets, read once, then every sheet once, then one package at a time against what
-  landed, in one sentence. No reasons; they know why schedules come before plans.
+  across its sheets, read once, then every sheet once, then each package reviewed on its own
+  against what landed, several at a time, in one sentence. No reasons; they know why schedules come before plans.
 - What is deliberately left out, by sheet family or number. Say it plainly: anything here will not
   be scoped.
 - When the first check-in will be, roughly.
@@ -829,10 +867,19 @@ that window's go-ahead.
 The reading happens one level down, one runner per pass. The lead does exactly this and holds
 nothing else:
 
-1. **Start one runner per pass.** For each pass in the window, dispatch a fresh
-   `plumlayer:scope-round-runner` with the runner dispatch below: pointers only, no pass brief and
-   no read-plan text. Append that pass's dispatch line to the ledger before you
-   dispatch it, never after. A finished pass, as the windows section above says, is not
+1. **Start one runner per pass.** At the window's start, and on every resume once the plan script
+   has run again, list the window's passes with one call, single quoted as every script call is:
+
+   ```sh
+   python3 '<plugin root>/scripts/lead_pass.py' passes --plan '<run folder>/read-plan.md'
+   ```
+
+   It prints two lines per pass: its id with its `units`, `units verified` and `summed` values,
+   and its prefixes, the `scopeItem:<unit id>-` of each unit id its plan block carries, in plan
+   order, which is what your count call takes when the pass reports. Its last line names the
+   passes to dispatch. For each pass to dispatch, dispatch
+   a fresh `plumlayer:scope-round-runner` with the runner dispatch below: pointers only, no pass
+   brief and no read-plan text. A finished pass, as the windows section above says, is not
    dispatched. Any other is dispatched whole even when it already carries a `pass:` line, as a
    pass is once a replan adds sheets to it, folds a part into it or cuts a sheet it read: its
    runner skips the units already verified, and its new `pass:` line carries the whole pass.
@@ -840,8 +887,8 @@ nothing else:
    start together, and a folded pass's heading names every discipline it carries; passes the plan
    marks as seeing the same work start one after another. The repeated lines pass, `RS1` and any
    lettered part of it, shares no discipline and starts alongside the vocabulary passes, with the
-   same runner dispatch. What a pass leaves in the lead's context is its dispatch line and its
-   summary, nothing else.
+   same runner dispatch. What a pass leaves in the lead's context is its dispatch, its hand-back
+   and its `pass:` line, nothing else.
 2. **The runner owns the pass.** It writes the pass brief if it is not already on disk, runs the
    pass's units in reading order (one fresh
    `plumlayer:scope-reader` per unit, one unit at a time), appends each unit's dispatch line
@@ -849,21 +896,44 @@ nothing else:
    starts, notes overlaps inside the pass, and appends the ledger in its fixed line shapes. The
    per-unit loop lives in the `scope-round-runner` agent definition and the reader mandates live
    in the `scope-reader` agent definition. Neither is restated here, and neither is ever trimmed.
-3. **Take a pass's counts when it reports, then let its summary go.** A runner returns one
-   fixed-shape summary (shape below). Before you say a number out loud, take the created count for
-   each of that pass's units with your own `search(subjectPrefix: "scopeItem:<unit-id>-", limit: 1)`,
-   reading `count`. That is the third boundary of non-negotiable 5, and it is count-only: never a
-   row list. Say the update and Question counts as the runner verified them, and the created
-   counts as your own. Those counts are the script's sum of that pass's ledger lines rather than a
-   runner's own addition, so the `pass:` line copies the updated, questions and replied totals
-   straight off the summary, and only the created counts are yours to re-take.
-   Append one `pass:` line to the ledger carrying that pass's verified totals,
-   and work from that line from then on rather than from the summary. A mismatch stops the run and
-   gets investigated, never papered over. So does a summary whose `per unit` line reads
-   `verified no` for a unit its `unread pages` line names as stopped answering twice: start no
-   further pass, check in at once naming that sheet, and on the go-ahead dispatch that pass again,
-   which starts at that sheet and reads the ones after it. Once that unit reads `verified yes`, the
-   earlier stop is history on the summary and stops nothing.
+3. **Take a pass's count when it reports, then record it.** A runner returns one short hand-back
+   (shape below) that names the pass's summary file. Read its `unverified:` and `unread:` lines
+   first. A pass with a unit on `unverified:` gets no `pass:` line, and the record script refuses
+   it. Where that unit reads `mismatch`, the run stops and gets investigated, never papered over.
+   Where the `unread:` line names it as stopped answering twice, start no further pass, check in at
+   once naming that sheet, and on the go-ahead dispatch that pass again, which starts at that sheet
+   and reads the ones after it; once that unit reads verified, the earlier stop is history and
+   stops nothing. A unit with no verified line and no such stop is a runner that stopped partway,
+   handled as the windows section says.
+
+   Otherwise, before you say a number out loud, take the pass's counts off the record yourself
+   with one call, `count_entries(projectId, subjectPrefixes: [<the prefixes on that pass's listing
+   line>])`, reading each `entryCount`. That is the third boundary of non-negotiable 5,
+   and it is count-only: never a row list, and never a prefix or a count taken off the hand-back.
+   Then record the pass, passing the answer's `counts` array through as it came back, single
+   quoted:
+
+   ```sh
+   python3 '<plugin root>/scripts/lead_pass.py' record '<run folder>/ledger.md' <window> <pass id> \
+     --plan '<run folder>/read-plan.md' --counts-json '<the counts array of the answer>'
+   ```
+
+   It pairs each count with its unit by its `subjectPrefix`, never by its place in the array, and
+   refuses an array whose prefixes are not exactly the pass's, each once, writing nothing. It
+   compares your counts unit by unit with the summary file, copies the updated, questions,
+   replied and candidates figures off that file, and in window 3 the pages opened and searches off
+   its `review:` line, appends the pass's one `pass:` line to the ledger, and prints it. Work from
+   that line from then on. A unit it names as above the runner's count carries entries written
+   since its runner verified it, by a later write onto its rows, and stops nothing. Exit 3 is a
+   mismatch: the record holds fewer entries under a unit's prefix than its runner verified. The
+   script wrote nothing and names each such unit with both counts, and the run stops and gets
+   investigated, never papered over. Any other refusal names what is wrong with the call: fix the
+   call and run it again. Say the update and Question counts as the runner verified them, and the
+   created counts as your own.
+<!-- user-facing -->
+   Between check-ins, tell the user at most one line per pass as it is recorded, naming what it
+   read in plain words: "I've read the fire alarm sheets." Keep the rest for the check-in.
+<!-- /user-facing -->
 4. **Close the window at its boundary.** When every pass of the window has reported and carries
    its `pass:` line, dispatch one more runner with `boundary` in place of the pass id. It scans the
    window's new items for the same work captured by two passes that ran alongside each other,
@@ -958,12 +1028,13 @@ On the go-ahead:
      --out '<run folder>/read-plan.md'
    ```
 
-2. **Run the passes** exactly as stage 4 runs them: one runner per pass, dispatch line first, the
-   runner's `verify_unit` per sheet, your own created counts per unit, one `pass:` line each, in
-   the plan's order. After a slice, the full plan's part that holds the slice's units holds new
-   ones beside them: it shows `units verified` below `units` and is dispatched like any unfinished
+2. **Run the passes** exactly as stage 4 runs them: one runner per pass, the runner's
+   `verify_unit` per sheet, your one count call, one `pass:` line each, in the plan's order.
+   After a slice, the full plan's part that holds the slice's units holds new ones beside them: it shows `units verified` below `units` and is dispatched like any unfinished
    pass, its runner skips the slice's finished units, and its new `pass:` line carries the whole
-   part. Passes that share no discipline start together, and a folded pass's heading names every
+   part. A plan with no pass, as where window 1 selected or left out every sheet, lists
+   `passes 0, finished 0; to dispatch: none`: no runner starts, and the window goes straight to
+   step 4. Passes that share no discipline start together, and a folded pass's heading names every
    discipline it carries. Every reader reads its sheet whole, for everything on it, whatever trade
    the work belongs to (non-negotiable 4); the runner's overlap scan and the record's refusal of a
    create whose name the project already carries are what keep two passes running alongside each
@@ -987,107 +1058,44 @@ On the go-ahead:
    `pass:` line: their runners read nothing and write new summaries. Then the window closes from
    that plan with `phase: window 2 complete`, its totals taken over the passes that plan carries.
 5. **Fold the packages into what one kind of firm bids.** This runs once the window is complete and
-   its index built, never after a paused line, and before the window 3 plan. A package is what one
-   kind of firm bids: a supplier, an installer, or a sub who furnishes and installs, as
-   `learn-project` step 8 draws them. Read `solicitation_list_packages(projectId)` and the
-   `tradeRollup` of `list_scope_items(projectId, limit: 0)`. For each package, ask which kind of
-   firm bids that work on a job this size, and with what else. Where a firm of another package
-   carries it, fold it in: `solicitation_update_package` on the package that keeps it, with the
-   folded package's `tradeCode` and its `codes` added to `codes`, its `manualSections` added to
-   `manualSections`, and `notes` rewritten to say what the package now carries, then
-   `solicitation_delete_package` on the folded one. That verb replaces each list it is sent whole,
-   so read the keeping package's current lists first and send them back with the additions, each
-   entry once, never repeating the keeping package's own `tradeCode` in its `codes`. The rows keep
-   their trade: a fold writes no `belongsToTrade`. Ask the same of every trade on a package's
-   `codes`, since a trade can sit inside a package whose firm does not carry it: where the firm of
-   another package carries it, move it. Send the package that takes it its `codes` and
-   `manualSections` with that trade and its sections added, then send the package it leaves its
-   lists without them, in that order so the trade is never on no package, rewriting `notes` on each
-   the same way. A sealant or firestopping section stays on the `manualSections` of each package
-   whose work it still seals or passes through, whichever package its trade moves to.
+   its index built, never after a paused line, and before the window 3 plan, and it runs one level
+   down: dispatch one fresh `plumlayer:scope-package-folder` with the package folder dispatch
+   below, mode `fold`, pointers only. How a package is folded, split, moved, or deleted as the
+   owner's own work lives in that agent's definition, which appends `phase: packages folded` to
+   the ledger as its last step; you hold none of it, and no package list, row or manual page of
+   the fold reaches your context. Read back only its hand-back (shape below). A folder that comes
+   back with no hand-back stopped partway: dispatch it again, and it keeps every act its report
+   already carries. Then gather what the check-in below names about the packages with one call,
+   single quoted:
 
-   A fold never puts two kinds of firm on one package: a supplier's package and the package that
-   installs its items stay two, the item's section on both. Where a row shows an item a supplier
-   furnishes and no package's `notes` name who installs it, name the package you judge does in the
-   supplier package's `notes` and the item in the installing package's `notes`, and add the section
-   to the installing package's `manualSections`. Who bids the work never comes from where the
-   catalog files a trade or from a section's title, except a section with no page range, as below.
-   A package of one or two rows is the first to ask about, and its row count never settles it. A
-   trade the catalog files beside another trade's work folds there only where that firm bids it
-   here. Where the catalog has no trade for an item, ask which kind of firm bids it and put it on
-   that firm's package, never on its nearest neighbor in the division. A section with a page range
-   moves by what its Part 1 summary covers, read on its first page with `get_page_text` as
-   orientation reads it. A section with none, read from the table of contents alone, moves by its
-   title, and its package's `notes` say the manual's text for it was not read in.
+   ```sh
+   python3 '<plugin root>/scripts/fold_report.py' print '<run folder>'
+   ```
 
-   Where the project's `structuralSystem` entry states wood-framed floors over a concrete or steel
-   podium, read the default carries in `learn-project` step 8,
-   `<plugin root>/skills/learn-project/SKILL.md`. Each default applies to every package
-   orientation did not draw, a package the record made as a row landed included: that package
-   goes where its line puts it, and its `notes` name that default. A default never moves work the
-   estimator has placed, by his own word, back to where the default puts it.
-
-   Walk-off mats, an acoustic underlayment laid under the finish floor, and floor prep (leveling
-   and patching under the finish) go with the flooring sub, whichever package they sit on; a poured
-   gypsum topping and the sound mat laid under it go with the sub who pours it; finish hardware and
-   door operators with doors, frames and hardware; reinforcing with cast-in-place concrete; steel
-   deck with structural steel. Joint sealants and penetration firestopping go with the work they
-   seal or pass through, and neither folds into another firm's package because the catalog files
-   them together. Add the sealant or firestopping section to the `manualSections` of every package
-   whose work it seals or passes through. A sealant or firestopping trade that carries rows keeps a
-   package of its own, whose `notes` say each trade carries the sealant at its own joints, or the
-   firestopping at its own penetrations, and name those packages. For each of its rows whose name,
-   description or citation says whose work it seals or passes through, write one
-   `packageRole:<that trade>` record,
-   `{ role: "candidate", note: "confirm trade responsibility: could be <home> or <this trade>" }`,
-   for each such trade, since a row can name several, all in one `record_batch` whose returned
-   `count` must equal the entries sent, so that package's review reads the row. On a pass over an
-   addendum, each trade that gains a candidate here is added to the trades that pass reviews:
-   append one line `fold touched <catalog id>` for each such trade to
-   `<run folder>/trades/fold.txt`, which the window 3 plan reads with the passes' own trades files.
-   The estimator can keep that package for the building envelope joints or for a firestop
-   specialist, or have its rows moved to those trades, and that move is the estimator's own write,
-   made on his word. A package whose
-   trade is a heading no sub bids here, such as `09 00 00` Finishes, is split into the packages
-   its subs bid, and each of its rows goes to the catalog trade that names its work, re-homed as
-   stage 8 re-homes them. A broad code that one sub bids on this job, such as `22 00 00` Plumbing
-   or `10 00 00` Specialties, stays whole: a broad code covers every trade under it. Work the
-   owner contracts for directly is no sub's bid. Where the manual says the owner hires the agency
-   (special inspections, testing), in Division 01 or in a technical section's quality control
-   article, or a sheet's general notes say it, or the owner furnishes and installs the item,
-   delete that work's package with `solicitation_delete_package` and fold it into no other. First
-   read its rows: one the contractor's own sub carries, such as mix testing the concrete sub
-   engages, is re-homed to that sub's trade as stage 8 re-homes a row whose trade is wrong, and
-   one several subs carry, such as a statement of responsibility each structural sub submits,
-   goes to the main one with a `candidate` role for each other. Where the manual and a sheet
-   disagree on who hires the agency for a row, that is a Question with both citations, cited on
-   that row with `cite_source(kind: "question", questionId)`, and the row keeps its trade; the answer decides where it goes. The rest keep their trade. Where the delete is refused because bidders have bid that package, it
-   stays. Where a package you keep lists that trade in its `codes`, take it off the
-   way a move takes a trade off; where a kept package covers it through a broad code, that
-   package's review reads those rows. A later
-   write that leaves a live, named row on that trade while no package covers it makes the package
-   again: a new row on the trade, a row moved onto it, a rename, or a restore, in any window. A
-   citation does not. Read `solicitation_list_packages` again before each later check-in and
-   at stage 8, and delete such a package again the same way. Where the manual and the sheets say
-   the contractor hires the agency, or say nothing, the package stays. In a pass on an addendum, ask
-   only of the packages this pass made: those whose `id` is in no row of `plan/packages.json`,
-   the copy stage 2 made, found with a local comparison; where it made none, nothing folds. Then
-   append `phase: packages folded` to the ledger. Stage 8 stays for the splits and folds a review
-   surfaces.
+   It prints every line of `reports/fold.md`, one act each under its label, and stops before
+   Bash's output limit; where its last line names what it did not print, run the command that
+   line gives for the rest. A run whose fold ran before the folder kept a report prints one line
+   saying so, and that line is no `deleted:` line, here, at the general requirements step or at
+   close-out. What it prints is for you to read: say what it names in the
+   estimator's words, and never paste a line as it printed. A later write can make a package for
+   the owner's own work again, so before each later check-in and at stage 8, where the report
+   carries a `deleted:` line, dispatch the folder again with mode `recheck`, and read back only its
+   hand-back.
 
 <!-- user-facing -->
 At this check-in, when nothing was deferred, say plainly that every sheet in the set has now been
 read, once each, and that nothing was left unread except what was deliberately left out at the
 start. Name what landed by trade, say each trade's page carries its items and shows every sheet
-each one appears on, and say what comes next in one sentence: one package at a time, against what
-landed. Name each package you folded into another, with the reason in one sentence, and each
+each one appears on, and say what comes next in one sentence: each package reviewed on its own
+against what landed, several at a time. Name each package you folded into another, with the reason in one sentence, and each
 package you split into the ones its subs bid, each package a supplier furnishes with the package
 that installs its items, each sealant or firestopping package you kept with the packages whose
 work its rows seal or pass through, and that the estimator can keep it or have its rows moved to
 those trades, each trade you moved from one package to another, each default you used with the
 package that follows it, and that the estimator can change any of them in chat,
 and each package you deleted because the owner hires that work, with the manual section or the
-sheet and note that says so. Name as the owner's work any of its items a package you kept still covers. When sheets were deferred, say which sheets were read and what landed from them by trade,
+sheet and note that says so. Name as the owner's work any of its items a package you kept still covers. Name each package
+whose trades or sections changed while the fold was stopped, with what changed. When sheets were deferred, say which sheets were read and what landed from them by trade,
 that the rest of the set, <m> sheets, is still waiting, and that the next go-ahead reads it. Never
 say every sheet has been read while any is waiting.
 <!-- /user-facing -->
@@ -1109,8 +1117,12 @@ On the go-ahead:
    `solicitation_list_packages`, except forms, so no section sits on two packages, and none where
    every one is placed already; and whose `codes` are those sections' own trades
    (`directory_list_trades(code: <the number spaced as the catalog spaces it>)`, then by its
-   title's noun), leaving out each trade stage 6 step 5 kept off as the owner's work and each
-   trade another package carries as its `tradeCode` or in its `codes`. Its `notes` say the
+   title's noun), leaving out each trade the fold deleted as the owner's work and each trade
+   another package carries as its `tradeCode` or in its `codes`. The fold's deletes are the
+   `deleted:` lines of one `fold_report.py print` call, as stage 6 step 5 gathers them, its
+   recheck deletes included; each carries the deleted package's `tradeCode` after `trade` and its
+   id after `package`, and the trade to leave out is the one after `trade`, read off the line
+   itself. Its `notes` say the
    estimator carries the general costs the Division 01 sections require, so every review puts
    them on this package's `tradeCode`. The package is made even where it holds no section, so an
    estimator cost read on any package has it to land on. A project holds one live package per
@@ -1123,11 +1135,12 @@ On the go-ahead:
    to `<run folder>/plan/packages-start.json` with a local command, since stage 8 compares the two.
    Then send one fresh agent to copy a fresh
    `solicitation_list_packages` response over `<run folder>/plan/packages.json`, byte for byte,
-   returning one line. Then run the plan script for window 3. It writes one pass per package in
-   `plan/packages.json`, in package order, each pass carrying one review unit whose id is the pass
-   id, with two packages carrying the same catalog trade planned one after the other. It reads no
-   sheets and takes no inventory. Read back only its bounds line: packages, reviews, passes,
-   trades, and the packages sharing a trade.
+   returning one line. Then run the plan script for window 3. It plans one review unit per package
+   in `plan/packages.json`, in package order, and puts up to four reviews in each pass, every
+   package of one catalog trade in the same pass, one after the other, so no two passes share a
+   trade; a trade of more than four packages is a pass of its own. It reads no sheets and takes
+   no inventory. Read back only its bounds line: packages,
+   reviews, passes, reviews per pass, trades, and the packages sharing a trade.
 
    In a pass on an addendum, the script reads the pass's own `trades/` files beside the plan and
    plans a review only for a package covering a trade this pass wrote on (its `tradeCode`, a
@@ -1148,12 +1161,12 @@ On the go-ahead:
    ```
 
 2. **Run the reviews** as stage 4 runs its passes, with `review-<pass id>` in place of the pass id,
-   so the runner dispatches one `plumlayer:scope-reviewer` for its one unit rather than a reader.
-   Dispatch line first, the runner's `verify_unit` against the pages the review opened, your own
-   created count for the unit, one `pass:` line each, in the plan's order. Two packages the plan
-   placed one after the other run one after the other, never at once.
+   so the runner dispatches one `plumlayer:scope-reviewer` per unit in turn rather than a reader.
+   The runner's `verify_unit` against the pages each review opened, your one count call over the
+   pass's prefixes, one `pass:` line each. No two passes share a trade, so all of them may start
+   together.
 3. **Check in every few packages.** After every fourth `pass:` line of the window, check in (format
-   below): the packages finished, their pages ready, what was raised. A pause here is at a package
+   below): the packages finished, their pages ready, what was raised. A pause here is at a pass
    boundary and loses nothing.
 
 <!-- user-facing -->
@@ -1194,7 +1207,8 @@ close out; the split the earlier passes settled stands.
    package that should collapse into another once scale is understood), apply the amendment live:
    `solicitation_create_package` for a genuinely new package, `solicitation_update_package` to
    fold, split, or rename an existing one. A fold here runs the same update-then-delete sequence as
-   stage 6's fold: the keeping package takes the folded package's trade, `codes` and
+   the package folder's fold mode, in `<plugin root>/agents/scope-package-folder.md`: the keeping
+   package takes the folded package's trade, `codes` and
    `manualSections`, then `solicitation_delete_package` removes the folded one, so no two packages
    cover the same work. A trade an item already sits on has its package
    already, so amend that package rather than creating one. Resolve the amendment's trade the same way as
@@ -1276,21 +1290,25 @@ Report to the user, in plain words:
 - **How long it took**: wall-clock from the read plan's approval to this report.
 <!-- /user-facing -->
 
-The report is written off the ledger's `pass:` and `phase:` lines, and the `same work:` and
-`not read:` notes named below, read with a local filter, and the one package read named below,
+The report is written off the ledger's `pass:` and `phase:` lines, and the `grain`, `same work:`
+and `not read:` notes named below, read with a local filter, and the one package read named below,
 never off memory and never off the whole file. Everything the report needs is on those lines: the
 wall-clock between the first and last of them, the counts, the deviations, and what is still open.
 Read them with one filter each and count them locally: the sheet reads are the `dispatch` lines,
 the distinct sheets are the sheet numbers on them, the rows created and the items are the `created`
 and `items` fields of the `verified` lines, and the candidates, the pages a review re-opened and
 the searches it ran are the `candidates`, `pages-opened` and `searches` fields of the `pass:`
-lines, the last one of a pass that carries two. The pairs of rows carrying the same work are the
+lines, the last one of a pass that carries two. The items you weren't sure how finely to split are
+the ledger's `note` lines of kind `grain`, in every window, the notes each check-in printed as how
+finely to split, each item named once. The pairs of rows carrying the same work are the
 window 3 `note` lines of kind `anomaly` that carry `same work:`, each pair named once, and the
 manual sections a review left unread or read in part are the window 3 `anomaly` notes that carry
 `not read:`, each section named once. What the index left open comes off the
 `phase: index built` lines, which carry its counts, and the codes found nowhere and the codes a
 later issue dropped are the `codeNoLocation` and `codeOnlyOnReplacedPages` reads the index step
-took, the only leftover rows the run holds. The general requirements package's Division 01
+took, the only leftover rows the run holds. The package split's folds, splits, moves and
+deletes before the reviews come off one `fold_report.py print` call, as stage 6 step 5 gathers
+them, its recheck deletes included. The general requirements package's Division 01
 sections come off one fresh `solicitation_get_package` of the package whose `tradeCode` is
 `01 11 13`, its id taken from `<run folder>/plan/packages.json` with a local filter. When the
 report has been given, append `phase: closed out`.
@@ -1300,13 +1318,14 @@ report has been given, append `phase: closed out`.
 Every dispatch carries pointers and nothing else. Whatever is pasted into a dispatch stays in the
 dispatcher's context for the rest of the run, so the read plan and the brief values are opened by
 the agent that needs them, from the paths it is handed, and the record is read by the agent that
-needs it. Every template below names `run_in_background: false` on the Agent call because the call
-is the wait: a background dispatch lets the dispatcher end its turn with work still in flight, and a
-turn that ends in a headless session is a process that exits and takes the work with it.
+needs it. Every template below names `run_in_background: false` for the session whose Agent tool
+takes it, where the call is then the wait, because a headless session stops a background agent
+after ten idle minutes. Where the call comes back with an agent id, you wait as the windows section
+says, by ending the turn.
 
-The mandates are not in these templates. They live in the three agent definitions the plugin ships,
-`scope-round-runner`, `scope-reader` and `scope-reviewer`, where each dispatched instance reads
-them fresh. They are never trimmed there and never restated here: a run that relaxes one reproduces
+The mandates are not in these templates. They live in the four agent definitions the plugin ships
+for this run, `scope-round-runner`, `scope-reader`, `scope-reviewer` and `scope-package-folder`,
+where each dispatched instance reads them fresh. They are never trimmed there and never restated here: a run that relaxes one reproduces
 a measured failure.
 
 The orientation dispatch and its summary are `learn-project`'s own, in its "Running one level
@@ -1320,17 +1339,42 @@ subagent_type: plumlayer:scope-round-runner
 run_in_background: false
 Project: <projectId>. Window: <1, 2, or 3>.
 Pass: <pass id, or "review-<pass id>", or "boundary">.
-Run folder: <path>. Read plan: <path to read-plan.md>.
-Scripts: <path to the plugin's scripts directory>.
-Run your pass as your definition says, write your summary to <run folder>/reports/<pass id>.md,
-or in window 3 to <run folder>/reports/<pass id>-pass.md, then return it.
+Run folder: <path>. Scripts: <path to the plugin's scripts directory>.
+Run your pass as your definition says.
 ```
 
-The window 3 path in the template carries that suffix because the pass id and the unit id are one
-string there, so `<pass id>.md` is the name the review's own report already holds. The `Scripts:`
-line is the plugin's own scripts directory, the path you already resolved for your plan script
-calls: the runner sums its pass with the script that sits there, and a runner handed no path would
-have to guess one.
+The runner's definition owns every path under the run folder: the read plan is always
+`<run folder>/read-plan.md`, and the summary file and the hand-back it returns are its own to
+write. The `Scripts:` line is the plugin's own scripts directory, the path you already resolved for
+your plan script calls: the runner sums its pass with the script that sits there, and a runner
+handed no path would have to guess one.
+
+**Package folder dispatch** (the lead writes this, once when window 2 closes with mode `fold`, and
+once with mode `recheck` before each later check-in and at stage 8 where the fold report carries a
+`deleted:` line):
+
+```text
+subagent_type: plumlayer:scope-package-folder
+run_in_background: false
+Project: <projectId>. Mode: <fold or recheck>.
+Run folder: <path>. Plugin root: <path to the plugin directory>.
+Run your mode as your definition says.
+```
+
+The `Plugin root:` line is the plugin directory you already resolved for your script calls: the
+folder reads `learn-project` step 8's default carries there and prints its hand-back with the
+script beside yours.
+
+**The package folder's hand-back** is printed by `fold_report.py` and is the whole of what the
+fold puts in your context; the acts stay in `reports/fold.md`:
+
+```text
+fold: packages <n> before, <n> after
+acts: folded <n>, split <n>, moved <n>, deleted <n>, kept <n>
+records: candidates sent <n> landed <n>, rows re-homed <n>, questions <n>
+phase: packages folded appended
+report: <run folder>/reports/fold.md
+```
 
 **Reader dispatch** (the runner writes this, once per read unit, in windows 1 and 2):
 
@@ -1388,7 +1432,7 @@ trades: <trade id + item count, one per trade; candidates <n>>
 trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
-anomalies: <one line each, with sheet and page, ending with where it landed: Question <id>, reply <id>, note on <subject>, sheet reading, or run only; or "none">
+anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
@@ -1406,9 +1450,11 @@ the runner find those writes back: a create is findable by its `scopeItem:<unit-
 update lands on a subject that already existed, a raise on a fresh Question id and a reply on the
 id of a Question somebody else raised, and nothing else in the report names them.
 
-**The runner's summary** comes back in this shape, and is what the lead reads when a pass reports,
-after taking that pass's created counts off the record itself: an entry count under each unit's
-prefix, never the reader's own item count, which travels separately as `items`:
+**The runner's summary** is written in this shape by the summary script the runner runs, to
+`<run folder>/reports/<pass id>.md`, where `lead_pass.py` reads it when you record the pass and
+at the check-in; you never read it yourself. `created` is an entry count under each unit's prefix,
+never the reader's own item count, which travels separately as `items`. The `review:` line is
+window 3's only, the pages opened and the searches run added up over the pass's verified reviews:
 
 ```text
 window: <n>   pass: <pass id>
@@ -1420,14 +1466,30 @@ conflicting rows: <n>, on units <unit ids>, or "none"
 overlap notes: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
 unread pages: <sheet + page + reason, one per line, or "none">
+grain questions: <one line each, as the report wrote it, or "none">
+door-owned suggestions: <one line each, as the report wrote it, or "none">
 definitions kinds added: <kinds, or "none">
 deviations and repairs: <one line each, or "none">
+review: pages opened <n>, searches <n>
 ledger: <path>, appended through <last line written>
 ```
 
-**The reviewer's report** comes back in this shape, and a window 3 runner's summary carries its
-`pages opened:` count and its `searches:` count up to the lead, which is where the `pass:` line's
-two extra fields come from:
+**The runner's hand-back** is what the runner returns to you, printed by the same script, and the
+whole of what a pass's report puts in your context. The `review:` line is window 3's only:
+
+```text
+window: <n>   pass: <pass id>
+units: <n>, verified <k>
+unverified: <unit id + mismatch | no verified line, one per line, or "none">
+unread: <each unread note verbatim, or "none">
+notes: anomalies <n>, overlaps <n>, deviations <n>, kinds <n>
+review: pages opened <n>, searches <n>
+report: <run folder>/reports/<pass id>.md
+```
+
+**The reviewer's report** comes back in this shape, and the summary script reads its
+`pages opened:` and `searches:` lines into the summary's `review:` line, which is where the
+`pass:` line's two extra fields come from:
 
 ```text
 unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
@@ -1446,7 +1508,7 @@ questions alone: <the id of every Question raised or replied to that no row carr
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
-anomalies: <one line each, with sheet and page, ending with where it landed: Question <id>, reply <id>, note on <subject>, sheet reading, or run only; or "none">
+anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
@@ -1467,6 +1529,29 @@ ledger: <path>, appended through <last line written>
 
 ## The check-in (what the user sees)
 
+Gather a check-in with two calls, and nothing else for it. The first covers the passes recorded
+since the last check-in:
+
+```sh
+python3 '<plugin root>/scripts/lead_pass.py' checkin '<run folder>' <window> --passes <pass id>,<pass id>
+```
+
+It prints your `pass:` line for each pass and their totals, the items by trade summed off their
+summaries' `trades:` lines, and the anomalies already on the record as counts: each anomaly line
+ends with where it landed, and one that ends `Question <id>`, `reply <id>` or `note on <subject>`
+is counted on an `on the record:` line, one per pass, or in window 3 one per review naming its
+package and trade, with one more line over them all. Then it prints every other note line of those
+summaries, each copied whole under its pass: every anomaly that landed nowhere on a trade's page
+(`sheet reading`, `run only`, or an ending it cannot read), every pair of rows carrying the same
+work wherever its sentence landed, and every overlap, unread page, grain question, door-owned
+suggestion, definitions kind and deviation line. A sheet reading is on the record and on no
+trade's page, so it is named in full. It stops before Bash's output limit, cutting a note too
+long for one call where the call's room ends and naming where, and where its last line names what
+it did not print, run the command that line gives for the rest. What it prints is for you to read: say what it names in the
+estimator's words, and never paste a note or a label as it printed. The second is `list_questions(projectId, limit: 0)`,
+whose `tradeCounts`, `everyTradeCount` and `untradedCount` give the project's Questions by the
+trades they name, the every-trade ones and the not-known-yet ones, with no rows to page through.
+
 <!-- user-facing -->
 At each check-in, name the window, or the packages, you finished and what they covered, then cover,
 in plain sentences:
@@ -1474,9 +1559,10 @@ in plain sentences:
 - What you read and what landed: sheets read, items added, items updated, by trade, and what you
   raised as Questions, by the trades they name, with the every-trade ones and the not-known-yet
   ones counted apart. Your own verified counts, never the ones reported up to you.
-- What you would like them to look at now: document defects, items you weren't sure how finely to
-  split, anomalies, each with its sheet reference, reviewable on each trade's page on
-  plumlayer.com.
+- What you would like them to look at now: each document defect and anomaly that is not on a
+  Question or a row yet, with its sheet reference, the items you weren't sure how finely to split,
+  and what is theirs to decide. Give the ones already on a Question or a row as a count, and say
+  where to see them: each trade's page on plumlayer.com.
 - What is defined now that wasn't before, and anything the next window depends on.
 - Anything that went sideways: a count that didn't match and how you fixed it, a page you couldn't
   read, a pass that stopped. Say it plainly. A sheet whose reading stopped partway is named with

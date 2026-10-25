@@ -17,6 +17,10 @@ pass: 1 B1 units 9 created 9999 updated 999 questions 99 replied 9 candidates 9 
 dispatch 2 B2 B2-1 sheets B-1.01 purpose invented plan sheet
 verified 2 B2 B2-1 created 777 items 77 updated 7 questions 7 replied 7 sent 800 landed 800 conflicts 7 result ok
 note 2 B2 B2-1 anomaly invented clause, a window 2 note that no window 1 summary may carry
-dispatch 3 rev-099999-1 rev-099999-1 sheets none purpose review an invented package
-verified 3 rev-099999-1 rev-099999-1 created 333 items 33 updated 3 questions 3 replied 3 sent 340 landed 340 conflicts 3 result ok
+dispatch 3 W3-1 rev-099999-1 sheets none purpose review an invented package
+verified 3 W3-1 rev-099999-1 created 333 items 33 updated 3 questions 3 replied 3 sent 340 landed 340 conflicts 3 result ok
+dispatch 3 W3-1 rev-099998-1 sheets none purpose review a second invented package
+verified 3 W3-1 rev-099998-1 created 222 items 22 updated 2 questions 2 replied 2 sent 230 landed 230 conflicts 0 result ok
+dispatch 3 W3-1 rev-099997-1 sheets none purpose review a third invented package
+verified 3 W3-1 rev-099997-1 created 111 items 11 updated 1 questions 1 replied 1 sent 120 landed 120 conflicts 0 result ok
 phase: window 1 complete units 3 created 16 updated 1 questions 1 replied 1 candidates 2 kinds declared 2 cross-pass overlaps 1

@@ -109,8 +109,10 @@ The three windows, and what each selects:
      `plan/window-2.json` beside window 1's file: the unit ids it assigned, each `--only` pattern
      with its reason and the unit keys it selected, the read-earlier keys in `readEarlierKeys`,
      and the deferred unit keys with their count.
-  3  one review per package: one pass per row of the packages file, in package order, with the
-     packages of one trade kept together. It reads no sheets, so it takes no inventory. In a pass
+  3  one review per package, in package order, with the packages of one trade kept together, and
+     up to REVIEWS_PER_PASS reviews to a pass, or one trade's reviews together where that trade
+     has more (below). It reads no sheets, so it takes no inventory, and it writes
+     `plan/window-3.json`, each review's unit id with the package it is bound to. In a pass
      on an addendum, whose `run.json` reads `issue: "addendum"`, it reads the pass's own
      `trades/` files beside the plan and plans only the packages covering a trade the pass wrote on, a
      row it created, updated or cited or a Question it raised, naming every other package as left
@@ -203,10 +205,11 @@ Passes already summed, in every window:
 
   Every unit verified is not enough on its own, because a replan can change which units a pass
   carries after its summary was written: a fold can take in a part whose units another pass
-  verified, and a cut can drop units, with the count coming out the same. So every pass block also
-  says `summed: yes` or `summed: no, <why>` under `units verified:`. It reads yes when the pass's
-  summary on file, `reports/<pass id>.md` in the run folder (`reports/<pass id>-pass.md` in window
-  3), names on its `per unit:` lines exactly the unit ids the block carries, and the ledger's last
+  verified, a cut can drop units, and in window 3 a package added or deleted can move reviews
+  between passes, with the count coming out the same. So every pass block also says
+  `summed: yes` or `summed: no, <why>` under `units verified:`. It reads yes when the pass's
+  summary on file, `reports/<pass id>.md` in the run folder, names on its `per unit:` lines
+  exactly the unit ids the block carries, and the ledger's last
   `pass: <window> <pass id>` line carries that summary's figures: its units count, and the
   updated, questions and replied totals the lead copies off it. A pass reading no is summed again:
   its runner skips the units already verified and writes a new summary. The reasons it names:
@@ -232,7 +235,34 @@ Passes under three units, in windows 1 and 2:
   groups parts and never renumbers one: a folded unit keeps the id its own discipline's part gave
   it, the parts read one after another in plan order, and the pass block names each part folded
   in. Nothing about the fold is stored; every plan run folds again from its own parts. Window 3
-  never folds: a review is its own pass, and its pass id is its unit id.
+  groups its reviews by its own rule, below.
+
+Reviews to a pass, in window 3:
+
+  Each review is a unit of its own, `rev-<packed trade code>-<n>` under the unit tag, and its id
+  belongs to its package's `id`, never to where the package sits in the list. Every window 3 run
+  writes `plan/window-3.json` beside the window 1 file: each package's unit id, and as retired
+  each id whose package the list no longer carries. A replan keeps the id that file gives a
+  package, so a review verified under its id stays verified while packages are added, deleted or
+  reordered around it, and a package the file does not name takes the next number past every
+  number its trade's ids have carried in that file or on the ledger's window 3 `dispatch` and
+  `verified` lines, so a new package never takes an id a deleted one held and reads unverified. A
+  run folder planned before this script kept the file carries its bindings in the read plan on
+  file instead: each window 3 unit line names its package (`, package <id>`), or, where every
+  review was its own pass, the block's `package:` line does. With no file, a replan takes those
+  bindings as the file's, so a package the read plan names keeps its id, an id whose package is
+  gone is retired, and a package it does not name is numbered past every number its trade carried
+  there or on the ledger. Only a folder with no read plan at all, a first plan, numbers each
+  trade's packages from 1 in package order. Ids are bound over the whole packages list
+  before an addendum's filter. The reviews kept are walked in package order, every review of one
+  folded trade code together, and put into passes of up to REVIEWS_PER_PASS: a trade's reviews go
+  into the pass being built where they fit beside what it holds, and start the next pass where
+  they do not. A trade's reviews are never split, so no two passes share a trade and every pass
+  can start at once; a trade with more reviews than REVIEWS_PER_PASS is a pass of its own, and one
+  with more than UNITS_PER_PASS is refused by name, since no runner supervises more. The passes
+  are numbered `W3-<n>` under the unit tag in plan order. Nothing about the grouping is stored, so
+  a package added or deleted can move reviews between passes, and `summed:` reads no on each pass
+  whose reviews changed.
 
 Usage:
 
@@ -252,9 +282,10 @@ Input shapes, named here so a change on the record's side surfaces as a named fi
 an empty plan:
 
   --packages  a `solicitation_list_packages` response: a `packages` array whose rows carry
-              `tradeCode`, and optionally `id`, `name` and `codes`. Two packages carrying one trade
-              is ordinary here: both plan a review, and the plan places them one after the
-              other.
+              `id` and `tradeCode`, and optionally `name` and `codes`. Two packages carrying one trade
+              is ordinary here: both plan a review, in one pass, one after the other. A unit
+              line names the package's id and trade; its `codes` are read only to choose an
+              addendum's reviews, and the reviewer reads them off the record.
   --window-1  the file window 1 wrote: `selected` and `excluded`, both arrays of inventory unit
               keys, and `repeatedSets`, which may be absent. Its other fields are this script's own
               bookkeeping and window 2 reads none. A key the inventory does not hold, or a
@@ -272,7 +303,10 @@ Exit codes:
   0  wrote the files; one bounds line on stdout naming what it read and what it wrote.
   1  a named failure, one line on stderr: a file that does not parse, a row total that does not
      match `--expect-count`, two rows folding to one unit key, a missing window input, an argument
-     some other window takes, an input row with no `tradeCode`, a window 1 file naming a unit key
+     some other window takes, an input row with no `tradeCode` or no `id`, two input rows carrying
+     one `id`, a window 3 plan file that is malformed or binds one unit id or one package to two,
+     a read plan whose window 3 blocks bind one unit id or one package to two, a
+     window 1 file naming a unit key
      the inventory does not hold or naming one as both selected and excluded, an `--include`,
      `--exclude` or `--only` with no colon or matching no sheet it may select, an inventory file
      this script did not write, a window 2 plan whose planned and deferred sheets are not a
@@ -293,7 +327,8 @@ Exit codes:
      whose issue differs from `run.json`; a window 1 file planned under another tag; a delivery
      list with no array, a delivery that is neither a set nor an addendum, or one whose
      `stillReading` is not true or false; window 3 of a pass on an addendum with no `trades/`
-     folder, or a trades line of neither known shape; two passes in flight; and a run folder holding a ledger
+     folder, or a trades line of neither known shape; a trade carrying more packages than one pass
+     holds; two passes in flight; and a run folder holding a ledger
      and no `run.json`, or a `run.json` the issue mode cannot read. Another pass's broken
      `run.json` never stops a plan. Seven are about a number printed on more than one page: a
      grid row with no `pageOccurrences` list, a list naming no page or more than one as the row's
@@ -393,10 +428,12 @@ _UNIT_TAG_RE = re.compile(r"^i[1-9][0-9]*$")
 CLOSED_OUT_LINE = "phase: closed out"
 PHASE_PREFIX = "phase:"
 
-# Where a pass runner writes its summary, beside the ledger. A window 3 pass id is also its unit
-# id, so its summary carries a suffix the review's own report does not.
+# Where a pass runner writes its summary, beside the ledger, as `<pass id>.md` in every window.
 REPORTS_FOLDER = "reports"
-WINDOW_3_SUMMARY_SUFFIX = "-pass"
+
+# A window 3 runner reviews its packages one at a time and holds one review report at a time, so a
+# pass carries a few reviews to spread its fixed cost.
+REVIEWS_PER_PASS = 4
 
 # The figures a `pass:` line copies off the summary, and the totals line they are read from.
 PASS_LINE_FIGURES = ("units", "updated", "questions", "replied")
@@ -1206,7 +1243,8 @@ def _read_packages(path: Path) -> list[dict]:
     """
     The `solicitation_list_packages` response, byte copied to disk. Every package row must carry a
     `tradeCode`: a package with no trade has no unit id for its review to record under, and guessing
-    one from its name would be reading meaning off a title.
+    one from its name would be reading meaning off a title. It must carry an `id` too, held to one
+    row, since a review's unit id is bound to it.
 
     Two packages carrying one trade is ordinary and plans two reviews. Nothing about a package
     collides any more: a review computes no sheet list, so there is nothing for two of them to
@@ -1223,9 +1261,14 @@ def _read_packages(path: Path) -> list[dict]:
         trade_code = row.get("tradeCode")
         if not isinstance(trade_code, str) or not trade_code.strip():
             raise PlanError(f"{path}: package {index} carries no `tradeCode`")
+        package_id = row.get("id")
+        if not isinstance(package_id, str) or not package_id.strip():
+            raise PlanError(f"{path}: package {index} carries no `id`, which its review's unit id is bound to")
+        if any(package_id == other.get("id") for other in packages):
+            raise PlanError(f"{path}: package {index} carries the `id` {package_id!r} an earlier package carries")
         codes = row.get("codes")
-        # The review carries the package's codes verbatim. A `codes` field that is not a list of
-        # strings is a shape change on the record's side, named here rather than rendered as none.
+        # An addendum's reviews are chosen off the package's codes. A `codes` field that is not a
+        # list of strings is a shape change on the record's side, named here rather than read as none.
         if codes is not None and (
             not isinstance(codes, list) or not all(isinstance(c, str) for c in codes)
         ):
@@ -1613,8 +1656,7 @@ def _summed(
             unit["id"] if window == 3 else unit["unitId"]
             for part in runner_pass for unit in part["units"]
         ]
-        suffix = WINDOW_3_SUMMARY_SUFFIX if window == 3 else ""
-        path = run_folder / REPORTS_FOLDER / f"{pass_id}{suffix}.md"
+        path = run_folder / REPORTS_FOLDER / f"{pass_id}.md"
         if not path.is_file():
             summed[pass_id] = "no, no summary on file"
             continue
@@ -1911,7 +1953,7 @@ def _runner_passes(window: int, plan: dict) -> list[list[dict]]:
     """The passes a runner is started for, each a list of the parts it reads in order."""
     parts = _window_parts(plan)
     if window == 3:
-        # A review is its own pass and its pass id is its unit id, so nothing folds.
+        # `_window_3` already grouped the reviews into passes, so nothing folds.
         return [[part] for part in parts]
     return _fold_small_parts(parts)
 
@@ -1965,8 +2007,12 @@ def _unit_line(label: str, row: dict, show_file: bool) -> str:
 
 
 def _review_line(number: int, review: dict) -> str:
-    """A window 3 unit is a review of a package, not a sheet, so it carries no page reference."""
-    return f"{number}. {review['id']}: {review['name']}"
+    """
+    A window 3 unit is a review of a package, not a sheet, so it carries no page reference. It
+    names the trade and the package the runner puts in that review's dispatch.
+    """
+    package_id = _text(review["package"].get("id")) or "(no id)"
+    return f"{number}. {review['id']}: {review['name']}, trade {review['tradeCode']}, package {package_id}"
 
 
 def _by_discipline(rows: list[dict]) -> list[tuple[str, list[dict]]]:
@@ -2246,37 +2292,173 @@ def _code_covers(package_code: str, written: str) -> bool:
     return target.startswith(aa + b)
 
 
+def _read_window_3_file(path: Path) -> list[tuple[str, str]] | None:
+    """
+    Every unit id the last window 3 plan run of this folder handed out, live and retired, as (unit
+    id, package id) pairs, or None where no window 3 plan has run here. A file that binds one id to
+    two packages, or one package to two ids, is a refusal: either would point a record prefix at
+    another package's work.
+    """
+    if not path.is_file():
+        return None
+    data = _read_json(path, "the window 3 plan file")
+    if not isinstance(data, dict) or data.get("window") != 3:
+        raise PlanError(f"{path} is not a window 3 file written by this script")
+    pairs: list[tuple[str, str]] = []
+    for field in ("units", "retired"):
+        entries = data.get(field)
+        if not isinstance(entries, list):
+            raise PlanError(f"{path}: `{field}` is not a list of unit id and package id pairs")
+        for index, entry in enumerate(entries, 1):
+            unit_id = entry.get("id") if isinstance(entry, dict) else None
+            package_id = entry.get("packageId") if isinstance(entry, dict) else None
+            if not isinstance(unit_id, str) or _parse_unit_id(unit_id) is None:
+                raise PlanError(f"{path}: `{field}` entry {index} carries no unit id of the shape <pass>-<number>")
+            if not isinstance(package_id, str) or not package_id:
+                raise PlanError(f"{path}: `{field}` entry {index} carries no `packageId`")
+            pairs.append((unit_id, package_id))
+    for position, (unit_id, package_id) in enumerate(pairs):
+        for other_id, other_package in pairs[:position]:
+            if unit_id == other_id:
+                raise PlanError(f"{path}: unit {unit_id} is bound to packages {other_package} and {package_id}")
+            if package_id == other_package:
+                raise PlanError(f"{path}: package {package_id} is bound to units {other_id} and {unit_id}")
+    return pairs
+
+
+def _read_ledger_window_3_ids(path: Path) -> set[str]:
+    """The unit ids on the ledger's window 3 `dispatch` and `verified` lines. A missing ledger is none."""
+    if not path.is_file():
+        return set()
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
+    named: set[str] = set()
+    for raw in text.splitlines():
+        parts = raw.strip().split()
+        if len(parts) >= 4 and parts[0] in ("dispatch", "verified") and parts[1] == "3":
+            named.add(parts[3])
+    return named
+
+
+_READ_PLAN_REVIEW_RE = re.compile(r"^[1-9][0-9]*\. (?P<unit>\S+): .*?(?:, package (?P<package>\S+))?(?: verified)?$")
+
+
+def _read_plan_window_3_bindings(path: Path) -> list[tuple[str, str]] | None:
+    """
+    The (unit id, package id) pairs the read plan already on file binds in its window 3 blocks, or
+    None where the folder holds no read plan at all. A plan written before `plan/window-3.json`
+    existed names the package one of two ways: on each unit line (`, package <id>`), or, where every
+    review was its own pass, on the block's `package:` line. A package written `(no id)` binds
+    nothing. A read plan of another window binds nothing.
+    """
+    if not path.is_file():
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        raise PlanError(f"cannot read the read plan at {path}: {e}") from e
+    pairs: list[tuple[str, str]] = []
+    for block in re.split(r"(?m)^### ", text)[1:]:
+        # A block ends at the next `## ` section, so a left-out package's line is never read as a unit.
+        block = re.split(r"(?m)^## ", block)[0]
+        lines = [raw.strip() for raw in block.splitlines()]
+        if "window: 3" not in lines:
+            continue
+        block_package = next((line[len("package: "):] for line in lines if line.startswith("package: ")), None)
+        units = [m for m in (_READ_PLAN_REVIEW_RE.match(line) for line in lines) if m is not None]
+        for match in units:
+            package_id = match.group("package") or (block_package if len(units) == 1 else None)
+            if package_id and package_id != "(no id)" and _parse_unit_id(match.group("unit")) is not None:
+                pairs.append((match.group("unit"), package_id))
+    for position, (unit_id, package_id) in enumerate(pairs):
+        for other_id, other_package in pairs[:position]:
+            if unit_id == other_id and package_id != other_package:
+                raise PlanError(f"{path}: unit {unit_id} is bound to packages {other_package} and {package_id}")
+            if package_id == other_package and unit_id != other_id:
+                raise PlanError(f"{path}: package {package_id} is bound to units {other_id} and {unit_id}")
+    return list(dict.fromkeys(pairs))
+
+
+def _bind_review_ids(
+    packages: list[dict], tag: str | None, plan_file: Path, ledger: Path, read_plan: Path
+) -> tuple[dict[str, str], list[dict]]:
+    """
+    Each package's review unit id, by package id, and the retired ids the plan file keeps. A
+    package the plan file names keeps its id whatever its trade code now reads, since rows sit
+    under it. Any other package takes the next number past every number its trade's ids carry in
+    the plan file or on the ledger, so no id is handed out twice. With no plan file, the bindings
+    come off the read plan already on file instead, since a folder planned before the plan file
+    existed carries its ids there: a package it names keeps its id, an id whose package is gone is
+    retired, and the ledger's ids still count toward the next number. Only with no read plan at all
+    is each trade's packages numbered from 1 in package order, as a first plan.
+    """
+    pairs = _read_window_3_file(plan_file)
+    if pairs is None:
+        pairs = _read_plan_window_3_bindings(read_plan)
+    ids: dict[str, str] = {}
+    if pairs is None:
+        ordinals: dict[str, int] = {}
+        for package in packages:
+            code = _text(package.get("tradeCode")).strip()
+            ordinals[_fold(code)] = ordinals.get(_fold(code), 0) + 1
+            # Always numbered, even where the trade carries one package: a bare `rev-092116-` would
+            # be a prefix of `rev-092116-2-`, and the runner verifies a review by prefix.
+            ids[package["id"]] = _tagged(f"rev-{_pack(code)}-{ordinals[_fold(code)]}", tag)
+        return ids, []
+    id_of_package = {package_id: unit_id for unit_id, package_id in pairs}
+    high_water: dict[str, int] = {}
+    for unit_id in [unit_id for unit_id, _package in pairs] + sorted(_read_ledger_window_3_ids(ledger)):
+        parsed = _parse_unit_id(unit_id)
+        if parsed is not None:
+            high_water[parsed[0]] = max(high_water.get(parsed[0], 0), parsed[1])
+    for package in packages:
+        kept = id_of_package.get(package["id"])
+        if kept is not None:
+            ids[package["id"]] = kept
+            continue
+        component = _tagged(f"rev-{_pack(_text(package.get('tradeCode')).strip())}", tag)
+        high_water[component] = high_water.get(component, 0) + 1
+        ids[package["id"]] = f"{component}-{high_water[component]}"
+    retired = [
+        {"id": unit_id, "packageId": package_id}
+        for unit_id, package_id in pairs if package_id not in ids
+    ]
+    return ids, retired
+
+
 def _window_3(
-    packages: list[dict], tag: str | None = None, written_on: set[str] | None = None
+    packages: list[dict],
+    ids: dict[str, str],
+    tag: str | None = None,
+    written_on: set[str] | None = None,
 ) -> dict:
     """
-    One review per package, in package order, with the packages of one trade kept together. The
-    order is the order the packages were bought in: the first package of each trade holds that
-    trade's place, and any later package on the same trade follows it there rather than where it
-    sat in the file.
+    One review per package, in package order, with the packages of one trade kept together, and
+    up to REVIEWS_PER_PASS reviews to a pass. The order is the order the packages were bought in:
+    the first package of each trade holds that trade's place, and any later package on the same
+    trade follows it there rather than where it sat in the file.
 
-    Two packages carrying one trade both plan, one after the other, and their unit ids differ by the
-    ordinal each carries. The runner's overlap scan sees them side by side, which is how two passes
-    over the same work are kept from doubling it.
+    Two packages carrying one trade both plan, one after the other in one pass, each under the unit
+    id bound to its own package id (`ids`, from `_bind_review_ids`). One runner reviews them in turn, so they never run at once,
+    and its overlap scan sees them side by side, which is how two reviews of the same work are
+    kept from doubling it. A trade's reviews are never split across passes, so no two passes share
+    a trade and every pass can start at once.
 
     `written_on`, the folded trades an addendum's pass wrote on, keeps only the reviews of
     the packages covering those trades (as their own trade or one of their `codes`), and every
-    other package is named as left out. Ids are numbered over the
+    other package is named as left out. Ids are bound over the
     whole list first, so a package's review id is the same whichever packages plan beside it.
     """
-    ordinals: dict[str, int] = {}
     reviews: list[dict] = []
     for package in packages:
         code = _text(package.get("tradeCode")).strip()
-        key = _fold(code)
-        ordinals[key] = ordinals.get(key, 0) + 1
         reviews.append(
             {
-                # Always numbered, even where the trade carries one package: a bare `rev-092116-`
-                # would be a prefix of `rev-092116-2-`, and the runner verifies a review by prefix.
-                "id": _tagged(f"rev-{_pack(code)}-{ordinals[key]}", tag),
+                "id": ids[package["id"]],
                 "tradeCode": code,
-                "tradeKey": key,
+                "tradeKey": _fold(code),
                 "name": _text(package.get("name")) or code,
                 "package": package,
                 "codes": list(package.get("codes") or []),
@@ -2305,20 +2487,31 @@ def _window_3(
             order.append(key)
         members[key].append(review)
 
-    passes: list[dict] = []
+    # A trade's reviews join the pass being built where they fit beside what it holds, and start the
+    # next pass where they do not, so a trade is never split and a pass over the cap is one trade.
+    groups: list[list[dict]] = []
     for key in order:
-        for review in members[key]:
-            plan_pass = {
-                "id": review["id"],
-                "name": review["name"],
-                "readsFor": review["tradeCode"],
-                "units": [review],
-                "extra": [
-                    ("package", _text(review["package"].get("id")) or "(no id)"),
-                    ("codes", ", ".join(review["codes"]) if review["codes"] else "none"),
-                ],
+        if len(members[key]) > UNITS_PER_PASS:
+            raise PlanError(
+                f"trade {members[key][0]['tradeCode']} carries {len(members[key])} packages, and "
+                f"its reviews share one pass, which holds at most {UNITS_PER_PASS}; fold that "
+                f"trade's packages into fewer before window 3"
+            )
+        if groups and len(groups[-1]) + len(members[key]) <= REVIEWS_PER_PASS:
+            groups[-1].extend(members[key])
+        else:
+            groups.append(list(members[key]))
+
+    passes: list[dict] = []
+    for number, group in enumerate(groups, 1):
+        passes.append(
+            {
+                "id": _tagged(f"W3-{number}", tag),
+                "name": "Package reviews: " + ", ".join(review["name"] for review in group),
+                "readsFor": "package reviews",
+                "units": group,
             }
-            passes.append(plan_pass)
+        )
 
     shared = [r for r in reviews if len(members[r["tradeKey"]]) > 1]
 
@@ -2585,8 +2778,6 @@ def _render(
         lines.append(f"reads for: {host['pass']['readsFor']}")
         if folded:
             lines.append(f"folded in: {', '.join(part['id'] for part in folded)}")
-        for label, value in host["pass"].get("extra", []):
-            lines.append(f"{label}: {value}")
         lines.append(f"units: {len(pass_units)}")
         unit_ids = [unit["id"] if window == 3 else unit["unitId"] for unit in pass_units]
         lines.append(f"units verified: {sum(1 for u in unit_ids if u in plan['verified'])}")
@@ -2874,7 +3065,10 @@ def plan(args) -> str:
         if run is not None and run["issue"] == "addendum":
             written_on, touched_units = _read_pass_trades(args.out.parent)
             unnamed = _units_touching_unnamed_trades(args.out.parent / LEDGER_FILE, touched_units)
-        result = _window_3(packages, tag, None if unnamed else written_on)
+        review_ids, retired_reviews = _bind_review_ids(
+            packages, tag, _window_file(args.out.parent, 3), args.out.parent / LEDGER_FILE, args.out
+        )
+        result = _window_3(packages, review_ids, tag, None if unnamed else written_on)
         result["packages"] = len(packages)
         result["unnamed"] = unnamed
 
@@ -2882,8 +3076,7 @@ def plan(args) -> str:
     result["verified"] = _read_ledger_verified(ledger_path, window)
     if window in (1, 2):
         # Both tiers sit in the run folder the plan file is written into, so neither is an argument
-        # the lead can forget. A window 3 review id is derived from its own trade code and ordinal
-        # and is already the same string on every run, so nothing here touches it.
+        # the lead can forget. A window 3 review id is bound to its package id above instead.
         result["unitIds"] = _bind_unit_ids(
             result["passes"],
             rows,
@@ -3052,9 +3245,27 @@ def plan(args) -> str:
             f"{written:,} bytes"
         )
 
+    # Written on every window 3 run, so the next run keeps each package's id and never hands out one
+    # a deleted package held.
+    window_3_path = _window_file(args.out.parent, 3)
+    window_3_payload = (
+        json.dumps(
+            {
+                "window": 3,
+                "units": [{"id": review_ids[p["id"]], "packageId": p["id"]} for p in packages],
+                "retired": retired_reviews,
+            },
+            indent=2,
+        )
+        + "\n"
+    ).encode("utf-8")
+    _write_atomically(window_3_path, window_3_payload)
+    written += len(window_3_payload)
     return (
-        f"wrote {args.out}: window 3{tag_clause}, packages {result['packages']}, reviews {result['reviews']}, "
-        f"passes {total_passes}, trades {result['trades']}, "
+        f"wrote {args.out} and {window_3_path}: window 3{tag_clause}, packages {result['packages']}, "
+        f"reviews {result['reviews']}, passes {total_passes}, reviews per pass at most "
+        f"{REVIEWS_PER_PASS} or one trade's packages together where that trade has more, "
+        f"trades {result['trades']}, "
         f"packages sharing a trade: {result['sharedCount']} "
         f"({_named(result['sharedCodes']) if result['sharedCodes'] else 'none'})"
         + (f", packages left out {len(result['leftOut'])}, nothing this pass wrote on their trade"

@@ -21,8 +21,7 @@ no sheet through. You open a page because something sent you there, and you name
 
 Pointers only, never pasted text. Your dispatch names:
 
-- the project id, the window number, your pass id, and your unit id, which for a review are the
-  same string;
+- the project id, the window number, your pass id and your unit id;
 - the package you review, as its package id, and the catalog trade id it reads for;
 - the run folder path and your pass brief path.
 
@@ -580,7 +579,7 @@ questions alone: <the id of every Question raised or replied to that no row carr
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
-anomalies: <one line each, with sheet and page, ending with where it landed: Question <id>, reply <id>, note on <subject>, sheet reading, or run only; or "none">
+anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">

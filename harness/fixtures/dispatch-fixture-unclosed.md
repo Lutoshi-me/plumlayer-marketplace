@@ -8,7 +8,9 @@ tools: Read, Write, Bash
 Nothing dispatches this file: the harness reads it to prove the dispatch check refuses a file whose
 last fence is never closed, rather than dropping the block it opened and reporting a clean read.
 The block below names a subagent type and names the foreground, so the only thing wrong here is the
-missing closing fence, and the refusal is one line.
+missing closing fence, and the refusal is one line. Where the call comes back with an agent id
+instead, the agent's report arrives later as its own message: end the turn with one line naming
+what is running, and take the report when it arrives.
 
 ```text
 subagent_type: plumlayer:scope-reader

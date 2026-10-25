@@ -117,8 +117,15 @@ pages file of your own, and `reports/`, one report per unit, written by the unit
 (Audience: agent). It is never committed to any repo, never uploaded, and never recorded as
 project entries.
 
-A dispatch is one Agent call with `run_in_background: false`, and the call is the wait. It carries
-pointers and nothing else:
+A dispatch is one Agent call. Where the Agent tool takes `run_in_background`, as in a headless
+session, send it `false`, as the template does: the call is then the wait, because a headless
+session stops a background agent after ten idle minutes. Where the call comes back with an agent id
+instead, the agent's report arrives later as its own message: end the turn with one line naming
+what is running, and take the report when it arrives. That is the case in a terminal, the desktop
+app or an editor, and units still go one at a time there: dispatch a unit, end the turn, and when
+its report arrives read it and dispatch the next. Wait by ending the turn and nothing else: no
+sleep, no shell loop, no look in `reports/` or at an agent's output file, and no message to the
+agent. A dispatch carries pointers and nothing else:
 
 ```text
 subagent_type: plumlayer:sheet-checker

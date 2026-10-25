@@ -6,7 +6,9 @@ tools: Read, Write, Bash
 ---
 
 Nothing dispatches this file: the harness reads it to prove the dispatch check passes a template
-that names the foreground, and leaves a fenced block naming no agent type alone.
+that names the foreground, and leaves a fenced block naming no agent type alone. Where the call
+comes back with an agent id instead, the agent's report arrives later as its own message: end the
+turn with one line naming what is running, and take the report when it arrives.
 
 ```text
 subagent_type: plumlayer:scope-reader

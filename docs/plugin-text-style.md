@@ -235,10 +235,14 @@ Each of these is a harness check.
     failing the release. The set is pass, review and boundary, plus the four headings
     that are not modes.
 17. The plan inventory script does its arithmetic. The shipped `plan_inventory.py` is run
-    in-process over an invented grid and two packages fixtures, and its counts, its
+    in-process over an invented grid and four packages fixtures, and its counts, its
     three windows' unit lines and page references, its pinned reading order, its balanced pass
-    split and its window 3 unit ids are compared against a tally the check computes itself off the
-    same fixtures. Window 2 has to come out an exact partition of the inventory minus the window 1
+    split and its window 3 unit ids and passes are compared against a tally the check computes
+    itself off the same fixtures. Window 3 plans every package's review exactly once across its
+    passes, at most four to a pass, the number pinned, in package order with every package of one
+    trade kept whole in one pass, so no trade sits on two passes; a trade over four is kept whole,
+    one over twelve is refused by name, the pass ids read `W3-<n>` and are never a unit id, and a
+    second run writes the same plan. Window 2 has to come out an exact partition of the inventory minus the window 1
     file the script itself wrote, and every window 3 unit id has to be a legal `verify_unit`
     subject prefix stem with none a prefix of another, which is the join the plan and the reviewer
     would otherwise first meet on mid-run. Broken inputs must each be
@@ -253,8 +257,15 @@ Each of these is a harness check.
     own pass before a replan folds that part keeps its id and is counted once in the folded pass's
     summary. Every pass block reads `summed: yes` only while the pass's summary on file names
     exactly its unit ids and its last `pass:` line carries that summary, so a fold that leaves the
-    count the same still reads no. A 209-sheet grid carrying a real
-    set's discipline and sheet type shape, with invented sheet numbers, plans its window 1 in three
+    count the same still reads no; in window 3, a package added between plans keeps every unit id
+    and reads no only on the passes whose reviews changed, and a run folder of one review per pass
+    reads every review verified and every pass unsummed. A review's id is bound to its package's id
+    in `plan/window-3.json`: a verified package deleted leaves its same-trade sibling unverified
+    under its own id, a package added ahead of a verified one leaves that one verified, and a
+    replaced package takes an id no package has held and reads unverified, its pass unsummed; in a
+    run folder planned before that file, the read plan on file binds them instead, a package on
+    each block's `package:` line or on each unit line, so the same delete and insert keep its ids. A
+    209-sheet grid carrying a real set's discipline and sheet type shape, with invented sheet numbers, plans its window 1 in three
     passes. A four-file fixture holds the repeated lines: window 1 plans one unit per file holding
     five or more of the rows the run reads, rows `--exclude` left out not counted, in a pass `RS1`
     that never folds and is counted apart from the sheets, each unit naming its file's sheets the
@@ -272,7 +283,15 @@ Each of these is a harness check.
     labels also have to equal the labels of the skill's own published summary block, in order, so
     the script and the shape cannot drift apart. A pass's units come off its read plan block, so a
     unit verified under its part's own pass id before a replan folded the part is counted once in
-    the folded pass, and the runner's own summary command has to be one the script accepts. Its
+    the folded pass, and the runner's own summary command has to be one the script accepts. The
+    summary goes to the file `--out` names and the short hand-back the runner returns goes to
+    stdout, both compared against a tally and against the labels the skill and the runner
+    definition publish, and the hand-back's one `report:` form, in both, names in every window
+    the path the lead's record script reads; a window 3 pass of three reviews adds up the pages
+    each opened and the searches each ran off its own report, a review that ran no search and one
+    that opened no page included, stopping at the labels of the skill's own reviewer block, which
+    `agents/scope-reviewer.md`'s report shape has to equal, and a review with no verified line
+    adds nothing and is named on the hand-back. Its
     bound is stated in the harness README entry and in the check's own detail line: the fixtures
     are ledger text, so this proves the arithmetic and not a real verification.
 19. No dispatch names `fork` as a subagent type, in either the `subagent_type:` dispatch-line
@@ -291,13 +310,17 @@ Each of these is a harness check.
     dispatched agent does not run on whatever model the session happens to be on, and a fixture
     with no `model` is shown to refuse. This cannot judge which model a definition should name;
     that stays a decision.
-22. Every dispatch template runs in the foreground. A fenced block in a shipped skill or agent
-    file that carries a `subagent_type:` line also carries `run_in_background: false`, so the
-    Agent call that dispatches an agent is the wait rather than a turn that can end with work in
-    flight. Blocks naming no subagent type are out of scope. A fence left open at the end of a file
-    is refused rather than skipped, so the block it swallowed cannot pass as a file with nothing to
-    check. This cannot judge whether a running agent passes the parameter, only that the text tells
-    it to.
+22. Every dispatch says how its caller waits. A fenced block in a shipped skill or agent file that
+    carries a `subagent_type:` line also carries `run_in_background: false`, so where the Agent
+    tool takes that parameter, as in a headless session, which stops a background agent after ten
+    idle minutes, the call is the wait. Blocks naming no subagent type are out of that rule's
+    scope. Where the call comes back with an agent id instead, as in a terminal, the caller ends
+    its turn: every shipped skill or agent file that dispatches an agent, by a template, by naming
+    `run_in_background`, or by sending a fresh agent, carries the one wait sentence that says so,
+    and none carries `rare seat` or `still comes back at once`, the sentence it replaced. A fence
+    left open at the end of a file is refused rather than skipped, so the block it swallowed cannot
+    pass as a file with nothing to check. This cannot judge whether a running agent passes the
+    parameter or ends its turn, only that the text tells it to.
 23. The repeated lines are read and cited as the server serves them. `agents/scope-reader.md`
     carries a section that walks `repeated: "only"` to its end with `setVersion`, cites each
     block's `firstSheet` with a box from the lowest `x0` and `y0` to the highest `x1` and `y1` of
@@ -336,10 +359,13 @@ Each of these is a harness check.
     keeps a hit only on a page its inventory carries, and reads a row's live citations off
     `drawingRefs`. A pass on an addendum plans its own sheets only, reviews only the packages its
     trades files name, the ones it only updated rows on or raised a Question naming among them,
-    and names the rest, and starts after its set's pass, earliest first; the
+    grouped into passes under its tag (`i3-W3-<n>`), and names the rest, and starts after its
+    set's pass, earliest first; the
     reviewer searches its pass's deliveries and names the file of every page it opens, and
     drawing-upload never asks whether a delivery is a set or an addendum. A unit that wrote on a
-    trade it did not name makes window 3 review every package; the reviewer asks the manual itself
+    trade it did not name makes window 3 review every package, and a trade the package fold
+    re-homes a row to is reviewed off the `fold touched` line the folder's re-home appends to
+    `trades/fold.txt`; the reviewer asks the manual itself
     before calling it silent; and drawing-upload's re-read of the open Questions reads the uploaded
     delivery by its id and cites its file. This cannot judge whether a reader sends the file on
     every citation; that stays in review and the measured pass.
@@ -347,10 +373,11 @@ Each of these is a harness check.
     summary's `anomalies:` line from the ledger's `anomaly` notes alone, and the close-out names
     the pairs of rows carrying the same work off them, so `agents/scope-round-runner.md` carries,
     in pass mode, the step that appends one `anomaly` note per line of a report's `anomalies:`
-    line, copied whole, with review mode copying the reviewer's the same way, before the unit's
-    `verified` line and with no sentence there negating the append; and in its ledger rule, the one
-    exception that lets those notes past its ban on re-telling a report and their exemption from
-    the 200-character clause. The check runs its own helper over the shipped text with each part
+    line, copied whole, with review mode copying the reviewer's the same way, and its
+    `grain questions:` and `door-owned suggestions:` lines as `grain` and `door` notes, before the
+    unit's `verified` line and with no sentence there negating the append; and in its ledger rule,
+    the one exception that lets those notes past its ban on re-telling a report and their exemption
+    from the 200-character clause. The check runs its own helper over the shipped text with each part
     taken out, the append negated and the order reversed, so the refusals are shown rather than
     assumed. This cannot judge whether a running runner writes the notes; that stays in
     review and the measured pass.
@@ -381,6 +408,48 @@ Each of these is a harness check.
     The check runs its scan over fixtures and its shape arms over the shipped text with each part
     broken, so the refusals are shown. This cannot judge whether a session stays small; that is
     measured from its transcript.
+28. The lead's pass script keeps its bookkeeping. The scope run's lead takes one `count_entries`
+    call per pass and writes the pass's `pass:` line with the shipped `lead_pass.py`, so it never
+    holds a summary. The script is run in-process with the plan and summary scripts over one
+    invented run folder: its passes listing is a tally of each plan block, the prefixes included,
+    and a window 2 plan with no pass lists none to dispatch; a record takes the `count_entries`
+    answer's `counts` array and pairs each count with its unit by prefix, so an answer in another
+    order records exactly the line the check builds, and the plan script then reads the pass as
+    `summed: yes`, while an answer whose short unit a pairing by place would pass is refused; a
+    count below the runner's appends nothing and names the unit with both counts; an answer with
+    a prefix missing, not in the pass or given twice, a summary naming other units, or a unit it
+    reads verified no, is refused; window 3's line for a tagged pass of two reviews carries both
+    counts and the reviews' pages opened and searches, and its listing gives each review's
+    prefix; the
+    check-in counts each anomaly that landed on a Question, a reply or a row by pass, or in window
+    3 by the review the plan names, and prints none of them, while every other note line, an
+    anomaly ending `run only` or `sheet reading` or with no ending, a pair of rows carrying the
+    same work, and every grain and door note among them, comes once across its calls, under labels
+    in estimator words, each call under Bash's output limit, and a note longer than one call is
+    cut under a line naming it and finished in the next; the skill's reader and reviewer report
+    shapes, both agents' shapes and the reader's mandate on the ending say a Question is named by
+    the full id `ask_question` returned, a reply by the id `reply_question` returned and a row by
+    its full subject, never shortened, since a short id prints the note whole; and the skill's
+    own three command lines are fed to the script's arguments. This cannot judge a count the record returns: the counts are the check's own.
+29. The package fold runs one level down. The scope run's lead dispatches the package folder at
+    stage 6 step 5 and reads its report with the shipped `fold_report.py`, so no package list, row
+    or manual page of the fold reaches its context. The step names no fold verb and carries the
+    dispatch, the print read and the recheck; the fold's rules stand in the folder's definition and
+    nowhere in the skill; the definition appends `phase: packages folded` in fold mode's last step
+    alone and nothing to the ledger in recheck mode; fold mode's first step makes the report before
+    any act, keeps the package list as the fold found it in `plan/packages-at-fold.json`, which the
+    skill's run folder section names, and, on a fold sent again, compares the record's packages
+    with that list and the report and writes or finishes an act found after a stop, never writing
+    a package still on the record as deleted and writing one whose lists changed with no act to
+    match as `changed:`; its report labels are the script's.
+    An empty report hands back zeros, a `changed:` line is taken and counted as no act, and a run
+    folder that folded before the folder kept a report
+    prints one line saying so and names no delete. The script
+    prints an invented report whole, a long one under Bash's output limit across calls and a line
+    over the limit cut and joined, every line once; its hand-back is a tally of the report under
+    the skill's published labels; each malformed report or call is refused in one line; and the
+    skill's and the definition's command lines run. This cannot judge how a running folder judges
+    a package: the report is invented.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

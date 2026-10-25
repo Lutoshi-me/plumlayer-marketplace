@@ -7,7 +7,9 @@ tools: Read, Write, Bash
 
 Nothing dispatches this file: the harness reads it to prove the dispatch check refuses a template
 that names a subagent type and does not name the foreground. That is the one thing wrong here, so
-the refusal is one line.
+the refusal is one line. Where the call comes back with an agent id instead, the agent's report
+arrives later as its own message: end the turn with one line naming what is running, and take the
+report when it arrives.
 
 ```text
 subagent_type: plumlayer:scope-reader
