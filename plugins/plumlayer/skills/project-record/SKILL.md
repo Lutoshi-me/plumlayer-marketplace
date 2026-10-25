@@ -324,6 +324,13 @@ assumption: update the rows it moves as "When an answer arrives" says.
   up again. The generic write doors refuse the `questionClosed` predicate; these two verbs and the
   site are the only way to close or reopen a Question.
 - `rewrite_question` rewords the ask, only when he tells you what it should say instead.
+- A reply posted by mistake, yours or anyone's, is taken off with `remove_question_communication`
+  by its `entryId` among the Question's `replies`, with his words in `reason` when he gave one, and
+  put back with `restore_question_communication` by its `removalId` under `removedReplies`. Remove
+  only the reply he names; a reply of yours that you find wrong is named to him, with the
+  correction posted as a new reply when he asks. Removing a reply moves neither who has the ball
+  nor the RFI number; a pinned reply that is removed reads as no pin until it is put back. A closed
+  Question refuses both, as it refuses a new reply.
 - `read_question_list` reads one list of the thread whole when he asks about entries older than
   the newest twenty (see the Read verbs above).
 
