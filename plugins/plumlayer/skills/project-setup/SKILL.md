@@ -116,9 +116,13 @@ the design team's time.
   absent from the drawings. The choices are the labels on the company's own `owner_process` list
   from `list_project_options`, called once before this ask and reused in step 4, so the answer is one step 4 can fill as given; the saved delivery
   method default is put forward only when it plainly names one of those labels. Take it if known;
-  skip if not (the ITB / contract confirms it later). Don't argue it against the user default, just
-  take what they say. The contract form (`contract_type`) is not asked; it is filled in step 4 when
-  the user says it or a document states it.
+  skip if not (the contract confirms it later). Don't argue it against the user default, just
+  take what they say. When a document the user handed over (an ITB, an RFP, a bid form) states how
+  the owner buys the job, you do not ask it: you fill it from that document in step 4, the closing
+  report names the document and page, and the user corrects it on Overview if it is wrong. The
+  contract form
+  (`contract_type`) is not asked; it is filled in step 4 when the user says it or a document
+  states it.
 
 Anything the user volunteers beyond this, an exclusion, a date, a strategy note, is still written
 per step 4, but nothing of the kind is asked for.
@@ -165,8 +169,8 @@ When the Mode B look below finds nothing: ask the group above, pre-filled from u
 ### Mode B: read what they already have (preferred when docs exist)
 Being started in a folder, or being pointed at one, is a hand-over: the user put you there on
 purpose, and what is in it is theirs to give. When the opening message names no path, look through
-the folder the session was started in, a few levels down (three is enough), for the drawing set and
-the project manual: PDFs, a drawings or specs folder, a project manual. Never look above that
+the folder the session was started in, a few levels down (three is enough), for the drawing set,
+the project manual and any bid invitation (an ITB, an RFP, a bid form): PDFs, a drawings or specs folder, a project manual. Never look above that
 folder, into siblings, or elsewhere on the machine, and never into a folder the user named as
 somewhere else. Say nothing about the search itself.
 
@@ -183,18 +187,21 @@ it into a git repo is safe.
 <!-- user-facing -->
 Example choice-question content, once the drawings and manual are found: project name, pre-filled
 from the folder name or a cover sheet / ITB found with the set when one names the job, otherwise a
-short free-text entry; procurement, the company's own choices with the held default as the first,
-recommended option and its source named, plus a skip option; and, in the same group, "Write a
-short starter file so I work the same way here every time?" with "yes" recommended. When the
-folder also holds files beyond the drawings and manual, bid tabs, a budget, one more entry in the
-same group: "Also found <files> here, use them too or leave them?" with "leave them" recommended.
+short free-text entry; procurement (left out when a document found with the set states it), the
+company's own choices with the held default as the first, recommended option and its source named,
+plus a skip option; and, in the same group, "Write a short starter file so I work the same way here
+every time?" with "yes" recommended. When the folder also holds files beyond the drawings, the
+manual and any bid invitation (bid tabs, a budget), one more entry in the same group: "Also found
+<files> here, use them too or leave them?" with "leave them" recommended.
 <!-- /user-facing -->
 The drawings and the project manual found are never put to the user as a question: they are named
-in the question's framing as what will be uploaded. The choice group holds the project name
-(pre-filled when a held answer exists, otherwise a short free-text entry), procurement, the
-starter-file offer, and, when other files exist, that one take-or-leave question. The one ask with
-no held answer, when nothing at all is found, is the exception the one-turn rule allows: a plain
-request for the drawings' path.
+in the question's framing as what will be uploaded. A bid invitation found with them (an ITB, an
+RFP, a bid form) is not put to the take-or-leave question either: read it before the ask, as the
+end of this step says, and leave procurement out of the group when it states it. The choice group
+holds the project name (pre-filled when a held answer exists, otherwise a short free-text entry),
+procurement when no document found with the set states it, the starter-file offer, and, when other
+files exist, that one take-or-leave question. The one ask with no held answer, when nothing at all
+is found, is the exception the one-turn rule allows: a plain request for the drawings' path.
 
 When the user says to use the other files, each is a handed-over document, read as the end of this
 step says: seed what it plainly states, cited to it, and pass any that belongs to the drawing
@@ -261,7 +268,9 @@ Seed what a handed-over document plainly states, cited to that document (it is t
 source, never a bare fact), and say what you seeded from where. Do not ask the user to confirm a
 fact the document states. Anything the source leaves unclear is `uncertain`, and anything two
 sources disagree on is `conflicting`; neither is ever a seed, and each is handled as the top of
-this step says. Defer the gaps to the read rather than interrogating for them.
+this step says. Defer the gaps to the read rather than interrogating for them. A bid invitation
+found with the set (an ITB, an RFP, a bid form) is read before the ask, so what it states fills its
+fact in step 4 and takes that fact out of the group.
 
 ---
 
@@ -486,11 +495,12 @@ rather than restating it from what an earlier step said:
   "Running one level down" says, and its summary is all this session reads of it. Neither is
   restated here, run partially, or swapped for a shortcut through its tools.
 - **Run, or stop and report; never create a consent step.** The user's decisions are the ask-now
-  set in step 2, put once with a pre-filled answer and its source where you hold one. Nothing else
+  set in step 2, put once with a pre-filled answer and its source where you hold one; procurement
+  that a handed-over document plainly states is not put at all, and step 4 fills it. Nothing else
   is put to the user as a question or a confirmation.
 - **Look inside the folder you were handed, quietly.** When no path was named, look through the
-  folder the session started in, up to three levels down, for the drawing set and the project
-  manual; never above that folder, never siblings, never elsewhere on the machine, and never into a
+  folder the session started in, up to three levels down, for the drawing set, the project
+  manual and any bid invitation; never above that folder, never siblings, never elsewhere on the machine, and never into a
   folder the user named as somewhere else. Say nothing about the search itself; what is found
   becomes the pre-filled answer in the ask-now question. Whatever is read is the citation of what it
   seeds.
@@ -498,8 +508,8 @@ rather than restating it from what an earlier step said:
   sub-skill's own report or from memory.
 - **Invitations are offered, never run from here.** `prepare-invitations` is named at the close
   when the job is going out to bid, and this skill never starts it. Reading an invitation to bid in
-  step 2 for the identity facts it fills (name, type, the owner, architect and engineers, the
-  address, the owner's bid date) is this skill's; setting what the invitations go out under (labor,
+  step 2 for the identity facts it fills (name, type, procurement, the owner, architect and
+  engineers, the address, the owner's bid date) is this skill's; setting what the invitations go out under (labor,
   places, site visits and the project's other dates) is `prepare-invitations`'.
 - **The instructions offer never overwrites.** Never write `CLAUDE.md` or `AGENTS.md` over one that
   already exists, never write either file without the user's yes, and write only the one file that
