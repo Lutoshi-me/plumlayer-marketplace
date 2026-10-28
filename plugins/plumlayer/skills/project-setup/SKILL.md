@@ -12,15 +12,16 @@ description: >
 # Project setup: stand up a new pursuit, end to end
 
 A Plumlayer project has one project record, the cloud, entry-based model of that project as it
-currently stands. This skill stands the pursuit up: it creates the project, turns what the user
-knows (or can hand you in a file) into **cited entries**, reads the drawing delivery and the project
-manual in, and orients on what came back.
+currently stands. This skill stands the pursuit up: it creates the project, puts what the user
+knows (or can hand you in a file) into Overview's own fields and into **cited entries**, reads
+the drawing delivery and the project manual in, and orients on what came back.
 
 > **Doctrine (binds every step):** you read and judge; deterministic tooling grounds; nothing leaves
 > unsigned and nothing enters untraced. What you seed here takes effect right away as the project's
 > starting frame, credited to the user with your citation, and its source is what someone *told
-> you*, not a drawing you read. When the drawings and specs are read later, an entry read off them
-> replaces a seed by naming it, or agrees with it. Cite every entry, never invent a fact, and
+> you*, not a drawing you read. When the drawings and specs are read later, an empty field is
+> filled from them, and a sheet that says something different from what the user gave is named to
+> the user, never written over it. Cite every entry, never invent a fact, and
 > name what's uncertain to the user rather than seeding it.
 >
 > **Confidentiality:** project specifics live in the runtime and in the user's own scoped cloud project record
@@ -42,10 +43,11 @@ later (a bulletin, an addendum, a re-issue), that is a different process and its
 **The load-bearing consequence, don't interrogate for what the set is about to tell you.** Almost
 everything about a project is read off the drawings later in this same session, cited to the
 sheet it came from. A user answering from memory gives you a restatement of what someone recalls;
-a cover-sheet / title-block read gives you the value printed on the drawing, which replaces the
-restatement minutes later, naming it as what it replaces. So asking the user to guess the project
-type, the engineers, the trades, or the square footage isn't just slow, it seeds entries the set
-read replaces, cluttering the ledger.
+a cover-sheet / title-block read gives you the value printed on the drawing, and fills the field
+minutes later when it is still empty. A guess written now holds the field, and the read can only
+name the difference to the user. So asking the user to guess the project type, the engineers, the
+trades, or the square footage isn't just slow, it puts a recalled value where the printed one
+belongs.
 <!-- user-facing -->
 Ask
 only for what no drawing will ever carry; for the rest, say "I'll read that off the set next" and move
@@ -90,15 +92,16 @@ and `learn-project` are unchanged, and they are the only reasons to stop this se
 
 The goal is a named shell plus only the facts the drawings won't supply, not a complete project
 record. Never invent a fact. Mark each one `confirmed`, `uncertain`, or `conflicting` as you go.
-A confirmed fact seeds as a record entry. An uncertain one, where the user is unsure or a document
-is unclear, is not seeded and is not a Question: when it is one of the ask-now facts below, put it
-forward in that group; otherwise name it in the closing report as left unseeded, and why. A
-conflicting one, where two handed-over documents disagree, is not seeded either: it becomes one
-Question with `ask_question`, cited to both documents, and only when it meets the standard. A
-Question is about the project, never about a Plumlayer failure; a tool problem in this interview
-is reported in the conversation, not raised as a Question. Question text is plain estimator words,
-and every Question meets the standard the `ask_question` verb states: a title, a citation for every
-place it names, and only what is worth the design team's time.
+A confirmed fact is written in step 4, into its Overview field or as a record entry. An
+uncertain one, where the user is unsure or a document is unclear, is not seeded and is not a
+Question: when it is one of the ask-now facts below, put it forward in that group; otherwise name
+it in the closing report as left unseeded, and why. A conflicting one, where two handed-over
+documents disagree, is not seeded either: it becomes one Question with `ask_question`, cited to
+both documents, and only when it meets the standard. A Question is about the project, never about
+a Plumlayer failure; a tool problem in this interview is reported in the conversation, not raised
+as a Question. Question text is plain estimator words, and every Question meets the standard the
+`ask_question` verb states: a title, a citation for every place it names, and only what is worth
+the design team's time.
 
 ### Ask now vs. defer to the read (the triage that keeps this short)
 
@@ -109,23 +112,31 @@ place it names, and only what is worth the design team's time.
   drawings are, and whether a project manual / spec book came with them. Give the one-line reason:
   the baseline package split anchors on the spec table of contents, so a manual handed over now
   saves re-running the split later. Local paths are all you need here; step 5 does the upload.
-- **Delivery method** (Design-Bid-Build / CM-at-risk / design-build / GMP), a contract fact often
-  absent from the drawings. Take it if known; skip if not (the ITB / contract confirms it later).
-  Don't argue it against the user default, just record what they say.
+- **Procurement**, how the owner buys the job (a hard bid, a negotiated job), a contract fact often
+  absent from the drawings. The choices are the labels on the company's own `owner_process` list
+  from `list_project_options`, called once before this ask and reused in step 4, so the answer is one step 4 can fill as given; the saved delivery
+  method default is put forward only when it plainly names one of those labels. Take it if known;
+  skip if not (the ITB / contract confirms it later). Don't argue it against the user default, just
+  take what they say. The contract form (`contract_type`) is not asked; it is filled in step 4 when
+  the user says it or a document states it.
 
-Anything the user volunteers beyond this, an exclusion, a date, a strategy note, is still recorded
+Anything the user volunteers beyond this, an exclusion, a date, a strategy note, is still written
 per step 4, but nothing of the kind is asked for.
 
-**Defer to the read, do NOT interrogate.** Step 5 reads each of these off the set, cited to the
-sheet. Note in one line that you'll read it, then move on:
+**Defer to the read, do NOT interrogate.** Step 5's orientation pass reads these off the set:
+it fills an empty address, project type and the firms on the contacts from the cover sheet and
+title blocks, and the upload produces the set inventory. Note in one line that you'll read it,
+then move on:
 - Project **type** (cover sheet + index).
 - **Parties** beyond any the user volunteers, owner, architect, structural EOR, MEP / civil engineers
   (title blocks + cover stamps). If an engineer is stamped nowhere, that's an upload-time finding / RFI,
   not an interview question.
-- **Size**, gross area, floor / unit counts (the drawings, often a code-summary sheet).
 - **Location** (cover sheet).
 - The **drawing-set inventory**, which issues exist and their dates (the drawing index *is* this;
   the registration and recognition in step 5 produce it).
+
+**Size** (gross area, floor and unit counts) is not read off the set by any step yet. Never ask for
+it; when the user volunteers it, step 4 records it.
 
 ### How the ask-now questions are put
 
@@ -172,15 +183,15 @@ it into a git repo is safe.
 <!-- user-facing -->
 Example choice-question content, once the drawings and manual are found: project name, pre-filled
 from the folder name or a cover sheet / ITB found with the set when one names the job, otherwise a
-short free-text entry; delivery method, with the held default as the first, recommended option and
-its source named, plus a skip option; and, in the same group, "Write a short starter file so I work
-the same way here every time?" with "yes" recommended. When the folder also holds files beyond the
-drawings and manual, bid tabs, a budget, one more entry in the same group: "Also found <files> here,
-use them too or leave them?" with "leave them" recommended.
+short free-text entry; procurement, the company's own choices with the held default as the first,
+recommended option and its source named, plus a skip option; and, in the same group, "Write a
+short starter file so I work the same way here every time?" with "yes" recommended. When the
+folder also holds files beyond the drawings and manual, bid tabs, a budget, one more entry in the
+same group: "Also found <files> here, use them too or leave them?" with "leave them" recommended.
 <!-- /user-facing -->
 The drawings and the project manual found are never put to the user as a question: they are named
 in the question's framing as what will be uploaded. The choice group holds the project name
-(pre-filled when a held answer exists, otherwise a short free-text entry), the delivery method, the
+(pre-filled when a held answer exists, otherwise a short free-text entry), procurement, the
 starter-file offer, and, when other files exist, that one take-or-leave question. The one ask with
 no held answer, when nothing at all is found, is the exception the one-turn rule allows: a plain
 request for the drawings' path.
@@ -257,8 +268,8 @@ this step says. Defer the gaps to the read rather than interrogating for them.
 ## 3. Create the project record shell
 
 Call the `create_project` MCP tool with the confirmed `name` (required) and optional
-`description`. Capture the returned `projectId`: every entry in the seed step below is
-scoped to it.
+`description`. Capture the returned `projectId`: every write in step 4 below is scoped to
+it.
 
 > **Fallback if `create_project` isn't available** (older plugin/server without the verb): ask the
 > user to create the project on plumlayer.com (one click), then call `list_projects` and resolve
@@ -275,10 +286,55 @@ One project = one project record.
 
 ---
 
-## 4. Seed the facts only the user carries
+## 4. Fill Overview and seed the rest
 
-Map the confirmed facts to entries and record them; an uncertain or conflicting fact is never
-seeded (step 2). Prefer the `record_batch` MCP tool, one call with
+A confirmed fact Overview has a field for goes into that field, through the same verb a person's
+edit on Overview goes through, and reads as the user's own write. The rest are record entries.
+An uncertain or conflicting fact is written to neither (step 2), and every fact written has a
+source: what the user said, or a document they handed over. The fields keep who set them and when,
+not what from, so the closing report names where each field's value came from.
+
+### Overview's fields
+
+Fill only what the user said or a handed-over document states; a sparse project is the correct
+early state.
+
+- **Project type, procurement, contract.** Use the `list_project_options` answer from step 2
+  (call it once now if step 2 did not). For each fact given,
+  pick the option on its list (`project_type`, `owner_process`, `contract_type`) whose label
+  plainly names what was given, and send the picked ids together:
+  `update_project(projectId, projectTypeId, ownerProcessId, contractTypeId)`, only the ones
+  picked. When no label plainly names what was given, leave that field empty and name the fact and
+  what was given in the closing report. Never create an option, and never pick a near match: a
+  contract given as "design-build" against a list of Lump sum, GMP and Cost plus fills nothing.
+- **The address.** `update_project(projectId, location: "<the address as given>")`, in the same
+  call when the options went out together.
+- **The owner's bid date.** The day the bid is due to the owner:
+  `set_project_date(projectId, kind: "owner_bid", onDay: "YYYY-MM-DD")`, with `atTime` (`HH:MM`, 24-hour) only
+  when a time was given, and always with its `timeZone`; a time whose zone nobody stated and the
+  address does not settle is left off and named in the closing report. A date given only for
+  subcontractors' bids is not this one: leave it for `prepare-invitations`, which asks for it.
+- **The owner, the architect, the engineers.** Each goes on the project's contacts as a firm from
+  the company directory. What a firm is on the job is its type in the directory, so the owner is
+  the firm typed Owner. For each firm named:
+  1. Find it: `directory_list_companies(text: "<the firm's name>")`. Exactly one company whose
+     name is the firm's name is that firm. Several that could be it, or only a near match: leave
+     the firm off and name it in the closing report; never pick one.
+  2. Its type: `directory_list_company_types` lists the account's types. Take the one whose label
+     plainly names the role (Owner for the owner, Architect for the architect, Engineer for a
+     structural, MEP or civil engineer), as the list spells it. A firm not in the directory is
+     added with `directory_add_company(name, vendorKind: [<that type>])`. A firm already there
+     without that type gets it beside the types it has,
+     `directory_update_company(companyId, vendorKind: [<its types>, <that type>])`, since
+     `vendorKind` replaces the whole list. When no type on the list names the role, the firm goes
+     on with the types it has, and the closing report says so; never add a type to the list.
+  3. Put it on: `project_set_design_team_company(projectId, companyId)`, the firm alone, with no
+     `add`.
+
+### The facts recorded as entries
+
+Map the remaining confirmed facts to entries and record them. Prefer the `record_batch` MCP tool,
+one call with
 `projectId=<the new project>` and an `entries` array of all the confirmed-fact seed entries (it's
 atomic: one bad entry rejects the batch and names the index). **Fallback:** if `record_batch` isn't
 available (older server), call the `record` tool once per entry, batched in parallel (many per
@@ -300,23 +356,14 @@ message).
 
 | Fact | subject | predicate | value |
 |---|---|---|---|
-| Project type | `project` | `projectType` | e.g. `interior fit-out` |
-| Delivery method | `project` | `deliveryMethod` | e.g. `CM-at-risk` |
-| Location | `project` | `location` | the location string |
 | Size | `project` | `grossArea` / `floorCount` | e.g. `42,000 SF` / `6` |
-| Bid due date | `project` | `bidDueDate` | ISO date |
-| Owner | `party:<slug>` | `hasRole` | `owner` (+ a `name` entry) |
-| Architect of record | `party:<slug>` | `hasRole` | `architect-of-record` |
-| Structural engineer | `party:<slug>` | `hasRole` | `structural-engineer` |
-| MEP engineer | `party:<slug>` | `hasRole` | `mep-engineer` |
-| GC / CM | `party:<slug>` | `hasRole` | `gc` / `cm` |
-| Party name | `party:<slug>` | `name` | the firm name |
 | Trade in scope | `project` | `tradeInScope` | one entry listing every trade |
 | Known set | `set:<id>` | `issueStatus` | `conformed` / `permit` / `bulletin-02` / … |
 | Set date | `set:<id>` | `issueDate` | ISO date |
 | Known exclusion | `project` | `knownExclusion` | one entry listing every exclusion the user named |
 
-Use short, stable slugs for party subjects (`party:smma`, `party:owner`). Keep values literal and
+The project type, procurement, contract, address, owner's bid date and the firms on the contacts
+are never recorded as entries; they go into Overview's fields above. Keep values literal and
 sourced. Every entry carries a `sourceInstrument` and evidence, no exceptions.
 
 ---
@@ -347,9 +394,10 @@ manual's table of contents, and the reconciliation gate. Every gate in it applie
 Run the `learn-project` skill now, in full, then return here for the closing report. It runs one
 level down: start it as its own "Running one level down" section says, handing its orientation
 dispatch the `projectId` from step 3, and read back only its summary. The orientation agent reads
-the seeded facts and the sheet inventory, takes a small number of bounded renders, records cited
-project-level facts, and drafts and creates the baseline trade-package split off the spec table of
-contents; its renders, its spec page reads and its package calls stay in that agent.
+the fields and facts step 4 wrote and the sheet inventory, takes a small number of bounded
+renders, records cited project-level facts, and drafts and creates the baseline trade-package
+split off the spec table of contents; its renders, its spec page reads and its package calls stay
+in that agent.
 
 Its preconditions 1 and 2 (a project exists, the set is recognized) hold by construction on this
 path: step 3 created the project and step 5 read the set in. If either check fails anyway, its
@@ -363,19 +411,27 @@ to wave through.
 Before the report, decide whether the job is going out to bid, from what this session already
 holds and never from a new question. Any one of these is enough: the user called it a bid (a hard
 bid, out to bid, a new bid); a document they handed over is an invitation to bid, a bid form, or
-instructions to bidders; a bid due date was given or seeded; or the project manual's Division 00
-carries bidding requirements, which one `search(projectId, subjectPrefix: "specSection:00",
-predicate: "hasTitle")` shows (an invitation or advertisement for bids, instructions to bidders, a
-bid form). With none of these, the close names the scope run alone.
+instructions to bidders; an owner's bid date was given or filled; or the project manual's
+Division 00 carries bidding requirements, which one `search(projectId, subjectPrefix:
+"specSection:00", predicate: "hasTitle")` shows (an invitation or advertisement for bids,
+instructions to bidders, a bid form). With none of these, the close names the scope run alone.
 
 <!-- user-facing -->
 One closing report for the whole session, in plain terms. Read every count back from the record
 rather than restating it from what an earlier step said:
 - **Created:** project name + `projectId`.
-- **Seeded:** how many facts were recorded, broken down (project facts / parties / trades / sets).
-- **Not seeded:** each fact left off the record and why (the user was unsure, or a document was
-  unclear), listed here in the conversation. These are not on the site, since nothing was recorded
-  for them; this list is the one place they are named.
+- **Filled on Overview:** each field filled and where its value came from, what the user said
+  or the document and page: the project type, procurement, contract, the address, the owner's bid
+  date, and each firm put on the contacts with the type it carries.
+- **Changed in the directory:** each firm added to the company directory, and each firm already
+  there that was given a type (Owner, Architect, Engineer), with the type added.
+- **Recorded:** how many other facts were recorded, broken down (size / trades / sets /
+  exclusions).
+- **Not filled or recorded:** each fact left off and why (the user was unsure, a document was
+  unclear, no choice on the company's list names what was given, a firm the directory holds more
+  than once, a time with no time zone), listed here in the conversation with what was given. These
+  are not on the site, since nothing was written for them; this list is the one place they are
+  named.
 - **The set:** the delivery that was read in, how many sheets were recognized, how many pages were
   read for a closer look, how many sheets carry a type and how many were left for a closer look, how
   many spec sections were found (or that no project manual came with it), and what the index check
@@ -385,12 +441,15 @@ rather than restating it from what an earlier step said:
   project (their count is `solicitation_list_packages(projectId, limit: 1)`'s `total`, which the
   two lists of names add up to), each package a supplier furnishes with the package that installs its
   items, each default used, how many of the manual's sections are placed on a package and each
-  left on no package with its reason, whether the structure and the description were written, and
-  where the packet landed.
+  left on no package with its reason, whether the structure and the description were written, what
+  it filled on Overview from the cover sheet and with which sheet, each firm it added to the
+  directory or gave a type, anything a sheet states that it left off and why (a sheet that names
+  something different from what the user gave is said here plainly), and where the packet landed.
 - **What a person should look at on plumlayer.com:** any Question raised for two documents that
-  disagree, among the project's Questions, and the seeded facts, each carrying your name, the time, and
-  what you read it from. What you seeded is the project's starting frame now, carrying your name and
-  what you were told; anyone who changes a value later, by hand or from a drawing read, replaces it.
+  disagree, among the project's Questions; the fields filled on Overview, each carrying your
+  name and the time; and the facts recorded, each carrying your name, the time, and what you read
+  it from. What you filled and recorded is the project's starting frame now; anyone who changes a
+  value later by hand replaces it, and a drawing read fills only what is still empty.
 - **Next:** when the job is going out to bid, offer `/prepare-invitations` as the next step in this
   same session: it reads the bidding requirements into the invitations in about a minute and does
   not wait for the scope run, and the user starts it by typing it now or any time later. Then name
@@ -406,13 +465,19 @@ rather than restating it from what an earlier step said:
   answerable, run this session to completion in one turn; only the stop points inside
   `drawing-upload` and `learn-project` end it early.
 - **Cite everything.** Every seeded entry carries `sourceInstrument` + evidence. No citation → don't
-  seed it.
+  seed it. An Overview field is filled only from what the user said or a document states, and
+  the closing report names which.
+- **Fill the fields, never a look-alike.** A project type, procurement or contract is an option on
+  the company's own list whose label plainly names what was given, or the field stays empty. Never
+  create an option or a company type, and never pick a near match or one of several directory
+  firms.
 - **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. An
   uncertain fact is named to the user and a conflicting one between two documents is one Question
   with `ask_question`; neither is silently resolved, seeded as fact, or dropped.
 - **Seeds come from what the user told you.** They take effect as the starting frame, cited to what
-  the user said, and a drawing read later replaces them by naming them. Never present one as a fact
-  read off the documents.
+  the user said. A drawing read later never writes over an Overview field the user gave; it names
+  a sheet that disagrees. A recorded entry a later read replaces is named by it in `supersedesId`.
+  Never present one as a fact read off the documents.
 - **One project = one project record.** Always seed within the correct `projectId` returned by `create_project`.
 - **An existing project is read, never re-created.** Step 1's branch reports where the project
   stands and ends there; it writes nothing.
@@ -433,9 +498,9 @@ rather than restating it from what an earlier step said:
   sub-skill's own report or from memory.
 - **Invitations are offered, never run from here.** `prepare-invitations` is named at the close
   when the job is going out to bid, and this skill never starts it. Reading an invitation to bid in
-  step 2 for the identity facts it seeds (name, type, parties, a bid due date) is this skill's;
-  setting what the invitations go out under (labor, places, the project's dates) is
-  `prepare-invitations`'.
+  step 2 for the identity facts it fills (name, type, the owner, architect and engineers, the
+  address, the owner's bid date) is this skill's; setting what the invitations go out under (labor,
+  places, site visits and the project's other dates) is `prepare-invitations`'.
 - **The instructions offer never overwrites.** Never write `CLAUDE.md` or `AGENTS.md` over one that
   already exists, never write either file without the user's yes, and write only the one file that
   matches the client running the session.

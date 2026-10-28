@@ -89,11 +89,9 @@ reads that do not wait on each other together, several calls in one turn, to kee
 
 1. Orientation.
    - `get_project(projectId)` for `location`.
-   - `search(projectId, subject: "project", predicate: "location")` and
-     `search(projectId, subject: "project", predicate: "bidDueDate")` for what project setup seeded.
-     A seeded entry is a second home for the same fact: read its current value beside the column,
-     never instead of it.
-   - `list_project_dates(projectId)`.
+   - `list_project_dates(projectId)`. Project setup puts the address it was given on `location`
+     and the owner's bid date it was given on an `owner_bid` date, so these two reads hold what
+     setup knew.
 2. The table of contents, when the manual's sections are on the record
    (`search(projectId, predicate: "inDivision", limit: 1)` finds one).
    - `search(projectId, subjectPrefix: "specSection:00", predicate: "hasTitle", limit: 500)` and
@@ -140,11 +138,11 @@ the searches. If nothing is stated, nothing is set, and the report says so.
 ### The current value on the record
 
 `search` returns every entry, replaced ones included. A record value read through `search`, a
-seeded location or bid date, a section's title or pages, is compared only by its slot's current
-value: group the rows by subject and predicate, drop every row another row in the group names in
-its `supersedesId`, and take the newest `assertedAt` among the rest, the lowest `id` on a tie. Read
-every row of a slot first (`count` says whether the page held them all). A replaced value never
-makes a disagreement, and a slot whose rows are all replaced holds nothing.
+section's title or pages, is compared only by its slot's current value: group the rows by subject
+and predicate, drop every row another row in the group names in its `supersedesId`, and take the
+newest `assertedAt` among the rest, the lowest `id` on a tie. Read every row of a slot first
+(`count` says whether the page held them all). A replaced value never makes a disagreement, and a
+slot whose rows are all replaced holds nothing.
 
 ### What counts as stated
 
@@ -281,17 +279,14 @@ The decisions:
   date, leave it. When the estimator has already said it in this conversation, set it with
   `set_project_date(kind: "subcontractor_bids")`. Otherwise it is asked in step 4, beside the
   owner's date and any date the documents set for bids from subcontractors.
-- A seeded `bidDueDate` entry names a bid date without saying whose. Never set it as either date;
-  show its current value in step 4's question too.
 
 ### The address
 
-- The project's `location` is empty, the documents state the project address, and no current
-  seeded `location` entry names a different place: `update_project(projectId, location: "<the
-  address as the document gives it>")`. Filling an empty address is the same edit a person makes on
-  the project, whether or not the plan room is up.
-- The column or a current seeded entry names a different place from the documents: a disagreement
-  with the record, since writing over it would replace what stands.
+- The project's `location` is empty and the documents state the project address:
+  `update_project(projectId, location: "<the address as the document gives it>")`. Filling an
+  empty address is the same edit a person makes on the project, whether or not the plan room is up.
+- The project's `location` names a different place from the documents: a disagreement with the
+  record, since writing over it would replace what stands.
 - A record value that is a shorter form of the same place ("Riverton, MA" against a full street
   address in Riverton, MA) is not a disagreement: leave it and quote the full address in the report.
 - Two documents giving different project addresses: a disagreement between documents.
@@ -304,10 +299,7 @@ The decisions:
   value is set and the report names both. When the record holds a value neither document gives,
   that is a disagreement with the record.
 - Every other conflict, one document against another or a document against the record, is asked in
-  step 4.
-- A current seeded entry whose `sourceInstrument` or evidence names a file or a sheet, rather than
-  `project-setup-interview`, the estimator's own word in project setup, stands for the document it
-  cites. A setting, a date, the project's location and an interview seed are not documents.
+  step 4. A setting, a date and the project's location are not documents.
 
 ## 4. Ask once
 
@@ -357,10 +349,9 @@ was incomplete. Then one `ask_question` per disagreement, with a `title` of a fe
 ask, the ask itself as `text`, written for a reader coming to it cold, and:
 
 - `sources`: each spec section as `{ "type": "spec", "section": "specSection:<the six digits,
-  packed>" }`; a sheet it cites as `{ "type": "sheet", "sheet": "<the sheet subject>" }`; a seeded
-  entry as `{ "type": "record", "entryId": "<its current entry's id>" }`, only beside a section or
-  a sheet. A section numbered the older five-digit way, or a document handed over that is not on the
-  record, cannot be cited, so name it and its page in the text. With no section or sheet to cite,
+  packed>" }`; a sheet it cites as `{ "type": "sheet", "sheet": "<the sheet subject>" }`. A
+  section numbered the older five-digit way, or a document handed over that is not on the record,
+  cannot be cited, so name it and its page in the text. With no section or sheet to cite,
   the verb takes no Question: the disagreement is asked only, and the report says so.
 - `everyTrade: true` when it is about the whole job, and `sourceInstrument: "prepare-invitations"`.
 

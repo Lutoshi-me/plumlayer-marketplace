@@ -1,8 +1,8 @@
 ---
 name: learn-project
 description: >
-  A cheap orientation pass, in a fresh agent, over an uploaded set: reads seed facts and
-  sheet inventory, takes a few bounded renders (cover, index, key plans), records cited
+  A cheap orientation pass, in a fresh agent, over an uploaded set: reads project fields and
+  sheets, takes a few bounded renders (cover, index, key plans), records cited
   facts, writes the project description, and drafts and creates the baseline trade-package split
   off the spec table of contents. Trigger on "learn the project", "orient on this set", "orientation pass",
   "/learn-project". Drives search, set_grid, render_page, get_page_text, record_batch,
@@ -20,9 +20,9 @@ gets this context instead of orienting from scratch, which is where reads get un
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. This is an *orientation* pass, not comprehension, it reads what upload already
 recognized, takes a handful of bounded renders, and stops. Everything it emits is your own reading,
-cited, and it becomes the project's working context the moment it lands, so an inferred value says
-it was inferred and cites what it was read from. Examples in this file are generic, never put a
-real project name, client data, or a real extracted value here.
+cited, and it becomes the project's working context the moment it lands, so each entry's evidence
+says what it was read from and whether a sheet labels it or you inferred it. Examples in this file
+are generic, never put a real project name, client data, or a real extracted value here.
 
 ## What this is, and the boundary
 
@@ -83,9 +83,13 @@ items only (Audience: agent; the session that started the skill words it for the
 ```text
 sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>
 stopped: <the precondition that failed and why, or "no">
-seeds present: <each seed predicate step 2 found on the record, or "none">; seeds absent: <each one it did not, or "none">
+seeds present: <each field or predicate step 2 found filled, or "none">; seeds absent: <each one it did not, or "none">
 disciplines: <each discipline code the sheet inventory covered + its sheet count>; inventory read <whole, or by sampled searches per discipline>
 learned: <each fact recorded in step 6, its predicate and its value as recorded, cut at 200 characters, one per line>
+left in place: <each step 6 predicate that already held a value on the project and was not written, or "none">
+replaced: <each step 6 predicate whose value this run replaced + who wrote the value it replaced, or "none">
+fields filled: <each empty Overview field or firm step 5 filled + the sheet it was read from, or "none">; not filled: <each thing a sheet states that step 5 left off + why, or "none">
+directory changed: <each firm step 5 added to the directory, and each it gave a type + the type, or "none">
 reconciliation: <the gate's counts, or "not run for this set">
 spec reading: <sections confirmed + listed in the table of contents only, or "not run for this project">
 structure: <filled, the sheet that grounded the system + the sheet that grounded the floor counts; or blank, the half the set does not state>
@@ -107,9 +111,12 @@ created this run.
 
 <!-- user-facing -->
 Where a user typed /learn-project, tell them, in plain terms, off that summary:
-- **What was read**, the project's identity, which of the seeded project facts were present, the
-  disciplines covered, and whether the project manual's table of contents was read.
-- **What was learned**, by kind: systems, scope areas, set shape, hazards.
+- **What was read**, the project's identity, which of the facts project setup filled were present,
+  the disciplines covered, and whether the project manual's table of contents was read.
+- **What was learned**, by kind: systems, scope areas, set shape, hazards. Name any value already
+  on the project that you left as it stands, and any you replaced, with who wrote it.
+- **What was filled on Overview** from the cover sheet and title blocks, with the sheet; each firm
+  added to the directory or given a type; and anything a sheet states that you left off, and why.
 - **What the index check found**, or that it hasn't run yet for this set, never silent on which.
 - **What was recorded**, how many facts, and any Question raised for a disagreement between
   documents. What was recorded is the project's working context now, carrying your name and its
@@ -148,16 +155,16 @@ Close by saying orientation is done and everything it made is on the project rec
    `drawing-upload` rather than orienting on an empty set. Either stop returns your summary with
    `stopped:` naming it, and the session that started you hands off.
 
-## 2. Read the entries (identity, seeds, sheet inventory)
+## 2. Read the project (identity, fields, facts, sheet inventory)
 
 1. `get_project(projectId)`, the project's identity (name, description, created date).
-2. **Read the `project-setup` seed entries verbatim, never re-create them.** For each of `projectType`,
-   `deliveryMethod`, `location`, `grossArea`, `floorCount`, `bidDueDate`, `tradeInScope`,
+2. **Read what `project-setup` filled and seeded, verbatim, never re-create it.** The `get_project`
+   answer from item 1 carries the project's fields: `projectType`, `ownerProcess` (procurement),
+   `contractType`, `location`, and the firms on its contacts (`owners`, `architects`,
+   `designTeam`). `list_project_dates(projectId)` carries the owner's bid date (kind `owner_bid`)
+   and any other date on the project. For each of `grossArea`, `floorCount`, `tradeInScope`,
    `knownExclusion`, call `search(projectId, predicate: "<predicate>")` and read what's there. These
-   feed the packet's Identity section directly. Where a seed is missing, orientation may record a
-   document-grounded entry on that predicate later; where a seed is thin and a document says more,
-   the document-grounded entry names the seed with `supersedesId` as the record it replaces, since a
-   write onto a field that already holds a value names what it replaces or is refused.
+   feed the packet's Identity section directly.
 3. **Sheet inventory.** Call `list_drawing_deliveries(projectId)` for the registered deliveries, then
    attempt `set_grid(projectId)` once. A set_grid payload on a set of real size can be large enough to
    file-redirect instead of returning inline, if that happens, fall back to sampled
@@ -235,8 +242,35 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
 1. **Cover sheet (1 render).** Find it via `search(projectId, predicate: "hasTitle", text: "cover")` or
    `text: "title sheet"`. If neither turns up a match, fall back to the lowest G-series sheet number in
    the inventory; if there's no G series either, fall back to the lowest sheet number in the set overall.
-   Whenever you use a fallback, record a `setShapeObservation` entry naming the substitution (e.g. "no
-   hasTitle match for a cover/title sheet; used the lowest G-series sheet instead").
+   Whenever you use a fallback, step 6's `setShapeObservation` says what the set lacks
+   (e.g. "The set has no cover or title sheet."), with the search that found none and the sheet
+   rendered in its place in the entry's evidence.
+
+   From the cover sheet and the title blocks of the sheets you render, fill what Overview still
+   has empty and a sheet plainly states. Never write over what step 2 found, whoever wrote it:
+   - The address, when `location` is empty: `update_project(projectId, location: "<the address
+     as the sheet gives it>")`.
+   - The project type, when `projectType` is empty: call `list_project_options` once and take the
+     option on its `project_type` list whose label plainly names what the sheet says,
+     `update_project(projectId, projectTypeId)`. No label plainly names it: leave it empty. Never
+     create an option or take a near match.
+   - The owner and the architect the sheet names, only when no firm of that role is on the
+     contacts yet (no owner in `owners`, no architect in `architects`); each engineer the sheet
+     names, only when that firm is not on the contacts yet (by company id, once found). Find the firm with `directory_list_companies(text: "<the firm's
+     name>")`: exactly one company with that name is the firm; several, or only a near match,
+     leaves it off. Its role is its directory type, the one on `directory_list_company_types` whose
+     label plainly names the role (Owner, Architect, Engineer). A firm not in the directory is
+     added with `directory_add_company(name, vendorKind: [<that type>])`; a firm already there
+     without that type gets it beside the ones it has, `directory_update_company(companyId,
+     vendorKind: [<its types>, <that type>])`, since `vendorKind` replaces the whole list. No type
+     names the role: the firm goes on with the types it has. Then
+     `project_set_design_team_company(projectId, companyId)`, the firm alone.
+
+   Name each field filled and each firm put on, with the sheet, on the summary's `fields filled`
+   line; each firm added to the directory or given a type on `directory changed`; and on
+   `not filled`, each thing a sheet states that you left off and why: the field already held
+   something different, no list option or type names it, or the directory holds more than one
+   firm by that name.
 2. **Drawing-index page (1 render).** Find it via `search(projectId, predicate: "hasTitle", text:
    "index")`, `"drawing list"`, or `"sheet list"`. If none of these match, skip the render and note
    the absence in your summary, never synthesize an index page that isn't there.
@@ -267,9 +301,35 @@ predicate, and a second one is refused:
 | `missingScopeFamily` | free text (e.g. "no Division 31 Earthwork/SOE sections in the TOC"), cited to the table of contents |
 | `hazardFlag` | free text (e.g. "occupied renovation, coordinate around active tenants") |
 
+Before the batch, read each predicate's current value: `search(projectId, predicate:
+"<predicate>")`, keep the rows whose subject is exactly `project`, drop every row another of them
+names in its `supersedesId`, and take the newest `assertedAt` among the rest, the lowest `id` on a
+tie. That row is the
+current value, and its `id` is what a new entry names in `supersedesId`; the record refuses a
+write onto a slot that holds a value without it.
+
+- `structuralSystem`, `envelopeSystem`, `phasingNote`, `hazardFlag`: the estimator reads and
+  rewrites these on the project's Details card. One that already holds a value stays out of the
+  batch, whoever wrote it, and goes on the summary's `left in place` line. You write onto it only
+  when the user asks, naming the current value's `id` in `supersedesId`.
+- `scopeArea`, `setShapeObservation`, `missingScopeFamily`: these are working context for later
+  passes. When this run reads more than the current value says, the new entry keeps the current
+  value's sentences, adds what this run found, and names the current value's `id` in
+  `supersedesId`; it goes on the summary's `replaced` line with who wrote the value it replaced.
+  When this run reads nothing new, it stays out of the batch.
+
+A batch takes one entry per predicate, so everything this run finds for one predicate is one
+value: the cover-sheet fallback of step 5 and the reconciliation findings of step 4 are sentences
+in the one `setShapeObservation`.
+
 This pass raises no Question for its own reading. What you judge about the project goes on the
-record as a fact, cited to what you read it from, and where it was inferred rather than labeled it
-says what it was read from. A family the table of contents is silent on is a `missingScopeFamily`
+record as a fact, cited to what you read it from. Each value in the table above is a plain
+statement about the job, one to three sentences when first written, written for the estimator who reads it on the
+project: no "My reading", no "inferred from", no account of how you read the set. What it was read
+from, and whether a sheet labels it or you inferred it from what the drawings show, goes in the
+entry's `evidence` and citation, never in the value. Good: "Wood-framed floors over a cast-in-place
+concrete podium." Bad: "My reading, inferred from the cover renderings: wood framing over a
+podium." A family the table of contents is silent on is a `missingScopeFamily`
 fact at this point, an expectation drawn from what a job of this kind usually carries before any
 sheet is read; the package review, which holds the drawing evidence, is where a manual silent on
 work the drawings show becomes a Question.
@@ -467,22 +527,24 @@ once, after the entries above are recorded and before the summary.
    leave it as is and say so in your summary. Only an empty description gets written below.
 2. **Write what the job is.** What the building is, what work is being done, for whom, where, and
    whatever makes this job different from a typical one, in plain estimator prose. Every statement
-   traces to something read this run, a render, a page, a seed entry, or an entry recorded in step
-   6; a differentiator you would only infer is left out of the description.
+   traces to something read this run, a render, a page, a field or fact step 2 read, or an entry
+   recorded in step 6; a differentiator you would only infer is left out of the description.
 3. **Leave out what already has a field.** Total SF, floor count, bid due date, status, structural
    or envelope system, and any sheet or spec bookkeeping already live as their own entries;
    restating them here duplicates the record instead of orienting a reader. Leave out narration of
    how the set was read too, this is what the job is, not how it was learned.
 4. **No length target.** As long as the job needs and no longer.
-5. Call `update_project(projectId, description: "<text>")`. The description and the structure value
-   from step 7 are the only fields on the project row this skill ever writes.
+5. Call `update_project(projectId, description: "<text>")`. The description, the structure value
+   from step 7, and the empty fields step 5 fills from the cover sheet are the only fields on the
+   project this skill ever writes.
 
 ## 10. Compile the run-context packet
 
 A projection compiled fresh from the entries read in step 2 and recorded in step 6, never itself
 recorded as an entry, never stored as truth. Sections, in order:
 
-1. **Identity**, name, type, delivery method, location, size, key dates (from the seed entries).
+1. **Identity**, name, type, procurement and contract, location, the owner, architect and
+   engineers, size, key dates (from what step 2 read).
 2. **Systems**, structural and envelope systems.
 3. **Scope areas**, the `scopeArea` and `phasingNote` entries.
 4. **Set shape**, disciplines present, issue labels seen, `setShapeObservation` entries,
@@ -522,14 +584,16 @@ designed, and the summary does not name it.
   agent and reads its summary; it never runs a render, a page read, or a package call of steps 1 to
   11 itself, except on a client with no agent tool.
 - **Cite everything.** No citation → don't emit the entry.
-- **Net-new facts only.** Never re-create a seed entry `project-setup` already recorded, or a sheet /
-  spec-section entry `drawing-upload` already recorded.
+- **Net-new facts only.** Never re-create a field `project-setup` filled or an entry it seeded, or a
+  sheet / spec-section entry `drawing-upload` already recorded.
 - **Judgment entries are cited and raise no Question.** The one raise is a disagreement between two
   documents, per step 6.
 - **A Question is about the project, never about a Plumlayer failure.** A render or read that
   fails is reported in the conversation, not raised as a Question.
-- **Say it is your reading.** These entries become the project's working context immediately, so an
-  inferred value that reads as a documented one is the failure to avoid.
+- **The value states the job; the evidence says how you know.** These entries become the project's
+  working context immediately. A value is a plain statement for the estimator; what it was read
+  from, and whether a sheet labels it or you inferred it, is in its evidence and citation, never a
+  preamble in the value.
 - **Orientation, not comprehension.** Respect the ≤6 render budget, if the set is too large for it to
   cover meaningfully, say so in your summary rather than silently exceeding it.
 - **The reconciliation gate is read, never run or recorded, by this skill.** Step 4 reads
@@ -542,8 +606,9 @@ designed, and the summary does not name it.
 - **Complete step 8's placement check before reporting the split.**
 - **Packages are match-or-create; a re-run never duplicates one.** Read `solicitation_list_packages`
   first and skip any catalog trade id already represented on the project.
-- **Status is a person's categorization; no skill sets it.** Orientation's only write to the
-  project row is `description`, and only when a person hadn't already written one.
+- **Status is a person's categorization; no skill sets it.** Orientation writes to the project
+  only what steps 5, 7 and 9 name: an empty address, project type or firm on the contacts (step 5),
+  the structure value (step 7), and `description` when a person hadn't already written one.
 
 ## Deferred (named, not skipped silently)
 
