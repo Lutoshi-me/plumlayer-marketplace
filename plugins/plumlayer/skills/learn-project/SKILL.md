@@ -354,8 +354,21 @@ in a specific page or render, cite the specific source file/instrument name, the
 `drawing-upload` and `project-setup`'s Mode B (reading in existing docs) use. Reserve the label
 `learn-project-orientation`
 only for derived or absence observations with no single source page: `missingScopeFamily` and any
-set-level `setShapeObservation`. Every entry's `evidence` cites the exact page/render or query of entries
-that produced it, never a fabricated locator.
+set-level `setShapeObservation`.
+
+Every entry's `evidence` is a list, one citation per page read or query run, each the exact page or
+query that produced the value, never a fabricated locator, and never wrapped in another object:
+Overview reads that list to name the sheets and spec sections each fact was read on. A sheet is
+`{ "sheet": "A-101", "fileId": "<fileId>", "pageInPdf": 12, "snippet": "<the words as printed>" }`.
+A spec section is
+`{ "fileId": "<fileId>", "source": "specSection:074200 - Metal Wall Panels", "locator": { "pageInPdf": 215 }, "snippet": "<the words as printed>" }`,
+the six digits packed and the section's title after a spaced hyphen. Any other page, such as the
+manual's table of contents, is
+`{ "fileId": "<fileId>", "pageInPdf": 4, "snippet": "<the words as printed>" }`. A query of
+entries is `{ "method": "record-query", "snippet": "<the query and what it returned>" }`. A
+`snippet` holds only the words as printed. How a value was read (labeled on the sheets, inferred
+from what they show) goes in a `"basis"` field on that citation, never in the snippet and never
+in a field beside the list.
 
 Call `record_batch` once with the full array. **Verify:** the returned `count` must equal the number of
 entries sent; a mismatch stops the run and gets reported, never a guessed correction.
