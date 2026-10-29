@@ -450,6 +450,18 @@ Each of these is a harness check.
     the skill's published labels; each malformed report or call is refused in one line; and the
     skill's and the definition's command lines run. This cannot judge how a running folder judges
     a package: the report is invented.
+30. A project's folder is named for its project id. A second project of one name once found the
+    first one's folder and could pick up its unfinished pass. The skill names the project folder
+    `<runs root>/<projectId>/` and no folder for the project's name, and its issue command passes
+    `--runs-root`. The shipped `plan_inventory.py` issue mode is run over two invented projects of
+    one name: each starts in its own folder; a pass begun in a folder named for the project is
+    found by the deliveries its own files name, resumed by its project and never by the other,
+    and a later set of that project starts beside it with the next tag; an old layout pass is found
+    by its grid's deliveries, and one whose grid names none is matched to no project; a broken
+    `run.json` in another project's folder stops nothing; and a folder two projects shared, or one
+    project's passes in two folders, is refused in one line naming the folders. The skill's own
+    issue command, filled in, finds the pass in the folder named for the project. This cannot
+    judge a seat's real run history: the folders are invented.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

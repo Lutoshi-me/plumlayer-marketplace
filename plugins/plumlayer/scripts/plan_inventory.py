@@ -56,6 +56,19 @@ One pass per drawing issue:
   started over a later one. Once the latest set has its pass, the earliest addendum of it no pass
   read is started, one at a time in the order they landed, each a partial pass of its own.
 
+  A project's folder is named for its project id, so two projects of one name never share one.
+  Projects once had folders named for the project's name, and `--runs-root`, the folder that holds
+  every project's folder, is where the issue mode looks for one: another folder there holding a
+  pass on a delivery this project lists is this project's earlier folder, and the issue mode
+  resumes and starts this project's passes there, so a pass begun under the name is still found
+  and every pass of the project stays in one folder. A pass is matched by the delivery ids its own
+  files name: its run folder's name and its `run.json`, or in the old layout the rows of its
+  `grid/` files. That match reads the delivery list's ids before anything else, and only its ids,
+  so a delivery in a shape this script does not know still never holds a pass up. A folder holding
+  passes of this project beside passes on deliveries this project does not list is refused, since
+  that is a folder two projects of one name shared, and so is a project whose passes sit in two
+  folders. An old layout pass whose grid names no delivery is matched to no project.
+
 A number printed on more than one page:
 
   A drawing issue can print one sheet number on two of its pages. The grid gives the number one
@@ -266,7 +279,7 @@ Reviews to a pass, in window 3:
 
 Usage:
 
-    python plan_inventory.py issue --runs <project folder> --deliveries <path>
+    python plan_inventory.py issue --runs <project folder> --deliveries <path> [--runs-root <dir>]
 
     python plan_inventory.py inventory --grid <dir or file> --expect-count 209 --out-dir <dir>
 
@@ -3323,7 +3336,108 @@ def _label(row: dict) -> str:
     return _text(row.get("label")) or _text(row.get("id"))
 
 
-def issue(runs: Path, deliveries_path: Path) -> str:
+def _listed_ids(path: Path) -> set[str]:
+    """
+    The delivery ids of the deliveries file and nothing else of it. Each row's other fields are
+    checked where the issue mode reads the list whole, after any pass in flight is named.
+    """
+    data = _read_json(path, "the deliveries file")
+    listed = data.get("deliveries") if isinstance(data, dict) else None
+    if not isinstance(listed, list):
+        return set()
+    return {row["id"] for row in listed if isinstance(row, dict) and isinstance(row.get("id"), str) and row["id"]}
+
+
+def _json_or_none(path: Path):
+    """A file's JSON, or None where it does not parse: a folder another project owns is read, never refused."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _folder_passes(folder: Path) -> list[tuple[Path, set[str]]]:
+    """
+    Every scope pass a project folder holds, each with the delivery ids its own files name. A run
+    folder is named for the delivery it reads, and its `run.json` names that delivery and the ones
+    it reads from. A pass in the old layout, its ledger in the project folder itself, names its
+    deliveries only on the rows of the grid it fetched.
+    """
+    passes: list[tuple[Path, set[str]]] = []
+    if not folder.is_dir():
+        return passes
+    if (folder / LEDGER_FILE).is_file():
+        ids: set[str] = set()
+        for page in sorted((folder / "grid").glob("*.json")) if (folder / "grid").is_dir() else []:
+            data = _json_or_none(page)
+            rows = data.get("sheets") if isinstance(data, dict) else None
+            for row in rows if isinstance(rows, list) else []:
+                if isinstance(row, dict) and isinstance(row.get("deliveryId"), str) and row["deliveryId"]:
+                    ids.add(row["deliveryId"])
+        passes.append((folder, ids))
+    for child in sorted(folder.iterdir()):
+        if not child.is_dir() or not ((child / RUN_FILE).is_file() or (child / LEDGER_FILE).is_file()):
+            continue
+        ids = {child.name}
+        run = _json_or_none(child / RUN_FILE) if (child / RUN_FILE).is_file() else None
+        if isinstance(run, dict):
+            ids.update(d for d in [run.get("deliveryId"), *(run.get("readFrom") or [])] if isinstance(d, str) and d)
+        passes.append((child, ids))
+    return passes
+
+
+def _project_folder(runs: Path, deliveries_path: Path, runs_root: Path) -> Path:
+    """
+    The folder this project's passes are in: its own, named for the project id, unless another
+    folder under the runs root holds a pass on a delivery the project lists, which is the folder
+    named for the project before folders took its id. Every pass of a project stays in one folder,
+    so the issue mode reads all of them, and a pass begun under the name is resumed where it is.
+    """
+    ours = _listed_ids(deliveries_path)
+    holding = [runs] if _folder_passes(runs) else []
+    here = runs.resolve()
+    for folder in sorted(runs_root.iterdir()) if runs_root.is_dir() else []:
+        if not folder.is_dir() or folder.resolve() == here:
+            continue
+        passes = _folder_passes(folder)
+        mine = [path for path, ids in passes if ids & ours]
+        if not mine:
+            continue
+        # A pass that names no delivery, as an old layout grid without them, belongs to no one
+        # project and goes with the folder.
+        others = [path.name if path != folder else "its own ledger" for path, ids in passes if ids and not ids & ours]
+        if others:
+            raise PlanError(
+                f"{folder} holds passes on this project's deliveries and passes on deliveries this "
+                f"project does not list ({_named(others)}), so two projects shared it; move the "
+                f"other project's run folders out of it before a pass runs here"
+            )
+        holding.append(folder)
+    if len(holding) > 1:
+        raise PlanError(
+            f"this project's passes sit in {len(holding)} folders ({'; '.join(str(f) for f in holding)}); "
+            f"a project keeps every pass in one folder, so move them into one before a pass runs"
+        )
+    return holding[0] if holding else runs
+
+
+def issue(runs: Path, deliveries_path: Path, runs_root: Path | None = None) -> str:
+    """
+    The issue mode's one line, read off the folder this project's passes are in: the project's own
+    folder, or with `--runs-root` the folder named for the project before folders took its id where
+    that one holds its passes, which the line then names.
+    """
+    folder = _project_folder(runs, deliveries_path, runs_root) if runs_root is not None else runs
+    line = _issue_in(folder, deliveries_path)
+    if folder != runs:
+        line += (
+            f"; this project's passes are in {folder}, the folder named for the project before "
+            f"project folders were named for the project id"
+        )
+    return line
+
+
+def _issue_in(runs: Path, deliveries_path: Path) -> str:
     """
     One line naming what the lead does next on this project, read off the project's run folders
     and its delivery list:
@@ -3477,6 +3591,10 @@ def main(argv: list[str] | None = None) -> int:
         "--deliveries", required=True, type=Path,
         help="the list_drawing_deliveries answer on disk, in delivery order",
     )
+    nxt.add_argument(
+        "--runs-root", type=Path,
+        help="the folder holding every project's folder, read for a folder named for this project before folders took its id",
+    )
 
     args = parser.parse_args(argv)
 
@@ -3484,7 +3602,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.mode == "inventory":
             print(inventory(args.grid, args.expect_count, args.out_dir))
         elif args.mode == "issue":
-            print(issue(args.runs, args.deliveries))
+            print(issue(args.runs, args.deliveries, args.runs_root))
         else:
             print(plan(args))
     except PlanError as e:

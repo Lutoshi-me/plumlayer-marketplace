@@ -347,13 +347,17 @@ No packet, no definitions files, no per-run copy of any of it: a reader that wan
 door type is asks the record, and a second reader on the same sheet finds the first one's reading
 there.
 
-The project folder, `~/.plumlayer/runs/<project-slug>/` (slug from the project name, lowercase,
-spaces to hyphens; fall back to the projectId), holds `deliveries.json`, the delivery list the
+The project folder, `<runs root>/<projectId>/`, where `<runs root>` is `~/.plumlayer/runs` with
+the home directory written out, is named for the project id and never for the project's name, so
+two projects of one name never share a folder. It holds `deliveries.json`, the delivery list the
 lead chooses a pass from, copied byte for byte from `list_drawing_deliveries` and read only by the
 plan script (Audience: machine), and one run folder per pass, named for the delivery the pass
-reads: `<project folder>/<deliveryId>/`. A pass begun before passes had folders of their own keeps its
-files in the project folder itself, and resumes there as it always has. A run folder holds only
-the run's own bookkeeping. Never committed to any repo, never uploaded to the project except
+reads: `<project folder>/<deliveryId>/`. Projects once had folders named for the project's name. A
+project whose passes began in such a folder keeps them there: the plan script's issue mode finds
+that folder by the deliveries its passes read, and resumes and starts the project's passes in it,
+naming it on its line, so every pass of one project stays in one folder. A pass begun before passes
+had folders of their own keeps its files in the folder of the project itself, and resumes there as
+it always has. A run folder holds only the run's own bookkeeping. Never committed to any repo, never uploaded to the project except
 record files, never recorded as project entries:
 
 - `run.json`: the drawing issue the pass reads and the tag its unit ids carry, written by the lead
@@ -606,10 +610,15 @@ before going on.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' issue \
-     --runs '<project folder>' --deliveries '<project folder>/deliveries.json'
+     --runs '<project folder>' --deliveries '<project folder>/deliveries.json' \
+     --runs-root '<runs root>'
    ```
 
-   Its first word is what you do.
+   Its first word is what you do. Every run folder you work in from here is the one the line names.
+   Where the line ends by naming the folder this project's passes are in, the project began its
+   passes in a folder named for the project, and they all stay there; never move a file out of it.
+   A refusal naming a folder two projects shared, or this project's passes in two folders, stops
+   the run: say which folders, and hand over.
    - `resume <run folder>`: a pass is in flight, and it finishes before another starts, whatever
      has landed since; a later delivery gets a pass of its own once this one closes out. Read the
      `phase:` and `pass:` lines of that folder's `ledger.md` with a local filter on the line
