@@ -51,11 +51,22 @@ Three modes:
     python lead_pass.py checkin <run folder> <window> --passes <pass id>,<pass id>,...
         [--start <lines>[:<characters>]]
 
-        What the check-in needs, off the ledger's `pass:` lines and the summaries on file: each
-        pass's last `pass:` line, the totals of those lines, the items by trade summed off the
-        summaries' `trades:` lines, the anomalies already on the record as counts, and then every
-        other note line of each summary, under its pass, each copied whole under the label
-        CHECKIN_LABELS gives it.
+        What the check-in needs, off the ledger's `pass:` lines, the read plan beside them and the
+        summaries on file. Each pass by what it read, the sheet numbers its block carries or in
+        window 3 its packages, with its last `pass:` line's figures in the estimator's words:
+
+            <pass id>, <n> sheets read (<sheet numbers>): new items <n>, items updated <n>, Questions raised <n>, replies <n>, new items with a candidate trade <n>
+            over <n> passes: new items <n>, items updated <n>, Questions raised <n>, replies <n>, new items with a candidate trade <n>
+            your own check over <n> pass lines, never said to the estimator: units <n>, entries <n>
+
+        The new items are the summaries' `trades:` lines summed, each a subject the pass's runner
+        found on the record. A pass line's `created` counts entries, every citation and trade
+        written with those items, so it goes on the lead's own line and never reads as items; in
+        window 3 that line adds the pages opened and the searches. Then the items by trade summed
+        off the same lines, the anomalies already on the record as counts, and every other note
+        line of each summary, under its pass, each copied whole under the label CHECKIN_LABELS
+        gives it, less the unit id it opens with, which a window 3 note trades for its package's
+        name.
 
         An anomaly ends with where it landed, after a comma, as the reader's and the reviewer's
         report shapes ask. One that ends `Question <id>`, `reply <id>` or `note on <subject>` is
@@ -124,16 +135,17 @@ REPORTS_FOLDER = pass_summary.REPORTS_FOLDER
 CHECKIN_CAP = 25_000
 
 # The summary lines a check-in carries, in the order the summary prints them, each with the label
-# the check-in prints it under, since the person watching reads what it prints. The note behind
-# the label is copied whole, as the reader wrote it.
+# the check-in prints it under, in the estimator's words, since the person watching reads what it
+# prints. The note behind the label is copied whole, as the reader wrote it, less the unit id it
+# opens with.
 CHECKIN_LABELS = {
-    "overlap notes": "overlap notes",
-    "anomalies": "anomalies",
-    "unread pages": "unread pages",
+    "overlap notes": "maybe the same work twice",
+    "anomalies": "to look at",
+    "unread pages": "pages not read",
     "grain questions": "how finely to split",
     "door-owned suggestions": "for the estimator to decide",
-    "definitions kinds added": "definitions kinds added",
-    "deviations and repairs": "deviations and repairs",
+    "definitions kinds added": "kinds of marks defined",
+    "deviations and repairs": "what went wrong and how it was fixed",
 }
 
 # Where an anomaly landed, as its last words after a comma, for the three places a trade's page
@@ -165,6 +177,10 @@ SAME_WORK = " same work: "
 
 # A window 3 unit line as the plan script writes it, ` verified` added once its review verified.
 _REVIEW_LINE_RE = re.compile(r"^[1-9][0-9]*\. (\S+): (.+), trade (.+), package \S+( verified)?$")
+
+# A window 1 or 2 unit line as the plan script writes it: the unit id, then the sheet number, or
+# `file <fileId>` on a repeated lines unit, then where it opens.
+_PLAN_UNIT_RE = re.compile(r"^(\S+-[1-9][0-9]*)\. (.+?), (?:file |page |from page )")
 
 # The figures of a `pass:` line, in its order, the window 3 pair included.
 PASS_FIGURES = ("units", "created", "updated", "questions", "replied", "candidates")
@@ -296,7 +312,7 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         )
 
     per_unit: dict[str, tuple[str, str]] = {}
-    totals = candidates = review = None
+    totals = candidates = review = trades = None
     for raw in lines:
         line = raw.strip()
         unit = _PER_UNIT_RE.match(line)
@@ -306,6 +322,7 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
             totals = _TOTALS_RE.search(line)
         elif line.startswith("trades:"):
             candidates = _CANDIDATES_RE.search(line)
+            trades = _trades_of(line)
         elif line.startswith("review:"):
             review = _REVIEW_RE.match(line)
     if totals is None:
@@ -323,6 +340,7 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         "questions": totals.group(2),
         "replied": totals.group(3),
         "candidates": candidates.group(1),
+        "items": sum(trades[0].values()) if trades else None,
         "pagesOpened": review.group(1) if review else None,
         "searches": review.group(2) if review else None,
     }
@@ -391,7 +409,10 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
     except OSError as e:
         raise LeadPassError(f"cannot append to the ledger at {ledger}: {e}") from e
 
-    out = [line]
+    # The pass as the estimator hears it, for the one line the lead says as each pass is recorded.
+    reads = _plan_reads(plan_path, window)[0]
+    said = {field: int(value) for field, value in figures if field in PASS_FIGURES}
+    out = [line, f"{pass_id}, {reads.get(pass_id, 'nothing planned')}: {_said_figures(summary['items'], said)}"]
     out.extend(f"above the runner's count: {entry}" for entry in above)
     return out
 
@@ -461,6 +482,91 @@ def _reviews_of(plan_path: Path) -> dict[str, str]:
     return reviews
 
 
+def _plan_reads(plan_path: Path, window: int) -> tuple[dict[str, str], dict[str, str]]:
+    """
+    What each pass of the read plan beside the ledger read, in the words a check-in says it in, and
+    what each unit id names: a sheet's number, the file a repeated lines unit reads, or a review's
+    package. Both are empty where the plan is not this window's or is not there, and the check-in
+    then names passes by id alone.
+    """
+    try:
+        lines = plan_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}, {}
+    first = next((line.strip() for line in lines if line.strip()), "")
+    if first != f"# Read plan: window {window}":
+        return {}, {}
+    sheets: dict[str, list[str]] = {}
+    files: dict[str, int] = {}
+    packages: dict[str, list[str]] = {}
+    named: dict[str, str] = {}
+    current = None
+    for raw in lines:
+        line = raw.strip()
+        if line == pass_summary._LEFT_OUT_HEADING:
+            break
+        heading = pass_summary._PASS_HEADING_RE.match(raw)
+        if heading:
+            current = heading.group(1)
+            sheets[current], files[current], packages[current] = [], 0, []
+            continue
+        if current is None:
+            continue
+        review = _REVIEW_LINE_RE.match(line) if window == 3 else None
+        if review:
+            packages[current].append(f"{review.group(2)}, trade {review.group(3)}")
+            named[review.group(1)] = review.group(2)
+            continue
+        unit = _PLAN_UNIT_RE.match(line)
+        if unit is None:
+            continue
+        if unit.group(2).startswith("file ") and ", from page " in line:
+            files[current] += 1
+            named[unit.group(1)] = "the repeated lines of one drawing file"
+        else:
+            sheets[current].append(unit.group(2))
+            named[unit.group(1)] = unit.group(2)
+    reads: dict[str, str] = {}
+    for pass_id in sheets:
+        parts = []
+        if packages[pass_id]:
+            parts.append(
+                f"{len(packages[pass_id])} package{'' if len(packages[pass_id]) == 1 else 's'} reviewed "
+                f"({'; '.join(packages[pass_id])})"
+            )
+        if sheets[pass_id]:
+            parts.append(
+                f"{len(sheets[pass_id])} sheet{'' if len(sheets[pass_id]) == 1 else 's'} read "
+                f"({', '.join(sheets[pass_id])})"
+            )
+        if files[pass_id]:
+            parts.append(
+                f"the repeated lines of {files[pass_id]} drawing file{'' if files[pass_id] == 1 else 's'} read"
+            )
+        reads[pass_id] = " and ".join(parts) or "nothing planned"
+    return reads, named
+
+
+def _without_unit(note: str, named: dict[str, str], window: int) -> str:
+    """
+    A summary note without the unit id it opens with. A sheet's note names its sheet and page right
+    after it, so the id goes; a review's note names its package in the id's place.
+    """
+    unit, _space, rest = note.partition(" ")
+    if unit not in named or not rest:
+        return note
+    return f"{named[unit]}: {rest}" if window == 3 else rest
+
+
+def _said_figures(items: int | None, figures: dict[str, int]) -> str:
+    """A pass line's figures as the estimator hears them, the new items off the summaries' trades."""
+    return (
+        (f"new items {items}" if items is not None else "new items not counted, a summary or its trades count missing")
+        + f", items updated {figures['updated']}, Questions raised {figures['questions']}, "
+        f"replies {figures['replied']}, new items with a candidate trade {figures['candidates']}"
+    )
+
+
 def _landed(note: str) -> str | None:
     """The place an anomaly says it landed where a trade's page shows it, or None to print it."""
     if SAME_WORK in note:
@@ -483,26 +589,10 @@ def checkin_lines(
 ) -> list[str]:
     ledger = run_folder / "ledger.md"
     last = _last_pass_lines(ledger, window)
-    figures = PASS_FIGURES + (REVIEW_FIGURES if window == 3 else ())
-
-    head: list[str] = [f"window {window}, passes {', '.join(pass_ids)}"]
-    totals = {field: 0 for field in figures}
-    with_line = 0
-    for pass_id in pass_ids:
-        line = last.get(pass_id)
-        if line is None:
-            head.append(f"{pass_id}: no pass line on the ledger")
-            continue
-        head.append(line)
-        with_line += 1
-        for field in figures:
-            totals[field] += _figure(line, field) or 0
-    head.append(
-        f"totals over {with_line} pass line{'' if with_line == 1 else 's'}: "
-        + ", ".join(f"{field} {totals[field]}" for field in figures)
-    )
+    reads, named = _plan_reads(run_folder / "read-plan.md", window)
 
     by_trade: dict[str, int] = {}
+    items_of: dict[str, int] = {}
     candidates = 0
     notes: list[tuple[str, str]] = []
     no_trades: list[str] = []
@@ -542,7 +632,8 @@ def checkin_lines(
                 continue
             landed = _landed(line) if label == "anomalies" and not continued else None
             if landed is None:
-                notes.append((pass_id, CHECKIN_LABELS[label] + line[len(label):]))
+                body = _without_unit(line[len(label) + 2:], named, window)
+                notes.append((pass_id, f"{CHECKIN_LABELS[label]}: {body}"))
                 notes.extend((pass_id, more) for more in continued)
                 continue
             unit = line[len("anomalies: "):].split(" ", 1)[0]
@@ -554,7 +645,35 @@ def checkin_lines(
             continue
         for code, count in trades[0].items():
             by_trade[code] = by_trade.get(code, 0) + count
+        items_of[pass_id] = sum(trades[0].values())
         candidates += trades[1]
+
+    # Each pass by what it read, with its figures in the estimator's words. The new items are the
+    # pass's trades summed, every one a subject its runner found on the record; `created` on a pass
+    # line counts entries, every citation and trade written with those items, and is never an item
+    # count, so it goes on the lead's own line below and never on these.
+    head: list[str] = [f"window {window}, passes {', '.join(pass_ids)}"]
+    totals = {field: 0 for field in PASS_FIGURES + REVIEW_FIGURES}
+    with_line = 0
+    items: int | None = 0
+    for pass_id in pass_ids:
+        line = last.get(pass_id)
+        name = f"{pass_id}, {reads[pass_id]}" if pass_id in reads else pass_id
+        if line is None:
+            head.append(f"{name}: no pass line on the ledger")
+            continue
+        with_line += 1
+        for field in totals:
+            totals[field] += _figure(line, field) or 0
+        figures = {field: _figure(line, field) or 0 for field in PASS_FIGURES}
+        head.append(f"{name}: {_said_figures(items_of.get(pass_id), figures)}")
+        items = None if items is None or pass_id not in items_of else items + items_of[pass_id]
+    head.append(f"over {with_line} pass{'' if with_line == 1 else 'es'}: " + _said_figures(items, totals))
+    head.append(
+        f"your own check over {with_line} pass line{'' if with_line == 1 else 's'}, never said to "
+        f"the estimator: units {totals['units']}, entries {totals['created']}"
+        + (f", pages opened {totals['pages-opened']}, searches {totals['searches']}" if window == 3 else "")
+    )
     ordered = sorted(by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
     head.append(
         "items by trade: "

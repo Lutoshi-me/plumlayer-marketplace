@@ -8967,6 +8967,18 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     above = f"above the runner's count: {a1_units[0]} {a1_counts[0]} on the record, {created[a1_units[0]]} when its runner verified it"
     if above not in out.splitlines():
         errors.append(f"a count above the runner's is not named with both counts: {out!r}")
+    # Under the line, the pass as the estimator hears it: the sheets it read and its new items off
+    # its trades, never the entry count.
+    line_fields = wanted_line.split()
+    said_record = (
+        f"A1, {len(a1_units)} sheets read ({', '.join(s for _u, s, _p in blocks['A1']['units'])}): "
+        f"new items {2 * len(a1_units)}, items updated {line_fields[line_fields.index('updated') + 1]}, "
+        f"Questions raised {line_fields[line_fields.index('questions') + 1]}, replies "
+        f"{line_fields[line_fields.index('replied') + 1]}, new items with a candidate trade "
+        f"{line_fields[line_fields.index('candidates') + 1]}"
+    )
+    if out.splitlines()[1:2] != [said_record]:
+        errors.append(f"the record does not say the pass in the estimator's words under its line: {out.splitlines()[1:2]}, expected {said_record!r}")
     if blocks_after := plan_blocks():
         a1_fields = blocks_after["A1"]["fields"]
         if a1_fields.get("summed") != "yes" or a1_fields.get("units verified") != str(len(a1_units)):
@@ -8976,6 +8988,26 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             )
         blocks = blocks_after
     check_listing("after A1 is recorded")
+
+    # The `checkin:` line the lead appends when the user answers a check-in, so a later session
+    # never shows that check-in again, is read past by every script that reads this ledger: the
+    # summary sums A1 as before and the plan still reads it finished.
+    ledger.write_text(ledger.read_text(encoding="utf-8") + "checkin: 1 A1 go\n", encoding="utf-8")
+    summarize("A1")
+    if (plan_blocks().get("A1") or {}).get("fields", {}).get("summed") != "yes":
+        errors.append("a `checkin:` line on the ledger leaves A1 read as unsummed")
+    check_listing("with a checkin line on the ledger")
+    skill_text = " ".join(
+        (plugin_path / "skills" / "scope-run" / "SKILL.md").read_text(encoding="utf-8").split()
+    )
+    for phrase in (
+        "checkin: <window> <window, or the id of the last pass recorded before it> <go|pause>",
+        "reads the ledger's `phase:`, `pass:` and `checkin:` lines first",
+        "A check-in a `checkin:` line records was shown and answered, and is never shown again",
+        "When the user answers a check-in, append its one `checkin:` line to the ledger",
+    ):
+        if phrase not in skill_text:
+            errors.append(f"the skill does not carry {phrase!r}")
 
     # ------------------------------------------------------------------ #
     # record: the refusals, each writing nothing
@@ -9190,22 +9222,38 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
                     f"the window 3 check-in's counts read {got_counts}, and a tally by the review "
                     f"each anomaly names reads {wanted_counts}: {err}"
                 )
+            # The pass is named by the packages it reviewed, and the entries, pages opened and
+            # searches go on the lead's own line alone.
+            reviewed = f"{review}, 2 packages reviewed ({names[review_units[0]]}; {names[review_units[1]]}): new items "
+            own = (
+                f"your own check over 1 pass line, never said to the estimator: units 2, entries "
+                f"{sum(review_counts.values())}, pages opened {figures.group(1)}, searches {figures.group(2)}"
+            )
+            w3_lines = out.splitlines()
+            if not any(l.startswith(reviewed) for l in w3_lines) or own not in w3_lines:
+                errors.append(f"the window 3 check-in does not name its pass by its packages and keep the lead's figures apart: {w3_lines[:4]}")
 
     # ------------------------------------------------------------------ #
     # checkin: every line once, every call under Bash's limit
     # ------------------------------------------------------------------ #
     # The labels a check-in prints its notes under, pinned here: the person watching reads them,
-    # so two of the summary's labels print in estimator words, and the note behind each is the
-    # reader's own text, copied whole.
+    # so every one is in estimator words, and the note behind each is the reader's own text,
+    # copied whole less the unit id it opens with.
     checkin_labels = {
-        "overlap notes": "overlap notes",
-        "anomalies": "anomalies",
-        "unread pages": "unread pages",
+        "overlap notes": "maybe the same work twice",
+        "anomalies": "to look at",
+        "unread pages": "pages not read",
         "grain questions": "how finely to split",
         "door-owned suggestions": "for the estimator to decide",
-        "definitions kinds added": "definitions kinds added",
-        "deviations and repairs": "deviations and repairs",
+        "definitions kinds added": "kinds of marks defined",
+        "deviations and repairs": "what went wrong and how it was fixed",
     }
+    plan_units = {unit_id for block in blocks.values() for unit_id, _s, _p in block["units"]}
+
+    def printed(label: str, body: str) -> str:
+        """A summary note as the check-in prints it: its check-in label, and no unit id in front."""
+        unit, _space, rest = body.partition(" ")
+        return f"{checkin_labels[label]}: {rest if unit in plan_units and rest else body}"
 
     # The summary lines of the anomalies the fixture counts, which the check-in never prints.
     counted_lines = {f"anomalies: {unit} {clause}" for _p, unit, clause, _w in counted_anomalies}
@@ -9220,39 +9268,72 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             for l in (folder / "reports" / f"{p}.md").read_text(encoding="utf-8").splitlines():
                 label = l.split(":", 1)[0]
                 if label in checkin_labels and not l.endswith(": none") and l not in counted_lines:
-                    notes.append(checkin_labels[label] + l[len(label):])
+                    notes.append(printed(label, l[len(label) + 2:]))
         return notes
 
     code, out, err = run(lead, ["checkin", str(folder), "1", "--passes", "A1,G1"])
     pass_lines = [l for l in ledger.read_text(encoding="utf-8").splitlines() if l.startswith("pass: 1 ")]
     last_lines = {l.split()[2]: l for l in pass_lines}
     carried = checkin_notes()
-    totals = {
-        field: sum(int(l.split()[l.split().index(field) + 1]) for l in last_lines.values())
-        for field in ("units", "created", "updated", "questions", "replied", "candidates")
-    }
+
+    def figures_of(line: str) -> dict[str, int]:
+        parts = line.split()
+        return {
+            field: int(parts[parts.index(field) + 1])
+            for field in ("units", "created", "updated", "questions", "replied", "candidates")
+        }
+
+    def said(items: int, f: dict[str, int]) -> str:
+        return (
+            f"new items {items}, items updated {f['updated']}, Questions raised {f['questions']}, "
+            f"replies {f['replied']}, new items with a candidate trade {f['candidates']}"
+        )
+
+    per_pass = {p: figures_of(last_lines[p]) for p in ("A1", "G1") if p in last_lines}
+    totals = {field: sum(f[field] for f in per_pass.values()) for field in ("units", "created", "updated", "questions", "replied", "candidates")}
+    items = {"A1": 2 * len(a1_units), "G1": len(g1_units)}
+    sheets_of = {p: [sheet for _u, sheet, _pg in blocks[p]["units"]] for p in ("A1", "G1")}
     if code != 0:
         errors.append(f"the check-in refused: {err}")
+    elif len(per_pass) != 2:
+        errors.append(f"the check-in fixture carries pass lines for {sorted(per_pass)}, not A1 and G1")
     else:
         lines = out.splitlines()
         for wanted in (
-            last_lines.get("A1", "A1 has no pass line"), last_lines.get("G1", "G1 has no pass line"),
-            "totals over 2 pass lines: " + ", ".join(f"{k} {v}" for k, v in totals.items()),
+            *(
+                f"{p}, {len(sheets_of[p])} sheets read ({', '.join(sheets_of[p])}): {said(items[p], per_pass[p])}"
+                for p in ("A1", "G1")
+            ),
+            f"over 2 passes: {said(items['A1'] + items['G1'], totals)}",
+            f"your own check over 2 pass lines, never said to the estimator: units {totals['units']}, "
+            f"entries {totals['created']}",
             f"items by trade: 09 21 16 x{2 * len(a1_units)}, 03 30 00 x{len(g1_units)}; "
             f"candidates {len(a1_units)}",
             *carried,
         ):
             if wanted not in lines:
                 errors.append(f"the check-in does not carry {wanted!r}")
+        # The pass lines are the lead's own, and `created` counts entries, never items: no line
+        # the check-in prints carries either.
+        head = lines[:next((i for i, l in enumerate(lines) if l.startswith("items by trade: ")), len(lines))]
+        machine = [l for l in lines if l.startswith("pass: ")] + [l for l in head if "created" in l]
+        if machine:
+            errors.append(f"the check-in prints a pass line or a created figure: {machine[:2]}")
         if not any(l.startswith("how finely to split: ") for l in carried) or not any(
             l.startswith("for the estimator to decide: ") for l in carried
         ):
             errors.append("the check-in fixture carries no grain question or door-owned suggestion")
-        internal = [l for l in lines if l.startswith(("grain questions:", "door-owned suggestions:"))]
+        internal = [l for l in lines if l.startswith(tuple(f"{label}:" for label in checkin_labels if checkin_labels[label] != label))]
         if internal:
             errors.append(f"the check-in prints a note under the summary's own label: {internal[:2]}")
+        with_unit = [
+            l for l in lines
+            if any(l.startswith(f"{label}: {u} ") for label in checkin_labels.values() for u in plan_units)
+        ]
+        if with_unit:
+            errors.append(f"the check-in prints a note with the unit id it opens with: {with_unit[:2]}")
         for kind, (unit, clause) in whole_anomalies.items():
-            if f"anomalies: {unit} {clause}" not in lines:
+            if printed("anomalies", f"{unit} {clause}") not in lines:
                 errors.append(f"the check-in does not print the anomaly with {kind} whole: {clause!r}")
         for kind, clause in (("grain", "may split by frame"), ("door", "looks retired")):
             if not any(clause in l for l in lines):
@@ -9277,7 +9358,8 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     a1_summary.write_text(a1_text.replace(continued_first + "\n", f"{continued_first}\n{continuation}\n"), encoding="utf-8")
     code, out, err = run(lead, ["checkin", str(folder), "1", "--passes", "A1,G1"])
     lines = out.splitlines()
-    at = lines.index(continued_first) if continued_first in lines else -1
+    continued_printed = printed("anomalies", f"{continued_unit} {continued_clause}")
+    at = lines.index(continued_printed) if continued_printed in lines else -1
     if code != 0 or at < 0 or lines[at + 1:at + 2] != [continuation]:
         errors.append(
             f"the check-in does not print a note with a continuation line whole, its continuation "

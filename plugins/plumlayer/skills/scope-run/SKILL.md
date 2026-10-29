@@ -391,19 +391,28 @@ record files, never recorded as project entries:
   Nothing else goes in the ledger: no headings, no bullets, no paragraphs, no re-telling of a
   report, except the `anomaly` notes, each a report's line copied whole, as the runner definition
   says. It is appended, never rewritten and never reformatted, and never read whole by anyone:
-  the lead reads its `phase:` lines with a local command (a filter on the line prefix), the
+  the lead reads its `phase:`, `pass:` and `checkin:` lines with a local command (a filter on the
+  line prefix), the
   close-out report is written off its `pass:` and `phase:` lines the same way, and off the window 3
   `anomaly` notes that carry `same work:` (stage 9), and a runner reads only its own filtered look
   for a unit's `verified` line and `anomaly` notes, as the runner definition says. Audience: agent, and it feeds the close-out report, so whatever crosses into that
   report becomes user-facing at the crossing and is translated there.
 
-  The lead's own two line shapes, which the runner never writes:
+  The lead's own three line shapes, which the runner never writes:
 
   ```text
   pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified <yes|no>
   pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified <yes|no>
   phase: <boundary name>
+  checkin: <window> <window, or the id of the last pass recorded before it> <go|pause>
   ```
+
+  A `checkin:` line says a check-in was shown and how the user answered it, appended as the
+  check-in section says. Its second field is `window` for the check-in that follows a window's
+  closing lines (window 1's after its index, window 2's after the fold or after a paused slice's
+  index), and the id of the last pass recorded before it for one inside a window, a check-in on a
+  sheet that stopped answering included. Its last field is `go` where the user sent the run on and
+  `pause` where they stopped it there.
 
   Every figure on a `pass:` line is written by `lead_pass.py record` (stage 4 step 3) off the
   pass's summary file and your own count call, never typed by hand: `created` is the sum of your
@@ -563,8 +572,23 @@ again to finish it carries a second `pass:` line, and its last one carries the w
 total taken over a window, and the close-out report, counts that one, for each pass the window's
 read plan now carries. A part a replan folded into another pass after its own `pass:` line was
 written is counted in the pass that took it in, and never twice. On every start this skill
-reads the ledger's `phase:` and `pass:` lines first, with a local filter, never the file: a run in
-flight resumes at the phase after the last line. Inside the window in flight, run that window's
+reads the ledger's `phase:`, `pass:` and `checkin:` lines first, with a local filter, never the
+file: a run in flight resumes at the phase after the last line. A check-in a `checkin:` line
+records was shown and answered, and is never shown again:
+
+- Where the last of those lines is a `checkin:` line reading `go`, start the step that follows
+  that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 7
+  step 1, or stage 6 step 1 again after a paused slice; after one inside a window, the passes that
+  are not finished.
+- Where it reads `pause`, the user stopped the run there: say in one sentence what the run does
+  next, and start it on their go-ahead, with a `checkin:` line reading `go` for the same check-in
+  first.
+- Where the last line is the one a check-in follows (`phase: index built` after window 1 or after
+  a paused slice, `phase: packages folded`, or the `pass:` line that made a fourth since the last
+  check-in) and no `checkin:` line follows it, that check-in was never answered: gather it and
+  show it.
+
+Inside the window in flight, run that window's
 plan script again first, exactly as its stage wrote it, with the same arguments: window 1's
 `--include` and `--exclude` and a slice's `--only`, each with its reason, are on that window's
 `plan/window-<n>.json`, taken off it with a local filter, and after `phase: window 2 paused` the run
@@ -621,10 +645,11 @@ before going on.
    the run: say which folders, and hand over.
    - `resume <run folder>`: a pass is in flight, and it finishes before another starts, whatever
      has landed since; a later delivery gets a pass of its own once this one closes out. Read the
-     `phase:` and `pass:` lines of that folder's `ledger.md` with a local filter on the line
-     prefix; never open the file whole. Resume at the phase after the last one, and inside the
-     window in flight run its plan script again and dispatch the first pass that is not finished,
-     as the windows section above says, so nothing already verified is read again. Where the last
+     `phase:`, `pass:` and `checkin:` lines of that folder's `ledger.md` with a local filter on the
+     line prefix; never open the file whole. Resume at the phase after the last one, never showing
+     again a check-in a `checkin:` line records, and inside the window in flight run its plan
+     script again and dispatch the first pass that is not finished, as the windows section above
+     says, so nothing already verified is read again. Where the last
      `phase:` line is `window 1 complete` with no `index built` after it, the index step (stage 5)
      runs first. Where the ledger carries no `phase:` line yet, the plan was never approved: take
      stage 3 again from step 1 in that folder. Once the plan is approved, never fetch the grid of a
@@ -1584,6 +1609,12 @@ in plain sentences:
 For example: "I've finished the first window, the schedules and legends. Here is what landed by
 trade, what I'd like you to look at, and what the next window reads. Proceed, adjust, or pause?"
 <!-- /user-facing -->
+
+When the user answers a check-in, append its one `checkin:` line to the ledger, in the shape the
+run folder section gives: `go` once every change they asked for at that check-in is made and the
+next step is about to start, or `pause` where they stop the run there. A session that starts
+later reads that line and never shows that check-in again. The read plan's check-in is recorded
+by `phase: plan approved` instead.
 
 ## What this skill does not do
 
