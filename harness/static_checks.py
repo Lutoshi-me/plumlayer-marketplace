@@ -8888,6 +8888,9 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
 
     for unit_id, sheet, _page in blocks["A1"]["units"]:
         ledger_lines += unit_lines("A1", unit_id, sheet)
+    # A check-in on a sheet that stopped answering in the window's first pass comes before any
+    # `pass:` line of the window, so its line names no pass, and every script reads past it.
+    ledger_lines.insert(3, "checkin: 1 none go")
     # The check-in names in full each anomaly that landed nowhere on a trade's page and counts the
     # ones on a Question, a reply or a row by pass. The fixture carries each ending the report
     # shape gives, one with no ending, a pair of rows carrying the same work that landed as a note
@@ -8971,7 +8974,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     # its trades, never the entry count.
     line_fields = wanted_line.split()
     said_record = (
-        f"A1, {len(a1_units)} sheets read ({', '.join(s for _u, s, _p in blocks['A1']['units'])}): "
+        f"{len(a1_units)} sheets read ({', '.join(s for _u, s, _p in blocks['A1']['units'])}): "
         f"new items {2 * len(a1_units)}, items updated {line_fields[line_fields.index('updated') + 1]}, "
         f"Questions raised {line_fields[line_fields.index('questions') + 1]}, replies "
         f"{line_fields[line_fields.index('replied') + 1]}, new items with a candidate trade "
@@ -9001,10 +9004,23 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         (plugin_path / "skills" / "scope-run" / "SKILL.md").read_text(encoding="utf-8").split()
     )
     for phrase in (
-        "checkin: <window> <window, or the id of the last pass recorded before it> <go|pause>",
+        "checkin: <window> <window, the id of the last pass recorded before it, or none> <go|pause>",
+        "and `none` for one inside a window before any pass of that window is recorded",
         "reads the ledger's `phase:`, `pass:` and `checkin:` lines first",
         "A check-in a `checkin:` line records was shown and answered, and is never shown again",
         "When the user answers a check-in, append its one `checkin:` line to the ledger",
+        # The resume rules at a check-in, each pinned so deleting one fails here: `go` starts the
+        # step after the check-in and never shows it again, `pause` asks before starting it, and a
+        # check-in with no `checkin:` line after it is shown.
+        "Where the last of those lines is a `checkin:` line reading `go`, start the step that follows "
+        "that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 7 "
+        "step 1, or stage 6 step 1 again after a paused slice; after one inside a window, its second "
+        "field a pass id or `none`, the passes that are not finished.",
+        "Where it reads `pause`, the user stopped the run there: say in one sentence what the run does "
+        "next, and start it on their go-ahead, with a `checkin:` line reading `go` for the same "
+        "check-in first.",
+        "and no `checkin:` line follows it, that check-in was never answered: gather it and show it.",
+        "never showing again a check-in a `checkin:` line records",
     ):
         if phrase not in skill_text:
             errors.append(f"the skill does not carry {phrase!r}")
@@ -9224,13 +9240,17 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
                 )
             # The pass is named by the packages it reviewed, and the entries, pages opened and
             # searches go on the lead's own line alone.
-            reviewed = f"{review}, 2 packages reviewed ({names[review_units[0]]}; {names[review_units[1]]}): new items "
+            reviewed = f"2 packages reviewed ({names[review_units[0]]}; {names[review_units[1]]}): new items "
             own = (
-                f"your own check over 1 pass line, never said to the estimator: units 2, entries "
+                f"your own check over 1 pass line ({review}), never said to the estimator: units 2, entries "
                 f"{sum(review_counts.values())}, pages opened {figures.group(1)}, searches {figures.group(2)}"
             )
             w3_lines = out.splitlines()
-            if not any(l.startswith(reviewed) for l in w3_lines) or own not in w3_lines:
+            w3_head = w3_lines[:next((i for i, l in enumerate(w3_lines) if l.startswith("items by trade: ")), len(w3_lines))]
+            if (
+                not any(l.startswith(reviewed) for l in w3_lines) or own not in w3_lines
+                or any(review in l for l in w3_head if l != own)
+            ):
                 errors.append(f"the window 3 check-in does not name its pass by its packages and keep the lead's figures apart: {w3_lines[:4]}")
 
     # ------------------------------------------------------------------ #
@@ -9301,11 +9321,12 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         lines = out.splitlines()
         for wanted in (
             *(
-                f"{p}, {len(sheets_of[p])} sheets read ({', '.join(sheets_of[p])}): {said(items[p], per_pass[p])}"
+                f"{len(sheets_of[p])} sheets read ({', '.join(sheets_of[p])}): {said(items[p], per_pass[p])}"
                 for p in ("A1", "G1")
             ),
             f"over 2 passes: {said(items['A1'] + items['G1'], totals)}",
-            f"your own check over 2 pass lines, never said to the estimator: units {totals['units']}, "
+            "window 1, 2 passes",
+            f"your own check over 2 pass lines (A1, G1), never said to the estimator: units {totals['units']}, "
             f"entries {totals['created']}",
             f"items by trade: 09 21 16 x{2 * len(a1_units)}, 03 30 00 x{len(g1_units)}; "
             f"candidates {len(a1_units)}",
@@ -9319,6 +9340,13 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         machine = [l for l in lines if l.startswith("pass: ")] + [l for l in head if "created" in l]
         if machine:
             errors.append(f"the check-in prints a pass line or a created figure: {machine[:2]}")
+        # A pass id goes on the lead's own line alone, never on a line said to the estimator.
+        with_id = [
+            l for l in head
+            if not l.startswith("your own check ") and re.search(r"\b(A1|G1)\b", l)
+        ]
+        if with_id:
+            errors.append(f"the check-in names a pass by its id on a line for the estimator: {with_id[:2]}")
         if not any(l.startswith("how finely to split: ") for l in carried) or not any(
             l.startswith("for the estimator to decide: ") for l in carried
         ):
@@ -9549,10 +9577,11 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         f"and the pages opened and searches off the review reports, its listing giving each "
         f"review's prefix, and "
         f"read back as summed; the record and the check-in naming each pass by the sheets it read, "
-        f"or in window 3 the packages it reviewed, with its new items off its trades and no "
-        f"`pass:` line or entry count but on the lead's own line, every note under an "
-        f"estimator-words label less its unit id, a `checkin:` line on the ledger read past by the "
-        f"summary and plan scripts and its shape and resume read in the skill; the check-in "
+        f"or in window 3 the packages it reviewed, with its new items off its trades and no pass "
+        f"id, `pass:` line or entry count but on the lead's own line, every note under an "
+        f"estimator-words label less its unit id, a `checkin:` line naming no pass, before the "
+        f"window's first `pass:` line, read past by the summary, plan and lead scripts, and its "
+        f"shape with `none` and the go, pause and unanswered resume rules read in the skill; the check-in "
         f"carrying the totals, the items by trade, the {len(counted_anomalies)} anomalies on a Question, a reply or a row counted by "
         f"pass and never printed, each ending on an id or subject in the record's form, two of "
         f"window 3 counted by the review the plan names, and every "
@@ -10074,7 +10103,19 @@ def check_fold_one_level_down(plugin_path: Path, marketplace_root: Path) -> Resu
 #      other.
 #   9. A broken run.json in another project's folder stops this project.
 #  10. The skill names the folder for the project's name, or its issue command does not pass the
-#      runs root, or the command as written does not find the name folder's pass.
+#      runs root, or the command as written does not find the name folder's pass, or on a shared
+#      or split folder refusal it has the lead say the folders rather than what is wrong.
+#  11. A pass whose run.json names a delivery of each project is resumed by one of them, since its
+#      deliveries meet the project's rather than all being the project's.
+#  12. An old layout grid naming a delivery of each project is resumed the same way.
+#  13. An old layout pass whose grid names no delivery, in flight beside a closed pass of the
+#      project, is resumed as the project's with nothing showing it is.
+#  14. A run.json of valid JSON with a field of another type raises out of the lookup, in another
+#      project's folder, or in this project's own pass is read past rather than refused by name.
+#  15. An old layout grid written as a bare array of rows, which the inventory reads, names no
+#      delivery, so its pass is found by no project.
+#  16. Orientation's packet and summary, or an upload's files, sit in a folder named for the
+#      project's name, so two projects of one name write over each other's.
 
 def check_project_folder_by_id(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "project-folder-by-id"
@@ -10210,12 +10251,88 @@ def check_project_folder_by_id(plugin_path: Path, marketplace_root: Path) -> Res
     write(folder / "proj-c" / "deliv-c1" / "ledger.md", open_ledger)
     answers("a broken run.json in another project's folder", folder, "proj-a", "start", str(folder / "proj-a" / "deliv-a2"))
 
+    # 11. A pass whose run.json names a delivery of each project is the shared folder case from
+    # either side, never resumed by one.
+    folder = runs_root("pass-on-both")
+    write(folder / named / "deliv-a2" / "run.json", _issue_run("deliv-a2", ["deliv-a2", "deliv-b1"], "i1"))
+    write(folder / named / "deliv-a2" / "ledger.md", open_ledger)
+    refused("a pass naming a delivery of each project, from project A", folder, "proj-a", str(folder / named), "deliv-a2")
+    refused("a pass naming a delivery of each project, from project B", folder, "proj-b", str(folder / named), "deliv-a2")
+
+    # 12. An old layout grid naming a delivery of each project is the same case.
+    folder = runs_root("old-layout-on-both")
+    write(folder / named / "ledger.md", open_ledger)
+    write(folder / named / "grid" / "page-000.json", {"sheets": [
+        {"sheetNumber": "A-1.01", "deliveryId": "deliv-a1"}, {"sheetNumber": "A-1.02", "deliveryId": "deliv-b1"},
+    ]})
+    refused("an old layout grid naming a delivery of each project, from project A", folder, "proj-a", str(folder / named), "its own ledger")
+    refused("an old layout grid naming a delivery of each project, from project B", folder, "proj-b", str(folder / named), "its own ledger")
+
+    # 13. An old layout pass whose grid names no delivery, in flight beside a closed pass of A's,
+    # carries nothing showing it is A's, so the folder is refused rather than that pass resumed.
+    folder = runs_root("unnamed-beside-closed")
+    write(folder / named / "ledger.md", open_ledger)
+    write(folder / named / "grid" / "page-000.json", {"sheets": [{"sheetNumber": "A-1.01"}]})
+    write(folder / named / "deliv-a1" / "run.json", _issue_run("deliv-a1", ["deliv-a1"], "i1"))
+    write(folder / named / "deliv-a1" / "ledger.md", closed)
+    refused("an old layout pass naming no delivery beside a closed pass of the project", folder, "proj-a",
+            str(folder / named), "its own ledger")
+    answers("an old layout pass naming no delivery beside a closed pass, from the other project", folder, "proj-b",
+            "start", str(folder / "proj-b" / "deliv-b1"))
+
+    # 14. Valid JSON with a field of the wrong type: in another project's folder it names no
+    # delivery and stops nothing; in this project's own pass it is refused naming the file.
+    folder = runs_root("wrong-type-elsewhere")
+    write(folder / "proj-c" / "deliv-c1" / "run.json", {"deliveryId": "deliv-c1", "readFrom": 1})
+    write(folder / "proj-c" / "deliv-c1" / "ledger.md", open_ledger)
+    write(folder / "proj-d" / "deliv-d1" / "run.json", {"deliveryId": 7, "readFrom": "deliv-d1"})
+    write(folder / "proj-d" / "deliv-d1" / "ledger.md", open_ledger)
+    answers("a run.json with a field of the wrong type in another project's folder", folder, "proj-a", "start",
+            str(folder / "proj-a" / "deliv-a2"))
+    folder = runs_root("wrong-type-own")
+    write(folder / named / "deliv-a2" / "run.json", {"deliveryId": "deliv-a2", "readFrom": 1})
+    write(folder / named / "deliv-a2" / "ledger.md", open_ledger)
+    refused("a run.json with a field of the wrong type in the project's own pass", folder, "proj-a",
+            str(folder / named / "deliv-a2" / "run.json"))
+    answers("a run.json with a field of the wrong type in the other project's pass", folder, "proj-b", "start",
+            str(folder / "proj-b" / "deliv-b1"))
+
+    # 15. An old layout grid written as a bare array of sheet rows, the other shape the inventory
+    # reads, is found by its rows' deliveries the same way.
+    folder = runs_root("old-layout-array")
+    write(folder / named / "ledger.md", open_ledger)
+    write(folder / named / "grid" / "page-000.json", [{"sheetNumber": "A-1.01", "deliveryId": "deliv-a1"}])
+    answers("an old layout grid written as an array of rows", folder, "proj-a", "resume", f"resume {folder / named}:")
+    answers("an old layout grid written as an array of rows, from the other project", folder, "proj-b", "start",
+            str(folder / "proj-b" / "deliv-b1"))
+
+    # 16. The skills that keep orientation's packet and summary, and an upload's files, in a local
+    # folder name it for the project id too, so two projects of one name never overwrite each
+    # other's files there.
+    for other in ("learn-project", "drawing-upload"):
+        cases += 1
+        text = (plugin_path / "skills" / other / "SKILL.md").read_text(encoding="utf-8")
+        if "<project-slug>" in text or re.search(r"plumlayer/runs/<", text):
+            errors.append(f"{other} still names a local folder for the project's name")
+        if "<runs root>/<projectId>/" not in text:
+            errors.append(f"{other} does not name its local folder `<runs root>/<projectId>/`")
+
     # 10. The skill names the folder for the project id, and its issue command, filled in, finds the
     # name folder's pass.
     if "<runs root>/<projectId>/" not in skill:
         errors.append("the skill does not name the project folder `<runs root>/<projectId>/`")
     if "<project-slug>" in skill:
         errors.append("the skill still names a folder for the project's name, `<project-slug>`")
+    # On a shared or split folder refusal the user hears what is wrong in plain words, and never a
+    # folder path, which the words table says nothing of.
+    flat_skill = " ".join(skill.split())
+    cases += 1
+    if "say which folders" in flat_skill:
+        errors.append("the skill tells the lead to say the folders of a shared or split folder refusal")
+    if "this project's earlier run files are mixed with another project's" not in flat_skill or (
+        "never say a folder path" not in flat_skill
+    ):
+        errors.append("the skill does not tell the user in plain words that this project's earlier run files are mixed with another project's, with no folder path")
     command = re.search(r"python3 '<plugin root>/scripts/plan_inventory\.py' issue\b([^`]*?)\n *```", skill)
     if command is None or "--runs-root '<runs root>'" not in command.group(1):
         errors.append("the skill's issue command does not pass `--runs-root '<runs root>'`")
@@ -10241,10 +10358,16 @@ def check_project_folder_by_id(plugin_path: Path, marketplace_root: Path) -> Res
         f"for its id, a pass in flight in the folder named for the project resumed by its own project "
         f"and never by the other, a closed one there taking the next set with the next tag, an old "
         f"layout pass found by its grid's deliveries and one naming none matched to no project, a "
-        f"broken run.json in another project's folder stopping nothing, and the skill's command "
-        f"filled in finding the name folder's pass; {refusals} refusals, each one line naming the "
-        f"folders (a folder two projects shared, from each side, and one project's passes in two "
-        f"folders); bound: invented folders, not a seat's real run history"
+        f"broken run.json in another project's folder stopping nothing, a run.json with a field of "
+        f"another type naming no delivery in another project's folder, an old layout grid of bare "
+        f"rows found by its rows' deliveries, the skill's command filled in finding the name "
+        f"folder's pass, its shared folder refusal said in plain words with no path, and "
+        f"learn-project and drawing-upload naming their local folder for the project id; "
+        f"{refusals} refusals, each one line naming the folders (a folder two projects shared, "
+        f"from each side, a pass or an old layout grid naming a delivery of each project, from "
+        f"each side, an old layout pass naming no delivery beside the project's closed pass, a "
+        f"run.json of the project's own with a field of another type, named by its path, and one "
+        f"project's passes in two folders); bound: invented folders, not a seat's real run history"
     )
     if errors:
         detail += " | " + "; ".join(errors)

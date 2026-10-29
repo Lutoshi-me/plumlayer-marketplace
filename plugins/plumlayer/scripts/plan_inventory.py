@@ -3356,12 +3356,35 @@ def _json_or_none(path: Path):
         return None
 
 
-def _folder_passes(folder: Path) -> list[tuple[Path, set[str]]]:
+def _run_names(run) -> tuple[set[str], bool]:
+    """
+    The delivery ids a run file names, and whether it names them as the lead writes it: a
+    `deliveryId` and a `readFrom` list, each id a string. A field of another type names nothing.
+    """
+    if not isinstance(run, dict):
+        return set(), False
+    delivery_id, read_from = run.get("deliveryId"), run.get("readFrom")
+    names = {delivery_id} if isinstance(delivery_id, str) and delivery_id else set()
+    if isinstance(read_from, list):
+        names.update(d for d in read_from if isinstance(d, str) and d)
+    whole = (
+        isinstance(delivery_id, str) and bool(delivery_id) and isinstance(read_from, list)
+        and all(isinstance(d, str) and d for d in read_from)
+    )
+    return names, whole
+
+
+def _folder_passes(folder: Path, ours: set[str]) -> list[tuple[Path, set[str]]]:
     """
     Every scope pass a project folder holds, each with the delivery ids its own files name. A run
     folder is named for the delivery it reads, and its `run.json` names that delivery and the ones
     it reads from. A pass in the old layout, its ledger in the project folder itself, names its
-    deliveries only on the rows of the grid it fetched.
+    deliveries only on the rows of the grid it fetched, a grid response or a bare array of rows.
+
+    A run file that does not parse, or names its deliveries in fields of another type, names no
+    delivery, so a folder another project owns is read and never refused; where its folder name or
+    any id it does name is one this project lists, it is this project's own run file, refused by
+    name.
     """
     passes: list[tuple[Path, set[str]]] = []
     if not folder.is_dir():
@@ -3370,7 +3393,7 @@ def _folder_passes(folder: Path) -> list[tuple[Path, set[str]]]:
         ids: set[str] = set()
         for page in sorted((folder / "grid").glob("*.json")) if (folder / "grid").is_dir() else []:
             data = _json_or_none(page)
-            rows = data.get("sheets") if isinstance(data, dict) else None
+            rows = data.get("sheets") if isinstance(data, dict) else data
             for row in rows if isinstance(rows, list) else []:
                 if isinstance(row, dict) and isinstance(row.get("deliveryId"), str) and row["deliveryId"]:
                     ids.add(row["deliveryId"])
@@ -3379,9 +3402,17 @@ def _folder_passes(folder: Path) -> list[tuple[Path, set[str]]]:
         if not child.is_dir() or not ((child / RUN_FILE).is_file() or (child / LEDGER_FILE).is_file()):
             continue
         ids = {child.name}
-        run = _json_or_none(child / RUN_FILE) if (child / RUN_FILE).is_file() else None
-        if isinstance(run, dict):
-            ids.update(d for d in [run.get("deliveryId"), *(run.get("readFrom") or [])] if isinstance(d, str) and d)
+        if (child / RUN_FILE).is_file():
+            names, whole = _run_names(_json_or_none(child / RUN_FILE))
+            if not whole:
+                if (ids | names) & ours:
+                    raise PlanError(
+                        f"{child / RUN_FILE} is a run file of this project's and does not name its "
+                        f"`deliveryId` and its `readFrom` list as delivery ids"
+                    )
+                ids = set()
+            else:
+                ids |= names
         passes.append((child, ids))
     return passes
 
@@ -3389,28 +3420,43 @@ def _folder_passes(folder: Path) -> list[tuple[Path, set[str]]]:
 def _project_folder(runs: Path, deliveries_path: Path, runs_root: Path) -> Path:
     """
     The folder this project's passes are in: its own, named for the project id, unless another
-    folder under the runs root holds a pass on a delivery the project lists, which is the folder
+    folder under the runs root holds a pass on deliveries the project lists, which is the folder
     named for the project before folders took its id. Every pass of a project stays in one folder,
     so the issue mode reads all of them, and a pass begun under the name is resumed where it is.
+
+    A pass is this project's only where every delivery its files name is one the project lists. A
+    folder holding a pass on any delivery the project does not list beside one on a delivery it
+    does, the same pass included, is one two projects shared, and is refused. So is one holding a
+    pass whose files name no delivery beside a pass of this project's: nothing shows that pass is
+    this project's, so it is never resumed as one. A folder whose passes all name no delivery
+    belongs to no one project and is passed over.
     """
     ours = _listed_ids(deliveries_path)
-    holding = [runs] if _folder_passes(runs) else []
+    holding = [runs] if _folder_passes(runs, ours) else []
     here = runs.resolve()
     for folder in sorted(runs_root.iterdir()) if runs_root.is_dir() else []:
         if not folder.is_dir() or folder.resolve() == here:
             continue
-        passes = _folder_passes(folder)
-        mine = [path for path, ids in passes if ids & ours]
-        if not mine:
+        passes = _folder_passes(folder, ours)
+        if not any(ids & ours for _path, ids in passes):
             continue
-        # A pass that names no delivery, as an old layout grid without them, belongs to no one
-        # project and goes with the folder.
-        others = [path.name if path != folder else "its own ledger" for path, ids in passes if ids and not ids & ours]
+
+        def label(path: Path) -> str:
+            return path.name if path != folder else "its own ledger"
+
+        others = [label(path) for path, ids in passes if ids and not ids <= ours]
         if others:
             raise PlanError(
-                f"{folder} holds passes on this project's deliveries and passes on deliveries this "
-                f"project does not list ({_named(others)}), so two projects shared it; move the "
-                f"other project's run folders out of it before a pass runs here"
+                f"{folder} holds passes on this project's deliveries and passes naming deliveries "
+                f"this project does not list ({_named(others)}), so two projects shared it; "
+                f"separate the two projects' run files before a pass runs here"
+            )
+        unnamed = [label(path) for path, ids in passes if not ids]
+        if unnamed:
+            raise PlanError(
+                f"{folder} holds passes on this project's deliveries and passes whose files name no "
+                f"delivery ({_named(unnamed)}), so nothing shows whose those are; move them out of "
+                f"it before a pass runs here"
             )
         holding.append(folder)
     if len(holding) > 1:

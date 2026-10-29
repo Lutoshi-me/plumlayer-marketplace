@@ -111,9 +111,11 @@ five modes:
 - `index`, at step 9: reads the drawing index.
 - `left`, after the last pages unit: reads back what is still untyped.
 
-The upload folder is `~/.plumlayer/runs/<project-slug>/upload/<deliveryId>/`, or
-`.../upload/manual/` for a project manual that came on its own (slug from the project name,
-lowercase, spaces to hyphens; fall back to the `projectId`). It holds the pages file `pages.txt`,
+The upload folder is `<runs root>/<projectId>/upload/<deliveryId>/`, or
+`<runs root>/<projectId>/upload/manual/` for a project manual that came on its own, where
+`<runs root>` is `~/.plumlayer/runs` with the home directory written out: inside the project folder
+`scope-run` uses, named for the project id and never for the project's name, so two projects of one
+name never write over each other's upload files. It holds the pages file `pages.txt`,
 written by the set unit, which you count with `wc -l` and never read (Audience: agent), any small
 pages file of your own, and `reports/`, one report per unit, written by the unit before it returns
 (Audience: agent). It is never committed to any repo, never uploaded, and never recorded as

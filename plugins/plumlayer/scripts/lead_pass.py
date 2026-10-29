@@ -58,11 +58,13 @@ Three modes:
 
         What the check-in needs, off the ledger's `pass:` lines, the read plan beside them and the
         summaries on file. Each pass by what it read, the sheet numbers its block carries or in
-        window 3 its packages, with its last `pass:` line's figures in the estimator's words:
+        window 3 its packages, with its last `pass:` line's figures in the estimator's words, and
+        its id only on the lead's own line:
 
-            <pass id>, <n> sheets read (<sheet numbers>): new items <n>, items updated <n>, Questions raised <n>, replies <n>, new items with a candidate trade <n>
+            window <n>, <n> passes
+            <n> sheets read (<sheet numbers>): new items <n>, items updated <n>, Questions raised <n>, replies <n>, new items with a candidate trade <n>
             over <n> passes: new items <n>, items updated <n>, Questions raised <n>, replies <n>, new items with a candidate trade <n>
-            your own check over <n> pass lines, never said to the estimator: units <n>, entries <n>
+            your own check over <n> pass lines (<pass ids>), never said to the estimator: units <n>, entries <n>
 
         The new items are the summaries' `trades:` lines summed, each a subject the pass's runner
         found on the record. A pass line's `created` counts entries, every citation and trade
@@ -417,7 +419,7 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
     # The pass as the estimator hears it, for the one line the lead says as each pass is recorded.
     reads = _plan_reads(plan_path, window)[0]
     said = {field: int(value) for field, value in figures if field in PASS_FIGURES}
-    out = [line, f"{pass_id}, {reads.get(pass_id, 'nothing planned')}: {_said_figures(summary['items'], said)}"]
+    out = [line, f"{reads.get(pass_id, 'nothing planned')}: {_said_figures(summary['items'], said)}"]
     out.extend(f"above the runner's count: {entry}" for entry in above)
     return out
 
@@ -657,26 +659,26 @@ def checkin_lines(
     # pass's trades summed, every one a subject its runner found on the record; `created` on a pass
     # line counts entries, every citation and trade written with those items, and is never an item
     # count, so it goes on the lead's own line below and never on these.
-    head: list[str] = [f"window {window}, passes {', '.join(pass_ids)}"]
+    head: list[str] = [f"window {window}, {len(pass_ids)} pass{'' if len(pass_ids) == 1 else 'es'}"]
     totals = {field: 0 for field in PASS_FIGURES + REVIEW_FIGURES}
-    with_line = 0
+    with_line: list[str] = []
     items: int | None = 0
     for pass_id in pass_ids:
         line = last.get(pass_id)
-        name = f"{pass_id}, {reads[pass_id]}" if pass_id in reads else pass_id
+        name = reads.get(pass_id, pass_id)
         if line is None:
             head.append(f"{name}: no pass line on the ledger")
             continue
-        with_line += 1
+        with_line.append(pass_id)
         for field in totals:
             totals[field] += _figure(line, field) or 0
         figures = {field: _figure(line, field) or 0 for field in PASS_FIGURES}
         head.append(f"{name}: {_said_figures(items_of.get(pass_id), figures)}")
         items = None if items is None or pass_id not in items_of else items + items_of[pass_id]
-    head.append(f"over {with_line} pass{'' if with_line == 1 else 'es'}: " + _said_figures(items, totals))
+    head.append(f"over {len(with_line)} pass{'' if len(with_line) == 1 else 'es'}: " + _said_figures(items, totals))
     head.append(
-        f"your own check over {with_line} pass line{'' if with_line == 1 else 's'}, never said to "
-        f"the estimator: units {totals['units']}, entries {totals['created']}"
+        f"your own check over {len(with_line)} pass line{'' if len(with_line) == 1 else 's'} ({', '.join(with_line) or 'none'}), "
+        f"never said to the estimator: units {totals['units']}, entries {totals['created']}"
         + (f", pages opened {totals['pages-opened']}, searches {totals['searches']}" if window == 3 else "")
     )
     ordered = sorted(by_trade.items(), key=lambda pair: (-pair[1], pair[0]))

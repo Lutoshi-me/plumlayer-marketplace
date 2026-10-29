@@ -64,9 +64,13 @@ orientation stage all start it the same way:
    Where the summary did not arrive in the message, its summary file is the summary: open that
    file rather than dispatching again.
 
+The project folder is `<runs root>/<projectId>/`, where `<runs root>` is `~/.plumlayer/runs` with
+the home directory written out: the folder `scope-run` uses, named for the project id and never for
+the project's name, so two projects of one name never write over each other's packet or summary.
+
 ```text
 run_in_background: false
-Project: <projectId>. Project folder: <~/.plumlayer/runs/<project-slug>/>.
+Project: <projectId>. Project folder: <runs root>/<projectId>/.
 You are the orientation agent. Run the `learn-project` skill for this project from step 1, in
 full, exactly as it is written. Write your summary to <project folder>/learn-project-summary.md
 in the shape its "Running one level down" section gives, then return it and end.
@@ -592,9 +596,8 @@ recorded as an entry, never stored as truth. Sections, in order:
 7. `[PLACEHOLDER, definitions-as-context envelope]`, a clearly marked final section; this
    skill does not design that envelope, it only reserves the slot.
 
-Write it to `~/.plumlayer/runs/<project-slug>/learn-project-packet.md` (the same local run folder
-the `scope-run` skill uses), derive `<project-slug>` from the project name (lowercase, spaces to
-hyphens) or fall back to the `projectId` if the name doesn't produce a clean slug. Never write it
+Write it to `<runs root>/<projectId>/learn-project-packet.md`, in the project folder your dispatch
+names, the same local run folder the `scope-run` skill uses. Never write it
 into a repo, and never record it as an entry. Regenerate it in full the next time this skill runs for the project, it is a projection,
 not a document to patch. Audience: agent. Its path is handed to the user at run end (step 11) and
 its content orients later readers; whatever crosses from it into user-facing text becomes

@@ -404,14 +404,16 @@ record files, never recorded as project entries:
   pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified <yes|no>
   pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified <yes|no>
   phase: <boundary name>
-  checkin: <window> <window, or the id of the last pass recorded before it> <go|pause>
+  checkin: <window> <window, the id of the last pass recorded before it, or none> <go|pause>
   ```
 
   A `checkin:` line says a check-in was shown and how the user answered it, appended as the
   check-in section says. Its second field is `window` for the check-in that follows a window's
   closing lines (window 1's after its index, window 2's after the fold or after a paused slice's
-  index), and the id of the last pass recorded before it for one inside a window, a check-in on a
-  sheet that stopped answering included. Its last field is `go` where the user sent the run on and
+  index), the id of the last pass recorded before it for one inside a window, a check-in on a
+  sheet that stopped answering included, and `none` for one inside a window before any pass of that
+  window is recorded, as a check-in on a sheet that stopped answering in the window's first pass.
+  Its last field is `go` where the user sent the run on and
   `pause` where they stopped it there.
 
   Every figure on a `pass:` line is written by `lead_pass.py record` (stage 4 step 3) off the
@@ -578,8 +580,8 @@ records was shown and answered, and is never shown again:
 
 - Where the last of those lines is a `checkin:` line reading `go`, start the step that follows
   that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 7
-  step 1, or stage 6 step 1 again after a paused slice; after one inside a window, the passes that
-  are not finished.
+  step 1, or stage 6 step 1 again after a paused slice; after one inside a window, its second field
+  a pass id or `none`, the passes that are not finished.
 - Where it reads `pause`, the user stopped the run there: say in one sentence what the run does
   next, and start it on their go-ahead, with a `checkin:` line reading `go` for the same check-in
   first.
@@ -642,7 +644,9 @@ before going on.
    Where the line ends by naming the folder this project's passes are in, the project began its
    passes in a folder named for the project, and they all stay there; never move a file out of it.
    A refusal naming a folder two projects shared, or this project's passes in two folders, stops
-   the run: say which folders, and hand over.
+   the run. Tell the user in plain words that this project's earlier run files are mixed with
+   another project's, or kept in two places, and that the run stops until they are separated, and
+   hand over. The folders stay in the script's line; never say a folder path.
    - `resume <run folder>`: a pass is in flight, and it finishes before another starts, whatever
      has landed since; a later delivery gets a pass of its own once this one closes out. Read the
      `phase:`, `pass:` and `checkin:` lines of that folder's `ledger.md` with a local filter on the

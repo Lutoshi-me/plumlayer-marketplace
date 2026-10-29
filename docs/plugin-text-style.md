@@ -436,10 +436,12 @@ Each of these is a harness check.
     and new items with a candidate trade, the record printing that line under the `pass:` line it
     appends; the check-in prints no `pass:` line and no `created` figure there, keeping the units
     and the entry count, and in window 3 the pages opened and searches, on the lead's own line
-    apart; and a note prints under its label less the unit id it opens with. The `checkin:` line
-    the lead appends when the user answers a check-in is read past by the summary and plan scripts,
-    and the skill carries its shape, the resume read of it and the rule that a check-in it records
-    is never shown again. This cannot judge a count the record returns: the counts are the check's
+    apart, and no line but that one names a pass by its id; and a note prints under its label less
+    the unit id it opens with. The `checkin:` line the lead appends when the user answers a
+    check-in, one naming no pass before the window's first `pass:` line among them, is read past by
+    the summary, plan and lead scripts, and the skill carries its shape with the `none` value, the
+    resume read of it, the rule that a check-in it records is never shown again, and each resume
+    rule, `go`, `pause` and a check-in with no line after it, so deleting one fails the check. This cannot judge a count the record returns: the counts are the check's
     own.
 29. The package fold runs one level down. The scope run's lead dispatches the package folder at
     stage 6 step 5 and reads its report with the shipped `fold_report.py`, so no package list, row
@@ -467,11 +469,16 @@ Each of these is a harness check.
     one name: each starts in its own folder; a pass begun in a folder named for the project is
     found by the deliveries its own files name, resumed by its project and never by the other,
     and a later set of that project starts beside it with the next tag; an old layout pass is found
-    by its grid's deliveries, and one whose grid names none is matched to no project; a broken
-    `run.json` in another project's folder stops nothing; and a folder two projects shared, or one
-    project's passes in two folders, is refused in one line naming the folders. The skill's own
-    issue command, filled in, finds the pass in the folder named for the project. This cannot
-    judge a seat's real run history: the folders are invented.
+    by its grid's deliveries, a grid response or a bare array of rows, and one whose grid names none
+    is matched to no project; a broken `run.json` in another project's folder, or one with a field
+    of another type, stops nothing; and a folder two projects shared, a pass naming a delivery of
+    each project, an old layout pass naming no delivery beside a pass of the project, or one
+    project's passes in two folders, is refused in one line naming the folders, and a `run.json`
+    of the project's own with a field of another type in one line naming it. The skill's own
+    issue command, filled in, finds the pass in the folder named for the project, and on a shared
+    or split folder refusal the skill has the lead say what is wrong in plain words and never a
+    folder path. `learn-project` and `drawing-upload` name their local folder for the project id
+    too. This cannot judge a seat's real run history: the folders are invented.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is
