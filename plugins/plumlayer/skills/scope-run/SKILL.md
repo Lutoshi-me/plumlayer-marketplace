@@ -270,14 +270,22 @@ A newly created scope item is a full row, not a name. Every new item writes:
   note is what lets a later reader correct the row rather than doubt the drawings. A correction is
   never a Question.
 - **quantity**: only where the sheet itself carries one, as `{value, unit}`.
+- **mark** (optional): the tag a drawing prints for this one item's product or type (`A1`,
+  `IW.A`, `TA-07`), copied as printed with no word such as Type or Mark in front, at most 24
+  characters, and cited with a box around the schedule row, legend line or plan tag it was read
+  from. Only where a drawing tags the item itself: a row carrying several codes, or none, has no
+  mark, and a mark is never taken out of the row's name or made up. The tag stays in the name or
+  description as the name rule above and non-negotiable 6 write it. A mark on the record that a
+  sheet shows misread is corrected like any other value; two drawings tagging one item
+  differently is a Question.
 
 A row's text never carries another item's subject id or a hand-written SUPERSEDED or date tag,
 per docs/plugin-text-style.md. Splitting one item into two is `retire_scope_item` naming why, plus
 a fresh CREATE for each half, never a tag written into the description.
 
 Recorded text is what the bidder reads: plain sentences, no em dashes, no bolding, never a
-sheet-by-sheet narration. The door refuses text over its bound (`name` 80 characters, `category`
-60, `description` 400, `notesExternal` and `notesInternal` 300 each); a row shaped by these rules
+sheet-by-sheet narration. The door refuses text over its bound (`name` 80 characters, `mark` 24,
+`category` 60, `description` 400, `notesExternal` and `notesInternal` 300 each); a row shaped by these rules
 never comes near them. A verbose row is a defect, not diligence.
 
 ## The Question bar

@@ -404,7 +404,19 @@ of them is ever trimmed.
    none. Where your sheet answers what that text asks, cite what your sheet shows
    on the row, and reply on the Question it names, or raise one where it clears the bar),
    `quantity` only where the sheet carries one, as `{value,
-   unit}`. A correction of a value on the record is two things: the write onto that field naming
+   unit}`. `mark` only where a drawing tags this one item: the tag a schedule, legend or plan
+   prints for its product or type (`A1`, `IW.A`, `TA-07`), copied as printed, spaces and
+   punctuation kept, with no word such as Type or Mark in front, at most 24 characters. Cite it
+   like the row, with the box mandate 2 gives around the schedule row, legend line or plan tag you
+   read it from and the tag as the evidence snippet: `evidence: { sheet, pageInPdf, fileId,
+   locator: { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] }, snippet: "IW.A" }`.
+   A row that carries several codes, as mandate 6's assembly row does, or that no drawing tags,
+   has no mark: never take one out of the row's own name and never make one up. The tag stays in
+   the `name` or `description` where mandate 6 writes it, since a row links to its type only
+   through those words. Where a row on the record has no mark and your sheet tags it, write the
+   mark as an update with that citation; where the row's mark is not what your sheet prints,
+   correct it as below when the record misread it, and raise a Question when two drawings tag the
+   item differently. A correction of a value on the record is two things: the write onto that field naming
    what it replaces (`supersedesId`), cited to the sheet and page with a box around what shows the
    right value and the words you read there as the evidence snippet; and the row's
    `notesInternal`, one plain sentence saying how the value was reached and what it replaced,
@@ -423,7 +435,7 @@ of them is ever trimmed.
    index links a row to a type only where the row carries that code as a whole word, so a range
    links its two ends and misses every type between. Recorded text is what the bidder
    reads: plain sentences, no em dashes, no bolding. The door refuses text over its bound (`name`
-   80 characters, `category` 60, `description` 400, `notesExternal` and `notesInternal` 300
+   80 characters, `mark` 24, `category` 60, `description` 400, `notesExternal` and `notesInternal` 300
    each); a row shaped by this rule never comes near them. A verbose row is a defect. A row's text
    never carries another item's subject id or a hand-written SUPERSEDED or date tag, per
    docs/plugin-text-style.md. Where an existing item needs to split into two, `retire_scope_item`
