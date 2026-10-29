@@ -449,8 +449,10 @@ rather than restating it from what an earlier step said:
   the baseline packages that now exist by name, the ones it created and the ones already on the
   project (their count is `solicitation_list_packages(projectId, limit: 1)`'s `total`, which the
   two lists of names add up to), each package a supplier furnishes with the package that installs its
-  items, each default used, how many of the manual's sections are placed on a package and each
-  left on no package with its reason, whether the structure and the description were written, what
+  items, each default used, how many of the manual's sections are placed on a package, each
+  section placed from its title alone by its number, each section whose item the catalog has no
+  trade for with the package it went on, and each left on no package with what stopped its
+  placing, whether the structure and the description were written, what
   it filled on Overview from the cover sheet and with which sheet, each firm it added to the
   directory or gave a type, anything a sheet states that it left off and why (a sheet that names
   something different from what the user gave is said here plainly), and where the packet landed.

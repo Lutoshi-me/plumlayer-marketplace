@@ -100,7 +100,10 @@ packages already on the project: <name + catalog trade id, one per line, or "non
 furnish and install: <the supplier's package + the package that installs its items, one per line, or "none">
 defaults: <package + the default it follows, one per line, or "none">
 sections placed: <n> of <n>, or "count incomplete"
-on no package: <section code + its reason, one per line, or "none">
+pages read for placement: <n> of at most 15, <each section code whose pages were read, or "none">
+placed by title alone: <each section code placed with none of its pages read, or "none">
+sections with no catalog trade: <section code + the package it went on, one per line, or "none">
+on no package: <section code + what stopped this run placing it, one per line, or "none">
 questions raised: <the id of each Question raised, or "none">
 renders: <n> of 6, <"covered" or "the set is too large for six">
 packet: <path>
@@ -128,7 +131,9 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
   with the package that follows it and that the user can change any of them in chat, any package
   with no catalog trade and so not created, how many of the manual's sections outside Divisions 00
   and 01 are placed on a package out of how many the manual has (or that the count is incomplete),
-  and each section left on no package with its reason. No approval is collected.
+  each section placed from its title alone by its number, each section whose item the catalog has
+  no trade for with the package it went on, and each section left on no package with what stopped
+  its placing. No approval is collected.
 - **The structure**, the sheet that grounded the system and the sheet that grounded the floor
   counts when it was filled, or that it was left blank and which half the set does not state.
 - **The description**, whether one was written or a person's was already in place and left alone.
@@ -424,17 +429,24 @@ amendments, stays in `scope-run`.
    other. Where the supplier and the installer resolve to the same catalog trade, keep one package,
    and its `notes` name the furnish and install split, for the bid form.
 
-   Every section step 3 read outside Divisions 00 and 01 goes to the package whose bidder buys it:
-   you place the manual section by section, by what its Part 1 summary says it covers. A section's
-   title never settles where it goes, except a section the manual carries only in its table of
-   contents, placed by its title as below. Before you place a section, read its first page:
-   `search(projectId, subjectPrefix: "specSection:", predicate: "locatedAt", full: true, limit: 100)`,
-   paged with `offset` to the end, gives each section's `fileId` and `pageStart`, and
-   `get_page_text` on that page carries the summary article; read the next page only where the
-   summary runs onto it. These are page text reads, not renders, and step 5's budget does not count
-   them. A section read from the table of contents alone carries `declaredOnPage` and no page
-   range: place it by its title, and its package's `notes` say the manual's text for it was not
-   read in.
+   Every section step 3 read outside Divisions 00 and 01 ends on at least one package, the package
+   whose bidder buys it. Place a section by its title in the table of contents where the title
+   decides it, that is where the title names work one kind of firm bids on this job: a gypsum board
+   section goes on the drywaller's package with no page read. Read a section's first page only
+   where its title leaves the package open: the title fits the packages of two firms on this job
+   (metal fabrications, sheet metal flashing and trim), names no work a firm bids (a subsurface
+   investigation, a common work results section), or names an item whose furnish and install split
+   decides its packages. Read at most 15 pages for placement in this step, sub-step 6 included,
+   since each page stays in this agent for the rest of the run; past 15, place the rest of those
+   sections by their titles too. To read one, `search(projectId, subject: "specSection:<its six
+   digits>", predicate: "locatedAt", full: true)` gives its `fileId` and `pageStart`, and
+   `get_page_text` on that page carries the Part 1 summary article; read the next page only where
+   the summary runs onto it, and that page counts toward the 15. These are page text reads, not
+   renders, and step 5's budget does not count them. A section read from the table of contents
+   alone carries `declaredOnPage` and no page range: place it by its title, and its package's
+   `notes` say the manual's text for it was not read in. Every section placed with none of its
+   pages read is placed from its title alone, and your summary names each one on its
+   `placed by title alone:` line.
 
    Probe the usually-present families the TOC is silent on (site/civil, SOE, landscaping/exterior
    improvements), the same probe that already produces `missingScopeFamily` entries (step 6): a
@@ -452,12 +464,19 @@ amendments, stays in `scope-run`.
    conduit passes through a rated wall or floor, and neither on a package of its own unless the
    estimator asks for one, for the building envelope joints or for a firestop specialist. Where
    the catalog has no trade for an item, ask the same question, which kind of firm bids it, and
-   put it on that firm's package, never on the package of its nearest neighbor in the division. A
+   put it on that firm's package, never on the package of its nearest neighbor in the division.
+   That package is on a catalog trade like every package, its `notes` name the item, and your
+   summary names the section on its `sections with no catalog trade:` line with the package it
+   went on, never on `on no package:`. A
    package's `tradeCode` is never a heading no sub bids here, such as `09 00 00` Finishes; a broad
    code one sub bids on this job, such as `22 00 00` Plumbing, is a package's trade like any
    other. Work the owner contracts for directly gets no package: where the manual says the owner
    hires the agency (special inspections, testing), in Division 01 or in a technical section's
    quality control article, or the owner furnishes and installs the item, draft no package for it.
+   Its section still ends on a package, as does a section no firm bids, such as a subsurface
+   investigation that points at the geotechnical report: it goes on the package of each firm that
+   reads it to price its own work, the earthwork and foundation packages for a geotechnical
+   report, and that package's `notes` say the section is there for reference.
 
    On a wood-over-podium job, start the split from what the common subs normally carry on one.
    That is a job where the set states wood-framed floors over a concrete or steel podium, on the
@@ -515,17 +534,18 @@ amendments, stays in `scope-run`.
    manualSections)` with that list plus the new sections, each number once:
    `solicitation_update_package` replaces the whole list, and it refuses two spellings of one
    section. Re-read the package before each later change to it. Re-list until `onNoPackage` is
-   empty, or every section left on it is one of two kinds, each named in your summary with its
-   reason: work you leave off on purpose because no subcontractor bids it here, such as
-   owner-furnished work with no installer or an agency the owner hires, or a section whose buying trade has no catalog
-   match, named with the trade you looked for. Always read `manualSectionPlacement.truncated`:
+   empty: a section no subcontractor bids and a section whose item the catalog has no trade for
+   each go on a package by sub-step 3's rules. A section still on it after that is placing this
+   run did not finish: name it on your summary's `on no package:` line with what stopped you.
+   Always read `manualSectionPlacement.truncated`:
    when it is true the count is incomplete, even with `onNoPackage` empty, and your summary says
    so. When it is false, the sections placed are `sectionsOutsideFrontEnd` less the length of
    `onNoPackage`. This sub-step is also how a project whose packages predate the manual, or were
    drafted without placing every section, gets its sections placed; `scope-run` runs it before
    any package review reads.
 7. **Put the split in your summary.** Its `packages:`, `furnish and install:`, `defaults:`,
-   `sections placed:` and `on no package:` lines carry it, and the session that started you says
+   `sections placed:`, `pages read for placement:`, `placed by title alone:`,
+   `sections with no catalog trade:` and `on no package:` lines carry it, and the session that started you says
    it to the user in the words "Running one level down" gives. No approval is collected.
 
 ## 9. Write the project description

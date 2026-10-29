@@ -59,10 +59,12 @@ wrong, and hand it over; if nothing is wrong, proceed and say what you did.
 How to say each thing as it happens:
 
 - "uploading" (steps 3–4)
-- "recognizing sheet numbers" (step 5, while a job is running)
+- "recognizing sheet numbers, 140 of 209 pages at 19:33" (step 5, while a job is running, off
+  the poll you just made, with its time)
 - "N sheets recognized" (step 5, on job success)
 - "M pages need review" (step 6's unnamed pages and untyped sheets)
-- "reading the spec book's table of contents" (step 8, while the extraction job is running)
+- "reading the spec book's table of contents, queued as of 19:30" (step 8, while the extraction
+  job is running, off the poll you just made, with its time)
 - "N sections found" (step 8, on job success)
 - "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
 - "re-reading the N open questions on the changed sheets" (step 9b)
@@ -123,7 +125,11 @@ session stops a background agent after ten idle minutes. Where the call comes ba
 instead, the agent's report arrives later as its own message: end the turn with one line naming
 what is running, and take the report when it arrives. That is the case in a terminal, the desktop
 app or an editor, and units still go one at a time there: dispatch a unit, end the turn, and when
-its report arrives read it and dispatch the next. Wait by ending the turn and nothing else: no
+its report arrives read it and dispatch the next. The line you end the turn on names the unit.
+Where it also says where one of this skill's jobs stands, such as a manual's contents read that
+filing started while the drawings were recognized, call that job's status verb just before you
+write the line and quote that read with its time, as step 5 says; a state read before the unit
+went out never goes on it. Wait by ending the turn and nothing else: no
 sleep, no shell loop, no look in `reports/` or at an agent's output file, and no message to the
 agent. A dispatch carries pointers and nothing else:
 
