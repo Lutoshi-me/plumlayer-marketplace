@@ -430,7 +430,17 @@ Each of these is a harness check.
     shapes, both agents' shapes and the reader's mandate on the ending say a Question is named by
     the full id `ask_question` returned, a reply by the id `reply_question` returned and a row by
     its full subject, never shortened, since a short id prints the note whole; and the skill's
-    own three command lines are fed to the script's arguments. This cannot judge a count the record returns: the counts are the check's own.
+    own three command lines are fed to the script's arguments. The check-in and the record speak
+    the estimator's words: a pass is named by the sheets it read, or in window 3 the packages it
+    reviewed, with its new items summed off its trades, items updated, Questions raised, replies
+    and new items with a candidate trade, the record printing that line under the `pass:` line it
+    appends; the check-in prints no `pass:` line and no `created` figure there, keeping the units
+    and the entry count, and in window 3 the pages opened and searches, on the lead's own line
+    apart; and a note prints under its label less the unit id it opens with. The `checkin:` line
+    the lead appends when the user answers a check-in is read past by the summary and plan scripts,
+    and the skill carries its shape, the resume read of it and the rule that a check-in it records
+    is never shown again. This cannot judge a count the record returns: the counts are the check's
+    own.
 29. The package fold runs one level down. The scope run's lead dispatches the package folder at
     stage 6 step 5 and reads its report with the shipped `fold_report.py`, so no package list, row
     or manual page of the fold reaches its context. The step names no fold verb and carries the
@@ -450,6 +460,18 @@ Each of these is a harness check.
     the skill's published labels; each malformed report or call is refused in one line; and the
     skill's and the definition's command lines run. This cannot judge how a running folder judges
     a package: the report is invented.
+30. A project's folder is named for its project id. A second project of one name once found the
+    first one's folder and could pick up its unfinished pass. The skill names the project folder
+    `<runs root>/<projectId>/` and no folder for the project's name, and its issue command passes
+    `--runs-root`. The shipped `plan_inventory.py` issue mode is run over two invented projects of
+    one name: each starts in its own folder; a pass begun in a folder named for the project is
+    found by the deliveries its own files name, resumed by its project and never by the other,
+    and a later set of that project starts beside it with the next tag; an old layout pass is found
+    by its grid's deliveries, and one whose grid names none is matched to no project; a broken
+    `run.json` in another project's folder stops nothing; and a folder two projects shared, or one
+    project's passes in two folders, is refused in one line naming the folders. The skill's own
+    issue command, filled in, finds the pass in the folder named for the project. This cannot
+    judge a seat's real run history: the folders are invented.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

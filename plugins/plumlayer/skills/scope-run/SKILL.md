@@ -347,13 +347,17 @@ No packet, no definitions files, no per-run copy of any of it: a reader that wan
 door type is asks the record, and a second reader on the same sheet finds the first one's reading
 there.
 
-The project folder, `~/.plumlayer/runs/<project-slug>/` (slug from the project name, lowercase,
-spaces to hyphens; fall back to the projectId), holds `deliveries.json`, the delivery list the
+The project folder, `<runs root>/<projectId>/`, where `<runs root>` is `~/.plumlayer/runs` with
+the home directory written out, is named for the project id and never for the project's name, so
+two projects of one name never share a folder. It holds `deliveries.json`, the delivery list the
 lead chooses a pass from, copied byte for byte from `list_drawing_deliveries` and read only by the
 plan script (Audience: machine), and one run folder per pass, named for the delivery the pass
-reads: `<project folder>/<deliveryId>/`. A pass begun before passes had folders of their own keeps its
-files in the project folder itself, and resumes there as it always has. A run folder holds only
-the run's own bookkeeping. Never committed to any repo, never uploaded to the project except
+reads: `<project folder>/<deliveryId>/`. Projects once had folders named for the project's name. A
+project whose passes began in such a folder keeps them there: the plan script's issue mode finds
+that folder by the deliveries its passes read, and resumes and starts the project's passes in it,
+naming it on its line, so every pass of one project stays in one folder. A pass begun before passes
+had folders of their own keeps its files in the folder of the project itself, and resumes there as
+it always has. A run folder holds only the run's own bookkeeping. Never committed to any repo, never uploaded to the project except
 record files, never recorded as project entries:
 
 - `run.json`: the drawing issue the pass reads and the tag its unit ids carry, written by the lead
@@ -387,19 +391,28 @@ record files, never recorded as project entries:
   Nothing else goes in the ledger: no headings, no bullets, no paragraphs, no re-telling of a
   report, except the `anomaly` notes, each a report's line copied whole, as the runner definition
   says. It is appended, never rewritten and never reformatted, and never read whole by anyone:
-  the lead reads its `phase:` lines with a local command (a filter on the line prefix), the
+  the lead reads its `phase:`, `pass:` and `checkin:` lines with a local command (a filter on the
+  line prefix), the
   close-out report is written off its `pass:` and `phase:` lines the same way, and off the window 3
   `anomaly` notes that carry `same work:` (stage 9), and a runner reads only its own filtered look
   for a unit's `verified` line and `anomaly` notes, as the runner definition says. Audience: agent, and it feeds the close-out report, so whatever crosses into that
   report becomes user-facing at the crossing and is translated there.
 
-  The lead's own two line shapes, which the runner never writes:
+  The lead's own three line shapes, which the runner never writes:
 
   ```text
   pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified <yes|no>
   pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified <yes|no>
   phase: <boundary name>
+  checkin: <window> <window, or the id of the last pass recorded before it> <go|pause>
   ```
+
+  A `checkin:` line says a check-in was shown and how the user answered it, appended as the
+  check-in section says. Its second field is `window` for the check-in that follows a window's
+  closing lines (window 1's after its index, window 2's after the fold or after a paused slice's
+  index), and the id of the last pass recorded before it for one inside a window, a check-in on a
+  sheet that stopped answering included. Its last field is `go` where the user sent the run on and
+  `pause` where they stopped it there.
 
   Every figure on a `pass:` line is written by `lead_pass.py record` (stage 4 step 3) off the
   pass's summary file and your own count call, never typed by hand: `created` is the sum of your
@@ -559,8 +572,23 @@ again to finish it carries a second `pass:` line, and its last one carries the w
 total taken over a window, and the close-out report, counts that one, for each pass the window's
 read plan now carries. A part a replan folded into another pass after its own `pass:` line was
 written is counted in the pass that took it in, and never twice. On every start this skill
-reads the ledger's `phase:` and `pass:` lines first, with a local filter, never the file: a run in
-flight resumes at the phase after the last line. Inside the window in flight, run that window's
+reads the ledger's `phase:`, `pass:` and `checkin:` lines first, with a local filter, never the
+file: a run in flight resumes at the phase after the last line. A check-in a `checkin:` line
+records was shown and answered, and is never shown again:
+
+- Where the last of those lines is a `checkin:` line reading `go`, start the step that follows
+  that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 7
+  step 1, or stage 6 step 1 again after a paused slice; after one inside a window, the passes that
+  are not finished.
+- Where it reads `pause`, the user stopped the run there: say in one sentence what the run does
+  next, and start it on their go-ahead, with a `checkin:` line reading `go` for the same check-in
+  first.
+- Where the last line is the one a check-in follows (`phase: index built` after window 1 or after
+  a paused slice, `phase: packages folded`, or the `pass:` line that made a fourth since the last
+  check-in) and no `checkin:` line follows it, that check-in was never answered: gather it and
+  show it.
+
+Inside the window in flight, run that window's
 plan script again first, exactly as its stage wrote it, with the same arguments: window 1's
 `--include` and `--exclude` and a slice's `--only`, each with its reason, are on that window's
 `plan/window-<n>.json`, taken off it with a local filter, and after `phase: window 2 paused` the run
@@ -606,16 +634,22 @@ before going on.
 
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' issue \
-     --runs '<project folder>' --deliveries '<project folder>/deliveries.json'
+     --runs '<project folder>' --deliveries '<project folder>/deliveries.json' \
+     --runs-root '<runs root>'
    ```
 
-   Its first word is what you do.
+   Its first word is what you do. Every run folder you work in from here is the one the line names.
+   Where the line ends by naming the folder this project's passes are in, the project began its
+   passes in a folder named for the project, and they all stay there; never move a file out of it.
+   A refusal naming a folder two projects shared, or this project's passes in two folders, stops
+   the run: say which folders, and hand over.
    - `resume <run folder>`: a pass is in flight, and it finishes before another starts, whatever
      has landed since; a later delivery gets a pass of its own once this one closes out. Read the
-     `phase:` and `pass:` lines of that folder's `ledger.md` with a local filter on the line
-     prefix; never open the file whole. Resume at the phase after the last one, and inside the
-     window in flight run its plan script again and dispatch the first pass that is not finished,
-     as the windows section above says, so nothing already verified is read again. Where the last
+     `phase:`, `pass:` and `checkin:` lines of that folder's `ledger.md` with a local filter on the
+     line prefix; never open the file whole. Resume at the phase after the last one, never showing
+     again a check-in a `checkin:` line records, and inside the window in flight run its plan
+     script again and dispatch the first pass that is not finished, as the windows section above
+     says, so nothing already verified is read again. Where the last
      `phase:` line is `window 1 complete` with no `index built` after it, the index step (stage 5)
      runs first. Where the ledger carries no `phase:` line yet, the plan was never approved: take
      stage 3 again from step 1 in that folder. Once the plan is approved, never fetch the grid of a
@@ -922,17 +956,21 @@ nothing else:
    refuses an array whose prefixes are not exactly the pass's, each once, writing nothing. It
    compares your counts unit by unit with the summary file, copies the updated, questions,
    replied and candidates figures off that file, and in window 3 the pages opened and searches off
-   its `review:` line, appends the pass's one `pass:` line to the ledger, and prints it. Work from
-   that line from then on. A unit it names as above the runner's count carries entries written
+   its `review:` line, appends the pass's one `pass:` line to the ledger, and prints it, with a
+   line under it naming the pass by the sheets it read, or in window 3 the packages it reviewed,
+   and its new items, items updated and Questions as the user hears them. Work from those lines
+   from then on. A unit it names as above the runner's count carries entries written
    since its runner verified it, by a later write onto its rows, and stops nothing. Exit 3 is a
    mismatch: the record holds fewer entries under a unit's prefix than its runner verified. The
    script wrote nothing and names each such unit with both counts, and the run stops and gets
    investigated, never papered over. Any other refusal names what is wrong with the call: fix the
-   call and run it again. Say the update and Question counts as the runner verified them, and the
-   created counts as your own.
+   call and run it again. The `created` figure on the `pass:` line counts entries, every citation
+   and trade written with the new items, and is your own check: say the new items, the items
+   updated and the Questions as the line under it gives them, and never the entry count.
 <!-- user-facing -->
    Between check-ins, tell the user at most one line per pass as it is recorded, naming what it
-   read in plain words: "I've read the fire alarm sheets." Keep the rest for the check-in.
+   read in plain words: "I've read the fire alarm sheets, 48 new items." Keep the rest for the
+   check-in.
 <!-- /user-facing -->
 4. **Close the window at its boundary.** When every pass of the window has reported and carries
    its `pass:` line, dispatch one more runner with `boundary` in place of the pass id. It scans the
@@ -1536,19 +1574,24 @@ since the last check-in:
 python3 '<plugin root>/scripts/lead_pass.py' checkin '<run folder>' <window> --passes <pass id>,<pass id>
 ```
 
-It prints your `pass:` line for each pass and their totals, the items by trade summed off their
+It prints each pass by the sheets it read, or in window 3 the packages it reviewed, with its new
+items, items updated, Questions raised, replies and new items with a candidate trade, then those
+figures over all the passes, then your own check apart, the units and the entry count off your
+`pass:` lines, which you never say. Then the items by trade summed off their
 summaries' `trades:` lines, and the anomalies already on the record as counts: each anomaly line
 ends with where it landed, and one that ends `Question <id>`, `reply <id>` or `note on <subject>`
 is counted on an `on the record:` line, one per pass, or in window 3 one per review naming its
 package and trade, with one more line over them all. Then it prints every other note line of those
-summaries, each copied whole under its pass: every anomaly that landed nowhere on a trade's page
+summaries, each copied whole under its pass, less the unit id it opens with, under a label in the
+estimator's words: every anomaly that landed nowhere on a trade's page
 (`sheet reading`, `run only`, or an ending it cannot read), every pair of rows carrying the same
 work wherever its sentence landed, and every overlap, unread page, grain question, door-owned
 suggestion, definitions kind and deviation line. A sheet reading is on the record and on no
 trade's page, so it is named in full. It stops before Bash's output limit, cutting a note too
 long for one call where the call's room ends and naming where, and where its last line names what
-it did not print, run the command that line gives for the rest. What it prints is for you to read: say what it names in the
-estimator's words, and never paste a note or a label as it printed. The second is `list_questions(projectId, limit: 0)`,
+it did not print, run the command that line gives for the rest. What it prints is for you to read:
+say what it names in the estimator's words, as the next section names them, and never paste a
+note or a label as it printed. The second is `list_questions(projectId, limit: 0)`,
 whose `tradeCounts`, `everyTradeCount` and `untradedCount` give the project's Questions by the
 trades they name, the every-trade ones and the not-known-yet ones, with no rows to page through.
 
@@ -1558,7 +1601,7 @@ in plain sentences:
 
 - What you read and what landed: sheets read, items added, items updated, by trade, and what you
   raised as Questions, by the trades they name, with the every-trade ones and the not-known-yet
-  ones counted apart. Your own verified counts, never the ones reported up to you.
+  ones counted apart. The counts the check-in prints, never the ones reported up to you.
 - What you would like them to look at now: each document defect and anomaly that is not on a
   Question or a row yet, with its sheet reference, the items you weren't sure how finely to split,
   and what is theirs to decide. Give the ones already on a Question or a row as a count, and say
@@ -1575,6 +1618,38 @@ in plain sentences:
 For example: "I've finished the first window, the schedules and legends. Here is what landed by
 trade, what I'd like you to look at, and what the next window reads. Proceed, adjust, or pause?"
 <!-- /user-facing -->
+
+When the user answers a check-in, append its one `checkin:` line to the ledger, in the shape the
+run folder section gives: `go` once every change they asked for at that check-in is made and the
+next step is about to start, or `pause` where they stop the run there. A session that starts
+later reads that line and never shows that check-in again. The read plan's check-in is recorded
+by `phase: plan approved` instead.
+
+## The words the user reads
+
+Everything you say to the user, at a check-in, between passes, at the close-out or anywhere else
+in the run, names things the way an estimator does. The scripts, the ledger, the reports and the
+record name them by id. Those ids stay in the run's files and in what only the agents read, and
+you never say one. For each kind:
+
+| The run's own name | What you say |
+|---|---|
+| A pass id (`A2a`, `i1-E2c`, `i1-W3-4`) | What it read, as the line under its `pass:` line and the check-in give it: "the fire alarm sheets", "the first architectural sheets, the A3 sections and the A6 roof details", or the packages it reviewed, by name. |
+| A unit or a review | The sheet ("E1.02"), the drawing file's repeated notes, or the package. |
+| A scope row's id or subject (`i1-H2a-1-8`, `scopeItem:...`) | The item by its name and its sheet: "the corridor light tags on E1.02". Where a note gives a row by its subject alone, take its name with one `search(projectId, subject: "<subject>", predicate: "name")` first. |
+| A Question's id, whole or cut short ("Question 39ed216b") | The Question by its title: "the Question on the stormwater structure". Where a note gives the id alone, take the title off its `question` entry with one `search(projectId, subject: "<the full id>", predicate: "question")` first. |
+| A reply's id (`clm-...`) | The reply on the Question it answers, by that Question's title. |
+| `created`, an entry, an entry count | Nothing. Count items: "285 new items", "69 items updated". |
+| A trade's catalog code alone (`28 30 00`) | The trade's name, its code after it where it helps: "fire alarm (28 30 00)". |
+| The runner, a reader, a reviewer, the package folder, a dispatch, a hand-back | "I": "I read the fire alarm sheets", "I folded fences and gates into Landscape". |
+| The ledger, a report, the read plan, a summary, a brief, the run folder, a file path | Nothing; say what it holds: "I noted it for the end of the run". |
+| A prefix, a unit tag, a rollup, the grain | Nothing: "the items those sheets added", "the full item list", "how finely to split". |
+| A field, a definition kind or a verb (`lateldepth`, `feederSymbol`, `notesInternal`, `list_scope_items`) | What it holds or does: "two misspelled lintel depth entries on the CMU lintel definitions", "the item's internal note", "a full list of the items". |
+
+When you say who put something on the record, a row, a note or a Question the run wrote, it is
+the user's work, credited to them, and you never name an agent as its author ("by the agent's
+judgment", "the reader put it on"). What you chose on your own reading, you say as your own
+choice: "I put it on Plumbing; move it if it belongs elsewhere."
 
 ## What this skill does not do
 
