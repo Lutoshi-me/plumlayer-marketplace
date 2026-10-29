@@ -645,8 +645,8 @@ before going on.
    passes in a folder named for the project, and they all stay there; never move a file out of it.
    A refusal naming a folder two projects shared, or this project's passes in two folders, stops
    the run. Tell the user in plain words that this project's earlier run files are mixed with
-   another project's, or kept in two places, and that the run stops until they are separated, and
-   hand over. The folders stay in the script's line; never say a folder path.
+   another project's and the run stops until they are separated, or that they are kept in two
+   places and the run stops until they are moved into one, and hand over. The folders stay in the script's line; never say a folder path.
    - `resume <run folder>`: a pass is in flight, and it finishes before another starts, whatever
      has landed since; a later delivery gets a pass of its own once this one closes out. Read the
      `phase:`, `pass:` and `checkin:` lines of that folder's `ledger.md` with a local filter on the

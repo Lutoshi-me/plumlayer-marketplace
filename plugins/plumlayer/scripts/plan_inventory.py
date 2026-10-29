@@ -3417,6 +3417,11 @@ def _folder_passes(folder: Path, ours: set[str]) -> list[tuple[Path, set[str]]]:
     return passes
 
 
+def _closed_out(ledger: Path) -> bool:
+    """True when a pass's ledger carries the closed-out line, so the pass can never resume."""
+    return any(line == CLOSED_OUT_LINE for line in (_phase_lines(ledger) or []))
+
+
 def _project_folder(runs: Path, deliveries_path: Path, runs_root: Path) -> Path:
     """
     The folder this project's passes are in: its own, named for the project id, unless another
@@ -3427,8 +3432,9 @@ def _project_folder(runs: Path, deliveries_path: Path, runs_root: Path) -> Path:
     A pass is this project's only where every delivery its files name is one the project lists. A
     folder holding a pass on any delivery the project does not list beside one on a delivery it
     does, the same pass included, is one two projects shared, and is refused. So is one holding a
-    pass whose files name no delivery beside a pass of this project's: nothing shows that pass is
-    this project's, so it is never resumed as one. A folder whose passes all name no delivery
+    pass whose files name no delivery beside a pass of this project's, unless that pass is closed
+    out: nothing shows that pass is this project's, so it is never resumed as one, and a closed one
+    can never resume at all. A folder whose passes all name no delivery
     belongs to no one project and is passed over.
     """
     ours = _listed_ids(deliveries_path)
@@ -3451,7 +3457,11 @@ def _project_folder(runs: Path, deliveries_path: Path, runs_root: Path) -> Path:
                 f"this project does not list ({_named(others)}), so two projects shared it; "
                 f"separate the two projects' run files before a pass runs here"
             )
-        unnamed = [label(path) for path, ids in passes if not ids]
+        unnamed = [
+            label(path)
+            for path, ids in passes
+            if not ids and not _closed_out(path / LEDGER_FILE)
+        ]
         if unnamed:
             raise PlanError(
                 f"{folder} holds passes on this project's deliveries and passes whose files name no "

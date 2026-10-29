@@ -10116,6 +10116,8 @@ def check_fold_one_level_down(plugin_path: Path, marketplace_root: Path) -> Resu
 #      delivery, so its pass is found by no project.
 #  16. Orientation's packet and summary, or an upload's files, sit in a folder named for the
 #      project's name, so two projects of one name write over each other's.
+#  17. A closed old layout ledger whose grid names no delivery stops a pass of the project in
+#      flight beside it, though a closed pass can never resume.
 
 def check_project_folder_by_id(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "project-folder-by-id"
@@ -10279,6 +10281,16 @@ def check_project_folder_by_id(plugin_path: Path, marketplace_root: Path) -> Res
             str(folder / named), "its own ledger")
     answers("an old layout pass naming no delivery beside a closed pass, from the other project", folder, "proj-b",
             "start", str(folder / "proj-b" / "deliv-b1"))
+
+    # 17. A closed old layout ledger whose grid names no delivery can never resume, so it does not
+    # stop a pass of A's in flight beside it: A resumes that pass where it is.
+    folder = runs_root("closed-unnamed-beside-in-flight")
+    write(folder / named / "ledger.md", closed)
+    write(folder / named / "grid" / "page-000.json", {"sheets": [{"sheetNumber": "A-1.01"}]})
+    write(folder / named / "deliv-a2" / "run.json", _issue_run("deliv-a2", ["deliv-a2"], "i1"))
+    write(folder / named / "deliv-a2" / "ledger.md", open_ledger)
+    answers("a closed old layout ledger naming no delivery beside a pass of the project in flight", folder, "proj-a",
+            "resume", str(folder / named / "deliv-a2"))
 
     # 14. Valid JSON with a field of the wrong type: in another project's folder it names no
     # delivery and stops nothing; in this project's own pass it is refused naming the file.
