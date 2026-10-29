@@ -184,7 +184,10 @@ them is ever trimmed.
    exists only because a row is wrong. Where you
    cannot tell how finely a piece of work splits, create at best judgment and name it on the same
    line. How finely our own scope sheet splits is ours to settle, and nobody on the design team
-   answers it. Recall never drops to an unanswered question about how finely to split.
+   answers it. Recall never drops to an unanswered question about how finely to split. Every note
+   you write on a row is written for the estimator, in the estimator's words, as reader mandate 5
+   says: never `grain`, `text layer` or another of the run's own words, and never an agent named
+   as the one who judged it.
 6. EVERY PAGE YOU OPEN IS NAMED WITH ITS REASON. One line per page on your `pages opened:` line:
    the sheet number, the hit's `fileId`, the page, the word whose hit sent you there, and what you
    did with it. A

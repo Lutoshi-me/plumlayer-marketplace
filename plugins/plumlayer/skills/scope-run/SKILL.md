@@ -956,17 +956,21 @@ nothing else:
    refuses an array whose prefixes are not exactly the pass's, each once, writing nothing. It
    compares your counts unit by unit with the summary file, copies the updated, questions,
    replied and candidates figures off that file, and in window 3 the pages opened and searches off
-   its `review:` line, appends the pass's one `pass:` line to the ledger, and prints it. Work from
-   that line from then on. A unit it names as above the runner's count carries entries written
+   its `review:` line, appends the pass's one `pass:` line to the ledger, and prints it, with a
+   line under it naming the pass by the sheets it read, or in window 3 the packages it reviewed,
+   and its new items, items updated and Questions as the user hears them. Work from those lines
+   from then on. A unit it names as above the runner's count carries entries written
    since its runner verified it, by a later write onto its rows, and stops nothing. Exit 3 is a
    mismatch: the record holds fewer entries under a unit's prefix than its runner verified. The
    script wrote nothing and names each such unit with both counts, and the run stops and gets
    investigated, never papered over. Any other refusal names what is wrong with the call: fix the
-   call and run it again. Say the update and Question counts as the runner verified them, and the
-   created counts as your own.
+   call and run it again. The `created` figure on the `pass:` line counts entries, every citation
+   and trade written with the new items, and is your own check: say the new items, the items
+   updated and the Questions as the line under it gives them, and never the entry count.
 <!-- user-facing -->
    Between check-ins, tell the user at most one line per pass as it is recorded, naming what it
-   read in plain words: "I've read the fire alarm sheets." Keep the rest for the check-in.
+   read in plain words: "I've read the fire alarm sheets, 48 new items." Keep the rest for the
+   check-in.
 <!-- /user-facing -->
 4. **Close the window at its boundary.** When every pass of the window has reported and carries
    its `pass:` line, dispatch one more runner with `boundary` in place of the pass id. It scans the
@@ -1570,19 +1574,24 @@ since the last check-in:
 python3 '<plugin root>/scripts/lead_pass.py' checkin '<run folder>' <window> --passes <pass id>,<pass id>
 ```
 
-It prints your `pass:` line for each pass and their totals, the items by trade summed off their
+It prints each pass by the sheets it read, or in window 3 the packages it reviewed, with its new
+items, items updated, Questions raised, replies and new items with a candidate trade, then those
+figures over all the passes, then your own check apart, the units and the entry count off your
+`pass:` lines, which you never say. Then the items by trade summed off their
 summaries' `trades:` lines, and the anomalies already on the record as counts: each anomaly line
 ends with where it landed, and one that ends `Question <id>`, `reply <id>` or `note on <subject>`
 is counted on an `on the record:` line, one per pass, or in window 3 one per review naming its
 package and trade, with one more line over them all. Then it prints every other note line of those
-summaries, each copied whole under its pass: every anomaly that landed nowhere on a trade's page
+summaries, each copied whole under its pass, less the unit id it opens with, under a label in the
+estimator's words: every anomaly that landed nowhere on a trade's page
 (`sheet reading`, `run only`, or an ending it cannot read), every pair of rows carrying the same
 work wherever its sentence landed, and every overlap, unread page, grain question, door-owned
 suggestion, definitions kind and deviation line. A sheet reading is on the record and on no
 trade's page, so it is named in full. It stops before Bash's output limit, cutting a note too
 long for one call where the call's room ends and naming where, and where its last line names what
-it did not print, run the command that line gives for the rest. What it prints is for you to read: say what it names in the
-estimator's words, and never paste a note or a label as it printed. The second is `list_questions(projectId, limit: 0)`,
+it did not print, run the command that line gives for the rest. What it prints is for you to read:
+say what it names in the estimator's words, as the next section names them, and never paste a
+note or a label as it printed. The second is `list_questions(projectId, limit: 0)`,
 whose `tradeCounts`, `everyTradeCount` and `untradedCount` give the project's Questions by the
 trades they name, the every-trade ones and the not-known-yet ones, with no rows to page through.
 
@@ -1592,7 +1601,7 @@ in plain sentences:
 
 - What you read and what landed: sheets read, items added, items updated, by trade, and what you
   raised as Questions, by the trades they name, with the every-trade ones and the not-known-yet
-  ones counted apart. Your own verified counts, never the ones reported up to you.
+  ones counted apart. The counts the check-in prints, never the ones reported up to you.
 - What you would like them to look at now: each document defect and anomaly that is not on a
   Question or a row yet, with its sheet reference, the items you weren't sure how finely to split,
   and what is theirs to decide. Give the ones already on a Question or a row as a count, and say
@@ -1615,6 +1624,32 @@ run folder section gives: `go` once every change they asked for at that check-in
 next step is about to start, or `pause` where they stop the run there. A session that starts
 later reads that line and never shows that check-in again. The read plan's check-in is recorded
 by `phase: plan approved` instead.
+
+## The words the user reads
+
+Everything you say to the user, at a check-in, between passes, at the close-out or anywhere else
+in the run, names things the way an estimator does. The scripts, the ledger, the reports and the
+record name them by id. Those ids stay in the run's files and in what only the agents read, and
+you never say one. For each kind:
+
+| The run's own name | What you say |
+|---|---|
+| A pass id (`A2a`, `i1-E2c`, `i1-W3-4`) | What it read, as the line under its `pass:` line and the check-in give it: "the fire alarm sheets", "the first architectural sheets, the A3 sections and the A6 roof details", or the packages it reviewed, by name. |
+| A unit or a review | The sheet ("E1.02"), the drawing file's repeated notes, or the package. |
+| A scope row's id or subject (`i1-H2a-1-8`, `scopeItem:...`) | The item by its name and its sheet: "the corridor light tags on E1.02". Where a note gives a row by its subject alone, take its name with one `search(projectId, subject: "<subject>", predicate: "name")` first. |
+| A Question's id, whole or cut short ("Question 39ed216b") | The Question by its title: "the Question on the stormwater structure". Where a note gives the id alone, take the title off its `question` entry with one `search(projectId, subject: "<the full id>", predicate: "question")` first. |
+| A reply's id (`clm-...`) | The reply on the Question it answers, by that Question's title. |
+| `created`, an entry, an entry count | Nothing. Count items: "285 new items", "69 items updated". |
+| A trade's catalog code alone (`28 30 00`) | The trade's name, its code after it where it helps: "fire alarm (28 30 00)". |
+| The runner, a reader, a reviewer, the package folder, a dispatch, a hand-back | "I": "I read the fire alarm sheets", "I folded fences and gates into Landscape". |
+| The ledger, a report, the read plan, a summary, a brief, the run folder, a file path | Nothing; say what it holds: "I noted it for the end of the run". |
+| A prefix, a unit tag, a rollup, the grain | Nothing: "the items those sheets added", "the full item list", "how finely to split". |
+| A field, a definition kind or a verb (`lateldepth`, `feederSymbol`, `notesInternal`, `list_scope_items`) | What it holds or does: "two misspelled lintel depth entries on the CMU lintel definitions", "the item's internal note", "a full list of the items". |
+
+When you say who put something on the record, a row, a note or a Question the run wrote, it is
+the user's work, credited to them, and you never name an agent as its author ("by the agent's
+judgment", "the reader put it on"). What you chose on your own reading, you say as your own
+choice: "I put it on Plumbing; move it if it belongs elsewhere."
 
 ## What this skill does not do
 

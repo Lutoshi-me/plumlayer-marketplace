@@ -40,6 +40,11 @@ Three modes:
             pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified yes
             pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified yes
 
+        Under it, it prints the pass as the estimator hears it, the line the check-in prints for
+        it below, with the new items off the summary's trades line, so the one line the lead says
+        as the pass is recorded names the sheets or packages and the items, never the pass id or
+        the entry count.
+
         `created` is the sum of the lead's own counts. `updated`, `questions` and `replied` come off
         the summary's totals line, `candidates` off its trades line, and in window 3 `pages-opened`
         and `searches` off its `review:` line. A unit whose count on the record is above the one its

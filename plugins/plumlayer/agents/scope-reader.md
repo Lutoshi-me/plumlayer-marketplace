@@ -411,7 +411,11 @@ of them is ever trimmed.
    never an id or a hand-written tag, placed as the `notesInternal` text above says. That note is
    what lets a later reader correct the row rather
    than doubt the drawings. A correction is never a Question. Where a count or grouping is your
-   own judgment rather than read off one place, say in the same note how it was reached. Never
+   own judgment rather than read off one place, say in the same note how it was reached. A note is
+   written for the estimator, in the estimator's words: say how a count or a grouping was reached
+   the way the estimator would ("One row for every tag the legend lists"), never with the run's own
+   words for it (`grain`, `text layer`, a unit, a pass, a prefix), and never naming an agent as
+   the one who judged it. Never
    transcribe a schedule's columns, a detail, bar sizes, or connector parts into any field, and
    never narrate the set sheet by sheet; how a schedule becomes rows is mandate 6. Where a row
    names a schedule's codes, write each code out in the `name` or the `description`
