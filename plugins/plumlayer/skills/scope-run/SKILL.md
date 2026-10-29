@@ -746,7 +746,8 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    `learn-project` step 8 sub-step 6 yourself now, placing each listed section on the package that
    buys it, before window 1 starts. Read `manualSectionPlacement.truncated` whatever
    `onNoPackage` holds: when it is true the placement count is incomplete, and close-out says so.
-   Every section still on `onNoPackage` carries its reason to close-out. Then send one fresh agent to copy the final `solicitation_list_packages` response
+   A section still on `onNoPackage` after that is placing this run did not finish: close-out
+   names it with what stopped its placing. Then send one fresh agent to copy the final `solicitation_list_packages` response
    to `<run folder>/plan/packages.json`, byte for byte, returning one line; the plan script reads
    it from there, and you never hold it.
 
@@ -1316,7 +1317,7 @@ Report to the user, in plain words:
   sheet they sit on, and this run did not go back for them. Name apart the codes a later drawing
   issue dropped, each with the earlier sheets that printed it, and say that any scope item still
   naming one is work the revision may have taken out, for you to check. Also the sheets left out of the read
-  plan at the start, and the manual sections on no package, each with the reason it is on none,
+  plan at the start, and the manual sections on no package, each with what stopped its placing,
   or that the count of them is incomplete when it was cut short. Name each manual section a
   review left unread or read only in part, with the reason and the pages left unread. On a pass
   on an addendum, also name the packages you did not review, and say why: this pass wrote no row
