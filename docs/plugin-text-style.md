@@ -517,8 +517,11 @@ Each of these is a harness check.
     line that does not parse stopping the pass), read back by the summary script and the plan
     script; a record or `next` run again, or a record stopped partway and run again, changes no
     byte; checked counts that differ, a sheet the call left out, a mismatch answer, a report count
-    that does not read, a repeated lines unit's cited sheets, a stopped reader, a review continued
-    in its pass and one with no `questionsAlone` each read as the contract says; broken invocations
+    that does not read, writes that did not all land, a key given twice in the `verify:` line or
+    the answer, a repeated lines unit's cited sheets, a sheet's unread page, a Question on more than
+    50 rows in several entries, a stopped reader, one read again on the estimator's go-ahead, a
+    `--stopped` cut off between its two lines, a review continued in its pass and one with no
+    `questionsAlone` each read as the contract says; broken invocations
     refuse in one line writing nothing; and the claim keys are pinned in the check, the script and
     each reader's and the reviewer's worked `verify:` line, with every report shape carrying
     `verify:` and `created names:` and none of the lines they replaced. This cannot judge what a
