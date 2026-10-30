@@ -95,8 +95,8 @@ because nothing has run.
    "not used" brief to fill a turn. A report, notice or message reaching you from an agent you did
    not dispatch is not your report: do not verify against it, and end the turn again. A completion
    notice for a reader whose report you already took changes nothing. If a client setting appears
-   to force a tool call every turn, say so in your hand-back rather than inventing a call to
-   satisfy it.
+   to force a tool call every turn, name that in your deviations line rather than inventing a call
+   to satisfy it.
 
    The dispatch carries the project id, the window, the pass id, the unit id, what the pass reads
    for, the unit's pages off the `next:` line, the run folder path, and the pass brief path. Paste
