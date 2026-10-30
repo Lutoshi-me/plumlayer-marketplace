@@ -398,7 +398,7 @@ gives the before numbers and the last read the after numbers, and the report pri
   set on this project), or that none are selected yet, and why. For each trade, how many companies
   pass its filters; the companies are on the site's invite list. Trades no company passes come
   first. Say when these numbers count companies with no answer on file, because your account keeps
-  them in, and when the directory holds no companies yet.
+  them in, and when the Network holds no companies yet.
 - **What changed each trade's count**: before and after for every trade whose count moved. Each
   trade has two numbers, the companies that pass the places and, of those, the companies that pass
   its labor condition. A change in the first is the places change, and a change between the two is

@@ -324,14 +324,14 @@ early state.
   address does not settle is left off and named in the closing report. A date given only for
   subcontractors' bids is not this one: leave it for `prepare-invitations`, which asks for it.
 - **The owner, the architect, the engineers.** Each goes on the project's contacts as a firm from
-  the company directory. What a firm is on the job is its type in the directory, so the owner is
+  the Network. What a firm is on the job is its type in the Network, so the owner is
   the firm typed Owner. For each firm named:
   1. Find it: `directory_list_companies(text: "<the firm's name>")`. Exactly one company whose
      name is the firm's name is that firm. Several that could be it, or only a near match: leave
      the firm off and name it in the closing report; never pick one.
   2. Its type: `directory_list_company_types` lists the account's types. Take the one whose label
      plainly names the role (Owner for the owner, Architect for the architect, Engineer for a
-     structural, MEP or civil engineer), as the list spells it. A firm not in the directory is
+     structural, MEP or civil engineer), as the list spells it. A firm not in the Network is
      added with `directory_add_company(name, vendorKind: [<that type>])`. A firm already there
      without that type gets it beside the types it has,
      `directory_update_company(companyId, vendorKind: [<its types>, <that type>])`, since
@@ -432,12 +432,12 @@ rather than restating it from what an earlier step said:
 - **Filled on Overview:** each field filled and where its value came from, what the user said
   or the document and page: the project type, procurement, contract, the address, the owner's bid
   date, and each firm put on the contacts with the type it carries.
-- **Changed in the directory:** each firm added to the company directory, and each firm already
+- **Changed in the Network:** each firm added to the Network, and each firm already
   there that was given a type (Owner, Architect, Engineer), with the type added.
 - **Recorded:** how many other facts were recorded, broken down (size / trades / sets /
   exclusions).
 - **Not filled or recorded:** each fact left off and why (the user was unsure, a document was
-  unclear, no choice on the company's list names what was given, a firm the directory holds more
+  unclear, no choice on the company's list names what was given, a firm the Network holds more
   than once, a time with no time zone), listed here in the conversation with what was given. These
   are not on the site, since nothing was written for them; this list is the one place they are
   named.
@@ -454,7 +454,7 @@ rather than restating it from what an earlier step said:
   trade for with the package it went on, and each left on no package with what stopped its
   placing, whether the structure and the description were written, what
   it filled on Overview from the cover sheet and with which sheet, each firm it added to the
-  directory or gave a type, anything a sheet states that it left off and why (a sheet that names
+  Network or gave a type, anything a sheet states that it left off and why (a sheet that names
   something different from what the user gave is said here plainly), and where the packet landed.
 - **What a person should look at on plumlayer.com:** any Question raised for two documents that
   disagree, among the project's Questions; the fields filled on Overview, each carrying your
@@ -480,7 +480,7 @@ rather than restating it from what an earlier step said:
   the closing report names which.
 - **Fill the fields, never a look-alike.** A project type, procurement or contract is an option on
   the company's own list whose label plainly names what was given, or the field stays empty. Never
-  create an option or a company type, and never pick a near match or one of several directory
+  create an option or a company type, and never pick a near match or one of several Network
   firms.
 - **Never invent a fact.** If the user didn't say it and no file shows it, don't seed it. An
   uncertain fact is named to the user and a conflicting one between two documents is one Question

@@ -93,7 +93,7 @@ learned: <each fact recorded in step 6, its predicate and its value as recorded,
 left in place: <each step 6 predicate that already held a value on the project and was not written, or "none">
 replaced: <each step 6 predicate whose value this run replaced + who wrote the value it replaced, or "none">
 fields filled: <each empty Overview field or firm step 5 filled + the sheet it was read from, or "none">; not filled: <each thing a sheet states that step 5 left off + why, or "none">
-directory changed: <each firm step 5 added to the directory, and each it gave a type + the type, or "none">
+Network changed: <each firm step 5 added to the Network, and each it gave a type + the type, or "none">
 reconciliation: <the gate's counts, or "not run for this set">
 spec reading: <sections confirmed + listed in the table of contents only, or "not run for this project">
 structure: <filled, the sheet that grounded the system + the sheet that grounded the floor counts; or blank, the half the set does not state>
@@ -123,7 +123,7 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
 - **What was learned**, by kind: systems, scope areas, set shape, hazards. Name any value already
   on the project that you left as it stands, and any you replaced, with who wrote it.
 - **What was filled on Overview** from the cover sheet and title blocks, with the sheet; each firm
-  added to the directory or given a type; and anything a sheet states that you left off, and why.
+  added to the Network or given a type; and anything a sheet states that you left off, and why.
 - **What the index check found**, or that it hasn't run yet for this set, never silent on which.
 - **What was recorded**, how many facts, and any Question raised for a disagreement between
   documents. What was recorded is the project's working context now, carrying your name and its
@@ -267,8 +267,8 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
      contacts yet (no owner in `owners`, no architect in `architects`); each engineer the sheet
      names, only when that firm is not on the contacts yet (by company id, once found). Find the firm with `directory_list_companies(text: "<the firm's
      name>")`: exactly one company with that name is the firm; several, or only a near match,
-     leaves it off. Its role is its directory type, the one on `directory_list_company_types` whose
-     label plainly names the role (Owner, Architect, Engineer). A firm not in the directory is
+     leaves it off. Its role is its type in the Network, the one on `directory_list_company_types` whose
+     label plainly names the role (Owner, Architect, Engineer). A firm not in the Network is
      added with `directory_add_company(name, vendorKind: [<that type>])`; a firm already there
      without that type gets it beside the ones it has, `directory_update_company(companyId,
      vendorKind: [<its types>, <that type>])`, since `vendorKind` replaces the whole list. No type
@@ -276,9 +276,9 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
      `project_set_design_team_company(projectId, companyId)`, the firm alone.
 
    Name each field filled and each firm put on, with the sheet, on the summary's `fields filled`
-   line; each firm added to the directory or given a type on `directory changed`; and on
+   line; each firm added to the Network or given a type on `Network changed`; and on
    `not filled`, each thing a sheet states that you left off and why: the field already held
-   something different, no list option or type names it, or the directory holds more than one
+   something different, no list option or type names it, or the Network holds more than one
    firm by that name.
 2. **Drawing-index page (1 render).** Find it via `search(projectId, predicate: "hasTitle", text:
    "index")`, `"drawing list"`, or `"sheet list"`. If none of these match, skip the render and note

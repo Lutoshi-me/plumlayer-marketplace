@@ -115,7 +115,7 @@ additional items → report. Each stage has gates; they are non-negotiable and c
    `leveled`, `taken_off`). When the user asks you to level the new bids, or names no file, these
    are the proposals: name them to him and read the ones he picks. A listed proposal is already
    uploaded and registered, so skip steps 5 and 6 and stage 2 for it, and read it by `fileId`.
-   When `company` is set, use its directory id as the party (`party:<companyId>`); when it is null,
+   When `company` is set, use its company id as the party (`party:<companyId>`); when it is null,
    resolve the party as stage 3 says. A listed package whose `coverageEntryId` is null has no
    coverage head yet, so its coverage write carries no `supersedesId`. This skill still reads one
    package per run: a proposal listed with several packages gets one full run of stages 3 to 8 for
@@ -234,7 +234,7 @@ Then place each proposal's resolved bidder, in this order:
    bidder, so supersession may apply (stage 6).
 2. **Otherwise, look for the company you invited.** Call `solicitation_list_invitations` for this
    package and read the invited companies. If the proposal's contracting party is plainly one of
-   them, use that company's directory id as the party: **`party:<companyId>`**. This is the identity
+   them, use that company's id in the Network as the party: **`party:<companyId>`**. This is the identity
    the rest of the system already knows the company by, and it is what lets a filed proposal move
    that company to Bid received on the coverage board by itself. Only the exact company id does
    that: a name-shaped party never will.
@@ -279,7 +279,7 @@ page without a text layer is read by OCR and `textSource` says so, and spans are
   manufacture a part, and never carry a part over from another proposal. `contact` is the verbatim
   fallback, and nothing downstream ever reads inside it.
 
-  **Name the directory contact only when you are certain who it is.** When you placed this bidder on
+  **Name the Network contact only when you are certain who it is.** When you placed this bidder on
   an invited company (stage 3 step 2) and `solicitation_list_invitations` names the recipient contact
   on that invitation (its `contactId`), put that id in `contactPerson.directoryContactId`. That case
   and no other. A contact id you settled by matching a name puts a real proposal against the wrong
@@ -841,7 +841,7 @@ edits `SKILL.md`; it runs the same pipeline against new paths.
   single-bidder filter behaves when there is no peer to anchor against, and whether the anchoring test
   is now too tight on a genuinely novel exclusion no peer thought to name.
 - **Party identity resolution: settled, see stage 3.** The bridge is the
-  directory company id: an invited company's proposal files under `party:<companyId>`, which is what
+  company's id in the Network: an invited company's proposal files under `party:<companyId>`, which is what
   moves that company to Bid received on the coverage board. An uninvited bidder still creates
   `party:<slug>`. What remains for a proving run is only how often real proposals match cleanly by
   name against the invited list, and how the ambiguous cases actually read in practice.
