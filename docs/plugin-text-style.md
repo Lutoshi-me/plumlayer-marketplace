@@ -490,6 +490,27 @@ Each of these is a harness check.
     or split folder refusal the skill has the lead say what is wrong in plain words and never a
     folder path. `learn-project` and `drawing-upload` name their local folder for the project id
     too. This cannot judge a seat's real run history: the folders are invented.
+31. A package review reads each manual section whole. A review once read only Part 2 of a section,
+    at most twelve pages, and the pages after went unread unless the estimator asked for a second
+    review. `agents/scope-reviewer.md` reads every section whole inside its page cap and names the
+    pages the cap left in one shape, `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>`, on
+    `sections not checked:`, the same line in the skill's copy of its report; none of the reviewer,
+    the runner or the skill carries the retired Part 2 read or its heading searches; the reviewer
+    carries a continuation mode that compares each section's file and pages with the record and
+    reads one a replaced manual moved whole, and names a section no longer on its package; the
+    runner carries the plan script's `continue` command and its pending run before the first unit;
+    and the skill its dispatch and a close-out that names a section as not read only where it has
+    no page range, its manual was removed or it left its package. The shipped `plan_inventory.py`
+    `continue` mode is run over invented run folders: it binds a continuation right after its review
+    in the review's pass and in `plan/window-3.json`, with each section's file and first page,
+    changes nothing run again, matches a replan, continues a continuation in turn, writes nothing
+    when it refuses after its reads, and refuses a report with nothing left among fourteen
+    refusals; the pending run binds what a stop between a `verified` line and `continue` left out
+    and names the unread pages of a full pass once; a replan counts continuations against a
+    trade's twelve units; two runs at once both land under the run folder's lock; the pass summary
+    counts the continuations; and the lead's check-in, off the ledger with no replan, shows a
+    section as read only once no report later in its chain names it. This cannot judge how a
+    reviewer spends its page cap on a real manual; that is the measured re-run's.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

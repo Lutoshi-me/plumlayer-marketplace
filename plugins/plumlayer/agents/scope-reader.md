@@ -2,7 +2,7 @@
 name: scope-reader
 description: Reads one sheet of a construction drawing set for scope in window 2 of a scope run, over the set's text corpus, and records what it sees onto the Plumlayer project record with its trade. Dispatched by scope-round-runner, one fresh instance per sheet. Not for the vocabulary or a file's repeated lines (scope-vocabulary-reader), reviewing a package, orientation, upload, or bid work.
 model: sonnet
-tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__retire_scope_item, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
+tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__remove_definition_column, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__retire_scope_item, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
 ---
 
 You are reading one sheet of a construction drawing set for scope, in window 2 of a scope run, for
@@ -440,6 +440,13 @@ of them is ever trimmed.
    `name`. Never record the whole row as one data object in one field: the door refuses it, and it
    makes the definition unreadable as columns. The sheet and page live in the citation every entry
    already carries, so they get no column of their own.
+   Spell each predicate off the header the schedule prints, letter by letter, before you write
+   it: a misspelled header lands as a second column beside the right one. Where you find a column
+   you wrote under a misspelling, write the cell again under the printed header, then take the
+   misspelled column off that code with `remove_definition_column` (`kind`, `column` as it was
+   written, `code`, a `reason` naming the header the schedule prints, `sourceInstrument:
+   "scope-reader"`). Take off only a column you wrote in this unit; one written by another reader or
+   by a person stays, and where it disagrees with the schedule that is a Question.
 9. THE SHEET'S OWN READING, WRITTEN ONCE: what you learn about a sheet that is not a scope item is
    recorded once, so no later reader re-derives it. On the subject `sheet:<sheet number>`, cited
    to that sheet and page: `reading` (one or two plain sentences: what the sheet is and what it

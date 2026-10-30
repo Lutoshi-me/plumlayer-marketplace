@@ -276,6 +276,7 @@ dispatch 2 L2 L2-6 sheets file-1a2b3c-p108 purpose further page of a shared numb
 dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-1a2b3c
 note 1 RS1 RS1-1 set 9f2c41d07ab3e815 file file-1a2b3c
 dispatch 3 W3-2 rev-075000-1 sheets none purpose review the roofing package
+dispatch 3 W3-2 rev-075000-1c-1 sheets none purpose continue the roofing manual sections
 ```
 
 ## Boundary mode
@@ -315,7 +316,7 @@ ledger: <path>, appended through <last line written>
 ## Review mode
 
 When your dispatch names `review-<pass id>`, you are a pass runner over a window 3 pass: pass mode,
-over up to four reviews, or one trade's reviews where that trade has more, with three differences.
+over up to four reviews, or one trade's reviews where that trade has more, with four differences.
 
 - **Each unit is a review, not a sheet.** Your pass block carries those reviews: `reads for:`
   reads `package reviews`, and each unit line names its unit id, the package's name, its catalog
@@ -332,8 +333,10 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   line's `sheets` field reads `none`, because a review is planned off the record and opens a page
   only where a hit sends it, and its `purpose` names the package. The dispatch carries the project
   id, the window, the pass id, the unit id, the catalog trade id and the package id its unit line
-  names, the run folder path, and the pass brief path. Paste nothing from
-  that file into it, and never the package's `codes` or `manualSections`: the reviewer reads
+  names, the run folder path, the pass brief path, and the reader definition path,
+  `<scripts path>/../agents/scope-reader.md` written out in full with the scripts path off your
+  dispatch, since the reviewer works under the reader's mandates and has no other way to find
+  them. Paste nothing from those files into it, and never the package's `codes` or `manualSections`: the reviewer reads
   those off the record, so the sections it checks have one source.
 - **Verify against the pages the review opened.** The reviewer names every page it opened on its
   `pages opened:` line, and those sheets are what you check. A line naming `section <code>` is a
@@ -370,6 +373,40 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   `search(subjectPrefix: "scopeItem:<unit id>-", limit: 1)`, reading `count`, with one
   `note <window> <pass> <unit> deviation verified by count, no page opened` line beside its
   `verified` line.
+- **Continue a review that left manual pages.** After a unit's `verified` line, where its report's
+  `sections not checked:` line names a section as `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>`, run
+
+  ```sh
+  python3 '<scripts path>/plan_inventory.py' continue --window 3 --report '<run folder>/reports/<unit id>.md'
+  ```
+
+  with the Bash tool, single quoted, right after that `verified` line and before the next unit's
+  `dispatch` line. It binds a continuation unit into your pass
+  block right after that unit and prints one line naming it; run again, it binds nothing new. Read
+  your pass block again: the continuation is your next unit, and you run it as any unit, its
+  `dispatch` line first (`purpose continue the <package name> manual sections`), then the
+  dispatch, then its verification exactly as a review's. Its dispatch carries a review's lines
+  and two more copied off its unit line, `Continues: <the unit id after continues>` and
+  `Sections: <the sections after sections>`. A continuation whose report names pages left is
+  continued the same way, so every page of a section is read in the pass. The review's
+  `continued:` anomaly goes on the ledger as every anomaly does, and the continuation's own lines
+  are what show those pages read. Where the script refuses because your pass already holds twelve
+  units, append one `note <window> <pass> <unit> unread section <code> pages <a> to <b> left, the pass holds twelve units`
+  per section the refusal names and go on to your next unit. Any other refusal is a mismatch.
+
+  Before your first unit, on every dispatch, run
+
+  ```sh
+  python3 '<scripts path>/plan_inventory.py' continue --window 3 --pending '<run folder>' --pass <pass id>
+  ```
+
+  with the Bash tool. A runner that stopped between a unit's `verified` line and its `continue` run
+  left that unit finished, which the look before each unit skips, with its pages left bound to no
+  continuation. This run binds into your pass block the continuation each such unit of your pass
+  is owed, and where your pass has no room for one it prints that unit's `unread` note, the shape
+  above filled in, for each section left that the ledger does not carry yet. Append each line it
+  prints that opens with `note ` to the ledger as printed, then read your pass block again: a
+  continuation it bound carries no `verified` line and runs as any unit. Any refusal is a mismatch.
 
 ## What you never do
 

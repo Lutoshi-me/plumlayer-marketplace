@@ -53,7 +53,8 @@ The `notes:` figures count the pass's notes of each kind, and the summary file c
   --plan    the read plan the pass runs off, `<run folder>/read-plan.md`. The pass's block there
             lists the units it carries, under a heading `### <pass id>. <name>`, one unit line each:
             `<unit id>. <sheet number>, ...` in windows 1 and 2, `<n>. <unit id>: <name>, trade
-            <trade>, package <package id>` in window 3, one line per review.
+            <trade>, package <package id>` in window 3, one line per review, and one per
+            continuation, the same line with `, continues <unit id>, sections ...` after it.
 
   --trades  the pass's own trades file, `<run folder>/trades/<pass id>.txt`, which the runner
             appends a unit at a time off its `verify_unit` results:
@@ -80,6 +81,10 @@ Window 3:
   label's own line counts where it names a page, and a line reading `none` counts nothing). A
   review with no `verified` line has no report to read and adds nothing; the hand-back names it on
   `unverified:`, and where no review of the pass carries one the `review:` line says so.
+
+  A continuation, the unit that reads on in a review's manual sections where the review's page cap
+  left pages, is a unit of its review's pass like any review: it is counted in `units:`, its
+  `verified` line is summed, and its pages opened and searches are read off its own report.
 
 Exit codes:
   0  the summary written to the --out file, the hand-back on stdout, one bounds line on stderr.
