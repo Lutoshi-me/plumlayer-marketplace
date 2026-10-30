@@ -343,13 +343,12 @@ Each of these is a harness check.
     every call only on `Repeated lines: read in set <version>`, with no probe call, compares the
     set version on every answer of the walk, and restarts the page whole on any answer that names
     no set version or another. The reader report in both readers and in the skill carries
-    `cited sheets:`, `page citations:` and `set version:`; the runner verifies an update cited to
-    a page with no sheet number by its subject and that page, and a repeated lines unit off the
-    first, taking the prefix counts once however many calls the sheets take, as review mode does
-    for a review that opened more than 20 pages, and no line of the runner sums the counts across
-    those calls; and the runner's own
-    dispatch, set and unread note lines, filled in, are read by the shipped plan script as it binds
-    and marks. This cannot judge whether the record door takes the evidence shape or the scope
+    `cited sheets:`, `set version:` and `verify:`, whose `pageCitations` names an update cited to
+    a page with no sheet number by its subject, file and page; the runner verifies a repeated lines
+    unit off `cited sheets:` in one call of at most 60 sheets, `sheets: []` where it cited none, as
+    review mode does a review, and splits no verify across calls; and the `dispatch`, `set` and
+    `unread` lines `scripts/runner_unit.py` writes for four repeated lines units are read by the
+    shipped plan script as it binds and marks. This cannot judge whether the record door takes the evidence shape or the scope
     surface draws the box; that is the api's to prove.
 24. A scope pass belongs to one drawing issue. The shipped `plan_inventory.py` plans two sets of
     one project, each from a run folder whose `run.json` names its delivery, the deliveries its
@@ -377,18 +376,16 @@ Each of these is a harness check.
     before calling it silent; and drawing-upload's re-read of the open Questions, in the file it
     reads at step 9b, reads the uploaded delivery by its id and cites its file. This cannot judge whether a reader sends the file on
     every citation; that stays in review and the measured pass.
-25. The runner copies each worker's anomalies onto the ledger. The summary script builds the
-    summary's `anomalies:` line from the ledger's `anomaly` notes alone, and the close-out names
-    the pairs of rows carrying the same work off them, so `agents/scope-round-runner.md` carries,
-    in pass mode, the step that appends one `anomaly` note per line of a report's `anomalies:`
-    line, copied whole, with review mode copying the reviewer's the same way, and its
-    `grain questions:` and `door-owned suggestions:` lines as `grain` and `door` notes, before the
-    unit's `verified` line and with no sentence there negating the append; and in its ledger rule,
-    the one exception that lets those notes past its ban on re-telling a report and their exemption
-    from the 200-character clause. The check runs its own helper over the shipped text with each part
-    taken out, the append negated and the order reversed, so the refusals are shown rather than
-    assumed. This cannot judge whether a running runner writes the notes; that stays in
-    review and the measured pass.
+25. Each worker's anomalies reach the ledger. The summary script builds the summary's
+    `anomalies:` line from the ledger's `anomaly` notes alone, and the close-out names the pairs of
+    rows carrying the same work off them, so `scripts/runner_unit.py` is run over one report whose
+    `anomalies:`, `grain questions:` and `door-owned suggestions:` lines carry a line past 200
+    characters and one with a colon, and must copy each whole as an `anomaly`, `grain` or `door`
+    note, in the report's order and before the unit's `verified` line, on a unit that verifies and
+    on one that does not; and the runner's ledger rule must carry the one exception that lets those
+    notes past its ban on re-telling a report and their exemption from the 200-character clause.
+    This cannot judge whether a running runner records every unit; that stays in review and the
+    measured pass.
 26. A number printed on more than one page is read on every page. The shipped `plan_inventory.py`
     is run in-process over an invented grid whose rows list their pages under `pageOccurrences`,
     and each further page of a row's own delivery has to come out a sheet of its own right after
@@ -498,8 +495,8 @@ Each of these is a harness check.
     the runner or the skill carries the retired Part 2 read or its heading searches; the reviewer
     carries a continuation mode that compares each section's file and pages with the record and
     reads one a replaced manual moved whole, and names a section no longer on its package; the
-    runner carries the plan script's `continue` command and its pending run before the first unit;
-    and the skill its dispatch and a close-out that names a section as not read only where it has
+    runner names the unit script binding a continuation through the plan script's own `continue`
+    code, and a continuation's `Continues:` and `Sections:` lines; and the skill its dispatch and a close-out that names a section as not read only where it has
     no page range, its manual was removed or it left its package. The shipped `plan_inventory.py`
     `continue` mode is run over invented run folders: it binds a continuation right after its review
     in the review's pass and in `plan/window-3.json`, with each section's file and first page,
@@ -511,6 +508,21 @@ Each of these is a harness check.
     counts the continuations; and the lead's check-in, off the ledger with no replan, shows a
     section as read only once no report later in its chain names it. This cannot judge how a
     reviewer spends its page cap on a real manual; that is the measured re-run's.
+32. A runner holds one line per unit. A runner that read every report back, retyped its lines into
+    ledger appends and searched for each item name and Question grew about 7.8k tokens a sheet, so
+    `scripts/runner_unit.py` takes each unit off the plan and writes its lines off the report and
+    the `verify_unit` answer. It is run in-process over invented run folders: a pass of four units
+    recorded in order against a tally written in the check (notes copied whole, count drift, an
+    exact name across two units, a reply named by its `clm-` entry id, a further page, a `verify:`
+    line that does not parse stopping the pass), read back by the summary script and the plan
+    script; a record or `next` run again, or a record stopped partway and run again, changes no
+    byte; checked counts that differ, a sheet the call left out, a mismatch answer, a report count
+    that does not read, a repeated lines unit's cited sheets, a stopped reader, a review continued
+    in its pass and one with no `questionsAlone` each read as the contract says; broken invocations
+    refuse in one line writing nothing; and the claim keys are pinned in the check, the script and
+    each reader's and the reviewer's worked `verify:` line, with every report shape carrying
+    `verify:` and `created names:` and none of the lines they replaced. This cannot judge what a
+    real `verify_unit` answer says; that is the api's own tests and the measured pass.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is
