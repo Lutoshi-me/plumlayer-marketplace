@@ -151,9 +151,9 @@ that relaxes any one of them reproduces a measured, named failure.
    the record back and confirms the count that landed equals the count sent, and checks any
    conflicting rows individually, before it ends. The pass runner separately re-verifies the same
    unit with one `verify_unit` call before the next unit of that pass starts: the entry count and
-   distinct subject count under the unit's prefix, and for each of the unit's sheets the subjects
-   whose citations name it, which is how an update and a new citation on a pre-existing subject
-   are found back. A reader's report that its batches landed is verified at both its own boundary
+   distinct subject count under the unit's prefix, and the writes the reader's `verify:` line names
+   that carry no prefix of the unit, each update and new citation on a pre-existing subject checked
+   against the unit's sheets and each Question and reply checked on the record. A reader's report that its batches landed is verified at both its own boundary
    and the runner's; neither replaces the other. The lead adds a third, count-only check when each
    pass reports: one `count_entries` call for the pass, its `subjectPrefixes` the
    `scopeItem:<unit id>-` of each unit id that pass's block in the read plan carries, never built
@@ -468,10 +468,12 @@ record files, never recorded as project entries:
   of the fold per line, which you read only through `fold_report.py print`. Audience: agent, and
   `fold.md` feeds the check-in that ends window 2 and the close-out, so whatever crosses from it
   into those becomes user-facing at the crossing and is translated there.
-- `names/`: one file per pass, the new item names each unit created, one per line, matched
-  against themselves and each other with a local command for overlaps. Audience: machine.
+- `names/`: one file per pass, the new item names each unit created, one `<name><tab><unit id>`
+  line each, written by the runner's unit script, which matches each unit's names against the
+  pass's earlier units for overlaps; the boundary matches the files against each other with a
+  local command. Audience: machine.
 - `kinds/`: one file per pass, the definition kinds each unit's reader named, one per line,
-  appended a unit at a time, and the window boundary takes their union with a local command to
+  appended a unit at a time by the runner's unit script, and the window boundary takes their union with a local command to
   find every kind a reader named without holding any of them itself. Audience: machine.
 - `trades/`: one file per pass, the trades each unit's own verification read, appended a unit at a
   time: one line per trade as `<unit id> trade <catalog id> <count>`, and one line as
@@ -1463,7 +1465,7 @@ Repeated lines: <"read in set <version>" or "not read">.
 Left out: <the sheet numbers on the unit line's "sheets left out", or "none">.
 Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>.
 Read your unit as your definition says, write your report to <run folder>/reports/<unit id>.md,
-then return it.
+then return its two lines, report: and verify:.
 ```
 
 `Reading for:` is `the repeated lines` on a unit of the repeated lines pass, whose `Pages:` line
@@ -1481,7 +1483,7 @@ Reviewing: <the package's catalog trade id>. Package: <the package id>.
 Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>.
 Reader definition: <scripts path>/../agents/scope-reader.md, written out in full.
 Review your package as your definition says, write your report to
-<run folder>/reports/<unit id>.md, then return it.
+<run folder>/reports/<unit id>.md, then return its two lines, report: and verify:.
 ```
 
 The package's `codes`, `manualSections` and `notes` are not in that dispatch: the reviewer reads
@@ -1503,30 +1505,28 @@ Sections: <the sections after "sections" on the unit line, as "<code> from page 
 Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>.
 Reader definition: <scripts path>/../agents/scope-reader.md, written out in full.
 Read on in the sections as your continuation mode says, write your report to
-<run folder>/reports/<unit id>.md, then return it.
+<run folder>/reports/<unit id>.md, then return its two lines, report: and verify:.
 ```
 
 Each section comes with the file and pages it had where the unit before read it. The continuation
 compares them with the record, and where a manual replaced since then moved the section, it reads
 the section whole from its first page now and says so on its `anomalies:` line.
 
-**The reader's report** comes back in this shape, counts and named anomalies only:
+**The reader's report** is written to `<run folder>/reports/<unit id>.md` in this shape, counts
+and named anomalies only, and the reader returns two lines, `report: <that path>` and the same
+`verify:` line:
 
 ```text
 unit: <unit id>   pass: <pass id>   window: <n>
 pages read: <sheet number + pageInPdf, renders taken and the reason for each, one per page>
 pages unread: <sheet number + pageInPdf + reason, or "none">
 cited sheets: <for the repeated lines, every sheet the unit's rows and citations name, comma separated; otherwise "none">
-page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
 set version: <for the repeated lines, the setVersion the unit's walk ended on; otherwise "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
-updated subjects: <the subject of every item updated or newly cited, except a row cited only to a Question, or "none">
-questions raised ids: <the id of every Question raised, or "none">
-questions replied ids: <the id of every Question replied to, or "none">
-questions linked: <the id of every Question raised or replied to + the subject of every row it was cited on, one Question per line, or "none">
-sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
+verify: <one line of JSON naming every write the record finds by no prefix of the unit: updatedSubjects, pageCitations, questionsRaised, questionsReplied, questionsLinked>
+created names: <one line of JSON, the name of every scope item created, or []>
+sent: <n>   landed: <n>   conflicts: <the count, then the ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
-trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
@@ -1535,17 +1535,19 @@ door-owned suggestions: <one line each, or "none">
 ```
 
 `cited sheets:` is what the runner verifies a repeated lines unit against, since that unit reads a
-file and has no sheet of its own; `page citations:` names the updates it cited to a page with no
-sheet number, which no sheet verifies, so the runner finds each back by its subject; and `set
-version:` is what the runner puts on the ledger for the window 2 plan to mark that file's sheets by. `created:` is the reader's own item count, not the entries under those items. `updated:` counts
-every pre-existing item the reader wrote anything onto, a note, a value, or a citation alike.
-`sent:` and `landed:` count every write the reader made for the unit, across every call, not only
-its first batch.
+file and has no sheet of its own; the `verify:` line's `pageCitations` names the updates it cited
+to a page with no sheet number, which no sheet verifies, so the call checks each by its subject
+and page; and `set version:` is what the runner's unit script puts on the ledger for the window 2
+plan to mark that file's sheets by. `created:` is the reader's own item count, not the entries
+under those items. `updated:` counts every pre-existing item the reader wrote anything onto, a
+note, a value, or a citation alike. `sent:` and `landed:` count every write the reader made for
+the unit, across every call, not only its first batch.
 
-The `updated subjects:`, `questions raised ids:` and `questions replied ids:` lines are what let
-the runner find those writes back: a create is findable by its `scopeItem:<unit-id>-` prefix, an
-update lands on a subject that already existed, a raise on a fresh Question id and a reply on the
-id of a Question somebody else raised, and nothing else in the report names them.
+The `verify:` line is what lets the runner check those writes: a create is findable by its
+`scopeItem:<unit-id>-` prefix, an update lands on a subject that already existed, a raise on a
+fresh Question id and a reply on the id of a Question somebody else raised, and nothing else in
+the report names them. The runner passes it to `verify_unit` as the call's claims, and its unit
+script writes the unit's ledger lines off the report and the answer.
 
 **The runner's summary** is written in this shape by the summary script the runner runs, to
 `<run folder>/reports/<pass id>.md`, where `lead_pass.py` reads it when you record the pass and
@@ -1584,9 +1586,10 @@ review: pages opened <n>, searches <n>
 report: <run folder>/reports/<pass id>.md
 ```
 
-**The reviewer's report** comes back in this shape, and the summary script reads its
-`pages opened:` and `searches:` lines into the summary's `review:` line, which is where the
-`pass:` line's two extra fields come from:
+**The reviewer's report** is written to `<run folder>/reports/<unit id>.md` in this shape, and
+the reviewer returns two lines, `report: <that path>` and the same `verify:` line. The summary
+script reads its `pages opened:` and `searches:` lines into the summary's `review:` line, which is
+where the `pass:` line's two extra fields come from:
 
 ```text
 unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
@@ -1594,15 +1597,11 @@ harvested: rows <n>, definition codes <n>, spec sections <n>, aliases <n>
 notes read: <each item the package notes name + the row that carries it, created or found, or `shown nowhere`, one per line, or "none">
 searches: <n> run, <n> returned nothing
 terms too general: <term + its page count, one per line, or "none">
-pages opened: <sheet number + fileId + page + the term that sent it + what it did, one per line, or "none">
+pages opened: <one per line, `<sheet number> <fileId> p<page> (<the term that sent it>) <what it did>`, a manual page with `section <code>` in place of the sheet number, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
-updated subjects: <the subject of every row updated or newly cited, except a row cited only to a Question, or "none">
-manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
-questions raised ids: <the id of every Question raised, or "none">
-questions replied ids: <the id of every Question replied to, or "none">
-questions linked: <the id of every Question raised or replied to + the subject of every row it was cited on, one Question per line, or "none">
-questions alone: <the id of every Question raised or replied to that no row carries + why, one per line, or "none">
-sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
+verify: <one line of JSON naming every write the record finds by no prefix of the unit: updatedSubjects, manualUpdates, questionsRaised, questionsReplied, questionsLinked, questionsAlone>
+created names: <one line of JSON, the name of every scope item created, or []>
+sent: <n>   landed: <n>   conflicts: <the count, then the ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">

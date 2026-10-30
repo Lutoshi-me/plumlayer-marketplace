@@ -151,8 +151,7 @@ REPORTS_FOLDER = "reports"
 # review opened are the lines under `pages opened:` up to the next of these.
 REVIEWER_LABELS = (
     "unit", "harvested", "notes read", "searches", "terms too general", "pages opened", "created",
-    "updated subjects", "manual updates", "questions raised ids", "questions replied ids",
-    "questions linked", "questions alone", "sent", "trades", "sheet readings written", "anomalies",
+    "verify", "created names", "sent", "trades", "sheet readings written", "anomalies",
     "grain questions", "silent sections", "unspecified work", "compared", "sections not checked",
     "families not checked", "door-owned suggestions",
 )
