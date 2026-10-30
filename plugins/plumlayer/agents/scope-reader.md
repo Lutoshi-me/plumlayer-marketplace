@@ -642,7 +642,9 @@ none:
 - `questionsRaised`: the full id of every Question you raised.
 - `questionsReplied`: the full id of every Question you replied to.
 - `questionsLinked`: one `{ "question": <its id>, "subjects": [<the subject of every row you cited it on>] }`
-  per Question you raised or replied to and cited on a row.
+  per Question you raised or replied to and cited on a row. An entry names at most 50 subjects: a
+  Question cited on more rows takes several entries, the same Question on each, and the line holds
+  at most 100 entries.
 
 ```text
 verify: {"updatedSubjects": ["scopeItem:A2-1-14"], "pageCitations": [], "questionsRaised": ["question:proj-9f2c:0a1b2c3d-0000-4000-8000-000000000007"], "questionsReplied": [], "questionsLinked": [{"question": "question:proj-9f2c:0a1b2c3d-0000-4000-8000-000000000007", "subjects": ["scopeItem:A2-3-2"]}]}
@@ -650,8 +652,11 @@ verify: {"updatedSubjects": ["scopeItem:A2-1-14"], "pageCitations": [], "questio
 
 `created:` is how many scope items you created, not the entries under them. `updated:` counts
 every pre-existing item you wrote anything onto: a note, a value, or a citation alike. `sent:` and
-`landed:` count every write you made for this unit, across every call, citations among them.
-`conflicts:` opens with its count, `0` or `none` where there were none.
+`landed:` count every write you made for this unit, across every call, citations among them,
+`landed:` the count the record shows. Where `landed:` is not `sent:`, or you could not confirm it
+(`landed: unconfirmed`), write both as they stand and stop, as mandate 7 says: your runner records
+the unit as a mismatch naming both, whatever its check answers. `conflicts:` opens with its count,
+`0` or `none` where there were none.
 
 The `verify:` line is how your runner checks what carries no `scopeItem:<unit-id>-` prefix: an
 update lands on a subject that already existed, a Question you raise on its own id, and a reply on

@@ -666,7 +666,9 @@ none:
 - `questionsRaised`: the full id of every Question you raised.
 - `questionsReplied`: the full id of every Question you replied to.
 - `questionsLinked`: one `{ "question": <its id>, "subjects": [<the subject of every row you cited it on>] }`
-  per Question you raised or replied to and cited on a row.
+  per Question you raised or replied to and cited on a row. An entry names at most 50 subjects: a
+  Question cited on more rows takes several entries, the same Question on each, and the line holds
+  at most 100 entries.
 - `questionsAlone`: the id of every Question you raised or replied to that no row carries.
 
 ```text
@@ -676,7 +678,10 @@ verify: {"updatedSubjects": ["scopeItem:A2-4-3"], "manualUpdates": [{"subject": 
 `created:` is your own item count: how many scope items you created, not the entries under them.
 `updated:` counts every pre-existing row you wrote anything onto, a note, a value, or a citation
 alike. `sent:` and `landed:` count every write you made for this review, across every call, not
-only your first batch. `conflicts:` opens with its count, `0` or `none` where there were none.
+only your first batch, `landed:` the count the record shows. Where `landed:` is not `sent:`, or you
+could not confirm it (`landed: unconfirmed`), write both as they stand and stop, as reader mandate
+7 says: your runner records the review as a mismatch naming both, whatever its check answers.
+`conflicts:` opens with its count, `0` or `none` where there were none.
 
 The `verify:` line is load-bearing, not bookkeeping. Your creates are findable by their
 `scopeItem:<unit id>-` prefix, but an update lands on a subject that already existed, a Question
