@@ -115,6 +115,10 @@ from pathlib import Path
 # the other is a refusal rather than a note with nowhere to go.
 NOTE_KINDS = ("anomaly", "unread", "kinds", "deviation", "overlap", "grain", "door", "packet", "set")
 
+# The unread note a runner writes when a unit's reader stopped answering twice. A later `dispatch`
+# line for that unit is the estimator's go-ahead to read it again, so the note no longer stands.
+STOPPED_TWICE = "reader stopped answering twice"
+
 # Which summary line each note kind lands on, one line per note. The `kinds` notes land too, as
 # the union on the definitions line, so they are counted as placed alongside these six.
 NOTE_LINES = {
@@ -319,6 +323,7 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
     members = set(plan["units"])
     parts_named = {pass_id, *plan["foldedIn"]}
     dispatched: list[str] = []
+    last_dispatch: dict[str, int] = {}
     verified: list[dict] = []
     verified_units: dict[str, tuple[int, str]] = {}
     notes: list[dict] = []
@@ -369,6 +374,7 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
                 raise SummaryError(f"{where}: the dispatch line names no `sheets` field")
             if unit not in dispatched:
                 dispatched.append(unit)
+            last_dispatch[unit] = number
         elif keyword == "verified":
             entry = _read_verified(parts, where)
             if unit in verified_units:
@@ -389,8 +395,20 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
                     f"({', '.join(f'`{k}`' for k in NOTE_KINDS)})"
                 )
             notes_by_kind[kind] += 1
-            notes.append({"unit": parts[3], "kind": kind, "clause": " ".join(parts[5:])})
+            notes.append({"unit": parts[3], "kind": kind, "clause": " ".join(parts[5:]), "at": number})
         last_line = line
+
+    # A stop the estimator has since given the go-ahead past is not a page left unread.
+    cleared = [
+        note for note in notes
+        if note["kind"] == "unread" and note["clause"].endswith(STOPPED_TWICE)
+        and last_dispatch.get(note["unit"], 0) > note["at"]
+    ]
+    for note in cleared:
+        notes.remove(note)
+        notes_by_kind["unread"] -= 1
+    for note in notes:
+        del note["at"]
 
     if not dispatched and not verified and not notes:
         raise SummaryError(

@@ -173,7 +173,7 @@ MAX_DEVIATIONS = 5
 CLAUSE_CAP = 200
 
 STOPPED_ONCE = "reader stopped answering, read again once"
-STOPPED_TWICE = "reader stopped answering twice"
+STOPPED_TWICE = pass_summary.STOPPED_TWICE
 
 _SHEET_LINE_RE = re.compile(
     r"^(?P<unit>\S+-[1-9][0-9]*)\. (?P<sheet>.+?), (?:file (?P<file>\S+), )?page (?P<page>[0-9]+)"

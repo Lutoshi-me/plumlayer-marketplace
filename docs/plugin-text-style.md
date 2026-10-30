@@ -519,8 +519,8 @@ Each of these is a harness check.
     byte; checked counts that differ, a sheet the call left out, a mismatch answer, a report count
     that does not read, writes that did not all land, a key given twice in the `verify:` line or
     the answer, a repeated lines unit's cited sheets, a sheet's unread page, a Question on more than
-    50 rows in several entries, a stopped reader, one read again on the estimator's go-ahead, a
-    `--stopped` cut off between its two lines, a review continued in its pass and one with no
+    50 rows in several entries, a stopped reader, one read again on the estimator's go-ahead (and
+    off the hand-back's unread line once verified), a `--stopped` cut off between its two lines, a review continued in its pass and one with no
     `questionsAlone` each read as the contract says; broken invocations
     refuse in one line writing nothing; and the claim keys are pinned in the check, the script and
     each reader's and the reviewer's worked `verify:` line, with every report shape carrying

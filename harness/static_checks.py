@@ -11820,6 +11820,30 @@ def check_runner_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         )
     cases += 1
 
+    # A reader that stopped twice, read again on the go-ahead and verified: the old stop note no
+    # longer names the sheet as unread in the summary's hand-back.
+    reread = root / "stopped-read"
+    (reread / "reports").mkdir(parents=True)
+    (reread / "read-plan.md").write_text(_unit_plan(2, "C2", "the sheet", ["C2-1. C-1.01, page 3: PLAN"]), encoding="utf-8")
+    reread_argv = ["next", str(reread), "--window", "2", "--pass", "C2"]
+    for extra in ([], ["--stopped", "C2-1"], ["--stopped", "C2-1"], ["--read-again", "C2-1"]):
+        _run_unit(module, [*reread_argv, *extra])
+    (reread / "reports" / "C2-1.md").write_text(_unit_report("C2-1", "C2", 2, verify=_verify_json()), encoding="utf-8")
+    code, out, err = _run_unit(
+        module, ["record", str(reread), "--window", "2", "--pass", "C2", "--unit", "C2-1"],
+        _unit_answer(0, checked={}, sheets=(("C-1.01", None),)),
+    )
+    if code != 0 or not out.startswith("verified C2-1 result ok"):
+        errors.append(f"a unit read again on the go-ahead recorded {out!r} ({err!r}), not a verified result")
+    code, out, err = _run_script_main(summary, [
+        str(reread / "ledger.md"), "2", "C2", "--plan", str(reread / "read-plan.md"),
+        "--out", str(reread / "reports" / "C2.md"),
+    ])
+    if code != 0 or any("C-1.01" in line for line in out.splitlines() if line.startswith("unread:")) \
+            or "C-1.01 reader stopped answering twice" in out:
+        errors.append(f"a sheet read again on the go-ahead still shows as not read: exit {code}, {out!r}, {err!r}")
+    cases += 1
+
     # A sheet whose report names a page it could not read: the page reaches the ledger as an
     # `unread` note, and the summary's hand-back names it.
     lines = one_unit(
@@ -11983,7 +12007,8 @@ def check_runner_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         f"differ, a sheet left out, a mismatch answer's first five rows, a report count that does not "
         f"read, writes that did not all land, a key given twice in the `verify:` line and in the "
         f"answer, a repeated lines unit's cited sheets, a reader stopped twice, then read again on the "
-        f"go-ahead and stopped twice more, a `--stopped` cut off between its two lines, a sheet's "
+        f"go-ahead and stopped twice more, a `--stopped` cut off between its two lines, a sheet read "
+        f"again on the go-ahead off the hand-back's unread line, a sheet's "
         f"unread page reaching the hand-back, a Question on 60 rows in two entries, a review continued "
         f"in its pass and one with no `questionsAlone`); {refusals} refusals each one line with nothing "
         f"written; bound: invented reports and answers, not a real reader or verify_unit answer"
