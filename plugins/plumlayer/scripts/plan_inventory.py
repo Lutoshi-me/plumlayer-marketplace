@@ -445,6 +445,10 @@ import tempfile
 import time
 from pathlib import Path
 
+# The stop note a runner writes is the summary script's own phrase, so both read a stop one way.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pass_summary import STOPPED_TWICE  # noqa: E402
+
 if os.name == "nt":
     import msvcrt
 else:
@@ -1656,16 +1660,25 @@ def _read_repeated_read(path: Path, repeated_sets: list[dict]) -> dict[str, str]
     last: dict[str, str | None] = {}
     version: dict[str, str] = {}
     unread: set[str] = set()
+    # A stop the estimator has since given the go-ahead past (a later `dispatch` line for the
+    # unit) is not lines left unread; every other unread note stands.
+    stopped: set[str] = set()
     for raw in text.splitlines():
-        parts = raw.strip().split()
+        line = raw.strip()
+        parts = line.split()
         if len(parts) < 5 or parts[1] != "1":
             continue
-        if parts[0] == "verified":
+        if parts[0] == "dispatch":
+            stopped.discard(parts[3])
+        elif parts[0] == "verified":
             last[parts[3]] = _figure(parts, "result")
+        elif parts[0] == "note" and parts[4] == "unread" and line.endswith(STOPPED_TWICE):
+            stopped.add(parts[3])
         elif parts[0] == "note" and parts[4] == "unread":
             unread.add(parts[3])
         elif parts[0] == "note" and parts[4] == "set" and len(parts) > 5:
             version[parts[3]] = parts[5]
+    unread |= stopped
     return {
         s["fileId"]: version[s["unitId"]] for s in repeated_sets
         if last.get(s["unitId"]) == "ok" and s["unitId"] not in unread and s["unitId"] in version

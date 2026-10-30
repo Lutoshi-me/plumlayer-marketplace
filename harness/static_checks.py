@@ -6910,6 +6910,34 @@ def check_repeated_lines_text(plugin_path: Path, marketplace_root: Path) -> Resu
             f"set note should mark file-a in that version, the unread note keep file-b whole, "
             f"file-c, with no set note, stay whole, and the not listed note keep file-d whole"
         )
+    # A repeated lines reader that stopped twice and was read again on the estimator's go-ahead
+    # counts its file as read; one with no go-ahead after its stop keeps its file whole.
+    stopped_ledger = folder / "stopped-ledger.md"
+    stopped_ledger.write_text("\n".join([
+        "dispatch 1 R1 R1-1 sheets none purpose repeated lines of file file-a",
+        "note 1 R1 R1-1 deviation file file-a reader stopped answering, read again once",
+        "dispatch 1 R1 R1-1 sheets none purpose repeated lines of file file-a",
+        "note 1 R1 R1-1 unread file file-a reader stopped answering twice",
+        "dispatch 1 R1 R1-1 sheets none purpose repeated lines of file file-a",
+        "note 1 R1 R1-1 set 9f2c41d07ab3e815 file file-a",
+        "verified 1 R1 R1-1 created 0 items 1 updated 0 questions 0 replied 0 sent 0 landed 0 conflicts 0 result ok",
+        "dispatch 1 R1 R1-2 sheets none purpose repeated lines of file file-b",
+        "note 1 R1 R1-2 set 2b4c41d07ab3e815 file file-b",
+        "verified 1 R1 R1-2 created 0 items 1 updated 0 questions 0 replied 0 sent 0 landed 0 conflicts 0 result ok",
+        "note 1 R1 R1-2 unread file file-b reader stopped answering twice",
+    ]) + "\n", encoding="utf-8")
+    try:
+        stopped_read = module._read_repeated_read(
+            stopped_ledger, [{"fileId": "file-a", "unitId": "R1-1"}, {"fileId": "file-b", "unitId": "R1-2"}],
+        )
+    except Exception as e:
+        stopped_read = {}
+        errors.append(f"the plan script refused a ledger with a stopped repeated lines reader: {e}")
+    if stopped_read != {"file-a": "9f2c41d07ab3e815"}:
+        errors.append(
+            f"the plan script reads the files whose repeated lines were read as {stopped_read}; file-a, "
+            f"read again on the go-ahead, should be read, and file-b, stopped with no go-ahead, whole"
+        )
     joined = len(units)
 
     detail = (
@@ -6924,7 +6952,8 @@ def check_repeated_lines_text(plugin_path: Path, marketplace_root: Path) -> Resu
         f"anywhere in the reader, `cited sheets:`, `set version:` and `verify:` on the reader report "
         f"in the agents and the skill, the runner verifying off `cited sheets:` in one call of at most "
         f"60 sheets in pass mode and review mode, and the unit script's dispatch, set, unread and "
-        f"not listed lines read by the plan script over {joined} units; bound: text and the "
+        f"not listed lines read by the plan script over {joined} units, and a reader stopped twice "
+        f"and read again on the go-ahead counting its file read; bound: text and the "
         f"script's ledger reader, not the record door or the scope surface"
     )
     if errors:
@@ -11826,8 +11855,16 @@ def check_runner_unit(plugin_path: Path, marketplace_root: Path) -> Result:
     (reread / "reports").mkdir(parents=True)
     (reread / "read-plan.md").write_text(_unit_plan(2, "C2", "the sheet", ["C2-1. C-1.01, page 3: PLAN"]), encoding="utf-8")
     reread_argv = ["next", str(reread), "--window", "2", "--pass", "C2"]
-    for extra in ([], ["--stopped", "C2-1"], ["--stopped", "C2-1"], ["--read-again", "C2-1"]):
-        _run_unit(module, [*reread_argv, *extra])
+    reread_next = "next: C2-1 sheet C-1.01 file none page 3 opens as none repeated not read left out none"
+    for extra, want in (
+        ([], reread_next), (["--stopped", "C2-1"], reread_next),
+        (["--stopped", "C2-1"], "stop: C2-1 reader stopped answering twice"), (["--read-again", "C2-1"], reread_next),
+    ):
+        code, out, err = _run_unit(module, [*reread_argv, *extra])
+        if code != 0 or out != want:
+            errors.append(f"setting up a sheet read again, next {' '.join(extra) or 'alone'} printed {out!r} ({err!r}), not {want!r}")
+    if "note 2 C2 C2-1 unread C-1.01 reader stopped answering twice" not in (reread / "ledger.md").read_text(encoding="utf-8").splitlines():
+        errors.append("setting up a sheet read again left no stop note on the ledger")
     (reread / "reports" / "C2-1.md").write_text(_unit_report("C2-1", "C2", 2, verify=_verify_json()), encoding="utf-8")
     code, out, err = _run_unit(
         module, ["record", str(reread), "--window", "2", "--pass", "C2", "--unit", "C2-1"],
