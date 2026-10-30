@@ -11285,13 +11285,18 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
 #   3. count drift, an exact name repeated across units, or a reply named by its `clm-` id is
 #      mishandled;
 #   4. a `verify:` line that does not parse, `checked` counts that differ from the report's lists,
-#      a call that left out the unit's sheet, or a review with no `questionsAlone` passes as ok;
+#      a call that left out the unit's sheet, writes that did not all land, a key given twice in
+#      the `verify:` line or the answer, or a review with no `questionsAlone` passes as ok;
 #   5. a run again after an interruption changes a byte;
-#   6. a stopped reader is dispatched a third time, or its notes are written twice;
+#   6. a stopped reader is dispatched a third time, its notes are written twice, a `--stopped` cut
+#      off between its two lines counts a stop that never happened, or a unit the estimator let the
+#      lead read again stays stopped;
 #   7. a review that left manual pages is not continued in the pass;
 #   8. the summary script cannot read what the script wrote;
 #   9. a broken invocation writes something, or refuses in more than one line;
-#  10. the claim keys the readers publish drift from the ones the script and the call read.
+#  10. the claim keys the readers publish drift from the ones the script and the call read;
+#  11. a page a sheet's reader could not read reaches no `unread` note;
+#  12. a Question cited on more than 50 rows has no shape the call takes.
 #
 # Honest bound: the reports and answers are invented here, so this proves the script's reading,
 # its order, its idempotence and its refusals, not what a real reader writes or a real answer says.
@@ -11679,6 +11684,26 @@ def check_runner_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         ("no-count", "B2-1. B-1.01, page 2: PLAN", plain.replace("sent: 0   landed: 0", "sent: all   landed: 0"),
          _unit_answer(2, checked=plain_checked, sheets=(("B-1.01", None),)),
          "the report's `sent:` field carries no whole number", []),
+        # Writes that did not all land, whatever the call answers.
+        ("landed-short", "B2-1. B-1.01, page 2: PLAN", plain.replace("sent: 0   landed: 0", "sent: 2   landed: 0"),
+         _unit_answer(0, checked=plain_checked, sheets=(("B-1.01", None),)),
+         "the report's `landed:` 0 is not its `sent:` 2", ["note 2 B2 B2-1 deviation reader sent 2, landed 0"]),
+        # A key given twice keeps only its last value in plain JSON, so the claims or the answer
+        # would read as less than was written.
+        ("verify-key-twice", "B2-1. B-1.01, page 2: PLAN",
+         plain.replace(
+             f"verify: {_verify_json(updatedSubjects=['scopeItem:A1-1-1'])}",
+             'verify: {"updatedSubjects": ["scopeItem:A1-1-1"], "updatedSubjects": [], "pageCitations": [], '
+             '"questionsRaised": [], "questionsReplied": [], "questionsLinked": []}',
+         ),
+         _unit_answer(2, checked={"updatedSubjects": 0}, sheets=(("B-1.01", None),)),
+         "the `verify:` line names `updatedSubjects` twice, so it does not read",
+         ["note 2 B2 B2-1 deviation the verify line names updatedSubjects twice, so it was not read"]),
+        ("answer-key-twice", "B2-1. B-1.01, page 2: PLAN", plain,
+         _unit_answer(2, checked=plain_checked, sheets=(("B-1.01", None),), result="mismatch")[:-1]
+         + ', "result": "ok"}',
+         "the answer names `result` twice, so it does not read",
+         ["note 2 B2 B2-1 deviation the answer names result twice, so it was not read"]),
     ):
         lines = one_unit(label, unit_line, report, answer)
         cases += 1
@@ -11749,6 +11774,86 @@ def check_runner_unit(plugin_path: Path, marketplace_root: Path) -> Result:
     ]
     if (stopped / "ledger.md").read_text(encoding="utf-8").splitlines() != want_stopped:
         errors.append(f"a stopped reader's ledger reads {(stopped / 'ledger.md').read_text(encoding='utf-8').splitlines()}")
+    cases += 1
+
+    # On the estimator's go-ahead the lead reads that unit again: its `dispatch` line after the
+    # stop opens the unit, and a reader that stops again is read again once before the pass stops.
+    again_argv = ["next", str(stopped), "--window", "2", "--pass", "C2"]
+    steps = [
+        (["--read-again", "C2-1"], "next: C2-1 sheet C-1.01 file none page 3 opens as none repeated not read left out none"),
+        (["--read-again", "C2-1"], "next: C2-1 sheet C-1.01 file none page 3 opens as none repeated not read left out none"),
+        ([], "next: C2-1 sheet C-1.01 file none page 3 opens as none repeated not read left out none"),
+        (["--stopped", "C2-1"], "next: C2-1 sheet C-1.01 file none page 3 opens as none repeated not read left out none"),
+        (["--stopped", "C2-1"], "stop: C2-1 reader stopped answering twice"),
+    ]
+    for extra, want in steps:
+        code, out, err = _run_unit(module, [*again_argv, *extra])
+        if code != 0 or out != want:
+            errors.append(f"next {' '.join(extra) or 'alone'} after the go-ahead printed {out!r} ({err!r}), not {want!r}")
+    want_again = want_stopped + [
+        "dispatch 2 C2 C2-1 sheets C-1.01 purpose the sheet",
+        "note 2 C2 C2-1 deviation C-1.01 reader stopped answering, read again once",
+        "dispatch 2 C2 C2-1 sheets C-1.01 purpose the sheet",
+        "note 2 C2 C2-1 unread C-1.01 reader stopped answering twice",
+    ]
+    if (stopped / "ledger.md").read_text(encoding="utf-8").splitlines() != want_again:
+        errors.append(f"a unit read again on the go-ahead leaves the ledger {(stopped / 'ledger.md').read_text(encoding='utf-8').splitlines()}")
+    cases += 1
+
+    # A `--stopped` cut off after its stop note and before the unit's next `dispatch` line, run
+    # again: the reader stopped once, so the unit is dispatched again rather than stopped at.
+    cut = root / "stopped-cut"
+    (cut / "reports").mkdir(parents=True)
+    (cut / "read-plan.md").write_text(_unit_plan(2, "C2", "the sheet", ["C2-1. C-1.01, page 3: PLAN"]), encoding="utf-8")
+    cut_lines = [
+        "dispatch 2 C2 C2-1 sheets C-1.01 purpose the sheet",
+        "note 2 C2 C2-1 deviation C-1.01 reader stopped answering, read again once",
+    ]
+    (cut / "ledger.md").write_text("\n".join(cut_lines) + "\n", encoding="utf-8")
+    code, out, err = _run_unit(module, ["next", str(cut), "--window", "2", "--pass", "C2", "--stopped", "C2-1"])
+    want_cut = cut_lines + ["dispatch 2 C2 C2-1 sheets C-1.01 purpose the sheet"]
+    if code != 0 or out != "next: C2-1 sheet C-1.01 file none page 3 opens as none repeated not read left out none" \
+            or (cut / "ledger.md").read_text(encoding="utf-8").splitlines() != want_cut:
+        errors.append(
+            f"a `--stopped` cut off after its note, run again, printed {out!r} ({err!r}) and left "
+            f"{(cut / 'ledger.md').read_text(encoding='utf-8').splitlines()}, counting a stop that never happened"
+        )
+    cases += 1
+
+    # A sheet whose report names a page it could not read: the page reaches the ledger as an
+    # `unread` note, and the summary's hand-back names it.
+    lines = one_unit(
+        "sheet-unread", "B2-1. B-1.01, page 2: PLAN",
+        _unit_report("B2-1", "B2", 2, verify=_verify_json(), unread=("B-1.01 p2 could not read the page",)),
+        _unit_answer(0, checked={}, sheets=(("B-1.01", None),)),
+    )
+    if not lines or lines[0] != "verified B2-1 result ok" \
+            or [line for line in lines if line.startswith("note ")] != ["note 2 B2 B2-1 unread B-1.01 p2 could not read the page"]:
+        errors.append(f"a sheet with a page it could not read wrote {lines}, not one `unread` note")
+    where = root / "sheet-unread"
+    code, out, err = _run_script_main(summary, [
+        str(where / "ledger.md"), "2", "B2", "--plan", str(where / "read-plan.md"),
+        "--out", str(where / "reports" / "B2.md"),
+    ])
+    if code != 0 or "unread: B2-1 B-1.01 p2 could not read the page" not in out.splitlines():
+        errors.append(f"the summary's hand-back does not name the page a sheet could not read: exit {code}, {out!r}, {err!r}")
+    cases += 1
+
+    # A Question cited on more than 50 rows goes on the `verify:` line as several entries of 50 at
+    # most, the same Question on each, and the script takes that as written.
+    many = [f"scopeItem:A1-1-{i}" for i in range(1, 61)]
+    split = _verify_json(questionsLinked=[{"question": question, "subjects": many[:50]}, {"question": question, "subjects": many[50:]}])
+    lines = one_unit(
+        "linked-split", "B2-1. B-1.01, page 2: PLAN", _unit_report("B2-1", "B2", 2, verify=split),
+        _unit_answer(0, checked={"questionsLinked": 2}, sheets=(("B-1.01", None),)),
+    )
+    if not lines or lines[0] != "verified B2-1 result ok":
+        errors.append(f"a Question cited on 60 rows in two entries printed {lines[:1]}, not ok")
+    for label, text in texts.items():
+        if "a Question cited on more rows takes several entries, the same Question on each" not in " ".join(text.split()):
+            errors.append(f"{label} does not split a Question cited on more than 50 rows into several entries")
+        if "Where `landed:` is not `sent:`" not in " ".join(text.split()):
+            errors.append(f"{label} does not say what a report whose writes did not all land carries")
     cases += 1
 
     # --- 7 and 4: a review that left manual pages, then its continuation with no `questionsAlone` --- #
@@ -11861,6 +11966,8 @@ def check_runner_unit(plugin_path: Path, marketplace_root: Path) -> Result:
     _run_unit(module, ["next", str(on_file), "--window", "2", "--pass", "E2"])
     (on_file / "reports" / "E2-1.md").write_text("unit: E2-1   pass: E2   window: 2\n", encoding="utf-8")
     refused("a stopped unit whose report is on file", ["next", str(on_file), "--window", "2", "--pass", "E2", "--stopped", "E2-1"], where=on_file)
+    refused("a unit read again whose reader never stopped twice", ["next", str(on_file), "--window", "2", "--pass", "E2", "--read-again", "E2-1"], where=on_file)
+    refused("a unit read again that is not the next", ["next", str(stopped), "--window", "2", "--pass", "C2", "--read-again", "C2-2"], where=stopped)
     with (on_file / "ledger.md").open("a", encoding="utf-8") as ledger:
         ledger.write("Unit E2-1 went well.\n")
     refused("a ledger line in none of the three shapes", ["next", str(on_file), "--window", "2", "--pass", "E2"], where=on_file)
@@ -11874,8 +11981,11 @@ def check_runner_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         f"`verify:` line that does not parse stopping the pass), each run again changing no byte, read by "
         f"the summary script and the plan script; {cases} mismatch and flow cases (checked counts that "
         f"differ, a sheet left out, a mismatch answer's first five rows, a report count that does not "
-        f"read, a repeated lines unit's cited sheets, a reader stopped twice, a review continued in its "
-        f"pass and one with no `questionsAlone`); {refusals} refusals each one line with nothing "
+        f"read, writes that did not all land, a key given twice in the `verify:` line and in the "
+        f"answer, a repeated lines unit's cited sheets, a reader stopped twice, then read again on the "
+        f"go-ahead and stopped twice more, a `--stopped` cut off between its two lines, a sheet's "
+        f"unread page reaching the hand-back, a Question on 60 rows in two entries, a review continued "
+        f"in its pass and one with no `questionsAlone`); {refusals} refusals each one line with nothing "
         f"written; bound: invented reports and answers, not a real reader or verify_unit answer"
     )
     if errors:
