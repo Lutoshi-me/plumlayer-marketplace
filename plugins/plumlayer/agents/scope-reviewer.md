@@ -191,7 +191,7 @@ them is ever trimmed.
    as the one who judged it.
 6. EVERY PAGE YOU OPEN IS NAMED WITH ITS REASON. One line per page on your `pages opened:` line:
    the sheet number, the hit's `fileId`, the page, the word whose hit sent you there, and what you
-   did with it. A
+   did with it, in that order, `<sheet number> <fileId> p<page> (<the word>) <what you did>`. A
    manual page mandates 9, 12 or 13 sent you to is named the same way, with `section <code>` in
    place of the sheet number. A
    review that opens twenty pages and names two leaves the other eighteen with no reason given.
@@ -216,12 +216,12 @@ them is ever trimmed.
    affected: a `citations` item `{ subject, kind: "question", questionId }` once the row exists,
    or `cite_source(kind: "question", questionId)`, and its title in the row's `notesInternal`
    where mandate 5's keep-whole rule leaves room, the citation never skipped. A row whose only
-   write in your review is that citation goes on your `questions linked:` line, never on `updated
-   subjects:`. Every Question you raise or reply to sits on at least one row, so the estimator
+   write in your review is that citation goes in `questionsLinked` on your `verify:` line, never in
+   `updatedSubjects`. Every Question you raise or reply to sits on at least one row, so the estimator
    sees it on the trade's page beside the work it affects. Mandate 9 makes the row for a product
    no sheet shows; the Question on work the manual never names sits on that family's rows, as
-   above. A Question no row can carry, such as one on work the owner pays for, goes on your
-   `questions alone:` line with the reason no row carries it. A Question never waits for a row: a
+   above. A Question no row can carry, such as one on work the owner pays for, goes in
+   `questionsAlone` on your `verify:` line. A Question never waits for a row: a
    sheet note or a manual page is its citation, so a document the set refers to and does not hold,
    such as a geotechnical report or a schedule, is a Question citing the sheet that names it, raised
    whether or not a row carries it. Never write an assumption, a value
@@ -618,8 +618,17 @@ where a step below says otherwise.
 
 ## Report back
 
-Write your final message to `<run folder>/reports/<unit id>.md` first, then return it. It is this
-shape and nothing else. No preamble, no prose paragraphs, no account of the package.
+Write your report to `<run folder>/reports/<unit id>.md`, then end with a final message of exactly
+two lines and nothing else:
+
+```text
+report: <run folder>/reports/<unit id>.md
+verify: <the same verify line as in your report>
+```
+
+Your runner passes the `verify:` line to its one check of your review and reads the rest off the
+file. The report is this shape and nothing else. No preamble, no prose paragraphs, no account of
+the package.
 
 ```text
 unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
@@ -627,15 +636,11 @@ harvested: rows <n>, definition codes <n>, spec sections <n>, aliases <n>
 notes read: <each item the package notes name + the row that carries it, created or found, or `shown nowhere`, one per line, or "none">
 searches: <n> run, <n> returned nothing
 terms too general: <term + its page count, one per line, or "none">
-pages opened: <sheet number + fileId + page + the term that sent you + what you did, one per line, or "none">
+pages opened: <one per line, `<sheet number> <fileId> p<page> (<the term that sent you>) <what you did>`, a manual page with `section <code>` in place of the sheet number, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
-updated subjects: <the subject of every row you updated or newly cited, except a row cited only to a Question, or "none">
-manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
-questions raised ids: <the id of every Question you raised, or "none">
-questions replied ids: <the id of every Question you replied to, or "none">
-questions linked: <the id of every Question raised or replied to + the subject of every row you cited it on, one Question per line, or "none">
-questions alone: <the id of every Question raised or replied to that no row carries + why, one per line, or "none">
-sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
+verify: <one line of JSON naming every write the record finds by no prefix of yours, in the shape below>
+created names: <one line of JSON, the name of every scope item you created as you wrote it, or []>
+sent: <n>   landed: <n>   conflicts: <the count, then the ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
@@ -648,19 +653,38 @@ families not checked: <row family, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 
+The `verify:` line is one JSON object on one line, every key below present, `[]` where you have
+none:
+
+- `updatedSubjects`: the subject of every row that existed before and that you updated or newly
+  cited off a page on your `pages opened:` line, except a row whose only write was a Question
+  citation.
+- `manualUpdates`: one `{ "subject", "specSection", "pageInPdf", "fileId" }` per row you wrote
+  onto off manual pages alone, a material in its `description` or a qualification in its
+  `notesExternal`, with the section's packed code and the manual page; such a row is not in
+  `updatedSubjects`.
+- `questionsRaised`: the full id of every Question you raised.
+- `questionsReplied`: the full id of every Question you replied to.
+- `questionsLinked`: one `{ "question": <its id>, "subjects": [<the subject of every row you cited it on>] }`
+  per Question you raised or replied to and cited on a row.
+- `questionsAlone`: the id of every Question you raised or replied to that no row carries.
+
+```text
+verify: {"updatedSubjects": ["scopeItem:A2-4-3"], "manualUpdates": [{"subject": "scopeItem:A2-4-9", "specSection": "092116", "pageInPdf": 412, "fileId": "file-4d5e6f"}], "questionsRaised": ["question:proj-9f2c:0a1b2c3d-0000-4000-8000-000000000031"], "questionsReplied": [], "questionsLinked": [{"question": "question:proj-9f2c:0a1b2c3d-0000-4000-8000-000000000031", "subjects": ["scopeItem:A2-4-3"]}], "questionsAlone": []}
+```
+
 `created:` is your own item count: how many scope items you created, not the entries under them.
 `updated:` counts every pre-existing row you wrote anything onto, a note, a value, or a citation
 alike. `sent:` and `landed:` count every write you made for this review, across every call, not
-only your first batch.
+only your first batch. `conflicts:` opens with its count, `0` or `none` where there were none.
 
-The `updated subjects:`, `questions raised ids:` and `questions replied ids:` lines are
-load-bearing, not bookkeeping. Your creates are findable by their `scopeItem:<unit id>-` prefix,
-but an update lands on a subject that already existed, a Question you raise on its own id, and a
-reply on the id of a Question somebody else raised, so nothing else in your report lets the runner
-find them back. Name every one. The runner finds an update back among the rows citing the sheets
-on your `pages opened:` line, so a row you wrote onto off manual pages alone, a material in its
-`description` or a qualification in its `notesExternal`, is named on `manual updates:` too, with
-the section and page, and found back there instead.
+The `verify:` line is load-bearing, not bookkeeping. Your creates are findable by their
+`scopeItem:<unit id>-` prefix, but an update lands on a subject that already existed, a Question
+you raise on its own id, and a reply on the id of a Question somebody else raised, so nothing else
+in your report lets the runner check them. Name every one. The runner checks an update among the
+rows citing the sheets on your `pages opened:` line, and a manual update by its section and page.
+`created names:` is how your runner finds the same work two reviews of its pass created, so name
+every item you created, exactly as its `name` reads.
 
 The `pages opened:` line is what your runner verifies you against, so it carries every page and not
 a sample. A page you opened and did nothing with is still named, with what you found there.

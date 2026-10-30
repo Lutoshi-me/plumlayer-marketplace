@@ -166,8 +166,8 @@ of them is ever trimmed.
    page creates takes its Question in one more `record_batch` after the batch that creates it. Name
    the Question by its title in that row's `notesInternal` where it fits under mandate 5's
    keep-whole rule; where it does not fit, the citation alone carries it, and the citation is never
-   skipped. A row whose only write in your unit is a Question citation goes on your
-   `questions linked:` line, never on `updated subjects:`. Never write an assumption, a value or a
+   skipped. A row whose only write in your unit is a Question citation goes in `questionsLinked` on
+   your `verify:` line, never in `updatedSubjects`. Never write an assumption, a value or a
    basis to price to for an open Question, in any field: what to carry until it is answered is the
    estimator's call. A reply adds what you read and where you read it, with its citation, and never
    argues which document governs or which answer is right: the design team decides that. A closed
@@ -258,7 +258,7 @@ of them is ever trimmed.
    `{ sheet, page, fileId }` (the raw `search` also returns superseded and removed ones). Cite this
    page only where none of its `drawingRefs` names this `fileId` and this `page`. Either way, a row
    is updated only where a write of yours landed on it: a citation the door answers `duplicate`
-   wrote nothing, so it puts the row on neither your `updated:` nor your `updated subjects:` line.
+   wrote nothing, so it puts the row on neither your `updated:` count nor your `updatedSubjects`.
    A citation of a row that already exists rides the batch.
    A row read off a schedule or a legend, created or cited, cites a `sheet-region`: a box from the
    lowest `x0` and `y0` to the highest `x1` and `y1` of the line boxes `get_page_text` gave you for
@@ -604,10 +604,11 @@ that file leave these lines out of their sheets, so what you do not record from 
    nextOffset` and `setVersion` set to the one your first answer carried, until `nextOffset` is
    absent. A block the end of one answer cut goes on in the next, its `fromLine` saying where.
    Where an answer says the file's repeated lines changed since your last call, read them again
-   from offset 0 once; on a second change, stop and name the file on `pages unread:` with that
-   reason. Where the call is refused because the file could not be checked, or prints the same
-   words at more spots than the check reads, there is nothing for you to read: name the file on
-   `pages unread:` with the refusal's reason, record nothing, and report. Keep the `setVersion`
+   from offset 0 once; on a second change, stop and name the file on `pages unread:` as
+   `file <fileId>: <the reason>`. Where the call is refused because the file could not be checked,
+   or prints the same words at more spots than the check reads, there is nothing for you to read:
+   name the file on `pages unread:` as `file <fileId>: <the refusal's reason>`, record nothing, and
+   report. Keep the `setVersion`
    your walk ended on: it goes on your `set version:` line, and the window 2 readers on this file
    leave lines out only where their answer names the same one.
 2. First, `notListed`, where an answer carries it, whatever its `blockCount`: it is one count for
@@ -667,36 +668,40 @@ that file leave these lines out of their sheets, so what you do not record from 
    box, a `document-page` citation `{ subject, kind: "document-page", fileId, pageInPdf }` or, on a
    new row, evidence `{ fileId, pageInPdf }`, and name the box you could not send on `anomalies:`
    with the file and page, ending `run only`. A page with no sheet number names no sheet your runner can verify by,
-   so every row that existed before and that you cite this way also goes on your `page citations:`
-   line, with its subject, the file and the page.
+   so every row that existed before and that you cite this way goes in `pageCitations` on your
+   `verify:` line, `{ "subject", "fileId", "pageInPdf" }`, and not in its `updatedSubjects`.
 7. A block whose `firstSheet` is null prints only on pages the set no longer shows: name each on
    `pages unread:` with its line count, and cite none.
 8. On `pages read:`, name each block you read by its first sheet, its page and its line count. On
    `cited sheets:`, name every sheet a row you created, updated or cited names, so your runner
-   finds your work back. On `page citations:`, name every update step 6 cited to a page with no
+   finds your work back. In `pageCitations`, name every update step 6 cited to a page with no
    sheet number. On `set version:`, write the `setVersion` your walk ended on.
 
 ## Report back
 
-Write your final message to `<run folder>/reports/<unit id>.md` first, then return it: your runner
-opens that file where your report does not reach it in the message. It is this shape and nothing
-else. No preamble, no prose paragraphs, no restatement of what you read.
+Write your report to `<run folder>/reports/<unit id>.md`, then end with a final message of exactly
+two lines and nothing else:
+
+```text
+report: <run folder>/reports/<unit id>.md
+verify: <the same verify line as in your report>
+```
+
+Your runner passes the `verify:` line to its one check of your unit and reads the rest off the
+file. The report is this shape and nothing else. No preamble, no prose paragraphs, no restatement
+of what you read.
 
 ```text
 unit: <unit id>   pass: <pass id>   window: <n>
 pages read: <sheet number + pageInPdf, renders taken and the reason for each, one per page>
 pages unread: <sheet number + pageInPdf + reason, or "none">
 cited sheets: <for the repeated lines, every sheet your rows and citations name, comma separated; otherwise "none">
-page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
 set version: <for the repeated lines, the setVersion your walk ended on; otherwise "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
-updated subjects: <the subject of every item you updated or newly cited, except a row cited only to a Question, or "none">
-questions raised ids: <the id of every Question you raised, or "none">
-questions replied ids: <the id of every Question you replied to, or "none">
-questions linked: <the id of every Question raised or replied to + the subject of every row you cited it on, one Question per line, or "none">
-sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
+verify: <one line of JSON naming every write the record finds by no prefix of yours, in the shape below>
+created names: <one line of JSON, the name of every scope item you created as you wrote it, or []>
+sent: <n>   landed: <n>   conflicts: <the count, then the ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
-trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
@@ -704,22 +709,34 @@ grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 
-`trades touched:` is each pre-existing row's `belongsToTrade` as the context read or
-`list_scope_items` gave it to you, and each code you sent a Question you raised in `trades` or
-`trade`, each catalog id once. A Question sent with `everyTrade: true`, or with no trade, names
-none here. A pass on an addendum reviews these packages afterward, so an addendum that only
-changes rows that already exist still has their packages reviewed.
+The `verify:` line is one JSON object on one line, every key below present, `[]` where you have
+none:
+
+- `updatedSubjects`: the subject of every row that existed before and that you updated or newly
+  cited, except a row whose only write was a Question citation and one in `pageCitations`.
+- `pageCitations`: for the repeated lines, one `{ "subject", "fileId", "pageInPdf" }` per update
+  you cited to a page with no sheet number; otherwise `[]`.
+- `questionsRaised`: the full id of every Question you raised.
+- `questionsReplied`: the full id of every Question you replied to.
+- `questionsLinked`: one `{ "question": <its id>, "subjects": [<the subject of every row you cited it on>] }`
+  per Question you raised or replied to and cited on a row.
+
+```text
+verify: {"updatedSubjects": ["scopeItem:A1-2-4"], "pageCitations": [{"subject": "scopeItem:A1-1-9", "fileId": "file-1a2b3c", "pageInPdf": 3}], "questionsRaised": [], "questionsReplied": ["question:proj-9f2c:0a1b2c3d-0000-4000-8000-000000000012"], "questionsLinked": []}
+```
 
 `created:` is how many scope items you created, not the entries under them. `updated:` counts
 every pre-existing item you wrote anything onto: a note, a value, or a citation alike. `cited
 sheets:` is what your runner verifies a repeated lines unit against, since that unit has no sheet
-of its own. `sent:` and
-`landed:` count every write you made for this unit, across every call, citations among them.
+of its own. `sent:` and `landed:` count every write you made for this unit, across every call,
+citations among them. `conflicts:` opens with its count, `0` or `none` where there were none.
 
-The `updated subjects:`, `questions raised ids:` and `questions replied ids:` lines are how your
-runner finds back what carries no `scopeItem:<unit-id>-` prefix: an update lands on a subject that
-already existed, a Question you raise on its own id, and a reply on the id of a Question somebody
-else raised. Name every one.
+The `verify:` line is how your runner checks what carries no `scopeItem:<unit-id>-` prefix: an
+update lands on a subject that already existed, a Question you raise on its own id, and a reply on
+the id of a Question somebody else raised. Name every one. A row it names that the record does not
+show citing your sheets or page, or a Question it names that the record does not carry, stops the
+pass. `created names:` is how your runner finds the same work two units of its pass created, so
+name every item you created, exactly as its `name` reads.
 
 An unread page is named, never silently skipped. Your reading is your word: it lands as the row's
 current value the moment you write it, so name what you are unsure of on the row, and raise a
