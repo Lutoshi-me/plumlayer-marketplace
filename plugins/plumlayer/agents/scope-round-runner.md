@@ -116,11 +116,14 @@ because nothing has run.
    `[Request interrupted by user for tool use]`. While you are still running, that text never means
    the user interrupted, since a user's interrupt stops you too: it means the reader stopped
    answering. Where its report file is there, verify off it. Where it is absent, run `next` with
-   `--stopped <unit id>` added. The first time, it notes the stop and prints the unit's `next:`
-   line again, its `dispatch` line appended again: dispatch the unit once more. The second time it
-   notes the unit unread and prints `stop:`, and the pass stops there as a mismatch does: go to
-   step 5. The unit stays dispatched with no `verified` line, so the next dispatch of the pass
-   starts at it.
+   `--stopped <unit id>` added. The first time, it notes the stop and appends the unit's `dispatch`
+   line again in one write, and prints the unit's `next:` line: dispatch the unit once more. The
+   second time it notes the unit unread and prints `stop:`, and the pass stops there as a mismatch
+   does: go to step 5. The script counts a stop off the unit's `dispatch` lines and stop notes
+   together, so running it again after an interruption never counts a stop that did not happen.
+   The unit stays dispatched with no `verified` line, and stays stopped until the estimator says to
+   read it again: the lead then appends its `dispatch` line after the stop, and `next` takes the
+   unit as a fresh one, read again once more if its reader stops again.
 3. **Verify per unit, in one call, before the next unit starts.** Make one call:
 
    ```text
@@ -158,10 +161,14 @@ because nothing has run.
    `<run folder>/kinds/<pass-id>.txt`, the trades off the answer to
    `<run folder>/trades/<pass-id>.txt`, then its notes on the ledger: each line of the report's
    `anomalies:`, `grain questions:` and `door-owned suggestions:` copied whole as an `anomaly`,
-   `grain` or `door` note, a repeated lines unit's `set` or `unread` note, a `deviation` where the
-   reader's counts and its named writes disagree, an `overlap` where an item's name matches one an
-   earlier unit of the pass created, and a `deviation` per mismatch the answer names. Then the
-   unit's `verified` line, last, so a `verified` line still means its unit is complete. It prints
+   `grain` or `door` note, a repeated lines unit's `set` or `unread` note, an `unread` note for
+   each page a sheet's report names on `pages unread:`, a `deviation` where the reader's counts and
+   its named writes disagree, an `overlap` where an item's name matches one an earlier unit of the
+   pass created, and a `deviation` per mismatch the answer names. Then the unit's `verified` line,
+   last, so a `verified` line still means its unit is complete. The unit is a mismatch, whatever
+   the answer says, where the report's `landed:` is not its `sent:`, naming both in a `deviation`,
+   and where the `verify:` line or the answer names one key twice, since which value was meant is
+   not on the page. It prints
    `verified <unit id> result ok`, then the next unit's `next:` line, its `dispatch` line already
    appended: dispatch it as step 2 says. `result mismatch: <reason>` is followed by `stop:`: a
    mismatch stops the pass and gets investigated, never papered over, so go to step 5. The
@@ -343,8 +350,9 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   dispatch any agent whose job is to wait for another agent or to do nothing. A dispatch that comes
   back with an agent id is waited on by ending the turn, never by a sleep, a shell loop or a look
   at a file, and a report from an agent you did not dispatch is not a report you verify against.
-- Dispatch a unit a third time. A reader that stopped answering is read again once; a second stop
-  ends the pass.
+- Dispatch a unit a third time on your own. A reader that stopped answering is read again once; a
+  second stop ends the pass, and only the estimator's go-ahead, which the lead writes as the unit's
+  `dispatch` line after the stop, opens it again.
 - Dispatch an agent with nothing real to give it. A reader is dispatched only with a unit and its
   pages, a reviewer only with a package; a turn with nothing left to dispatch ends by returning to
   your summary or moving to the next step, never by a placeholder call carrying a "do nothing",

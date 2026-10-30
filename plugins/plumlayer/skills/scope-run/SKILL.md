@@ -956,9 +956,12 @@ nothing else:
    first. A pass with a unit on `unverified:` gets no `pass:` line, and the record script refuses
    it. Where that unit reads `mismatch`, the run stops and gets investigated, never papered over.
    Where the `unread:` line names it as stopped answering twice, start no further pass, check in at
-   once naming that sheet, and on the go-ahead dispatch that pass again, which starts at that sheet
-   and reads the ones after it; once that unit reads verified, the earlier stop is history and
-   stops nothing. A unit with no verified line and no such stop is a runner that stopped partway,
+   once naming that sheet, and on the go-ahead run
+   `python3 '<plugin root>/scripts/runner_unit.py' next '<run folder>' --window <n> --pass <pass id> --read-again <unit id>`,
+   single quoted, which appends that unit's `dispatch` line after its stop, then dispatch that
+   pass again, which starts at that sheet and reads the ones after it. Without that line the pass
+   stops at the sheet again. Once that unit reads verified, the earlier stop is history and stops
+   nothing. A unit with no verified line and no such stop is a runner that stopped partway,
    handled as the windows section says.
 
    Otherwise, before you say a number out loud, take the pass's counts off the record yourself
