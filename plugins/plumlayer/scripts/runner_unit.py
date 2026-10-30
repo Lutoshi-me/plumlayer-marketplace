@@ -13,7 +13,7 @@ answer already carries, copied or counted.
 
 Two modes:
 
-    python runner_unit.py next '<run folder>' --window <n> --pass <pass id> [--stopped <unit id>]
+    python runner_unit.py next '<run folder>' --window <n> --pass <pass id> [--stopped <unit id> | --read-again <unit id>]
 
         Reads the pass's block of `<run folder>/read-plan.md` with the summary script's own plan
         reader, and this window's ledger lines for the units the block carries, whatever pass they
@@ -35,9 +35,18 @@ Two modes:
 
         `--stopped <unit id>` is for a reader that stopped answering and left no report. The first
         time, it appends `note <window> <pass> <unit> deviation <sheet> reader stopped answering,
-        read again once` and goes on as `next` does, the unit's `dispatch` line appended again. The
-        second time, decided by counting those notes, it appends `note <window> <pass> <unit> unread
-        <sheet> reader stopped answering twice` and prints `stop:`.
+        read again once` and the unit's `dispatch` line again, in one write, and prints the unit's
+        `next:` line. The second time it appends `note <window> <pass> <unit> unread <sheet> reader
+        stopped answering twice` and prints `stop:`. Which time it is comes off the unit's
+        `dispatch` lines and stop notes read together: a `read again once` note with no `dispatch`
+        line after it is a first stop whose `dispatch` line never landed, so the call appends that
+        line and counts no second stop.
+
+        `--read-again <unit id>` is the lead's, on the estimator's go-ahead to read again a unit
+        whose reader stopped answering twice. It appends the unit's `dispatch` line after the stop
+        and prints its `next:` line. A `stopped answering twice` note stops the unit only until a
+        `dispatch` line follows it; past that, the unit is read as a fresh one, read again once
+        more if its reader stops again.
 
     python runner_unit.py record '<run folder>' --window <n> --pass <pass id> --unit <unit id> <<'EOF'
     <the verify_unit answer, as it came back>
@@ -62,6 +71,10 @@ Two modes:
                note <w> <p> <u> set <setVersion> file <fileId>                      (repeated lines)
                note <w> <p> <u> unread file <fileId> repeated lines not read, <reason>  (repeated lines)
                note <w> <p> <u> unread file <fileId> <b> blocks <l> lines not listed, <why>  (repeated lines)
+               note <w> <p> <u> unread <each line under pages unread:>                     (a sheet)
+               note <w> <p> <u> deviation the verify line names <key> twice, so it was not read
+               note <w> <p> <u> deviation the answer names <key> twice, so it was not read
+               note <w> <p> <u> deviation reader sent <s>, landed <l>
                note <w> <p> <u> deviation reader counted <what> <a>, named <b>
                note <w> <p> <u> overlap <name> (<earlier unit>, <unit>)
                note <w> <p> <u> deviation verify <check> <value>: <reason>       (up to five)
@@ -77,7 +90,10 @@ Two modes:
         report does not carry is written 0 on a mismatch line, and the reason names it.
 
         The result is a mismatch where the answer says so, where `checked` differs from the
-        `verify:` line, where the `verify:` line or a count field of the report does not read, where
+        `verify:` line, where the `verify:` line or a count field of the report does not read,
+        where the report's `landed:` is not its `sent:`, whatever the answer says, where the
+        `verify:` line or the answer names one key twice in an object, the answer then read for
+        nothing and its trades not written, where
         the answer's `sheets` leave out a page the unit read (its own sheet, a repeated lines
         unit's `cited sheets:`, a review's `pages opened:`), or where a review's `verify:` line
         carries no `questionsAlone`. It prints `verified <unit> result ok` or `verified <unit>
@@ -94,7 +110,8 @@ Exit codes:
      no block for the pass, a block over twelve units, a unit the block does not carry, a ledger
      line in none of the three shapes, no report file, an answer that is not a JSON object with a
      whole number `entryCount` and a `result`, a `--stopped` unit that is not the one `next` takes,
-     carries no `dispatch` line or has its report on file.
+     carries no `dispatch` line or has its report on file, a `--read-again` unit that is not the
+     one `next` takes or whose reader never stopped answering twice.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies values. Nothing here fills a gap: a report that does not
@@ -182,6 +199,35 @@ _PAGE_RE = re.compile(r"^p[0-9]+$")
 
 class UnitError(Exception):
     """A named failure with a one-line reason, reported on stderr and exiting 1."""
+
+
+class _KeyTwice(ValueError):
+    """A JSON object naming one key twice, which plain decoding reads as its last value alone."""
+
+
+def _one_key_each(pairs: list[tuple[str, object]]) -> dict:
+    out: dict = {}
+    for key, value in pairs:
+        if key in out:
+            raise _KeyTwice(key)
+        out[key] = value
+    return out
+
+
+def _loads(text: str):
+    """JSON decoded with every key of every object once, so nothing written is read as dropped."""
+    return json.loads(text, object_pairs_hook=_one_key_each)
+
+
+def _key_twice(text: str | None) -> str | None:
+    """The key a JSON text names twice in one object, or None."""
+    try:
+        _loads(text or "")
+    except _KeyTwice as e:
+        return str(e)
+    except json.JSONDecodeError:
+        pass
+    return None
 
 
 # --------------------------------------------------------------------------- #
@@ -377,7 +423,32 @@ def _pending(folder: Path, window: int, pass_id: str) -> None:
     _append(ledger, [line for line in said if line.startswith("note ") and line not in have])
 
 
-def next_unit(folder: Path, window: int, pass_id: str, stopped: str | None = None) -> list[str]:
+def _stop_state(lines: list[str]) -> str:
+    """
+    Where a unit stands on stopped readers, off its `dispatch` lines and stop notes read together,
+    in ledger order: `stopped` where its last `stopped answering twice` note has no `dispatch` line
+    after it; `once` where a `read again once` note since then has a `dispatch` line after it;
+    `once, not dispatched` where it has none, a `--stopped` cut off between its two lines; else
+    `open`. A `dispatch` line after a `stopped answering twice` note is the estimator's go-ahead to
+    read the unit again, so the stops before it count for nothing.
+    """
+    state = "open"
+    for line in lines:
+        if line.startswith("dispatch "):
+            if state == "stopped":
+                state = "open"
+            elif state == "once, not dispatched":
+                state = "once"
+        elif line.startswith("note ") and line.endswith(STOPPED_TWICE):
+            state = "stopped"
+        elif line.startswith("note ") and line.endswith(STOPPED_ONCE):
+            state = "once, not dispatched"
+    return state
+
+
+def next_unit(
+    folder: Path, window: int, pass_id: str, stopped: str | None = None, read_again: str | None = None,
+) -> list[str]:
     plan, units = read_block(folder, window, pass_id)
     if window == 3:
         _pending(folder, window, pass_id)
@@ -387,35 +458,49 @@ def next_unit(folder: Path, window: int, pass_id: str, stopped: str | None = Non
     unit = _first_open(units, ledger)
     prefix = f"note {window} {pass_id}"
 
-    if stopped is not None:
-        if unit is None or unit["unit"] != stopped:
+    for named_unit, why in ((stopped, "no stopped reader is noted"), (read_again, "nothing is read again")):
+        if named_unit is not None and (unit is None or unit["unit"] != named_unit):
             raise UnitError(
-                f"{stopped} is not the unit this pass reads next "
-                f"({unit['unit'] if unit else 'none, every unit verified'}), so no stopped reader is noted"
+                f"{named_unit} is not the unit this pass reads next "
+                f"({unit['unit'] if unit else 'none, every unit verified'}), so {why}"
             )
+
+    if stopped is not None:
         lines = ledger["byUnit"][stopped]
         if not any(line.startswith(f"dispatch {window} ") for line in lines):
             raise UnitError(f"{stopped} carries no dispatch line on {ledger_path}, so no reader of it stopped")
         report = folder / REPORTS_FOLDER / f"{stopped}.md"
         if report.is_file():
             raise UnitError(f"{report} is on file; verify the unit off it and record it")
-        once = sum(1 for line in lines if line.startswith("note ") and line.endswith(STOPPED_ONCE))
-        twice = any(line.startswith("note ") and line.endswith(STOPPED_TWICE) for line in lines)
+        state = _stop_state(lines)
         named = _sheet_named(unit)
-        if once == 0:
-            _append(ledger_path, [f"{prefix} {stopped} deviation {named} {STOPPED_ONCE}"])
-        else:
-            if not twice:
-                _append(ledger_path, [f"{prefix} {stopped} unread {named} {STOPPED_TWICE}"])
+        if state == "open":
+            # The note and the unit's next `dispatch` line in one write.
+            _append(ledger_path, [
+                f"{prefix} {stopped} deviation {named} {STOPPED_ONCE}",
+                _dispatch_line(window, pass_id, unit, plan["fields"].get("reads for", "")),
+            ])
+        elif state == "once":
+            _append(ledger_path, [f"{prefix} {stopped} unread {named} {STOPPED_TWICE}"])
             return [f"stop: {stopped} {STOPPED_TWICE}"]
+        # `once, not dispatched` goes on as `next` does, which appends the `dispatch` line the cut
+        # call did not, and `stopped` stops below.
         ledger = read_ledger(ledger_path, window, set(plan["units"]))
+
+    if read_again is not None:
+        lines = ledger["byUnit"][read_again]
+        if not any(line.startswith("note ") and line.endswith(STOPPED_TWICE) for line in lines):
+            raise UnitError(f"{read_again}'s reader never stopped answering twice, so it needs no go-ahead to read it again")
+        if _stop_state(lines) == "stopped":
+            _append(ledger_path, [_dispatch_line(window, pass_id, unit, plan["fields"].get("reads for", ""))])
+            ledger = read_ledger(ledger_path, window, set(plan["units"]))
 
     if unit is None:
         return ["next: none"]
     lines = ledger["byUnit"][unit["unit"]]
     if unit["unit"] in ledger["verified"]:
         return [f"stop: {unit['unit']} stands verified as a mismatch"]
-    if any(line.startswith("note ") and line.endswith(STOPPED_TWICE) for line in lines):
+    if _stop_state(lines) == "stopped":
         return [f"stop: {unit['unit']} {STOPPED_TWICE}"]
     # A unit whose last line is its dispatch is dispatched and not yet back, so a `next` run again
     # appends nothing.
@@ -481,7 +566,9 @@ def parse_claims(text: str | None, window: int) -> tuple[dict | None, str | None
     if text is None:
         return None, "the report carries no `verify:` line"
     try:
-        claims = json.loads(text)
+        claims = _loads(text)
+    except _KeyTwice as e:
+        return None, f"the `verify:` line names `{e}` twice, so it does not read"
     except json.JSONDecodeError as e:
         return None, f"the `verify:` line is not one line of JSON ({e.msg})"
     if not isinstance(claims, dict):
@@ -593,9 +680,15 @@ def _missing_sheets(expected: list[tuple[str, str | None]], answer: dict) -> lis
 # record
 # --------------------------------------------------------------------------- #
 
-def read_answer(text: str) -> dict:
+def read_answer(text: str) -> tuple[dict, str | None]:
+    """
+    The answer and None, or where it names a key twice, an empty mismatch and that key, since
+    which of the two values the call meant is not on the page.
+    """
     try:
-        answer = json.loads(text)
+        answer = _loads(text)
+    except _KeyTwice as e:
+        return {"entryCount": 0, "result": "mismatch"}, str(e)
     except json.JSONDecodeError as e:
         raise UnitError(f"the answer on stdin is not JSON ({e.msg}); pass the verify_unit answer as it came back") from None
     if not isinstance(answer, dict):
@@ -605,7 +698,7 @@ def read_answer(text: str) -> dict:
         raise UnitError("the answer on stdin carries no whole number `entryCount`, so it is no verify_unit answer")
     if answer.get("result") not in ("ok", "mismatch"):
         raise UnitError("the answer on stdin carries no `result` of ok or mismatch; send the call with the report's claims")
-    return answer
+    return answer, None
 
 
 def _clause(text: str) -> str:
@@ -625,20 +718,35 @@ def _file_lines(path: Path) -> list[str]:
         raise UnitError(f"cannot read {path}: {e}") from e
 
 
-def assess(unit: dict, fields: dict[str, list[str]], answer: dict, window: int, unit_id: str) -> dict:
-    """Every figure and reason the unit's lines carry, worked out before anything is written."""
+def assess(
+    unit: dict, fields: dict[str, list[str]], answer: dict, window: int, unit_id: str,
+    answer_twice: str | None = None,
+) -> dict:
+    """
+    Every figure and reason the unit's lines carry, worked out before anything is written.
+    `answer_twice` is the key the answer names twice, where it does, and then nothing is checked
+    against the answer.
+    """
     reasons: list[str] = []
     deviations: list[str] = []
+    drift: list[str] = []
 
     head = (fields.get("unit") or [""])[0]
     if not head.startswith(f"{unit_id} ") and head != unit_id:
         reasons.append(f"the report opens with `unit: {head[:60]}`, not with unit {unit_id}")
 
-    claims, claims_reason = parse_claims((fields.get("verify") or [None])[0], window)
+    verify_text = (fields.get("verify") or [None])[0]
+    claims, claims_reason = parse_claims(verify_text, window)
     if claims_reason:
         reasons.append(claims_reason)
+        twice = _key_twice(verify_text)
+        if twice:
+            drift.append(f"deviation the verify line names {twice} twice, so it was not read")
 
-    if answer["result"] != "ok":
+    if answer_twice:
+        reasons.append(f"the answer names `{answer_twice}` twice, so it does not read")
+        drift.append(f"deviation the answer names {answer_twice} twice, so it was not read")
+    elif answer["result"] != "ok":
         rows = answer.get("mismatches") if isinstance(answer.get("mismatches"), list) else []
         named = [
             f"verify {row.get('check')} {row.get('value')}: {row.get('reason')}"
@@ -648,7 +756,7 @@ def assess(unit: dict, fields: dict[str, list[str]], answer: dict, window: int, 
         deviations.extend(named[:MAX_DEVIATIONS])
 
     checked = answer.get("checked")
-    if claims is not None:
+    if claims is not None and not answer_twice:
         if not isinstance(checked, dict):
             reasons.append("the answer carries no `checked` counts, so the claims were not sent")
         else:
@@ -664,7 +772,7 @@ def assess(unit: dict, fields: dict[str, list[str]], answer: dict, window: int, 
     if len(expected) > SHEETS_PER_CALL:
         reasons.append(f"the unit names {len(expected)} sheets, over the {SHEETS_PER_CALL} one call checks")
         deviations.append(f"verify sheets cut at {SHEETS_PER_CALL} of {len(expected)}")
-    else:
+    elif not answer_twice:
         missing = _missing_sheets(expected, answer)
         if missing:
             reasons.append(f"the call left out {pass_summary._named(missing)}")
@@ -682,6 +790,12 @@ def assess(unit: dict, fields: dict[str, list[str]], answer: dict, window: int, 
         if number is None:
             reasons.append(f"the report's `{name}:` field carries no whole number")
         figures[name] = number or 0
+    # A reader whose writes did not all land stops and says so on these two figures, so the unit is
+    # a mismatch on them whatever the call answers.
+    readable = all(_first_whole(_inline(fields, "sent", name) or "") is not None for name in ("sent", "landed"))
+    if readable and figures["sent"] != figures["landed"]:
+        reasons.append(f"the report's `landed:` {figures['landed']} is not its `sent:` {figures['sent']}")
+        drift.append(f"deviation reader sent {figures['sent']}, landed {figures['landed']}")
     conflicts_text = _inline(fields, "sent", "conflicts")
     if conflicts_text is not None and conflicts_text.lower() == "none":
         figures["conflicts"] = 0
@@ -694,7 +808,6 @@ def assess(unit: dict, fields: dict[str, list[str]], answer: dict, window: int, 
     named_updates = _named_updates(claims) if claims else 0
     raised = len(claims.get("questionsRaised", [])) if claims else 0
     replied = len(claims.get("questionsReplied", [])) if claims else 0
-    drift = []
     if claims is not None and counts is not None:
         for what, counted, named in (
             ("updated", updated_counted, named_updates),
@@ -706,7 +819,7 @@ def assess(unit: dict, fields: dict[str, list[str]], answer: dict, window: int, 
 
     names_entry = (fields.get("created names") or ["[]"])[0]
     try:
-        names = json.loads(names_entry)
+        names = _loads(names_entry)
         if not isinstance(names, list) or not all(isinstance(n, str) and n.strip() for n in names):
             raise ValueError
     except (json.JSONDecodeError, ValueError):
@@ -756,11 +869,11 @@ def record_unit(folder: Path, window: int, pass_id: str, unit_id: str, answer_te
     report = folder / REPORTS_FOLDER / f"{unit_id}.md"
     if not report.is_file():
         raise UnitError(f"no report at {report}; a unit with no report is read again")
-    answer = read_answer(answer_text)
+    answer, answer_twice = read_answer(answer_text)
     fields = read_report(report, REVIEWER_LABELS if window == 3 else READER_LABELS)
     ledger_path = folder / LEDGER_FILE
     ledger = read_ledger(ledger_path, window, set(plan["units"]))
-    seen = assess(unit, fields, answer, window, unit_id)
+    seen = assess(unit, fields, answer, window, unit_id, answer_twice)
     result = "mismatch" if seen["reasons"] else "ok"
     said = f"verified {unit_id} result {result}" + (f": {seen['reasons'][0]}" if seen["reasons"] else "")
 
@@ -785,9 +898,9 @@ def record_unit(folder: Path, window: int, pass_id: str, unit_id: str, answer_te
                 kinds.append(kind)
     _append(kinds_path, kinds)
 
-    # 3. Trades, the whole unit at once.
+    # 3. Trades, the whole unit at once, and none off an answer that does not read.
     trades_path = folder / "trades" / f"{pass_id}.txt"
-    if not any(line.split(" ", 1)[0] == unit_id for line in _file_lines(trades_path)):
+    if not answer_twice and not any(line.split(" ", 1)[0] == unit_id for line in _file_lines(trades_path)):
         trade_lines = [
             f"{unit_id} trade {row['trade']} {row['count']}"
             for row in answer.get("trades") or []
@@ -805,6 +918,8 @@ def record_unit(folder: Path, window: int, pass_id: str, unit_id: str, answer_te
     notes += [f"{prefix} door {line}" for line in fields.get("door-owned suggestions", [])]
     if unit["kind"] == "repeated":
         notes += [f"{prefix} {_clause(note)}" for note in _repeated_notes(unit, fields)]
+    elif unit["kind"] == "sheet":
+        notes += [f"{prefix} unread {_clause(entry)}" for entry in fields.get("pages unread", [])]
     notes += [f"{prefix} {_clause(note)}" for note in seen["drift"]]
     earlier: dict[str, str] = {}
     for name, owner in others:
@@ -851,7 +966,12 @@ def main(argv: list[str] | None = None, stdin: str | None = None) -> int:
         command.add_argument("--window", type=int, required=True, choices=(1, 2, 3))
         command.add_argument("--pass", dest="pass_id", required=True, help="the pass id the plan gives")
         if mode == "next":
-            command.add_argument("--stopped", help="the unit whose reader stopped answering and left no report")
+            stop = command.add_mutually_exclusive_group()
+            stop.add_argument("--stopped", help="the unit whose reader stopped answering and left no report")
+            stop.add_argument(
+                "--read-again", dest="read_again",
+                help="the unit whose reader stopped answering twice, which the estimator said to read again",
+            )
         else:
             command.add_argument("--unit", required=True, help="the unit whose report and answer to record")
     args = parser.parse_args(argv)
@@ -862,7 +982,7 @@ def main(argv: list[str] | None = None, stdin: str | None = None) -> int:
         if args.pass_id.startswith("review-"):
             raise UnitError(f"`{args.pass_id}` names the mode; give the bare pass id the plan gives")
         if args.mode == "next":
-            lines = next_unit(args.folder, args.window, args.pass_id, args.stopped)
+            lines = next_unit(args.folder, args.window, args.pass_id, args.stopped, args.read_again)
         else:
             text = stdin if stdin is not None else sys.stdin.buffer.read().decode("utf-8")
             lines = record_unit(args.folder, args.window, args.pass_id, args.unit, text)
