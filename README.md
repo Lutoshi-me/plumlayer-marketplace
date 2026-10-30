@@ -113,8 +113,8 @@ Plus two utilities you reach for directly: `project-record` and `setup`.
 ### Buyout
 
 - **`bid-intake`**: reads a trade's sub proposals and turns them into bid records against the
-  matching trade package, so you can level bids side by side with the amounts, inclusions, and
-  exclusions each sub actually quoted.
+  matching trade package, so you can level bids side by side with the amounts, quantities,
+  inclusions, and exclusions each sub actually quoted.
 
 ### Measure
 

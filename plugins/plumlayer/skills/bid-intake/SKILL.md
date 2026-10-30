@@ -62,8 +62,8 @@ say to the user (no em dashes, no bolded emphasis words). Say:
 - "N proposals waiting to be leveled" (after `list_proposals`, naming each file, the company that
   sent it, when it arrived, and its packages)
 - "reading <bidder>'s proposal" (per-proposal read)
-- "N rows answered, M not addressed" (after a proposal read; never imply a row not addressed is a
-  zero)
+- "N rows answered, M not addressed, Q with a quantity" (after a proposal read; never imply a row
+  not addressed is a zero)
 - "N unlisted scope items, things they priced that aren't on the checklist" (after a proposal read,
   when the proposal carries unlisted content: plain words for what stage 7b records)
 - "K proposals read, J bid lines to record" (before recording)
@@ -285,19 +285,43 @@ page without a text layer is read by OCR and `textSource` says so, and spans are
   and no other. A contact id you settled by matching a name puts a real proposal against the wrong
   person's record; leave the field off and let the name on the proposal stand by itself.
 - **Per-row responses**: for each scope row the proposal addresses, the response along the three
-  axes plus amount, note, and substitution, per the response value shape (stage 7):
+  axes plus amount, quantity, note, and substitution, per the response value shape (stage 7):
   - **inclusion**: `base` (in the base bid), `adder` (a priced add), or `excluded` (not carried).
   - **routing**: `self` / `by-others` / `NIC`, when the proposal says who carries it. Distinguishes a
     true exclusion from a scope-gap the bidder routes elsewhere. Omit when it is plain base scope.
   - **amount**: the dollar figure when one is given (an adder's add, or a broken-out base cost). Omit
     when none is stated. Never derive a number the proposal does not state.
+  - **quantity**: the one number and unit the proposal prints for this row, on the line you read the
+    answer from (`"quantity": {"value": 22, "unit": "EA"}`). Keep the unit exactly as printed (`EA`,
+    `LF`, `ea.`), never converted and never matched to another bidder's. A comma groups digits:
+    "1,250 LF" is 1250 LF. "Approx. 1,200 SF" is 1200 SF with the note `Approx.`; "1 LS" is 1 LS;
+    "Lump Sum" with no number is no quantity. Leave the quantity off when the row prints none, when
+    you folded two or more lines into the row, when one line covers several rows (the reverse case
+    under the aggregation rule), when the proposal prints a range or several figures for the row,
+    when the only figure sits on an alternate's line, or when the printed unit runs past 20
+    characters (its words go in the note instead). Never add, divide, or multiply to reach a
+    quantity, never take one from the schedule, the drawings, the estimator's own quantity, or
+    another bidder, and never write a price per unit: the amount and the quantity already carry it.
   - **ambiguity**: `OSV` / `TV` / `unclear` when the proposal prices a row ambiguously ("other scope
     value", "to verify", a bare "?"). An ambiguous token never resolves to a hard `amount`.
   - **substitution**: the bidder's own words for a different product or method priced in place of what
     the documents specify, verbatim, when the proposal states one. Record it on every row it touches,
     cited to the page it came from. If the proposal names only what it offers, record only that; never
     supply the specified side yourself.
-  - **note**: whatever else the row says in free text ("included above", "option 1", a typed comment).
+  - **note**: only what the proposal says about this row that no other field carries, short and in
+    the bidder's own terms: `With A1`, `Bronze finish`, `Option 1`, `Approx.`, `Tax excluded`. When
+    nothing is left, leave the note off. The estimator reads the answer in the cell as an icon (a
+    check for included; an X for excluded, by others, or not in contract; a plus or minus for an add
+    or deduct; a question mark for unclear or a substitution) with the amount and the quantity beside
+    it. So a note never restates the row's own answer (included, in base, excluded, by others, NIC,
+    add, deduct, alternate, unclear, not addressed), and never repeats the price, the quantity, a
+    price per unit, or the substitution's words. A qualification on part of the row stays, in the
+    bidder's words, even when it uses one of those words: `Tax excluded`, `Installation by others`.
+    An alternate's own name goes in `alternate.label`. The line you read the answer from, and any
+    comparison against the schedule, go in `evidence.rationale`, which the estimator reads in the
+    cell's card. A folded row or a row sharing one figure names its lines in the note, as the
+    aggregation rule says. A note is plain estimator words, per docs/plugin-text-style.md: never
+    another entry's subject id.
 - **Coverage**: did this proposal bid the whole package (`full`) or a subset (`partial`)? A `partial`
   coverage may carry a short human label ("Framing only") and, when the proposal names the covered
   rows, the explicit `coveredItems` subset (the `scopeItem:` subjects from stage 3). The label is
@@ -350,9 +374,10 @@ two may only:
 - run the **miss-direction checks**: is this bidder an outlier low because they excluded a row the
   peers all carried? Flag it for review.
 
-Pass two must never revise a pass-one `amount` or `inclusion` to move a bidder toward the peers.
-The whole point of reading blind first is that a bidder's price stands on their own document. In the
-report, state which pass produced which flag.
+Pass two must never revise a pass-one `amount` or `inclusion` to move a bidder toward the peers,
+and it never adds or changes a `quantity`. The whole point of reading blind first is that a bidder's
+price stands on their own document. A quantity that differs between bidders goes in the report,
+never onto an answer. In the report, state which pass produced which flag.
 
 ### Hard read rules (gates, not advice)
 
@@ -408,7 +433,8 @@ These are gates. Write them into every read:
   row response is allowed only when all three hold: same bidder, same scope row (same mark), and
   the lines are complementary components of that one row's scope; never alternatives to choose
   between. Apply one consistent aggregation rule for the whole run, state it in the report, and flag
-  every aggregated response (its note names the lines folded in; the receipt cites where they sit).
+  every aggregated response (its note names the lines folded in; the receipt cites where they sit;
+  it carries no quantity).
   Lines that belong to different rows stay split, and a line that maps to no row becomes an Additional
   item; aggregation never absorbs it into a nearby row. When you cannot tell whether lines are
   complementary or alternative, do not fold: keep the clearest single line as the response, put the
@@ -418,13 +444,14 @@ These are gates. Write them into every read:
   combined type against what the schedule splits into two or more marks. Do not silently attach it to
   the likeliest one. Record a response on each row the line genuinely covers, flag every one of
   them `unclear`, and say in each note that they share one undivided proposal figure and which line it
-  was, so a person can see the split is yours and not the bidder's. Never divide the money between
-  rows by your own arithmetic.
+  was, so a person can see the split is yours and not the bidder's. None of them carries a quantity.
+  Never divide the money or the quantity between rows by your own arithmetic.
 
   **Do not fold across a checklist row and a door assembly.** A line named for a window mark can be
   the glazed half of a door assembly rather than extra units of that mark. When a line's quantity does
   not reconcile against the schedule's own quantity for that mark, treat that as the signal it is a
   different thing, and check before folding: a wrong fold inflates the largest row on the package.
+  Write that comparison in `evidence.rationale`; the schedule never changes the quantity you record.
 
   **Additional items aggregate under the same rule.** Two proposal lines may fold into one item only
   when they are complementary components of the same unlisted thing; say in the item's note which
@@ -449,8 +476,8 @@ row, and the additional items this proposal earned under the stage-4 gate). Befo
 **confidence audit**: collect every read whose `evidence.confidence` is below 0.7 and list it in
 the report for human attention. A low-confidence read is still recorded, carrying its confidence and its
 receipt, but it is called out, not buried in a count. State the per-bidder counts by predicate, the
-not-addressed count per bidder, and the additional-item count per bidder, so the write manifest is
-honest.
+not-addressed count per bidder, the count of answers carrying a quantity per bidder, and the
+additional-item count per bidder, so the write manifest is honest.
 
 ## 6. Declare the supersession mode (before recording)
 
@@ -534,10 +561,19 @@ rejected by `.strict()`, enums are exact):
  "predicate": "bidResponse",
  "value": {"inclusion": "adder", "routing": "self", "amount": 4200,
            "substitution": "Kwikset 780 in lieu of the specified Schlage B60N",
-           "note": "add for level 5 finish"},
+           "note": "Level 5 finish"},
  "sourceInstrument": "bid-intake-skill",
  "evidence": {"instrument": "bid-intake-skill", "method": "agent-read", "confidence": 0.8,
    "rationale": "line item 3, priced add", "fileId": "<fileId>", "page": 2}}
+
+// per-row response with the quantity the proposal prints, and nothing left for a note
+{"subject": "bidResponse:party:<companyId>:bidPackage:<projectId>:09 29 00:scopeItem:<id>",
+ "predicate": "bidResponse",
+ "value": {"inclusion": "base", "amount": 61050, "quantity": {"value": 1850, "unit": "LF"}},
+ "sourceInstrument": "bid-intake-skill",
+ "evidence": {"instrument": "bid-intake-skill", "method": "agent-read", "confidence": 0.9,
+   "rationale": "line 3, partition type P1, 1,850 LF; the schedule lists 1,850 LF",
+   "fileId": "<fileId>", "page": 2}}
 
 // coverage  (predicate: "bidCoverage")  — proposalFileId is the registered file id, label is optional
 {"subject": "bidCoverage:party:<companyId>:bidPackage:<projectId>:09 29 00",
@@ -577,6 +613,9 @@ Value rules that the schema enforces, honor them at authoring time:
   Omission is the only correct encoding of "not stated."
 - `substitution` is free text, 1 to 2000 characters, the bidder's own words verbatim. Like every other
   optional bid field it is omitted when absent, never `null`.
+- `quantity` is `{ value, unit }` with both parts required and no other key: `value` a number of zero
+  or more (never the string `"22"`), `unit` 1 to 20 characters as printed. A proposal that states no
+  quantity gets no `quantity` key, never `null` and never a 0 standing for none.
 - `contactPerson` is the person the proposal names, in parts, each part the document's own text and
   each part omitted when the document does not carry it. Its `name` is required, so a contact you
   cannot read a person's name from goes to the flat `contact` string instead. Never write both for
@@ -753,8 +792,9 @@ The run report is the manifest. State, plainly:
 
 - **Per bidder:** the bidder identity you used, entry counts by type (profile / responses / coverage /
   summary), whether this was a fresh bid, a full revision, or a partial update, and what it replaced,
-  how many rows the proposal did not address, and which rows carry a substitution. Name a
-  package-wide substitution once, as a summary of the rows it touches, rather than repeating it per row.
+  how many rows the proposal did not address, how many answers carry a quantity, and which rows
+  carry a substitution. Name a package-wide substitution once, as a summary of the rows it touches,
+  rather than repeating it per row.
 - **Additional items:** how many unlisted scope items you recorded per bidder, and where they now live
   (the package's Additional items section on plumlayer.com), a pointer to what landed, not a
   re-listing of it. The items carry their own descriptions and citations; restating them here would
@@ -806,6 +846,11 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - Any count restated as "confirmed" gets an explicit fresh recount against its source first; an
   echoed number is never verification.
 - An ambiguous token (`OSV` / `TV` / `?`) never resolves to a hard `amount`.
+- A quantity is the one figure the proposal prints for the row, with its unit as printed; never a
+  sum, a split, or a product, and never a figure from the schedule, the drawings, or another bidder.
+  A folded row, a row sharing one line, a range, and an alternate's figure carry none.
+- A note carries only words the answer's icon, amount, and quantity cannot show; it never restates
+  the row's own inclusion or routing, its price, its quantity, or its substitution.
 - A substitution is recorded on every row it touches, in the bidder's own words, cited to the page.
   It is never an ambiguity value, never an Additional item, and there is no bidder-level or
   package-level record for a substitution that runs across the whole bid.
