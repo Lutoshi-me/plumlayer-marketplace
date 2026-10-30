@@ -64,6 +64,10 @@ and `learn-project` are unchanged, and they are the only reasons to stop this se
 ## 1. Preflight
 
 1. **Confirm the account.** Call `whoami`. State which account the project will be created under.
+   Where your client loads a verb's schema before its first call, load `whoami`'s now and each
+   later verb's when you are about to call it, that verb alone; never load a batch of verbs for
+   steps you may not reach, such as this step's existing-project reads on a new project, or
+   `record_batch` and `ask_question` before step 4 has a fact to write.
 2. **Load user defaults (optional).** Read `~/.plumlayer/operator.json` if it exists (written by
    the `setup` skill), use its `defaults` to pre-fill and avoid re-asking. If it's missing and the
    user wants personalization, suggest running `/setup` first (optional, not required).

@@ -106,8 +106,18 @@ five modes:
   the recognition jobs, reads the whole sheet list, types what the titles decide, names the codes
   off the standard discipline list, and writes the pages file, one line per page that needs a look.
 - `pages`, one per twelve lines of a pages file: reads those pages and records what it reads. A
-  pages file you write yourself, for the local sampling in step 2, the file sampling in 1c or a
-  manual's opening pages in step 8, takes the same line shape, which the agent's definition gives.
+  pages file you write yourself, for the local sampling in step 2, the file sampling in 1c, a
+  manual's opening pages in step 8, a sheet left untyped in step 6 or a page check in step 9,
+  takes the line shape the set unit writes, one line per page, so you never open the agent's
+  definition for it:
+
+  ```text
+  <sheet:<number> or page:<fileId>:<pageInPdf>> | <fileId> | <pageInPdf> | <deliveryId, or none> | <delivery label, or none> | <reasons> | <the recognized title, or none>
+  ```
+
+  A line for a local PDF not yet uploaded puts `local` first and the file's local path in place of
+  the `fileId`, with `none` for the delivery: `local | <local path> | <page> | none | none | local
+  file | none`.
 - `index`, at step 9: reads the drawing index.
 - `left`, after the last pages unit: reads back what is still untyped.
 
@@ -164,6 +174,11 @@ Say once in the closing report that the pages were read in this conversation.
 
 ## 1. Pick the project
 
+Where your client loads a verb's schema before its first call, load it when you are about to call
+that verb, that verb alone, here and at every later step; never load a batch of verbs for steps
+you may not reach, such as the single-file upload verbs beside the bulk ones, or the cloud entry's
+and the re-read's verbs on a first delivery.
+
 Call `list_projects` and confirm with the user which project record this delivery belongs to (a project is one
 project record); get its `projectId`. When `project-setup` runs this skill it hands you the
 `projectId` it just created: that project is confirmed, so skip `list_projects`. If there is no project yet, hand off to `project-setup` first; this
@@ -212,57 +227,9 @@ Not every run starts from a local delivery. When the user points you at a projec
 already in cloud storage (uploaded in a prior session, or they ask you to "read the uploaded set"
 or "(re)recognize" it), there is nothing to recognize locally and nothing to upload. Detect it before
 asking for paths: if the user hands you no local files, call `list_files(projectId)`; if the
-drawings are there, run this branch. When it's genuinely ambiguous (some files uploaded, the user
+drawings are there, read `cloud-entry.md` beside this file, in this skill's own folder, and run
+that branch in place of steps 2 to 4. When it's genuinely ambiguous (some files uploaded, the user
 also holding local files), ask; never assume which delivery the user means.
-
-The branch substitutes the local-only stages and reuses everything else unchanged:
-
-- **Enumerate instead of recognize packaging (replaces step 2).** `list_files(projectId)` is your
-  source list: each row carries `fileId`, `filename`, `sizeBytes`, and its `deliveryId` (or null).
-  Apply step 2's judgment to that list: which files are drawings and which aren't. When a filename
-  doesn't decide, write a small pages file naming the file's first page or two with the reason
-  `file` and dispatch a pages unit over it: on this branch even the file-selection sampling is
-  cloud-side, since there are no local bytes, and the unit's `files:` line says what each page is.
-<!-- user-facing -->
-Emit the same packaging
-  report: which files you will recognize, which you're excluding and why.
-<!-- /user-facing -->
-- **Delivery attribution instead of registration (replaces steps 3–4).** Read each drawing file's
-  `deliveryId` from `list_files`, cross-referenced against `list_drawing_deliveries(projectId)`:
-  - **Attributed**: the file already carries its delivery. Reuse it; never register a duplicate
-    delivery for the same issue.
-  - **Unattributed** (`deliveryId: null`): surface the gap to the user; never invent attribution.
-    Establish which issue the files belong to (ask, or have a pages unit read the cover sheet with
-    the reason `file`: its `files:` line gives the issue label, date and sequence the cover prints,
-    each with its page and the words as printed, and says which it does not print), register the
-    delivery per step 3 if it doesn't exist yet, and pass its id as
-    `recognize_sheets.deliveryId` in step 5: that is the supported attach mechanism for an
-    already-registered file (a `register_file` retry returns the existing row; it does not
-    re-attribute). Chronology still comes from the documents: `issuedOn` off a cover sheet or
-    revision table, never upload time.
-  - **Mixed attribution** across files is legitimate (files from different deliveries live in one
-    project): recognize each file against its own delivery; what you must not do is guess a delivery
-    for the unattributed ones or pass a `deliveryId` that disagrees with a file's registered one
-    (the server refuses the mismatch).
-
-From here the pipeline is identical: step 5 (`register_pages` once, then `recognize_sheets` per file,
-pass `deliveryId` explicitly for any file whose registration doesn't carry it), step 6 (the sheet
-checker's units: the pages the pass could not name, the sheet typing, the corrections), step 7
-(verify). Every gate applies unchanged.
-
-**Re-recognize semantics (the honest limits).** Re-running `recognize_sheets` on a file+delivery is
-always safe: a `stale` or `failed` job restarts; a `succeeded` one returns the existing job and the
-write stays idempotent. That also means this branch cannot force a fresh read of a file+delivery
-that already succeeded: a corrected re-read after a bad run needs a force-re-recognize path, which
-is not built yet. Say so plainly rather than re-running and implying new output.
-
-**Idempotent recognition is not evidence of typing coverage.** A `succeeded` job returning
-unchanged tells you nothing about whether step 6 ever ran for these sheets. A delivery recognized
-before this skill carried a typing stage, or one whose earlier run stopped short of it, looks
-identical from `recognize_sheets_status` alone to a fully typed one. Before this branch reports
-done, check typing coverage directly (as in step 7's verify) rather than inferring it from the
-job's idempotent success. The force-re-recognize gap above is a recognition-fidelity limit only;
-it is never license to skip the typing check, which does not depend on it.
 
 ## 2. Recognize the delivery's packaging
 
@@ -662,7 +629,9 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    `deliveryId` instead to run the per-delivery RECEIVING check: that one delivery's own drawing
    index against only the sheets delivered in it. `result.mode` reports which comparison ran. Either
    way it compares three sides: what the index declares, what sheets are actually in the set, and
-   what the spec sections say. It returns a full report; it writes nothing on this call.
+   what the spec sections say. The bare call answers the counts, the warnings, and one line per open
+   item in `report.openItems.lines`, each saying what the item is and who settles it; pass
+   `full: true` for the whole report with each finding's evidence. It writes nothing on this call.
 3.
 <!-- user-facing -->
 **Walk the user through the report** before recording anything:
@@ -673,9 +642,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    - What's in the set the index doesn't list: checked first against the index page's own raw
      text (a table-reading miss on our side stays with you to settle; a genuine absence becomes a
      question for the design team).
-   - What couldn't be read: `report.openItems.parseRejectedSample` and
-     `report.openItems.unparsedPages` name the tokens and pages this run could not account for; state
-     those counts out loud rather than folding them into "no problems found."
+   - What couldn't be read: `report.counts.parseRejected` counts the index tokens this run could
+     not read as sheet numbers (a warning says so, and `full: true` lists the first 25), and
+     `report.openItems.unparsedPages` names the index pages it could not read whole; state those
+     counts out loud rather than folding them into "no problems found."
    - Whether the index re-read agreed with the stored records: check `report.declaredLedgerDrift.ran`
      first. It's `false`, never a hollow zero, whenever no index page could be read at all, or a
      receiving-check run had to widen its re-read to another delivery's pages; the drift arrays are
@@ -684,7 +654,13 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
      this delivery, the spec leg is reported as not having run. Say exactly that; never present it
      as a finding of zero.
 <!-- /user-facing -->
-4. **Record the findings.** Once you have shown the report, call
+4. **Record the findings.** A sheet the index lists and the set lacks goes straight to its
+   Question once every page of the delivery is recognized, that is once no unit's `flagged:` line
+   names a page of it: read no sheet list rows, run no search, and open no agent file to check it
+   first. Where the index lists a number with a letter (`A-501A`, `A-501B`) and two pages print
+   the number less its letter (`A-501`), recording raises that one Question itself. Only while flagged pages remain can the sheet be on one of them: write those pages to a
+   pages file with the reason `unnamed`, in the line shape "Who reads the pages" gives, and
+   dispatch pages units over it before you record, twelve lines to a unit as step 6 batches them. Once you have shown the report, call
    `reconcile_set(projectId, record: true)` and say what landed. Two things land: the sheet findings
    that stay with you to settle, and, for the side the design team has to answer, Questions on
    the board, each citing the index page and the sheets it is about. Those Questions are grouped by
@@ -697,98 +673,9 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
 A revised sheet can answer a Question somebody raised against the one it replaces, or move the
 callout the Question points at. This step reads every open Question on what changed against the
 new paper and says what it found on each one. It runs whenever a prior delivery or manual existed:
-an addendum, a new set, or a manual on its own. On the project's first delivery there is
-nothing earlier on the board to re-read, so skip it.
-
-1. **Which sheets changed.** For a manual on its own, the sections step 8 read out of the new
-   manual. For a drawing delivery, first read its `issue` off `list_drawing_deliveries`. Where it
-   is null with `stillReading` false, the delivery holds no sheet number: `set_grid` refuses it and
-   no sheet is known to have changed, so skip the rest of this step and go to step 10, whose
-   handoff names it. Otherwise the changed sheets are the ones this delivery itself prints, each
-   on its own page of it, read by its own id and never off the current set: an addendum uploaded
-   after a later one is not the current set's page for any sheet the later one reprints, and it
-   still changed that sheet. Take `set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)`
-   for the counts, then pages with `discipline` + `limit`/`offset`.
-   - For an addendum, every row is a sheet it prints, on its own page.
-   - For a new set, the grid joins the set with its addenda and gives each sheet the newest page
-     that prints it. A row whose `deliveryId` is this delivery's is a sheet the set prints, on its
-     own page. A row from one of its addenda is a sheet the addendum reprinted or added: find
-     whether the set prints it too with
-     `search_set_text(projectId, query: "<sheet number>", deliveryId: <this delivery's id>, wholeWord: true)`,
-     which searches this delivery's pages only and names each hit's sheet number as this delivery
-     printed it. A hit whose `sheetNumber` is that number is the set's own page of the sheet, by
-     its `fileId` and `page`, and the sheet changed; with none, the addendum added the sheet and
-     this set does not print it.
-   Each changed sheet's `fileId` and `pageInPdf` are this delivery's page of it, which points 3
-   and 4 read.
-2. **Which Questions.** The `sheet` and `section` filters on `list_questions` read only the places
-   the ask itself cites, and a reader that meets the same callout on a second sheet cites it in a
-   reply, so a filtered read misses a Question that names a changed sheet only in a reply. Read the
-   open Questions whole instead: `list_questions(projectId, full: true, limit: 10)`, paged with
-   `offset: nextOffset` until `nextOffset` is absent. Keep every one whose ask or any reply cites a
-   changed sheet (`sheet:<n>`) or a section the new manual carries (`specSection:<packed code>`).
-   A place somebody took off the ask still sits in `sources`, one for one with `sourceRemovals`,
-   which is null where the place still stands and names who took it off where it is gone. Skip
-   every ask source whose `sourceRemovals` entry is not null, here and in point 3: a Question whose
-   only citation of a changed sheet was taken off on purpose is not this step's, and never gets a
-   new box put back. Reply citations are read as they are. That read also carries each kept
-   Question's ask and every place it and its replies cite, which the points below work from.
-3. **On a changed sheet, point the Question at this delivery's page too.** A source that names its
-   drawing file opens on the page it was cited on, whatever later issue reprints the sheet; a
-   source with no file opens on the page the current set shows for the sheet, at its old
-   coordinates, which a moved layout leaves on nothing. Keep every existing source, either way,
-   since taking one off is the estimator's call. For each `sheet-region` box or `sheet-point` on a
-   changed sheet, in the ask (a standing source only) or in a reply, that names no file or another
-   file than this delivery's: find the callout on this delivery's page, the `fileId` and
-   `pageInPdf` on that sheet's row from point 1, with `search_set_text` its tag with `deliveryId`
-   set to this delivery, whose hits carry boxes in the same PDF points, then `get_page_text(fileId,
-   pageNum: <that pageInPdf>, region: <around the hit>)`. A whole-page `render_page(fileId,
-   pageNum: <that pageInPdf>)` answers with `pageWidthPt` and `pageHeightPt`, for rendering a
-   region where the callout is in the linework. Then `add_question_source` a `sheet-region` box
-   around the callout there, built from the boxes `get_page_text` gave you for the callout's words,
-   with `frame: "page-points"` and this delivery's `fileId`, so the Question opens on the new paper
-   as well as the page it was raised on; the reply in point 5 says so. A render shows you where the
-   callout is and never gives the box: where no word of the page's read carries the callout, add
-   the sheet with no box (`{ "type": "sheet", "sheet": "sheet:<n>" }` with this delivery's
-   `fileId`) and tell the user that sheet's text did not carry the callout.
-   `add_question_source` is refused once a Question holds ten places. Never take one off to make
-   room: cite the new box in the reply instead, and name that Question to the user as one with no
-   room for another place on it.
-4. **Re-read each one against the new paper.**
-   - On a changed sheet: read the callout's text on this delivery's page, and search the ask's own
-     tags and words with `search_set_text` and `deliveryId` set to this delivery, after
-     `set_text_status` says the new pages have been read. Render further only where the change is
-     in the linework, a cloud or a delta the text does not carry.
-   - On a section of the new manual: a spec citation has no box and no sheet. Read the section's
-     pages off its `locatedAt` (`search(projectId, subject: "specSection:<packed code>", predicate:
-     "locatedAt")`), with `get_page_text` on the part the ask is about, and search the ask's words
-     with `search_set_text` and `kind: document`.
-5. **Three outcomes, and no fourth.**
-   - The new paper answers it: work it as project-record's "When an answer arrives" says.
-     `reply_question` saying what the revised sheet or section shows, citing it; tell the user
-     what changed and that the reply may answer it, so he can have it pinned; and name the scope
-     rows that cite the Question (`questions` on each `list_scope_items` row). Update
-     those rows' values, citing the Question, only when he asks in this session; otherwise they
-     are the scope pass's in step 10, which reads this delivery's sheets.
-   - The new paper changed on the point without answering it: `reply_question` saying what
-     changed.
-   - Unchanged on the point: no reply, and it is counted in the report, unless point 3 added a
-     box, when a reply says only where the callout sits on the new paper.
-   A reply on a sheet cites a `sheet-region` box around what it read there, with this delivery's
-   `fileId`, built as point 3 builds one, or the sheet with no box where point 3 says. A reply on a section cites the section, `{ "type": "spec", "section":
-   "specSection:<packed code>" }`.
-6. **Never close one, and never raise one here.** Closing is the estimator's: `close_question`
-   only when the user settles it in this session, with their reason in `note`. No new Question
-   comes out of this step; what the delivery changes in the scope list is still the handoff in
-   step 10.
-
-<!-- user-facing -->
-Report: how many open Questions cite a changed sheet or section, how many got a reply, the ones
-the new paper may answer with the scope rows each one moves, the ones you pointed at the new paper
-too, any with no room for another place on it, and how many were unchanged on the point. Name each
-Question by its title, or by its RFI number ("RFI 22") once it holds one. Say plainly that none
-was closed and that settling one is theirs.
-<!-- /user-facing -->
+an addendum, a new set, or a manual on its own. There, read `reread-questions.md` beside this
+file, in this skill's own folder, and run it. On the project's first delivery there is nothing
+earlier on the board to re-read, so skip it and leave that file unread.
 
 ## 10. Close out
 

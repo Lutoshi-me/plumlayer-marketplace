@@ -35,8 +35,8 @@ path and the plugin root, the plugin's own directory. Under the run folder:
 - `ledger.md` is the run ledger, which you append to once, at the end of fold mode, and never read
   beyond one local filter for its `phase: packages folded` line.
 
-Under the plugin root, `skills/learn-project/SKILL.md` step 8 draws what a package is and carries
-the default carries named below, and `scripts/fold_report.py` prints your hand-back.
+Under the plugin root, `agents/orientation.md` step 8 draws what a package is and carries the
+default carries named below, and `scripts/fold_report.py` prints your hand-back.
 
 A re-home, wherever this definition names one, is the one the scope-run skill's stage 8 makes: one
 `record_batch` of `belongsToTrade` records, each naming the trade record it replaces in
@@ -86,7 +86,7 @@ verb states.
    package's lists carrying a folded package's trade while that package still stands, make the
    other half first, as step 2 makes it, then append the act's line.
 2. Fold. A package is what one kind of firm bids: a supplier, an installer, or a sub who furnishes
-   and installs, as `learn-project` step 8 draws them. Beside the package list step 1 read, read
+   and installs, as orientation's step 8 draws them. Beside the package list step 1 read, read
    the `tradeRollup` of `list_scope_items(projectId, limit: 0)`. For each package, ask which
    kind of firm bids that work on a job this size, and with what else. Where a firm of another
    package carries it, fold it in: `solicitation_update_package` on the package that keeps it, with
@@ -118,8 +118,8 @@ verb states.
    title, and its package's `notes` say the manual's text for it was not read in.
 
    Where the project's `structuralSystem` entry states wood-framed floors over a concrete or steel
-   podium, read the default carries in `learn-project` step 8,
-   `<plugin root>/skills/learn-project/SKILL.md`. Each default applies to every package
+   podium, read the default carries in orientation's step 8,
+   `<plugin root>/agents/orientation.md`. Each default applies to every package
    orientation did not draw, a package the record made as a row landed included: that package
    goes where its line puts it, and its `notes` name that default. A default never moves work the
    estimator has placed, by his own word, back to where the default puts it.

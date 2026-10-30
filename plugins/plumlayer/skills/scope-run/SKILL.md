@@ -505,9 +505,11 @@ The run executes at three levels. Each level is a separate agent context, bounde
   scan and the declaration of any kind a reader named and did not declare), and in window 3 each
   pass runner runs up to four review units, or every package of one trade where that trade has
   more, one at a time.
-- **The reader** (the plugin's `scope-reader` agent, one fresh instance per read unit) reads one
-  sheet, for the vocabulary or for the sheet itself, over the corpus, and records, as the window's
-  stage and the pass brief define. It writes its report to `reports/` and ends.
+- **The readers**, one fresh instance per read unit, each read over the corpus and record, as the
+  window's stage and the pass brief define: in window 1 the plugin's `scope-vocabulary-reader`
+  agent reads one sheet for the vocabulary, or one drawing file's repeated lines, and in window 2
+  its `scope-reader` agent reads one sheet for the sheet itself. Each writes its report to
+  `reports/` and ends.
 - **The package folder** (the plugin's `scope-package-folder` agent, one fresh instance per
   dispatch) folds the packages into what one kind of firm bids once window 2 is read and indexed,
   writes each act to `reports/fold.md`, and returns a five-line hand-back; dispatched again, it
@@ -733,8 +735,8 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
 2. **Orientation runs one level down.** Where step 1 finds orientation needs to run, start it as
    `learn-project`'s own "Running one level down" section says, with the orientation dispatch it
    gives, the way a pass is dispatched to a runner: pointers only, no seed facts, no inventory rows,
-   no spec-section text. The agent runs the `learn-project` skill exactly as written and returns its
-   summary in the shape that section gives. Read back only that summary: its first line (sheets
+   no spec-section text. The orientation agent runs its own definition (`agents/orientation.md`)
+   exactly as written and returns its summary in the shape that definition gives. Read back only that summary: its first line (sheets
    seen, index findings, spec sections, packages drafted, questions raised) and the lines under it.
    Never relay the dispatched agent's own user-facing report text. What orientation learned is on
    the record, which is where every reader reads it.
@@ -755,7 +757,7 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    `manualSectionPlacement`. A package review reads only the manual sections its package lists in
    `manualSections`, so a section on no package is a section no review checks. Where
    `onNoPackage` is not empty, the packages were drafted before every section was placed: run
-   `learn-project` step 8 sub-step 6 yourself now, placing each listed section on the package that
+   `agents/orientation.md` step 8 sub-step 6 yourself now, placing each listed section on the package that
    buys it, before window 1 starts. Read `manualSectionPlacement.truncated` whatever
    `onNoPackage` holds: when it is true the placement count is incomplete, and close-out says so.
    A section still on `onNoPackage` after that is placing this run did not finish: close-out
@@ -937,12 +939,12 @@ nothing else:
    same runner dispatch. What a pass leaves in the lead's context is its dispatch, its hand-back
    and its `pass:` line, nothing else.
 2. **The runner owns the pass.** It writes the pass brief if it is not already on disk, runs the
-   pass's units in reading order (one fresh
-   `plumlayer:scope-reader` per unit, one unit at a time), appends each unit's dispatch line
+   pass's units in reading order (one fresh reader per unit, one unit at a time,
+   `plumlayer:scope-vocabulary-reader` in window 1 and `plumlayer:scope-reader` in window 2), appends each unit's dispatch line
    before that unit starts, verifies every unit with one `verify_unit` call before the next unit
    starts, notes overlaps inside the pass, and appends the ledger in its fixed line shapes. The
    per-unit loop lives in the `scope-round-runner` agent definition and the reader mandates live
-   in the `scope-reader` agent definition. Neither is restated here, and neither is ever trimmed.
+   in the `scope-vocabulary-reader` and `scope-reader` agent definitions. Neither is restated here, and neither is ever trimmed.
 3. **Take a pass's count when it reports, then record it.** A runner returns one short hand-back
    (shape below) that names the pass's summary file. Read its `unverified:` and `unread:` lines
    first. A pass with a unit on `unverified:` gets no `pass:` line, and the record script refuses
@@ -1374,8 +1376,9 @@ takes it, where the call is then the wait, because a headless session stops a ba
 after ten idle minutes. Where the call comes back with an agent id, you wait as the windows section
 says, by ending the turn.
 
-The mandates are not in these templates. They live in the four agent definitions the plugin ships
-for this run, `scope-round-runner`, `scope-reader`, `scope-reviewer` and `scope-package-folder`,
+The mandates are not in these templates. They live in the five agent definitions the plugin ships
+for this run, `scope-round-runner`, `scope-vocabulary-reader`, `scope-reader`, `scope-reviewer` and
+`scope-package-folder`,
 where each dispatched instance reads them fresh. They are never trimmed there and never restated here: a run that relaxes one reproduces
 a measured failure.
 
@@ -1413,7 +1416,7 @@ Run your mode as your definition says.
 ```
 
 The `Plugin root:` line is the plugin directory you already resolved for your script calls: the
-folder reads `learn-project` step 8's default carries there and prints its hand-back with the
+folder reads `agents/orientation.md` step 8's default carries there and prints its hand-back with the
 script beside yours.
 
 **The package folder's hand-back** is printed by `fold_report.py` and is the whole of what the
@@ -1430,7 +1433,7 @@ report: <run folder>/reports/fold.md
 **Reader dispatch** (the runner writes this, once per read unit, in windows 1 and 2):
 
 ```text
-subagent_type: plumlayer:scope-reader
+subagent_type: <plumlayer:scope-vocabulary-reader in window 1, plumlayer:scope-reader in window 2>
 run_in_background: false
 Project: <projectId>. Window: <n>. Pass: <pass id>. Unit: <unit id>.
 Reading for: <"the vocabulary", "the sheet", or "the repeated lines">.

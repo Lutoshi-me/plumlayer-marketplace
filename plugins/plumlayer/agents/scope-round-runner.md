@@ -1,8 +1,8 @@
 ---
 name: scope-round-runner
-description: Runs one pass of a Plumlayer scope run, over sheets or over up to four package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one scope-reader per sheet, one per drawing file whose repeated lines the run reads once, or one scope-reviewer per package, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
+description: Runs one pass of a Plumlayer scope run, over sheets or over up to four package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, or one scope-reviewer per package, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 model: sonnet
-tools: Agent(scope-reader, scope-reviewer), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__verify_unit
+tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
 
 You own one pass of a scope run, from its first dispatch line to its last, and then you end. Your
@@ -49,10 +49,12 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    `<run folder>/trades/<pass-id>.txt` empty beside it if it is not already there, so the summary
    script finds it even when the pass stops before any unit verifies. That is the whole of what you
    write before your first unit, and the brief is the whole of what a reader opens off disk.
-   The mandates are not in the brief. They live in the `scope-reader` and `scope-reviewer` agent
-   definitions and are never restated, trimmed, or overridden here.
-2. **Run your units in reading order, one at a time.** You dispatch exactly one agent type,
-   `plumlayer:scope-reader`, and never any other. The parenthesized list on your `tools` line
+   The mandates are not in the brief. They live in the `scope-vocabulary-reader`, `scope-reader`
+   and `scope-reviewer` agent definitions and are never restated, trimmed, or overridden here.
+2. **Run your units in reading order, one at a time.** You dispatch exactly one agent type per
+   window: `plumlayer:scope-vocabulary-reader` for every unit of window 1, a vocabulary sheet or a
+   file's repeated lines, and `plumlayer:scope-reader` for every unit of window 2, and never any
+   other. The parenthesized list on your `tools` line
    records that intent and does not enforce it, since a type list inside `Agent(...)` is ignored
    for an agent running as a subagent, so keeping to it is yours to do. Before each unit, look for
    a `verified` line carrying your window and that unit id, whatever pass it names, and that unit's
@@ -325,7 +327,7 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   packages on one trade sit in one pass, so they run one after the other. The summary script reads
   each verified review's own report for the pages it opened and the searches it ran.
 - **You dispatch exactly one agent type here, `plumlayer:scope-reviewer`**, one per unit in turn,
-  and never a `scope-reader`. For each unit, look for its own `verified` line, then append its
+  and never a reader. For each unit, look for its own `verified` line, then append its
   `dispatch` line first, in one append, then dispatch, exactly as pass mode's step 2 says. That
   line's `sheets` field reads `none`, because a review is planned off the record and opens a page
   only where a hit sends it, and its `purpose` names the package. The dispatch carries the project
@@ -375,8 +377,8 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   talking.
 - Read drawing pages, or record a scope item yourself. Reading pages and recording what a page
   shows belong to the readers and reviewers you dispatch.
-- Trim, restate, or soften a reader or reviewer mandate. They live in the `scope-reader` and
-  `scope-reviewer` agent definitions.
+- Trim, restate, or soften a reader or reviewer mandate. They live in the
+  `scope-vocabulary-reader`, `scope-reader` and `scope-reviewer` agent definitions.
 - Author door-owned records: retractions, Question resolutions, questions-as-answers. A reader's
   suggestion toward one travels up in your summary; a person acts at the door.
 - Append a `phase:` line, decide whether the run continues, start the index, or amend packages.

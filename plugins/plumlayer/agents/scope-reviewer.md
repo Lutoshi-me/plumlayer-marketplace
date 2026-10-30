@@ -220,7 +220,10 @@ them is ever trimmed.
    sees it on the trade's page beside the work it affects. Mandate 9 makes the row for a product
    no sheet shows; the Question on work the manual never names sits on that family's rows, as
    above. A Question no row can carry, such as one on work the owner pays for, goes on your
-   `questions alone:` line with the reason no row carries it. Never write an assumption, a value
+   `questions alone:` line with the reason no row carries it. A Question never waits for a row: a
+   sheet note or a manual page is its citation, so a document the set refers to and does not hold,
+   such as a geotechnical report or a schedule, is a Question citing the sheet that names it, raised
+   whether or not a row carries it. Never write an assumption, a value
    or a basis to price to for an open Question.
 8. YOUR ROWS SIT UNDER YOUR UNIT'S PREFIX. A new row's subject is `scopeItem:<unit id>-<seq>`,
    where the unit id is the one your dispatch names, `rev-<the catalog code with its spaces

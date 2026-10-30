@@ -130,6 +130,11 @@ Each of these is a harness check.
 
 ## 5. Formatting
 
+- A skill's branch that most runs never take may live in a file beside its `SKILL.md`, which the
+  skill names at the branch point and the agent reads by path only when the branch applies, so
+  the skill's own load stays small. Such a file is shipped text like `SKILL.md`, and every check
+  below that reads skill text reads it too.
+
 - Headings are sentence case: `## 3. Read the open pages`, not `## 3 · Read The Open Pages` and
   not `## Step 3 — Read the open pages`.
 - Numbered stages start at 1 and use `N.` as the separator.
@@ -205,9 +210,9 @@ Each of these is a harness check.
     tells the agent to raise a Question carries the sentence ending "never about a Plumlayer
     failure". This is a regression guard over a cue list: failure wording it does not name still
     passes, and whether a Question an agent raises is about the project stays in review.
-13. The Question bar. `agents/scope-reader.md` carries the bar in its fixed wording, "a draft
-    RFI". No shipped skill or agent file carries a retired raise-for-everything phrase ("rather than
-    smoothing it", "rather than guessing") on the same line as the word Question, and none carries
+13. The Question bar. `agents/scope-reader.md` and `agents/scope-vocabulary-reader.md` each
+    carry the bar in its fixed wording, "a draft RFI". No shipped skill or agent file carries a
+    retired raise-for-everything phrase ("rather than smoothing it", "rather than guessing") on the same line as the word Question, and none carries
     the wording of a Question rule the draft-RFI standard retired: "always raises a Question",
     "raise a Question if inferred" or "when inferred", "Question naming the grain", "a correction
     of an earlier write, that is a Question", `mepDeliveryShape`, or a `"scope-item"` source type, matched over the whole file with whitespace collapsed because those
@@ -321,8 +326,11 @@ Each of these is a harness check.
     left open at the end of a file is refused rather than skipped, so the block it swallowed cannot
     pass as a file with nothing to check. This cannot judge whether a running agent passes the
     parameter or ends its turn, only that the text tells it to.
-23. The repeated lines are read and cited as the server serves them. `agents/scope-reader.md`
-    carries a section that walks `repeated: "only"` to its end with `setVersion`, cites each
+23. The repeated lines are read and cited as the server serves them. Window 1 units go to
+    `agents/scope-vocabulary-reader.md` and window 2 sheets to `agents/scope-reader.md`, as the
+    runner's `Agent(...)` list and pass mode say; the sheet reader carries no repeated lines
+    section and holds neither `record` nor the file batch verbs, and the vocabulary reader holds no
+    `record`. The vocabulary reader carries a section that walks `repeated: "only"` to its end with `setVersion`, cites each
     block's `firstSheet` with a box from the lowest `x0` and `y0` to the highest `x1` and `y1` of
     the note's lines, sent with `frame: "page-points"` and never converted, and names nothing
     `page-points-rendered`. The same section keeps the set version it read, reports a file with no
@@ -331,10 +339,10 @@ Each of these is a harness check.
     block whose first sheet carries no number on the first numbered sheet its `printedOn` lists or
     as a page with no box, reads a box on another page around the same spot grown by 4 points,
     since two pages of a block can sit 4 points apart, and copies `notListed` as the one count it
-    is, before an answer with no block sends it to report. Its window 2 bullet asks for `omit` on
+    is, before an answer with no block sends it to report. The sheet reader's window 2 bullet asks for `omit` on
     every call only on `Repeated lines: read in set <version>`, with no probe call, compares the
     set version on every answer of the walk, and restarts the page whole on any answer that names
-    no set version or another. The reader report in the agent and in the skill carries
+    no set version or another. The reader report in both readers and in the skill carries
     `cited sheets:`, `page citations:` and `set version:`; the runner verifies an update cited to
     a page with no sheet number by its subject and that page, and a repeated lines unit off the
     first, taking the prefix counts once however many calls the sheets take, as review mode does
@@ -366,8 +374,8 @@ Each of these is a harness check.
     trade it did not name makes window 3 review every package, and a trade the package fold
     re-homes a row to is reviewed off the `fold touched` line the folder's re-home appends to
     `trades/fold.txt`; the reviewer asks the manual itself
-    before calling it silent; and drawing-upload's re-read of the open Questions reads the uploaded
-    delivery by its id and cites its file. This cannot judge whether a reader sends the file on
+    before calling it silent; and drawing-upload's re-read of the open Questions, in the file it
+    reads at step 9b, reads the uploaded delivery by its id and cites its file. This cannot judge whether a reader sends the file on
     every citation; that stays in review and the measured pass.
 25. The runner copies each worker's anomalies onto the ledger. The summary script builds the
     summary's `anomalies:` line from the ledger's `anomaly` notes alone, and the close-out names
@@ -399,11 +407,14 @@ Each of these is a harness check.
     talks to stays there, and a setup on a set of about 240 sheets once took that session from 58k
     to 774k tokens. No page read verb (`render_page`, `get_page_text`, `search_set_text`,
     `reconcile_index`), and no `set_grid` other than a summary call with `limit: 0`, sits on a line
-    a lead runs: project-setup whole, drawing-upload outside its steps 9b and 10, and
-    learn-project's `## Running one level down`, and no line there reads a PDF's pages with the
-    Read tool. drawing-upload carries its `plumlayer:sheet-checker` dispatch, pairing each
-    recognition job with its `fileId`, learn-project its orientation dispatch and the first line
-    of its summary, scope-run neither of its own copies, project-setup and scope-run point at
+    a lead runs: project-setup whole, learn-project whole, drawing-upload outside its step 10 and
+    its step 9b file, and drawing-upload's cloud entry file whole, and no line there reads a PDF's
+    pages with the Read tool. drawing-upload carries its `plumlayer:sheet-checker` dispatch, pairing
+    each recognition job with its `fileId`, learn-project its `plumlayer:orientation` dispatch and
+    the first line of its summary, with orientation's numbered steps and summary shape in
+    `agents/orientation.md` and none in the skill the lead loads, drawing-upload gives the pages
+    file's line shape as the sheet checker writes it and sends a sheet the index lists and the set
+    lacks straight to its Question, scope-run neither of its own copies, project-setup and scope-run point at
     learn-project's section, and the retired sentences forbidding any agent in the upload are gone.
     The check runs its scan over fixtures and its shape arms over the shipped text with each part
     broken, so the refusals are shown. This cannot judge whether a session stays small; that is
