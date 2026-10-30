@@ -10,12 +10,8 @@ pages opened:
 - section 099999 file-1111 p12 (invented term) read Part 2, one row updated
 pages opened: X-3.01 file-0000 p9 (invented term, the label written again) read one callout, nothing new
 created: 1   updated: 1   questions raised: 0   questions replied: 0
-updated subjects: scopeItem:A1-1-1
-manual updates: scopeItem:A1-1-1 specSection:099999 p12
-questions raised ids: none
-questions replied ids: none
-questions linked: none
-questions alone: none
+verify: {"updatedSubjects": [], "manualUpdates": [{"subject": "scopeItem:A1-1-1", "specSection": "099999", "pageInPdf": 12, "fileId": "file-1111"}], "questionsRaised": [], "questionsReplied": [], "questionsLinked": [], "questionsAlone": []}
+created names: ["Invented row"]
 sent: 2   landed: 2   conflicts: none
 trades: 09 99 99 x1; candidates 0
 sheet readings written: none

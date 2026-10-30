@@ -228,6 +228,18 @@ Checks:
       lock a run held when its process ended is taken over in one line, and a replan deleting a
       package with section pages a continuation still owes a read is refused until the ledger
       records them unread.
+  32. Runner unit: the shipped scripts/runner_unit.py, imported in-process over invented run
+      folders. `next` takes a pass's units in order and appends each `dispatch` line once; `record`
+      writes a unit's names, kinds and trades files and its ledger lines off the report and the
+      verify_unit answer, compared line by line with a tally written here (notes copied whole, count
+      drift, an exact name across units, a reply by its `clm-` entry id, a further page, a `verify:`
+      line that does not parse stopping the pass), the summary script and the plan script reading
+      what it wrote; a record or `next` run again, or a record stopped partway and run again,
+      changes no byte; checked counts that differ, a sheet the call left out, a mismatch answer, a
+      report count that does not read, a repeated lines unit's cited sheets, a stopped reader, a
+      review continued in its pass and one with no `questionsAlone` each read as the contract
+      says; broken invocations refuse in one line writing nothing; and the claim keys are pinned
+      here, in the script and in each reader's and the reviewer's worked `verify:` line.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -6693,7 +6705,7 @@ _REPEATED_SECTION_PHRASES = (
     'kind: "document-page"',
     "name the box you could not send",
     # An update cited to a page with no sheet number, which no sheet verifies.
-    "`page citations:`",
+    "`pageCitations`",
     # `notListed` is one count for the whole set, read at that grain.
     "`{ blocks, lines, why }`",
 )
@@ -6712,20 +6724,12 @@ _OMIT_PHRASES = (
 )
 # The omit answer names its set's version on every call, so the walk opens with no probe.
 _OMIT_FORBIDDEN_PHRASES = ("`limit: 1`",)
-# Every `verify_unit` call answers the whole prefix, so the prefix counts come off one call.
-_RUNNER_SPLIT_VERIFY_PHRASE = "never added across calls"
-_RUNNER_DISPATCH_RE = re.compile(
-    r"`(dispatch <window> <pass> <unit> sheets none purpose repeated lines of file <fileId>)`"
-)
-_RUNNER_SET_RE = re.compile(r"`(note <window> <pass> <unit> set <setVersion> file <fileId>)`")
-_RUNNER_UNREAD_RE = re.compile(
-    r"`(note <window> <pass> <unit> unread file <fileId> repeated lines not read, <the reason>)`"
-)
-_RUNNER_NOT_LISTED_RE = re.compile(
-    r"`(note <window> <pass> <unit> unread file <fileId> <blocks> blocks <lines> lines not listed, <why>)`"
-)
-# An update cited to a page with no sheet number is found back by its subject and that page.
-_RUNNER_PAGE_CITATION_PHRASE = 'search(subject: "<subject>", full: true)'
+# One call with claims takes every sheet a repeated lines unit cited, up to sixty, so nothing is
+# split across calls; a unit that cited none still sends its claims, with no sheet.
+_RUNNER_ONE_CALL_PHRASE = "at most 60"
+_RUNNER_CITED_SHEETS_PHRASE = "its sheets are the ones on its report's `cited sheets:` line"
+_RUNNER_NO_SHEET_PHRASE = '`sheets: []` where that line reads "none"'
+_READER_PAGE_CITATION_PHRASE = 'one `{ "subject", "fileId", "pageInPdf" }` per update'
 
 
 def check_repeated_lines_text(plugin_path: Path, marketplace_root: Path) -> Result:
@@ -6820,103 +6824,93 @@ def check_repeated_lines_text(plugin_path: Path, marketplace_root: Path) -> Resu
             (body for body in _fenced_block_bodies(text.splitlines()) if any(l.startswith("unit: <unit id>") for l in body)),
             [],
         )
-        for wanted in ("cited sheets: ", "page citations: ", "set version: "):
+        for wanted in ("cited sheets: ", "set version: ", "verify: "):
             if not any(line.startswith(wanted) for line in report):
                 errors.append(f"the reader report published in {label} carries no `{wanted.strip()}` line")
-    if "`cited sheets:`" not in runner_text:
-        errors.append("the runner does not say it verifies a repeated lines unit off `cited sheets:`")
-    if "`page citations:`" not in runner_text or _RUNNER_PAGE_CITATION_PHRASE not in " ".join(runner_text.split()):
+    runner_flat = " ".join(runner_text.split())
+    for phrase in (_RUNNER_CITED_SHEETS_PHRASE, _RUNNER_NO_SHEET_PHRASE):
+        if phrase not in runner_flat:
+            errors.append(f"the runner does not verify a repeated lines unit off `cited sheets:`: no {phrase!r}")
+    if _READER_PAGE_CITATION_PHRASE not in " ".join(reader_text.split()):
         errors.append(
-            "the runner does not verify an update cited to a page with no sheet number off "
-            "`page citations:`, by its subject and that page"
+            "the reader's `verify:` line does not name an update cited to a page with no sheet number "
+            "in `pageCitations`, by its subject, file and page"
         )
-    # Both places that split a verify over calls of 20 sheets, a repeated lines unit in pass mode
-    # and a review in review mode, take the prefix counts once; neither may sum them.
     runner_sections = {
         chunk.split("\n", 1)[0].strip(): " ".join(chunk.split("\n", 1)[-1].split())
         for chunk in runner_text.split("\n## ")[1:]
     }
     for heading, unit in (("Pass mode", "a repeated lines unit"), ("Review mode", "a review")):
-        if _RUNNER_SPLIT_VERIFY_PHRASE not in runner_sections.get(heading, ""):
-            errors.append(
-                f"the runner's {heading.lower()} does not say {unit}'s prefix counts are taken once "
-                f"and never added across its verify calls, each of which answers the whole prefix"
-            )
+        if _RUNNER_ONE_CALL_PHRASE not in runner_sections.get(heading, ""):
+            errors.append(f"the runner's {heading.lower()} does not verify {unit} in one call of at most 60 sheets")
+        if "never added across calls" in runner_sections.get(heading, ""):
+            errors.append(f"the runner's {heading.lower()} still splits {unit}'s verify across calls")
     if re.search(r"\bsum(?:med)? the counts\b", " ".join(runner_text.split())):
         errors.append("the runner tells itself to sum counts across verify calls that each answer the whole prefix")
 
-    # The join: the runner's own lines, filled in, through the script's own ledger readers.
-    dispatch = _RUNNER_DISPATCH_RE.search(" ".join(runner_text.split()))
-    set_note = _RUNNER_SET_RE.search(" ".join(runner_text.split()))
-    unread = _RUNNER_UNREAD_RE.search(" ".join(runner_text.split()))
-    not_listed = _RUNNER_NOT_LISTED_RE.search(" ".join(runner_text.split()))
+    # The join: four repeated lines units run through the unit script, and the lines it wrote read
+    # back by the plan script's own ledger readers.
     joined = 0
-    if dispatch is None or set_note is None or unread is None or not_listed is None:
+    try:
+        module = _load_script_module(script, "plan_inventory")
+        unit_module = _load_script_module(plugin_path.joinpath(*RUNNER_UNIT_SCRIPT), "runner_unit")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import the scripts: {e}")
+    folder = Path(__file__).parent / ".test-results" / "repeated-lines-text"
+    shutil.rmtree(folder, ignore_errors=True)
+    (folder / "reports").mkdir(parents=True)
+    (folder / "read-plan.md").write_text(_unit_plan(1, "RS1", "the repeated lines", [
+        f"RS1-{n}. file file-{f}, from page 2: repeated lines" for n, f in enumerate("abcd", 1)
+    ]), encoding="utf-8")
+    page_citation = {"subject": "scopeItem:A1-1-9", "fileId": "file-a", "pageInPdf": 3}
+    units = {
+        # Read, versioned, one update cited to a page with no sheet number.
+        "RS1-1": (dict(set_version="9f2c41d07ab3e815", cited="X-1.01", counts=(1, 1, 0, 0),
+                       verify=_verify_json(pageCitations=[page_citation])),
+                  _unit_answer(3, checked={"pageCitations": 1}, sheets=(("X-1.01", "file-a"),))),
+        # The file's repeated lines could not be read.
+        "RS1-2": (dict(unread=("file file-b: the check stopped",), verify=_verify_json()), _unit_answer(0, checked={})),
+        # No version on the report, so the file's sheets are read whole.
+        "RS1-3": (dict(verify=_verify_json()), _unit_answer(0, checked={})),
+        # Read and versioned, but some blocks not listed: read by nobody, so kept whole.
+        "RS1-4": (dict(set_version="1c0de5e7f00d2a11", unread=("2 blocks, 14 lines not listed, their pages were read again",),
+                       verify=_verify_json()), _unit_answer(0, checked={})),
+    }
+    _run_unit(unit_module, ["next", str(folder), "--window", "1", "--pass", "RS1"])
+    for unit, (fields, answer) in units.items():
+        (folder / "reports" / f"{unit}.md").write_text(_unit_report(unit, "RS1", 1, **fields), encoding="utf-8")
+        code, out, err = _run_unit(unit_module, ["record", str(folder), "--window", "1", "--pass", "RS1", "--unit", unit], answer)
+        if code != 0 or not out.startswith(f"verified {unit} result ok"):
+            errors.append(f"the unit script recorded {unit} as {out!r} ({err!r})")
+    ledger = folder / "ledger.md"
+    lines = ledger.read_text(encoding="utf-8").splitlines() if ledger.is_file() else []
+    for want in (
+        "dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-a",
+        "note 1 RS1 RS1-1 set 9f2c41d07ab3e815 file file-a",
+        "note 1 RS1 RS1-2 unread file file-b repeated lines not read, the check stopped",
+        "note 1 RS1 RS1-3 deviation file-c the report names no set version, so its sheets are read whole",
+        "note 1 RS1 RS1-4 set 1c0de5e7f00d2a11 file file-d",
+        "note 1 RS1 RS1-4 unread file file-d 2 blocks 14 lines not listed, their pages were read again",
+    ):
+        if want not in lines:
+            errors.append(f"the unit script wrote no `{want}` line")
+    try:
+        bound = module._read_ledger_repeated(ledger)
+        read = module._read_repeated_read(
+            ledger, [{"fileId": f"file-{f}", "unitId": f"RS1-{n}"} for n, f in enumerate("abcd", 1)],
+        )
+    except Exception as e:
+        bound, read = {}, {}
+        errors.append(f"the plan script refused the unit script's repeated lines lines: {e}")
+    if bound != {"RS1-1": "file-a", "RS1-2": "file-b", "RS1-3": "file-c", "RS1-4": "file-d"}:
+        errors.append(f"the plan script binds the unit script's dispatch lines as {bound}, not each unit to its file")
+    if read != {"file-a": "9f2c41d07ab3e815"}:
         errors.append(
-            "the runner does not spell the repeated lines dispatch line, set note, unread note and "
-            "not listed note in their fixed shapes"
+            f"the plan script reads the files whose repeated lines were read as {read}; the "
+            f"set note should mark file-a in that version, the unread note keep file-b whole, "
+            f"file-c, with no set note, stay whole, and the not listed note keep file-d whole"
         )
-    else:
-        try:
-            module = _load_script_module(script, "plan_inventory")
-        except Exception as e:
-            return Result(name, False, detail=f"cannot import {script.name}: {e}")
-
-        def fill(template: str, unit: str, file_id: str) -> str:
-            return (
-                template.replace("<window>", "1").replace("<pass>", "RS1").replace("<unit>", unit)
-                .replace("<fileId>", file_id).replace("<the reason>", "the check stopped")
-                .replace("<setVersion>", "9f2c41d07ab3e815").replace("<blocks>", "2")
-                .replace("<lines>", "14").replace("<why>", "their pages were read again")
-            )
-
-        folder = Path(__file__).parent / ".test-results" / "repeated-lines-text"
-        shutil.rmtree(folder, ignore_errors=True)
-        folder.mkdir(parents=True, exist_ok=True)
-        ledger = folder / "ledger.md"
-        verified = "verified 1 RS1 {} created 3 items 1 updated 0 questions 0 replied 0 sent 3 landed 3 conflicts 0 result ok"
-        ledger.write_text(
-            "\n".join([
-                fill(dispatch.group(1), "RS1-1", "file-a"),
-                verified.format("RS1-1"),
-                fill(set_note.group(1), "RS1-1", "file-a"),
-                fill(dispatch.group(1), "RS1-2", "file-b"),
-                verified.format("RS1-2"),
-                fill(unread.group(1), "RS1-2", "file-b"),
-                fill(dispatch.group(1), "RS1-3", "file-c"),
-                verified.format("RS1-3"),
-                # Read and versioned, but some blocks not listed: read by nobody, so kept whole.
-                fill(dispatch.group(1), "RS1-4", "file-d"),
-                verified.format("RS1-4"),
-                fill(set_note.group(1), "RS1-4", "file-d"),
-                fill(not_listed.group(1), "RS1-4", "file-d"),
-            ]) + "\n",
-            encoding="utf-8",
-        )
-        try:
-            bound = module._read_ledger_repeated(ledger)
-            read = module._read_repeated_read(
-                ledger,
-                [
-                    {"fileId": "file-a", "unitId": "RS1-1"},
-                    {"fileId": "file-b", "unitId": "RS1-2"},
-                    {"fileId": "file-c", "unitId": "RS1-3"},
-                    {"fileId": "file-d", "unitId": "RS1-4"},
-                ],
-            )
-        except Exception as e:
-            bound, read = {}, {}
-            errors.append(f"the plan script refused the runner's own repeated lines lines: {e}")
-        if bound != {"RS1-1": "file-a", "RS1-2": "file-b", "RS1-3": "file-c", "RS1-4": "file-d"}:
-            errors.append(f"the plan script binds the runner's dispatch lines as {bound}, not each unit to its file")
-        if read != {"file-a": "9f2c41d07ab3e815"}:
-            errors.append(
-                f"the plan script reads the files whose repeated lines were read as {read}; the "
-                f"runner's set note should mark file-a in that version, its unread note keep file-b "
-                f"whole, file-c, with no set note, stay whole, and its not listed note keep file-d "
-                f"whole"
-            )
-        joined = 4
+    joined = len(units)
 
     detail = (
         f"the reader's repeated lines section checked for {len(_REPEATED_SECTION_PHRASES)} phrases "
@@ -6927,10 +6921,10 @@ def check_repeated_lines_text(plugin_path: Path, marketplace_root: Path) -> Resu
         f"around the same spot grown by 4 points, `notListed` handled before an empty set returns, and "
         f"`notListed` at its own grain), its leave-out bullet for {len(_OMIT_PHRASES)} (omit only on "
         f"a matching set version, whole otherwise, with no probe call), no `page-points-rendered` "
-        f"anywhere in the reader, `cited sheets:` and `set version:` on the reader report in the "
-        f"agent and the skill, the runner verifying off `cited sheets:` with the prefix counts taken "
-        f"once in pass mode and review mode, and the runner's own dispatch, set and "
-        f"unread note lines read by the plan script over {joined} units; bound: text and the "
+        f"anywhere in the reader, `cited sheets:`, `set version:` and `verify:` on the reader report "
+        f"in the agents and the skill, the runner verifying off `cited sheets:` in one call of at most "
+        f"60 sheets in pass mode and review mode, and the unit script's dispatch, set, unread and "
+        f"not listed lines read by the plan script over {joined} units; bound: text and the "
         f"script's ledger reader, not the record door or the scope surface"
     )
     if errors:
@@ -7801,7 +7795,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     elif set(json.loads(sheet_shape)) != {"sheet", "fileId"}:
         errors.append("the runner's sheet shape is not the sheet and fileId verify_unit takes")
     for phrase, where in (
-        ("each with the `fileId` its unit line names", "repeated lines unit"),
+        ("each with its unit's file", "repeated lines unit"),
         ("as the sheet number alone", "sheet with no file"),
     ):
         if phrase not in runner_flat:
@@ -7818,7 +7812,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         reread_flat = " ".join((plugin_path / "skills" / "drawing-upload" / "reread-questions.md").read_text(encoding="utf-8").split())
     except Exception as e:
         return Result(name, False, detail=f"cannot read the reviewer or drawing-upload: {e}")
-    opened_shape = "pages opened: <sheet number + fileId + page + the term that sent you + what you did"
+    opened_shape = "pages opened: <one per line, `<sheet number> <fileId> p<page> (<the term that sent you>) <what you did>`"
     for flat, who, phrase in (
         (skill_flat, "the skill", "a partial pass over the sheets it prints"),
         (skill_flat, "the skill", "the index after each window that ran"),
@@ -7828,13 +7822,10 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         (reviewer_flat, "the reviewer", "with `deliveryId` set to each delivery its `readFrom` names"),
         (reviewer_flat, "the reviewer", "carries the hit's `fileId`"),
         (reviewer_flat, "the reviewer", opened_shape),
-        (runner_flat, "the runner", "with the `fileId` the reviewer's line names for it"),
-        (runner_flat, "the runner", "`<unit id> touched <catalog id>`"),
-        *(
-            (reader_flat, label, "trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names")
-            for label, reader_flat in readers_flat.items()
-        ),
-        (skill_flat, "the skill's copy of the reader report", "trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names"),
+        # The runner sends each page a review opened on the file its line names. The trades a unit
+        # touched come off the verify_unit answer through runner_unit.py, which the runner-unit
+        # check runs; no report carries them any more.
+        (runner_flat, "the runner", "one per line as `<sheet number> <fileId> p<page> ...`"),
         (upload_flat, "drawing-upload", "You never ask the user whether a delivery is a new set or an addendum"),
         (upload_flat, "drawing-upload", "a partial scope pass over the sheets it prints"),
         # A drawing search by delivery counts only that delivery's files, and a manual uploaded on
@@ -7909,29 +7900,13 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
 # pass_summary.py builds the summary's `anomalies:` line from the ledger's `anomaly` notes alone,
 # and the close-out names the same work pairs off those notes. The runner once carried the note
 # kind and a worked example and no step telling it to write one, so every summary's anomalies line
-# could come back empty with every other check passing. The check holds the step itself, not only
-# its words: the append sentence in pass mode, which review mode inherits, placed before the
-# `verified` line so that line still means the unit is complete, and no sentence there that
-# negates an append of the notes; and in the ledger rule, the one exception to its ban on
-# re-telling a report, without which the ban forbids the notes, and the exemption from the
-# 200-character clause, without which a long line is cut. The report's grain questions and
-# door-owned suggestions reach the lead's check-in only as `grain` and `door` notes the same way,
-# so the step that copies them and their place in the exception are held here too.
+# could come back empty with every other check passing. The unit script now writes the notes, so
+# the check runs it: each line of the three note fields copied whole, a long one and one with a
+# colon among them, in order and before the `verified` line, whether the unit verifies or not. The
+# ledger rule's one exception to its ban on re-telling a report, and the exemption from the
+# 200-character clause, are still held in the runner's text, since without them the rule forbids
+# the notes the script writes.
 
-_ANOMALY_ACTION_PHRASE = (
-    "Append the unit's `anomaly` notes first: one `note <window> <pass> <unit> anomaly <the line>` "
-    "per line on the report's `anomalies:` line"
-)
-_ANOMALY_COPY_PHRASES = (
-    _ANOMALY_ACTION_PHRASE,
-    "each copied whole",
-    "review mode copies the reviewer's line the same way",
-    "Its `grain questions:` and `door-owned suggestions:` lines go on the ledger the same way",
-)
-_ANOMALY_VERIFIED_PHRASE = "Then append the unit's `verified` line"
-_ANOMALY_NEGATION_RE = re.compile(
-    r"\b(?:never|not|don't|no longer)\s+(?:\w+\s+){0,2}append\b[^.]{0,120}\banomaly\b", re.IGNORECASE
-)
 _ANOMALY_LEDGER_PHRASES = (
     "The `anomaly`, `grain` and `door` notes are the one exception, each a line of the report "
     "copied whole",
@@ -7947,31 +7922,15 @@ def _runner_section(text: str, heading: str) -> str | None:
     return " ".join(parts[1].split("\n## ", 1)[0].split())
 
 
-def _anomaly_copy_errors(pass_mode: str | None, ledger_rule: str | None) -> list[str]:
+def check_anomaly_notes(plugin_path: Path) -> Result:
+    name = "anomaly-notes-copied"
+    runner = plugin_path / "agents" / "scope-round-runner.md"
+    script = plugin_path.joinpath(*RUNNER_UNIT_SCRIPT)
+    for path in (runner, script):
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
     errors: list[str] = []
-    if pass_mode is None:
-        errors.append("scope-round-runner.md has no `## Pass mode` section")
-    else:
-        for phrase in _ANOMALY_COPY_PHRASES:
-            if phrase not in pass_mode:
-                errors.append(
-                    f"the runner's pass mode does not carry {phrase!r}, so no step copies a "
-                    f"report's `anomalies:` lines onto the ledger as `anomaly` notes"
-                )
-        action_at = pass_mode.find(_ANOMALY_ACTION_PHRASE)
-        verified_at = pass_mode.find(_ANOMALY_VERIFIED_PHRASE)
-        if action_at >= 0 and (verified_at < 0 or verified_at < action_at):
-            errors.append(
-                f"the runner's pass mode does not append the `anomaly` notes before "
-                f"{_ANOMALY_VERIFIED_PHRASE!r}, so a `verified` line can stand for a unit whose "
-                f"notes never landed"
-            )
-        negation = _ANOMALY_NEGATION_RE.search(pass_mode)
-        if negation:
-            errors.append(
-                f"the runner's pass mode carries {negation.group(0)!r}, which negates the append "
-                f"of the `anomaly` notes"
-            )
+    ledger_rule = _runner_section(runner.read_text(encoding="utf-8"), "The ledger lines")
     if ledger_rule is None:
         errors.append("scope-round-runner.md has no `## The ledger lines` section")
     else:
@@ -7979,53 +7938,60 @@ def _anomaly_copy_errors(pass_mode: str | None, ledger_rule: str | None) -> list
             if phrase not in ledger_rule:
                 errors.append(
                     f"the runner's ledger rule does not carry {phrase!r}, so its ban on re-telling "
-                    f"a report or its 200-character clause keeps an anomaly line off the ledger "
-                    f"whole"
+                    f"a report or its 200-character clause keeps an anomaly line off the ledger whole"
                 )
-    return errors
+    try:
+        module = _load_script_module(script, "runner_unit")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import {script.name}: {e}")
 
-
-def check_anomaly_notes(plugin_path: Path) -> Result:
-    name = "anomaly-notes-copied"
-    runner = plugin_path / "agents" / "scope-round-runner.md"
-    if not runner.is_file():
-        return Result(name, False, detail=f"not found: {runner}")
-    text = runner.read_text(encoding="utf-8")
-    pass_mode = _runner_section(text, "Pass mode")
-    ledger_rule = _runner_section(text, "The ledger lines")
-    errors = _anomaly_copy_errors(pass_mode, ledger_rule)
-
-    # The helper is run over the shipped text with each guarded part taken out, the action negated
-    # and the order reversed, so every refusal is shown rather than assumed.
-    mutations: list[tuple[str, str, str]] = []
-    if pass_mode is not None and ledger_rule is not None and not errors:
-        for phrase in _ANOMALY_COPY_PHRASES:
-            mutations.append((f"pass mode with {phrase!r} taken out", pass_mode.replace(phrase, ""), ledger_rule))
-        mutations.append((
-            "pass mode with the append negated",
-            pass_mode.replace(_ANOMALY_ACTION_PHRASE, "Never a" + _ANOMALY_ACTION_PHRASE[1:]),
-            ledger_rule,
-        ))
-        mutations.append((
-            "pass mode with the `verified` line appended before the notes",
-            pass_mode.replace(_ANOMALY_VERIFIED_PHRASE, "").replace(
-                _ANOMALY_ACTION_PHRASE, _ANOMALY_VERIFIED_PHRASE + ". " + _ANOMALY_ACTION_PHRASE
-            ),
-            ledger_rule,
-        ))
-        for phrase in _ANOMALY_LEDGER_PHRASES:
-            mutations.append((f"the ledger rule with {phrase!r} taken out", pass_mode, ledger_rule.replace(phrase, "")))
-        for label, mutated_pass, mutated_ledger in mutations:
-            if not _anomaly_copy_errors(mutated_pass, mutated_ledger):
-                errors.append(f"the check passed {label}")
+    # One report whose three note fields carry a line past 200 characters, a comma and a colon, run
+    # through the unit script once with an answer that reads ok and once with a `verify:` line that
+    # does not parse: the notes land whole either way, before the `verified` line.
+    anomalies = (
+        "F-1.01 p2 " + "the stair detail names a nosing the finish legend does not list, " * 4 + "note on scopeItem:F2-1-1",
+        "section 099999 p4 continued: pages left p5-p9, run only",
+        "F-1.01 p2 two tags, one mark, Question question:proj-0001:q-0002",
+    )
+    grain = ("F-1.01 p2 nosing is one row or one per stair", "F-1.01 p2 tread and riser, one row or two")
+    door = ("F-1.01 p2 the nosing row reads as replacing an earlier one",)
+    want_notes = (
+        [f"note 2 F2 F2-1 anomaly {line}" for line in anomalies]
+        + [f"note 2 F2 F2-1 grain {line}" for line in grain]
+        + [f"note 2 F2 F2-1 door {line}" for line in door]
+    )
+    root = Path(__file__).parent / ".test-results" / "anomaly-notes"
+    shutil.rmtree(root, ignore_errors=True)
+    runs = 0
+    for label, verify in (("ok", _verify_json()), ("mismatch", '{"updatedSubjects": [')):
+        folder = root / label
+        (folder / "reports").mkdir(parents=True)
+        (folder / "read-plan.md").write_text(_unit_plan(2, "F2", "the sheet", ["F2-1. F-1.01, page 2: STAIR DETAILS"]), encoding="utf-8")
+        (folder / "reports" / "F2-1.md").write_text(
+            _unit_report("F2-1", "F2", 2, verify=verify, anomalies=anomalies, grain=grain, door=door), encoding="utf-8"
+        )
+        _run_unit(module, ["next", str(folder), "--window", "2", "--pass", "F2"])
+        code, out, err = _run_unit(
+            module, ["record", str(folder), "--window", "2", "--pass", "F2", "--unit", "F2-1"],
+            _unit_answer(1, checked={}, sheets=(("F-1.01", None),)),
+        )
+        runs += 1
+        lines = (folder / "ledger.md").read_text(encoding="utf-8").splitlines() if (folder / "ledger.md").is_file() else []
+        notes = [line for line in lines if line.startswith("note ")]
+        verified = [index for index, line in enumerate(lines) if line.startswith("verified ")]
+        if code != 0:
+            errors.append(f"the {label} run refused: {err}")
+        elif notes != want_notes:
+            errors.append(f"the {label} run wrote the notes {notes}, not each report line whole in its order")
+        elif verified != [len(lines) - 1] or not lines[-1].endswith(f"result {label}"):
+            errors.append(f"the {label} run's `verified` line is not the last line or does not read {label}")
 
     detail = (
-        f"the runner's pass mode appends each `anomalies:` line as an `anomaly` note before the "
-        f"`verified` line, review mode's included, and its grain questions and door-owned "
-        f"suggestions as `grain` and `door` notes the same way, with no sentence negating it, and "
-        f"its ledger rule carries the one exception and the exemption from the 200-character "
-        f"clause for all three; "
-        f"{len(mutations)} mutations refused; bound: text only, not whether a runner writes the notes"
+        f"the unit script copies each line of a report's `anomalies:`, `grain questions:` and "
+        f"`door-owned suggestions:` whole as an `anomaly`, `grain` or `door` note, a line past 200 "
+        f"characters and one with a colon among them, in the report's order and before the `verified` "
+        f"line, on {runs} runs, one a mismatch; the runner's ledger rule carries the one exception and "
+        f"the exemption from the 200-character clause for all three; bound: invented reports"
     )
     if errors:
         detail += " | " + "; ".join(errors)
@@ -8531,6 +8497,43 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
                 )
                 if code == 0 and want_line not in join_text.splitlines():
                     errors.append(f"the plan after the runner's worked line carries no line `{want_line}`")
+
+    # The dispatch line the unit script appends for a further page binds it the same way: planned
+    # first, the number's own page verified, then `next` takes the further page.
+    unit_dir, unit_w1 = root / "unit-line", root / "unit-line-w1"
+    unit_key = _shared_key(_SHARED_FILE, 108)
+    code, _bounds, err = inventory(unit_dir, [
+        _shared_row("L", "L-4.30", "detail", 107, "DETAILS", further=((108, "DETAILS CONTINUED", "detail"),),
+                    file_id=_SHARED_FILE),
+    ])
+    unit_text = ""
+    if code != 0:
+        errors.append(f"the unit script's grid refused: {err}")
+    else:
+        unit_w1.mkdir(parents=True, exist_ok=True)
+        plan(unit_w1, 1, unit_dir / "inventory.json")
+        code, _b, _e, unit_text = plan(
+            unit_dir, 2, unit_dir / "inventory.json", "--window-1", str(unit_w1 / "plan" / "window-1.json")
+        )
+    passes = [m.group(1) for m in map(_ISSUE_PASS_RE.match, unit_text.splitlines()) if m]
+    units = [m.groups() for m in map(_SHARED_UNIT_RE.match, unit_text.splitlines()) if m]
+    if unit_text and (len(passes) != 1 or len(units) != 2 or units[1][4] != unit_key):
+        errors.append(f"the unit script's plan reads passes {passes} and units {units}, not one pass of the page and its further page")
+    elif unit_text:
+        try:
+            unit_module = _load_script_module(plugin_path.joinpath(*RUNNER_UNIT_SCRIPT), "runner_unit")
+        except Exception as e:
+            return Result(name, False, detail=f"cannot import the unit script: {e}")
+        (unit_dir / "ledger.md").write_text(
+            f"verified 2 {passes[0]} {units[0][0]} created 1 items 1 updated 0 questions 0 replied 0 sent 1 "
+            f"landed 1 conflicts 0 result ok\n", encoding="utf-8",
+        )
+        code, out, err = _run_unit(unit_module, ["next", str(unit_dir), "--window", "2", "--pass", passes[0]])
+        if code != 0 or f" opens as {unit_key} " not in out or not out.startswith(f"next: {units[1][0]} sheet L-4.30 "):
+            errors.append(f"next prints {out!r} ({err!r}) for a further page, not its number with the key it opens as")
+        bound = module._read_ledger_units(unit_dir / "ledger.md", 2)
+        if bound != {units[1][0]: (unit_key,)}:
+            errors.append(f"the ledger reader binds the unit script's dispatch line as {bound}, expected {units[1][0]} on {unit_key}")
     readers = {path.name: path.read_text(encoding="utf-8") for path in reader_paths}
     reviewer = (plugin_path / "agents" / "scope-reviewer.md").read_text(encoding="utf-8")
     # A corpus hit on another number's further page names no sheet number, and both searchers keep
@@ -10634,16 +10637,22 @@ _WHOLE_SECTION_PHRASES = (
     "`Sections: 230000 from page 901 of file-1a2b p880-p915, 233113 from page 950 of file-1a2b p940-p960`",
 )
 
-# The runner's two `continue` commands and the twelve-unit note, which the pending run prints.
-_RUNNER_PENDING_COMMAND = (
-    "python3 '<scripts path>/plan_inventory.py' continue --window 3 --pending '<run folder>' --pass <pass id>"
-)
+# The plan script's two `continue` commands, which runner_unit.py runs in-process for the runner,
+# and the twelve-unit note the pending run prints. The runner's text names the binding and the
+# continuation's two dispatch lines; the runner-unit check runs the binding through the unit script.
+_PLAN_CONTINUE_COMMANDS = {
+    "continue --window 3 --report": (
+        "python3 '<scripts path>/plan_inventory.py' continue --window 3 --report '<run folder>/reports/<unit id>.md'"
+    ),
+    "continue --window 3 --pending": (
+        "python3 '<scripts path>/plan_inventory.py' continue --window 3 --pending '<run folder>' --pass <pass id>"
+    ),
+}
 _RUNNER_UNREAD_NOTE = (
     "note <window> <pass> <unit> unread section <code> pages <a> to <b> left, the pass holds twelve units"
 )
 _RUNNER_CONTINUE_PHRASES = (
-    "python3 '<scripts path>/plan_inventory.py' continue --window 3 --report '<run folder>/reports/<unit id>.md'",
-    _RUNNER_PENDING_COMMAND,
+    "through the plan script's own `continue` code",
     "`Continues: <the unit id after continues>`",
     "`Sections: <the sections after sections>`",
     f"`{_RUNNER_UNREAD_NOTE}`",
@@ -10709,10 +10718,10 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         "no continuation mode": dict(texts, reviewer=texts["reviewer"].replace("## Continuation mode", "## Second read")),
         "the skill's report line in another shape": dict(texts, skill=texts["skill"].replace(
             report_line, report_line.replace("pages left p<a>-p<b>", "pages left <a> to <b>"))),
-        "the runner without the continue command": dict(texts, runner=texts["runner"].replace(
-            "plan_inventory.py' continue --window 3 --report", "plan_inventory.py' plan --window 3 --report")),
-        "the runner without the pending run": dict(texts, runner=texts["runner"].replace(
-            "continue --window 3 --pending", "continue --window 3 --report")),
+        "the runner binding a continuation by hand": dict(texts, runner=texts["runner"].replace(
+            "own `continue` code", "own steps by hand")),
+        "the runner without a continuation's `Continues:` line": dict(texts, runner=texts["runner"].replace(
+            "`Continues: <the unit id after continues>`", "`Continues:`")),
         "the continuation reading on in a section that moved": dict(texts, reviewer=texts["reviewer"].replace(
             "Where the file or either page differs", "Whatever the file or pages")),
         "the close-out naming every `continued:` note": dict(texts, skill=texts["skill"].replace(
@@ -10811,11 +10820,8 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         )
 
     def runner_argv(marker: str, where: Path, unit: str = "", pass_id: str = "") -> list[str]:
-        """A `continue` command of the runner's own, filled in, or its documented form where the
-        runner lost it, which the text arm names."""
-        command = next((line.strip() for line in texts["runner"].splitlines() if marker in line), "")
-        if not command:
-            command = _RUNNER_PENDING_COMMAND
+        """A `continue` command of the plan script's, filled in, as runner_unit.py runs it."""
+        command = _PLAN_CONTINUE_COMMANDS[marker]
         return shlex.split(
             command.replace("<scripts path>", str(plugin_path / "scripts"))
             .replace("<run folder>", where.as_posix()).replace("<unit id>", unit).replace("<pass id>", pass_id)
@@ -10844,14 +10850,14 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
     pass_summary_path.unlink()
 
     # A session that stopped between the review's `verified` line and its `continue` run: the
-    # runner's pending run, as its definition writes it, binds the continuation the stop left out.
+    # pending run, as the runner's unit script runs it, binds the continuation the stop left out.
     code, out, err = run(plan_module, runner_argv("continue --window 3 --pending", folder, pass_id=pass_id))
     wanted_line = (
         f"2. {first}: Invented HVAC, trade 23 00 00, package pkg-hvac, continues {review}, sections "
         f"230000 from page 901 of file-m1 p880-p915, 233113 from page 950 of file-m1 p940-p960"
     )
     if code != 0 or not out.startswith(f"bound {first} in pass {pass_id} after {review}"):
-        errors.append(f"the runner's pending run does not bind {first} after {review} on a resume: exit {code}, {out!r}, {err!r}")
+        errors.append(f"the pending run does not bind {first} after {review} on a resume: exit {code}, {out!r}, {err!r}")
     elif block_units(folder, pass_id) != [review, first, *others] or wanted_line not in plan_path.read_text(
         encoding="utf-8"
     ).splitlines():
@@ -10984,10 +10990,10 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
     # The runner's own commands, filled in, are ones the script runs.
     code, out, err = run(plan_module, runner_argv("continue --window 3 --report", folder, unit=review))
     if code != 0 or not out.startswith("already bound: "):
-        errors.append(f"the runner's continue command does not run as written: exit {code}, {err!r}")
+        errors.append(f"the plan script's continue command does not run as written: exit {code}, {err!r}")
     code, out, err = run(plan_module, runner_argv("continue --window 3 --pending", folder, pass_id=pass_id))
     if code != 0 or out != f"nothing to continue in pass {pass_id}":
-        errors.append(f"the runner's pending command does not run as written: exit {code}, {out!r}, {err!r}")
+        errors.append(f"the plan script's pending command does not run as written: exit {code}, {out!r}, {err!r}")
 
     # Refusals, each exit 1 with one line and nothing written.
     refusal_cases = {
@@ -11236,7 +11242,7 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         f"runner {len(_RUNNER_CONTINUE_PHRASES)} and the skill {len(_SKILL_CONTINUE_PHRASES)}, and the "
         f"`sections not checked:` line one shape in the reviewer and the skill; {text_refused} text "
         f"mutations refused; the plan script's continue over invented run folders: a refusal after "
-        f"every read writing nothing, the runner's pending run binding {first} on a resume right "
+        f"every read writing nothing, the pending run binding {first} on a resume right "
         f"after its review in {pass_id} and in plan/window-3.json with each section's pages left, "
         f"file and first page, the review's own continue, the pending run again and a replan "
         f"changing no byte, a continuation's own pages left continued by {second}, every unit id a "
@@ -11245,7 +11251,7 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         f"gone from its package as to look at, the check-in and the lead's record naming the pass by "
         f"the one section its chain read to its end and never by one still open, the pass summary "
         f"counting 6 units with both "
-        f"continuations, the lead's record taking their prefixes in, the runner's two commands run "
+        f"continuations, the lead's record taking their prefixes in, the plan script's two commands run "
         f"as written, a full pass printing each section's unread note once, a replan counting a "
         f"continuation against the twelve units of its trade's pass, two runs at once both landing "
         f"under the run folder's lock, a lock a run held when its process ended taken over in one "
@@ -11259,6 +11265,618 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         f"live run holds, to continue and to a replan, and a replan deleting a package whose "
         f"continuation is not verified or left pages again); "
         f"bound: invented reports and folders, not a real review"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: the runner's unit script
+# --------------------------------------------------------------------------- #
+#
+# A pass runner once read every reader report back, retyped its lines into ledger appends, ran a
+# `search` per item name and per Question, and held all of it. runner_unit.py now takes each unit
+# off the plan (`next`) and writes each unit's ledger lines and files off the report and the
+# `verify_unit` answer (`record`), so a runner holds one line per unit. What can fail, one case each:
+#   1. a unit's lines land in another order, or the `verified` line is not last;
+#   2. a figure is taken from the wrong source: `created` from the reader rather than the answer,
+#      `updated` from the reader's count rather than the subjects its `verify:` line names;
+#   3. count drift, an exact name repeated across units, or a reply named by its `clm-` id is
+#      mishandled;
+#   4. a `verify:` line that does not parse, `checked` counts that differ from the report's lists,
+#      a call that left out the unit's sheet, or a review with no `questionsAlone` passes as ok;
+#   5. a run again after an interruption changes a byte;
+#   6. a stopped reader is dispatched a third time, or its notes are written twice;
+#   7. a review that left manual pages is not continued in the pass;
+#   8. the summary script cannot read what the script wrote;
+#   9. a broken invocation writes something, or refuses in more than one line;
+#  10. the claim keys the readers publish drift from the ones the script and the call read.
+#
+# Honest bound: the reports and answers are invented here, so this proves the script's reading,
+# its order, its idempotence and its refusals, not what a real reader writes or a real answer says.
+
+RUNNER_UNIT_SCRIPT = ("scripts", "runner_unit.py")
+
+# The claim keys verify_unit reads, pinned here from the harness's side.
+_CLAIM_KEYS = (
+    "updatedSubjects", "pageCitations", "manualUpdates", "questionsRaised", "questionsReplied",
+    "questionsLinked", "questionsAlone",
+)
+_READER_CLAIM_KEYS = {"updatedSubjects", "pageCitations", "questionsRaised", "questionsReplied", "questionsLinked"}
+_REVIEWER_CLAIM_KEYS = {
+    "updatedSubjects", "manualUpdates", "questionsRaised", "questionsReplied", "questionsLinked", "questionsAlone",
+}
+# Report lines the `verify:` line replaced, and the touched trades the answer now carries.
+_RETIRED_REPORT_LINES = (
+    "updated subjects:", "questions raised ids:", "questions replied ids:", "questions linked:",
+    "page citations:", "manual updates:", "questions alone:", "trades touched:",
+)
+_UNIT_SET = "9f2c41d07ab3e815"
+
+
+def _run_unit(module, argv: list[str], stdin: str | None = None) -> tuple[int, str, str]:
+    """The unit script's own main() with its streams captured, the answer passed as stdin."""
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        try:
+            code = module.main(argv, stdin=stdin)
+        except SystemExit as e:
+            code = e.code if isinstance(e.code, int) else 2
+    return code, out.getvalue().strip(), err.getvalue().strip()
+
+
+def _unit_plan(window: int, pass_id: str, reads_for: str, unit_lines: list[str]) -> str:
+    """A read plan block in the shape plan_inventory.py writes, for one pass."""
+    return "\n".join([
+        f"# Read plan: window {window}", "", "Written by hand for the harness.", "",
+        f"## Window {window}", "", f"### {pass_id}. Invented", "", f"window: {window}",
+        f"reads for: {reads_for}", f"units: {len(unit_lines)}", "units verified: 0",
+        "summed: no, no summary on file", "", *unit_lines, "", "## Deliberately left out", "",
+        "Nothing. This window left nothing out by pattern.", "",
+    ])
+
+
+def _unit_report(
+    unit: str, pass_id: str, window: int, *, verify: str, names: str = "[]",
+    counts: tuple[int, int, int, int] = (0, 0, 0, 0), sent: int = 0, landed: int = 0,
+    conflicts: str = "none", cited: str = "none", set_version: str = "none",
+    unread: tuple[str, ...] = (), anomalies: tuple[str, ...] = (), grain: tuple[str, ...] = (),
+    door: tuple[str, ...] = (), kinds: str = "none",
+) -> str:
+    """A reader report in the published shape, its multi-line fields one entry per line."""
+    def field(label: str, entries: tuple[str, ...]) -> list[str]:
+        return [f"{label}: none"] if not entries else [f"{label}: {entries[0]}", *entries[1:]]
+
+    created, updated, raised, replied = counts
+    return "\n".join([
+        f"unit: {unit}   pass: {pass_id}   window: {window}",
+        "pages read: invented page read whole",
+        *field("pages unread", unread),
+        f"cited sheets: {cited}",
+        f"set version: {set_version}",
+        f"created: {created}   updated: {updated}   questions raised: {raised}   questions replied: {replied}",
+        f"verify: {verify}",
+        f"created names: {names}",
+        f"sent: {sent}   landed: {landed}   conflicts: {conflicts}",
+        "trades: invented",
+        f"definitions kinds added: {kinds}",
+        "sheet readings written: none",
+        *field("anomalies", anomalies),
+        *field("grain questions", grain),
+        *field("door-owned suggestions", door),
+    ]) + "\n"
+
+
+def _unit_answer(
+    entry_count: int, *, trades: tuple[tuple[str, int], ...] = (), candidates: int = 0,
+    touched: tuple[str, ...] = (), checked: dict | None = None,
+    sheets: tuple[tuple[str, str | None], ...] = (), result: str = "ok",
+    mismatches: tuple[dict, ...] = (),
+) -> str:
+    """A verify_unit answer with claims, in the contract's shape."""
+    answer = {
+        "entryCount": entry_count, "subjectCount": 1, "itemCount": 1,
+        "trades": [{"trade": trade, "count": count} for trade, count in trades],
+        "candidates": candidates, "tradesTouched": list(touched),
+        "sheets": [
+            {"sheet": sheet, **({"fileId": file_id} if file_id else {}), "subjectCount": 1,
+             "truncated": False, "droppedUnmatched": 0}
+            for sheet, file_id in sheets
+        ],
+        "result": result, "mismatches": list(mismatches),
+    }
+    if checked is not None:
+        answer["checked"] = checked
+    return json.dumps(answer)
+
+
+def _folder_bytes(folder: Path) -> dict[str, bytes]:
+    return {
+        str(path.relative_to(folder)): path.read_bytes()
+        for path in sorted(folder.rglob("*")) if path.is_file()
+    }
+
+
+def _verify_json(**lists) -> str:
+    """A `verify:` line's JSON, every reader key present."""
+    claims = {key: [] for key in ("updatedSubjects", "pageCitations", "questionsRaised", "questionsReplied", "questionsLinked")}
+    claims.update(lists)
+    return json.dumps(claims)
+
+
+def check_runner_unit(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "runner-unit"
+    script = plugin_path.joinpath(*RUNNER_UNIT_SCRIPT)
+    runner_path = plugin_path / "agents" / "scope-round-runner.md"
+    reviewer_path = plugin_path / "agents" / "scope-reviewer.md"
+    skill_path = plugin_path / "skills" / "scope-run" / "SKILL.md"
+    reader_paths = [plugin_path / "agents" / name for name in READERS]
+    for path in (script, runner_path, reviewer_path, skill_path, *reader_paths):
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+    try:
+        module = _load_script_module(script, "runner_unit")
+        summary = _load_script_module(plugin_path.joinpath(*PASS_SUMMARY_SCRIPT), "pass_summary")
+        planner = _load_script_module(plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT), "plan_inventory")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import the scripts: {e}")
+
+    errors: list[str] = []
+    root = Path(__file__).parent / ".test-results" / "runner-unit"
+    shutil.rmtree(root, ignore_errors=True)
+
+    # --- 10: the claim keys, from the definitions' side and the script's --- #
+    texts = {path.name: path.read_text(encoding="utf-8") for path in (*reader_paths, reviewer_path)}
+    for label, text in texts.items():
+        worked = [line for line in text.splitlines() if line.startswith("verify: {")]
+        want = _REVIEWER_CLAIM_KEYS if label == reviewer_path.name else _READER_CLAIM_KEYS
+        if len(worked) != 1:
+            errors.append(f"{label} carries {len(worked)} worked `verify:` lines, not one")
+            continue
+        try:
+            claims = json.loads(worked[0][len("verify: "):])
+        except json.JSONDecodeError as e:
+            errors.append(f"{label}'s worked `verify:` line is not JSON: {e.msg}")
+            continue
+        if set(claims) != want:
+            errors.append(f"{label}'s worked `verify:` line carries {sorted(claims)}, not {sorted(want)}")
+        parsed, reason = module.parse_claims(worked[0][len("verify: "):], 3 if label == reviewer_path.name else 2)
+        if reason:
+            errors.append(f"the script refuses {label}'s worked `verify:` line: {reason}")
+        flat = " ".join(text.split())
+        if "report: <run folder>/reports/<unit id>.md verify: <the same verify line as in your report>" not in flat:
+            errors.append(f"{label} does not end with the two lines, `report:` and `verify:`")
+    if tuple(module.CLAIM_CAPS) != _CLAIM_KEYS:
+        errors.append(f"the script reads the claims {tuple(module.CLAIM_CAPS)}, not {_CLAIM_KEYS}")
+    for label, text in (*texts.items(), ("the scope-run skill", skill_path.read_text(encoding="utf-8"))):
+        for body in _fenced_block_bodies(text.splitlines()):
+            if not any(line.startswith("unit: <unit id>") for line in body):
+                continue
+            for line in body:
+                if line.startswith(_RETIRED_REPORT_LINES):
+                    errors.append(f"the report shape in {label} still carries `{line.split(':', 1)[0]}:`")
+            for wanted in ("verify: ", "created names: "):
+                if not any(line.startswith(wanted) for line in body):
+                    errors.append(f"the report shape in {label} carries no `{wanted.strip()}` line")
+    # The script's labels are the published report shapes' labels, in order.
+    skill_text = skill_path.read_text(encoding="utf-8")
+    for label, text, labels in (
+        ("scope-reader.md", texts[SHEET_READER], module.READER_LABELS),
+        ("scope-reviewer.md", texts[reviewer_path.name], module.REVIEWER_LABELS),
+    ):
+        body = next(
+            (b for b in _fenced_block_bodies(text.splitlines()) if any(l.startswith("unit: <unit id>") for l in b)), []
+        )
+        published = tuple(line.split(":", 1)[0] for line in body)
+        if published != labels:
+            errors.append(f"the script reads {label}'s report by {labels}, and it publishes {published}")
+    if module.REVIEWER_LABELS != summary.REVIEWER_LABELS:
+        errors.append("the unit script and the summary script read a review's report by different labels")
+
+    # The runner's own two command lines, filled in, are ones the script runs.
+    runner_text = runner_path.read_text(encoding="utf-8")
+    commands = {}
+    for mode in ("next", "record"):
+        line = next((l.strip() for l in runner_text.splitlines() if f"runner_unit.py' {mode} " in l), "")
+        if not line:
+            errors.append(f"the runner carries no `runner_unit.py {mode}` command")
+        commands[mode] = line.split(" <<", 1)[0]
+
+    def argv_of(mode: str, folder: Path, window: int, pass_id: str, unit: str = "") -> list[str]:
+        command = commands.get(mode) or ""
+        filled = (
+            command.replace("<scripts path>", str(plugin_path / "scripts"))
+            .replace("<run folder>", folder.as_posix()).replace("<n>", str(window))
+            .replace("<pass id>", pass_id).replace("<unit id>", unit)
+        )
+        return shlex.split(filled)[2:] if filled else []
+
+    # --- 1 to 5 and 8: a window 2 pass of four units --- #
+    folder = root / "pass"
+    (folder / "reports").mkdir(parents=True)
+    further_key = "file-0002-p9"
+    (folder / "read-plan.md").write_text(_unit_plan(2, "A2", "the sheet", [
+        "A2-1. A-1.01, page 4: FLOOR PLAN",
+        "A2-2. A-1.02, page 5: SECOND FLOOR PLAN",
+        f"A2-3. A-5.01, file file-0002, page 9, opens as {further_key}: DETAILS CONTINUED, repeated lines read in set {_UNIT_SET}",
+        "A2-4. A-2.01, page 7: ELEVATIONS",
+    ]), encoding="utf-8")
+    (folder / "ledger.md").write_text("phase: plan approved\n", encoding="utf-8")
+    long_anomaly = (
+        "A-1.01 p4 the finish legend lists a resilient base in two heights, 4 inch at the corridors and "
+        "6 inch at the stair cores, and the room finish schedule names neither height for rooms 104, 106 "
+        "and 108, which the plan tags as corridor rooms, note on scopeItem:A2-1-1"
+    )
+    anomalies = (long_anomaly, "A-1.01 p4 a room tag repeats on two rooms, Question question:proj-0001:q-0001")
+    question = "question:proj-0001:q-0001"
+    reports = {
+        "A2-1": _unit_report(
+            "A2-1", "A2", 2, counts=(2, 1, 1, 0), sent=7, landed=7,
+            conflicts="1, scopeItem:A1-1-3 kept the later value",
+            verify=_verify_json(updatedSubjects=["scopeItem:A1-1-3"], questionsRaised=[question],
+                                questionsLinked=[{"question": question, "subjects": ["scopeItem:A1-1-3"]}]),
+            names=json.dumps(["Resilient base, 4 inch", "Sealed concrete floor"]),
+            anomalies=anomalies, grain=("A-1.01 p4 base is one row or two, by height",),
+            door=("A-1.01 p4 the corridor base row reads as replacing an earlier one",),
+            kinds="roomType, finishType",
+        ),
+        # Count drift, a reply named by its reply entry id, and a name the first unit made.
+        "A2-2": _unit_report(
+            "A2-2", "A2", 2, counts=(1, 3, 0, 1), sent=4, landed=4,
+            verify=_verify_json(updatedSubjects=["scopeItem:A1-1-4"], questionsReplied=["clm-7f3e2a"]),
+            names=json.dumps(["RESILIENT BASE 4 inch"]), kinds="finishType",
+        ),
+        # A further page whose reader wrote a `verify:` line that does not parse.
+        "A2-3": _unit_report(
+            "A2-3", "A2", 2, counts=(1, 0, 0, 0), sent=2, landed=2,
+            verify='{"updatedSubjects": ["scopeItem:A1-1-2"]', names=json.dumps(["Stair nosing"]),
+        ),
+    }
+    answers = {
+        "A2-1": _unit_answer(
+            11, trades=(("09 65 13", 1), ("03 35 00", 1)), candidates=1, touched=("09 65 13",),
+            checked={"updatedSubjects": 1, "pageCitations": 0, "questionsRaised": 1, "questionsReplied": 0, "questionsLinked": 1},
+            sheets=(("A-1.01", None),),
+        ),
+        "A2-2": _unit_answer(
+            5, trades=(("09 65 13", 1),), touched=("09 65 13", "09 30 00"),
+            checked={"updatedSubjects": 1, "questionsReplied": 1}, sheets=(("A-1.02", None),),
+        ),
+        # The runner could send no claims, so the answer checked none.
+        "A2-3": _unit_answer(3, trades=(("06 40 00", 1),), sheets=(("A-5.01", "file-0002"),)),
+    }
+    for unit, text in reports.items():
+        (folder / "reports" / f"{unit}.md").write_text(text, encoding="utf-8")
+
+    def ledger_lines() -> list[str]:
+        return (folder / "ledger.md").read_text(encoding="utf-8").splitlines()
+
+    said: dict[str, list[str]] = {}
+    code, out, err = _run_unit(module, argv_of("next", folder, 2, "A2"))
+    said["next"] = out.splitlines()
+    before = _folder_bytes(folder)
+    code2, out2, _err2 = _run_unit(module, argv_of("next", folder, 2, "A2"))
+    if code != 0 or code2 != 0 or out2 != out or _folder_bytes(folder) != before:
+        errors.append(f"next run twice does not print one line and append one dispatch line: exit {code}, {out!r}, {err!r}")
+    for unit in ("A2-1", "A2-2", "A2-3"):
+        code, out, err = _run_unit(module, argv_of("record", folder, 2, "A2", unit), answers[unit])
+        said[unit] = out.splitlines()
+        if code != 0:
+            errors.append(f"record {unit} refused: {err}")
+        before = _folder_bytes(folder)
+        code, again, err = _run_unit(module, argv_of("record", folder, 2, "A2", unit), answers[unit])
+        if code != 0 or again != out or _folder_bytes(folder) != before:
+            errors.append(f"record {unit} run again changed a byte or printed otherwise: exit {code}, {again!r}, {err!r}")
+
+    # The tally, written here off the fixtures above.
+    n = "note 2 A2"
+    want_ledger = [
+        "phase: plan approved",
+        "dispatch 2 A2 A2-1 sheets A-1.01 purpose the sheet",
+        f"{n} A2-1 anomaly {anomalies[0]}",
+        f"{n} A2-1 anomaly {anomalies[1]}",
+        f"{n} A2-1 grain A-1.01 p4 base is one row or two, by height",
+        f"{n} A2-1 door A-1.01 p4 the corridor base row reads as replacing an earlier one",
+        "verified 2 A2 A2-1 created 11 items 2 updated 1 questions 1 replied 0 sent 7 landed 7 conflicts 1 result ok",
+        "dispatch 2 A2 A2-2 sheets A-1.02 purpose the sheet",
+        f"{n} A2-2 deviation reader counted updated 3, named 1",
+        f"{n} A2-2 overlap RESILIENT BASE 4 inch (A2-1, A2-2)",
+        "verified 2 A2 A2-2 created 5 items 1 updated 1 questions 0 replied 1 sent 4 landed 4 conflicts 0 result ok",
+        f"dispatch 2 A2 A2-3 sheets {further_key} purpose the sheet",
+        "verified 2 A2 A2-3 created 3 items 1 updated 0 questions 0 replied 0 sent 2 landed 2 conflicts 0 result mismatch",
+    ]
+    if ledger_lines() != want_ledger:
+        got = ledger_lines()
+        first_diff = next((i for i, (a, b) in enumerate(zip(got, want_ledger)) if a != b), min(len(got), len(want_ledger)))
+        errors.append(
+            f"the ledger reads otherwise than the tally from line {first_diff + 1}: "
+            f"{got[first_diff:first_diff + 2]} against {want_ledger[first_diff:first_diff + 2]}"
+        )
+    want_said = {
+        "next": ["next: A2-1 sheet A-1.01 file none page 4 opens as none repeated not read left out none"],
+        "A2-1": ["verified A2-1 result ok", "next: A2-2 sheet A-1.02 file none page 5 opens as none repeated not read left out none"],
+        "A2-2": [
+            "verified A2-2 result ok",
+            f"next: A2-3 sheet A-5.01 file file-0002 page 9 opens as {further_key} repeated read in set {_UNIT_SET} left out none",
+        ],
+    }
+    for key, want in want_said.items():
+        if said.get(key) != want:
+            errors.append(f"{key} printed {said.get(key)}, not {want}")
+    a23 = said.get("A2-3", [])
+    if len(a23) != 2 or not a23[0].startswith("verified A2-3 result mismatch: the `verify:` line is not one line of JSON") \
+            or a23[1] != "stop: A2-3 stands verified as a mismatch":
+        errors.append(f"a `verify:` line that does not parse printed {a23}, not a mismatch and a stop")
+    files = {
+        "names": [
+            "Resilient base, 4 inch\tA2-1", "Sealed concrete floor\tA2-1", "RESILIENT BASE 4 inch\tA2-2",
+            "Stair nosing\tA2-3",
+        ],
+        "kinds": ["roomType", "finishType"],
+        "trades": [
+            "A2-1 trade 09 65 13 1", "A2-1 trade 03 35 00 1", "A2-1 candidates 1", "A2-1 touched 09 65 13",
+            "A2-2 trade 09 65 13 1", "A2-2 candidates 0", "A2-2 touched 09 65 13", "A2-2 touched 09 30 00",
+            "A2-3 trade 06 40 00 1", "A2-3 candidates 0",
+        ],
+    }
+    for kind, want in files.items():
+        path = folder / kind / "A2.txt"
+        got = path.read_text(encoding="utf-8").splitlines() if path.is_file() else None
+        if got != want:
+            errors.append(f"{kind}/A2.txt reads {got}, not {want}")
+
+    # The summary script reads what the unit script wrote, and the plan script reads its trades.
+    code, out, err = _run_script_main(summary, [
+        str(folder / "ledger.md"), "2", "A2", "--plan", str(folder / "read-plan.md"),
+        "--trades", str(folder / "trades" / "A2.txt"), "--out", str(folder / "reports" / "A2.md"),
+    ])
+    want_back = [
+        "window: 2   pass: A2", "units: 4, verified 2", "unverified: A2-3 mismatch",
+        "unverified: A2-4 no verified line", "unread: none",
+        "notes: anomalies 2, overlaps 1, deviations 1, kinds 0",
+        f"report: {folder / 'reports' / 'A2.md'}",
+    ]
+    if code != 0 or out.splitlines() != want_back:
+        errors.append(f"the summary script reads the unit script's lines as exit {code}, {out!r}, {err!r}")
+    try:
+        written_on, touched_units = planner._read_pass_trades(folder)
+        if touched_units != {"A2-1", "A2-2"} or "093000" not in written_on:
+            errors.append(f"the plan script reads the touched trades as {sorted(touched_units)}, {sorted(written_on)}")
+    except Exception as e:
+        errors.append(f"the plan script refuses the unit script's trades file: {e}")
+    cases = 1
+
+    # --- 4: a mismatch for each way the call or the report falls short --- #
+    def one_unit(label: str, unit_line: str, report: str, answer: str, window: int = 2) -> list[str]:
+        where = root / label
+        (where / "reports").mkdir(parents=True)
+        (where / "read-plan.md").write_text(_unit_plan(window, "B2", "the sheet", [unit_line]), encoding="utf-8")
+        (where / "reports" / "B2-1.md").write_text(report, encoding="utf-8")
+        _run_unit(module, ["next", str(where), "--window", str(window), "--pass", "B2"])
+        code, out, err = _run_unit(module, ["record", str(where), "--window", str(window), "--pass", "B2", "--unit", "B2-1"], answer)
+        if code != 0:
+            errors.append(f"{label}: record refused: {err}")
+        return out.splitlines() + (where / "ledger.md").read_text(encoding="utf-8").splitlines()
+
+    plain = _unit_report("B2-1", "B2", 2, counts=(1, 1, 0, 0), verify=_verify_json(updatedSubjects=["scopeItem:A1-1-1"]))
+    plain_checked = {"updatedSubjects": 1}
+    mismatch_rows = tuple(
+        {"check": "updatedSubjects", "value": f"scopeItem:A1-1-{i}", "reason": "cites none of the call's sheets"}
+        for i in range(1, 7)
+    )
+    for label, unit_line, report, answer, want_reason, want_lines in (
+        ("checked-differs", "B2-1. B-1.01, page 2: PLAN", plain,
+         _unit_answer(2, checked={"updatedSubjects": 0}, sheets=(("B-1.01", None),)),
+         "the call checked 0 of `updatedSubjects` where the report names 1", []),
+        ("sheet-left-out", "B2-1. B-1.01, file file-0009, page 2: PLAN", plain,
+         _unit_answer(2, checked=plain_checked, sheets=(("B-1.01", "file-0001"),)),
+         "the call left out B-1.01 on file-0009", []),
+        ("answer-mismatch", "B2-1. B-1.01, page 2: PLAN", plain,
+         _unit_answer(2, checked=plain_checked, sheets=(("B-1.01", None),), result="mismatch", mismatches=mismatch_rows),
+         "verify updatedSubjects scopeItem:A1-1-1: cites none of the call's sheets",
+         [f"note 2 B2 B2-1 deviation verify updatedSubjects scopeItem:A1-1-{i}: cites none of the call's sheets" for i in range(1, 6)]),
+        ("no-count", "B2-1. B-1.01, page 2: PLAN", plain.replace("sent: 0   landed: 0", "sent: all   landed: 0"),
+         _unit_answer(2, checked=plain_checked, sheets=(("B-1.01", None),)),
+         "the report's `sent:` field carries no whole number", []),
+    ):
+        lines = one_unit(label, unit_line, report, answer)
+        cases += 1
+        if not lines or lines[0] != f"verified B2-1 result mismatch: {want_reason}":
+            errors.append(f"{label}: printed {lines[:1]}, not the mismatch `{want_reason}`")
+        notes = [line for line in lines if line.startswith("note ")]
+        if notes != want_lines:
+            errors.append(f"{label}: wrote the notes {notes}, not {want_lines}")
+        if not any(line.endswith("result mismatch") and line.startswith("verified 2 B2 B2-1 ") for line in lines):
+            errors.append(f"{label}: wrote no mismatch `verified` line")
+
+    # A repeated lines unit is checked on every sheet its `cited sheets:` line names, on its file.
+    lines = one_unit(
+        "repeated-sheets", "B2-1. file file-r, from page 2: repeated lines",
+        _unit_report("B2-1", "B2", 1, set_version=_UNIT_SET, cited="X-1.01, X-2.01",
+                     verify=_verify_json(pageCitations=[{"subject": "scopeItem:A1-1-9", "fileId": "file-r", "pageInPdf": 3}])),
+        _unit_answer(4, checked={"pageCitations": 1}, sheets=(("X-1.01", "file-r"),)), window=1,
+    )
+    cases += 1
+    if not lines or lines[0] != "verified B2-1 result mismatch: the call left out X-2.01 on file-r":
+        errors.append(f"a repeated lines unit's call missing a cited sheet printed {lines[:1]}")
+    if f"note 1 B2 B2-1 set {_UNIT_SET} file file-r" not in lines:
+        errors.append("a repeated lines unit's `set` note was not written")
+    if "dispatch 1 B2 B2-1 sheets none purpose repeated lines of file file-r" not in lines:
+        errors.append("a repeated lines unit's `dispatch` line is not in its fixed shape")
+
+    # --- 5: a record stopped after its files and its first note, run again --- #
+    interrupted = root / "interrupted"
+    (interrupted / "reports").mkdir(parents=True)
+    (interrupted / "read-plan.md").write_text(_unit_plan(2, "A2", "the sheet", ["A2-1. A-1.01, page 4: FLOOR PLAN"]), encoding="utf-8")
+    (interrupted / "reports" / "A2-1.md").write_text(reports["A2-1"], encoding="utf-8")
+    _run_unit(module, ["next", str(interrupted), "--window", "2", "--pass", "A2"])
+    record_argv = ["record", str(interrupted), "--window", "2", "--pass", "A2", "--unit", "A2-1"]
+    _run_unit(module, record_argv, answers["A2-1"])
+    whole = _folder_bytes(interrupted)
+    cut_ledger = (interrupted / "ledger.md").read_text(encoding="utf-8").splitlines()[:2]
+    (interrupted / "ledger.md").write_bytes(("\n".join(cut_ledger) + "\n").encode("utf-8"))
+    code, out, err = _run_unit(module, record_argv, answers["A2-1"])
+    if code != 0 or _folder_bytes(interrupted) != whole:
+        errors.append(
+            "a record stopped after its names, kinds and trades files and its first note, run again, "
+            "does not end with the same bytes as one that ran through"
+        )
+    cases += 1
+
+    # --- 6: a reader that stopped answering, read again once and then stopped at --- #
+    stopped = root / "stopped"
+    (stopped / "reports").mkdir(parents=True)
+    (stopped / "read-plan.md").write_text(_unit_plan(2, "C2", "the sheet", [
+        "C2-1. C-1.01, page 3: PLAN", "C2-2. C-1.02, page 4: PLAN",
+    ]), encoding="utf-8")
+    steps = [
+        ([], "next: C2-1 sheet C-1.01 file none page 3 opens as none repeated not read left out none"),
+        (["--stopped", "C2-1"], "next: C2-1 sheet C-1.01 file none page 3 opens as none repeated not read left out none"),
+        (["--stopped", "C2-1"], "stop: C2-1 reader stopped answering twice"),
+        (["--stopped", "C2-1"], "stop: C2-1 reader stopped answering twice"),
+        ([], "stop: C2-1 reader stopped answering twice"),
+    ]
+    for extra, want in steps:
+        code, out, err = _run_unit(module, ["next", str(stopped), "--window", "2", "--pass", "C2", *extra])
+        if code != 0 or out != want:
+            errors.append(f"next {' '.join(extra) or 'alone'} on a stopped reader printed {out!r} ({err!r}), not {want!r}")
+    want_stopped = [
+        "dispatch 2 C2 C2-1 sheets C-1.01 purpose the sheet",
+        "note 2 C2 C2-1 deviation C-1.01 reader stopped answering, read again once",
+        "dispatch 2 C2 C2-1 sheets C-1.01 purpose the sheet",
+        "note 2 C2 C2-1 unread C-1.01 reader stopped answering twice",
+    ]
+    if (stopped / "ledger.md").read_text(encoding="utf-8").splitlines() != want_stopped:
+        errors.append(f"a stopped reader's ledger reads {(stopped / 'ledger.md').read_text(encoding='utf-8').splitlines()}")
+    cases += 1
+
+    # --- 7 and 4: a review that left manual pages, then its continuation with no `questionsAlone` --- #
+    review_root = root / "review"
+    (review_root / "plan").mkdir(parents=True)
+    (review_root / "reports").mkdir()
+    (review_root / "run.json").write_text(json.dumps(_issue_run("deliv-w1", ["deliv-w1"], "i1")), encoding="utf-8")
+    (review_root / "plan" / "packages.json").write_text(json.dumps({"packages": [
+        {"id": "pkg-hvac", "tradeCode": "23 00 00", "name": "Invented HVAC"},
+        {"id": "pkg-roof", "tradeCode": "07 50 00", "name": "Invented roofing"},
+    ]}), encoding="utf-8")
+    code, _out, err = _run_script_main(planner, [
+        "plan", "--window", "3", "--packages", str(review_root / "plan" / "packages.json"),
+        "--out", str(review_root / "read-plan.md"),
+    ])
+    review_pass = None
+    if code != 0:
+        errors.append(f"the window 3 plan refused the review fixture: {err}")
+    else:
+        _window, passes = summary.plan_passes(review_root / "read-plan.md")
+        review_pass = passes[0] if passes else None
+    if review_pass is not None:
+        units = summary.read_plan(review_root / "read-plan.md", 3, review_pass)["units"]
+        hvac = next((u for u in units if "230000" in u), units[0])
+        fixture = (marketplace_root / "harness" / "fixtures" / "reviewer-report-fixture.md").read_text(encoding="utf-8")
+
+        def review_report(unit: str, verify: str, left: str) -> str:
+            lines = fixture.splitlines()
+            lines[0] = f"unit: {unit}   package: Invented HVAC   trade: 23 00 00   window: 3"
+            lines[lines.index("sections not checked: none")] = f"sections not checked: {left}"
+            at = next(i for i, line in enumerate(lines) if line.startswith("verify: "))
+            lines[at] = f"verify: {verify}"
+            return "\n".join(lines) + "\n"
+
+        review_claims = json.dumps({
+            "updatedSubjects": ["scopeItem:A1-1-5"],
+            "manualUpdates": [{"subject": "scopeItem:A1-1-1", "specSection": "099999", "pageInPdf": 12, "fileId": "file-1111"}],
+            "questionsRaised": [], "questionsReplied": [], "questionsLinked": [], "questionsAlone": [],
+        })
+        (review_root / "reports" / f"{hvac}.md").write_text(
+            review_report(hvac, review_claims, "230000 pages left p901-p915 of file-m1 p880-p915"), encoding="utf-8"
+        )
+        review_answer = _unit_answer(
+            3, trades=(("23 00 00", 1),), checked={"updatedSubjects": 1, "manualUpdates": 1, "questionsAlone": 0},
+            sheets=(("X-1.01", "file-0000"), ("X-2.01", "file-0000"), ("X-3.01", "file-0000")),
+        )
+        first_unit = units[0]
+        code, out, err = _run_unit(module, ["next", str(review_root), "--window", "3", "--pass", review_pass])
+        # Every review before the HVAC one is verified by hand, so the HVAC review is the one taken.
+        for unit in units[: units.index(hvac)]:
+            with (review_root / "ledger.md").open("a", encoding="utf-8") as ledger:
+                ledger.write(f"verified 3 {review_pass} {unit} created 0 items 0 updated 0 questions 0 replied 0 sent 0 landed 0 conflicts 0 result ok\n")
+            (review_root / "reports" / f"{unit}.md").write_text(review_report(unit, review_claims, "none"), encoding="utf-8")
+        code, out, err = _run_unit(module, ["next", str(review_root), "--window", "3", "--pass", review_pass])
+        code, out, err = _run_unit(module, ["record", str(review_root), "--window", "3", "--pass", review_pass, "--unit", hvac], review_answer)
+        continuation = f"{hvac}c-1"
+        want_review = [
+            f"verified {hvac} result ok",
+            f"next: {continuation} package pkg-hvac trade 23 00 00 continues {hvac} sections 230000 from page 901 of file-m1 p880-p915",
+        ]
+        if code != 0 or out.splitlines() != want_review:
+            errors.append(f"a review that left manual pages printed {out!r} ({err!r}), not {want_review}")
+        ledger = (review_root / "ledger.md").read_text(encoding="utf-8").splitlines()
+        if f"dispatch 3 {review_pass} {continuation} sheets none purpose continue the Invented HVAC manual sections" not in ledger:
+            errors.append("the continuation's `dispatch` line is not in its fixed shape")
+        no_alone = json.dumps({key: [] for key in _REVIEWER_CLAIM_KEYS - {"questionsAlone"}})
+        (review_root / "reports" / f"{continuation}.md").write_text(review_report(continuation, no_alone, "none"), encoding="utf-8")
+        code, out, err = _run_unit(module, [
+            "record", str(review_root), "--window", "3", "--pass", review_pass, "--unit", continuation,
+        ], _unit_answer(1, checked={}, sheets=(("X-1.01", "file-0000"), ("X-2.01", "file-0000"), ("X-3.01", "file-0000"))))
+        if not out.startswith(f"verified {continuation} result mismatch: a review's `verify:` line carries no `questionsAlone`"):
+            errors.append(f"a review with no `questionsAlone` printed {out!r} ({err!r})")
+        cases += 2
+
+    # --- 9: broken invocations, each one line, nothing written --- #
+    refusals = 0
+
+    def refused(label: str, argv: list[str], stdin: str | None = None, where: Path = folder) -> None:
+        nonlocal refusals
+        before = _folder_bytes(where)
+        code, out, err = _run_unit(module, argv, stdin)
+        if code == 1 and not out and len(err.splitlines()) == 1 and err.startswith("runner_unit: ") \
+                and _folder_bytes(where) == before:
+            refusals += 1
+        else:
+            errors.append(f"{label} is not refused in one line with nothing written: exit {code}, {out!r}, {err!r}")
+
+    base = ["--window", "2", "--pass", "A2"]
+    ok_answer = answers["A2-1"]
+    refused("a unit with no report", ["record", str(folder), *base, "--unit", "A2-4"], ok_answer)
+    refused("an answer that is not JSON", ["record", str(folder), *base, "--unit", "A2-2"], "entryCount 5")
+    refused("an answer with no entry count", ["record", str(folder), *base, "--unit", "A2-2"], json.dumps({"result": "ok"}))
+    refused("an answer with no result", ["record", str(folder), *base, "--unit", "A2-2"], json.dumps({"entryCount": 5}))
+    refused("a unit the block does not carry", ["record", str(folder), *base, "--unit", "A2-9"], ok_answer)
+    refused("the mode's pass id", ["next", str(folder), "--window", "2", "--pass", "review-A2"])
+    refused("no run folder", ["next", str(root / "missing"), *base])
+    refused("a pass the plan does not carry", ["next", str(folder), "--window", "2", "--pass", "Z2"])
+    refused("a plan of another window", ["next", str(folder), "--window", "1", "--pass", "A2"])
+    refused("a stopped unit that is not the next", ["next", str(stopped), "--window", "2", "--pass", "C2", "--stopped", "C2-2"], where=stopped)
+    long_pass = root / "long"
+    (long_pass / "reports").mkdir(parents=True)
+    (long_pass / "read-plan.md").write_text(
+        _unit_plan(2, "D2", "the sheet", [f"D2-{i}. D-{i}.01, page {i}: PLAN" for i in range(1, 14)]), encoding="utf-8"
+    )
+    refused("a pass of thirteen units", ["next", str(long_pass), "--window", "2", "--pass", "D2"], where=long_pass)
+    on_file = root / "on-file"
+    (on_file / "reports").mkdir(parents=True)
+    (on_file / "read-plan.md").write_text(_unit_plan(2, "E2", "the sheet", ["E2-1. E-1.01, page 1: PLAN"]), encoding="utf-8")
+    refused("a stopped unit with no dispatch line", ["next", str(on_file), "--window", "2", "--pass", "E2", "--stopped", "E2-1"], where=on_file)
+    _run_unit(module, ["next", str(on_file), "--window", "2", "--pass", "E2"])
+    (on_file / "reports" / "E2-1.md").write_text("unit: E2-1   pass: E2   window: 2\n", encoding="utf-8")
+    refused("a stopped unit whose report is on file", ["next", str(on_file), "--window", "2", "--pass", "E2", "--stopped", "E2-1"], where=on_file)
+    with (on_file / "ledger.md").open("a", encoding="utf-8") as ledger:
+        ledger.write("Unit E2-1 went well.\n")
+    refused("a ledger line in none of the three shapes", ["next", str(on_file), "--window", "2", "--pass", "E2"], where=on_file)
+
+    detail = (
+        f"the claim keys pinned in the readers' and the reviewer's worked `verify:` lines, the script and "
+        f"here, every report shape carrying `verify:` and `created names:` and none of the "
+        f"{len(_RETIRED_REPORT_LINES)} lines they replaced, and the runner's two commands run as written; "
+        f"a pass of four units recorded in order against a tally written here (anomalies whole, grain, "
+        f"door, count drift, an exact name across two units, a reply by its entry id, a further page, a "
+        f"`verify:` line that does not parse stopping the pass), each run again changing no byte, read by "
+        f"the summary script and the plan script; {cases} mismatch and flow cases (checked counts that "
+        f"differ, a sheet left out, a mismatch answer's first five rows, a report count that does not "
+        f"read, a repeated lines unit's cited sheets, a reader stopped twice, a review continued in its "
+        f"pass and one with no `questionsAlone`); {refusals} refusals each one line with nothing "
+        f"written; bound: invented reports and answers, not a real reader or verify_unit answer"
     )
     if errors:
         detail += " | " + "; ".join(errors)
@@ -11299,6 +11917,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_fold_one_level_down(plugin_path, marketplace_root),
         check_project_folder_by_id(plugin_path, marketplace_root),
         check_whole_manual_sections(plugin_path, marketplace_root),
+        check_runner_unit(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed
