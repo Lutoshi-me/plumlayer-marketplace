@@ -2837,8 +2837,8 @@ def _read_pass_trades(folder: Path) -> tuple[set[str], set[str]]:
     The trades are every catalog id on a `<unit id> trade <catalog id> <count>` line of the pass's
     trades files, which the runners append off each unit's own verification, and on a `<unit id>
     touched <catalog id>` line, the home trade of a row the unit updated or cited and a trade a
-    Question it raised names, which the runners carry off the reader's report. An addendum that
-    only changes existing scope still has its packages reviewed. A candidates line names no trade.
+    Question it raised names, which the runner's unit script writes off the `verify_unit` answer.
+    An addendum that only changes existing scope still has its packages reviewed. A candidates line names no trade.
 
     The grammar is the one `pass_summary.py` reads the same files by, held as strictly: a count
     that is not a whole number is refused, as it is there. The folder is found beside the plan, so

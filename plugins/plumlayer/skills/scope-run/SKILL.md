@@ -1209,7 +1209,7 @@ On the go-ahead:
    trade in its `codes`, or a trade under a broad code of either): a row it created, a row
    that already existed and that it updated or cited, or a Question it raised naming that trade.
    Its bounds line counts the packages it left out, and the read plan names each. Where a unit's
-   `verified` line shows a row updated or a Question raised and its reader named no trade it
+   `verified` line shows a row updated or a Question raised and its check named no trade it
    touched, which packages the pass wrote on is not known: the plan reviews every package, and its
    bounds line names those units. A pass that
    wrote on no trade plans no review: append `phase: window 3 complete` with zero totals and go to stage 8. The
