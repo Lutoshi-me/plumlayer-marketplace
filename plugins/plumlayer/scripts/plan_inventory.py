@@ -257,7 +257,7 @@ Passes under three units, in windows 1 and 2:
 
 Which passes wait, in every window:
 
-  A lead runs up to PASSES_AT_ONCE passes alongside each other in windows 1 and 2, so the order of
+  A lead runs up to PASSES_AT_ONCE passes alongside each other in every window, so the order of
   work inside a discipline has to hold across passes, and a lead's judgment is not what holds it.
   Every pass block says `starts after: <pass ids>`, or `starts after: none`, under `summed:`. Each
   window sorts its sheet types into classes, in `WINDOW_1_SHEET_CLASSES` and
@@ -299,8 +299,8 @@ Reviews to a pass, in window 3:
   before an addendum's filter. The reviews kept are walked in package order, every review of one
   folded trade code together, and put into passes of up to REVIEWS_PER_PASS: a trade's reviews go
   into the pass being built where they fit beside what it holds, and start the next pass where
-  they do not. A trade's reviews are never split, so no two passes share a trade and every pass
-  can start at once; a trade with more reviews than REVIEWS_PER_PASS is a pass of its own, and one
+  they do not. A trade's reviews are never split, so no two passes share a trade and no pass
+  waits on another; a trade with more reviews than REVIEWS_PER_PASS is a pass of its own, and one
   with more than UNITS_PER_PASS is refused by name, since no runner supervises more. The passes
   are numbered `W3-<n>` under the unit tag in plan order. Nothing about the grouping is stored, so
   a package added or deleted can move reviews between passes, and `summed:` reads no on each pass
@@ -488,9 +488,10 @@ UNITS_PER_PASS = 12
 # a part under this many units folds into a neighbouring pass rather than starting a runner alone.
 MIN_PASS_UNITS = 3
 
-# How many passes a lead holds running at once in windows 1 and 2. Six is the most that has run at
-# once on a set of about 500 sheets with no lock timeout, write volume refusal or API error. Window
-# 3 has no limit: no two of its passes share a trade, so all of them may start together.
+# How many passes a lead holds running at once, in every window. Claude Code stops agents past 20
+# running together, and each pass runs a runner and its reader or reviewer, so six passes and the
+# lead are 13. Six is also the most that has run at once on a set of about 500 sheets with no lock
+# timeout, write volume refusal or API error.
 PASSES_AT_ONCE = 6
 
 PREFIX_GROUP_CAP = 60
@@ -2821,7 +2822,7 @@ def _window_3(
     id bound to its own package id (`ids`, from `_bind_review_ids`). One runner reviews them in turn, so they never run at once,
     and its overlap scan sees them side by side, which is how two reviews of the same work are
     kept from doubling it. A trade's reviews are never split across passes, so no two passes share
-    a trade and every pass can start at once.
+    a trade and no pass waits on another.
 
     `written_on`, the folded trades an addendum's pass wrote on, keeps only the reviews of
     the packages covering those trades (as their own trade or one of their `codes`), and every

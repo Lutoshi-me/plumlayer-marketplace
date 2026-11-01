@@ -38,7 +38,7 @@ Three modes:
 
         `--running` is the passes the lead started and has not recorded. `start now:` is the passes
         not finished, not running and with every pass on their `starts after:` line finished, in
-        plan order, cut to PASSES_AT_ONCE less the count running; window 3 has no cut. `waiting:` is
+        plan order, cut to PASSES_AT_ONCE less the count running, in every window. `waiting:` is
         every other pass not finished and not running.
 
         `--reported` is the pass that just handed back. It prints only that pass's prefixes line,
@@ -398,9 +398,8 @@ def passes_lines(
             )
         if pass_id not in out and not any(other in to_dispatch for other in waits_on):
             ready.append(pass_id)
-    if window != 3:
-        out_now = len({pass_id for pass_id in out if pass_id in to_dispatch})
-        ready = ready[:max(0, plan_inventory.PASSES_AT_ONCE - out_now)]
+    out_now = len({pass_id for pass_id in out if pass_id in to_dispatch})
+    ready = ready[:max(0, plan_inventory.PASSES_AT_ONCE - out_now)]
 
     since, after_line = _since_checkin(plan_path.parent / plan_inventory.LEDGER_FILE, window)
     due = window != 1 and after_line >= CHECK_IN_EVERY

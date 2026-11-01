@@ -11327,7 +11327,8 @@ _PASSES_AT_ONCE_SKILL_PHRASES = (
     "about 3 minutes a sheet",
     "six passes running at once",
     "divide the sheet minutes by six",
-    "No two passes share a trade, so all of them may start together.",
+    "No two passes share a trade, so none waits on another, and you start what `start now:` names, up to six at once",
+    "listing holds you to six at once in every window, because Claude Code stops agents past 20 running together",
     "Wait on an agent by ending the turn and nothing else",
 )
 # The three values of a `checkin:` line's second field, in the section the lead writes it from.
@@ -11845,7 +11846,9 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         expect("window 3's passes", len(starts_of(where)), 7)
         expect("the summary script's window 3 read", len(summary.read_plan(where / "read-plan.md", 3, "W3-1")["units"]), 4)
         everything = [f"W3-{n}" for n in range(1, 8)]
-        expect("window 3 is not cut", names(listed(where)["start now"]), everything)
+        expect("window 3 is cut at the limit", names(listed(where)["start now"]), everything[:_PASSES_AT_ONCE])
+        expect("window 3 past the limit waits", names(listed(where)["waiting"]), everything[_PASSES_AT_ONCE:])
+        expect("window 3 with six of them out", names(listed(where, everything[:_PASSES_AT_ONCE])["start now"]), [])
         expect("window 3 with all of them out", listed(where, everything)["start now"], "none")
         append(where, *[pass_line(3, f"W3-{n}") for n in range(1, 5)])
         listing = listed(where, ["W3-5", "W3-6"])
@@ -11860,7 +11863,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         expect("a window 3 resume at a check-in", listing["start now"], "none, a check-in is due")
         expect("what waits on it", names(listing["waiting"]), ["W3-5", "W3-6", "W3-7"])
         append(resumed, "checkin: 3 W3-4 go")
-        expect("past its go-ahead, no limit on the start", names(listed(resumed)["start now"]), ["W3-5", "W3-6", "W3-7"])
+        expect("past its go-ahead, what is left starts", names(listed(resumed)["start now"]), ["W3-5", "W3-6", "W3-7"])
 
     arm("window 3", arm_window_3)
 
@@ -12218,10 +12221,9 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
                 if len(finished) < len(plan_order):
                     raise ValueError(f"{case}: nothing finished, running or to start, with {listing['waiting']} left")
                 break
-            if window != 3:
-                tally["peak"] = max(tally["peak"], len(running))
-                if len(running) > _PASSES_AT_ONCE:
-                    errors.append(f"{case}: {len(running)} passes at once: {running}")
+            tally["peak"] = max(tally["peak"], len(running))
+            if len(running) > _PASSES_AT_ONCE:
+                errors.append(f"{case}: {len(running)} passes at once: {running}")
             done = take_next(running)
             running.remove(done)
             listing = hand_back(where, window, done, running)
@@ -12380,7 +12382,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         f"lines, its pass out until recorded and a continuation among its prefixes taken by the real "
         f"record; {tally['simulated']} passes driven to the end of windows 1, 2 and 3 over "
         f"{tally['checkins']} check-ins the check-in script printed, never stuck, at most "
-        f"{tally['peak']} at once in windows 1 and 2, every pass reported once; the skill, the runner "
+        f"{tally['peak']} at once in every window, every pass reported once; the skill, the runner "
         f"and both readers carrying the rules; {refused_mutations} mutations of the script and the "
         f"text refused; bound: invented grids and a hand-driven ledger, not a real run's readers"
     )

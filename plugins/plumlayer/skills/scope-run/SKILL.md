@@ -950,8 +950,9 @@ nothing else:
    You start what `start now:` names, a fresh `plumlayer:scope-round-runner` for each with the
    runner dispatch below: pointers only, no pass brief and no read-plan text. When a pass hands back,
    step 3 takes its count, records it and lists again, and you start what that last listing names. The
-   listing holds you to six at once in windows 1 and 2, and it holds a discipline's later kinds
-   of sheet until the passes holding its earlier ones finish, so the sheet that should create a row
+   listing holds you to six at once in every window, because Claude Code stops agents past 20
+   running together and each pass runs a runner and its reader or reviewer. It holds a discipline's
+   later kinds of sheet until the passes holding its earlier ones finish, so the sheet that should create a row
    is the first to see its work. You never pick a pass yourself, and you wait by ending the turn, as
    the windows section says. A pass the listing names is started whole even
    when it already carries a `pass:` line, as a
@@ -1263,9 +1264,8 @@ On the go-ahead:
 2. **Run the reviews** as stage 4 runs its passes, with `review-<pass id>` in place of the pass id,
    so the runner dispatches one `plumlayer:scope-reviewer` per unit in turn rather than a reader.
    The runner's `verify_unit` against the pages each review opened, your one count call over the
-   pass's prefixes, one `pass:` line each. No two passes share a trade, so all of them may start
-   together. `start now:` names every one with no limit at the window's start, and you start them
-   all. A review reads every manual section on its package whole, up to its page cap, and
+   pass's prefixes, one `pass:` line each. No two passes share a trade, so none waits on another, and
+   you start what `start now:` names, up to six at once, as stage 4 step 1 says. A review reads every manual section on its package whole, up to its page cap, and
    names the pages the cap left as `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` on its
    `sections not checked:` line. Its runner then binds a continuation unit into the same pass with the plan script's
    `continue` mode and runs it there, so every page of a section is read inside the window without
