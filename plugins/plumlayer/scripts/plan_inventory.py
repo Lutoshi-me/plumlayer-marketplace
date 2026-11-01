@@ -100,8 +100,9 @@ A number printed on more than one page:
 The three windows, and what each selects:
 
   1  the vocabulary: every sheet whose type is schedule, legend, notes or cover-index, plus what
-     `--include` names and minus what `--exclude` names, grouped into passes by discipline, with a
-     pass under three units folded into the pass before or after it (below). It also writes
+     `--include` names and minus what `--exclude` names, grouped into passes by discipline, sorted
+     inside a discipline so those four types come ahead of what `--include` added, with a pass under
+     three units folded into the pass before or after it (below). It also writes
      `plan/window-1.json` in the run folder the `--out` path sits in, holding the unit keys it
      selected and the unit keys it left out, so window 2 subtracts this window rather than
      recomputing it from arguments it might not be given identically, and the `--include` and
@@ -253,6 +254,30 @@ Passes under three units, in windows 1 and 2:
   it, the parts read one after another in plan order, and the pass block names each part folded
   in. Nothing about the fold is stored; every plan run folds again from its own parts. Window 3
   groups its reviews by its own rule, below.
+
+Which passes wait, in every window:
+
+  A lead runs up to PASSES_AT_ONCE passes alongside each other in windows 1 and 2, so the order of
+  work inside a discipline has to hold across passes, and a lead's judgment is not what holds it.
+  Every pass block says `starts after: <pass ids>`, or `starts after: none`, under `summed:`. Each
+  window sorts its sheet types into classes, in `WINDOW_1_SHEET_CLASSES` and
+  `WINDOW_2_SHEET_CLASSES`: window 1's vocabulary, then what `--include` added; window 2's sections
+  and details, then its elevations, ceiling plans and enlarged plans, then everything else, an
+  untyped sheet and a type no list names among them.
+
+  A pass waits for an earlier pass of the same discipline that holds a unit not yet verified of a
+  lower class than the highest class among the pass's own units not yet verified. The rule runs per
+  discipline, so a folded pass carrying several applies it for each, and the parts in plan order
+  say which pass is earlier. A verified unit holds nothing back, so a resumed plan waits on no work
+  already read. A sheet a slice deferred is in no pass, so it holds nothing back either. A repeated
+  lines pass waits for nothing and nothing waits for it, and every window 3 block reads
+  `starts after: none`, since no two of its passes share a trade.
+
+  A pass waits only on passes before it in plan order, so the waits cannot cycle: the first pass
+  not finished always has every pass it waits on finished, and the lead's listing can always start
+  it or has one running. `lead_pass.py passes` reads these lines and the ledger and says what to
+  start, reading the ledger through `live_pass_state`: a block's `units verified:` and `summed:`
+  are as of the last plan run, and a pass reports between plan runs.
 
 Reviews to a pass, in window 3:
 
@@ -463,6 +488,11 @@ UNITS_PER_PASS = 12
 # a part under this many units folds into a neighbouring pass rather than starting a runner alone.
 MIN_PASS_UNITS = 3
 
+# How many passes a lead holds running at once in windows 1 and 2. Six is the most that has run at
+# once on a set of about 500 sheets with no lock timeout, write volume refusal or API error. Window
+# 3 has no limit: no two of its passes share a trade, so all of them may start together.
+PASSES_AT_ONCE = 6
+
 PREFIX_GROUP_CAP = 60
 TITLES_PER_PREFIX = 3
 MAX_NAMED = 5
@@ -490,6 +520,17 @@ WINDOW_2_SHEET_TYPE_ORDER = (
     "plan", "overall-plan", "schematic", "other", UNTYPED_SHEET_TYPE,
 )
 _WINDOW_2_TYPE_RANK = {name: index for index, name in enumerate(WINDOW_2_SHEET_TYPE_ORDER)}
+
+# The classes that hold each window's order once one discipline's passes run alongside each other:
+# a pass waits for an earlier pass holding a lower class than its own highest. A type no list here
+# names sits in the class after the lists, as `other`, `plan` and an unknown type do in window 2.
+#
+# Window 1 reads what the marks mean before anything `--include` added that uses them. Window 2 keeps
+# the order above, in the three steps that matter: reading plans at the same moment as details would
+# create coarser rows under different names, which the record's name refusal cannot catch, while two
+# sheets of one step see the same work at about the same grain.
+WINDOW_1_SHEET_CLASSES = (VOCABULARY_SHEET_TYPES,)
+WINDOW_2_SHEET_CLASSES = (("section", "detail"), ("elevation", "RCP", "enlarged-plan"))
 
 SELECT_KEYS = {"discipline", "sheetTypes", "patterns"}
 
@@ -1812,6 +1853,32 @@ def _summed(
     return summed
 
 
+def live_pass_state(
+    window: int, units_by_pass: dict[str, list[str]], run_folder: Path
+) -> dict[str, tuple[int, str]]:
+    """
+    Each pass's `units verified:` count and `summed:` value as a plan run would write them now, for
+    the unit ids its plan block carries, off the ledger and the summaries in the run folder. The
+    plan file is rewritten only by a plan run, so its own two lines go stale as soon as a pass
+    reports. A missing ledger is nothing verified and no pass line, which reads as unfinished.
+    """
+    ledger = run_folder / LEDGER_FILE
+    verified = _read_ledger_verified(ledger, window)
+    summed = _summed(
+        window,
+        [
+            [{"id": pass_id, "units": [{"id": unit, "unitId": unit} for unit in units]}]
+            for pass_id, units in units_by_pass.items()
+        ],
+        run_folder,
+        _read_ledger_pass_lines(ledger, window),
+    )
+    return {
+        pass_id: (sum(1 for unit in units if unit in verified), summed[pass_id])
+        for pass_id, units in units_by_pass.items()
+    }
+
+
 def _bind_unit_ids(
     passes: list[dict],
     rows: list[dict],
@@ -2099,6 +2166,41 @@ def _fold_clause(runner_passes: list[list[dict]]) -> str:
     return clause
 
 
+def _starts_after(
+    window: int, runner_passes: list[list[dict]], verified: set[str]
+) -> dict[str, str]:
+    """
+    Each pass's `starts after:` value: the earlier passes it waits for, in plan order, or `none`.
+    Per discipline, a pass waits for an earlier pass holding a unit not yet verified of a lower
+    class than the highest class among its own units not yet verified. A repeated lines pass, and
+    every pass of window 3, is left out of the rule on both sides.
+    """
+    waits: dict[str, list[str]] = {_host(runner_pass)["id"]: [] for runner_pass in runner_passes}
+    if window == 3:
+        return {pass_id: "none" for pass_id in waits}
+    # Each discipline's earlier passes, each with the lowest class it still holds.
+    earlier: dict[str, list[tuple[str, int]]] = {}
+    for runner_pass in runner_passes:
+        if _is_repeated_pass(runner_pass):
+            continue
+        pass_id = _host(runner_pass)["id"]
+        held: dict[str, list[int]] = {}
+        for part in runner_pass:
+            for unit in part["units"]:
+                if unit["unitId"] not in verified:
+                    held.setdefault(part["pass"]["discipline"], []).append(_sheet_class(window, unit))
+        gates = {
+            earlier_id
+            for discipline, classes in held.items()
+            for earlier_id, lowest in earlier.get(discipline, [])
+            if lowest < max(classes)
+        }
+        waits[pass_id] = [other for other in waits if other in gates]
+        for discipline, classes in held.items():
+            earlier.setdefault(discipline, []).append((pass_id, min(classes)))
+    return {pass_id: ", ".join(gates) or "none" for pass_id, gates in waits.items()}
+
+
 def _unit_line(label: str, row: dict, show_file: bool) -> str:
     """
     A planned unit's label is its unit id, which is what the runner puts on the ledger line and in
@@ -2177,6 +2279,13 @@ def _by_sheet_type(rows: list[dict]) -> list[dict]:
     )
 
 
+def _sheet_class(window: int, row: dict) -> int:
+    """A row's class in window 1 or 2: its place in that window's lists, or the class after them."""
+    classes = WINDOW_1_SHEET_CLASSES if window == 1 else WINDOW_2_SHEET_CLASSES
+    sheet_type = _sheet_type_of(row)
+    return next((at for at, types in enumerate(classes) if sheet_type in types), len(classes))
+
+
 def _pass_id_for_discipline(discipline: str, window: int, tag: str | None = None) -> str:
     """
     A discipline pass is named for its discipline and its window, so `A1` reads as A, window 1, and
@@ -2243,7 +2352,9 @@ def _window_1(rows: list[dict], includes, excludes, tag: str | None = None) -> d
                 "discipline": discipline,
                 "name": f"Vocabulary, discipline {discipline}",
                 "readsFor": "the vocabulary",
-                "units": group,
+                # Ahead of the split at twelve, so parts running alongside each other still read
+                # the schedules and legends before the sheets `--include` added that use their codes.
+                "units": sorted(group, key=lambda row: _sheet_class(1, row)),
             }
         )
 
@@ -3061,8 +3172,7 @@ def _render(
             total_units += len(pass_units)
         heading = f"### {host['id']}. {host['name']}"
         if folded:
-            # The lead finds a discipline's passes by their headings, so a folded pass names every
-            # discipline it carries.
+            # A folded pass's heading names every discipline it carries.
             disciplines = [part["pass"]["discipline"] for part in folded]
             heading += (
                 f", with discipline{'s' if len(disciplines) > 1 else ''} {', '.join(disciplines)}"
@@ -3077,6 +3187,7 @@ def _render(
         unit_ids = [unit["id"] if window == 3 else unit["unitId"] for unit in pass_units]
         lines.append(f"units verified: {sum(1 for u in unit_ids if u in plan['verified'])}")
         lines.append(f"summed: {plan['summed'][host['id']]}")
+        lines.append(f"starts after: {plan['startsAfter'][host['id']]}")
         lines.append("")
         for number, (unit, unit_id) in enumerate(zip(pass_units, unit_ids), 1):
             line = (
@@ -3421,6 +3532,7 @@ def plan(args) -> str:
     result["summed"] = _summed(
         window, runner_passes, args.out.parent, _read_ledger_pass_lines(ledger_path, window)
     )
+    result["startsAfter"] = _starts_after(window, runner_passes, result["verified"])
     body, total_units, total_passes = _render(window, result, rows, show_file, runner_passes)
     payload = body.encode("utf-8")
     _write_atomically(args.out, payload)

@@ -228,6 +228,14 @@ Checks:
       lock a run held when its process ended is taken over in one line, and a replan deleting a
       package with section pages a continuation still owes a read is refused until the ledger
       records them unread.
+  32. Passes at once: the shipped scripts/plan_inventory.py writes `starts after:` under every pass
+      block off the classes of sheet each window pins, and window 1 reads its vocabulary ahead of
+      what `--include` added; the shipped scripts/lead_pass.py says what to start off those lines,
+      the ledger and the summaries, up to the limit the check pins, and which passes the next
+      check-in reports, and `passes --reported` prints what a hand-back needs. Both are run
+      in-process over invented grids, through windows 1, 2 and 3 driven to their end, a pass reported
+      only where a check-in printed it; the skill, the runner and both readers carry the rules; and
+      each fix broken again is refused.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -9038,8 +9046,8 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             f"passes {len(blocks)}, finished {len(blocks) - len(to_dispatch)}; to dispatch: "
             + (", ".join(to_dispatch) if to_dispatch else "none")
         )
-        if lines != wanted:
-            errors.append(f"{label}: the passes listing reads {lines}, expected {wanted}")
+        if lines[:len(wanted)] != wanted:
+            errors.append(f"{label}: the passes listing reads {lines}, expected {wanted} first")
 
     check_listing("a first plan")
 
@@ -9059,7 +9067,10 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         errors.append("the empty window 2 fixture plans a pass, so it proves nothing about an empty plan")
     else:
         code, out, err = run(lead, ["passes", "--plan", str(empty / "read-plan.md")])
-        if code != 0 or out.splitlines() != ["passes 0, finished 0; to dispatch: none"]:
+        if code != 0 or out.splitlines() != [
+            "passes 0, finished 0; to dispatch: none", "start now: none", "waiting: none",
+            "since the last check-in: none", "check-in due: no",
+        ]:
             errors.append(
                 f"a window 2 plan with no pass does not list `passes 0, finished 0; to dispatch: "
                 f"none`: exit {code}, {out!r}, {err!r}"
@@ -9207,8 +9218,8 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         (plugin_path / "skills" / "scope-run" / "SKILL.md").read_text(encoding="utf-8").split()
     )
     for phrase in (
-        "checkin: <window> <window, the id of the last pass recorded before it, or none> <go|pause>",
-        "and `none` for one inside a window before any pass of that window is recorded",
+        "checkin: <window> <window, the id of the last pass recorded when it was shown, or none> <go|pause>",
+        "and `none` for one inside a window shown before any pass of that window is recorded",
         "reads the ledger's `phase:`, `pass:` and `checkin:` lines first",
         "A check-in a `checkin:` line records was shown and answered, and is never shown again",
         "When the user answers a check-in, append its one `checkin:` line to the ledger",
@@ -9218,7 +9229,8 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         "Where the last of those lines is a `checkin:` line reading `go`, start the step that follows "
         "that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 7 "
         "step 1, or stage 6 step 1 again after a paused slice; after one inside a window, its second "
-        "field a pass id or `none`, the passes that are not finished.",
+        "field a pass id or `none`, the passes that are not finished, or the window's close where "
+        "every pass is finished.",
         "Where it reads `pause`, the user stopped the run there: say in one sentence what the run does "
         "next, and start it on their go-ahead, with a `checkin:` line reading `go` for the same "
         "check-in first.",
@@ -9707,8 +9719,11 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     skill_text = skill.read_text(encoding="utf-8").replace("\\\n", " ") if skill.is_file() else ""
     commands = re.findall(r"python3 '<plugin root>/scripts/lead_pass\.py' (\w+)([^\n]*)", skill_text)
     modes = sorted(mode for mode, _rest in commands)
-    if modes != ["checkin", "passes", "record"]:
-        errors.append(f"the skill carries the lead_pass commands {modes}, expected one each of checkin, passes and record")
+    if modes != ["checkin", "passes", "passes", "record"]:
+        errors.append(
+            f"the skill carries the lead_pass commands {modes}, expected one each of checkin and "
+            f"record, and passes twice, whole and with --reported"
+        )
     # The skill names the line an empty window prints, so the lead reads it as a window with
     # nothing to run.
     if "`passes 0, finished 0; to dispatch: none`" not in " ".join(skill_text.split()):
@@ -11265,6 +11280,1115 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# Check: passes of one discipline run alongside each other
+# --------------------------------------------------------------------------- #
+#
+# The lead used to guess which passes could start together, off a mark the plan script never wrote,
+# so one set started ten passes at once and another four and stopped. The plan script now writes
+# which earlier passes each pass waits for, and the lead's listing says what to start, off the
+# ledger and the summaries as they stand, because a plan block goes stale as soon as a pass reports.
+#
+# Arms: the class of each sheet type per window; window 1 reads its vocabulary ahead of what
+# `--include` added with every id the ledger binds kept; `starts after:` for a discipline of many
+# parts, a mixed part, a folded pass, the repeated lines pass, a resumed plan, a slice and window 3,
+# read back by the summary script's own plan reader; `start now:` at the limit, with gates open and
+# shut, on a stale plan block, past a pass stopped on a mismatch, and at a check-in; each value a
+# `checkin:` line's second field takes, read back through the listing; what the next check-in reports
+# where a pass was recorded while one stood open; the `--reported` call a hand-back makes, a window 3
+# continuation among its prefixes; windows 1, 2 and 3 driven to their end as the skill's steps say,
+# never stuck, never past the limit, every pass reported once by a check-in the check-in script
+# printed; the skill, the runner and both readers saying so; and each fix broken again, in the script
+# and in the text, and refused. Honest bound: invented grids and a hand-driven ledger, so this proves
+# the schedule and nothing about how a real run's readers behave.
+
+_PASSES_AT_ONCE = 6
+_WINDOW_2_CLASS_OF = {
+    "section": 0, "detail": 0, "elevation": 1, "RCP": 1, "enlarged-plan": 1, "plan": 2,
+    "overall-plan": 2, "schematic": 2, "other": 2, "untyped": 2, "a type nobody ranked": 2,
+}
+_WINDOW_1_CLASS_OF = {
+    "schedule": 0, "legend": 0, "notes": 0, "cover-index": 0, "detail": 1, "plan": 1, "untyped": 1,
+    "a type nobody ranked": 1,
+}
+_LISTING_LABELS = ("start now", "waiting", "since the last check-in", "check-in due")
+
+# What the lead, the runner and the readers each have to say, whitespace collapsed.
+_PASSES_AT_ONCE_SKILL_PHRASES = (
+    "start what `start now:` names",
+    "You never pick a pass yourself",
+    "--running",
+    "`check-in due: yes`",
+    "While a check-in is due or open you start nothing",
+    "the count of four restarts at the `checkin:` line",
+    "every pass `since the last check-in:` names",
+    "the id of the last pass recorded when it was shown",
+    "about 5 to 6 minutes a sheet",
+    "about 3 minutes a sheet",
+    "six passes running at once",
+    "divide the sheet minutes by six",
+    "No two passes share a trade, so all of them may start together.",
+    "Wait on an agent by ending the turn and nothing else",
+)
+# The three values of a `checkin:` line's second field, in the section the lead writes it from.
+_CHECKIN_FIELD_PHRASES = (
+    "It reads `window` after a window's closing lines, whatever `since the last check-in:` shows.",
+    "Inside a window it reads the pass that was last on `since the last check-in:` when you showed it",
+    "Inside a window where that line read `none`",
+    "the pass of the last `pass:` line of this window on the ledger when you showed it",
+    "`none` only where the window has no `pass:` line yet",
+)
+# A check-in with nothing since the last one: the script refuses an empty `--passes`.
+_CHECKIN_EMPTY_PHRASE = "skip this call, which refuses an empty list"
+# What a hand-back runs, in this order, whatever the window.
+_HAND_BACK_ORDER = (
+    "--reported '<pass id>' --running '<pass id>,<pass id>'",
+    "A pass on `--reported` counts as out until it is recorded",
+    "count_entries(projectId, subjectPrefixes: [<those prefixes>])",
+    "lead_pass.py' record '<run folder>/ledger.md'",
+    "make the `--reported` call again",
+)
+# What that call reads, what the lead holds of it, and how a `go` and a continuation use it.
+_HAND_BACK_PHRASES = (
+    "read off the plan as it stands now",
+    "You act on those five closing lines and keep no prefix",
+    "the prefixes line and the closing lines of step 3's two calls",
+    "the prefixes it prints for the pass carry them",
+    "`--reported` naming the pass on that line",
+)
+_WINDOW_3_CLOSING_PHRASE = "gather the check-in on those passes before you close, as its own check-in"
+# What each window's own step says about the check-in that closes it. The driver reports a window's
+# last passes only where its step carries this, so a step that drops it fails the drive.
+_WINDOW_CLOSING_CHECKINS = {
+    1: "After window 1, check in (format below)",
+    2: "fold the packages (step 5), and check in on the passes `since the last check-in:` names",
+    3: _WINDOW_3_CLOSING_PHRASE,
+}
+_CADENCE_PHRASE = "four `pass:` lines have landed since the last `checkin:` line"
+_PASSES_AT_ONCE_RETIRED_SKILL_PHRASES = (
+    "passes the plan marks",
+    "marks as seeing the same work",
+    "Passes that share no discipline",
+    "After every fourth `pass:` line",
+    "that made a fourth since",
+    "the id of the last pass recorded before it",
+    "Its second field is the pass that was last on",
+    "read only those last five lines",
+    "with a local filter, since the plan does not change",
+    "list the passes again whole",
+    "that pass still on `--running`",
+    "four passes have reported",
+)
+# A reader's mandate 7: the two refusals a row moving causes, what the reader does on the second,
+# in that order, and that no other refusal is sent again on this rule.
+_READER_RESEND_ORDER = (
+    "Readers run alongside you and write the rows you read",
+    "Two refusals are that, and you send the batch again each time",
+    "where the door names a row already carrying the name",
+    "where the door says a field already holds a value or that the record you named was replaced",
+    'read that row again with `search(subject: "<its subject>")`',
+    "judge your write against what it now says",
+    "write with `supersedesId` set to the record it shows now",
+    "Any other refusal is not a row moving",
+)
+_READER_CALL_SHAPE_PHRASE = "one of the two refusals mandate 7 names"
+_READER_RETIRED_PHRASES = (
+    "one resend of that batch",
+    "Send it again each time, and never stop on it",
+    "each time the door refuses it over a row another reader wrote",
+)
+
+
+def _in_order(text: str, phrases: tuple[str, ...]) -> list[str]:
+    """The phrases the text does not carry, or carries out of the order given."""
+    problems: list[str] = []
+    at = 0
+    for phrase in phrases:
+        found = text.find(phrase, at)
+        if found < 0:
+            problems.append(phrase)
+        else:
+            at = found + len(phrase)
+    return problems
+
+
+def _passes_at_once_text_errors(skill: str, runner: str, readers: dict[str, str]) -> list[str]:
+    """What the lead, the runner and the readers fail to say, each text whitespace collapsed."""
+    errors: list[str] = []
+    wanted = (
+        *_PASSES_AT_ONCE_SKILL_PHRASES, *_CHECKIN_FIELD_PHRASES, _CHECKIN_EMPTY_PHRASE, *_HAND_BACK_PHRASES,
+        *_WINDOW_CLOSING_CHECKINS.values(), _CADENCE_PHRASE,
+    )
+    errors += [f"the skill does not say {phrase!r}" for phrase in wanted if phrase not in skill]
+    errors += [f"the skill still says {phrase!r}" for phrase in _PASSES_AT_ONCE_RETIRED_SKILL_PHRASES if phrase in skill]
+    errors += [f"a hand-back's step does not say, in its order, {phrase!r}" for phrase in _in_order(skill, _HAND_BACK_ORDER)]
+    if "cannot see each other's new items" in runner:
+        errors.append("the boundary still says passes running together cannot see each other's new items")
+    if "A reader sees everything written before its own read" not in runner:
+        errors.append("the boundary does not say what a reader sees")
+    for reader, text in readers.items():
+        errors += [
+            f"{reader} does not say, in its order, {phrase!r}" for phrase in _in_order(text, _READER_RESEND_ORDER)
+        ]
+        if _READER_CALL_SHAPE_PHRASE not in text:
+            errors.append(f"{reader}'s call shape does not limit a resend to the two refusals")
+        errors += [f"{reader} still says {phrase!r}" for phrase in _READER_RETIRED_PHRASES if phrase in text]
+    return errors
+
+
+def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "passes-at-once"
+    try:
+        lead = _load_script_module(plugin_path.joinpath(*LEAD_PASS_SCRIPT), "lead_pass")
+        summary = _load_script_module(plugin_path.joinpath(*PASS_SUMMARY_SCRIPT), "pass_summary")
+        planner = _load_script_module(plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT), "plan_inventory")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import the scripts: {e}")
+
+    errors: list[str] = []
+    root = Path(__file__).parent / ".test-results" / "passes-at-once"
+    shutil.rmtree(root, ignore_errors=True)
+    tally = {"arms": 0, "simulated": 0, "checkins": 0, "peak": 0}
+
+    def expect(label: str, got, wanted) -> None:
+        if got != wanted:
+            errors.append(f"{label}: read {got!r}, expected {wanted!r}")
+
+    def arm(label: str, body) -> None:
+        """Each arm on its own, so a run on code without one of these names every arm it fails."""
+        tally["arms"] += 1
+        try:
+            body()
+        except Exception as e:
+            errors.append(f"{label}: {type(e).__name__}: {e}")
+
+    def run(module, argv: list[str]) -> tuple[int, str, str]:
+        try:
+            return _run_script_main(module, argv)
+        except SystemExit as e:
+            return (e.code if isinstance(e.code, int) else 2), "", ""
+
+    def row(discipline: str, number: str, sheet_type: str, page: int) -> dict:
+        file_id = f"file-{discipline.lower()}"
+        return {
+            "unitKey": f"{number}@{file_id}#{page}", "discipline": discipline, "sheetNumber": number,
+            "pageTitle": f"{sheet_type} on {number}", "sheetType": sheet_type, "fileId": file_id,
+            "pageInPdf": page,
+        }
+
+    def sheets(discipline: str, stem: str, sheet_type: str, count: int) -> list[dict]:
+        return [
+            row(discipline, f"{discipline}-{stem}.{i:02d}", sheet_type, int(stem) * 100 + i)
+            for i in range(1, count + 1)
+        ]
+
+    def new_folder(case: str, rows: list[dict]) -> Path:
+        where = root / case
+        shutil.rmtree(where, ignore_errors=True)
+        (where / "plan").mkdir(parents=True)
+        (where / "inventory.json").write_text(json.dumps({"sheets": rows}), encoding="utf-8")
+        return where
+
+    def plan_1(where: Path, includes: tuple[str, ...] = ()) -> None:
+        argv = ["plan", "--window", "1", "--inventory", str(where / "inventory.json")]
+        for pattern in includes:
+            argv += ["--include", pattern]
+        code, _bounds, err = run(planner, argv + ["--out", str(where / "read-plan.md")])
+        if code != 0:
+            raise ValueError(f"window 1 plan refused in {where.name}: {err}")
+
+    def plan_2(where: Path, only: tuple[str, ...] = ()) -> None:
+        argv = [
+            "plan", "--window", "2", "--inventory", str(where / "inventory.json"),
+            "--window-1", str(where / "plan" / "window-1.json"),
+        ]
+        for pattern in only:
+            argv += ["--only", pattern]
+        code, _bounds, err = run(planner, argv + ["--out", str(where / "read-plan.md")])
+        if code != 0:
+            raise ValueError(f"window 2 plan refused in {where.name}: {err}")
+
+    def blocks_of(where: Path, repeated: bool = False) -> dict[str, dict]:
+        text = (where / "read-plan.md").read_text(encoding="utf-8")
+        return {p["id"]: p for p in _plan_passes(text, repeated=repeated)}
+
+    def starts_of(where: Path) -> dict[str, str | None]:
+        return {pass_id: p["fields"].get("starts after") for pass_id, p in blocks_of(where).items()}
+
+    def sheet_of_unit(where: Path) -> dict[str, str]:
+        return {unit[0]: unit[1] for p in blocks_of(where).values() for unit in p["units"]}
+
+    def append(where: Path, *lines: str) -> None:
+        with (where / "ledger.md").open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write("".join(f"{line}\n" for line in lines))
+
+    def verified_line(window: int, pass_id: str, unit: str, result: str = "ok") -> str:
+        return (
+            f"verified {window} {pass_id} {unit} created 1 items 1 updated 0 questions 0 replied 0 "
+            f"sent 1 landed 1 conflicts 0 result {result}"
+        )
+
+    def pass_line(window: int, pass_id: str) -> str:
+        return (
+            f"pass: {window} {pass_id} units 1 created 1 updated 0 questions 0 replied 0 candidates 0 "
+            f"lead-verified yes"
+        )
+
+    def listed(where: Path, running: list[str] | None = None, reported: str | None = None) -> dict:
+        argv = ["passes", "--plan", str(where / "read-plan.md")]
+        if running:
+            argv += ["--running", ",".join(running)]
+        if reported:
+            argv += ["--reported", reported]
+        code, out, err = run(lead, argv)
+        if code != 0:
+            raise ValueError(f"the listing refused in {where.name}: exit {code}, {err}")
+        fields: dict = {"lines": out.splitlines()}
+        for line in out.splitlines():
+            for label in _LISTING_LABELS:
+                if line.startswith(f"{label}: "):
+                    fields[label] = line[len(label) + 2:]
+            if line.startswith("passes "):
+                fields["dispatch"] = line
+            if reported and line.startswith(f"{reported} prefixes: "):
+                fields["prefixes"] = json.loads(line[len(reported) + 11:])
+        return fields
+
+    def names(value: str) -> list[str]:
+        return [] if value.startswith("none") else value.split(", ")
+
+    def runner_reports(where: Path, window: int, pass_id: str) -> None:
+        """What a pass's runner leaves before it hands back: its ledger lines and its summary."""
+        if window == 3:
+            # Read with the shipped reader, which takes a continuation's line as a unit of its pass.
+            units = [(unit, "none") for unit in summary.read_plan(where / "read-plan.md", 3, pass_id)["units"]]
+        else:
+            units = [(unit[0], unit[1]) for unit in blocks_of(where)[pass_id]["units"]]
+        (where / "reports").mkdir(exist_ok=True)
+        (where / "trades").mkdir(exist_ok=True)
+        (where / "trades" / f"{pass_id}.txt").write_text(
+            "".join(f"{unit} trade 09 00 00 1\n{unit} candidates 0\n" for unit, _sheet in units), encoding="utf-8"
+        )
+        done = (where / "ledger.md").read_text(encoding="utf-8") if (where / "ledger.md").is_file() else ""
+        for unit, sheet in units:
+            if window == 3:
+                (where / "reports" / f"{unit}.md").write_text(
+                    "the review's own report\nsearches: 2 run, 0 returned nothing\npages opened: none\n",
+                    encoding="utf-8",
+                )
+            if f"verified {window} {pass_id} {unit} " not in done:
+                append(
+                    where, f"dispatch {window} {pass_id} {unit} sheets {sheet} purpose the sheet",
+                    verified_line(window, pass_id, unit),
+                )
+        code, _out, err = run(summary, [
+            str(where / "ledger.md"), str(window), pass_id, "--plan", str(where / "read-plan.md"),
+            "--out", str(where / "reports" / f"{pass_id}.md"),
+            "--trades", str(where / "trades" / f"{pass_id}.txt"),
+        ])
+        if code != 0:
+            raise ValueError(f"the summary script refused {pass_id}: {err}")
+
+    def record_pass(where: Path, window: int, pass_id: str, prefixes: list[str]) -> None:
+        """The lead's record, its counts answered over the prefixes it was given."""
+        counts = json.dumps([{"subjectPrefix": prefix, "entryCount": 1} for prefix in prefixes])
+        code, _out, err = run(lead, [
+            "record", str(where / "ledger.md"), str(window), pass_id, "--plan", str(where / "read-plan.md"),
+            "--counts-json", counts,
+        ])
+        if code != 0:
+            raise ValueError(f"the record refused {pass_id}: {err}")
+
+    def finish(where: Path, window: int, pass_id: str) -> None:
+        """A pass as a run ends it: its runner's lines, the summary script, the lead's record."""
+        runner_reports(where, window, pass_id)
+        record_pass(where, window, pass_id, [f"scopeItem:{unit[0]}-" for unit in blocks_of(where)[pass_id]["units"]])
+
+    def hand_back(where: Path, window: int, pass_id: str, running: list[str]) -> dict:
+        """
+        A hand-back as stage 4 step 3 gives it: the `--reported` call prints the prefixes, the count
+        and the record take them, and the same call again says what comes next.
+        """
+        runner_reports(where, window, pass_id)
+        before = listed(where, running, reported=pass_id)
+        expect(f"{where.name}: the `--reported` call's lines", len(before["lines"]), 6)
+        expect(
+            f"{where.name}: {pass_id}, handed back and not recorded, offered again",
+            pass_id in names(before["start now"]) + names(before["waiting"]), False,
+        )
+        record_pass(where, window, pass_id, before["prefixes"])
+        return listed(where, running, reported=pass_id)
+
+    def checkin_covers(where: Path, window: int, shown: list[str]) -> list[str]:
+        """What a check-in shown covers, read off what the check-in script printed for it."""
+        code, out, err = run(lead, ["checkin", str(where), str(window), "--passes", ",".join(shown)])
+        if code != 0:
+            raise ValueError(f"{where.name}: the check-in refused what the listing named: {err}")
+        own = re.search(r"your own check over \d+ pass lines? \(([^)]*)\)", out)
+        if own is None:
+            raise ValueError(f"{where.name}: the check-in printed no line of the passes it covers: {out!r}")
+        return names(own.group(1))
+
+    # Three parts of one discipline in order of work, the middle one mixed; a discipline of one
+    # class in two parts, its second carrying a small discipline folded in; two more of two classes.
+    many_parts = (
+        sheets("A", "1", "plan", 15) + sheets("A", "2", "elevation", 7) + sheets("A", "3", "section", 6)
+        + sheets("A", "5", "detail", 8)
+        + sheets("S", "5", "detail", 13)
+        + sheets("E", "1", "plan", 2)
+        + sheets("T", "1", "plan", 6) + sheets("T", "5", "detail", 8)
+        + sheets("P", "1", "plan", 6) + sheets("P", "5", "detail", 7)
+        + sheets("G", "5", "detail", 2)
+    )
+    many_parts_starts = {
+        "A2a": "none", "A2b": "A2a", "A2c": "A2a, A2b", "S2a": "none", "S2b": "none", "T2a": "none",
+        "T2b": "T2a", "P2a": "none", "P2b": "P2a",
+    }
+
+    # ------------------------------------------------------------------ #
+    # The classes, the constant
+    # ------------------------------------------------------------------ #
+    def arm_classes() -> None:
+        expect("the stated limit", planner.PASSES_AT_ONCE, _PASSES_AT_ONCE)
+        for sheet_type, wanted in _WINDOW_2_CLASS_OF.items():
+            expect(f"window 2's class of {sheet_type}", planner._sheet_class(2, {"sheetType": sheet_type}), wanted)
+        for sheet_type, wanted in _WINDOW_1_CLASS_OF.items():
+            expect(f"window 1's class of {sheet_type}", planner._sheet_class(1, {"sheetType": sheet_type}), wanted)
+        expect("window 2's class of a row with no type", planner._sheet_class(2, {"sheetType": None}), 2)
+        expect("window 1's class of a row with no type", planner._sheet_class(1, {"sheetType": None}), 1)
+
+    arm("the classes", arm_classes)
+
+    # ------------------------------------------------------------------ #
+    # Window 1 reads its vocabulary first, and keeps every id the ledger binds
+    # ------------------------------------------------------------------ #
+    window_1_rows = (
+        sheets("A", "5", "detail", 3) + sheets("A", "6", "schedule", 7) + sheets("A", "0", "notes", 6)
+        + sheets("G", "0", "notes", 14)
+    )
+    include = ("A-5.*:these details carry a door schedule",)
+
+    def arm_window_1_sort() -> None:
+        where = new_folder("w1-sort", window_1_rows)
+        plan_1(where, include)
+        blocks = blocks_of(where)
+        expect(
+            "window 1's first part of a discipline",
+            [unit[1] for unit in blocks["A1a"]["units"]],
+            [f"A-6.0{i}" for i in range(1, 8)] + ["A-0.01"],
+        )
+        expect(
+            "window 1's second part, what --include added last",
+            [unit[1] for unit in blocks["A1b"]["units"]],
+            [f"A-0.0{i}" for i in range(2, 7)] + ["A-5.01", "A-5.02", "A-5.03"],
+        )
+        expect(
+            "window 1's waits",
+            starts_of(where),
+            {"A1a": "none", "A1b": "A1a", "G1a": "none", "G1b": "none"},
+        )
+        repeated = blocks_of(where, repeated=True)
+        expect("the repeated lines pass's wait", [p["fields"].get("starts after") for p in repeated.values()], ["none"])
+        named = [pass_id for value in starts_of(where).values() for pass_id in names(value or "none")]
+        expect("a pass waiting on the repeated lines", [p for p in named if p.startswith("RS1")], [])
+
+    arm("window 1's sort", arm_window_1_sort)
+
+    def arm_window_1_bound() -> None:
+        # Two units the ledger already binds, one of them a sheet --include added: both keep their
+        # ids at the front of their part, and the rest come behind them in class order.
+        where = new_folder("w1-bound", window_1_rows)
+        append(
+            where, "dispatch 1 A1a A1a-1 sheets A-5.01 purpose the vocabulary",
+            "dispatch 1 A1a A1a-2 sheets A-6.01 purpose the vocabulary",
+        )
+        plan_1(where, include)
+        a1a = blocks_of(where)["A1a"]["units"]
+        expect(
+            "a ledger-bound unit in window 1",
+            [(unit[0], unit[1]) for unit in a1a[:3]],
+            [("A1a-1", "A-5.01"), ("A1a-2", "A-6.01"), ("A1a-3", "A-6.02")],
+        )
+        expect(
+            "the last part's tail, after a bound sheet",
+            [unit[1] for unit in blocks_of(where)["A1b"]["units"]][-2:],
+            ["A-5.02", "A-5.03"],
+        )
+
+        # A run an earlier plugin planned in inventory order, every unit dispatched, reads the same
+        # ids on the same sheets after this plan: nothing moves under a bound id.
+        old = new_folder("w1-old-order", window_1_rows)
+        a_rows = [r["sheetNumber"] for r in window_1_rows if r["discipline"] == "A"]
+        g_rows = [r["sheetNumber"] for r in window_1_rows if r["discipline"] == "G"]
+        wanted = {f"A1a-{i + 1}": sheet for i, sheet in enumerate(a_rows[:8])}
+        wanted.update({f"A1b-{i + 1}": sheet for i, sheet in enumerate(a_rows[8:])})
+        wanted.update({f"G1a-{i + 1}": sheet for i, sheet in enumerate(g_rows[:7])})
+        wanted.update({f"G1b-{i + 1}": sheet for i, sheet in enumerate(g_rows[7:])})
+        append(old, *[
+            f"dispatch 1 {unit.split('-')[0]} {unit} sheets {sheet} purpose the vocabulary"
+            for unit, sheet in wanted.items()
+        ])
+        plan_1(old, include)
+        expect("every id an earlier plan's ledger binds", sheet_of_unit(old), wanted)
+
+    arm("window 1's bound ids", arm_window_1_bound)
+
+    # ------------------------------------------------------------------ #
+    # starts after: many parts, a mixed part, a folded pass, a resume, a slice, window 3
+    # ------------------------------------------------------------------ #
+    def arm_many_parts() -> None:
+        where = new_folder("w2-many", many_parts)
+        plan_1(where)
+        plan_2(where)
+        expect("window 2's waits", starts_of(where), many_parts_starts)
+        blocks = blocks_of(where)
+        expect("the fixture's first fold", blocks["S2b"]["fields"].get("folded in"), "E2")
+        expect("the fixture's second fold", blocks["P2b"]["fields"].get("folded in"), "G2")
+        expect("the mixed part", [unit[1][:3] for unit in blocks["A2b"]["units"]],
+               ["A-5"] * 2 + ["A-2"] * 7 + ["A-1"] * 3)
+        # The block line is read by the reader every other script uses, and takes nothing from it.
+        read = summary.read_plan(where / "read-plan.md", 2, "A2c")
+        expect("the summary script's read of the line", read["fields"].get("starts after"), "A2a, A2b")
+        expect("the summary script's units", len(read["units"]), 12)
+        lines = (where / "read-plan.md").read_text(encoding="utf-8").splitlines()
+        at = next(i for i, line in enumerate(lines) if line.startswith("### A2b."))
+        block = lines[at:lines.index("", at + 2)]
+        expect("the line sits under summed", block[-2:], ["summed: no, no summary on file", "starts after: A2a"])
+
+    arm("a discipline of many parts", arm_many_parts)
+
+    def arm_folded_part() -> None:
+        # A part the ledger's unlettered dispatch left small folds into the next pass, whose own
+        # discipline holds nothing lower: the wait comes from the folded part's discipline alone.
+        rows = sheets("K", "5", "detail", 12) + sheets("K", "1", "plan", 1) + sheets("N", "1", "plan", 5)
+        where = new_folder("w2-folded", rows)
+        plan_1(where)
+        append(where, "dispatch 2 K2 K2-1 sheets K-5.01 purpose the sheet")
+        plan_2(where)
+        blocks = blocks_of(where)
+        expect("the small part's fold", blocks["N2"]["fields"].get("folded in"), "K2b")
+        expect("a folded pass's wait", starts_of(where), {"K2": "none", "N2": "K2"})
+
+    arm("a folded pass", arm_folded_part)
+
+    def arm_resume() -> None:
+        where = new_folder("w2-resume", many_parts)
+        plan_1(where)
+        plan_2(where)
+        first = blocks_of(where)
+        ids = sheet_of_unit(where)
+
+        def unit_ids(pass_id: str, stems: tuple[str, ...]) -> list[str]:
+            return [unit[0] for unit in first[pass_id]["units"] if unit[1].startswith(stems)]
+
+        append(where, *[verified_line(2, "A2a", unit[0]) for unit in first["A2a"]["units"]])
+        plan_2(where)
+        got = starts_of(where)
+        expect("a resume with the first part verified", (got["A2b"], got["A2c"]), ("none", "A2b"))
+        expect("a resume keeping every id", sheet_of_unit(where), ids)
+
+        # The middle part's later sheets verified: what it still holds no longer holds its own
+        # class up against the part before it.
+        resumed = new_folder("w2-resume-own", many_parts)
+        plan_1(resumed)
+        plan_2(resumed)
+        append(resumed, *[verified_line(2, "A2b", unit) for unit in unit_ids("A2b", ("A-1", "A-2"))])
+        plan_2(resumed)
+        expect("a pass whose own later sheets are verified", starts_of(resumed)["A2b"], "none")
+
+        # The middle part's lower sheets verified: it no longer holds the last part back.
+        lower = new_folder("w2-resume-lower", many_parts)
+        plan_1(lower)
+        plan_2(lower)
+        append(lower, *[verified_line(2, "A2a", unit[0]) for unit in first["A2a"]["units"]])
+        append(lower, *[verified_line(2, "A2b", unit) for unit in unit_ids("A2b", ("A-5", "A-3", "A-2"))])
+        plan_2(lower)
+        expect("a last part once nothing lower is unread", starts_of(lower)["A2c"], "none")
+
+    arm("a resumed plan", arm_resume)
+
+    def arm_slice() -> None:
+        where = new_folder("w2-slice", many_parts)
+        plan_1(where)
+        plan_2(where, ("A-1.*:the plans first",))
+        expect("a slice of one class, its deferred details holding nothing", starts_of(where), {"A2a": "none", "A2b": "none"})
+        two = new_folder("w2-slice-two", many_parts)
+        plan_1(two)
+        plan_2(two, ("A-1.*:the plans", "A-5.*:the details"))
+        expect("a slice of two classes", starts_of(two), {"A2a": "none", "A2b": "A2a"})
+
+    arm("a slice", arm_slice)
+
+    packages = {"packages": [
+        {"id": f"pkg-{trade}-{n}", "name": f"Package {trade} {n}", "tradeCode": f"0{trade} 10 00"}
+        for trade in range(1, 8) for n in range(1, 5)
+    ]}
+
+    def window_3_folder(case: str) -> Path:
+        where = new_folder(case, [])
+        (where / "plan" / "packages.json").write_text(json.dumps(packages), encoding="utf-8")
+        code, _bounds, err = run(planner, [
+            "plan", "--window", "3", "--packages", str(where / "plan" / "packages.json"),
+            "--out", str(where / "read-plan.md"),
+        ])
+        if code != 0:
+            raise ValueError(f"window 3 plan refused: {err}")
+        return where
+
+    def finish_window_3(where: Path, pass_id: str) -> None:
+        runner_reports(where, 3, pass_id)
+        record_pass(where, 3, pass_id, [f"scopeItem:{review[0]}-" for review in blocks_of(where)[pass_id]["reviews"]])
+
+    def arm_window_3() -> None:
+        where = window_3_folder("w3")
+        expect("window 3's waits", set(starts_of(where).values()), {"none"})
+        expect("window 3's passes", len(starts_of(where)), 7)
+        expect("the summary script's window 3 read", len(summary.read_plan(where / "read-plan.md", 3, "W3-1")["units"]), 4)
+        everything = [f"W3-{n}" for n in range(1, 8)]
+        expect("window 3 is not cut", names(listed(where)["start now"]), everything)
+        expect("window 3 with all of them out", listed(where, everything)["start now"], "none")
+        append(where, *[pass_line(3, f"W3-{n}") for n in range(1, 5)])
+        listing = listed(where, ["W3-5", "W3-6"])
+        expect("window 3's check-in due", listing["check-in due"], "yes")
+        expect("window 3 holds its starts at a check-in", listing["start now"], "none, a check-in is due")
+
+        # A resume with four of seven recorded and no answer on the ledger: the check-in comes first.
+        resumed = window_3_folder("w3-resume")
+        for n in range(1, 5):
+            finish_window_3(resumed, f"W3-{n}")
+        listing = listed(resumed)
+        expect("a window 3 resume at a check-in", listing["start now"], "none, a check-in is due")
+        expect("what waits on it", names(listing["waiting"]), ["W3-5", "W3-6", "W3-7"])
+        append(resumed, "checkin: 3 W3-4 go")
+        expect("past its go-ahead, no limit on the start", names(listed(resumed)["start now"]), ["W3-5", "W3-6", "W3-7"])
+
+    arm("window 3", arm_window_3)
+
+    # ------------------------------------------------------------------ #
+    # start now: the limit, the gates, a stale block, a mismatch
+    # ------------------------------------------------------------------ #
+    def arm_limit() -> None:
+        where = new_folder("listing-limit", sheets("A", "1", "plan", 96))
+        plan_1(where)
+        plan_2(where)
+        ids = [f"A2{letter}" for letter in "abcdefgh"]
+        expect("the plan's passes", list(starts_of(where)), ids)
+        listing = listed(where)
+        expect("start now at the limit", names(listing["start now"]), ids[:6])
+        expect("waiting past the limit", names(listing["waiting"]), ids[6:])
+        listing = listed(where, ids[:2])
+        expect("start now with two out", names(listing["start now"]), ids[2:6])
+        expect("waiting with two out", names(listing["waiting"]), ids[6:])
+        listing = listed(where, ids[:6])
+        expect("start now with six out", listing["start now"], "none")
+        expect("waiting with six out", names(listing["waiting"]), ids[6:])
+        code, out, err = run(lead, ["passes", "--plan", str(where / "read-plan.md"), "--running", "A2z"])
+        expect("a running pass the plan does not carry", (code, out, len(err.splitlines())), (1, "", 1))
+
+    arm("start now at the limit", arm_limit)
+
+    def arm_gates() -> None:
+        where = new_folder("listing-gates", many_parts)
+        plan_1(where)
+        plan_2(where)
+        before = (where / "read-plan.md").read_bytes()
+        listing = listed(where)
+        expect("start now with the gates shut", names(listing["start now"]), ["A2a", "S2a", "S2b", "T2a", "P2a"])
+        expect("waiting with the gates shut", names(listing["waiting"]), ["A2b", "A2c", "T2b", "P2b"])
+        expect("with no ledger, nothing is finished", "finished 0;" in listing["dispatch"], True)
+        expect("with no ledger, nothing is due", listing["check-in due"], "no")
+        expect("with no ledger, nothing has reported", listing["since the last check-in"], "none")
+
+        finish(where, 2, "A2a")
+        expect("the plan file between plan runs", (where / "read-plan.md").read_bytes(), before)
+        listing = listed(where, ["S2a", "S2b", "T2a", "P2a"])
+        expect("a gate opened by the ledger", names(listing["start now"]), ["A2b"])
+        expect("what still waits", names(listing["waiting"]), ["A2c", "T2b", "P2b"])
+        lines = listing["lines"]
+        expect("the pass's own line, live", lines[0], "A2a: units 12, units verified 12, summed yes")
+        expect("finished and to dispatch, live", listing["dispatch"],
+               "passes 9, finished 1; to dispatch: A2b, A2c, S2a, S2b, T2a, T2b, P2a, P2b")
+        expect("since the last check-in, live", listing["since the last check-in"], "A2a")
+
+        # A plan run gives what the listing already said: the same readers over the same files.
+        live = listed(where)["lines"]
+        plan_2(where)
+        expect("the listing against a plan run", listed(where)["lines"], live)
+
+    arm("start now with gates", arm_gates)
+
+    def arm_mismatch() -> None:
+        # A pass that stopped on a mismatch never finishes, so what waits on it keeps waiting: the
+        # listing names it again for the lead that has investigated, and nothing behind it.
+        where = new_folder("listing-mismatch", many_parts)
+        plan_1(where)
+        plan_2(where)
+        unit = blocks_of(where)["A2a"]["units"][0][0]
+        append(where, f"dispatch 2 A2a {unit} sheets x purpose the sheet", verified_line(2, "A2a", unit, "mismatch"))
+        listing = listed(where)
+        expect("the stopped pass", "A2a" in names(listing["start now"]), True)
+        expect("what waits on it", [p for p in ("A2b", "A2c") if p in names(listing["waiting"])], ["A2b", "A2c"])
+        listing = listed(where, ["S2a", "S2b", "T2a", "P2a"])
+        expect("what waits on it, with the rest out", names(listing["start now"]), ["A2a"])
+        expect("the rest of it", names(listing["waiting"]), ["A2b", "A2c", "T2b", "P2b"])
+
+    arm("a pass stopped on a mismatch", arm_mismatch)
+
+    # ------------------------------------------------------------------ #
+    # The check-in: due, restarted, and a pass recorded while one stood open
+    # ------------------------------------------------------------------ #
+    def checkin_folder(case: str) -> tuple[Path, list[str]]:
+        where = new_folder(case, sheets("A", "1", "plan", 96))
+        plan_1(where)
+        plan_2(where)
+        return where, [f"A2{letter}" for letter in "abcdefgh"]
+
+    def arm_checkin_due() -> None:
+        where, ids = checkin_folder("checkin-due")
+        append(where, pass_line(1, "A1"), pass_line(1, "A1b"), "checkin: 1 window go")
+        append(where, *[pass_line(2, p) for p in ids[:3]])
+        listing = listed(where)
+        expect("three passes", listing["check-in due"], "no")
+        expect("three passes, another window's lines left out", names(listing["since the last check-in"]), ids[:3])
+        expect("three passes start on", names(listing["start now"]), ids[:6])
+        append(where, pass_line(2, ids[3]))
+        listing = listed(where, ids[4:6])
+        expect("four passes", listing["check-in due"], "yes")
+        expect("four passes hold the start", listing["start now"], "none, a check-in is due")
+        expect("what waits on the check-in", names(listing["waiting"]), ids[:4] + ids[6:])
+        expect("what it reports", sorted(names(listing["since the last check-in"])), sorted(ids[:4]))
+        append(where, f"checkin: 2 {ids[3]} go")
+        listing = listed(where)
+        expect("after the go-ahead", (listing["check-in due"], listing["since the last check-in"]), ("no", "none"))
+        expect("after the go-ahead, the start", names(listing["start now"]), ids[:6])
+
+    arm("a check-in due", arm_checkin_due)
+
+    def arm_cadence() -> None:
+        # The cadence is every fourth `pass:` line. A pass run again carries a second line, which
+        # counts, and the check-in names it once, at its last line.
+        where, ids = checkin_folder("checkin-cadence")
+        a, b, c = ids[:3]
+        append(where, *[pass_line(2, p) for p in (a, b, c)])
+        expect("three lines", listed(where)["check-in due"], "no")
+        append(where, pass_line(2, a))
+        listing = listed(where)
+        expect("a fourth line, one of its passes run again", listing["check-in due"], "yes")
+        expect("that pass named once, at its last line", names(listing["since the last check-in"]), [b, c, a])
+
+    arm("the cadence", arm_cadence)
+
+    def arm_checkin_field() -> None:
+        # Each value the check-in section gives for the second field, read back through the listing.
+        # A check-in with nothing since the last one names the pass of the window's last `pass:` line.
+        nothing, ids = checkin_folder("field-nothing-since")
+        a, b, c, d, e = ids[:5]
+        append(nothing, *[pass_line(2, p) for p in (a, b, c, d)], f"checkin: 2 {d} go")
+        expect("nothing since the last check-in", listed(nothing)["since the last check-in"], "none")
+        append(nothing, f"checkin: 2 {d} go")
+        expect("a check-in that names the last pass, the window not read again",
+               listed(nothing)["since the last check-in"], "none")
+        append(nothing, pass_line(2, e))
+        expect("the next pass after it", names(listed(nothing)["since the last check-in"]), [e])
+
+        # A pass recorded while that one stood open is reported at the next one.
+        stood, ids = checkin_folder("field-nothing-since-open")
+        a, b, c, d, e = ids[:5]
+        append(stood, *[pass_line(2, p) for p in (a, b, c, d)], f"checkin: 2 {d} go", pass_line(2, e), f"checkin: 2 {d} go")
+        expect("recorded while it stood open", names(listed(stood)["since the last check-in"]), [e])
+
+        # After a paused slice's check-in, the same value: the slice's last pass.
+        slice_end, ids = checkin_folder("field-after-slice")
+        a, b = ids[:2]
+        append(slice_end, pass_line(2, a), "phase: index built", "checkin: 2 window go", f"checkin: 2 {a} go")
+        expect("after a `window` line, the window not read again", listed(slice_end)["since the last check-in"], "none")
+        append(slice_end, pass_line(2, b))
+        expect("the next pass after that", names(listed(slice_end)["since the last check-in"]), [b])
+
+        # `window` after a window's closing lines, whatever the line showed, leaves nothing to report.
+        closing, ids = checkin_folder("field-window")
+        append(closing, *[pass_line(2, p) for p in ids[:3]], "phase: packages folded", "checkin: 2 window go")
+        expect("a closing check-in's line", listed(closing)["since the last check-in"], "none")
+
+        # `none` where the window has no `pass:` line yet, and a pass recorded while it stood open.
+        first, ids = checkin_folder("field-none")
+        append(first, "checkin: 2 none go")
+        expect("a check-in before the window's first line", listed(first)["since the last check-in"], "none")
+        append(first, pass_line(2, ids[0]))
+        expect("the first pass after it", names(listed(first)["since the last check-in"]), [ids[0]])
+
+        # A check-in with nothing since has no `--passes` to give, and the script says so in one line.
+        code, out, err = run(lead, ["checkin", str(first), "2", "--passes", ""])
+        expect("an empty `--passes`", (code, out, len(err.splitlines())), (1, "", 1))
+
+    arm("the second field of a `checkin:` line", arm_checkin_field)
+
+    def arm_reported() -> None:
+        where = new_folder("reported", sheets("A", "1", "plan", 96))
+        plan_1(where)
+        plan_2(where)
+        ids = [f"A2{letter}" for letter in "abcdefgh"]
+        plan_bytes = (where / "read-plan.md").read_bytes()
+        whole = listed(where, ids[1:3])["lines"]
+        call = listed(where, ids[1:3], reported=ids[0])
+        expect("the `--reported` call's first line", call["lines"][0], whole[1])
+        expect("the `--reported` call's closing lines, against a whole listing's labels",
+               [line.split(":", 1)[0] for line in call["lines"][1:]],
+               [line.split(":", 1)[0] for line in whole[-5:]])
+        expect("the pass it names, out until recorded", ids[0] in names(call["start now"]) + names(call["waiting"]), False)
+        expect("the pass it names, not finished", ids[0] in call["dispatch"], True)
+        expect("a pass it names counts toward the limit", names(listed(where, ids[1:5], reported=ids[0])["start now"]), [ids[5]])
+        expect("with six out, itself among them", listed(where, ids[1:6], reported=ids[0])["start now"], "none")
+
+        # The whole hand-back: its prefixes go through the real record, and the call again carries it.
+        runner_reports(where, 2, ids[0])
+        before = listed(where, ids[1:3], reported=ids[0])
+        record_pass(where, 2, ids[0], before["prefixes"])
+        after = listed(where, ids[1:3], reported=ids[0])
+        expect("the call again, past the record", names(after["since the last check-in"]), [ids[0]])
+        expect("the call again, what is finished", "finished 1;" in after["dispatch"], True)
+        expect("the plan untouched by a hand-back", (where / "read-plan.md").read_bytes(), plan_bytes)
+
+        # A pass the plan does not carry is refused in one line.
+        code, out, err = run(lead, ["passes", "--plan", str(where / "read-plan.md"), "--reported", "A2z"])
+        expect("a reported pass the plan does not carry", (code, out, len(err.splitlines())), (1, "", 1))
+
+        # A window 3 continuation that joined the pass while it ran is in the prefixes at call time,
+        # and the record takes them.
+        joined = new_folder("reported-continuation", [])
+        (joined / "reports").mkdir()
+        (joined / "run.json").write_text(json.dumps(_issue_run("deliv-w1", ["deliv-w1"], "i1")), encoding="utf-8")
+        (joined / "plan" / "packages.json").write_text(json.dumps({"packages": [
+            {"id": "pkg-hvac", "tradeCode": "23 00 00", "name": "Invented HVAC"},
+            {"id": "pkg-roof", "tradeCode": "07 50 00", "name": "Invented roofing"},
+        ]}), encoding="utf-8")
+        code, _out, err = run(planner, [
+            "plan", "--window", "3", "--packages", str(joined / "plan" / "packages.json"),
+            "--out", str(joined / "read-plan.md"),
+        ])
+        if code != 0:
+            raise ValueError(f"the window 3 plan refused: {err}")
+        pass_id = "i1-W3-1"
+        reviews = summary.read_plan(joined / "read-plan.md", 3, pass_id)["units"]
+        review = next(unit for unit in reviews if "230000" in unit)
+        wanted = [f"scopeItem:{unit}-" for unit in reviews]
+        expect("the prefixes before a continuation", listed(joined, reported=pass_id)["prefixes"], wanted)
+        lines = (Path(__file__).parent / "fixtures" / "reviewer-report-fixture.md").read_text(encoding="utf-8").splitlines()
+        lines[0] = f"unit: {review}   package: Invented HVAC   trade: 23 00 00   window: 3"
+        at = lines.index("sections not checked: none")
+        pages_left = _PAGES_LEFT_SHAPE.strip("`").replace("<code>", "230000").replace("<a>", "901").replace(
+            "<b>", "915").replace("<fileId>", "file-m1").replace("<start>", "880")
+        lines[at] = f"sections not checked: {pages_left}"
+        report = joined / "reports" / f"{review}.md"
+        report.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        append(
+            joined, f"dispatch 3 {pass_id} {review} sheets none purpose review the package",
+            verified_line(3, pass_id, review),
+        )
+        code, out, err = run(planner, ["continue", "--window", "3", "--report", str(report)])
+        if code != 0:
+            raise ValueError(f"continue refused: {err}")
+        grown = summary.read_plan(joined / "read-plan.md", 3, pass_id)["units"]
+        expect("a continuation bound", len(grown), len(reviews) + 1)
+        runner_reports(joined, 3, pass_id)
+        call = listed(joined, reported=pass_id)
+        expect("the prefixes after a continuation", call["prefixes"], [f"scopeItem:{unit}-" for unit in grown])
+        record_pass(joined, 3, pass_id, call["prefixes"])
+        expect("the pass past the record", listed(joined, reported=pass_id)["since the last check-in"], pass_id)
+
+    arm("the `--reported` call", arm_reported)
+
+    def arm_stood_open() -> None:
+        where, ids = checkin_folder("checkin-open")
+        a, b, c, d, e, f, g, h = ids
+        append(where, *[pass_line(2, p) for p in (a, b, c, d)])
+        # The check-in is shown on these four, with others out; one reports while it stands open.
+        append(where, pass_line(2, e))
+        listing = listed(where, [f])
+        expect("while it stands open, nothing starts", listing["start now"], "none, a check-in is due")
+        append(where, f"checkin: 2 {d} go")
+        listing = listed(where, [f])
+        expect("the pass recorded while it stood open", names(listing["since the last check-in"]), [e])
+        expect("the count restarts at the line", listing["check-in due"], "no")
+        append(where, *[pass_line(2, p) for p in (f, g, h)])
+        listing = listed(where)
+        expect("three after the line", listing["check-in due"], "no")
+        expect("the next check-in's passes so far", names(listing["since the last check-in"]), [e, f, g, h])
+        append(where, pass_line(2, a))
+        listing = listed(where)
+        expect("four after the line", listing["check-in due"], "yes")
+        expect("the next check-in's passes", names(listing["since the last check-in"]), [e, f, g, h, a])
+
+        # Shown before any pass was recorded, as on a sheet that stopped in the window's first pass.
+        first, ids = checkin_folder("checkin-none")
+        append(first, pass_line(2, ids[0]), "checkin: 2 none go")
+        expect("recorded while a `none` check-in stood open", names(listed(first)["since the last check-in"]), [ids[0]])
+
+        # The check-in after a window's closing lines has nothing out, so it reads from its line.
+        closing, ids = checkin_folder("checkin-window")
+        append(closing, pass_line(2, ids[0]), "checkin: 2 window go", pass_line(2, ids[1]))
+        expect("after a paused slice's check-in", names(listed(closing)["since the last check-in"]), [ids[1]])
+
+        # A pause held until what was out has reported, then the go-ahead for the same check-in.
+        paused, ids = checkin_folder("checkin-pause")
+        a, b, c, d, e = ids[:5]
+        append(
+            paused, *[pass_line(2, p) for p in (a, b, c, d, e)], f"checkin: 2 {d} pause", f"checkin: 2 {d} go",
+        )
+        listing = listed(paused)
+        expect("after a pause and its go-ahead", names(listing["since the last check-in"]), [e])
+        expect("after a pause and its go-ahead, the count", listing["check-in due"], "no")
+
+    arm("a pass recorded while a check-in stood open", arm_stood_open)
+
+    def arm_window_1_never_due() -> None:
+        where = new_folder("checkin-window-1", window_1_rows)
+        plan_1(where, include)
+        append(where, *[pass_line(1, p) for p in ("A1a", "A1b", "G1a", "G1b", "RS1")])
+        listing = listed(where)
+        expect("window 1 has no check-in inside it", listing["check-in due"], "no")
+        expect("window 1 starts on", listing["start now"].endswith("is due"), False)
+
+    arm("window 1", arm_window_1_never_due)
+
+    # ------------------------------------------------------------------ #
+    # A whole window, driven to its end
+    # ------------------------------------------------------------------ #
+    def drive_folder(case: str, window: int) -> Path:
+        if window == 3:
+            return window_3_folder(case)
+        if window == 1:
+            # Files under five sheets each, so this plans no repeated lines pass and every pass is
+            # one the driver's plan reader returns.
+            where = new_folder(case, [row for d in "ABCDEFGH" for row in sheets(d, "0", "schedule", 4)])
+            plan_1(where)
+            return where
+        # Fifteen passes, so the last of them lands after the last check-in in either order.
+        where = new_folder(case, many_parts + sheets("B", "1", "plan", 72))
+        plan_1(where)
+        plan_2(where)
+        return where
+
+    def drive(case: str, window: int, take_next, skill: str) -> None:
+        """
+        A window as a lead with the skill's text runs it. A pass counts as reported only where a
+        check-in shown printed it, and the check-in that closes a window is shown only where that
+        window's own step carries it, so a pass that reaches no check-in fails `every pass reported
+        once`.
+        """
+        where = drive_folder(case, window)
+        plan_order = list(starts_of(where))
+        waits = {p: names(value or "none") for p, value in starts_of(where).items()}
+        for pass_id, gates in waits.items():
+            expect(f"{case}: {pass_id} names only earlier passes",
+                   [g for g in gates if plan_order.index(g) >= plan_order.index(pass_id)], [])
+        ids = sheet_of_unit(where)
+        running: list[str] = []
+        finished: list[str] = []
+        reported: list[str] = []
+        steps = 0
+        replanned = window != 2
+        listing = listed(where)
+        while True:
+            steps += 1
+            if steps > 10 * len(plan_order):
+                raise ValueError(f"{case}: the window did not end: {finished}")
+            if listing["check-in due"] == "yes":
+                shown = names(listing["since the last check-in"])
+                reported.extend(checkin_covers(where, window, shown))
+                tally["checkins"] += 1
+                # What is out reports while it stands open, one of them before the answer.
+                if running:
+                    done = take_next(running)
+                    running.remove(done)
+                    open_listing = hand_back(where, window, done, running)
+                    finished.append(done)
+                    expect(f"{case}: while the check-in stands open", open_listing["start now"],
+                           "none, a check-in is due")
+                append(where, f"checkin: {window} {shown[-1]} go")
+                listing = listed(where, running, reported=shown[-1])
+                continue
+            start = names(listing["start now"])
+            for pass_id in start:
+                open_gates = [g for g in waits[pass_id] if g not in finished]
+                if open_gates:
+                    errors.append(f"{case}: {pass_id} started ahead of {open_gates}")
+            running.extend(start)
+            if not running:
+                if len(finished) < len(plan_order):
+                    raise ValueError(f"{case}: nothing finished, running or to start, with {listing['waiting']} left")
+                break
+            if window != 3:
+                tally["peak"] = max(tally["peak"], len(running))
+                if len(running) > _PASSES_AT_ONCE:
+                    errors.append(f"{case}: {len(running)} passes at once: {running}")
+            done = take_next(running)
+            running.remove(done)
+            listing = hand_back(where, window, done, running)
+            finished.append(done)
+            # A plan run midway keeps every id on its sheet, and the listing after it is whole.
+            if not replanned and len(finished) >= len(plan_order) // 2:
+                replanned = True
+                out_before = list(running)
+                plan_2(where)
+                expect(f"{case}: a replan midway", sheet_of_unit(where), ids)
+                expect(f"{case}: what is out after a replan", running, out_before)
+                listing = listed(where, running)
+
+        since = names(listing["since the last check-in"])
+        if _WINDOW_CLOSING_CHECKINS[window] in skill and since:
+            reported.extend(checkin_covers(where, window, since))
+            tally["checkins"] += 1
+            append(where, f"checkin: {window} {'window' if window != 3 else since[-1]} go")
+            expect(f"{case}: past its closing check-in", listed(where)["since the last check-in"], "none")
+        expect(f"{case}: every pass reported once", sorted(reported), sorted(plan_order))
+        tally["simulated"] += len(plan_order)
+
+    skill_text = " ".join((plugin_path / "skills" / "scope-run" / "SKILL.md").read_text(encoding="utf-8").split())
+
+    def first_out(out: list[str]) -> str:
+        return out[0]
+
+    def last_out(out: list[str]) -> str:
+        return out[-1]
+
+    def drive_every_window(skill: str) -> None:
+        drive("drive-1", 1, first_out, skill)
+        drive("drive-2-first", 2, first_out, skill)
+        drive("drive-2-last", 2, last_out, skill)
+        drive("drive-3-first", 3, first_out, skill)
+        drive("drive-3-last", 3, last_out, skill)
+
+    arm("windows driven to their end", lambda: drive_every_window(skill_text))
+
+    # ------------------------------------------------------------------ #
+    # What the lead, the runner and the readers read
+    # ------------------------------------------------------------------ #
+    runner_text = " ".join((plugin_path / "agents" / "scope-round-runner.md").read_text(encoding="utf-8").split())
+    reader_texts = {
+        reader: " ".join((plugin_path / "agents" / reader).read_text(encoding="utf-8").split())
+        for reader in (SHEET_READER, VOCABULARY_READER)
+    }
+
+    arm("the text", lambda: errors.extend(_passes_at_once_text_errors(skill_text, runner_text, reader_texts)))
+
+    # ------------------------------------------------------------------ #
+    # Each fix broken again, and refused
+    # ------------------------------------------------------------------ #
+    def found_by(body) -> list[str]:
+        """What a run of the arms finds, apart from what the check itself has found."""
+        kept = list(errors)
+        kept_tally = dict(tally)
+        errors.clear()
+        try:
+            body()
+        except Exception as e:
+            errors.append(f"{type(e).__name__}: {e}")
+        found = list(errors)
+        errors[:] = kept
+        tally.update(kept_tally)
+        return found
+
+    def listing_arms() -> None:
+        for body in (arm_window_3, arm_limit, arm_cadence, arm_checkin_field, arm_stood_open, arm_reported):
+            try:
+                body()
+            except Exception as e:
+                errors.append(f"{type(e).__name__}: {e}")
+        drive_every_window(skill_text)
+
+    # (what the mutation breaks, the shipped script's text, what it reads instead)
+    script_mutations = [
+        ("a window 3 start offered while a check-in is due", "    if due:\n        ready = []",
+         "    if due and window != 3:\n        ready = []"),
+        ("the cadence counting distinct passes", "sum(1 for at, _pass_id in recorded if at > line_at)",
+         "len({pass_id for at, pass_id in recorded if at > line_at})"),
+        ("a `checkin:` line's second field not read",
+         'read_from = -1 if shown_with == "none" else (named[-1] if named else line_at)', "read_from = line_at"),
+        ("a pass on `--reported` offered to start", "out = {*running, *([reported] if reported else [])}", "out = set(running)"),
+        ("`--reported` printing every pass", "return [prefixes_of[reported], *closing]", "return [*lines, *closing]"),
+        ("`--reported` taking a pass the plan does not carry", "if reported is not None and reported not in pass_ids:", "if False:"),
+    ]
+    mutated_dir = root / "mutated"
+    mutated_dir.mkdir(parents=True, exist_ok=True)
+    real_lead = lead
+    refused_mutations = 0
+    try:
+        lead_source = plugin_path.joinpath(*LEAD_PASS_SCRIPT).read_text(encoding="utf-8")
+        for label, old, new in script_mutations:
+            if old not in lead_source:
+                errors.append(f"the mutation for {label} no longer applies to the script")
+                continue
+            (mutated_dir / "lead_pass.py").write_text(lead_source.replace(old, new), encoding="utf-8")
+            lead = _load_script_module(mutated_dir / "lead_pass.py", "lead_pass")
+            if found_by(listing_arms):
+                refused_mutations += 1
+            else:
+                errors.append(f"the script with {label} passes every arm")
+    finally:
+        lead = real_lead
+        while str(mutated_dir) in sys.path:
+            sys.path.remove(str(mutated_dir))
+
+    def text_refused(label: str, skill: str = skill_text, readers: dict[str, str] = reader_texts) -> None:
+        nonlocal refused_mutations
+        if skill == skill_text and readers == reader_texts:
+            errors.append(f"the mutation for {label} changed nothing")
+        elif _passes_at_once_text_errors(skill, runner_text, readers):
+            refused_mutations += 1
+        else:
+            errors.append(f"the text with {label} passes")
+
+    # One rule covers the three values, an empty check-in skips its call, and a hand-back's sequence
+    # and what the lead holds stay as written.
+    for phrase in (*_CHECKIN_FIELD_PHRASES, _CHECKIN_EMPTY_PHRASE, *_HAND_BACK_ORDER, *_HAND_BACK_PHRASES,
+                   _WINDOW_CLOSING_CHECKINS[2], _WINDOW_3_CLOSING_PHRASE, _CADENCE_PHRASE):
+        text_refused(f"{phrase!r} taken out", skill_text.replace(phrase, ""))
+    for phrase in _PASSES_AT_ONCE_RETIRED_SKILL_PHRASES[-6:]:
+        text_refused(f"{phrase!r} put back", skill_text + " " + phrase)
+    text_refused(
+        "the count call ahead of the listing that prints its prefixes",
+        skill_text.replace(_HAND_BACK_ORDER[0], "@@").replace(_HAND_BACK_ORDER[2], _HAND_BACK_ORDER[0]).replace("@@", _HAND_BACK_ORDER[2]),
+    )
+    for reader in reader_texts:
+        for phrase in (*_READER_RESEND_ORDER[1:], _READER_CALL_SHAPE_PHRASE):
+            text_refused(f"{reader} with {phrase!r} taken out", readers={**reader_texts, reader: reader_texts[reader].replace(phrase, "")})
+        for phrase in _READER_RETIRED_PHRASES:
+            text_refused(f"{reader} with {phrase!r} put back", readers={**reader_texts, reader: reader_texts[reader] + " " + phrase})
+
+    # A window whose step drops its closing check-in leaves its last passes unreported, and the
+    # driver says which.
+    def closing_dropped(window: int):
+        return lambda: drive(f"drive-{window}-no-closing", window, first_out, skill_text.replace(_WINDOW_CLOSING_CHECKINS[window], ""))
+
+    for window in (1, 2, 3):
+        if any("every pass reported once" in finding for finding in found_by(closing_dropped(window))):
+            refused_mutations += 1
+        else:
+            errors.append(f"window {window}'s step with its closing check-in taken out passes the drive")
+
+    detail = (
+        f"{tally['arms']} arms over invented grids: the class of each sheet type per window and the "
+        f"limit of {_PASSES_AT_ONCE} pinned; window 1's vocabulary ahead of what --include added, with "
+        f"every id a ledger binds kept; `starts after:` for a discipline of many parts, a mixed part, "
+        f"a folded pass, the repeated lines pass, a resumed plan, a slice and window 3, read back by "
+        f"the summary script's own reader; `start now:` at the limit, with gates open and shut, off "
+        f"the ledger with the plan file untouched, past a pass stopped on a mismatch and at a "
+        f"check-in; every fourth `pass:` line due, a pass run again counted at each line; each value "
+        f"of a `checkin:` line's second field read back; a pass recorded while a check-in stood open "
+        f"reported at the next one with the count restarted at the line; the `--reported` call's "
+        f"lines, its pass out until recorded and a continuation among its prefixes taken by the real "
+        f"record; {tally['simulated']} passes driven to the end of windows 1, 2 and 3 over "
+        f"{tally['checkins']} check-ins the check-in script printed, never stuck, at most "
+        f"{tally['peak']} at once in windows 1 and 2, every pass reported once; the skill, the runner "
+        f"and both readers carrying the rules; {refused_mutations} mutations of the script and the "
+        f"text refused; bound: invented grids and a hand-driven ledger, not a real run's readers"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -11296,6 +12420,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_shared_number_pages(plugin_path, marketplace_root),
         check_setup_lead_reads(plugin_path, marketplace_root),
         check_lead_pass(plugin_path, marketplace_root),
+        check_passes_at_once(plugin_path, marketplace_root),
         check_fold_one_level_down(plugin_path, marketplace_root),
         check_project_folder_by_id(plugin_path, marketplace_root),
         check_whole_manual_sections(plugin_path, marketplace_root),

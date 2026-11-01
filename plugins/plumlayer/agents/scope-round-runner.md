@@ -285,9 +285,9 @@ When your dispatch names `boundary` instead of a pass, you close a window and yo
 
 1. Scan the window's new items for the same work captured by two passes that ran alongside each
    other, matching the per-pass name files under `<run folder>/names/` against each other with a
-   local command, never by pulling rows into your context. Passes running together cannot see each
-   other's new items, which is the whole reason this scan sits at the boundary and not inside a
-   pass.
+   local command, never by pulling rows into your context. A reader sees everything written before
+   its own read and nothing written after it, so two passes running together can each create the
+   same work, which is the whole reason this scan sits at the boundary and not inside a pass.
 2. **Declare any kind the record uses and has not declared.** Take the union of every
    `<run folder>/kinds/*.txt` file this window's passes wrote, found with a local command (sort,
    unique) rather than by holding them yourself: those files only ever hold definition kinds, so

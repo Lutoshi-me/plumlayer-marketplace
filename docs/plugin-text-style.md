@@ -511,6 +511,33 @@ Each of these is a harness check.
     counts the continuations; and the lead's check-in, off the ledger with no replan, shows a
     section as read only once no report later in its chain names it. This cannot judge how a
     reviewer spends its page cap on a real manual; that is the measured re-run's.
+32. Passes of one discipline run alongside each other, and the script says which. A lead once
+    guessed which passes could start together, off a mark the plan never wrote, and one set started
+    ten at once and another four and stopped. The shipped `plan_inventory.py` pins six passes at
+    once and each window's classes of sheet, reads a window 1 discipline's vocabulary ahead of what
+    `--include` added with every id a ledger binds kept, and writes `starts after:` under `summed:`
+    in every pass block, for a discipline of many parts, a mixed part, a folded pass, the repeated
+    lines pass, a resumed plan, a slice and window 3, which the summary script's plan reader reads
+    past. The shipped `lead_pass.py passes` prints `start now:`, `waiting:`,
+    `since the last check-in:` and `check-in due:`, off those lines, the ledger and the summaries,
+    with the plan file untouched since a pass reported: at the limit with `--running`, with gates
+    open and shut, past a pass stopped on a mismatch, and at a check-in in every window, due at every
+    fourth `pass:` line, a pass recorded while one stood open reported at the next with the count
+    restarted at the `checkin:` line. Each value a `checkin:` line's second field takes is read back
+    through that listing. `passes --reported` prints the one pass's prefixes off the plan at call time,
+    a window 3 continuation among them and taken by the real record, and the five closing lines, keeps
+    that pass out until it is recorded, and refuses a pass the plan does not carry. Windows 1, 2 and 3
+    are driven to their end, never stuck, never past the limit, each hand-back taking its prefixes off
+    that call, and a pass counts as reported only where a check-in the check-in script printed covers
+    it, the check-in that closes a window shown only where that window's step says so, so a pass that
+    reaches no check-in fails. The skill says the lead starts what `start now:` names and never picks
+    a pass, gives the second field's three values, a hand-back's calls in their order and what the lead
+    holds of them, each window's closing check-in, and the measured basis of its time estimate; the
+    runner's boundary says what a reader sees; and both readers read a row that moved again, judge
+    their write against it, and send a batch again only on the two refusals a row moving causes. Each
+    fix broken again, in the script and in the text, is refused. This cannot judge how a running
+    reader handles a refusal, or a run's real wall time and duplicate groups; those are the measured
+    run's.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

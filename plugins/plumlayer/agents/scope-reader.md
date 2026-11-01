@@ -407,7 +407,16 @@ of them is ever trimmed.
    mandate 2 gives. Leave `versionScope` off: a sheet read names no issue label. After every
    batch, read the record back and confirm the count that landed equals the count sent, entries
    and citations alike; a citation answered `duplicate` wrote nothing and is in neither count.
-   Recheck any conflicting ids individually. This verification happens before you finish and is
+   Recheck any conflicting ids individually. Readers run alongside you and write the rows you
+   read, so the door can refuse a batch over a row that moved after your read, and nothing in that
+   batch landed. Two refusals are that, and you send the batch again each time: where the door names
+   a row already carrying the name, as mandate 1 says, however many times it names another; and
+   where the door says a field already holds a value or that the record you named was replaced, once
+   you read that row again with `search(subject: "<its subject>")`, judge your write against what it
+   now says as mandate 1 does, and either cite the row where it already says what you read or write
+   with `supersedesId` set to the record it shows now. Any other refusal is not a row moving: handle
+   it as the rest of this file says.
+   This verification happens before you finish and is
    part of your report. If you cannot confirm your counts, report the mismatch and stop rather
    than reporting success.
 8. VOCABULARY SHEETS (a schedule, legend, or notes sheet, in any window): also record what the
@@ -474,10 +483,12 @@ so in your report, and the lead closes it only if the user settles the answer in
 The call shape of one page, end to end: one `read_sheet_context`, one `get_page_text` in lines
 walked on `nextOffset` to its end, a render only where text cannot give what you are after, one
 `record_batch` carrying its citations of rows that already exist, with mandate 7's count check,
-one resend of that batch where the door refuses a name, and one report. A page whose `pageRead`
+a resend of that batch each time the door answers one of the two refusals mandate 7 names,
+and one report. A page whose `pageRead`
 came back null costs a second context read. Anything past that shape is a named fallback: a list
 the answer said it cut, mandate 3's corpus search, mandate 1's searches before a create and checks
-before a new Question, or the `record_batch` that cites a Question on a row this page created.
+before a new Question, mandate 7's read of a row the door says changed, or the `record_batch` that
+cites a Question on a row this page created.
 
 Five reads repeat what the context answer already gave you, so do not make them: a trade-filtered
 `list_scope_items` (one package's whole slice is the review's read; a sheet carries whatever trades

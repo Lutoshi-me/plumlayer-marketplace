@@ -14,18 +14,53 @@ that summary.
 
 Three modes:
 
-    python lead_pass.py passes --plan <run folder>/read-plan.md
+    python lead_pass.py passes --plan <run folder>/read-plan.md [--running <pass id>,<pass id>]
+        [--reported <pass id>]
 
         Every pass the read plan carries, in its order, two lines each:
 
-            <pass id>: units <n>, units verified <k>, summed <the plan's summed value>
+            <pass id>: units <n>, units verified <k>, summed <yes, or no and why>
             <pass id> prefixes: ["scopeItem:<unit id>-", ...]
 
-        and one last line, `passes <n>, finished <k>; to dispatch: <pass ids, or none>`. A pass is
-        finished where its `units:` and `units verified:` agree and it reads `summed: yes`, the rule
-        the skill gives. The prefixes are built from the unit ids the plan block carries, in its
-        order. A plan with no pass, as window 2's is where window 1 selected or left out every
-        sheet, prints only that last line, `passes 0, finished 0; to dispatch: none`.
+        then `passes <n>, finished <k>; to dispatch: <pass ids, or none>`, and what the lead does
+        next, off the plan's `starts after:` lines and the ledger beside it:
+
+            start now: <pass ids, or none>
+            waiting: <pass ids, or none>
+            since the last check-in: <pass ids, or none>
+            check-in due: <yes or no>
+
+        A pass is finished where its `units:` and `units verified:` agree and it reads `summed: yes`,
+        the rule the skill gives. Those two values are taken as a plan run would write them now, off
+        the ledger and the summaries on file, since the plan file is rewritten only by a plan run; a
+        plan with no ledger yet has nothing finished. The prefixes are built from the unit ids the
+        plan block carries, in its order.
+
+        `--running` is the passes the lead started and has not recorded. `start now:` is the passes
+        not finished, not running and with every pass on their `starts after:` line finished, in
+        plan order, cut to PASSES_AT_ONCE less the count running; window 3 has no cut. `waiting:` is
+        every other pass not finished and not running.
+
+        `--reported` is the pass that just handed back. It prints only that pass's prefixes line,
+        read off the plan at this call, so a window 3 continuation that joined the pass is in it,
+        then the five closing lines, `passes` through `check-in due:`. A pass the plan does not carry
+        is refused. It counts as running until it is recorded, so it is never offered to start.
+
+        `since the last check-in:` is what the lead hands to `checkin --passes`: the passes with a
+        `pass:` line of this window since the last check-in was shown, last recorded last. A
+        `checkin:` line is appended when the user answers, so a pass recorded while the check-in
+        stood open sits above it; the line's second field names the last pass recorded when it was
+        shown, and this reads from that pass's line, from the window's first line where the field
+        reads `none`, and from the `checkin:` line itself otherwise. With no `checkin:` line of this
+        window it reads every `pass:` line of the window.
+
+        `check-in due:` is yes in windows 2 and 3 where CHECK_IN_EVERY `pass:` lines or more of this
+        window sit after its last `checkin:` line, a pass run again counted at each of its lines, and
+        always no in window 1, which has no check-in inside it. Where one is due, `start now:` reads
+        `none, a check-in is due`, and every pass not finished and not running goes on `waiting:`.
+
+        A plan with no pass, as window 2's is where window 1 selected or left out every sheet, prints
+        `passes 0, finished 0; to dispatch: none` and those four lines, each reading none or no.
 
     python lead_pass.py record <run folder>/ledger.md <window> <pass id>
         --plan <run folder>/read-plan.md --counts-json '<the counts array>'
@@ -123,7 +158,9 @@ Three modes:
 Exit codes:
   0  printed, and in record mode the `pass:` line appended.
   1  a named failure, one line on stderr: a read plan, ledger or summary file that is not there,
-     a plan block with no `units verified:` or `summed:` line, counts that are not a JSON list of
+     a plan block with no `units verified:`, `summed:` or `starts after:` line, or one waiting on a
+     pass the plan does not carry, a `--running` or `--reported` naming a pass the plan does not
+     carry, counts that are not a JSON list of
      prefixes with whole numbers or whose prefixes are not exactly the plan block's, each once, a
      summary of another window or pass, one naming other units than the plan block carries, one
      with a unit it reads `verified no`, or one with no totals line, no candidates count, or in
@@ -151,6 +188,9 @@ import pass_summary  # noqa: E402
 import plan_inventory  # noqa: E402
 
 REPORTS_FOLDER = pass_summary.REPORTS_FOLDER
+
+# How many `pass:` lines land between check-ins inside windows 2 and 3.
+CHECK_IN_EVERY = 4
 
 # Under the 30,000 characters a Bash call returns. Every line a check-in call prints counts
 # against it, the closing line included.
@@ -256,36 +296,127 @@ def _read_plan(path: Path, window: int, pass_id: str) -> dict:
 # passes
 # --------------------------------------------------------------------------- #
 
-def passes_lines(plan_path: Path) -> list[str]:
+def _since_checkin(ledger: Path, window: int) -> tuple[list[str], int]:
+    """
+    The passes the next check-in reports, each once, last recorded last, and how many `pass:` lines
+    sit after the last `checkin:` line, both of this window. No ledger yet is nothing reported.
+    """
+    if not ledger.is_file():
+        return [], 0
+    try:
+        text = ledger.read_text(encoding="utf-8")
+    except Exception as e:
+        raise LeadPassError(f"cannot read the ledger at {ledger}: {e}") from e
+    recorded: list[tuple[int, str]] = []
+    checkin: tuple[int, str] | None = None
+    for at, raw in enumerate(text.splitlines()):
+        parts = raw.strip().split()
+        if len(parts) >= 3 and parts[1] == str(window):
+            if parts[0] == "pass:":
+                recorded.append((at, parts[2]))
+            elif parts[0] == "checkin:":
+                checkin = (at, parts[2])
+    line_at, read_from = -1, -1
+    if checkin is not None:
+        line_at, shown_with = checkin
+        named = [at for at, pass_id in recorded if pass_id == shown_with and at < line_at]
+        read_from = -1 if shown_with == "none" else (named[-1] if named else line_at)
+    since: dict[str, int] = {}
+    for at, pass_id in recorded:
+        if at > read_from:
+            # Taken out and put back, so a pass recorded a second time sits at its last line.
+            since.pop(pass_id, None)
+            since[pass_id] = at
+    return list(since), sum(1 for at, _pass_id in recorded if at > line_at)
+
+
+def passes_lines(
+    plan_path: Path, running: list[str] | None = None, reported: str | None = None
+) -> list[str]:
     try:
         window, pass_ids = pass_summary.plan_passes(plan_path)
     except pass_summary.SummaryError as e:
         raise LeadPassError(str(e)) from None
-    lines: list[str] = []
-    to_dispatch: list[str] = []
+    running = running or []
+    not_planned = [pass_id for pass_id in running if pass_id not in pass_ids]
+    if not_planned:
+        raise LeadPassError(
+            f"--running names {_named(not_planned)}, which {plan_path} does not carry; name the "
+            f"passes you have out as the listing spells them"
+        )
+    if reported is not None and reported not in pass_ids:
+        raise LeadPassError(
+            f"--reported names {reported}, which {plan_path} does not carry; name the pass that "
+            f"handed back as the listing spells it"
+        )
+    # A pass that handed back is out until it is recorded, so nothing offers it to start again.
+    out = {*running, *([reported] if reported else [])}
+    blocks: dict[str, dict] = {}
     for pass_id in pass_ids:
-        block = _read_plan(plan_path, window, pass_id)
-        fields = block["fields"]
-        for field in ("units verified", "summed"):
-            if field not in fields:
+        blocks[pass_id] = _read_plan(plan_path, window, pass_id)
+        for field in ("units verified", "summed", "starts after"):
+            if field not in blocks[pass_id]["fields"]:
                 raise LeadPassError(
                     f"{plan_path}: pass {pass_id}'s block carries no `{field}:` line, which the "
                     f"plan script writes; run the plan script again"
                 )
-        lines.append(
-            f"{pass_id}: units {fields['units']}, units verified {fields['units verified']}, "
-            f"summed {fields['summed']}"
+    try:
+        live = plan_inventory.live_pass_state(
+            window, {pass_id: block["units"] for pass_id, block in blocks.items()}, plan_path.parent,
         )
+    except plan_inventory.PlanError as e:
+        raise LeadPassError(str(e)) from None
+
+    lines: list[str] = []
+    prefixes_of: dict[str, str] = {}
+    to_dispatch: list[str] = []
+    for pass_id, block in blocks.items():
+        verified, summed = live[pass_id]
+        lines.append(f"{pass_id}: units {block['fields']['units']}, units verified {verified}, summed {summed}")
         prefixes = [f"scopeItem:{unit}-" for unit in block["units"]]
-        lines.append(f"{pass_id} prefixes: {json.dumps(prefixes)}")
-        if not (fields["units"] == fields["units verified"] and fields["summed"] == "yes"):
+        prefixes_of[pass_id] = f"{pass_id} prefixes: {json.dumps(prefixes)}"
+        lines.append(prefixes_of[pass_id])
+        if not (verified == len(block["units"]) and summed == "yes"):
             to_dispatch.append(pass_id)
     finished = len(pass_ids) - len(to_dispatch)
-    lines.append(
+    closing = [
         f"passes {len(pass_ids)}, finished {finished}; to dispatch: "
         + (", ".join(to_dispatch) if to_dispatch else "none")
-    )
-    return lines
+    ]
+
+    ready: list[str] = []
+    for pass_id in to_dispatch:
+        waits_on = [
+            other.strip() for other in blocks[pass_id]["fields"]["starts after"].split(",")
+            if other.strip() and other.strip() != "none"
+        ]
+        gone = [other for other in waits_on if other not in blocks]
+        if gone:
+            raise LeadPassError(
+                f"{plan_path}: pass {pass_id} waits on {_named(gone)}, which the plan does not "
+                f"carry; run the plan script again"
+            )
+        if pass_id not in out and not any(other in to_dispatch for other in waits_on):
+            ready.append(pass_id)
+    if window != 3:
+        out_now = len({pass_id for pass_id in out if pass_id in to_dispatch})
+        ready = ready[:max(0, plan_inventory.PASSES_AT_ONCE - out_now)]
+
+    since, after_line = _since_checkin(plan_path.parent / plan_inventory.LEDGER_FILE, window)
+    due = window != 1 and after_line >= CHECK_IN_EVERY
+    if due:
+        ready = []
+        start_now = "none, a check-in is due"
+    else:
+        start_now = ", ".join(ready) or "none"
+    waiting = [pass_id for pass_id in to_dispatch if pass_id not in out and pass_id not in ready]
+    closing.append(f"start now: {start_now}")
+    closing.append(f"waiting: {', '.join(waiting) or 'none'}")
+    closing.append(f"since the last check-in: {', '.join(since) or 'none'}")
+    closing.append(f"check-in due: {'yes' if due else 'no'}")
+    if reported is not None:
+        return [prefixes_of[reported], *closing]
+    return [*lines, *closing]
 
 
 # --------------------------------------------------------------------------- #
@@ -940,6 +1071,14 @@ def main(argv: list[str] | None = None) -> int:
 
     passes = modes.add_parser("passes", help="every pass the read plan carries and its prefixes")
     passes.add_argument("--plan", type=Path, required=True, help="the window's read-plan.md")
+    passes.add_argument(
+        "--running", default="",
+        help="the passes you started and have not recorded, comma separated",
+    )
+    passes.add_argument(
+        "--reported",
+        help="the pass that just handed back; prints only its prefixes and the five closing lines",
+    )
 
     rec = modes.add_parser("record", help="compare a pass's counts and append its pass line")
     rec.add_argument("ledger", type=Path, help="the run folder's ledger.md")
@@ -965,7 +1104,10 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.mode == "passes":
-            lines = passes_lines(args.plan)
+            lines = passes_lines(
+                args.plan, [pass_id.strip() for pass_id in args.running.split(",") if pass_id.strip()],
+                args.reported,
+            )
         elif args.mode == "record":
             lines = record(args.ledger, args.window, args.pass_id, args.plan, args.counts_json)
         else:

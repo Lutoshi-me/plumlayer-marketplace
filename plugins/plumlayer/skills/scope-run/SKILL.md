@@ -79,7 +79,8 @@ that ran, then window 3 over only the packages this pass wrote rows on. The stag
 a pass on an addendum differs; everywhere else it runs as a set's pass does.
 
 **This run is attended.** The user approves the read plan before any reading and reviews at every
-check-in. Never read past a check-in without the user's go-ahead. The package split is not a gate:
+check-in. Never start a pass past a check-in without the user's go-ahead; passes already running
+finish, as the check-in section says. The package split is not a gate:
 this run reads the baseline packages orientation created, amends them as the scope list surfaces
 what the spec TOC could not see, shows what it did, and stops; they stay editable, and a correction
 is a change on the site or a tool call.
@@ -412,17 +413,19 @@ record files, never recorded as project entries:
   pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified <yes|no>
   pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified <yes|no>
   phase: <boundary name>
-  checkin: <window> <window, the id of the last pass recorded before it, or none> <go|pause>
+  checkin: <window> <window, the id of the last pass recorded when it was shown, or none> <go|pause>
   ```
 
   A `checkin:` line says a check-in was shown and how the user answered it, appended as the
   check-in section says. Its second field is `window` for the check-in that follows a window's
   closing lines (window 1's after its index, window 2's after the fold or after a paused slice's
-  index), the id of the last pass recorded before it for one inside a window, a check-in on a
-  sheet that stopped answering included, and `none` for one inside a window before any pass of that
-  window is recorded, as a check-in on a sheet that stopped answering in the window's first pass.
-  Its last field is `go` where the user sent the run on and
-  `pause` where they stopped it there.
+  index), whatever else it shows, the id of the last pass recorded when it was shown for one inside a
+  window, a check-in on a sheet that stopped answering included, and `none` for one inside a window
+  shown before any pass of that window is recorded, as a check-in on a sheet that stopped answering
+  in the window's first pass.
+  A pass recorded while a check-in stands open sits below the pass that field names and above the
+  `checkin:` line, which is how the next check-in comes to report it. Its last field is `go` where
+  the user sent the run on and `pause` where they stopped it there.
 
   Every figure on a `pass:` line is written by `lead_pass.py record` (stage 4 step 3) off the
   pass's summary file and your own count call, never typed by hand: `created` is the sum of your
@@ -595,13 +598,15 @@ records was shown and answered, and is never shown again:
 - Where the last of those lines is a `checkin:` line reading `go`, start the step that follows
   that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 7
   step 1, or stage 6 step 1 again after a paused slice; after one inside a window, its second field
-  a pass id or `none`, the passes that are not finished.
+  a pass id or `none`, the passes that are not finished, or the window's close where every pass is
+  finished.
 - Where it reads `pause`, the user stopped the run there: say in one sentence what the run does
   next, and start it on their go-ahead, with a `checkin:` line reading `go` for the same check-in
   first.
 - Where the last line is the one a check-in follows (`phase: index built` after window 1 or after
-  a paused slice, `phase: packages folded`, or the `pass:` line that made a fourth since the last
-  check-in) and no `checkin:` line follows it, that check-in was never answered: gather it and
+  a paused slice, `phase: packages folded`, or in window 2 or 3 a `pass:` line at or past the
+  fourth since the last `checkin:` line, past it where a pass reported while the check-in stood
+  open) and no `checkin:` line follows it, that check-in was never answered: gather it and
   show it.
 
 Inside the window in flight, run that window's
@@ -609,17 +614,17 @@ plan script again first, exactly as its stage wrote it, with the same arguments:
 `--include` and `--exclude` and a slice's `--only`, each with its reason, are on that window's
 `plan/window-<n>.json`, taken off it with a local filter, and after `phase: window 2 paused` the run
 is the one without `--only` that stage 6 step 4 names. The script keeps every id the ledger and the
-plan file already hold and marks the units already verified. Then dispatch the first pass of the
-window that is not finished, found with the one `lead_pass.py passes` call stage 4 step 1 gives,
-which reads the pass headings and their `units:`, `units verified:` and `summed:` lines and names
-the passes to dispatch on its last line. A pass is finished when its block shows the same count on
-its `units:` and `units verified:` lines and shows `summed: yes`. Window 1's repeated lines pass is
-a pass like any other here: it carries the same three lines and is finished, or dispatched, the
-same way. The plan script writes that
+plan file already hold and marks the units already verified. Then take the one
+`lead_pass.py passes` call stage 4 step 1 gives, with no `--running`, since a resume has no pass
+out, and carry on from what it names as that step says. A pass is finished when its `units:` and
+`units verified:` counts agree and it reads `summed: yes`. Window 1's repeated lines pass is
+a pass like any other here: it carries the same lines and is finished, or started, the
+same way. It reads `summed: yes`
 only while the pass's summary on file names exactly the unit ids the block now carries and the
 pass's last `pass:` line carries that summary's figures, so a replan that changes which units a
 pass carries, by a fold or a cut, leaves it unfinished even where the count comes out the same.
-Any other pass is dispatched, whether or not a `pass:` line for it is on the ledger: its runner
+Any other pass is not finished, whether or not a `pass:` line for it is on the ledger: when the
+listing names it, its runner
 skips the units already verified and writes a new summary. A pass on a later drawing issue starts
 in a run folder of its own on a project that already carries scope items, and the live-list
 mandate (non-negotiable 2) keeps its readers from creating what is already there. A run folder
@@ -666,8 +671,8 @@ before going on.
      `phase:`, `pass:` and `checkin:` lines of that folder's `ledger.md` with a local filter on the
      line prefix; never open the file whole. Resume at the phase after the last one, never showing
      again a check-in a `checkin:` line records, and inside the window in flight run its plan
-     script again and dispatch the first pass that is not finished, as the windows section above
-     says, so nothing already verified is read again. Where the last
+     script again and start what its listing names, as the windows section above says, so nothing
+     already verified is read again. Where the last
      `phase:` line is `window 1 complete` with no `index built` after it, the index step (stage 5)
      runs first. Where the ledger carries no `phase:` line yet, the plan was never approved: take
      stage 3 again from step 1 in that folder. Once the plan is approved, never fetch the grid of a
@@ -723,6 +728,9 @@ Tell them what the run will do: you read the set in three windows, the schedules
    rough sense of how long this set will take from its size, and confirm they are staying for the
    check-ins.
 <!-- /user-facing -->
+   Take that rough sense from what runs have measured: window 1 about 5 to 6 minutes a sheet and
+   window 2 about 3 minutes a sheet, with six passes running at once, so divide the sheet minutes by
+   six. Say that the time waiting on their go-ahead at check-ins is apart from that.
    Where it can, the run starts from a clean conversation, but it never raises sessions,
    compaction, context, or usage with the user, at run start or at any point after it.
 
@@ -907,6 +915,8 @@ Never show passes as a table, counts of dispatches, bundle codes, lanes, model n
 about how the run is executed. Never offer a recommended option.
 <!-- /user-facing -->
 
+Work out when the first check-in will be as precondition 6 does, off window 1's sheets.
+
 On the go-ahead, append `phase: plan approved` to the ledger. Nothing reads before that line exists.
 
 ## 4. Window 1: vocabulary
@@ -920,28 +930,39 @@ that window's go-ahead.
 The reading happens one level down, one runner per pass. The lead does exactly this and holds
 nothing else:
 
-1. **Start one runner per pass.** At the window's start, and on every resume once the plan script
-   has run again, list the window's passes with one call, single quoted as every script call is:
+1. **Start one runner per pass, as the listing says.** At the window's start, and each time the
+   plan script has run again, a resume among them, list the window's passes whole with one call,
+   single quoted as every script call is:
 
    ```sh
    python3 '<plugin root>/scripts/lead_pass.py' passes --plan '<run folder>/read-plan.md'
    ```
 
-   It prints two lines per pass: its id with its `units`, `units verified` and `summed` values,
+   It prints two lines per pass: its id with its `units`, `units verified`
+   and `summed` values as the ledger and the summaries now have them,
    and its prefixes, the `scopeItem:<unit id>-` of each unit id its plan block carries, in plan
-   order, which is what your count call takes when the pass reports. Its last line names the
-   passes to dispatch. For each pass to dispatch, dispatch
-   a fresh `plumlayer:scope-round-runner` with the runner dispatch below: pointers only, no pass
-   brief and no read-plan text. A finished pass, as the windows section above says, is not
-   dispatched. Any other is dispatched whole even when it already carries a `pass:` line, as a
+   order. A line then names the passes
+   not finished, after `to dispatch:`, and four more say what you do next: `start now:`, the
+   passes to start; `waiting:`, the passes held back; `since the last check-in:`, the passes the
+   next check-in reports; and `check-in due:`. You act on those five closing lines and keep no
+   prefix: step 3's call prints a pass's prefixes when it reports.
+
+   You start what `start now:` names, a fresh `plumlayer:scope-round-runner` for each with the
+   runner dispatch below: pointers only, no pass brief and no read-plan text. When a pass hands back,
+   step 3 takes its count, records it and lists again, and you start what that last listing names. The
+   listing holds you to six at once in windows 1 and 2, and it holds a discipline's later kinds
+   of sheet until the passes holding its earlier ones finish, so the sheet that should create a row
+   is the first to see its work. You never pick a pass yourself, and you wait by ending the turn, as
+   the windows section says. A pass the listing names is started whole even
+   when it already carries a `pass:` line, as a
    pass is once a replan adds sheets to it, folds a part into it or cuts a sheet it read: its
-   runner skips the units already verified, and its new `pass:` line carries the whole pass.
-   Passes that share no discipline
-   start together, and a folded pass's heading names every discipline it carries; passes the plan
-   marks as seeing the same work start one after another. The repeated lines pass, `RS1` and any
-   lettered part of it, shares no discipline and starts alongside the vocabulary passes, with the
-   same runner dispatch. What a pass leaves in the lead's context is its dispatch, its hand-back
-   and its `pass:` line, nothing else.
+   runner skips the units already verified, and its new `pass:` line carries the whole pass. The
+   repeated lines pass, `RS1` and any lettered part of it, waits for nothing, nothing waits for it,
+   and it takes the same runner dispatch. A mismatch, or a sheet that stopped answering twice, stops
+   the run as step 3 says, whatever `start now:` names: passes already out finish and are recorded,
+   and you start nothing until it is settled. What a pass leaves in the lead's context is its
+   dispatch, its hand-back, the prefixes line and the closing lines of step 3's two calls, its count
+   answer, and its `pass:` line with the line under it, nothing else.
 2. **The runner owns the pass.** It writes the pass brief if it is not already on disk, runs the
    pass's units in reading order (one fresh reader per unit, one unit at a time,
    `plumlayer:scope-vocabulary-reader` in window 1 and `plumlayer:scope-reader` in window 2), appends each unit's dispatch line
@@ -959,9 +980,20 @@ nothing else:
    stops nothing. A unit with no verified line and no such stop is a runner that stopped partway,
    handled as the windows section says.
 
-   Otherwise, before you say a number out loud, take the pass's counts off the record yourself
-   with one call, `count_entries(projectId, subjectPrefixes: [<the prefixes on that pass's listing
-   line>])`, reading each `entryCount`. That is the third boundary of non-negotiable 5,
+   Otherwise, before you say a number out loud, list that pass with one call, the pass that handed
+   back after `--reported` and every other pass you started and have not recorded after `--running`,
+   which you leave off where there is none:
+
+   ```sh
+   python3 '<plugin root>/scripts/lead_pass.py' passes --plan '<run folder>/read-plan.md' --reported '<pass id>' --running '<pass id>,<pass id>'
+   ```
+
+   It prints that pass's `<pass id> prefixes:` line, read off the plan as it stands now, and the five
+   closing lines, and it refuses a pass the plan does not carry. A pass on `--reported` counts as out
+   until it is recorded, so `start now:` does not name it, and those closing lines do not yet count
+   it. Take the pass's counts off the record yourself with one call,
+   `count_entries(projectId, subjectPrefixes: [<those prefixes>])`, reading each `entryCount`. That
+   is the third boundary of non-negotiable 5,
    and it is count-only: never a row list, and never a prefix or a count taken off the hand-back.
    Then record the pass, passing the answer's `counts` array through as it came back, single
    quoted:
@@ -986,6 +1018,10 @@ nothing else:
    call and run it again. The `created` figure on the `pass:` line counts entries, every citation
    and trade written with the new items, and is your own check: say the new items, the items
    updated and the Questions as the line under it gives them, and never the entry count.
+
+   Once the pass is recorded, make the `--reported` call again, with the same passes. Its closing
+   lines now count the pass you recorded, and they are the ones you act on: start what `start now:`
+   names, and where they read `check-in due: yes`, check in as stages 6 and 7 say.
 <!-- user-facing -->
    Between check-ins, tell the user at most one line per pass as it is recorded, naming what it
    read in plain words: "I've read the fire alarm sheets, 48 new items." Keep the rest for the
@@ -1086,23 +1122,27 @@ On the go-ahead:
    ```
 
 2. **Run the passes** exactly as stage 4 runs them: one runner per pass, the runner's
-   `verify_unit` per sheet, your one count call, one `pass:` line each, in the plan's order.
+   `verify_unit` per sheet, your one count call, one `pass:` line each.
    After a slice, the full plan's part that holds the slice's units holds new ones beside them: it shows `units verified` below `units` and is dispatched like any unfinished
    pass, its runner skips the slice's finished units, and its new `pass:` line carries the whole
    part. A plan with no pass, as where window 1 selected or left out every sheet, lists
    `passes 0, finished 0; to dispatch: none`: no runner starts, and the window goes straight to
-   step 4. Passes that share no discipline start together, and a folded pass's heading names every
-   discipline it carries. Every reader reads its sheet whole, for everything on it, whatever trade
+   step 4. You start what the listing's `start now:` names, up to six at once, and when a pass hands
+   back you take its count, record it and list again as stage 4 step 3 says, then start what that
+   names. Every reader reads its sheet whole, for everything
+   on it, whatever trade
    the work belongs to (non-negotiable 4); the runner's overlap scan and the record's refusal of a
    create whose name the project already carries are what keep two passes running alongside each
    other from creating the same work twice.
-3. **Check in every few passes.** After every fourth `pass:` line of the window, check in (format
-   below): the sheets read, what landed by trade, what was raised. A pause here is at a pass
-   boundary and loses nothing.
+3. **Check in every few passes.** Where the listing reads `check-in due: yes`,
+   four `pass:` lines have landed since the last `checkin:` line: check in (format below) on the
+   passes `since the last check-in:` names: the sheets read, what landed by trade, what was raised. A pause
+   here is at a pass boundary and loses nothing.
 4. **Close the window** with a boundary runner, as in stage 4 step 4, then append
    `phase: window 2 complete` with the window's verified totals, run the index (stage 5, steps 1 to
    4) so every row cites every page it appears on before any review reads it, fold the packages
-   (step 5), and check in.
+   (step 5), and check in on the passes `since the last check-in:` names, whatever `check-in due:`
+   reads, since the passes that came after the last check-in report here.
    When the plan deferred sheets, the window is not closed. After the slice's passes, run the
    boundary runner and the index the same way, but append
    `phase: window 2 paused units <n> ... deferred <m>` in place of `phase: window 2 complete`: the
@@ -1110,8 +1150,8 @@ On the go-ahead:
    again at step 1, with a plan run without `--only`, and a resume after that line starts there.
    A slice whose bounds line reads `plus deferred 0` is the window's last slice: after its passes,
    run the plan once more without `--only`. Every unit in it shows verified, but that plan can fold
-   one slice's part into another's pass, so before you total or close anything, dispatch every pass
-   in it that is not finished, as the windows section says and step 2 runs them, each with its own
+   one slice's part into another's pass, so before you total or close anything, start each pass
+   in it that is not finished as its listing names it, as step 2 runs them, each with its own
    `pass:` line: their runners read nothing and write new summaries. Then the window closes from
    that plan with `phase: window 2 complete`, its totals taken over the passes that plan carries.
 5. **Fold the packages into what one kind of firm bids.** This runs once the window is complete and
@@ -1224,17 +1264,19 @@ On the go-ahead:
    so the runner dispatches one `plumlayer:scope-reviewer` per unit in turn rather than a reader.
    The runner's `verify_unit` against the pages each review opened, your one count call over the
    pass's prefixes, one `pass:` line each. No two passes share a trade, so all of them may start
-   together. A review reads every manual section on its package whole, up to its page cap, and
+   together. `start now:` names every one with no limit at the window's start, and you start them
+   all. A review reads every manual section on its package whole, up to its page cap, and
    names the pages the cap left as `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` on its
    `sections not checked:` line. Its runner then binds a continuation unit into the same pass with the plan script's
    `continue` mode and runs it there, so every page of a section is read inside the window without
-   your asking; you start nothing for it. Since a continuation joins its pass while the pass runs,
-   list the passes again when a pass hands back, and take your count over the prefixes that
-   listing prints for it: its continuations are units of the pass like any review, and the record
-   script refuses a count that leaves one out.
-3. **Check in every few packages.** After every fourth `pass:` line of the window, check in (format
-   below): the packages finished, their pages ready, what was raised. A pause here is at a pass
-   boundary and loses nothing.
+   your asking; you start nothing for it. A continuation joins its pass while the pass runs, and the
+   `--reported` call reads the plan when you make it, so the prefixes it prints for the pass carry them:
+   its continuations are units of the pass like
+   any review, and the record script refuses a count that leaves one out.
+3. **Check in every few packages.** Where the listing reads `check-in due: yes`,
+   four `pass:` lines have landed since the last `checkin:` line: check in (format below) on the
+   passes `since the last check-in:` names: the packages finished, their pages ready, what was raised. A
+   pause here is at a pass boundary and loses nothing.
 
 <!-- user-facing -->
 At each of these check-ins, name the packages you finished, say their pages are ready to look at,
@@ -1242,10 +1284,15 @@ and name what you raised on them and what you would like them to look at. Name e
 the reviews found carrying the same work, the row that now carries every sheet and the one left
 to retire, and say they retire it on the site or tell you to. Where a manual section ran past one
 review's pages, say you read the rest of it in a second review.
-Then say which packages come next, in one sentence. A pause here loses nothing.
+Then say which packages come next, in one sentence, or where none is left, that you have reviewed
+every package and go on to the package split and the close-out. A pause here loses nothing.
 <!-- /user-facing -->
 
-4. **Close the window** with a boundary runner, then run the index once more (stage 5, steps 1 to
+4. **Close the window.** Where every pass is finished and `since the last check-in:` names any,
+   gather the check-in on those passes before you close, as its own check-in, whatever
+   `check-in due:` reads, and show it: no other check-in follows them, and the close-out's reads do
+   not carry every note they hold. On the go-ahead, and straight away where
+   `since the last check-in:` reads `none`, close with a boundary runner, then run the index once more (stage 5, steps 1 to
    4) so the rows the reviews created carry every sheet too, then append
    `phase: window 3 complete` with the window's verified totals and what the third index left
    open, by count and named where it is a code found nowhere.
@@ -1626,8 +1673,10 @@ ledger: <path>, appended through <last line written>
 
 ## The check-in (what the user sees)
 
-Gather a check-in with two calls, and nothing else for it. The first covers the passes recorded
-since the last check-in:
+Gather a check-in with two calls, and nothing else for it. The first covers the passes your last
+listing names on `since the last check-in:`, and a session that holds no listing yet takes one with
+the call stage 4 step 1 gives. Where that line reads `none`, no pass has reported since the last
+check-in: skip this call, which refuses an empty list, and make only the second.
 
 ```sh
 python3 '<plugin root>/scripts/lead_pass.py' checkin '<run folder>' <window> --passes <pass id>,<pass id>
@@ -1678,11 +1727,37 @@ For example: "I've finished the first window, the schedules and legends. Here is
 trade, what I'd like you to look at, and what the next window reads. Proceed, adjust, or pause?"
 <!-- /user-facing -->
 
+While a check-in is due or open you start nothing. It is open from when you show it until its
+`checkin:` line. Passes already running finish: each gets its `pass:` line and its one line to the
+user, and you end the turn again. A change the user asks for that runs the plan script again waits
+until the passes you have out have reported.
+
 When the user answers a check-in, append its one `checkin:` line to the ledger, in the shape the
 run folder section gives: `go` once every change they asked for at that check-in is made and the
-next step is about to start, or `pause` where they stop the run there. A session that starts
+next step is about to start, or `pause` where they stop the run there. Its second field takes one
+of three values. It reads `window` after a window's closing lines, whatever `since the last check-in:`
+shows. Inside a window it reads the pass that was last on `since the last check-in:` when you showed
+it, whatever has been recorded since. Inside a window where that line read `none`, as on a sheet that
+stopped answering right after a check-in, it reads the pass of the last `pass:` line of this window on
+the ledger when you showed it, and `none` only where the window has no `pass:` line yet, since a
+`none` past that first line reports the whole window again.
+
+After `go` on a check-in inside a window, make the call stage 4 step 3 gives, `--reported` naming the
+pass on that line and `--running` the passes you started and have not recorded, and start what it
+names. Where that line reads `none`, or the change the user asked for ran the plan script, list the
+passes whole as stage 4 step 1 does, with `--running` where any are out. A session that starts
 later reads that line and never shows that check-in again. The read plan's check-in is recorded
-by `phase: plan approved` instead.
+by `phase: plan approved` instead. Inside a window the count of four restarts at the `checkin:` line,
+and the next check-in reports every pass `since the last check-in:` names, a pass recorded while
+this one stood open among them.
+
+Where the user answers `pause` while passes are running, those passes finish first. Record each as
+it reports, and append the `pause` line once the last of them has its `pass:` line, so a session
+that starts later reads the run as stopped there.
+
+<!-- user-facing -->
+Say so plainly in one sentence: "What I've already started will finish first, then I'll stop."
+<!-- /user-facing -->
 
 ## The words the user reads
 
