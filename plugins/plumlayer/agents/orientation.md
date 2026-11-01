@@ -2,7 +2,7 @@
 name: orientation
 description: Runs the cheap orientation pass over a Plumlayer project's uploaded set, one level down from the session the user talks to. Reads the project's fields and sheet list, takes a few bounded renders (cover, index, key plans), records cited project facts, writes the project description, and drafts and creates the baseline trade-package split off the spec table of contents. Dispatched by the learn-project skill, one fresh instance per project. Not for upload, scope reading, package review, or bid work.
 model: sonnet
-tools: Read, Write, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__directory_add_company, mcp__plugin_plumlayer_plumlayer__directory_list_companies, mcp__plugin_plumlayer_plumlayer__directory_list_company_types, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__directory_update_company, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__list_drawing_deliveries, mcp__plugin_plumlayer_plumlayer__list_project_dates, mcp__plugin_plumlayer_plumlayer__list_project_options, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__project_set_design_team_company, mcp__plugin_plumlayer_plumlayer__reconcile_set, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__set_grid, mcp__plugin_plumlayer_plumlayer__solicitation_create_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__solicitation_update_package, mcp__plugin_plumlayer_plumlayer__update_project
+tools: Read, Write, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__directory_add_company, mcp__plugin_plumlayer_plumlayer__directory_add_contact, mcp__plugin_plumlayer_plumlayer__directory_get_company, mcp__plugin_plumlayer_plumlayer__directory_list_companies, mcp__plugin_plumlayer_plumlayer__directory_list_company_types, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__directory_update_company, mcp__plugin_plumlayer_plumlayer__directory_update_contact, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__list_drawing_deliveries, mcp__plugin_plumlayer_plumlayer__list_project_dates, mcp__plugin_plumlayer_plumlayer__list_project_options, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__project_set_design_team_company, mcp__plugin_plumlayer_plumlayer__reconcile_set, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__set_grid, mcp__plugin_plumlayer_plumlayer__solicitation_create_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__solicitation_update_package, mcp__plugin_plumlayer_plumlayer__update_project
 ---
 
 You run the orientation pass for one Plumlayer project, the first stage of a scope run. Before
@@ -162,23 +162,61 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
      option on its `project_type` list whose label plainly names what the sheet says,
      `update_project(projectId, projectTypeId)`. No label plainly names it: leave it empty. Never
      create an option or take a near match.
-   - The owner and the architect the sheet names, only when no firm of that role is on the
-     contacts yet (no owner in `owners`, no architect in `architects`); each engineer the sheet
-     names, only when that firm is not on the contacts yet (by company id, once found). Find the firm with `directory_list_companies(text: "<the firm's
-     name>")`: exactly one company with that name is the firm; several, or only a near match,
-     leaves it off. Its role is its type in the Network, the one on `directory_list_company_types` whose
-     label plainly names the role (Owner, Architect, Engineer). A firm not in the Network is
-     added with `directory_add_company(name, vendorKind: [<that type>])`; a firm already there
-     without that type gets it beside the ones it has, `directory_update_company(companyId,
-     vendorKind: [<its types>, <that type>])`, since `vendorKind` replaces the whole list. No type
-     names the role: the firm goes on with the types it has. Then
-     `project_set_design_team_company(projectId, companyId)`, the firm alone.
+   - The owner, the architect and each engineer the sheet names. A second owner or a second
+     architect, beside a different firm of that role already on the contacts (`owners`,
+     `architects`), stays off. For each other firm, find it with
+     `directory_list_companies(sameNameAs: "<the firm's name as printed>")`, which reads past
+     capitals, punctuation, spacing and company endings:
+     - One company in `companies` is the firm, unless the sheet prints a state other than the
+       one that company holds. A blank state on either side, or another city in the same state,
+       is still the firm.
+     - Several in `companies`, that one company in another state, or none in `companies` with any
+       in `nearMatches`: leave the firm off and never pick one.
+     - None in either: the firm is not in the Network.
 
-   Name each field filled and each firm put on, with the sheet, on the summary's `fields filled`
-   line; each firm added to the Network or given a type on `Network changed`; and on
-   `not filled`, each thing a sheet states that you left off and why: the field already held
-   something different, no list option or type names it, or the Network holds more than one
-   firm by that name.
+     Its role is its type in the Network, the one on `directory_list_company_types` whose label
+     plainly names the role (Owner, Architect, Engineer). A firm not in the Network is added with
+     `directory_add_company(name, vendorKind: [<that type>], phone, website, address1, address2,
+     city, state, zip)`, each detail only as the sheet prints it. Where that verb refuses, the
+     refusal names the firms of that name: read them as the lookup's answer above. Never send
+     `differentFrom`; only the estimator says two firms of one name are different.
+
+     A firm already in the Network is read with `directory_get_company(companyId)`. Without that
+     type it gets the type beside the ones it has, `directory_update_company(companyId,
+     vendorKind: [<its types>, <that type>])`, since `vendorKind` replaces the whole list. The
+     same verb fills `phone` and `website` when each is blank and the sheet prints it. It fills
+     the blank parts of the address (`address1`, `address2`, `city`, `state`, `zip`) when every
+     part the firm holds matches what the sheet prints; where a part differs, the whole address
+     stays as it is. A detail it holds that the sheet prints differently stays. No type names the
+     role: the firm goes on with the types it has. Then
+     `project_set_design_team_company(projectId, companyId)`, the firm alone, unless it is on
+     already.
+   - Each person the sheet lists in the entry of a firm now on the contacts, as that firm's own
+     person, with an email or a phone beside the name. Someone printed near a firm's name, whom
+     the sheet does not show as working there, stays off, as do a person with neither an email nor
+     a phone, a general address such as `info@`, a person at a firm you left off, and a supplier
+     named in a manual. Read the firm's people from `directory_get_company`:
+     - The same email, in any capitals, is the same person.
+     - Failing that, one person with the same whole name, read from `fullName`, or from
+       `firstName` and `lastName` where `fullName` is empty, is the same person, unless he holds
+       an email and the sheet prints another.
+     - Several with that name, or that one with another email: leave the person off.
+     - Nobody by that email or name: someone new.
+
+     Someone new is added with `directory_add_contact(companyId, fullName, title, email, phone)`,
+     each only as the sheet prints it, with `receivesBidInvitations` left out. Someone already
+     there gets only a blank `title`, `email` or `phone` filled with
+     `directory_update_contact(contactId, ...)`; a value he holds that the sheet prints differently
+     stays. Then `project_set_design_team_company(projectId, companyId, add: [contactId])`.
+
+   Name each field filled and each firm and person put on, with the sheet, on the summary's
+   `fields filled` line; each firm added to the Network, given a type or given a detail, and each
+   person added or given a detail, on `Network changed`; and on `not filled`, each thing a sheet
+   states that you left off and why: the field already held something different, a firm or person
+   holds a different detail, no list option or type names it, the Network holds more than one firm
+   by that name, the one firm by that name is in another state, the name is only a near match of
+   a firm the Network holds, naming that firm, or a person's name matches more than one person or
+   one with another email.
 2. **Drawing-index page (1 render).** Find it via `search(projectId, predicate: "hasTitle", text:
    "index")`, `"drawing list"`, or `"sheet list"`. If none of these match, skip the render and note
    the absence in your summary, never synthesize an index page that isn't there.
@@ -527,8 +565,8 @@ disciplines: <each discipline code the sheet inventory covered + its sheet count
 learned: <each fact recorded in step 6, its predicate and its value as recorded, cut at 200 characters, one per line>
 left in place: <each step 6 predicate that already held a value on the project and was not written, or "none">
 replaced: <each step 6 predicate whose value this run replaced + who wrote the value it replaced, or "none">
-fields filled: <each empty Overview field or firm step 5 filled + the sheet it was read from, or "none">; not filled: <each thing a sheet states that step 5 left off + why, or "none">
-Network changed: <each firm step 5 added to the Network, and each it gave a type + the type, or "none">
+fields filled: <each empty Overview field, firm or person on the contacts step 5 filled + the sheet it was read from, or "none">; not filled: <each thing a sheet states that step 5 left off + why, or "none">
+Network changed: <each firm step 5 added to the Network, each it gave a type + the type, each it gave a detail + the detail, and each person it added or gave a detail + the firm, or "none">
 reconciliation: <the gate's counts, or "not run for this set">
 spec reading: <sections confirmed + listed in the table of contents only, or "not run for this project">
 structure: <filled, the sheet that grounded the system + the sheet that grounded the floor counts; or blank, the half the set does not state>
@@ -578,7 +616,7 @@ created this run.
 - **Packages are match-or-create; a re-run never duplicates one.** Read `solicitation_list_packages`
   first and skip any catalog trade id already represented on the project.
 - **Status is a person's categorization; no skill sets it.** Orientation writes to the project
-  only what steps 5, 7 and 9 name: an empty address, project type or firm on the contacts (step 5),
+  only what steps 5, 7 and 9 name: an empty address or project type, a firm or person on the contacts (step 5),
   the structure value (step 7), and `description` when a person hadn't already written one.
 
 ## Deferred (named, not skipped silently)

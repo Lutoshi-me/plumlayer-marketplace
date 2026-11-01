@@ -78,8 +78,10 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
   or page read that failed.
 - **What was learned**, by kind: systems, scope areas, set shape, hazards. Name any value already
   on the project that you left as it stands, and any you replaced, with who wrote it.
-- **What was filled on Overview** from the cover sheet and title blocks, with the sheet; each firm
-  added to the Network or given a type; and anything a sheet states that you left off, and why.
+- **What was filled on Overview** from the cover sheet and title blocks, with the sheet, each firm
+  and person put on the contacts among it; each firm added to the Network, given a type or given a
+  detail; each person added to a firm or given a detail; and anything a sheet states that you left
+  off, and why.
 - **What the index check found**, or that it hasn't run yet for this set, never silent on which.
 - **What was recorded**, how many facts, and any Question raised for a disagreement between
   documents. What was recorded is the project's working context now, carrying your name and its

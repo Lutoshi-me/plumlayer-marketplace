@@ -330,19 +330,48 @@ early state.
 - **The owner, the architect, the engineers.** Each goes on the project's contacts as a firm from
   the Network. What a firm is on the job is its type in the Network, so the owner is
   the firm typed Owner. For each firm named:
-  1. Find it: `directory_list_companies(text: "<the firm's name>")`. Exactly one company whose
-     name is the firm's name is that firm. Several that could be it, or only a near match: leave
-     the firm off and name it in the closing report; never pick one.
-  2. Its type: `directory_list_company_types` lists the account's types. Take the one whose label
-     plainly names the role (Owner for the owner, Architect for the architect, Engineer for a
-     structural, MEP or civil engineer), as the list spells it. A firm not in the Network is
-     added with `directory_add_company(name, vendorKind: [<that type>])`. A firm already there
-     without that type gets it beside the types it has,
-     `directory_update_company(companyId, vendorKind: [<its types>, <that type>])`, since
-     `vendorKind` replaces the whole list. When no type on the list names the role, the firm goes
-     on with the types it has, and the closing report says so; never add a type to the list.
-  3. Put it on: `project_set_design_team_company(projectId, companyId)`, the firm alone, with no
-     `add`.
+  1. Find it: `directory_list_companies(sameNameAs: "<the firm's name as given>")`, which reads
+     past capitals, punctuation, spacing and company endings. One company in `companies` is that
+     firm, unless what you were given names a state other than the one that company holds; a blank
+     state on either side, or another city in the same state, is still the firm. Several in
+     `companies`, that one company in another state, or none in `companies` with any in
+     `nearMatches`: leave the firm off and name it in the closing report; never pick one. None in
+     either: the firm is not in the Network.
+  2. Its type and details: `directory_list_company_types` lists the account's types. Take the one
+     whose label plainly names the role (Owner for the owner, Architect for the architect,
+     Engineer for a structural, MEP or civil engineer), as the list spells it. A firm not in the
+     Network is added with `directory_add_company(name, vendorKind: [<that type>], phone, website,
+     address1, address2, city, state, zip)`, each detail only as the user gave it or a document
+     prints it. Where that verb refuses, the refusal names the firms of that name: read them as
+     step 1's answer. Send `differentFrom` only when the user says it is a different firm. A firm
+     already there is read with `directory_get_company(companyId)`. Without that type it gets the
+     type beside the types it has, `directory_update_company(companyId, vendorKind: [<its types>,
+     <that type>])`, since `vendorKind` replaces the whole list. The same verb fills `phone` and
+     `website` when each is blank. It fills the blank parts of the address (`address1`,
+     `address2`, `city`, `state`, `zip`) when every part the firm holds matches what you were
+     given; where a part differs, the whole address stays as it is. A detail it holds that differs
+     from what you were given stays, and the closing report names both. When no type on the list
+     names the role, the firm goes on with the types it has, and the closing report says so; never
+     add a type to the list.
+  3. Put it on: `project_set_design_team_company(projectId, companyId)`, the firm alone.
+  4. Its people: each person the user names at the firm, or a document lists in the firm's entry,
+     as that firm's own person, with an email or a phone beside the name. Someone printed near a
+     firm's name, whom the document does not show as working there, stays off, as do a person with
+     neither an email nor a phone and a general address such as `info@`, unless the user named
+     him. Read the firm's people from `directory_get_company`:
+     - The same email, in any capitals, is the same person.
+     - Failing that, one person with the same whole name, read from `fullName`, or from
+       `firstName` and `lastName` where `fullName` is empty, is the same person, unless he holds
+       an email and you were given another.
+     - Several with that name, or that one with another email: leave the person off and name him
+       in the closing report.
+     - Nobody by that email or name: someone new.
+
+     Someone new is added with `directory_add_contact(companyId, fullName, title, email, phone)`,
+     with `receivesBidInvitations` left out. Someone already there gets only a blank `title`,
+     `email` or `phone` filled with `directory_update_contact(contactId, ...)`; a value he holds
+     that differs stays, and the closing report names both. Then
+     `project_set_design_team_company(projectId, companyId, add: [contactId])`.
 
 ### The facts recorded as entries
 
@@ -435,14 +464,19 @@ rather than restating it from what an earlier step said:
 - **Created:** project name + `projectId`.
 - **Filled on Overview:** each field filled and where its value came from, what the user said
   or the document and page: the project type, procurement, contract, the address, the owner's bid
-  date, and each firm put on the contacts with the type it carries.
-- **Changed in the Network:** each firm added to the Network, and each firm already
-  there that was given a type (Owner, Architect, Engineer), with the type added.
+  date, each firm put on the contacts with the type it carries, and each person put on with his
+  firm.
+- **Changed in the Network:** each firm added to the Network, each firm already there that was
+  given a type (Owner, Architect, Engineer) or a phone, website or address, with what was added,
+  and each person added to a firm or given a detail.
 - **Recorded:** how many other facts were recorded, broken down (size / trades / sets /
   exclusions).
 - **Not filled or recorded:** each fact left off and why (the user was unsure, a document was
   unclear, no choice on the company's list names what was given, a firm the Network holds more
-  than once, a time with no time zone), listed here in the conversation with what was given. These
+  than once, the one firm by that name in another state, a name that is only a near match of a
+  firm in the Network, a firm or person holding a different detail, a person's name matching more
+  than one person or one with another email, a time with no time zone),
+  listed here in the conversation with what was given. These
   are not on the site, since nothing was written for them; this list is the one place they are
   named.
 - **The set:** the delivery that was read in, how many sheets were recognized, how many pages were
@@ -457,8 +491,10 @@ rather than restating it from what an earlier step said:
   section placed from its title alone by its number, each section whose item the catalog has no
   trade for with the package it went on, and each left on no package with what stopped its
   placing, whether the structure and the description were written, what
-  it filled on Overview from the cover sheet and with which sheet, each firm it added to the
-  Network or gave a type, anything a sheet states that it left off and why (a sheet that names
+  it filled on Overview from the cover sheet and with which sheet, each firm and person it put on
+  the contacts, each firm it added to the Network or gave a type or detail, each person it added
+  to a firm or gave a detail, anything a
+  sheet states that it left off and why (a sheet that names
   something different from what the user gave is said here plainly), and where the packet landed.
 - **What a person should look at on plumlayer.com:** any Question raised for two documents that
   disagree, among the project's Questions; the fields filled on Overview, each carrying your
