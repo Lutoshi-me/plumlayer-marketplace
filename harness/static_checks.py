@@ -9861,8 +9861,8 @@ FOLD_VERBS = (
 # The rules the fold moved, one sentence each: the definition carries every one and the skill none.
 FOLD_RULE_SENTENCES = {
     "walk-off mats": "Walk-off mats, an acoustic underlayment laid under the finish floor, and floor prep",
-    "podium defaults": "Where the project's `structuralSystem` entry states wood-framed floors over a concrete or steel podium, read the default carries",
-    "sealant and firestopping": "Joint sealants and penetration firestopping go with the work they seal or pass through",
+    "default carries": "On every job, read the default carries in orientation's step 8",
+    "sealant and firestopping": "Joint sealants go with the waterproofer: a sealant package folds into the waterproofing package",
     "supplier and installer": "A fold never puts two kinds of firm on one package",
     "owner's work": "Work the owner contracts for directly is no sub's bid",
 }

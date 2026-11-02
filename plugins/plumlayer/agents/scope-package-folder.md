@@ -92,7 +92,10 @@ verb states.
    package carries it, fold it in: `solicitation_update_package` on the package that keeps it, with
    the folded package's `tradeCode` and its `codes` added to `codes`, its `manualSections` added to
    `manualSections`, and `notes` rewritten to say what the package now carries, then
-   `solicitation_delete_package` on the folded one. That verb replaces each list it is sent whole,
+   `solicitation_delete_package` on the folded one. A broad code, one ending in `00`, whether the
+   folded package's `tradeCode` or one of its `codes`, goes onto the keeping package's `codes` only
+   where no other package still standing holds a trade under it; otherwise add the finer trades of
+   the folded package's rows from the `tradeRollup` in its place. That verb replaces each list it is sent whole,
    so read the keeping package's current lists first and send them back with the additions, each
    entry once, never repeating the keeping package's own `tradeCode` in its `codes`. The rows keep
    their trade: a fold writes no `belongsToTrade`. Ask the same of every trade on a package's
@@ -100,11 +103,14 @@ verb states.
    another package carries it, move it. Send the package that takes it its `codes` and
    `manualSections` with that trade and its sections added, then send the package it leaves its
    lists without them, in that order so the trade is never on no package, rewriting `notes` on each
-   the same way. A sealant or firestopping section stays on the `manualSections` of each package
-   whose work it still seals or passes through, whichever package its trade moves to.
+   the same way. A firestopping section stays on the `manualSections` of each package whose work
+   still passes through it, whichever package its trade moves to.
 
    A fold never puts two kinds of firm on one package: a supplier's package and the package that
-   installs its items stay two, the item's section on both. Where a row shows an item a supplier
+   installs its items stay two, the item's section on both. The exception is an item the installing
+   firm buys itself, as orientation's step 8 names them: a wood truss package folds into the
+   framer's package, and a reinforcing or post-tensioning package into the concrete package, its
+   trade on that package's `codes`. Where a row shows an item a supplier
    furnishes and no package's `notes` name who installs it, name the package you judge does in the
    supplier package's `notes` and the item in the installing package's `notes`, and add the section
    to the installing package's `manualSections`. Who bids the work never comes from where the
@@ -117,41 +123,47 @@ verb states.
    orientation reads it. A section with none, read from the table of contents alone, moves by its
    title, and its package's `notes` say the manual's text for it was not read in.
 
-   Where the project's `structuralSystem` entry states wood-framed floors over a concrete or steel
-   podium, read the default carries in orientation's step 8,
+   On every job, read the default carries in orientation's step 8,
    `<plugin root>/agents/orientation.md`. Each default applies to every package
    orientation did not draw, a package the record made as a row landed included: that package
-   goes where its line puts it, and its `notes` name that default. A default never moves work the
-   estimator has placed, by his own word, back to where the default puts it.
+   goes where its line puts it, and its `notes` name that default. A default that depends on the
+   job applies only where the set shows what its line names, read off the project's
+   `structuralSystem` entry and the rows. A default never moves work the estimator has placed, by
+   his own word, back to where the default puts it.
 
    Walk-off mats, an acoustic underlayment laid under the finish floor, and floor prep (leveling
    and patching under the finish) go with the flooring sub, whichever package they sit on; a poured
    gypsum topping and the sound mat laid under it go with the sub who pours it; finish hardware and
-   door operators with doors, frames and hardware; reinforcing with cast-in-place concrete; steel
-   deck with structural steel. Joint sealants and penetration firestopping go with the work they
-   seal or pass through, and neither folds into another firm's package because the catalog files
-   them together. Add the sealant or firestopping section to the `manualSections` of every package
-   whose work it seals or passes through. A sealant or firestopping trade that carries rows keeps a
-   package of its own, whose `notes` say each trade carries the sealant at its own joints, or the
-   firestopping at its own penetrations, and name those packages. For each of its rows whose name,
-   description or citation says whose work it seals or passes through, write one
-   `packageRole:<that trade>` record,
+   door operators with doors, frames and hardware; reinforcing and post-tensioning with
+   cast-in-place concrete; wood trusses with the framer; steel deck with structural steel. Joint
+   sealants go with the waterproofer: a sealant package folds into the waterproofing package, its
+   trade and its sections added there. Penetration firestopping goes with each trade at its own
+   penetrations: a firestopping package folds into the waterproofing package, its trade added to
+   that package's `codes` so its rows land on a package, and its section added to the
+   `manualSections` of every package whose work passes through it, and the waterproofing package's
+   `notes` say each trade carries the firestopping at its own penetrations and name those
+   packages. A firestopping package stays a package of its own only where the manual asks for a
+   single firestopping source, or the estimator asks for one; its `notes` then say so. Where the
+   project has no waterproofing package, a sealant or firestopping package stays as it is, and its
+   `notes` say which firm carries it. Either way, for
+   each firestopping row whose name, description or citation says whose work it passes through,
+   write one `packageRole:<that trade>` record,
    `{ role: "candidate", note: "confirm trade responsibility: could be <home> or <this trade>" }`,
    for each such trade, since a row can name several, all in one `record_batch` whose returned
    `count` must equal the entries sent, so that package's review reads the row. On a pass over an
    addendum, each trade that gains a candidate here is added to the trades that pass reviews:
    append one line `fold touched <catalog id>` for each such trade to
    `<run folder>/trades/fold.txt`, which the window 3 plan reads with the passes' own trades files.
-   The estimator can keep that package for the building envelope joints or for a firestop
-   specialist, or have its rows moved to those trades, and that move is the estimator's own write,
-   made on his word. A package whose
+   The estimator can have the firestopping rows moved to those trades, and that move is the
+   estimator's own write, made on his word. A package whose
    trade is a heading no sub bids here, such as `09 00 00` Finishes, is split into the packages
    its subs bid, and each of its rows goes to the catalog trade that names its work, re-homed as
    the re-home above. Where no package carries a trade one of those subs bids, make its package
    first with `solicitation_create_package`: that trade as its `tradeCode`, its name the way an
    estimator names the work, the split package's `manualSections` that trade's work takes, and
    `notes` saying what it carries. A broad code that one sub bids on this job, such as `22 00 00` Plumbing
-   or `10 00 00` Specialties, stays whole: a broad code covers every trade under it. Work the
+   or `10 00 00` Specialties, stays whole while no other package holds a trade under it: a broad
+   code covers every trade under it. Work the
    owner contracts for directly is no sub's bid. Where the manual says the owner hires the agency
    (special inspections, testing), in Division 01 or in a technical section's quality control
    article, or a sheet's general notes say it, or the owner furnishes and installs the item,

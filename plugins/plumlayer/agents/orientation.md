@@ -372,8 +372,17 @@ amendments, stays in `scope-run`.
    the package you judge does, and that package takes the section on its `manualSections` and names
    the item in its own `notes`, as for a documented pair. Toilet accessories a specialties supplier
    furnishes and the finish carpenter installs, for example, are two packages, each naming the
-   other. Where the supplier and the installer resolve to the same catalog trade, keep one package,
-   and its `notes` name the furnish and install split, for the bid form.
+   other. Keep the two packages for windows, cabinets, appliances, specialties and doors. The
+   exception is an item the installing firm buys itself: the framer buys the wood trusses, and the
+   concrete sub buys the reinforcing and the post-tensioning tendons, so each sits on the
+   installing firm's package alone, its supply trade on that package's `codes`, with no supply
+   package. Where the supplier and the installer resolve to the same catalog trade, keep one
+   package, and its `notes` name the furnish and install split, for the bid form.
+
+   A package's `notes` never name a firm that has no package. Where your draft says another firm
+   installs or carries an item, that firm's package is on the project, made in this step, or the
+   item goes on a package that is: automatic door operators go with doors, frames and hardware, or
+   with the glazing package where they open storefront entrances.
 
    Every section step 3 read outside Divisions 00 and 01 ends on at least one package, the package
    whose bidder buys it. Place a section by its title in the table of contents where the title
@@ -403,20 +412,30 @@ amendments, stays in `scope-run`.
    trade on that package's `codes`, never a package of its own. Walk-off mats, an acoustic
    underlayment laid under the finish floor, and floor prep go on the flooring package; a poured
    gypsum topping and the sound mat under it on the package of the sub who pours it; finish
-   hardware and door operators on doors, frames and hardware; reinforcing on cast-in-place
-   concrete; steel deck on structural steel. Joint sealants and penetration firestopping go with
-   the work they seal or pass through: the sealant section on the `manualSections` of every
-   package whose joints it seals, the firestopping section on every package whose pipe, duct or
-   conduit passes through a rated wall or floor, and neither on a package of its own unless the
-   estimator asks for one, for the building envelope joints or for a firestop specialist. Where
+   hardware and door operators on doors, frames and hardware; reinforcing and post-tensioning on
+   cast-in-place concrete; steel deck on structural steel. Joint sealants go with the waterproofer:
+   the sealant section on the waterproofing package's `manualSections` and its trade on that
+   package's `codes`. Penetration firestopping goes with each trade at its own penetrations: the
+   firestopping section on the `manualSections` of every package whose pipe, duct or conduit
+   passes through a rated wall or floor, and the firestopping trade on the waterproofing package's
+   `codes`, so a firestopping row lands on a package. Firestopping is a package of its own only
+   where the manual asks for a single firestopping source, or the estimator asks for one. Where
    the catalog has no trade for an item, ask the same question, which kind of firm bids it, and
    put it on that firm's package, never on the package of its nearest neighbor in the division.
    That package is on a catalog trade like every package, its `notes` name the item, and your
    summary names the section on its `sections with no catalog trade:` line with the package it
    went on, never on `on no package:`. A
-   package's `tradeCode` is never a heading no sub bids here, such as `09 00 00` Finishes; a broad
-   code one sub bids on this job, such as `22 00 00` Plumbing, is a package's trade like any
-   other. Work the owner contracts for directly gets no package: where the manual says the owner
+   package's `tradeCode` and its `codes` never hold a heading no sub bids here, such as
+   `09 00 00` Finishes, and never a broad code that takes in trades another package on the project
+   holds. A code ending in
+   `00` takes in every catalog trade under it, so `03 00 00` on the concrete package would take in
+   the precast or gypsum underlayment package's trades, and `12 30 00` on the casework package the
+   countertops package's, and each of those rows would be read by two packages. Use the specific
+   trade for the package's work, the catalog's cast-in-place concrete trade or its residential
+   casework trade, with the other trades its firm carries on `codes`. A broad code one sub bids on
+   this job, such as `22 00 00` Plumbing, is a package's trade like any other while no other
+   package on the project holds a trade under it. Work the owner contracts for directly gets no
+   package: where the manual says the owner
    hires the agency (special inspections, testing), in Division 01 or in a technical section's
    quality control article, or the owner furnishes and installs the item, draft no package for it.
    Its section still ends on a package, as does a section no firm bids, such as a subsurface
@@ -424,33 +443,98 @@ amendments, stays in `scope-run`.
    reads it to price its own work, the earthwork and foundation packages for a geotechnical
    report, and that package's `notes` say the section is there for reference.
 
-   On a wood-over-podium job, start the split from what the common subs normally carry on one.
-   That is a job where the set states wood-framed floors over a concrete or steel podium, on the
-   cover or code sheet's construction type (Type III or V over Type I) or on the structural
-   sheets, as your `structuralSystem` entry from step 6 records it. On any other job, or where the
-   set does not state both, use none of these lines. Each is a default the estimator can change in
-   chat, and the set or the manual overrides any of them: where the manual has the window supplier
-   install its windows, the windows package installs them. Where a package follows a line, its
-   `notes` name it as the default for this kind of job, as in this note:
+   Start the split from what the common subs carry, the defaults below, on any job. Each is a
+   default the estimator can change in chat, and the set or the manual overrides any of them:
+   where the manual has the window supplier install its windows, the windows package installs
+   them, and where the manual asks for a single firestopping source, firestopping is its own
+   package. A default for work the job does not have makes no package. Where a package follows a
+   default, its `notes` name it as the default, as in this note:
 <!-- user-facing -->
-   "Wood framing, sheathing and trusses, with the air barrier and the window installation at the
-   wood levels, the default for a wood-over-podium job."
+   "Wood framing, sheathing and wood trusses, supply included, with the window installation and
+   the air barrier at the wood walls, the default for a wood-framed job."
 <!-- /user-facing -->
 
-   - The wood framer carries the air barrier or WRB and the window installation, both at the
-     wood levels.
-   - The electrician carries fire alarm, tel/data, the intercom and the radio amplifier. CCTV and
-     access control can stand apart.
-   - On an urban site where the building covers most of the lot, one site contractor carries
-     earthwork, utilities, paving and curb, and the landscape is its own package. The site
-     package's `notes` name the breakouts to ask for on the bid form.
-   - The drywaller does not carry the acoustical ceilings or the sprayed acoustic finish.
-   - Spray fireproofing is its own sub on a steel podium.
-   - Cabinets are bought supply only, countertops furnished and installed, and the finish
-     carpenter installs the cabinets, the doors, the hardware and the accessories.
+   These hold on nearly every job where the work is there:
+
+   - The concrete sub carries the reinforcing and the post-tensioning, a rebar supplier's price
+     inside the concrete package, so there is no reinforcing or post-tensioning package. Concrete
+     sidewalks go with concrete.
+   - The earthwork sub carries excavation, dewatering, soil export with the impacted soils and any
+     tank removal, the site water, sewer and storm utilities, asphalt paving, street curbs and
+     pavement markings.
+   - Landscaping, planting and irrigation are one exterior improvements package, and fencing and
+     gates go on it.
+   - Metal wall panels, fiber cement and the other cladding are one siding package.
+   - The roofer carries the sheet metal flashing, copings, gutters, downspouts and roof hatches.
+   - The mason carries the architectural precast and the cast stone.
+   - The waterproofer carries dampproofing, waterproofing and the joint sealants. Each trade carries
+     the firestopping at its own penetrations, with the firestopping trade on the waterproofing
+     package's `codes`, as above.
+   - Spray fireproofing, intumescent paint included, is its own package.
+   - Door hardware is bought with the doors and frames. The finish carpenter installs the doors,
+     the hardware and the frames other than the welded hollow metal frames, with the cabinets and
+     the toilet accessories.
+   - Storefront, entrances and glazing are one package, with the glass film, the common-area
+     mirrors and the louvers.
+   - On a wood-framed job, the window supplier furnishes the windows and the framer installs them.
+   - The framer carries the wood trusses, supply included.
+   - The drywaller carries the non-bearing metal studs and installs the welded hollow metal frames.
+   - Carpet goes on the flooring package with the resilient flooring, and wall coverings on the
+     painting package.
+   - The electrician carries fire alarm, access control, video surveillance, the intercom,
+     tel/data, the radio amplifier and the lighting fixtures.
+   - Residential appliances are their own package. Food service equipment is its own package only
+     where the job has a commercial kitchen.
+   - Countertops are a package of their own, apart from casework. Finish carpentry and millwork are
+     two packages, or one where the job has little millwork or the owner furnishes the casework.
+   - Gypsum underlayment, smoke containment curtains, overhead doors, window treatments, signage,
+     elevators, trash chutes and roof anchors are each a package of their own. Fireplaces, flood
+     barriers, operable partitions and package systems are each a package of their own apart from
+     specialties, and shower doors stay in specialties.
+   - General conditions are a markup line on the estimate, never a package. Division 01 work sits
+     on the general requirements package below.
+
+   These depend on the job, each by what the set shows:
+
+   - Structural steel is its own package where the structural sheets show a steel podium or a
+     steel frame, or steel framing whole floors or roofs. On a wood job over a concrete podium, or
+     a renovation, the steel goes on the metal fabrications package.
+   - Excavation support and underpinning are their own package where the drawings show a basement
+     below the water table, a support of excavation system or adjacent buildings to underpin. A
+     manual section alone does not make the package; otherwise they go with earthwork.
+   - Abatement is its own package where the job demolishes or renovates an existing building and
+     the hazardous materials survey lists a large inventory. Otherwise it goes with demolition.
+   - The air barrier goes with the framer on wood-framed walls, and with the waterproofer at the
+     podium and on walls that are not wood.
+
+   Every trade a default puts on a package goes on that package's `codes`, resolved through
+   `directory_list_trades` as sub-step 4 resolves every trade: fire alarm, access control, video
+   surveillance, tel/data and the lighting trades on the electrical package; the joint sealant and
+   firestopping trades on the waterproofing package; the reinforcing installation, reinforcing
+   material and post-tensioning trades on the concrete package; the wood truss trade on the
+   framing package; and so on down the list. A reader files an item on the trade that names its
+   work, and an item on a trade no package lists makes a package of its own as it lands, so a
+   default written only in `notes` still leaves each of its trade's items making that package.
+
+   Every split carries one general requirements package: `tradeCode` `01 11 13`, the catalog's
+   General Contractor trade, which the scope run and its readers name as the general requirements
+   package's trade, since the catalog carries no general requirements code; its name
+   `General Requirements`; on its `codes`, the catalog's temporary facilities and controls trade,
+   `01 50 00`, checked with `directory_list_trades(code: "01 50 00")` and found by
+   `directory_list_trades(query: "temporary facilities")` only where that code is not listed, which
+   takes in the finer temporary trades under it; no `manualSections`, since the scope run
+   places the Division 01 sections; and `notes` saying it holds the job's own temporary work and
+   the Division 01 items a vendor prices, such as a hoist, a tower crane or final cleaning, so a
+   reader's temporary item lands there. Where the catalog does not carry `01 11 13`, name the
+   package on your summary as no catalog trade, not created; where it carries no temporary
+   facilities and controls trade, create the package with no `codes`.
 4. **Resolve every package to the trade catalog** via `directory_list_trades`: exact `code` lookup
    first, then a `query` by trade name or alias. Record the catalog trade id verbatim; never guess
-   an id from memory (store-resolution). A package with no reasonable catalog match cannot be
+   an id from memory (store-resolution). The one code you take without a lookup is a division code
+   for a firm that bids its whole division on this job, `22 00 00` Plumbing, `23 00 00` HVAC,
+   `26 00 00` Electrical or `31 00 00` Earthwork: the trade list leaves division codes out, and
+   package create accepts them. Take it only where no package on the project holds a trade under
+   it and no finer trade on the list names that firm's whole work. A package with no reasonable catalog match cannot be
    created (the verb requires a catalog code): name it in your summary as "no catalog trade, not
    created," never force a wrong code.
 
@@ -469,7 +553,8 @@ amendments, stays in `scope-run`.
    ids from the same `directory_list_trades` resolution as step 4, never repeating `tradeCode`);
    `manualSections` lists every manual section the package buys; `notes` carries a one-line
    rationale in plain prose, no fixed shape. A package already on the project (sub-step 1) gets
-   the sections your draft gives it the way sub-step 6 adds a section to a package.
+   the sections and the `codes` your draft gives it the way sub-step 6 adds a section to a
+   package, its current lists sent back whole with the additions.
 6. **Place every section, then count.** Re-list packages with `solicitation_list_packages` and
    confirm every created one landed. The same answer carries `manualSectionPlacement`:
    `sectionsOutsideFrontEnd`, how many sections outside Divisions 00 and 01 are on the record,

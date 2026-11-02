@@ -300,15 +300,23 @@ of them is ever trimmed.
 4. CAPTURE EVERYTHING, AND NAME THE TRADE AS YOU WRITE: capture everything you see, whatever trade
    it belongs to, at the grain of mandate 6. A distinction that does not earn a row is on the
    sheet the row cites, not written into the row. Every row you write carries its trade, right
-   then: `belongsToTrade` is the catalog trade that names the work itself, the finest the catalog
-   carries. Where the manual specifies the work in a numbered section, use the catalog trade for
-   that section, `directory_list_trades(code: <the section number>)` with the number spaced the way
-   the catalog spaces it; where the catalog does not carry that number, take the trade the
-   section's title names, found as the next sentence says. Otherwise use the trade whose catalog
-   name, not an alias, says what the item is, found with
+   then: `belongsToTrade` is the catalog trade that names the work as the firm that installs it,
+   the finest such trade the catalog carries. Where the manual specifies the work in a numbered
+   section, use the catalog trade for that section, `directory_list_trades(code: <the section
+   number>)` with the number spaced the way the catalog spaces it; where the catalog does not carry
+   that number, take the trade the section's title names, found as the next sentence says.
+   Otherwise use the trade whose catalog name, not an alias, says what the item is, found with
    `directory_list_trades(query: <the item's own noun>)`: a fire extinguisher cabinet drawn on a
    partition plan goes to the catalog's fire protection specialties trade, never to the partitions
-   trade the sheet is titled for. Never the trade a sheet's title names, never a trade because its
+   trade the sheet is titled for. However you found it, a catalog trade whose name names only a
+   supplier, a material supply or a rep (a ready-mix supplier, a reinforcing steel material, a
+   lighting rep) holds only an item the set or the manual has bought furnish-only; a trade whose
+   name names the work as well as its supplier names the work only where no trade on the list
+   names that work alone. Every other item goes to the trade of the firm that installs it, and
+   where the catalog's only trade for the item names its supplier or rep, to the `tradeCode` of the
+   package whose firm installs it, as `solicitation_list_packages` gives it, or, where no package
+   holds that firm's work yet, to the catalog trade that names the installing firm's work: a row of downlights the electrician installs goes on the electrical package's trade,
+   never on a lighting rep trade. Never the trade a sheet's title names, never a trade because its
    package happens to exist, never `01 11 13` because no package fits. The one exception is work a
    package's `notes` say that package installs or carries, an item another package's supplier
    furnishes, a share of a section placed on several packages, or a general cost the general

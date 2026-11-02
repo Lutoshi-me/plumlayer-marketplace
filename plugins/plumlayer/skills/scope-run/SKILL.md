@@ -232,11 +232,17 @@ A newly created scope item is a full row, not a name. Every new item writes:
   heading. Every row under one heading sits on the same trade. Take a heading from the page's
   context read only where its rows are the same kind of work as yours. The review surface groups
   by this: an uncategorized list renders as a wall.
-- **trade** (required), recorded as `belongsToTrade`: the catalog trade that names the work
-  itself, the finest the catalog carries. Where the manual specifies the work in a numbered
-  section, use the catalog trade for that section. Otherwise use the trade whose catalog name, not
-  an alias, says what the item is, found with `directory_list_trades(query: <the item's own
-  noun>)`. Never the trade a sheet's title names, never a trade because its package happens to
+- **trade** (required), recorded as `belongsToTrade`: the catalog trade that names the work as
+  the firm that installs it, the finest such trade the catalog carries. Where the manual specifies
+  the work in a numbered section, use the catalog trade for that section. Otherwise use the trade
+  whose catalog name, not an alias, says what the item is, found with
+  `directory_list_trades(query: <the item's own noun>)`. A trade whose name names only a supplier,
+  a material supply or a rep holds only an item bought furnish-only, and a trade whose name names
+  the work as well as its supplier names the work only where no trade names that work alone.
+  Where the catalog's only trade for an item that is not bought furnish-only names its supplier or
+  rep, the item takes the `tradeCode` of the package whose firm installs it, or the catalog trade
+  that names that firm's work where no package holds it yet.
+  Never the trade a sheet's title names, never a trade because its package happens to
   exist, except work a package's `notes` say it installs or carries, which takes the package's
   `tradeCode`, never `01 11 13` because no package fits. Which sub bids the work is the package's
   business, settled when the run folds packages before the reviews (stage 6 step 5). It is the
@@ -1209,7 +1215,7 @@ On the go-ahead:
    Divisions 00 and 01, and what they require still costs money. Read them with one paged
    `search(projectId, subjectPrefix: "specSection:01", predicate: "hasTitle")`. Where the project
    has no Division 01 section, skip this. Otherwise `solicitation_create_package` one package
-   named `General requirements` whose `tradeCode` is `01 11 13`, the catalog's General Contractor
+   named `General Requirements` whose `tradeCode` is `01 11 13`, the catalog's General Contractor
    trade, since the catalog carries no general requirements code and this is the estimator's own
    work; whose `manualSections` are every Division 01 section on no package on a fresh
    `solicitation_list_packages`, except forms, so no section sits on two packages, and none where
