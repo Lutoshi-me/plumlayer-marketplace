@@ -104,9 +104,9 @@ that relaxes any one of them reproduces a measured, named failure.
    index wrote is the index's own, recorded as a text match; a reader cites what the index did
    not already cite and never re-cites a page the item already carries.
    A manual-grounded record cites its spec section the way a drawing-grounded one cites its
-   sheet, with the section number, the file and the page read: in `source` on a new row and as
-   `kind: "spec-section"` on a row that already exists, in the two shapes the reader's mandate 2
-   gives. The section is what the estimator reads; the page is where the app opens
+   sheet, with the section number, the file and the page read: in `source` on a new row's
+   entries, and as a `kind: "spec-section"` citation on any row, a new row in the batch that
+   creates it, in the two shapes the reader's mandate 2 gives. The section is what the estimator reads; the page is where the app opens
    it. Never a bare document page for a manual whose section is known.
 2. **Create / update / question against the live list.** Every reader holds the current scope list
    for its trade or content families as match-or-create context: for each thing seen, create a new

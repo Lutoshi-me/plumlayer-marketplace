@@ -156,8 +156,8 @@ of them is ever trimmed.
    same-work test. A Question on every trade is cited only on the rows its answer would change,
    and one whose answer would change no row you saw stands alone. Each citation is one `citations`
    item, `{ subject, kind: "question", questionId }`, with the id `ask_question` or
-   `reply_question` returned; a citation lands only on a row that already exists, so a row this
-   page creates takes its Question in one more `record_batch` after the batch that creates it. Name
+   `reply_question` returned. A row this page creates takes its Question citation in the same
+   `record_batch` that creates it, so raise or reply before you send that batch. Name
    the Question by its title in that row's `notesInternal` where it fits under mandate 5's
    keep-whole rule; where it does not fit, the citation alone carries it, and the citation is never
    skipped. A row whose only write in your unit is a Question citation goes on your
@@ -253,28 +253,31 @@ of them is ever trimmed.
    page only where none of its `drawingRefs` names this `fileId` and this `page`. Either way, a row
    is updated only where a write of yours landed on it: a citation the door answers `duplicate`
    wrote nothing, so it puts the row on neither your `updated:` nor your `updated subjects:` line.
-   A citation of a row that already exists rides the batch.
+   A citation rides the batch, on a row that already exists or on one the same batch creates. A
+   row you create carries its source twice in that one batch: as the `evidence` on each of its
+   entries, and as one item of `citations` naming its new subject, in the citation shapes below.
+   The citation keeps the source on the row after someone edits one of its fields.
    A row read off a schedule or a legend, created or cited, cites a `sheet-region`: a box from the
    lowest `x0` and `y0` to the highest `x1` and `y1` of the line boxes `get_page_text` gave you for
    the schedule row or legend line it was read from, sent as they are with
-   `frame: "page-points"` and never converted. On a new row the evidence is `{ sheet, pageInPdf,
-   fileId, locator: { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }`; a citation
-   of a row that already exists is `{ subject, kind: "sheet-region", sheet, pageInPdf, fileId,
-   bboxPts, frame: "page-points" }`. Two rows share one box only where they name the same line. A
+   `frame: "page-points"` and never converted. On a new row's entries the evidence is `{ sheet,
+   pageInPdf, fileId, locator: { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }`;
+   the citation, on a new row or one that already exists, is `{ subject, kind: "sheet-region",
+   sheet, pageInPdf, fileId, bboxPts, frame: "page-points" }`. Two rows share one box only where they name the same line. A
    box is never measured off a render: no pixel, tile, `clipPt` or `pxPerPt` is turned into points
    for a citation, and no box is drawn where you judge the row sits on the picture. Where no line
    of the page's read carries the row you read (the read came back bounded or `workerCapped`, or
-   it missed that line), cite the sheet with no box, `{ sheet, pageInPdf, fileId }` on a new row
-   and `{ subject, kind: "sheet", sheet, pageInPdf, fileId }` on a row that already exists, and
+   it missed that line), cite the sheet with no box, `{ sheet, pageInPdf, fileId }` as a new row's
+   evidence and `{ subject, kind: "sheet", sheet, pageInPdf, fileId }` as the citation, and
    name it on your `anomalies:` line as
    `<sheet> p<page> no box: <the rows>, <why no line carries them>, run only`. The same holds for
    every box this file asks for, a Question's included.
    A manual-grounded record names its spec section the way a drawing-grounded one names its sheet,
-   with the file and the page you read it on. On a new row the section rides in `source`, never in
-   a field of its own, which the door refuses:
+   with the file and the page you read it on. In a new row's evidence the section rides in
+   `source`, never in a field of its own, which the door refuses:
    `{ source: "specSection:<packed number> — <the section's title>", fileId, locator: { pageInPdf } }`;
-   a citation of a row that already exists is `{ subject, kind: "spec-section", specSection,
-   fileId, pageInPdf }`, the section number as the manual prints it. Never cite a manual page as a
+   the citation, on a new row or one that already exists, is `{ subject, kind: "spec-section",
+   specSection, fileId, pageInPdf }`, the section number as the manual prints it. Never cite a manual page as a
    bare document page when you know its section. Where the manual says the specifications are on
    the drawings, a row whose product, method or extent rests on a specification sheet of the
    drawings cites that sheet and page as well.
@@ -401,10 +404,10 @@ of them is ever trimmed.
 7. RECORD directly and VERIFY: `record_batch` (at most 500 entries and citations together per
    call, atomic; subjects `scopeItem:<unit-id>-<seq>` for new items, the item's existing subject
    for updates). An entry carries `subject`, `predicate`, `value`, `sourceInstrument` and
-   `evidence` in mandate 2's shape, plus `supersedesId` where you are replacing a value. A citation
-   of a row that already exists is one item of `citations`, `{ subject, kind: "sheet", sheet,
-   pageInPdf, fileId }`, or for a row read off a schedule or a legend the `sheet-region` shape
-   mandate 2 gives. Leave `versionScope` off: a sheet read names no issue label. After every
+   `evidence` in mandate 2's shape, plus `supersedesId` where you are replacing a value. A
+   citation, of a row that already exists or of a row the same call creates, is one item of
+   `citations`, `{ subject, kind: "sheet", sheet, pageInPdf, fileId }`, or for a row read off a
+   schedule or a legend the `sheet-region` shape mandate 2 gives. Leave `versionScope` off: a sheet read names no issue label. After every
    batch, read the record back and confirm the count that landed equals the count sent, entries
    and citations alike; a citation answered `duplicate` wrote nothing and is in neither count.
    Recheck any conflicting ids individually. Readers run alongside you and write the rows you
@@ -482,13 +485,13 @@ so in your report, and the lead closes it only if the user settles the answer in
 
 The call shape of one page, end to end: one `read_sheet_context`, one `get_page_text` in lines
 walked on `nextOffset` to its end, a render only where text cannot give what you are after, one
-`record_batch` carrying its citations of rows that already exist, with mandate 7's count check,
+`record_batch` carrying its new rows and every citation, of the rows it creates and of rows that
+already exist, with mandate 7's count check,
 a resend of that batch each time the door answers one of the two refusals mandate 7 names,
 and one report. A page whose `pageRead`
 came back null costs a second context read. Anything past that shape is a named fallback: a list
 the answer said it cut, mandate 3's corpus search, mandate 1's searches before a create and checks
-before a new Question, mandate 7's read of a row the door says changed, or the `record_batch` that
-cites a Question on a row this page created.
+before a new Question, or mandate 7's read of a row the door says changed.
 
 Five reads repeat what the context answer already gave you, so do not make them: a trade-filtered
 `list_scope_items` (one package's whole slice is the review's read; a sheet carries whatever trades
@@ -647,7 +650,9 @@ none here. A pass on an addendum reviews these packages afterward, so an addendu
 changes rows that already exist still has their packages reviewed.
 
 `created:` is how many scope items you created, not the entries under them. `updated:` counts
-every pre-existing item you wrote anything onto: a note, a value, or a citation alike. `sent:` and
+every pre-existing item you wrote anything onto: a note, a value, or a citation alike. A row you
+created counts on `created:` alone, with its own citations, and goes on neither `updated:` nor
+`updated subjects:`. `sent:` and
 `landed:` count every write you made for this unit, across every call, citations among them.
 
 The `updated subjects:`, `questions raised ids:` and `questions replied ids:` lines are how your

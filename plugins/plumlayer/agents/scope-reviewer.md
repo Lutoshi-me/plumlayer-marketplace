@@ -213,8 +213,8 @@ them is ever trimmed.
    three items of one kind) goes into the first Question you raise on it, or a reply on the open
    one, carrying all its sources. Every Question you raise or reply to is cited on each live row
    its answer would change, on this package or another, as reader mandate 1 decides which rows are
-   affected: a `citations` item `{ subject, kind: "question", questionId }` once the row exists,
-   or `cite_source(kind: "question", questionId)`, and its title in the row's `notesInternal`
+   affected: a `citations` item `{ subject, kind: "question", questionId }`, sent in the batch
+   that creates the row when your review creates it, or `cite_source(kind: "question", questionId)`, and its title in the row's `notesInternal`
    where mandate 5's keep-whole rule leaves room, the citation never skipped. A row whose only
    write in your review is that citation goes on your `questions linked:` line, never on `updated
    subjects:`. Every Question you raise or reply to sits on at least one row, so the estimator
