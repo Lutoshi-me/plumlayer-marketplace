@@ -515,6 +515,10 @@ amendments, stays in `scope-run`.
    framing package; and so on down the list. A reader files an item on the trade that names its
    work, and an item on a trade no package lists makes a package of its own as it lands, so a
    default written only in `notes` still leaves each of its trade's items making that package.
+   A trade a default splits between two packages goes on the `codes` of one of them only, and the
+   other package's `notes` name its share: on a wood job over a podium, the air barrier trade goes
+   on the waterproofing package and the framing package's `notes` name the wood walls, so a
+   reader files that share on the other package's `tradeCode` and no row is read by both.
 
    Every split carries one general requirements package: `tradeCode` `01 11 13`, the catalog's
    General Contractor trade, which the scope run and its readers name as the general requirements
