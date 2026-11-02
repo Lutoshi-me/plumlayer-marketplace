@@ -162,9 +162,13 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
      option on its `project_type` list whose label plainly names what the sheet says,
      `update_project(projectId, projectTypeId)`. No label plainly names it: leave it empty. Never
      create an option or take a near match.
-   - The owner, the architect and each engineer the sheet names. A second owner or a second
-     architect, beside a different firm of that role already on the contacts (`owners`,
-     `architects`), stays off. For each other firm, find it with
+   - The owner, the owner's representative, the architect and each engineer the sheet names, the
+     owner first. A second owner or a second architect, beside a different firm of that role
+     already on the contacts (`owners`, `architects`), stays off. The owner's representative is
+     typed Consultant, never Owner, since the firm typed Owner is the project's owner; a
+     representative that is the owner's own firm is that one firm, and any other representative
+     the Network already types Owner stays off, whether or not the owner went on. For each other
+     firm, find it with
      `directory_list_companies(sameNameAs: "<the firm's name as printed>")`, which reads past
      capitals, punctuation, spacing and company endings:
      - One company in `companies` is the firm, unless the sheet prints a state other than the
@@ -175,7 +179,8 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
      - None in either: the firm is not in the Network.
 
      Its role is its type in the Network, the one on `directory_list_company_types` whose label
-     plainly names the role (Owner, Architect, Engineer). A firm not in the Network is added with
+     plainly names the role (Owner, Consultant for the owner's representative, Architect,
+     Engineer). A firm not in the Network is added with
      `directory_add_company(name, vendorKind: [<that type>], phone, website, address1, address2,
      city, state, zip)`, each detail only as the sheet prints it. Where that verb refuses, the
      refusal names the firms of that name: read them as the lookup's answer above. Never send

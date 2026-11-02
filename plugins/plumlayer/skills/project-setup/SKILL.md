@@ -136,7 +136,7 @@ it fills an empty address, project type and the firms on the contacts from the c
 title blocks, and the upload produces the set inventory. Note in one line that you'll read it,
 then move on:
 - Project **type** (cover sheet + index).
-- **Parties** beyond any the user volunteers, owner, architect, structural EOR, MEP / civil engineers
+- **Parties** beyond any the user volunteers, owner, owner's representative, architect, structural EOR, MEP / civil engineers
   (title blocks + cover stamps). If an engineer is stamped nowhere, that's an upload-time finding / RFI,
   not an interview question.
 - **Location** (cover sheet).
@@ -327,9 +327,12 @@ early state.
   when a time was given, and always with its `timeZone`; a time whose zone nobody stated and the
   address does not settle is left off and named in the closing report. A date given only for
   subcontractors' bids is not this one: leave it for `prepare-invitations`, which asks for it.
-- **The owner, the architect, the engineers.** Each goes on the project's contacts as a firm from
-  the Network. What a firm is on the job is its type in the Network, so the owner is
-  the firm typed Owner. For each firm named:
+- **The owner, the owner's representative, the architect, the engineers.** Each goes on the
+  project's contacts as a firm from the Network, the owner first. What a firm is on the job is its
+  type in the Network, so the owner is the firm typed Owner, and the owner's representative is
+  typed Consultant, never Owner. A representative that is the owner's own firm is that one firm,
+  and any other representative the Network already types Owner stays off, whether or not the
+  owner went on, named in the closing report. For each firm named:
   1. Find it: `directory_list_companies(sameNameAs: "<the firm's name as given>")`, which reads
      past capitals, punctuation, spacing and company endings. One company in `companies` is that
      firm, unless what you were given names a state other than the one that company holds; a blank
@@ -338,8 +341,9 @@ early state.
      `nearMatches`: leave the firm off and name it in the closing report; never pick one. None in
      either: the firm is not in the Network.
   2. Its type and details: `directory_list_company_types` lists the account's types. Take the one
-     whose label plainly names the role (Owner for the owner, Architect for the architect,
-     Engineer for a structural, MEP or civil engineer), as the list spells it. A firm not in the
+     whose label plainly names the role (Owner for the owner, Consultant for the owner's
+     representative, Architect for the architect, Engineer for a structural, MEP or civil
+     engineer), as the list spells it. A firm not in the
      Network is added with `directory_add_company(name, vendorKind: [<that type>], phone, website,
      address1, address2, city, state, zip)`, each detail only as the user gave it or a document
      prints it. Where that verb refuses, the refusal names the firms of that name: read them as
