@@ -351,7 +351,8 @@ them is ever trimmed.
     - A count a note prints. Where a row's count comes off a note and the plan draws the item,
       find the plan with `search_set_text` for its tag, then count the distinct drawn instances on
       it by looking: `get_page_text` in lines for the tags it prints, and `render_page` with
-      `tiles` where the symbol carries no text, an instance a tile seam cuts counted once. Leave
+      `tiles: {maxPx: 2000, dpi: 120}` where the symbol carries no text, an instance a tile seam
+      cuts counted once. Leave
       out the tag where it stands in a legend, a note, a schedule or a repeated view of the same
       area, such as an enlarged plan. `hitsOnPage` counts text matches, never drawn items, so it is
       never the count. A tag of two characters is searched exactly with `wholeWord: true`, as

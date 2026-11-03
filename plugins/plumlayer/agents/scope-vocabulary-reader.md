@@ -610,10 +610,12 @@ render only what text cannot give.
   sheet, call `render_page` with `tiles: {maxPx: 2000, dpi: 120}`: one call returns a small
   orientation overview plus tiles covering the whole page with no gap, each carrying its own
   `clipPt` and `pxPerPt` so you can find a text line's box on the tile, never the other way
-  (mandate 2). On an E-size sheet that is about 9 tiles, roughly what 8 hand-picked crops cost, in
-  one turn. When a dense region resists reading at 120, call again at `dpi: 150` before falling
-  back to region crops. A tiled call counts as one render on your `pages read:` line, named
-  `tiled@120` or `tiled@150`.
+  (mandate 2). On an E-size sheet that is 6 tiles in one turn. Tile at 120 and no lower: at 100
+  and under a reader misses linework and tags that 120 reads, and at 60 misreads counts. Never
+  tile above 150: on an E-size sheet the larger grid comes back with its bottom tiles missing, or
+  not at all. When a dense region resists reading at 120, take a region crop of it at `dpi: 200`
+  rather than tiling the sheet again. A tiled call counts as one render on your `pages read:`
+  line, named `tiled@` and its DPI, as `tiled@120`.
 Then emit against the live list.
 
 ## Reading a file's repeated lines
