@@ -12,6 +12,8 @@ The branch substitutes the local-only stages and reuses everything else unchange
   doesn't decide, write a small pages file naming the file's first page or two with the reason
   `file` and dispatch a pages unit over it: on this branch even the file-selection sampling is
   cloud-side, since there are no local bytes, and the unit's `files:` line says what each page is.
+  A file whose `kind` reads `unsorted` is still being sorted: run step 4's "Wait for the sort" for
+  it before step 5, with the same 10 minute exit.
 <!-- user-facing -->
 Emit the same packaging
   report: which files you will recognize, which you're excluding and why.

@@ -307,10 +307,10 @@ Every file you upload in step 4 attaches to this one `deliveryId`.
    ```bash
    curl -X PUT "$SIGNED_URL" -H "Content-Type: application/pdf" --data-binary @"$LOCAL_PDF_PATH"
    ```
-3. `register_file(projectId, fileId, filename, contentType, kind: "drawing", deliveryId)`: always pass
-   `kind: "drawing"` and `deliveryId`. The kind files it as a drawing at once, so section 5 can read its
-   sheets; without it the server sorts the file first. The delivery makes chronology come from the
-   delivery, not upload order. Idempotent: a retried call for the same
+3. `register_file(projectId, fileId, filename, contentType, deliveryId)`: always pass `deliveryId`
+   and leave `kind` out, so the server sorts the file by its page sizes (see "Wait for the sort"
+   below). The delivery makes chronology come from the delivery, not upload order. Idempotent: a
+   retried call for the same
    `fileId` returns the existing row. Rejects `not_found` (PUT didn't land), `empty`, or `oversize`
    (2 GB ceiling per file): if any of these fire, stop and report rather than retrying blindly.
 
@@ -332,13 +332,47 @@ calls of at most 250:
      curl -X PUT "$url" -H "Content-Type: application/pdf" --data-binary @"$LOCAL_DIR/$filename"
    done
    ```
-3. `register_files(projectId, files, kind: "drawing", deliveryId)`: pass every file's `{fileId,
-   filename, contentType?}`, `kind: "drawing"`, and the same `deliveryId` from step 3, so chronology comes from the delivery, not
-   upload order. Answers per file, never all-or-nothing: `{registered, failed, counts}`.
+3. `register_files(projectId, files, deliveryId)`: pass every file's `{fileId, filename,
+   contentType?}` and the same `deliveryId` from step 3, so chronology comes from the delivery, not
+   upload order, and leave `kind` out, so the server sorts each file by its page sizes (see "Wait
+   for the sort" below). Answers per file, never all-or-nothing: `{registered, failed, counts}`.
    `counts.registered` must equal the number of files you sent. Anything in `failed` names its
    `fileId`, `filename`, `reason`, and `message`: re-PUT and re-register only those files, by
    `fileId`, never the whole batch again, and never blindly. A `reason` of `not_found` (the PUT
    didn't land) is worth that retry; any other reason is stopped and reported.
+
+**Wait for the sort.** A file registered with no `kind` reads `unsorted` in `list_files` until the
+server has measured it. A PDF whose pages are mostly large-format sheets becomes `drawing`, and
+because it carries the `deliveryId`, the server starts its sheet read itself; any other file becomes
+`document`. Call `list_files(projectId)` every ~5s until none of the files you just registered reads
+`unsorted`, and never decide a file's kind yourself while it is unsorted. A sort that fails leaves
+the file `unsorted`, and nothing an agent calls starts it again, so the wait has one exit of your
+own: a file still `unsorted` after 10 minutes of polls with no file changing kind. Stop there, carry
+on with the files already sorted, and tell the user:
+
+<!-- user-facing -->
+These files have not been sorted yet: <filenames>. On the Documents page, each one has Retry on its
+row under New Uploads. Once it is filed, I can read its sheets.
+<!-- /user-facing -->
+
+Then:
+
+- Every file now `drawing` goes on to step 5.
+- A file now `document` that step 2 judged a project manual, a spec book or another non-drawing:
+  leave it out of steps 5 to 7 and name it in the packaging report. A manual or spec book goes to
+  step 8 from item 2 on; it is already filed, so do not upload it again. Its spec section read has
+  started, unless the file is not a PDF or could not be opened; `extract_spec_toc` then starts the
+  read or fails with the reason, and step 8 reports that failure.
+- A file now `document` that step 2 judged a drawing (a set printed mostly on letter paper, say):
+  put it to the user. If the user confirms it is drawings, `update_file(projectId, fileId, kind:
+  "drawing")` files it as one, and it goes on to step 5, where `recognize_sheets` with the
+  `deliveryId` reads its sheets. If not, treat it as a document as above.
+
+Name `kind: "drawing"` on the register call only for a file step 2 judged a drawing that is printed
+on letter or legal paper (a sketch with a title block), which the sort would file as a document.
+`register_files` applies one kind to every file in the call, so register such a file in a call of
+its own. Never name it for a whole delivery: a project manual misjudged in step 2 then gets a
+drawing page for every one of its pages.
 
 Either path, no local run folder and no manifest file: the project files list (`list_files`) is the
 record.
@@ -352,7 +386,9 @@ Then, once per file, call `recognize_sheets(projectId, fileId, deliveryId)` to s
 deterministic server-side pass over that PDF. It returns immediately (it does not scan inline) with
 `{jobId, status: "queued"|"succeeded", deliveryId, alreadyActive?}`. `alreadyActive: true` means a job
 for this file+delivery is already in flight or done; poll the returned `jobId` rather than starting a
-second one. Run `recognize_sheets` once per file, never twice for the same file+delivery.
+second one. A drawing the server sorted in step 4 already has its read started, so for it this call
+answers with that job and `alreadyActive: true`.
+Run `recognize_sheets` once per file, never twice for the same file+delivery.
 
 Poll `recognize_sheets_status(projectId, jobId)` every ~3-5s. The loop has exactly two exits, and
 both are the server's: `state` is `succeeded` or `failed`, or `state` is `stale`. Nothing else ends
@@ -560,7 +596,8 @@ disk the whole time.
    folder-of-divisions manual) uses `request_file_uploads`, the same PUT loop, then
    `register_files(projectId, files, kind: "document")`, with the same `counts.registered` check and
    the same per-`fileId` retry on anything in `failed`. A project manual is a project record, not a
-   drawing sheet, so it does not attach to a `deliveryId`. Misfiled earlier as a drawing? Fix it in
+   drawing sheet, so it needs no `deliveryId`; a manual step 4 sorted as a document keeps the one
+   it was registered with, and that is fine. Misfiled earlier as a drawing? Fix it in
    place with `update_file(projectId, fileId, kind: "document")` rather than re-uploading:
    reclassifying away from `drawing` sweeps its stray page rows in the same call.
 2. **Filing starts the read; ask for its job one file at a time.** `register_file`, `register_files`,
