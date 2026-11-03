@@ -37,10 +37,11 @@ never put a real client or project name here.
 
 This skill runs in the conversation, start to finish: every question to the user is put here, and
 every job is waited on here, in the open, with the poll loop in step 5, so each report of a job's
-state is first-hand. The one part that runs one level down is reading pages, which takes neither an
-answer from the user nor a job's state: it goes to the plugin's `sheet-checker` agent, as "Who
-reads the pages" says. Never hand a question, a job, or a decision to an agent, and never improvise
-an agent for any of them.
+state is first-hand. Two parts run one level down, since neither takes an answer from the user nor
+a job's state: reading pages goes to the plugin's `sheet-checker` agent, as "Who reads the pages"
+says, and step 9b's re-read of the open Questions goes to its `question-checker` agent, as that
+step's file says. Never hand a question, a job, or a decision to an agent, and never improvise an
+agent for any of them.
 
 Run, or stop and report; never create a consent step. The user's decisions in this skill are:
 which project this delivery belongs to, its issue label, which files are the drawings when the packaging leaves it
@@ -67,7 +68,7 @@ How to say each thing as it happens:
   job is running, off the poll you just made, with its time)
 - "N sections found" (step 8, on job success)
 - "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
-- "re-reading the N open questions on the changed sheets" (step 9b)
+- "re-reading the N open questions against the new paper" (step 9b)
 - "the set uses N discipline codes outside the standard list; I found the set's own name for K of
   them" (step 6)
 <!-- /user-facing -->
@@ -121,24 +122,28 @@ five modes:
 - `index`, at step 9: reads the drawing index.
 - `left`, after the last pages unit: reads back what is still untyped.
 
+The re-read of the open Questions at step 9b runs one level down the same way, in the plugin's
+`question-checker` agent, as `reread-questions.md` says: page units one at a time, questions units
+up to four at once. No Question's thread reaches this conversation either.
+
 The upload folder is `<runs root>/<projectId>/upload/<deliveryId>/`, or
 `<runs root>/<projectId>/upload/manual/` for a project manual that came on its own, where
 `<runs root>` is `~/.plumlayer/runs` with the home directory written out: inside the project folder
 `scope-run` uses, named for the project id and never for the project's name, so two projects of one
 name never write over each other's upload files. It holds the pages file `pages.txt`,
-written by the set unit, which you count with `wc -l` and never read (Audience: agent), any small
-pages file of your own, and `reports/`, one report per unit, written by the unit before it returns
-(Audience: agent). It is never committed to any repo, never uploaded, and never recorded as
-project entries.
+written by the set unit, which you count with `awk 'END{print NR}'` and never read (Audience:
+agent), any small pages file of your own, and `reports/`, one report per unit, written by the unit
+before it returns (Audience: agent). It is never committed to any repo, never uploaded, and never
+recorded as project entries.
 
 A dispatch is one Agent call. Where the Agent tool takes `run_in_background`, as in a headless
 session, send it `false`, as the template does: the call is then the wait, because a headless
 session stops a background agent after ten idle minutes. Where the call comes back with an agent id
 instead, the agent's report arrives later as its own message: end the turn with one line naming
 what is running, and take the report when it arrives. That is the case in a terminal, the desktop
-app or an editor, and units still go one at a time there: dispatch a unit, end the turn, and when
-its report arrives read it and dispatch the next. The line you end the turn on names the unit.
-Where it also says where one of this skill's jobs stands, such as a manual's contents read that
+app or an editor, and page units still go one at a time there: dispatch a unit, end the turn,
+and when its report arrives read it and dispatch the next. The line you end the turn on names the
+unit. Where it also says where one of this skill's jobs stands, such as a manual's contents read that
 filing started while the drawings were recognized, call that job's status verb just before you
 write the line and quote that read with its time, as step 5 says; a state read before the unit
 went out never goes on it. Wait by ending the turn and nothing else: no
@@ -159,8 +164,8 @@ Check your unit as your definition says, write your report to that path, then re
 ```
 
 Read the report that comes back and nothing else: the record holds what the unit wrote. Dispatch
-units one after another, never two at once, since two units can reach the same sheet. Before each
-dispatch, note the time with a local command (`date -u +%Y-%m-%dT%H:%M:%SZ`). Where a unit's
+page units one after another, never two at once, since two units can reach the same sheet. Before
+each dispatch, note the time with a local command (`date -u +%Y-%m-%dT%H:%M:%SZ`). Where a unit's
 report did not arrive in the message, its report file is the report: open that file rather than
 dispatching the unit again. Where the file is absent too, dispatch that unit once more, against the
 live record, with `Since:` set to the time you noted before its first dispatch: the first copy's
@@ -197,9 +202,12 @@ it after step 5, and steps 9b and 10 branch on it.
 
 The server combines the deliveries by sheet number either way, and for each sheet the newest
 delivery that carries it wins: a sheet an addendum does not carry keeps showing from the delivery
-that last issued it, and so does a sheet an earlier set had that a new set does not carry. Step 10
-reads those sheets back and reports them as a finding. Nothing is retired, here or anywhere else in
-this skill.
+that last issued it. A new set ends each sheet an earlier delivery printed in a discipline the set
+reissues and the set leaves out, once the set is dated or sequenced after that delivery: an ended
+sheet leaves the current set and stays readable in its own delivery. A sheet it would have ended
+that holds takeoff marks or a scale someone set stays current, and so does every sheet of a
+discipline the set leaves out entirely. Step 10 reads both kinds back and reports them as a
+finding. Nothing is retired by this skill, here or anywhere else in it.
 
 Step 3 registers the delivery with `deliveryKind: "baseline"` where `list_drawing_deliveries`
 comes back empty, the project's first delivery, and `"revision"` for any later one. That field
@@ -493,7 +501,12 @@ run, not left for later.
    Narrate the split in estimator words: "the recognition pass sorted N of M sheets by type; I'm
    looking at the K it left."
 <!-- /user-facing -->
-3. **The pages units.** Count the pages file's lines with `wc -l`, and dispatch one pages unit per
+3. **The pages units.** Count the pages file's lines with `awk 'END{print NR}' <pages file>`,
+   which counts a last line with no newline too. The file holds this delivery's pages to look at
+   and, on an addendum, the earlier deliveries' too, so compare that count with the set unit's
+   `pages to look at` plus the `pages to look at` on its `earlier deliveries:` line, where that
+   line carries one. Where they differ, stop the run there and name the file's count and both
+   figures. Otherwise dispatch one pages unit per
    twelve lines, in order (lines 1 to 12, then 13 to 24, and so on), one after another, until the
    last line is covered. Sum each unit's counts as it returns, this delivery's apart from earlier
    deliveries'.
@@ -711,7 +724,8 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    first. Where the index lists a number with a letter (`A-501A`, `A-501B`) and two pages print
    the number less its letter (`A-501`), recording raises that one Question itself. Only while flagged pages remain can the sheet be on one of them: write those pages to a
    pages file with the reason `unnamed`, in the line shape "Who reads the pages" gives, and
-   dispatch pages units over it before you record, twelve lines to a unit as step 6 batches them. Once you have shown the report, call
+   dispatch pages units over it before you record, twelve lines to a unit as step 6 batches them. Once you have shown the report, note
+   the time with `date -u +%Y-%m-%dT%H:%M:%SZ`, which step 9b passes on as `Asked before:`, then call
    `reconcile_set(projectId, record: true)` and say what landed. Two things land: the sheet findings
    that stay with you to settle, and, for the side the design team has to answer, Questions on
    the board, each citing the index page and the sheets it is about. Those Questions are grouped by
@@ -723,7 +737,9 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
 
 A revised sheet can answer a Question somebody raised against the one it replaces, or move the
 callout the Question points at. This step reads every open Question on what changed against the
-new paper and says what it found on each one. It runs whenever a prior delivery or manual existed:
+new paper: it closes each one the new paper answers, with one line naming where, rewrites each one
+nobody has sent that the new paper changed, and points the rest at the new pages, replying once on
+a sent one it changed. It runs whenever a prior delivery or manual existed:
 an addendum, a new set, or a manual on its own. There, read `reread-questions.md` beside this
 file, in this skill's own folder, and run it. On the project's first delivery there is nothing
 earlier on the board to re-read, so skip it and leave that file unread.
@@ -741,20 +757,27 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
    `discipline` + `limit`/`offset` until the rows you hold cover the count. Never a bare call: its
    default first page is not the set. Every row carries the delivery governing it (`deliveryId`,
    `label`, `kind`). The lingering sheets are the rows whose governing delivery is not this one:
-   sheets the prior set carried, this new set did not, and the server still shows as part of the
-   current set. Report `currentSetStatus` / `currentSetNotes` for any row the resolver could not
-   settle rather than folding it into the list. If the paging could not be completed, say so and say
-   how far it got; a partial list is never put up as a complete one.
+   sheets an earlier delivery printed that this new set did not end, because the set leaves their
+   discipline out entirely, they hold takeoff, or the set is not yet dated after them. Report
+   `currentSetStatus` / `currentSetNotes` for any row the resolver could not settle rather than
+   folding it into the list. If the paging could not be completed, say so and say how far it got; a
+   partial list is never put up as a complete one. Then read this delivery's row on
+   `list_drawing_deliveries` for the sheets the set ended: its `ends`, which left the current set,
+   and its `keptForTakeoff`, which it would have ended and which stay current for their takeoff.
 <!-- user-facing -->
    Give the user the list with the criterion that produced it said out loud: these are the sheets
    still showing as part of the set that came in on an earlier delivery, not on this one. Name them
-   by sheet number.
+   by sheet number, and say which of them stay only for their takeoff, which leave the set once
+   someone deletes that takeoff. Then name the ended sheets by sheet number: they no longer show as
+   part of the set, and the user still opens each one in the delivery that printed it.
 <!-- /user-facing -->
 2. **It is a report, nothing more.** This skill does not retire, replace, or write anything about
    those sheets, on any path.
 <!-- user-facing -->
-   Say plainly that they still show as part of the set and that nothing here changed or removed
-   them, rather than wording it so it sounds like the run acted on them.
+   Say plainly that the lingering sheets still show as part of the set and that you changed or
+   removed none of them, and that the ended sheets are out of the set because the new set is dated
+   after them, with nothing written about them, rather than wording it so it sounds like the run
+   acted on them.
 <!-- /user-facing -->
 3. **The handoff.** For a drawing delivery, read its `issue` off `list_drawing_deliveries` and
    name the scope pass for it, which `scope-run` runs: a new set gets a full pass over every sheet
@@ -778,8 +801,9 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
 
 - **The questions and the jobs stay in the conversation.** Every question to the user is put
   here, every job is polled here until the server ends it, and every report of a job's state
-  quotes the last payload received and its time. Page reads go to the sheet checker, one unit at a
-  time, and nothing else leaves this conversation.
+  quotes the last payload received and its time. Page reads go to the sheet checker and the
+  re-read of the open Questions to the question checker, page units one at a time and questions
+  units up to four at once, and nothing else leaves this conversation.
 - **Run, or stop and report; never create a consent step.** The user's decisions are the ones
   named at the top of this file; everything else is the skill's own work. A failure is reported
   with its error, retried only when the error names what a retry changes, and never put to the
@@ -787,7 +811,10 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
   into the project as a Question: a Question is about the project, never about a Plumlayer
   failure. Question text is plain estimator words, and every Question meets the standard the
   `ask_question` verb states: a title, a citation for every place it names, and only what is worth
-  the design team's time.
+  the design team's time. Its first sentence states the problem; a sentence names at most three
+  tags, only the ones with the problem; and it carries no colon without the list it announces, no
+  long parenthesis, no clause re-describing what a tag already names, no sentence on why we need the
+  answer, and no sentence repeating the title.
 - **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
   (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
   1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing
@@ -840,9 +867,12 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
   backstop, or an unread spec manual are named as what didn't run, never paraphrased into "no
   problems found." `reconcile_set` findings are recorded without asking, and the report says what
   landed: sheet findings for our own queue, and Questions on the board for the design team's side.
-- **An open Question on a changed sheet is re-read and replied to, never closed by this skill.**
-  Step 9b replies where the new paper answers it or changes on its point, adds a box where its
-  callout moved, and raises no new Question.
+- **An open Question on what changed has three outcomes, and step 9b raises no new one.** Where
+  the new paper answers it, it is closed with one line naming where, and the user reviews those
+  closes first. Where the new paper changes on its point without answering it, a Question nobody
+  has sent is reworded to read as of the new paper, and a sent one gets one reply saying what
+  changed. Where it is unchanged on the point, it is pointed at the new pages and nothing else is
+  written.
 - **The step 10 lingering-sheet list is a complete paged read, not a first page.** It comes from
   `set_grid(limit: 0)` followed by pages until the rows cover the count, and its criterion (the
   sheet's governing delivery is not this delivery) is stated with the list. Paging that could not be

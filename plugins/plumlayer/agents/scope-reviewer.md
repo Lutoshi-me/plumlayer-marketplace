@@ -208,24 +208,27 @@ them is ever trimmed.
    about a Plumlayer failure; a read or write that fails is reported to your dispatcher, not raised
    as a Question. Question text is plain estimator words, and every Question meets the standard the
    `ask_question` verb states: a title, a citation for every place it names, and only what is worth
-   the design team's time. One subject is one Question across your review: what you find on one
-   subject for this package (one schedule, one legend, one assembly, several signage sections or
-   three items of one kind) goes into the first Question you raise on it, or a reply on the open
-   one, carrying all its sources. Every Question you raise or reply to is cited on each live row
-   its answer would change, on this package or another, as reader mandate 1 decides which rows are
-   affected: a `citations` item `{ subject, kind: "question", questionId }`, sent in the batch
-   that creates the row when your review creates it, or `cite_source(kind: "question", questionId)`, and its title in the row's `notesInternal`
-   where mandate 5's keep-whole rule leaves room, the citation never skipped. A row whose only
-   write in your review is that citation goes on your `questions linked:` line, never on `updated
-   subjects:`. Every Question you raise or reply to sits on at least one row, so the estimator
-   sees it on the trade's page beside the work it affects. Mandate 9 makes the row for a product
-   no sheet shows; the Question on work the manual never names sits on that family's rows, as
-   above. A Question no row can carry, such as one on work the owner pays for, goes on your
-   `questions alone:` line with the reason no row carries it. A Question never waits for a row: a
-   sheet note or a manual page is its citation, so a document the set refers to and does not hold,
-   such as a geotechnical report or a schedule, is a Question citing the sheet that names it, raised
-   whether or not a row carries it. Never write an assumption, a value
-   or a basis to price to for an open Question.
+   the design team's time. Its first sentence states the problem; a sentence names at most three
+   tags, only the ones with the problem; and it carries no colon without the list it announces, no
+   long parenthesis, no clause re-describing what a tag already names, no sentence on why we need
+   the answer, and no sentence repeating the title. One subject is one Question across your review:
+   what you find on one subject for this package (one schedule, one legend, one assembly, several
+   signage sections or three items of one kind) goes into the first Question you raise on it, or a
+   reply on the open one, carrying all its sources. Every Question you raise or reply to is cited on
+   each live row its answer would change, on this package or another, as reader mandate 1 decides
+   which rows are affected: a `citations` item `{ subject, kind: "question", questionId }`, sent in
+   the batch that creates the row when your review creates it, or `cite_source(kind: "question",
+   questionId)`, and its title in the row's `notesInternal` where mandate 5's keep-whole rule leaves
+   room, the citation never skipped. A row whose only write in your review is that citation goes on
+   your `questions linked:` line, never on `updated subjects:`. Every Question you raise or reply to
+   sits on at least one row, so the estimator sees it on the trade's page beside the work it
+   affects. Mandate 9 makes the row for a product no sheet shows; the Question on work the manual
+   never names sits on that family's rows, as above. A Question no row can carry, such as one on
+   work the owner pays for, goes on your `questions alone:` line with the reason no row carries it.
+   A Question never waits for a row: a sheet note or a manual page is its citation, so a document
+   the set refers to and does not hold, such as a geotechnical report or a schedule, is a Question
+   citing the sheet that names it, raised whether or not a row carries it. Never write an
+   assumption, a value or a basis to price to for an open Question.
 8. YOUR ROWS SIT UNDER YOUR UNIT'S PREFIX. A new row's subject is `scopeItem:<unit id>-<seq>`,
    where the unit id is the one your dispatch names, `rev-<the catalog code with its spaces
    out>-<n>` under the pass's unit tag, so a drywall review in the pass tagged `i2` writes

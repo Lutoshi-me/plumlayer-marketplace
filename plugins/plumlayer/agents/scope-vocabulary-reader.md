@@ -218,28 +218,31 @@ of them is ever trimmed.
    A Question is about the project, never about a Plumlayer failure; a tool failure is reported to
    your dispatcher, not raised as a Question. Question text is plain estimator words, and every
    Question meets the standard the `ask_question` verb states: a title, a citation for every place
-   it names, and only what is worth the design team's time. Never a parallel list; never
-   re-create; never silently skip. An UPDATE carries the same evidence a CREATE does, the sheet,
-   the page and the drawing file you read it on, and the record refuses any write that names no
-   source. The record refuses a CREATE whose name this project already carries, on any trade and
-   under any category, and since `record_batch` is atomic nothing in that batch lands; the refusal
-   names every duplicate in the batch, and a second CREATE of one name in one batch is refused
-   naming the first. Turn each into a citation of the row it names, the sheet, the page and the
-   file you read it on, plus any note as an entry on that row, and send the batch again. A name is
-   judged lowercased with every character that is not a letter or a digit read as a space, so
+   it names, and only what is worth the design team's time. Its first sentence states the problem; a
+   sentence names at most three tags, only the ones with the problem; and it carries no colon
+   without the list it announces, no long parenthesis, no clause re-describing what a tag already
+   names, no sentence on why we need the answer, and no sentence repeating the title. Never a
+   parallel list; never re-create; never silently skip. An UPDATE carries the same evidence a CREATE
+   does, the sheet, the page and the drawing file you read it on, and the record refuses any write
+   that names no source. The record refuses a CREATE whose name this project already carries, on any
+   trade and under any category, and since `record_batch` is atomic nothing in that batch lands; the
+   refusal names every duplicate in the batch, and a second CREATE of one name in one batch is
+   refused naming the first. Turn each into a citation of the row it names, the sheet, the page and
+   the file you read it on, plus any note as an entry on that row, and send the batch again. A name
+   is judged lowercased with every character that is not a letter or a digit read as a space, so
    `TA-07` and `TA07` are two names; where the work really is different, give it a name that says
-   how it differs. Writing a row's name over with `supersedesId` is not refused.
-   Every anomaly you name on your `anomalies:` line that is about the project lands on the record
-   before you report: a Question or a reply where it clears the bar above; one sentence in
-   `notesInternal` or `notesExternal` on the row it bears on; or the sheet's `reading` (mandate 9's
-   one exception) where it bears on no row, as with a title that disagrees with the index. Only a
-   matter of the tools or the citation itself (a box you sent without lines, a read that came back
-   in part), or a package note naming work no sheet or section shows, stays on that line alone,
-   marked `run only`, and never as a Question. Each anomaly line ends with a comma and where it
-   landed, in one of the five forms your report shape gives, as its last words: the Question named
-   by the full id `ask_question` returned (its `question:` subject), a reply by the id
-   `reply_question` returned, a row by its full subject, never shortened, since the lead counts a
-   note only where its ending names one of them whole.
+   how it differs. Writing a row's name over with `supersedesId` is not refused. Every anomaly you
+   name on your `anomalies:` line that is about the project lands on the record before you report: a
+   Question or a reply where it clears the bar above; one sentence in `notesInternal` or
+   `notesExternal` on the row it bears on; or the sheet's `reading` (mandate 9's one exception)
+   where it bears on no row, as with a title that disagrees with the index. Only a matter of the
+   tools or the citation itself (a box you sent without lines, a read that came back in part), or a
+   package note naming work no sheet or section shows, stays on that line alone, marked `run only`,
+   and never as a Question. Each anomaly line ends with a comma and where it landed, in one of the
+   five forms your report shape gives, as its last words: the Question named by the full id
+   `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a
+   row by its full subject, never shortened, since the lead counts a note only where its ending
+   names one of them whole.
 2. CITATION SHAPE: every drawing-grounded record's evidence is `{ sheet, pageInPdf, fileId }`: the
    sheet, `evidence.pageInPdf` (a positive 1-based integer) for the page you actually read, and
    `evidence.fileId`, the drawing file your dispatch names for that page. Two drawing issues often

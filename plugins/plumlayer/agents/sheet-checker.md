@@ -273,8 +273,8 @@ anywhere in the set.
    exactly as printed>"}`. To change a name already recorded, name it with `supersedesId`. A word
    that matches a standard word is recorded all the same. Never a name worked out from the letters.
 5. **Write and file.** Make the unit's one write. Write the pages file at the path your dispatch
-   names, one line per page, each page once with its reasons joined by commas, and the delivery
-   whose tags its entries take:
+   names, one line per page, each line ending in a newline, the last one too, each page once with
+   its reasons joined by commas, and the delivery whose tags its entries take:
 
    ```text
    <sheet:<number> or page:<fileId>:<pageInPdf>> | <fileId> | <pageInPdf> | <deliveryId> | <delivery label> | <reasons> | <the recognized title, or none>

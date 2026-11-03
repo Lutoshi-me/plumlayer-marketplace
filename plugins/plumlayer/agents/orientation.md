@@ -291,9 +291,12 @@ no trade filter, paged with `offset: nextOffset` until it comes back whole: an
 open one on the same topic gets a reply (`reply_question`) rather than a second Question, and a closed one is not
 asked again. A Question is about the project, never about a Plumlayer failure. Question text is
 plain estimator words, and every Question meets the standard the `ask_question` verb states: a
-title, a citation for every place it names, and only what is worth the design team's time. It
-never names a predicate from the table above, an internal step, or a field, and it carries no em
-dash.
+title, a citation for every place it names, and only what is worth the design team's time. Its first
+sentence states the problem; a sentence names at most three tags, only the ones with the problem;
+and it carries no colon without the list it announces, no long parenthesis, no clause re-describing
+what a tag already names, no sentence on why we need the answer, and no sentence repeating the
+title. It never names a predicate from the table above, an internal step, or a field, and it carries
+no em dash.
 
 Good: title "Story count differs between cover and sections"; "The cover sheet lists four
 stories; building sections A-301 and A-302 show five. Please confirm five stories." Bad: a

@@ -319,11 +319,17 @@ assumption: update the rows it moves as "When an answer arrives" says.
   when he says to.
 - `close_question` closes a Question when the estimator says it is settled. Put his reason in
   `note` in his own words, or leave `note` off rather than writing a reason nobody gave. A Question
-  you merely think looks answered is replied to or named to him, never closed.
+  you merely think looks answered is replied to or named to him, never closed. The one exception is
+  the re-read in `drawing-upload` after he uploads a new drawing set, an addendum or a manual: it
+  closes each Question the new paper answers, with one line in `note` naming where, and he reviews
+  those closes first and reopens any that is wrong.
 - `reopen_question` puts a closed Question back when he says it was closed too early or has come
   up again. The generic write doors refuse the `questionClosed` predicate; these two verbs and the
   site are the only way to close or reopen a Question.
-- `rewrite_question` rewords the ask, only when he tells you what it should say instead.
+- `rewrite_question` rewords the ask when he tells you what it should say instead, and in that
+  same re-read, which rewords a Question nobody has sent (state `not_sent`) whose point the new
+  paper changed. A Question that has gone out is never reworded unless he tells you to: the design
+  team holds the words it was sent with, so say what changed with one `reply_question`.
 - A reply posted by mistake, yours or anyone's, is taken off with `remove_question_communication`
   by its `entryId` among the Question's `replies`, with his words in `reason` when he gave one, and
   put back with `restore_question_communication` by its `removalId` under `removedReplies`. Remove
@@ -336,16 +342,18 @@ assumption: update the rows it moves as "When an answer arrives" says.
 
 ### When an answer arrives
 
-The estimator pastes the design team's email or RFI response, or an addendum comes in that answers
-a Question. Then:
+An addendum or a new set that comes in goes through `drawing-upload`, whose re-read of the open
+Questions closes each one the new paper answers. This section is for an answer the estimator
+pastes, the design team's email or RFI response, or one he points at in documents already on the
+project. Then:
 
 1. Put the answer on the Question. The design team's own words go on with
    `log_question_reply_received`, as close to verbatim as you have them, with who sent them in
    `from` and when in `at`; his handing you their answer is the ask to log it. When one email
    answers several Questions, log it once, naming each in `questionIds`: each Question gets its
-   own reply, and `replies` in the answer lists each one's entry. An answer the new
-   documents give goes on with `reply_question`, saying what the revised sheet or section shows and
-   citing it.
+   own reply, and `replies` in the answer lists each one's entry. An answer he points at in
+   documents already on the project goes on with `reply_question`, saying what the sheet or section
+   shows and citing it.
 2. Pin that reply with `pin_question_reply` when the estimator says it is the answer. A reply
    logged on several Questions is pinned, corrected or removed on each Question by its own entry.
 3. Update the scope values the answer moves: write each new value naming what it replaces
@@ -407,14 +415,19 @@ Drawn
   among them; then raise what you find as "Raising a Question" says. Where instead you can see
   the recognizer grabbed the wrong cell for a title or discipline, correct it with a supersession
   edge (see "Correcting a machine misread"), not a Question.
-- **"Here's the architect's answer" / an addendum came in** → "When an answer arrives".
+- **"Here's the architect's answer"** → "When an answer arrives".
+- **"An addendum came in" / "here's the new set"** → `drawing-upload`, whose re-read closes the
+  Questions it answers.
 - **"I sent it" / "they wrote back" / "that send was logged wrong"** → "Sending and what comes
   back".
 
 ## Discipline
 - Question text is plain estimator words, and every Question meets the standard the
   `ask_question` verb states: a title, a citation for every place it names, and only what is worth
-  the design team's time.
+  the design team's time. Its first sentence states the problem; a sentence names at most three
+  tags, only the ones with the problem; and it carries no colon without the list it announces, no
+  long parenthesis, no clause re-describing what a tag already names, no sentence on why we need the
+  answer, and no sentence repeating the title.
 - Be honest about your own entries: each is your reading of what you cited, and you say so when
   you tell the user about it. Anyone can replace it later the same way any write does, by naming
   it.

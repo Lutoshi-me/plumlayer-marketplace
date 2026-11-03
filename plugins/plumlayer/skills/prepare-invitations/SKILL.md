@@ -356,8 +356,11 @@ ask, the ask itself as `text`, written for a reader coming to it cold, and:
 - `everyTrade: true` when it is about the whole job, and `sourceInstrument: "prepare-invitations"`.
 
 Question text is plain estimator words, and every Question meets the standard the `ask_question`
-verb states. A Question is about the project, never about a Plumlayer failure: a refused write or a
-page that would not read goes in the report.
+verb states. Its first sentence states the problem; a sentence names at most three tags, only the
+ones with the problem; and it carries no colon without the list it announces, no long parenthesis,
+no clause re-describing what a tag already names, no sentence on why we need the answer, and no
+sentence repeating the title. A Question is about the project, never about a Plumlayer failure: a
+refused write or a page that would not read goes in the report.
 
 ## 5. Write
 

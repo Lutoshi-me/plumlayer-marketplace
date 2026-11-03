@@ -126,11 +126,14 @@ that relaxes any one of them reproduces a measured, named failure.
    never about a Plumlayer failure; a read or write that fails is reported and handled in the run's
    own failure path, not raised as a Question. Question text is plain estimator words, and every
    Question meets the standard the `ask_question` verb states: a title, a citation for every place
-   it names, and only what is worth the design team's time. Every Question raised or replied to,
-   by a reader, a reviewer or this run itself, is cited on each live row its answer would change,
-   as the reader's mandate 1 decides those rows, so the estimator sees it on the trade's scope
-   page, and it never carries an assumption, a value or a basis to price to: what to carry until
-   it is answered is the estimator's call.
+   it names, and only what is worth the design team's time. Its first sentence states the problem; a
+   sentence names at most three tags, only the ones with the problem; and it carries no colon
+   without the list it announces, no long parenthesis, no clause re-describing what a tag already
+   names, no sentence on why we need the answer, and no sentence repeating the title. Every Question
+   raised or replied to, by a reader, a reviewer or this run itself, is cited on each live row its
+   answer would change, as the reader's mandate 1 decides those rows, so the estimator sees it on
+   the trade's scope page, and it never carries an assumption, a value or a basis to price to: what
+   to carry until it is answered is the estimator's call.
 3. **Store-resolution is mandatory.** A mark, tag, or code is resolved by querying the project
    record, never from memory, never inherited from another sheet's read, never assumed from a
    similar-looking mark. For a code the page in front of a reader prints, its own

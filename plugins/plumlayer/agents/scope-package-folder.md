@@ -52,7 +52,10 @@ filter, paged until it comes back whole; where an open one already asks it, cite
 A Question is about the project, never about a Plumlayer failure; a call that fails is named in
 your report's lines and your hand-back, not raised as a Question. Question text is plain estimator
 words, per `docs/plugin-text-style.md`, and every Question meets the standard the `ask_question`
-verb states.
+verb states. Its first sentence states the problem; a sentence names at most three tags, only the
+ones with the problem; and it carries no colon without the list it announces, no long parenthesis,
+no clause re-describing what a tag already names, no sentence on why we need the answer, and no
+sentence repeating the title.
 
 ## Fold mode
 

@@ -10,9 +10,9 @@ Checks:
      skill set matches EXPECTED_SKILLS exactly, in both directions.
   4. Agents: every agents/*.md has frontmatter that actually parses as YAML
      and a non-empty `name` and `description`; the shipped agent set matches
-     EXPECTED_AGENTS exactly, in both directions (`orientation`, `scope-package-folder`,
-     `scope-reader`, `scope-reviewer`, `scope-round-runner`, `scope-vocabulary-reader`,
-     `sheet-checker`); and no agent declares a
+     EXPECTED_AGENTS exactly, in both directions (`orientation`, `question-checker`,
+     `scope-package-folder`, `scope-reader`, `scope-reviewer`, `scope-round-runner`,
+     `scope-vocabulary-reader`, `sheet-checker`); and no agent declares a
      frontmatter field the runtime ignores for plugin-shipped agents
      (`hooks`, `mcpServers`, `permissionMode`). Checks 3 and 4 both validate
      the frontmatter block with PyYAML when it is importable, falling back to
@@ -169,10 +169,10 @@ Checks:
   27. Setup reads stay out of the lead: no page read verb (`render_page`, `get_page_text`,
       `search_set_text`, `reconcile_index`) and no `set_grid` other than a `limit: 0` summary call
       on a line a lead session runs, which is project-setup whole, learn-project whole,
-      drawing-upload outside its step 10 and its step 9b file, and drawing-upload's cloud entry
+      drawing-upload outside its step 10, and drawing-upload's cloud entry file and its step 9b
       file whole, and no Read tool on a PDF's pages there either; drawing-upload carries its
       `plumlayer:sheet-checker` dispatch, with each recognition job paired with its `fileId` on
-      its `Jobs:` line, gives the pages file's line shape as the sheet checker writes it and sends
+      its `Jobs:` line, and its step 9b file its `plumlayer:question-checker` dispatch; it gives the pages file's line shape as the sheet checker writes it and sends
       a sheet the index lists and the set lacks straight to its Question; learn-project carries its
       `plumlayer:orientation` dispatch and the first line of its summary, with orientation's steps
       and summary shape in agents/orientation.md and none in the skill; scope-run carries neither
@@ -228,6 +228,21 @@ Checks:
       lock a run held when its process ended is taken over in one line, and a replan deleting a
       package with section pages a continuation still owes a read is refused until the ledger
       records them unread.
+  33. Question writing sentence: every shipped skill or agent file, and docs/plugin-text-style.md,
+      that carries "Question text is plain estimator words" carries the one writing sentence
+      after it, word for word, and the files known to carry the phrase are pinned so a detection
+      that stops seeing one fails. Run over the shipped text with the sentence taken out of a
+      reader, the question checker and the style doc, and one word of it changed, each refused.
+  34. Question checker outcomes: agents/question-checker.md carries the three outcomes of its
+      decision, answered, changed and unchanged, "never reword it" for a Question that has gone
+      out, the guard on a close (every standing place agrees, every part of the ask answered),
+      the `not_sent` condition on a rewrite, the clause where one place answers and another
+      disagrees, the rule that a missed search never makes a Question answered, an absence only
+      off a whole read, and a copy sent again taking in its first copy's work before it counts
+      `already closed`; drawing-upload and its step 9b file carry the questions units up to four
+      at once, the wait on the text read, one folder per re-read, and an addendum's pages file
+      counted with the earlier deliveries' pages. Run over the shipped text with each taken out,
+      each refused.
   32. Passes at once: the shipped scripts/plan_inventory.py writes `starts after:` under every pass
       block off the classes of sheet each window pins, and window 1 reads its vocabulary ahead of
       what `--include` added; the shipped scripts/lead_pass.py says what to start off those lines,
@@ -282,10 +297,12 @@ EXPECTED_SKILLS = {
 # vocabulary reader per unit in window 1, one sheet reader per sheet in window 2,
 # or one reviewer per package in window 3; the lead also starts the package
 # folder when window 2 closes. The sheet checker is dispatched by drawing-upload
-# for every page read an upload makes, and the orientation agent by learn-project
-# for the orientation pass.
+# for every page read an upload makes, the question checker by drawing-upload's
+# step 9b for the re-read of the open Questions after a later delivery, and the
+# orientation agent by learn-project for the orientation pass.
 EXPECTED_AGENTS = {
     "orientation",
+    "question-checker",
     "scope-package-folder",
     "scope-reader",
     "scope-reviewer",
@@ -6259,6 +6276,11 @@ TOOLS_PROHIBITION_ONLY = {
         # The reviewer adds what no row carries; retiring a row is the estimator's call.
         "retire_scope_item",
     },
+    "question-checker": {
+        # The re-read settles the Questions already open: a new disagreement goes to the estimator,
+        # who decides whether to ask it, and putting a closed Question back is his.
+        "ask_question", "reopen_question",
+    },
 }
 
 _CONNECTOR_DECLARATION_RE = re.compile(re.escape(CONNECTOR_TOOL_PREFIX) + r"([a-z][a-z0-9_]*)")
@@ -6595,8 +6617,8 @@ def check_dispatch_foreground(plugin_path: Path, marketplace_root: Path) -> Resu
     # The files known to dispatch an agent, so a detection that stopped seeing one of them fails
     # here rather than passing the file unread.
     for label in (
-        "scope-run/SKILL.md", "drawing-upload/SKILL.md", "learn-project/SKILL.md",
-        "scope-round-runner.md",
+        "scope-run/SKILL.md", "drawing-upload/SKILL.md", "drawing-upload/reread-questions.md",
+        "learn-project/SKILL.md", "scope-round-runner.md",
     ):
         if label not in waiting:
             errors.append(f"{label}: carries no wait sentence for a call that comes back with an agent id")
@@ -7824,6 +7846,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         reviewer_flat = " ".join((plugin_path / "agents" / "scope-reviewer.md").read_text(encoding="utf-8").split())
         upload_flat = " ".join((plugin_path / "skills" / "drawing-upload" / "SKILL.md").read_text(encoding="utf-8").split())
         reread_flat = " ".join((plugin_path / "skills" / "drawing-upload" / "reread-questions.md").read_text(encoding="utf-8").split())
+        checker_flat = " ".join((plugin_path / "agents" / "question-checker.md").read_text(encoding="utf-8").split())
     except Exception as e:
         return Result(name, False, detail=f"cannot read the reviewer or drawing-upload: {e}")
     opened_shape = "pages opened: <sheet number + fileId + page + the term that sent you + what you did"
@@ -7848,21 +7871,21 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         # A drawing search by delivery counts only that delivery's files, and a manual uploaded on
         # its own sits in none of them, so the manual is asked on its own before it is called silent.
         (reviewer_flat, "the reviewer", "run one `kind: document` search for the same words with no `deliveryId`"),
-        # Step 9b, in the file the skill reads at that step, reads the uploaded delivery's own
-        # sheets and cites them on its own file.
-        (reread_flat, "drawing-upload's step 9b", "`set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)`"),
-        (reread_flat, "drawing-upload's step 9b", "`search_set_text` its tag with `deliveryId` set to this delivery"),
-        (reread_flat, "drawing-upload's step 9b", "with this delivery's `fileId`"),
-        (reread_flat, "drawing-upload's step 9b", "Keep every existing source"),
+        # Step 9b's re-read runs in the question checker, which the step's own file dispatches;
+        # it reads the uploaded delivery's own sheets and cites them on its own file.
+        (checker_flat, "the question checker", "`set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)`"),
+        (checker_flat, "the question checker", "`search_set_text` its tag with `deliveryId` set to this delivery"),
+        (checker_flat, "the question checker", "with this delivery's `fileId`"),
+        (checker_flat, "the question checker", "Keep every existing source"),
         # The handoff on the two paths with no scope pass to name.
         (upload_flat, "drawing-upload", "No scope pass reads a project manual on its own"),
         (upload_flat, "drawing-upload", "holds no sheet number"),
         # A set's grid by delivery carries a sheet one of its addenda reprinted as the addendum's
         # row, so the set's own page of it is found inside the set by a delivery-scoped search.
-        (reread_flat, "drawing-upload's step 9b", "A row from one of its addenda is a sheet the addendum reprinted or added"),
-        (reread_flat, "drawing-upload's step 9b", "`search_set_text(projectId, query: \"<sheet number>\", deliveryId: <this delivery's id>, wholeWord: true)`"),
-        # set_grid refuses a delivery holding no sheet number, so step 9b skips the grid read.
-        (reread_flat, "drawing-upload's step 9b", "`set_grid` refuses it and no sheet is known to have changed, so skip the rest of this step"),
+        (checker_flat, "the question checker", "A row from one of its addenda is a sheet the addendum reprinted or added"),
+        (checker_flat, "the question checker", "`search_set_text(projectId, query: \"<sheet number>\", deliveryId: <this delivery's id>, wholeWord: true)`"),
+        # set_grid refuses a delivery holding no sheet number, so the re-read skips the grid read.
+        (checker_flat, "the question checker", "`set_grid` refuses it and no sheet is known to have changed, so skip the rest of this step"),
         # The skill sends a later delivery to that file at step 9b.
         (upload_flat, "drawing-upload", "read `reread-questions.md` beside this file"),
     ):
@@ -7877,6 +7900,16 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     ):
         if phrase in upload_flat or phrase in reread_flat:
             errors.append(f"drawing-upload still reads {phrase!r}")
+    # The re-read closes what the new paper answers, so the sentences that forbade a close, and
+    # the reply that only said where a callout sits, are gone from all three files.
+    for phrase in (
+        "Never close one",
+        "never closed by this skill",
+        "a reply says only where the callout sits",
+    ):
+        for flat, who in ((upload_flat, "drawing-upload"), (reread_flat, "drawing-upload's step 9b file"), (checker_flat, "the question checker")):
+            if phrase in flat:
+                errors.append(f"{who} still reads {phrase!r}")
 
     shutil.rmtree(root / "choose", ignore_errors=True)
     detail = (
@@ -8582,14 +8615,16 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
 #
 # A project setup on a set of about 240 sheets once took the lead session from 58k to 774k tokens:
 # the title block renders, the spec first pages, the package creates and the sheet grid all landed
-# in the session the user talks to. The page reads now go to the plugin's `sheet-checker` agent and
+# in the session the user talks to. The page reads now go to the plugin's `sheet-checker` agent,
+# the re-read of the open Questions after a later delivery to its `question-checker` agent, and
 # orientation runs one level down in the plugin's `orientation` agent, as learn-project's own
 # section says. This holds the text that drives the lead to that shape.
 #
 # What can fail, one case each below:
 #   1. a page read verb (`render_page`, `get_page_text`, `search_set_text`, `reconcile_index`)
 #      comes back into text the lead runs: project-setup whole, learn-project whole,
-#      drawing-upload outside its step 10, or drawing-upload's cloud entry file;
+#      drawing-upload outside its step 10, or drawing-upload's cloud entry file or its step 9b
+#      file;
 #   2. `set_grid` comes back there as anything but a summary call carrying `limit: 0`;
 #   3. drawing-upload loses its sheet-checker dispatch, learn-project its orientation dispatch or
 #      the first line of its summary, scope-run takes its own copy of either back, or project-setup
@@ -8607,7 +8642,9 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
 #      the shape the sheet checker's set mode writes, so the lead opens the agent's definition to
 #      learn it, as a measured lead did at a cost of about 18k tokens;
 #   9. drawing-upload's step 9 stops sending a sheet the index lists and the set lacks straight
-#      to its Question, the case that measured lead read grid rows and searched the record for.
+#      to its Question, the case that measured lead read grid rows and searched the record for;
+#  10. drawing-upload's step 9b file loses its `plumlayer:question-checker` dispatch, so the lead
+#      reads every open Question's thread and the new pages itself.
 #
 # Honest bound: this reads the shipped text, not a session. Whether a lead session in fact stays
 # small is measured from its transcript.
@@ -8644,6 +8681,7 @@ _ORIENTATION_SUMMARY_LABELS = (
 _CLOUD_ENTRY_POINTER = "read `cloud-entry.md` beside this file"
 _CLOUD_ENTRY_BODY = "The branch substitutes the local-only stages and reuses everything else unchanged"
 _SHEET_CHECKER_LINE_RE = re.compile(r"^\s*subagent_type\s*:\s*plumlayer:sheet-checker\s*$")
+_QUESTION_CHECKER_LINE_RE = re.compile(r"^\s*subagent_type\s*:\s*plumlayer:question-checker\s*$")
 _RETIRED_GATES = (
     ("drawing-upload", "No step of it is handed to a background agent or a subagent"),
     ("drawing-upload", "No step is handed to a background agent or a subagent"),
@@ -8713,6 +8751,12 @@ def _lead_shape_errors(texts: dict[str, str]) -> list[str]:
     checker_blocks = [body for _, body in blocks if any(_SHEET_CHECKER_LINE_RE.match(l) for l in body)]
     if not checker_blocks:
         errors.append("drawing-upload carries no dispatch block naming `subagent_type: plumlayer:sheet-checker`")
+    reread_blocks, _ = _fenced_blocks(texts["reread"].splitlines())
+    if not any(any(_QUESTION_CHECKER_LINE_RE.match(l) for l in body) for _, body in reread_blocks):
+        errors.append(
+            "drawing-upload's step 9b file carries no dispatch block naming "
+            "`subagent_type: plumlayer:question-checker`"
+        )
     for body in checker_blocks:
         jobs = [l for l in body if l.strip().startswith("Jobs:")]
         if len(jobs) != 1 or "fileId" not in jobs[0]:
@@ -8787,6 +8831,7 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
     texts: dict[str, str] = {}
     paths = {skill: skills / skill / "SKILL.md" for skill in ("project-setup", "learn-project", "drawing-upload", "scope-run")}
     paths["cloud-entry"] = skills / "drawing-upload" / "cloud-entry.md"
+    paths["reread"] = skills / "drawing-upload" / "reread-questions.md"
     paths["orientation"] = plugin_path / "agents" / "orientation.md"
     paths["sheet-checker"] = plugin_path / "agents" / "sheet-checker.md"
     for key, path in paths.items():
@@ -8794,19 +8839,23 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
             return Result(name, False, detail=f"not found: {path}")
         texts[key] = path.read_text(encoding="utf-8")
 
-    # drawing-upload's step 9b file is the one place a lead reads a page, on a later delivery's
-    # open Questions, so it is not scanned; its step 10 pages the current set's sheet list.
+    # drawing-upload's step 10 pages the current set's sheet list, so it is not scanned. Its step 9b
+    # file is: the re-read of the open Questions runs in the question checker it dispatches.
     scans = (
         ("project-setup", None, ()),
         ("learn-project", None, ()),
         ("drawing-upload", None, ("10.",)),
         ("cloud-entry", None, ()),
+        ("reread", None, ()),
     )
     errors: list[str] = []
     lead_lines = 0
     for skill, only, exempt in scans:
         lead_lines += len(_lead_lines(texts[skill], only, exempt))
-        label = "drawing-upload/cloud-entry.md" if skill == "cloud-entry" else f"{skill}/SKILL.md"
+        label = {
+            "cloud-entry": "drawing-upload/cloud-entry.md",
+            "reread": "drawing-upload/reread-questions.md",
+        }.get(skill, f"{skill}/SKILL.md")
         errors.extend(_lead_read_errors(texts[skill], label, only, exempt))
     errors.extend(_lead_shape_errors(texts))
 
@@ -8824,7 +8873,7 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
         if not fixture.is_file():
             errors.append(f"fixture not found at {fixture}")
             continue
-        got = _lead_read_errors(fixture.read_text(encoding="utf-8"), fixture_name, None, ("9b.", "10."))
+        got = _lead_read_errors(fixture.read_text(encoding="utf-8"), fixture_name, None, ("10.",))
         if wanted is None:
             if got:
                 errors.append(f"{fixture_name}: clean fixture refused: {'; '.join(got)}")
@@ -8839,6 +8888,8 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
 
         mutations.append(("drawing-upload with its sheet-checker dispatch line taken out", mutated(
             "drawing-upload", re.sub(r"(?m)^\s*subagent_type\s*:\s*plumlayer:sheet-checker\s*$", "", texts["drawing-upload"]))))
+        mutations.append(("drawing-upload's step 9b file with its question-checker dispatch line taken out", mutated(
+            "reread", re.sub(r"(?m)^\s*subagent_type\s*:\s*plumlayer:question-checker\s*$", "", texts["reread"]))))
         mutations.append(("drawing-upload with its `Jobs:` line naming no fileId", mutated(
             "drawing-upload", re.sub(r"(?m)^Jobs:.*$", "Jobs: <every recognition jobId>.", texts["drawing-upload"]))))
         mutations.append(("learn-project with its orientation dispatch taken out", mutated(
@@ -8880,8 +8931,9 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
     detail = (
         f"{lead_lines} lines a lead runs scanned for {len(_LEAD_READ_VERBS)} page read verbs and "
         f"`set_grid` with rows and for the Read tool on a PDF's pages (project-setup whole, "
-        f"learn-project whole, drawing-upload outside step 10 and its step 9b file, its cloud entry "
+        f"learn-project whole, drawing-upload outside step 10, its cloud entry file and its step 9b "
         f"file whole), the sheet-checker dispatch with each job paired with its fileId, the "
+        f"question-checker dispatch in the step 9b file, the "
         f"orientation dispatch, its steps 1 to 11 and its summary shape in the agent's definition "
         f"and none of the steps in the skill, the pages file line shape given in drawing-upload "
         f"field for field as the sheet checker writes it, step 9 sending a sheet the index lists "
@@ -12391,6 +12443,220 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# Check: the Question writing sentence
+# --------------------------------------------------------------------------- #
+#
+# A review of one project's Questions found them hard to read beside the drawing they cite: a first
+# sentence that did not say the problem, a run of tags most of which were fine, a colon with no
+# list after it, a long parenthesis re-describing a tag the schedule already names, and a sentence
+# on why the answer mattered. The `ask_question` and `rewrite_question` verbs state the writing
+# rules where every agent reads them; every file that carries the plain-words phrase carries one
+# sentence that names them, word for word, so no agent that writes a Question reads the phrase
+# without it.
+#
+# The check: every shipped skill or agent file and the style doc that carries the phrase carries the
+# sentence, whitespace collapsed since it wraps, and the files known to carry the phrase are pinned,
+# so a detection that stops seeing one fails. It runs over the shipped text with the sentence taken
+# out of three files and one word of it changed, and each is refused. What it cannot judge: whether
+# a Question an agent writes follows the sentence; that stays in review and the measured re-read.
+
+QUESTION_WRITING_SENTENCE = (
+    "Its first sentence states the problem; a sentence names at most three tags, only the ones with "
+    "the problem; and it carries no colon without the list it announces, no long parenthesis, no "
+    "clause re-describing what a tag already names, no sentence on why we need the answer, and no "
+    "sentence repeating the title."
+)
+
+_QUESTION_WRITING_CARRIERS = (
+    "docs/plugin-text-style.md",
+    "plugins/plumlayer/agents/orientation.md",
+    "plugins/plumlayer/agents/question-checker.md",
+    "plugins/plumlayer/agents/scope-package-folder.md",
+    "plugins/plumlayer/agents/scope-reader.md",
+    "plugins/plumlayer/agents/scope-reviewer.md",
+    "plugins/plumlayer/agents/scope-vocabulary-reader.md",
+    "plugins/plumlayer/skills/drawing-upload/SKILL.md",
+    "plugins/plumlayer/skills/prepare-invitations/SKILL.md",
+    "plugins/plumlayer/skills/project-record/SKILL.md",
+    "plugins/plumlayer/skills/project-setup/SKILL.md",
+    "plugins/plumlayer/skills/scope-run/SKILL.md",
+    "plugins/plumlayer/skills/takeoff/SKILL.md",
+)
+
+
+def _question_writing_errors(texts: dict[str, str]) -> list[str]:
+    """One refusal per file carrying the plain-words phrase without the writing sentence, and one
+    per pinned file that no longer carries the phrase."""
+    errors: list[str] = []
+    carriers: set[str] = set()
+    for label, text in texts.items():
+        flat = " ".join(text.split())
+        if QUESTION_PLAIN_WORDS_PHRASE not in flat:
+            continue
+        carriers.add(label)
+        if QUESTION_WRITING_SENTENCE not in flat:
+            errors.append(
+                f"{label}: carries '{QUESTION_PLAIN_WORDS_PHRASE}' and not the Question writing "
+                f"sentence"
+            )
+    for label in _QUESTION_WRITING_CARRIERS:
+        if label not in carriers:
+            errors.append(f"{label}: no longer carries '{QUESTION_PLAIN_WORDS_PHRASE}'")
+    return errors
+
+
+def check_question_writing_sentence(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "question-writing-sentence"
+    paths = sorted((plugin_path / "skills").rglob("*.md")) + sorted((plugin_path / "agents").rglob("*.md"))
+    paths.append(marketplace_root / "docs" / "plugin-text-style.md")
+    texts: dict[str, str] = {}
+    for path in paths:
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[path.relative_to(marketplace_root).as_posix()] = path.read_text(encoding="utf-8")
+
+    errors = _question_writing_errors(texts)
+    carriers = sum(QUESTION_PLAIN_WORDS_PHRASE in " ".join(v.split()) for v in texts.values())
+
+    # The same arm over the shipped text broken, so every refusal is shown rather than assumed.
+    mutations: list[tuple[str, dict[str, str]]] = []
+    if not errors:
+        def without(label: str, old: str, new: str) -> dict[str, str]:
+            flat = " ".join(texts[label].split())
+            return {**texts, label: flat.replace(old, new)}
+
+        for label in (
+            "plugins/plumlayer/agents/scope-reader.md",
+            "plugins/plumlayer/agents/question-checker.md",
+            "docs/plugin-text-style.md",
+        ):
+            mutations.append((f"{label} with the writing sentence taken out", without(label, QUESTION_WRITING_SENTENCE, "")))
+        mutations.append((
+            "plugins/plumlayer/skills/takeoff/SKILL.md with three tags made four",
+            without("plugins/plumlayer/skills/takeoff/SKILL.md", "at most three tags", "at most four tags"),
+        ))
+        mutations.append((
+            "plugins/plumlayer/skills/scope-run/SKILL.md with the plain-words phrase taken out",
+            without("plugins/plumlayer/skills/scope-run/SKILL.md", QUESTION_PLAIN_WORDS_PHRASE, "Question text reads plainly"),
+        ))
+        for label, broken in mutations:
+            if not _question_writing_errors(broken):
+                errors.append(f"the check passed {label}")
+
+    detail = (
+        f"{len(texts)} files scanned, {carriers} carrying the plain-words phrase, each with the "
+        f"writing sentence, {len(_QUESTION_WRITING_CARRIERS)} carriers pinned, {len(mutations)} "
+        f"mutations refused; bound: text only, not how a Question an agent writes reads"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: the question checker's outcomes
+# --------------------------------------------------------------------------- #
+#
+# After a later delivery the question checker settles each open Question it touches in one of three
+# ways: it closes one the new paper answers, rewords an unsent one the new paper changed or replies
+# once on a sent one, and points an unchanged one at the new pages. A sent Question is never
+# reworded, since the design team holds the words it was sent with. A close needs every standing
+# place to agree, a part answered is a change, and neither a search that found nothing nor a read
+# that covered the page in part answers one. A copy sent again takes in its first copy's work before
+# it counts a close as already made. The lead waits on the new paper's text read, gives each re-read
+# its own folder, counts an addendum's pages file with the earlier deliveries' pages, and runs the
+# questions units up to four at once and the page units one at a time. The check
+# holds each of those rules by phrase in the file that carries it, and runs over the shipped text
+# with each taken out. What it cannot judge: whether a running checker decides a Question rightly;
+# that is the measured re-read's.
+
+_QUESTION_CHECKER = "agents/question-checker.md"
+_QUESTION_CHECKER_PINS: tuple[tuple[str, str], ...] = (
+    (_QUESTION_CHECKER, "ANSWERED: the new paper gives what the ask asks for"),
+    (_QUESTION_CHECKER, "CHANGED, NOT ANSWERED: the new paper moves the point"),
+    (_QUESTION_CHECKER, "UNCHANGED: the new paper says on the point what it said before"),
+    (_QUESTION_CHECKER, "never reword it"),
+    # The guard on a close: every standing place, changed sheet or not, and every part of the ask.
+    (_QUESTION_CHECKER, "The places agree only when every standing cited place agrees, including a "
+                        "place on a sheet this delivery did not change"),
+    (_QUESTION_CHECKER, "An ask of several parts is answered only when every part is; an answer to "
+                        "some of them is CHANGED"),
+    # Only a Question nobody has sent is reworded.
+    (_QUESTION_CHECKER, "Where `state` is `not_sent`: add the new places, then `rewrite_question`"),
+    (_QUESTION_CHECKER, "or one place now answers it and another disagrees on the same point"),
+    # An ended sheet's item a search did not find is never taken as gone from the set.
+    (_QUESTION_CHECKER, "A missed search never makes a Question answered"),
+    (_QUESTION_CHECKER, "Where no page of this delivery carries the view, the Question is CHANGED, "
+                        "never ANSWERED"),
+    # A read that covered the page in part is no evidence that anything is gone from it.
+    (_QUESTION_CHECKER, "An absence counts only off a page you read with `get_page_text` whose "
+                        "answer carries neither `ocr.bounded` nor `notReadReason`, never off a "
+                        "search with no hit"),
+    # A copy sent again takes in its first copy's closes before anything is counted already closed.
+    (_QUESTION_CHECKER, "take in the earlier copy's work now, as \"Sent again\" says, before you "
+                        "count anything else. Then a Question the answer carries as closed, and not "
+                        "by that copy, was settled since the list was read: count it under "
+                        "`already closed`"),
+    ("skills/drawing-upload/reread-questions.md", "Page units go one at a time, and questions units "
+                                                  "up to four at once"),
+    # The lead waits on the new paper's text read before any unit searches it.
+    ("skills/drawing-upload/reread-questions.md", "Poll `set_text_status(projectId, fileId)` on each "
+                                                  "one every few seconds"),
+    ("skills/drawing-upload/reread-questions.md", "`state` `succeeded` with `pagesNotRead` 0 is a "
+                                                  "file whose text is read"),
+    # One folder per re-read, so an earlier re-read of the same delivery never adds to the counts.
+    ("skills/drawing-upload/reread-questions.md", "every command below reads it and nothing else, so "
+                                                  "a re-read of the same delivery run earlier never "
+                                                  "adds to these counts"),
+    ("skills/drawing-upload/SKILL.md", "page units one at a time, questions units up to four at once"),
+    # An addendum's pages file carries the earlier deliveries' rows too.
+    ("skills/drawing-upload/SKILL.md", "plus the `pages to look at` on its `earlier deliveries:` "
+                                       "line"),
+)
+
+
+def _question_checker_errors(texts: dict[str, str]) -> list[str]:
+    errors = []
+    for label, phrase in _QUESTION_CHECKER_PINS:
+        if phrase not in " ".join(texts[label].split()):
+            errors.append(f"{label} does not read {phrase!r}")
+    return errors
+
+
+def check_question_checker_outcomes(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "question-checker-outcomes"
+    texts: dict[str, str] = {}
+    for label in sorted({label for label, _ in _QUESTION_CHECKER_PINS}):
+        path = plugin_path / label
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[label] = path.read_text(encoding="utf-8")
+    errors = _question_checker_errors(texts)
+
+    # Each pin taken out of the shipped text, so every refusal is shown rather than assumed.
+    refused = 0
+    if not errors:
+        for label, phrase in _QUESTION_CHECKER_PINS:
+            broken = {**texts, label: " ".join(texts[label].split()).replace(phrase, "")}
+            if _question_checker_errors(broken):
+                refused += 1
+            else:
+                errors.append(f"the check passed {label} with {phrase!r} taken out")
+
+    detail = (
+        f"{len(_QUESTION_CHECKER_PINS)} phrases held over {len(texts)} files (the question checker's "
+        f"three outcomes, the sent rule, the guard on a close, the unsent condition, a missed search "
+        f"or a partial read never answering one, a copy sent again counted first, the lead's wait "
+        f"on the text read, one folder per re-read, an addendum's pages file count, and the lead's "
+        f"four questions units at once), {refused} mutations "
+        f"refused; bound: text only, not how a running checker decides"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -12426,6 +12692,8 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_fold_one_level_down(plugin_path, marketplace_root),
         check_project_folder_by_id(plugin_path, marketplace_root),
         check_whole_manual_sections(plugin_path, marketplace_root),
+        check_question_writing_sentence(plugin_path, marketplace_root),
+        check_question_checker_outcomes(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

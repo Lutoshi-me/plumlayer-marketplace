@@ -56,11 +56,14 @@ A Question an agent raises with `ask_question` is not shipped plugin text, but t
 the site exactly like any other user-facing string, so it answers to the same rules as everything
 else in this contract. Question text is plain estimator words: no em dashes, no internal names (a
 predicate, an internal step, a field, or another Question's own internal name), no bold for
-emphasis, one vocabulary the same as section 3 requires. What makes a Question worth raising, and
-its title, its citations and how it reads to the design team, is the standard the `ask_question`
-verb's own description states, where every agent reads it at the verb; this section keeps only
-the plain-words rule, and `learn-project` keeps one worked example. Every skill or agent file that
-tells an agent to raise a Question carries the plain-words phrase and points at the verb's
+emphasis, one vocabulary the same as section 3 requires. Its first sentence states the problem; a
+sentence names at most three tags, only the ones with the problem; and it carries no colon without
+the list it announces, no long parenthesis, no clause re-describing what a tag already names, no
+sentence on why we need the answer, and no sentence repeating the title. What makes a Question worth
+raising, and its title, its citations and how it reads to the design team, is the standard the
+`ask_question` verb's own description states, where every agent reads it at the verb; this section
+keeps only the plain-words rule, and `learn-project` keeps one worked example. Every skill or agent
+file that tells an agent to raise a Question carries the plain-words phrase and points at the verb's
 standard instead of restating either.
 
 ### Record text never carries another entry's name
@@ -374,8 +377,9 @@ Each of these is a harness check.
     trade it did not name makes window 3 review every package, and a trade the package fold
     re-homes a row to is reviewed off the `fold touched` line the folder's re-home appends to
     `trades/fold.txt`; the reviewer asks the manual itself
-    before calling it silent; and drawing-upload's re-read of the open Questions, in the file it
-    reads at step 9b, reads the uploaded delivery by its id and cites its file. This cannot judge whether a reader sends the file on
+    before calling it silent; and drawing-upload's re-read of the open Questions, run by the
+    question checker the file it reads at step 9b dispatches, reads the uploaded delivery by its
+    id and cites its file. This cannot judge whether a reader sends the file on
     every citation; that stays in review and the measured pass.
 25. The runner copies each worker's anomalies onto the ledger. The summary script builds the
     summary's `anomalies:` line from the ledger's `anomaly` notes alone, and the close-out names
@@ -407,10 +411,11 @@ Each of these is a harness check.
     talks to stays there, and a setup on a set of about 240 sheets once took that session from 58k
     to 774k tokens. No page read verb (`render_page`, `get_page_text`, `search_set_text`,
     `reconcile_index`), and no `set_grid` other than a summary call with `limit: 0`, sits on a line
-    a lead runs: project-setup whole, learn-project whole, drawing-upload outside its step 10 and
-    its step 9b file, and drawing-upload's cloud entry file whole, and no line there reads a PDF's
+    a lead runs: project-setup whole, learn-project whole, drawing-upload outside its step 10, and
+    drawing-upload's cloud entry file and its step 9b file whole, and no line there reads a PDF's
     pages with the Read tool. drawing-upload carries its `plumlayer:sheet-checker` dispatch, pairing
-    each recognition job with its `fileId`, learn-project its `plumlayer:orientation` dispatch and
+    each recognition job with its `fileId`, its step 9b file its `plumlayer:question-checker`
+    dispatch, learn-project its `plumlayer:orientation` dispatch and
     the first line of its summary, with orientation's numbered steps and summary shape in
     `agents/orientation.md` and none in the skill the lead loads, drawing-upload gives the pages
     file's line shape as the sheet checker writes it and sends a sheet the index lists and the set
@@ -538,6 +543,14 @@ Each of these is a harness check.
     fix broken again, in the script and in the text, is refused. This cannot judge how a running
     reader handles a refusal, or a run's real wall time and duplicate groups; those are the measured
     run's.
+33. Question text reads easily. Every shipped skill or agent file, and this file, that carries
+    the phrase "Question text is plain estimator words" carries the one writing sentence after
+    it, word for word, and the files known to carry the phrase are pinned. This cannot judge
+    whether a Question an agent writes follows it; that stays in review.
+34. The question checker settles a Question in three ways. `agents/question-checker.md` carries
+    its three outcomes, answered, changed and unchanged, and `never reword it` for a Question
+    that has gone out. This cannot judge whether a running checker decides rightly; that is the
+    measured re-read's.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

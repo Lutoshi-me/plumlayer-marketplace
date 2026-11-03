@@ -11,6 +11,6 @@ description: >
 
 Call `set_grid(projectId, limit: 0)` and read `count` off it. Send every page read to the agent.
 
-## 9b. Re-read the open Questions
+## 10. Close out
 
 Here `get_page_text` and `render_page` stay where the step runs, since this heading is exempt.
