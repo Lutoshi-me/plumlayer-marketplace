@@ -230,8 +230,14 @@ A newly created scope item is a full row, not a name. Every new item writes:
   specialties", "Kitchen casework", "Countertops", "Resilient flooring"). Never the sheet, room or
   drawing it was read on, never another trade's name, and never two kinds of work joined into one
   heading. Every row under one heading sits on the same trade. Take a heading from the page's
-  context read only where its rows are the same kind of work as yours. The review surface groups
-  by this: an uncategorized list renders as a wall.
+  context read only where its rows are the same kind of work as yours. The door refuses a heading
+  that is one of the record's internal names, read in any casing and with a hyphen or underscore
+  as a space, such as `scope`, `trade boundary`, `trade convention`, `convention`, `boundary`,
+  `candidate`, `claim`, `contested`, `ambiguity`, `register`, `kind`, `family`,
+  `uncategorized`, `other`, `misc` or `tbd`; and it refuses a heading that is a lowercase token
+  joined by hyphens or underscores with no spaces (`metal-studs`, `toilet_accessories`); write a
+  short heading an estimator would put on a scope sheet, naming the class of work, spelled out
+  with spaces. The review surface groups by this: an uncategorized list renders as a wall.
 - **trade** (required), recorded as `belongsToTrade`: the catalog trade that names the work as
   the firm that installs it, the finest such trade the catalog carries. Where the manual specifies
   the work in a numbered section, use the catalog trade for that section. Otherwise use the trade

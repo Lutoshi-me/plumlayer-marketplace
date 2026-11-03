@@ -346,7 +346,8 @@ of them is ever trimmed.
    cabinets", "Postal specialties", "Kitchen casework", "Countertops", "Resilient flooring"); never
    the sheet, room or drawing it was read on, never another trade's name, and never two kinds of
    work joined into one heading; every row under one heading sits on the same trade; take a
-   heading from the context read only where its rows are the same kind of work as yours),
+   heading from the context read only where its rows are the same kind of work as yours; the
+   headings the door refuses are named below, after the length bounds),
    `belongsToTrade` (required, mandate 4), `description` (optional, zero to three sentences: only
    what a bidder must know to price the line that the name and citation do not already say, such
    as the product or method the drawings call for, the extent or limits, a rated or special
@@ -393,7 +394,14 @@ of them is ever trimmed.
    as a whole word. Recorded text is what the bidder reads: plain sentences, no em dashes, no
    bolding. The door refuses text over its bound (`name` 80 characters, `mark` 24, `category` 60,
    `description` 400, `notesExternal` and `notesInternal` 300 each); a row shaped by this rule
-   never comes near them, and a verbose row is a defect. A row's text never carries another item's
+   never comes near them, and a verbose row is a defect. The door also refuses a `category` that is
+   one of the record's internal names, read in any casing and with a hyphen or underscore as a
+   space, such as `scope`, `trade boundary`, `trade convention`, `convention`, `boundary`,
+   `candidate`, `claim`, `contested`, `ambiguity`, `register`, `kind`, `family`,
+   `uncategorized`, `other`, `misc` or `tbd`; and it refuses a `category` that is a lowercase
+   token joined by hyphens or underscores with no spaces (`metal-studs`, `toilet_accessories`);
+   write a short heading an estimator would put on a scope sheet, naming the class of work,
+   spelled out with spaces. A row's text never carries another item's
    subject id or a hand-written SUPERSEDED or date tag, per docs/plugin-text-style.md. Where an
    existing item needs to split into two, `retire_scope_item` names why and you CREATE each half
    fresh.
