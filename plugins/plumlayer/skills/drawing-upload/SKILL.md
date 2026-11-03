@@ -389,6 +389,20 @@ did not observe that. What the server says on each poll:
   issue already holds the title, discipline, or type this pass read, so this pass wrote none of them.
   When it is above zero, tell the user this issue was read after a newer one and that the newer
   issue's values stand on those sheets. Do not record this issue's values over them.
+- On a `succeeded` pass, `written.numbersReplaced` lists the pages where this pass read a different
+  sheet number from the one the page carried, and the page now carries the new number. Each item
+  has `pageInPdf`, `from`, and `to`. When `pages` is above zero, tell the user each one: page
+  {pageInPdf} was {from} and now reads {to}, and the marks, scale, packages, citations, and any
+  title, discipline, or type entered on {from} are now on {to}. A number a person or an agent
+  entered is replaced only by a number the reader had not read on that page before.
+- On a `succeeded` pass, `written.numbersKept` lists the pages where a number stays although this
+  pass read another number there, or none (`read` is null). Each item has `pageInPdf`,
+  `sheetNumber`, and `read`. The number stays because work sits on it (takeoff marks, a scale, a
+  package, a citation from a scope item or a Question, or a title, discipline, or type someone
+  entered) or because another number already holds the page. When `pages` is above zero, tell the
+  user {sheetNumber} stays on page {pageInPdf} although the drawing now reads {read} there (or no
+  number), and ask whether to move that work and take {sheetNumber} off the page with
+  `remove_sheet_from_page`. Never take a number off yourself without the user's answer.
 - `report.pagesUnread` lists pages the pass did not read at all (each such `unnamedPages` row says
   why in `unread`). Those pages are not in `enteredValuesKept`; the set unit in step 6 sends them
   to be read.
