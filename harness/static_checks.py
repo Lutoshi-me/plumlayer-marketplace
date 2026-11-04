@@ -7876,7 +7876,22 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         (checker_flat, "the question checker", "`set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)`"),
         (checker_flat, "the question checker", "`search_set_text` its tag with `deliveryId` set to this delivery"),
         (checker_flat, "the question checker", "with this delivery's `fileId`"),
-        (checker_flat, "the question checker", "Keep every existing source"),
+        (checker_flat, "the question checker", "with every existing source standing"),
+        # An unsent Question's old pages come off as the new ones go on; a sent one keeps the
+        # places the design team was sent, and the door keeps its last sheet or section.
+        (checker_flat, "the question checker", "comes off with `retract_source` where it is a sheet, with or without a box, whose `changed` line in `sheets.txt` reads `current`"),
+        (checker_flat, "the question checker", "A spec section, a reply's place, and every place of a sent or closed Question stay."),
+        (checker_flat, "the question checker", "the new boxes, then the removals, then `rewrite_question` last."),
+        # A Question keeps its own ask; a place dropping the item is followed to where it went;
+        # a rewrite reads as the one set the design team has, no longer than what it replaces.
+        (checker_flat, "the question checker", "a new tag, a new item or a new mismatch the new paper raises is never folded into it"),
+        (checker_flat, "the question checker", "One place dropping the item answers nothing until you know where the item went"),
+        (checker_flat, "the question checker", "never a value read off another page"),
+        (checker_flat, "the question checker", "a place on a sheet this delivery did not change included"),
+        (checker_flat, "the question checker", "A sheet whose `changed` line reads `older` keeps every place"),
+        (checker_flat, "the question checker", "check that `sources.length` plus the boxes you will add stays within fifty"),
+        (checker_flat, "the question checker", "Write a rewrite as of the current set, this delivery together with the sheets it leaves standing"),
+        (checker_flat, "the question checker", "A rewrite stays under 120 words"),
         # The handoff on the two paths with no scope pass to name.
         (upload_flat, "drawing-upload", "No scope pass reads a project manual on its own"),
         (upload_flat, "drawing-upload", "holds no sheet number"),

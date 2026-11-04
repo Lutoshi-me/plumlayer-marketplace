@@ -9,8 +9,8 @@ unit, so no Question's thread and no page lands in this conversation. The agent'
 how a Question is read against the new paper and what it writes; none of it is restated here, and
 you never read a Question's thread or a page yourself. It closes each Question the new paper
 answers, with one line naming where, rewrites each one nobody has sent that the new paper changed,
-replies once on each sent one it changed, and points each one it still applies to at the new pages.
-It raises none.
+replies once on each sent one it changed, and points each one it still applies to at the new pages,
+taking the old pages off an unsent one. It raises none.
 
 Each re-read has a folder of its own. When step 9b starts, note the time with
 `date -u +%Y%m%dT%H%M%SZ` and make `<upload folder>/reread-<that time>/reports/` with
@@ -56,8 +56,8 @@ adds to these counts. The sheet checker's files stay where "Who reads the pages"
    `grep -h '^closed |' <re-read folder>/reports/questions-*.md` for every close, with its title or
    RFI number and its note; `grep -h '^rewritten |' <re-read folder>/reports/questions-*.md` for
    every rewrite, by its new title; the counts with
-   `awk '/^closed [0-9]/ {c+=$2; w+=$4; r+=$6; u+=$8; p+=$11} /^read [0-9]/ {s+=$5} END {print "in scope", s, "closed", c, "rewritten", w, "replied", r, "unchanged", u, "places added", p}' <re-read folder>/reports/questions-*.md`;
-   and `grep -hE '^(no room|no box|not found|pages not read|new disagreement|not returned) \|' <re-read folder>/reports/questions-*.md`
+   `awk '/^closed [0-9]/ {c+=$2; w+=$4; r+=$6; u+=$8; p+=$11; t+=$14} /^read [0-9]/ {s+=$5} END {print "in scope", s, "closed", c, "rewritten", w, "replied", r, "unchanged", u, "places added", p, "taken off", t}' <re-read folder>/reports/questions-*.md`;
+   and `grep -hE '^(taken off|no room|no box|not found|pages not read|new disagreement|not returned) \|' <re-read folder>/reports/questions-*.md`
    for the rest.
 
 A dispatch carries pointers and nothing else. Dispatch the list unit alone and take its report
@@ -103,10 +103,12 @@ or by its RFI number ("RFI 22") once it holds one, with the line naming where, a
 the Questions I closed because the new set answers them (the new addendum, or the new manual, as it
 is); review them first and reopen any that is wrong. Then the ones I reworded to read as of the new
 paper, by their new titles, since nobody had sent them. Then how many I replied to saying what
-changed, how many I left as they were because I found their point unchanged, and how many places I
-added. Then any I added no place to because it holds ten already, any I pointed at a sheet with no
-box because I found no words for the callout on its page, any citing a sheet that is no longer in
-the new set, and any I left alone because the text of the new pages they need never finished
+changed, how many I left as they were because I found their point unchanged, how many places I
+added, and which old pages I took off because the new paper printed them again or no longer prints
+them, each by its Question and sheet. Then any I added no place to because it holds ten already, any
+I pointed at a sheet with no box because I found no words for the callout on its page, any citing a
+sheet that is no longer in the new set, and any I left alone because the text of the new pages they
+need never finished
 reading, naming that file. Then each disagreement I found on another point, by sheet, for you to
 decide whether to ask about it.
 <!-- /user-facing -->
