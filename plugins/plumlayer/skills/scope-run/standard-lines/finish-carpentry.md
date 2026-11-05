@@ -1,0 +1,23 @@
+# Finish Carpentry
+
+Numbers: 06 20
+Home: 06 20
+
+| Kind | Line | Condition | Where to Look | Row Name |
+|---|---|---|---|---|
+| Which Trade | Casework Install by Casework or Finish Carpentry | The drawings show casework, and the casework section is furnish only or names installation by another section, or the owner or FF&E furnishes the casework | casework elevations; Division 12 35 30 or 06 41 00 Part 3; Division 06 20 00; owner furnished equipment list | Casework install |
+| Which Trade | Door and Hardware Install by Finish Carpentry | Doors and finish carpentry or drywall are separate packages on this job, the door schedule shows doors with hardware sets, and the door and hardware sections furnish only or do not name who installs | door schedule; Division 08 14 16 and 08 71 00 Part 3; Division 06 20 00 | Door and hardware install |
+| Which Trade | Toilet Accessory, Fire Extinguisher Cabinet and Mailbox Install by Specialties, Finish Carpentry, Drywall or Plumbing | Specialties and finish carpentry, drywall or plumbing are separate packages on this job, and the plans or bath elevations show toilet accessories, fire extinguisher cabinets or mailboxes | floor plans; bath elevations; Division 10 28 00, 10 44 00 and 10 55 00 | Specialty item install |
+| Convention | Window Sills, Aprons and Casing | The window schedule shows new windows with interior trim, sills or aprons | window details; interior elevations; window schedule | Interior window trim |
+| Which Trade | Wood Casing at Door Frames by Finish Carpentry | The door details, door schedule or finish schedule show wood casing or trim at door frames | door frame details; door schedule; finish schedule; Division 06 20 00 | Wood casing at door frames |
+| Which Trade | Millwork Install with Finish Carpentry | Millwork and finish carpentry are separate packages and the drawings show architectural millwork | Division 06 40 00 architectural woodwork; interior elevations | Millwork install |
+| Pricing | Hoisting and Distribution of Own Material |  |  | Hoisting own finish material |
+| Which Trade | Countertop Install by Countertops, Millwork or Finish Carpentry | The drawings show countertops and a countertop section exists apart from the finish carpentry and millwork sections | Division 12 36 00 countertops; casework elevations | Countertop install |
+| Which Trade | Appliance Install by Appliances or Finish Carpentry | The appliance schedule lists appliances, and the appliance section is furnish only, does not name who installs, or is not in the project manual | appliance schedule; Division 11 31 00 Part 3; Division 06 20 00; unit kitchen plans | Appliance install |
+| Which Trade | FRP Panels with Drywall | The finish schedule lists FRP panels | finish schedule; Division 06 or 09 FRP section | FRP panels |
+| Pricing | Sales Tax on Supplied Materials | The package includes material the sub supplies (a product spec section in the package) and the project manual does not say the job is tax exempt | the package's spec sections; Division 00 and Division 01 for a tax exemption | Sales tax on supplied materials |
+| Which Trade | Window Install by Windows, Framing, Finish Carpentry or Siding | The window schedule or window section shows punched units (vinyl, fiberglass or wood) a supplier furnishes, not a window wall the window sub installs, and two or more of windows, rough carpentry, finish carpentry and siding are separate packages on this job | window schedule; window details; Division 08 50 00 or 08 52 00 Part 3; Division 06 10 00 and 07 46 00 | Window install |
+| Which Trade | Hollow Metal Frames Set by Drywall | Drywall and doors or finish carpentry are separate packages on this job, and the door schedule shows hollow metal frames in gypsum board or metal stud walls | door schedule; wall types; frame details; Division 08 11 13 | Hollow metal frame setting |
+| Which Trade | Wood Trim and Base Furnished by Finish Carpentry | Millwork and finish carpentry are separate packages and the drawings show wood trim or base profiles | trim and base profile details; finish schedule | Wood trim and base supply |
+| Which Trade | Shade Pocket by Drywall or Finish Carpentry, Fascia by Window Treatments | The window treatment section or reflected ceiling plans show shade pockets or headboxes recessed in the ceiling, or fascias at the shades | reflected ceiling plans; window head details; Division 12 24 00 | Shade pockets; Shade fascias |
+| Which Trade | Exterior and Balcony Door Install with Framing | The door schedule shows new exterior or balcony doors in wood framed walls and finish carpentry is a separate package | door schedule; floor plans; exterior elevations | Exterior and balcony door install |

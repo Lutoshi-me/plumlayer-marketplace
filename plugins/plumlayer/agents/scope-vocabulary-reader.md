@@ -92,22 +92,27 @@ of them is ever trimmed.
    per page, not per row, one `list_scope_items(category: <each section of the context read whose
    rows are that kind of thing>)`. `search` returns raw entries, live and replaced alike, so read a
    hit's current row with `list_scope_items(subjectPrefix: <its subject>)` before you rely on it.
-   A live row naming the same tag, model or code within one tag system, or the same product in the
-   same place, is the row: cite your sheet on it as an UPDATE. LVT-1 and LVT-01 are one tag. The
+   A live row naming the same tag, model or code within one tag system, or the same named product,
+   is the row: cite your sheet on it as an UPDATE. LVT-1 and LVT-01 are one tag. The
    tag, model or code names the item itself, never what it sits on, under, beside or serves (the
    underlayment beneath LVT-1 is its own work), and a model number is the item's own, never a part
-   it shares with other items: a tub and a shower on one valve model are two fixtures. Furnishing
-   and installing an item are two rows only where a package's `notes` put them on two packages. The
-   same place is the room, room type or area both rows name; a tag holds within one place, so one
-   tag in two places is two rows, and a row kept per level (posts, holdowns, headers counted per
-   level) is its own place. Hold a batch's own rows against each other by this test too: a
-   schedule row and a plan row for one item are one row. A row naming no place, a door type or a
-   typical detail, covers wherever its type is used, so a plan showing that type in a named room is
-   cited on the type row, never a new one. Two rows that both name places are one piece of work
-   only where they cover the same extent; where one covers more (the units, against the units and
-   the corridors), they are not. Two rows each claiming the whole of one surface or one fixture in
-   one place are one piece of work even under different codes, the disagreement below, while the
-   layers or parts of one assembly under their own codes stay separate rows. Two schedules that
+   it shares with other items: a tub and a shower on one valve model are two fixtures. One product
+   is one row across the job, wherever it is used: a tag on every level, in two buildings or in many
+   rooms is one row citing each sheet that shows it, and a level, floor or plan is never a reason
+   for a second row, so the subfloor on six floor plans, the holdowns on every level and one
+   panelboard type in many rooms are one row each. A row naming no place, a door type or a typical
+   detail, covers wherever its type is used, so a plan showing that type in a named room is cited on
+   the type row, never a new one. One product is two rows only where the drawings or the manual
+   separate the work: its supply and its install, where a package's `notes` put them on two
+   packages, a schedule calls it furnished by one party and installed by another, or the manual
+   specifies the supply and the install in separate sections, each row named for its half ("Window
+   Type A, Supply" and "Window Type A, Install"); and on a finish trade, the areas mandate 5 heads
+   its rows by, where the finish schedule or the plans call the product in more than one of them,
+   each row named for its area. Hold a batch's own rows against each other by this test too: a
+   schedule row and a plan row for one item are one row. Two rows each claiming the whole of one
+   surface or one fixture in one place are one piece of work even under different codes, the
+   disagreement below, while the layers or parts of one assembly under their own codes stay separate
+   rows. Two schedules that
    number their tags apart (a fixture list on an architectural sheet and the plumbing schedule) are
    two tag systems: a tag both print is not by itself the same work, and one fixture under two tags
    is found by what it is and where it goes.
@@ -338,28 +343,62 @@ of them is ever trimmed.
    trade, the same catalog code in the predicate, its value an object and never the bare word:
    `{"role": "candidate", "note": "confirm trade responsibility: could be 09 21 16 or 06 10 00"}`,
    the note internal and never bidder-facing. Keep moving; never hold a row back for its trade and
-   never raise a Question for it. The trade rides in the same `record_batch` as the name. Whether a
-   row is an exclusion, a general requirement, or an alternate is a person's call at the package
-   surface, never yours; what you read that points toward one goes in `notesExternal`.
+   never raise a Question for it. The trade rides in the same `record_batch` as the name. Which
+   trade carries a piece of work is a row, never a note. Where a sheet or the manual says work is by
+   others, not in contract, by the owner or a tenant, under a separate contract, or furnished by one
+   party and installed by another, write that work as a row of its own on the catalog trade of the
+   firm the paper names as carrying it, and in the same batch one `packageRole:<trade>` record for
+   the trade whose work the note sits beside, its value `{"role": "exclusion", "counterparty": "<the
+   catalog id of the trade that carries it, owner where the owner or a tenant does, or left off
+   where the paper names no one>"}`. Where the paper names the owner, a tenant or no one, the row's
+   own trade is the trade it sits beside, and the exclusion is on that same trade. Name the row the
+   way the bidder reads it ("Power to heat trace by electrical", "Retail walls and ceilings not in
+   contract"). Where a live row already carries the work, write the exclusion record onto it and
+   cite your page there. A note that has a trade carry its own general costs (hoisting its own
+   material, protecting its own work, tax on what it supplies, its own cleanup) is one row for each
+   such cost on that trade, `category` `General Items`, with one `packageRole:<that trade>` record
+   valued `{"role": "general-requirement"}` in the same batch. Whether a row is an alternate stays a
+   person's call at the package surface; what you read that points toward one goes in
+   `notesExternal`.
 5. THE ROW: every new item writes the row the way it reads on a scope sheet, and the citation
    carries the detail. `name` (required: what is done, to what, where, under about twelve words,
    the way a sub would say it; a mark or tag belongs here when it is how the sub finds the work,
    "Grab bar TA-07, 42 inch"), `category` (required: the heading the row sits under on its trade's
-   scope sheet, naming what its items are in the words a sub uses ("Toilet accessories", "Medicine
-   cabinets", "Postal specialties", "Kitchen casework", "Countertops", "Resilient flooring"); never
-   the sheet, room or drawing it was read on, never another trade's name, and never two kinds of
-   work joined into one heading; every row under one heading sits on the same trade; take a
-   heading from the context read only where its rows are the same kind of work as yours; the
-   headings the door refuses are named below, after the length bounds),
-   `belongsToTrade` (required, mandate 4), `description` (optional, zero to three sentences: only
-   what a bidder must know to price the line that the name and citation do not already say, such
-   as the product or method the drawings call for, the extent or limits, a rated or special
-   condition; a simple item has none), `notesExternal` (optional, one sentence: an instruction to
-   the bidder about the line, what is by others, what to break out, what to confirm, what is an
-   alternate), `notesInternal` (optional, one sentence: a watch item for the estimator, an open
+   scope sheet, in Title Case, with a, an, and, as, at, by, for, from, in, into, of, on, or, the, to
+   and with lowercase after the first word. On a structure, envelope, site or MEP trade it names the
+   kind of work or the system the row is part of, the way a sub groups his own scope ("Foundations",
+   "Slabs and Flatwork", "Piping", "Fixtures", "Equipment", "Fire Alarm", "Low Voltage"). On a
+   finish trade (flooring, tile, painting and wall coverings, acoustical ceilings, toilet
+   accessories, casework, countertops, appliances, window treatments and finish carpentry) it names
+   the area the row is in where the job has more than one, in the job's own words for it off the
+   finish schedule or the plans ("Units", "Common Area", "Amenity", "Back of House"), and otherwise
+   the kind of work ("Toilet Accessories", "Medicine Cabinets", "Postal Specialties", "Kitchen
+   Casework", "Countertops", "Resilient Flooring", "Floor Prep and Underlayment"). A phase or
+   building heading only where the drawings or the manual separate the work by phase or by
+   building; a product used in two buildings is otherwise one row under one heading. Never the
+   sheet, room or drawing it was read on, never another trade's name, never a heading for
+   specifications, products or references, and never two unrelated kinds of work joined into one
+   heading; every row under one heading sits on the same trade; take a heading from the context
+   read where its rows are
+   the same kind of work, or in the same area, as yours; the headings the door refuses are named
+   below, after the length bounds), `belongsToTrade` (required, mandate 4), `description` (optional,
+   at most two short sentences and
+   about thirty words, not counting the codes the row names: only what a bidder must know to price
+   the line that the name and citation do not already say, the product or method, the extent or
+   limits, a rated or special condition; never a spec article number, a schedule's values or a tag
+   the row is not for, since the citation carries them; a simple item has none. On a finish row the
+   extent is the rooms or room types the room finish schedule lists it in ("Unit kitchens and
+   baths", "Corridors, levels 2 to 5"), read off the finish schedule and never off a material key or
+   legend alone, which says what a finish is and not where it goes; where your sheet is the key,
+   find the schedule with `search_set_text` for the finish's code and cite it. Mandate 1's two
+   products in a disagreement are the one description that runs longer), `notesExternal` (optional,
+   one sentence: an instruction to the bidder about the line, what to break out, what to confirm,
+   what is an alternate; work by others is a row of its own, mandate 4), `notesInternal` (optional,
+   one sentence: a watch item for the estimator, an open
    Question on the row, or how the row's count or grouping was reached and what a correction
-   replaced; never a citation audit, and never a conflict between two documents, which is a
-   Question. Where it already holds text that asks something or names an open Question, every
+   replaced; never a citation audit, never which trade carries the work, which is a row under
+   mandate 4, and never a conflict between two documents, which is a Question. Where it already
+   holds text that asks something or names an open Question, every
    sentence you add, a correction, an anomaly mandate 1 lands there, or the sheet an answer was
    found on, goes after that text, kept whole, never in its place. Where the two do not fit the
    field's 300 characters, shorten yours and never the earlier text; where even a short sentence
@@ -408,16 +447,19 @@ of them is ever trimmed.
    subject id or a hand-written SUPERSEDED or date tag, per docs/plugin-text-style.md. Where an
    existing item needs to split into two, `retire_scope_item` names why and you CREATE each half
    fresh.
-6. GRAIN: one row per product type, and one row per product where the set names the product. A
+6. GRAIN: one row per product across the job, as mandate 1 says: one row per product type, and one
+   row per product where the set names the product. A
    product type is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
    medicine cabinet, a walk-off mat, an acoustic underlayment. Where the set names products by a
    model number, or by a legend or schedule code that stands for one product, each product is its
    own row, named with its code and what it is ("Towel bar TA-04, 24 inch", "Medicine cabinet
-   MC-2, 16 by 22 inch"), with the model in the description. Instances are never rows: one towel
-   bar TA-04 in twenty bathrooms is one row, and where the set counts them the count is its
-   quantity. A schedule of places, such as a room finish schedule or a door schedule, is read for
-   the products and types it calls for, one row each ("Luxury vinyl tile flooring, LVT"), never
-   one row for the whole schedule. A schedule of one assembly's types that differ only in size or
+   MC-2, 16 by 22 inch"), with the model in the description. Instances are never rows: one towel bar
+   TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
+   where the set counts them the count is its quantity. A schedule of places, such as a room finish
+   schedule or a door schedule, is read for
+   the products and types it calls for, one row each ("Luxury vinyl tile flooring, LVT"), never one
+   row for the whole schedule, and each finish row's `description` names its extent as mandate 5
+   says. A schedule of one assembly's types that differ only in size or
    spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
    written out. Never copy a schedule's columns into a row: the row names its product and cites
    the schedule row that defines it (mandate 2). A row is never a whole sheet and never a package

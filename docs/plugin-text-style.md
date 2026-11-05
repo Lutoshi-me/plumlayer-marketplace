@@ -551,6 +551,34 @@ Each of these is a harness check.
     its three outcomes, answered, changed and unchanged, and `never reword it` for a Question
     that has gone out. This cannot judge whether a running checker decides rightly; that is the
     measured re-read's.
+35. The standard lines go to one package each. The 46 trade files under
+    `skills/scope-run/standard-lines/` carry 287 lines, each row five cells, one of the four kinds,
+    a line, a place to look wherever there is a condition, and a row name, and each file one or more
+    Home numbers, each one its numbers start, and at most one `Else:` line naming another file's
+    title. A row name is at most 36 characters with no comma, one per half of a Which Trade line and
+    one for any other line, never twice in a file and never shared by two lines. Each Which Trade
+    line names only trades the check knows, a trade named before `Install` among them, reads the
+    same in every file whose trade its line or its condition names, and shares its condition with
+    no other line, so one piece of work has one line. The shipped `standard_lines.py` is run over production
+    package patterns whose files are assigned in the check apart from the script: each file goes to
+    the one package the case names, and the script prints exactly the distinct lines of that
+    package's files, each once with its kind, row name, condition and place to look, a line with no
+    condition with its instrument at the plugin version, and nothing where no file goes to it. Each
+    Which Trade case prints its halves' writers and records, and with every file on its own package
+    every half of every Which Trade line has one set of writers every other package names, and
+    every printed name is `<row name>, <package name>` within 80 characters, or `<row name>,
+    <tradeCode>` for a 61-character package name. A bad kind, an empty line, a short row, a number
+    two files claim, a number not written as pairs of digits, a table with no header, no Home line,
+    a Home number outside the file's numbers, an `Else:` line naming no other file, a long row
+    name, a row name with a comma, one row name for two halves, an unknown trade, a code spaced
+    another way, a package not on the list or given twice, no name and a missing folder are each
+    refused in one line. The reviewer, the runner, the skill and both readers keep the rules that
+    hold a line to its condition, keep it from ever being a Question, take the package list before
+    the script, write what the script prints, let the paper give this package's own half to it or
+    to another trade over what the script printed, name each row and each
+    kind row of mandate 12 for its package, put the headings in build order and save that order,
+    and shape the exclusion and general requirement records. This cannot judge whether a running
+    review finds a condition rightly; that is the measured run's.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

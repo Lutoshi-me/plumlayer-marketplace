@@ -2,7 +2,7 @@
 name: scope-round-runner
 description: Runs one pass of a Plumlayer scope run, over sheets or over up to four package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, or one scope-reviewer per package, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 model: sonnet
-tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__verify_unit
+tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
 
 You own one pass of a scope run, from its first dispatch line to its last, and then you end. Your
@@ -196,7 +196,11 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    review mode copies the reviewer's line the same way. Its `grain questions:` and
    `door-owned suggestions:` lines go on the ledger the same way, as
    `note <window> <pass> <unit> grain <the line>` and `note <window> <pass> <unit> door <the line>`,
-   so the lead's check-in carries them to the estimator. On a unit run again after a stop, append
+   so the lead's check-in carries them to the estimator. In review mode, each entry of the
+   report's `standard lines:`, on its label's line or under it, that ends `row not yet written`
+   goes on the ledger the same way, as `note <window> <pass> <unit> anomaly <the entry>`, so the
+   check-in carries to the estimator each half the paper gives to the reviewed package's trade
+   while the row it would cite was not yet written. On a unit run again after a stop, append
    only the lines step 2's look did not already find among that unit's notes. Then
    append the unit's `verified` line, last, so a `verified` line still means its unit is complete.
    The reader's own verification and yours are two separate boundaries and neither replaces the
@@ -358,7 +362,17 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   is in pass mode: one `search(subject: "<that subject>", full: true)` per line, paged with
   `offset` until it comes back whole, which must carry an entry that no other entry's
   `supersedesId` names and whose evidence names that section (`specSection:<packed code>`) and
-  that page; one it does not carry is a mismatch. Each Question id is found back with one
+  that page; one it does not carry is a mismatch. Each row on the review's `headings written:` line
+  after its first is found back with one `search(subject: "<subject>", predicate: "category")`,
+  whose live entry, the one no other entry's `supersedesId` names, must carry that heading; one it
+  does not carry is a mismatch. Where the first line of `headings written:` names headings, the
+  order the review saved is read back with one `solicitation_get_package(packageId)` for the
+  package you dispatched it for, and its `categoryOrder`, each entry trimmed of the spaces around
+  it, must carry the headings on the review's `headings written:` first line, each trimmed the
+  same way, in that order. A heading the review wrote that the list lacks or holds out of that
+  order, or no list, is a mismatch; a listed heading the review did not write is not one, since
+  the package keeps a listed heading no row carries.
+  Each Question id is found back with one
   `search(subject: "<question id>")`, each `questions linked:` line by its first row as in pass
   mode, and a created subject with no trade and no candidate is a mismatch. A Question the
   reviewer raised or replied to that is on neither its `questions linked:` line nor its

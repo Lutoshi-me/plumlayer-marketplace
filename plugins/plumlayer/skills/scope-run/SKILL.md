@@ -149,8 +149,9 @@ that relaxes any one of them reproduces a measured, named failure.
    refuses a new scope item with no trade and no candidate, and refuses a trade the catalog does
    not carry, on `belongsToTrade` and inside `packageRole:<trade>` alike. `record_batch` is atomic
    and order free, so the trade rides in the same batch as the name; `record` carries one entry, so
-   there the trade entry is written first. Whether an item is an exclusion, a general requirement,
-   or an alternate is still a person's call at the package surface.
+   there the trade entry is written first. Work the paper says is by others is an exclusion row, and
+   a trade's own general costs are general requirement rows, as the reader's mandate 4 says; whether
+   an item is an alternate is still a person's call at the package surface.
 5. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
    the record back and confirms the count that landed equals the count sent, and checks any
    conflicting rows individually, before it ends. The pass runner separately re-verifies the same
@@ -165,14 +166,18 @@ that relaxes any one of them reproduces a measured, named failure.
    lead reports as runner-verified rather than asserting a check it did not run. The lead never calls the unfiltered `list_scope_items` during
    the run: that verb walks the whole scope list, and pulling it is how the lead's context stops
    being cheap. Counts only, `limit: 0`, is the one call the lead makes on it.
-6. **Grain.** One row per product type, and one row per product where the set names the product. A
+6. **Grain.** One row per product across the job, as the reader's mandate 1 says: one row per
+   product type, and one row per product where the set names the product. A
    product type is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
    medicine cabinet, a walk-off mat, an acoustic underlayment. Where the set names products by a
    model number, or by a legend or schedule code that stands for one product, each product is its
    own row, named with its code and what it is ("Towel bar TA-04, 24 inch", "Medicine cabinet
-   MC-2, 16 by 22 inch"), with the model in the description. Instances are never rows: one towel
-   bar TA-04 in twenty bathrooms is one row, and where the set counts them the count is its
-   quantity. A schedule of places, such as a room finish schedule or a door schedule, is read for
+   MC-2, 16 by 22 inch"), with the model in the description. Instances are never rows: one towel bar
+   TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
+   where the set counts them the count is its quantity. One product is two rows only where the
+   drawings or the manual separate its supply from its install, or on a finish trade by area, as the
+   reader's mandate 1 says. A schedule of places, such as a room finish schedule or a door schedule,
+   is read for
    the products and types it calls for, one row each ("Luxury vinyl tile flooring, LVT"), never
    one row for the whole schedule. A schedule of one assembly's types that differ only in size or
    spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
@@ -228,12 +233,23 @@ A newly created scope item is a full row, not a name. Every new item writes:
   about twelve words, the way a sub would say it ("Repoint brick masonry at facade", "Install
   lintels above CMU openings"; not a recitation of every type mark). A mark or tag belongs here
   when it is how the sub finds the work.
-- **category** (required): the heading the row sits under on its trade's scope sheet, naming what
-  its items are in the words a sub uses ("Toilet accessories", "Medicine cabinets", "Postal
-  specialties", "Kitchen casework", "Countertops", "Resilient flooring"). Never the sheet, room or
-  drawing it was read on, never another trade's name, and never two kinds of work joined into one
-  heading. Every row under one heading sits on the same trade. Take a heading from the page's
-  context read only where its rows are the same kind of work as yours. The door refuses a heading
+- **category** (required): the heading the row sits under on its trade's scope sheet, in Title Case,
+  with a, an, and, as, at, by, for, from, in, into, of, on, or, the, to and with lowercase after the
+  first word. On a structure, envelope, site or MEP trade it names the kind of work or the system
+  the row is part of, the way a sub groups his own scope ("Foundations", "Slabs and Flatwork",
+  "Piping", "Fixtures", "Equipment", "Fire Alarm", "Low Voltage"). On a finish trade (flooring,
+  tile, painting and wall coverings, acoustical ceilings, toilet accessories, casework, countertops,
+  appliances, window treatments and finish carpentry) it names the area the row is in where the job
+  has more than one, in the job's own words for it off the finish schedule or the plans ("Units",
+  "Common Area", "Amenity", "Back of House"), and otherwise the kind of work ("Toilet Accessories",
+  "Medicine Cabinets", "Postal Specialties", "Kitchen Casework", "Countertops", "Resilient
+  Flooring", "Floor Prep and Underlayment"). A phase or building heading only where the drawings or
+  the manual separate the work by phase or by building; a product used in two buildings is
+  otherwise one row under one heading. Never the sheet, room or drawing it was read on, never
+  another trade's name, never a heading for specifications, products or references, and never two
+  unrelated kinds of work joined into one heading. Every row under one heading sits on the same
+  trade. Take a heading from the page's context read where its rows are the same kind of work, or in
+  the same area, as yours. The door refuses a heading
   that is one of the record's internal names, read in any casing and with a hyphen or underscore
   as a space, such as `scope`, `trade boundary`, `trade convention`, `convention`, `boundary`,
   `candidate`, `claim`, `contested`, `ambiguity`, `register`, `kind`, `family`,
@@ -264,20 +280,31 @@ A newly created scope item is a full row, not a name. Every new item writes:
   trade>" }`, the note internal only and never bidder-facing, written in the same batch. The roles
   the door takes are `exclusion`, `general-requirement`, `ve-alternate` and `candidate`, each with
   an optional `counterparty` and `note`, and `{ retracted: true, reason? }` is the only other value
-  it takes. A bare word is refused and the batch is atomic, so it costs every entry in the batch.
+  it takes. The run writes `exclusion` where the paper says work is by others and
+  `general-requirement` for a trade's own general costs, and the reviews write both for the standard
+  lines; `ve-alternate` stays the user's to write. A bare word is refused and the batch is atomic,
+  so it costs every entry in the batch.
   The `<trade>` in that predicate is the same catalog code, and the door reads it there too.
-- **description** (optional, zero to three sentences): only what a bidder must know to price the
-  line that the name and citation do not already say: the product or method the drawings call
-  for, the extent or limits, a rated or special condition. A simple item has none. The citation
+- **description** (optional, at most two short sentences and about thirty words, not counting the
+  codes the row names): only what a bidder must know to price the line that the name and citation do
+  not already say: the product or method, the extent or limits, a rated or special condition. Never
+  a spec article number, a schedule's values or a tag the row is not for, since the citation carries
+  them. A simple item has none. On a finish row the extent is the rooms or room types the room
+  finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2 to 5"), read off the
+  finish schedule and never off a material key or legend alone, which says what a finish is and not
+  where it goes. The reader's mandate 1 names the two products of a disagreement in the one
+  description that runs longer. The citation
   points at the sheet, and the doctrine is cite, don't rewrite: never transcribe a schedule's
   columns, the detail, or the bar sizes into the row. How a schedule becomes rows is
   non-negotiable 6.
-- **notesExternal** (optional, one sentence): an instruction to the bidder about the line: what is
-  by others, what to break out, what to confirm, what is an alternate.
+- **notesExternal** (optional, one sentence): an instruction to the bidder about the line: what to
+  break out, what to confirm, what is an alternate. Work by others is a row of its own, as the
+  reader's mandate 4 says.
 - **notesInternal** (optional, one sentence): either a watch item for the estimator, an open
   Question on the row, or how the row's count or grouping was reached
-  and what a correction replaced. Never a citation audit, and never a conflict between two
-  documents: that is a Question. A correction of a value on the record is two things: the write
+  and what a correction replaced. Never a citation audit, never which trade carries the work, which
+  is a row of its own as the reader's mandate 4 says, and never a conflict between two documents:
+  that is a Question. A correction of a value on the record is two things: the write
   onto that field naming what it replaces (`supersedesId`), cited to a box around what shows the
   right value with the words read there as the evidence snippet; and this note, one plain sentence
   saying how the value was reached and what it replaced, never an id or a hand-written tag,
@@ -1286,8 +1313,10 @@ On the go-ahead:
    `continue` mode and runs it there, so every page of a section is read inside the window without
    your asking; you start nothing for it. A continuation joins its pass while the pass runs, and the
    `--reported` call reads the plan when you make it, so the prefixes it prints for the pass carry them:
-   its continuations are units of the pass like
-   any review, and the record script refuses a count that leaves one out.
+   its continuations are units of the pass like any review, and the record script refuses a count
+   that leaves one out. Each review also writes the standard lines whose condition it finds on this
+   job's own drawings or manual, each cited to where it found it, and settles its package's headings
+   in the order the work is built.
 3. **Check in every few packages.** Where the listing reads `check-in due: yes`,
    four `pass:` lines have landed since the last `checkin:` line: check in (format below) on the
    passes `since the last check-in:` names: the packages finished, their pages ready, what was raised. A
@@ -1654,7 +1683,7 @@ report: <run folder>/reports/<pass id>.md
 unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
 harvested: rows <n>, definition codes <n>, spec sections <n>, aliases <n>
 notes read: <each item the package notes name + the row that carries it, created or found, or `shown nowhere`, one per line, or "none">
-searches: <n> run, <n> returned nothing
+searches: <n> run, <n> returned nothing, <n> of them standard line
 terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent it + what it did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
@@ -1674,6 +1703,8 @@ unspecified work: <row family + the Question id, or `left open` + why it is low 
 compared: <subject + the sources compared + what you found + how it ended: Question <id>, qualification on <subject>, `agree`, `low cost, not asked`, `closed Question <id>`, `not settled`, or `not reached`, one per line, or "none">
 sections not checked: <one per line, `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` for the pages the page cap left, or the section code + the reason: "no page range", "manual removed", "not on the package", "the owner's work", "no manual sections on this package", "the manual was not read in"; or "none">
 families not checked: <row family, one per line, or "none">
+standard lines: <each line the script printed + how it ended, one per line, or "none">
+headings written: <the headings in build order on the first line, then each row whose heading was written + its subject + the heading, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 
@@ -1806,9 +1837,9 @@ choice: "I put it on Plumbing; move it if it belongs elsewhere."
   **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`), **get the
   invitations ready** (`prepare-invitations`, which does not wait for this run), **draft the
   baseline package split** (owned by `learn-project`).
-- **Author boundary enrollments other than trade-responsibility candidates**: exclusions, general
-  requirements, and VE/alternates stay manual-first doctrine; the user authors those boundary
-  lines at the package surface.
+- **Author VE or alternate enrollments**: whether an item is an alternate stays the user's call at
+  the package surface. The run writes trade-responsibility candidates, exclusions where the paper
+  says work is by others, and each trade's general items in its General Requirements section.
 - **Tag trades after the fact.** There is no tagging stage: an item's trade is written with the
   row. An item with no trade is a door refusal, never a backlog.
 - **Keep a copy of the record on disk.** No packet, no definitions files: a reader asks the record.

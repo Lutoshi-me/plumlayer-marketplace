@@ -154,7 +154,7 @@ REVIEWER_LABELS = (
     "updated subjects", "manual updates", "questions raised ids", "questions replied ids",
     "questions linked", "questions alone", "sent", "trades", "sheet readings written", "anomalies",
     "grain questions", "silent sections", "unspecified work", "compared", "sections not checked",
-    "families not checked", "door-owned suggestions",
+    "families not checked", "standard lines", "headings written", "door-owned suggestions",
 )
 
 

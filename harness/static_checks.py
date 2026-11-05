@@ -12672,6 +12672,891 @@ def check_question_checker_outcomes(plugin_path: Path, marketplace_root: Path) -
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# Check — The standard lines a review writes
+# --------------------------------------------------------------------------- #
+#
+# A package review writes the lines a sub's price carries that the documents rarely spell out, off
+# one file per trade, and only where it finds the line's condition on the job. A line written with
+# no condition lands on every job, a trade's file given to two packages writes its lines twice, and
+# a Which Trade line two reviews both write lands twice under one name the record refuses. So the
+# files keep one shape and the shipped count, the script gives each file to one live package the
+# same way for every review and prints each row's name and each half's one writer, and the rules
+# that hold a line to its condition, to that writer and to no Question stay in the text.
+
+STANDARD_LINES_FILES = 46
+STANDARD_LINES_ROWS = 287
+STANDARD_LINES_ROW_NAME_MAX = 36
+STANDARD_LINES_NAME_MAX = 80
+
+_STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
+    ("reviewer", "A line lands on this package only where you find its condition in this job's own "
+                 "drawings or manual, cited to the page or section where you found it."),
+    ("reviewer", "A condition holds only where every part of it holds on this job, and a part you "
+                 "cannot find writes nothing."),
+    ("reviewer", "Never a Question. A line is the estimator's own practice, never the design team's"),
+    ("reviewer", '`evidence: { basis: "trade-convention", source: "<the line as printed>" }`'),
+    ("reviewer", "the `instrument:` the script prints as their `sourceInstrument`"),
+    ("reviewer", "scripts/standard_lines.py' --package '<this package's tradeCode>' --all '<each "
+                 "package on that list as its name as the list shows it, =, then its tradeCode and its "
+                 "codes comma separated, the packages separated by ;>'"),
+    ("reviewer", "Before anything else this mandate does, take `solicitation_list_packages(projectId)` "
+                 "once"),
+    ("reviewer", "A row a line writes is named exactly as the script's `name:` prints it"),
+    ("reviewer", "A role for a standard line is never written onto a row of another package's trade, "
+                 "and a citation only onto the writer's row of a Which Trade half the paper gives to "
+                 "this package's trade"),
+    ("reviewer", "You write what it prints and nothing else: never open the lines files, never read "
+                 "another trade's lines, and never decide from a trade's or a package's name which "
+                 "package a line or a half goes to."),
+    ("reviewer", "Check that part against the `places:` line"),
+    ("reviewer", "so the script settles who writes it, the same way for each"),
+    ("reviewer", "You write this half, always, as printed, whatever this package's own paper says."),
+    ("reviewer", "write it all the same, cite that place on the row too"),
+    ("reviewer", "You never write this half, whatever this package's own paper says: no row, no role "
+                 "and no candidate or exclusion record for it."),
+    ("reviewer", "Its `name:` is the name of the row that package writes"),
+    ("reviewer", "cite the place on that row with `cite_source`, a citation and never a role"),
+    ("reviewer", "Name the half `paper gives it to <this package's tradeCode>, <sheet and page or "
+                 "section>`"),
+    ("reviewer", "cite nothing and name it `paper gives it to <this package's tradeCode>, <sheet and "
+                 "page or section>, row not yet written`; the runner carries that line to the check-in."),
+    ("runner", "that ends `row not yet written` goes on the ledger the same way, as `note <window> "
+               "<pass> <unit> anomaly <the entry>`"),
+    ("reviewer", "Every exclusion record you write for a half this package carries names this "
+                 "package's `tradeCode` as its counterparty; only an `or` half still undecided keeps "
+                 "`exclusion on: <tradeCode>, no counterparty` as printed."),
+    ("fixture", "paper gives it to 09 99 99, X-1.01 file-0000 p3"),
+    ("fixture", "paper gives it to 09 99 99, X-2.01 file-0000 p4, row not yet written"),
+    ("fixture", "written scopeItem:A1-1-1, X-1.01 file-0000 p3, paper gives it to 26 00 00, section "
+                "099999 file-1111 p12"),
+    ("reviewer", "it is the company's standard line for this trade, and no drawing or specification "
+                 "calls for it"),
+    ("reviewer", "Each is named for its kind, `Qualifications`, `Special warranties`, `Extra "
+                 "materials` or `Field tests`, then a comma and this package's `name`"),
+    ("reviewer", "The furnishing row that covers both stays so both bidders price the install, and "
+                 "the estimator awards it to one."),
+    ("reviewer", "The order: the way the work is built, never alphabetical."),
+    ("reviewer", "`solicitation_update_package({ packageId, categoryOrder: [<the headings>] })` once, "
+                 "with no `projectId`"),
+    ("runner", "must carry the headings on the review's `headings written:` first line, each trimmed "
+               "the same way, in that order"),
+    ("runner", "a listed heading the review did not write is not one"),
+    ("reviewer", "**Settle the headings again where you created rows**, mandate 15 whole, last"),
+    (SHEET_READER, "A phase or building heading only where the drawings or the manual separate the "
+                   "work by phase or by building"),
+    (VOCABULARY_READER, "A phase or building heading only where the drawings or the manual separate "
+                        "the work by phase or by building"),
+    ("reviewer", "A row whose only write in your review is its heading goes on `headings written:`, "
+                 "never on `updated subjects:`."),
+    (VOCABULARY_READER, 'its value `{"role": "exclusion", "counterparty": "<the catalog id of the trade '
+                        'that carries it, owner where the owner or a tenant does, or left off where the '
+                        'paper names no one>"}`'),
+    (VOCABULARY_READER, '`category` `General Items`, with one `packageRole:<that trade>` record valued '
+                        '`{"role": "general-requirement"}` in the same batch'),
+    (SHEET_READER, 'its value `{"role": "exclusion", "counterparty": "<the catalog id of the trade '
+                   'that carries it, owner where the owner or a tenant does, or left off where the '
+                   'paper names no one>"}`'),
+    (SHEET_READER, '`category` `General Items`, with one `packageRole:<that trade>` record valued '
+                   '`{"role": "general-requirement"}` in the same batch'),
+    ("runner", "Each row on the review's `headings written:` line after its first is found back"),
+    ("skill", "Each review also writes the standard lines whose condition it finds on this job's own "
+              "drawings or manual"),
+)
+
+
+# Text the reviewer must never carry, since two reviews run at once and each reads only its own
+# sections: a review the script did not name writing a half lands it twice, and the named writer
+# skipping a printed `yes` lands it nowhere. Each holds the patterns refused and the sentences shown
+# refused, among them the ones that once let a review's own paper overrule the script.
+_STANDARD_LINES_REFUSED: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
+    ("a review the script did not name writing a half", (
+        r"even (?:where|when|if|though) the script print(?:ed|s) `(?:you write it: no|carried by|left to)",
+        r"(?:paper|notes)[^.]{0,80}\bbeats?\b[^.]{0,40}script",
+        r"(?:carried by|left to) <tradeCode>`[^.]{0,40}\bunless\b",
+    ), (
+        "Where they give a half to this package's trade, write it, even where the script printed "
+        "`carried by` or `left to`.",
+        "For this package's own half the paper beats what the script printed.",
+        "Name it `carried by <tradeCode>`, unless the paper gives it to this package, below.",
+    )),
+    ("the named writer skipping a printed `yes`", (
+        r"even (?:where|when|if|though) the script print(?:ed|s) `(?:you write it: )?yes`",
+        r"write nothing for (?:it|this half|that half|the half)[^.]{0,80}`(?:you write it: )?yes`",
+    ), (
+        "Where the paper or the notes give a half to a trade other than this package's, write "
+        "nothing for it, even where the script printed `yes`.",
+        "Where this package's paper gives the half to another trade, write nothing for that half "
+        "though the script printed `you write it: yes`.",
+    )),
+)
+
+
+def _standard_lines_text_errors(texts: dict[str, str]) -> list[str]:
+    errors = []
+    for label, phrase in _STANDARD_LINES_PINS:
+        if phrase not in " ".join(texts[label].split()):
+            errors.append(f"{label} does not read {phrase!r}")
+    reviewer = " ".join(texts["reviewer"].split())
+    for what, patterns, _ in _STANDARD_LINES_REFUSED:
+        for pattern in patterns:
+            found = re.search(pattern, reviewer)
+            if found:
+                errors.append(f"reviewer reads {found.group(0)!r}, which lets {what}")
+    return errors
+
+
+def _standard_lines_by_hand(folder: Path) -> list[dict]:
+    """The files read here, apart from the script: title, numbers, Home numbers, Else and line rows."""
+    out = []
+    for path in sorted(folder.glob("*.md")):
+        text = path.read_text(encoding="utf-8").splitlines()
+        numbers = next((l for l in text if l.startswith("Numbers:")), "Numbers:")[len("Numbers:"):]
+        homes = next((l for l in text if l.startswith("Home:")), "Home:")[len("Home:"):]
+        otherwise = next((l[len("Else:"):].strip() for l in text if l.startswith("Else:")), None)
+        rows = [l for l in text if l.startswith("| ") and not l.startswith("| Kind ")]
+        out.append({
+            "title": text[0][2:] if text and text[0].startswith("# ") else "",
+            "numbers": [n.strip().replace(" ", "") for n in numbers.split(",") if n.strip()],
+            "homes": [h.strip() for h in homes.split(",") if h.strip()],
+            "else": otherwise,
+            "rows": [[c.strip() for c in r.strip()[1:-1].split("|")] for r in rows],
+            "slug": path.stem,
+        })
+    return out
+
+
+def _sl_digits(code: str) -> str:
+    base, _, suffix = code.partition(".")
+    return base.replace(" ", "") + suffix
+
+
+def _standard_lines_assigned(files: list[dict], packages: dict[str, list[str]]) -> dict[str, str | None]:
+    """
+    Each file's one package, worked out here apart from the script: (a) a code that is a Home
+    number, holds it or sits under it, the first Home number listed first, then a `tradeCode`, then
+    the nearest, then the lowest `tradeCode`, a division code only where it is the Home number; (b) a
+    Home number's division as a code, the first listed first; then the package of the file the
+    `Else:` line names; (c) the most of the file's numbers held, ties to the lowest `tradeCode`.
+    """
+    def trimmed(code: str) -> str:
+        digits = _sl_digits(code)
+        while len(digits) > 2 and digits.endswith("00"):
+            digits = digits[:-2]
+        return digits
+
+    def group(code: str) -> str:
+        digits = trimmed(code)
+        return digits[:-1] if len(digits) >= 4 and digits.endswith("0") else digits
+
+    out: dict[str, str | None] = {}
+    by_title = {item["title"]: item["slug"] for item in files}
+    for item in [f for f in files if not f["else"]] + [f for f in files if f["else"]]:
+        found = []
+        divisions = []
+        for at, listed in enumerate(item["homes"]):
+            home = listed.replace(" ", "")
+            for trade_code, codes in packages.items():
+                for code in [trade_code] + [c for c in codes if c != trade_code]:
+                    t, g = trimmed(code), group(code)
+                    if _sl_digits(code) == home[:2] + "0000":
+                        divisions.append((at, code != trade_code, trade_code))
+                    if t == home:
+                        near = 0
+                    elif len(t) == 2:
+                        continue
+                    elif home.startswith(g):
+                        near = 1 + len(home) - len(g)
+                    elif _sl_digits(code).startswith(home):
+                        near = 100 + len(t) - len(home)
+                    else:
+                        continue
+                    found.append((at, code != trade_code, near, trade_code))
+        if found:
+            out[item["slug"]] = min(found)[3]
+            continue
+        if divisions:
+            out[item["slug"]] = min(divisions)[2]
+            continue
+        if item["else"] and out.get(by_title.get(item["else"], "")):
+            out[item["slug"]] = out[by_title[item["else"]]]
+            continue
+        held = []
+        for trade_code, codes in packages.items():
+            count = sum(1 for n in item["numbers"]
+                        if any(n.startswith(group(c)) or _sl_digits(c).startswith(n) for c in [trade_code] + codes))
+            if count:
+                held.append((-count, trade_code))
+        out[item["slug"]] = min(held)[1] if held else None
+    return out
+
+
+# The trades a Which Trade line names, as its line spells them after `by`, `with` or `Not`, and the
+# trade file each is. The owner and a utility are named and are no trade.
+_WHICH_TRADE_NAMES: dict[str, tuple[str, ...]] = {
+    "Appliances": ("appliances",),
+    "Casework": ("casework",),
+    "Concrete": ("cast-in-place-concrete",),
+    "Countertops": ("countertops",),
+    "Waterproofing": ("dampproofing-and-waterproofing",),
+    "Joint Sealants": ("joint-sealants",),
+    "Demolition": ("demolition",),
+    "Drywall": ("drywall",),
+    "Sitework": ("earthwork-and-sitework",),
+    "Earthwork": ("earthwork-and-sitework",),
+    "Paving": ("paving",),
+    "Site Utilities": ("site-utilities",),
+    "Doors": ("doors-frames-and-hardware",),
+    "Electrical": ("electrical",),
+    "Elevators": ("elevators",),
+    "Elevator Company": ("elevators",),
+    "Elevator Vendor": ("elevators",),
+    "Finish Carpentry": ("finish-carpentry",),
+    "Fire Protection": ("fire-protection",),
+    "Firestopping": ("firestopping",),
+    "Flooring": ("flooring",),
+    "Gypsum Underlayment": ("gypsum-underlayment",),
+    "HVAC": ("hvac",),
+    "Insulation": ("insulation",),
+    "Landscaping": ("landscaping-and-site-improvements",),
+    "Masonry": ("masonry",),
+    "Metal Railings": ("metal-railings",),
+    "Millwork": ("millwork-architectural-woodwork",),
+    "Misc Metals": ("miscellaneous-metals",),
+    "Plumbing": ("plumbing",),
+    "Roofing": ("roofing",),
+    "Framing": ("rough-carpentry",),
+    "Rough Carpentry": ("rough-carpentry",),
+    "Siding": ("siding-and-cladding",),
+    "Specialties": ("specialties",),
+    "Fireproofing": ("spray-fireproofing",),
+    "Glazing": ("storefront-and-glazing",),
+    "Storefront Sub": ("storefront-and-glazing",),
+    "Storefront": ("storefront-and-glazing",),
+    "Structural Steel": ("structural-steel",),
+    "Tile": ("tiling",),
+    "Tiling": ("tiling",),
+    "Roof Anchors": ("roof-anchors-and-fall-protection",),
+    "Window Treatments": ("window-treatments",),
+    "Windows": ("windows",),
+    "Each MEP Trade": ("plumbing", "hvac", "electrical", "fire-protection"),
+    "MEP": ("plumbing", "hvac", "electrical", "fire-protection"),
+}
+_WHICH_TRADE_NO_TRADE = ("Owner", "Utility")
+
+
+def _condition_named(condition: str) -> set[str]:
+    """The trade files a line's condition names, by the same words as the line, in any case, longest first."""
+    named: set[str] = set()
+    rest = condition
+    for word in sorted(_WHICH_TRADE_NAMES, key=len, reverse=True):
+        pattern = re.compile(r"(?<![\w-])" + re.escape(word) + r"(?![\w-])", re.IGNORECASE)
+        if pattern.search(rest):
+            named.update(_WHICH_TRADE_NAMES[word])
+            rest = pattern.sub(" ", rest)
+    return named
+
+
+def _which_trade_named(line: str) -> tuple[set[str], list[str]]:
+    """
+    The trade files a Which Trade line names, and each name after `by`, `with` or `Not` that is
+    neither a trade nor the owner or a utility. After each of those words the names run, joined by
+    commas, `or` and `and`, until a piece that names none (`Power`, `Installed`). A trade named just
+    before `Install` at the line's start (`Millwork Install with Finish Carpentry`) is named too.
+    """
+    named: set[str] = set()
+    unknown: list[str] = []
+    head = re.split(r"\b(?:by|with|Not)\b", line)[0].strip()
+    if head.endswith(" Install") and head[: -len(" Install")] in _WHICH_TRADE_NAMES:
+        named.update(_WHICH_TRADE_NAMES[head[: -len(" Install")]])
+    for tail in re.split(r"\b(?:by|with|Not)\b", line)[1:]:
+        for index, piece in enumerate(tail.split(",")):
+            parts = [p.strip() for p in re.split(r"\b(?:or|and)\b", piece) if p.strip()]
+            parts = [re.sub(r"^(?:the|a|an) ", "", p) for p in parts]
+            known = [p for p in parts if p in _WHICH_TRADE_NAMES or p in _WHICH_TRADE_NO_TRADE]
+            if index and (not parts or parts[0] not in known):
+                break
+            for part in parts:
+                if part in _WHICH_TRADE_NAMES:
+                    named.update(_WHICH_TRADE_NAMES[part])
+                elif part not in _WHICH_TRADE_NO_TRADE:
+                    unknown.append(part)
+    return named, unknown
+
+
+def _which_trade_errors(files: list[dict]) -> tuple[list[str], int]:
+    """
+    One piece of work, one line: every Which Trade line names only known trades, sits with the same
+    five cells in every trade file its line or its condition names, and shares its condition with
+    no other line.
+    """
+    errors: list[str] = []
+    by_line: dict[str, list[tuple[str, list[str]]]] = {}
+    for item in files:
+        for row in item["rows"]:
+            if len(row) == 5 and row[0] == "Which Trade":
+                by_line.setdefault(row[1], []).append((item["slug"], row))
+    slugs = {item["slug"] for item in files}
+    by_condition: dict[str, set[str]] = {}
+    for line, places in by_line.items():
+        named, unknown = _which_trade_named(line)
+        if unknown:
+            errors.append(f"{line!r} names {unknown!r}, which is no trade the check knows")
+        if not named:
+            errors.append(f"{line!r} names no trade")
+        carriers = {slug for slug, _row in places}
+        in_condition = set().union(*(_condition_named(row[2]) for _slug, row in places))
+        missing = sorted(slug for slug in (named | in_condition) - carriers if slug in slugs)
+        if missing:
+            errors.append(f"{line!r} names {', '.join(missing)}, whose file does not carry it")
+        unknown_files = sorted((named | in_condition) - slugs)
+        if unknown_files:
+            errors.append(f"{line!r} names the trade files {', '.join(unknown_files)}, which are not in the folder")
+        if len({tuple(row) for _slug, row in places}) > 1:
+            errors.append(f"{line!r} reads differently across {', '.join(sorted(carriers))}")
+        for _slug, row in places:
+            by_condition.setdefault(row[2], set()).add(line)
+    for condition, lines in by_condition.items():
+        if len(lines) > 1:
+            errors.append(f"the lines {sorted(lines)!r} share the condition {condition[:80]!r}, so they are one piece of work")
+    return errors, len(by_line)
+
+
+def _row_name_errors(files: list[dict]) -> list[str]:
+    """
+    Each line's row names: one per half of a Which Trade line (one per `by` or `with`), one for any
+    other line, each at most 36 characters, with no comma and in sentence case, none used twice in a
+    file, and no
+    row name shared by two different lines anywhere, so no package's two rows can take one name.
+    """
+    errors: list[str] = []
+    owner: dict[str, str] = {}
+    for item in files:
+        seen: set[str] = set()
+        for row in item["rows"]:
+            if len(row) != 5:
+                continue
+            names = [n.strip() for n in row[4].split(";")]
+            halves = len(re.findall(r"\b(?:by|with)\b", row[1])) if row[0] == "Which Trade" else 1
+            if len(names) != halves or not all(names):
+                errors.append(f"{item['slug']}.md gives {row[1]!r} {len(names)} row names for {halves} halves")
+            for name in names:
+                if len(name) > STANDARD_LINES_ROW_NAME_MAX:
+                    errors.append(f"{item['slug']}.md row name {name!r} runs {len(name)} characters")
+                if "," in name:
+                    errors.append(f"{item['slug']}.md row name {name!r} carries a comma")
+                if name and not name[0].isupper():
+                    errors.append(f"{item['slug']}.md row name {name!r} does not open with a capital")
+                if name.lower() in seen:
+                    errors.append(f"{item['slug']}.md uses the row name {name!r} twice")
+                seen.add(name.lower())
+                if owner.setdefault(name.lower(), row[1]) != row[1]:
+                    errors.append(f"the row name {name!r} names both {owner[name.lower()]!r} and {row[1]!r}")
+    return errors
+
+
+def _standard_lines_blocks(out: str) -> list[dict]:
+    """The script's printed lines, each with the fields printed under it and its halves."""
+    blocks: list[dict] = []
+    for line in out.splitlines():
+        if line.startswith("line: "):
+            blocks.append({"line": line[len("line: "):], "halves": []})
+        elif line.startswith("  half: ") and blocks:
+            blocks[-1]["halves"].append({"half": line[len("  half: "):], "records": []})
+        elif line.startswith("    ") and blocks and blocks[-1]["halves"]:
+            key, _, value = line.strip().partition(": ")
+            half = blocks[-1]["halves"][-1]
+            if key in ("exclusion on", "candidate on"):
+                half["records"].append(f"{key}: {value}")
+            else:
+                half[key] = value
+        elif line.startswith("  ") and blocks and ": " in line:
+            key, _, value = line.strip().partition(": ")
+            blocks[-1][key] = value
+    return blocks
+
+
+# Production package patterns, each with the trade files every package must take. Where several
+# packages split a division, the narrow ones take their own files and the division package the rest;
+# where a narrow package bids part of a trade's work (post-tensioning, reinforcing, forming), the
+# trade's file goes to the package of its Home number alone.
+_STANDARD_LINES_CASES: tuple[tuple[str, dict[str, set[str]]], ...] = (
+    ("03 00 00 + 03 23 01", {"03 00 00": {"cast-in-place-concrete", "gypsum-underlayment"}, "03 23 01": set()}),
+    ("03 30 00 + 03 21 00 + 03 11 00", {"03 30 00": {"cast-in-place-concrete"}, "03 21 00": set(), "03 11 00": set()}),
+    ("03 00 00 + 03 54 13", {"03 00 00": {"cast-in-place-concrete"}, "03 54 13": {"gypsum-underlayment"}}),
+    ("31 00 00 + 32 00 00", {"31 00 00": {"earthwork-and-sitework", "support-of-excavation", "ground-improvement-and-piles",
+                                          "site-utilities"},
+                             "32 00 00": {"landscaping-and-site-improvements", "paving"}}),
+    ("31 00 00 + 31 50 00 + 31 63 33", {"31 00 00": {"earthwork-and-sitework", "paving", "site-utilities"},
+                                        "31 50 00": {"support-of-excavation"}, "31 63 33": {"ground-improvement-and-piles"}}),
+    ("31 00 00 + 31 40 00", {"31 00 00": {"earthwork-and-sitework", "ground-improvement-and-piles", "paving", "site-utilities"},
+                             "31 40 00": {"support-of-excavation"}}),
+    ("31 00 00 + 33 00 00", {"31 00 00": {"earthwork-and-sitework", "ground-improvement-and-piles", "paving", "support-of-excavation"},
+                             "33 00 00": {"site-utilities"}}),
+    ("31 00 00 + 32 12 16", {"31 00 00": {"earthwork-and-sitework", "ground-improvement-and-piles", "site-utilities",
+                                          "support-of-excavation"},
+                             "32 12 16": {"paving"}}),
+    ("31 00 00", {"31 00 00": {"earthwork-and-sitework", "ground-improvement-and-piles", "paving", "site-utilities",
+                               "support-of-excavation"}}),
+    ("09 00 00 + 09 65 00 + 09 30 00 + 09 90 00", {"09 00 00": {"drywall"}, "09 65 00": {"flooring"},
+                                                   "09 30 00": {"tiling"}, "09 90 00": {"painting"}}),
+    ("09 60 00 + 09 21 16 + 09 91 00", {"09 60 00": {"flooring"}, "09 21 16": {"drywall"}, "09 91 00": {"painting"}}),
+    ("26 00 00 + 26 34 60", {"26 00 00": {"electrical"}, "26 34 60": set()}),
+    ("06 20 00 + 06 22 00", {"06 20 00": {"finish-carpentry"}, "06 22 00": {"millwork-architectural-woodwork"}}),
+    ("05 50 00 + 05 12 00", {"05 50 00": {"miscellaneous-metals", "metal-railings"}, "05 12 00": {"structural-steel"}}),
+    ("22 00 00", {"22 00 00": {"plumbing"}}),
+    ("08 33 23", {"08 33 23": set()}),
+    ("01 11 13", {"01 11 13": set()}),
+)
+
+# Which Trade writers: (packages, the line, {package: [what each half prints for it, in order]}),
+# each half a `you write it:` value and, where it writes, its records in order.
+_STANDARD_LINES_WRITERS: tuple[tuple[str, str, dict[str, list[tuple[str, list[str]]]]], ...] = (
+    ("06 20 00; 11 31 00", "Appliance Install by Appliances or Finish Carpentry", {
+        "06 20 00": [("yes", ["candidate on: 11 31 00, note: confirm trade responsibility: could be Appliances or Finish Carpentry"])],
+        "11 31 00": [("no, left to 06 20 00", [])],
+    }),
+    ("31 00 00; 02 41 00", "Utility Cut and Caps by Site Utilities, Not Demolition", {
+        "31 00 00": [("yes", ["exclusion on: 02 41 00, counterparty: 31 00 00"])],
+        "02 41 00": [("no, carried by 31 00 00", [])],
+    }),
+    ("22 00 00; 26 00 00", "Heat Trace Cable by Plumbing, Power by Electrical", {
+        "22 00 00": [("yes", ["exclusion on: 26 00 00, counterparty: 22 00 00"]), ("no, carried by 26 00 00", [])],
+        "26 00 00": [("no, carried by 22 00 00", []), ("yes", ["exclusion on: 22 00 00, counterparty: 26 00 00"])],
+    }),
+    ("22 00 00", "Water Meters Furnished by Utility or Owner, Installed by Plumbing", {
+        "22 00 00": [("yes", ["exclusion on: 22 00 00, counterparty: owner"]), ("yes", [])],
+    }),
+    ("02 41 00", "Elevator Decommissioning by the Elevator Company, Not Demolition", {
+        "02 41 00": [("yes", ["exclusion on: 02 41 00, counterparty: 14 20 00"])],
+    }),
+    ("22 00 00; 23 00 00; 09 21 16", "Access Panels Furnished by Plumbing, HVAC, Electrical and Fire Protection, Installed by Drywall", {
+        "22 00 00": [("yes", ["exclusion on: 09 21 16, counterparty: 22 00 00"]), ("no, carried by 09 21 16", [])],
+        "23 00 00": [("yes", ["exclusion on: 09 21 16, counterparty: 23 00 00"]), ("no, carried by 09 21 16", [])],
+        "09 21 16": [("no, carried by 22 00 00, 23 00 00", []),
+                     ("yes", ["exclusion on: 22 00 00, counterparty: 09 21 16", "exclusion on: 23 00 00, counterparty: 09 21 16"])],
+    }),
+    ("07 84 00; 22 00 00", "Firestopping at All Penetrations by Firestopping, Not Drywall, Plumbing, HVAC, Electrical and Fire Protection", {
+        "07 84 00": [("yes", ["exclusion on: 22 00 00, counterparty: 07 84 00"])],
+        "22 00 00": [("no, carried by 07 84 00", [])],
+    }),
+    ("07 84 00; 22 00 00", "Firestopping at Own Penetrations by Drywall, Plumbing, HVAC, Electrical and Fire Protection", {
+        "22 00 00": [("yes", ["exclusion on: 07 84 00, counterparty: 22 00 00"])],
+        "07 84 00": [("no, carried by 22 00 00", [])],
+    }),
+    ("03 30 00; 04 20 00", "Dowels from Concrete into Masonry by Concrete", {
+        "03 30 00": [("yes", ["exclusion on: 04 20 00, counterparty: 03 30 00"])],
+        "04 20 00": [("no, carried by 03 30 00", [])],
+    }),
+    ("31 00 00; 33 00 00; 22 00 00", "Water and Sewer Services from 10 Feet Outside the Building In by Plumbing, Beyond by Site Utilities", {
+        "22 00 00": [("yes", ["exclusion on: 33 00 00, counterparty: 22 00 00"]), ("no, carried by 33 00 00", [])],
+        "33 00 00": [("no, carried by 22 00 00", []), ("yes", ["exclusion on: 22 00 00, counterparty: 33 00 00"])],
+    }),
+)
+
+
+def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "standard-lines"
+    paths = {
+        "reviewer": plugin_path / "agents" / "scope-reviewer.md",
+        "runner": plugin_path / "agents" / "scope-round-runner.md",
+        "skill": plugin_path / "skills" / "scope-run" / "SKILL.md",
+        VOCABULARY_READER: plugin_path / "agents" / VOCABULARY_READER,
+        SHEET_READER: plugin_path / "agents" / SHEET_READER,
+        "fixture": marketplace_root / "harness" / "fixtures" / "reviewer-report-fixture.md",
+    }
+    script_path = plugin_path / "scripts" / "standard_lines.py"
+    folder = plugin_path / "skills" / "scope-run" / "standard-lines"
+    for path in (*paths.values(), script_path, folder):
+        if not path.exists():
+            return Result(name, False, detail=f"not found: {path}")
+    texts = {label: path.read_text(encoding="utf-8") for label, path in paths.items()}
+    errors = _standard_lines_text_errors(texts)
+
+    # Each pin taken out of the shipped text, so every refusal is shown rather than assumed.
+    refused = 0
+    if not errors:
+        for label, phrase in _STANDARD_LINES_PINS:
+            broken = {**texts, label: " ".join(texts[label].split()).replace(phrase, "")}
+            if _standard_lines_text_errors(broken):
+                refused += 1
+            else:
+                errors.append(f"the check passed {label} with {phrase!r} taken out")
+        # Each refused sentence written into mandate 14 at its Which Trade bullet.
+        at = "- Which Trade, a line that says which trade carries a piece of work."
+        for what, _, samples in _STANDARD_LINES_REFUSED:
+            for sample in samples:
+                broken = {**texts, "reviewer": texts["reviewer"].replace(at, f"{at} {sample}", 1)}
+                if at in texts["reviewer"] and _standard_lines_text_errors(broken):
+                    refused += 1
+                else:
+                    errors.append(f"the check passed the reviewer with {sample!r}, which lets {what}")
+
+    # The files: the shipped count, one shape, four kinds, no blank line, a place to look wherever
+    # there is a condition, a Home number one of the file's numbers starts, and the row names.
+    files = _standard_lines_by_hand(folder)
+    rows = [row for item in files for row in item["rows"]]
+    if len(files) != STANDARD_LINES_FILES or len(rows) != STANDARD_LINES_ROWS:
+        errors.append(
+            f"{len(files)} standard lines files carrying {len(rows)} lines, and the plugin ships "
+            f"{STANDARD_LINES_FILES} carrying {STANDARD_LINES_ROWS}"
+        )
+    kinds = ("Pricing", "Incidental", "Convention", "Which Trade")
+    no_condition = 0
+    for item in files:
+        if not item["title"] or not item["numbers"]:
+            errors.append(f"{item['slug']}.md has no title or no numbers")
+        if not item["homes"]:
+            errors.append(f"{item['slug']}.md has no Home number")
+        for listed in item["homes"]:
+            home = listed.replace(" ", "")
+            if not re.fullmatch(r"\d{2}(?:\d{2}){0,2}", home) or not any(home.startswith(n) for n in item["numbers"]):
+                errors.append(f"{item['slug']}.md has the Home number {listed!r}, which none of its numbers starts")
+        if item["else"] is not None and item["else"] not in {other["title"] for other in files if other is not item}:
+            errors.append(f"{item['slug']}.md names {item['else']!r} on its Else line, which is no other file's title")
+        for row in item["rows"]:
+            if len(row) != 5 or row[0] not in kinds or not row[1] or not row[4]:
+                errors.append(f"{item['slug']}.md carries the row {row!r}")
+            elif bool(row[2]) != bool(row[3]):
+                errors.append(f"{item['slug']}.md names a condition with no place to look, or the other way, on {row[1]!r}")
+            elif not row[2]:
+                no_condition += 1
+    if len({item["title"] for item in files}) != len(files):
+        errors.append("two standard lines files carry one title")
+    row_name_errors = _row_name_errors(files)
+    errors.extend(row_name_errors)
+    row_names = sum(len(row[4].split(";")) for row in rows if len(row) == 5)
+
+    # One piece of work, one Which Trade line, worded the same in every file whose trade it names;
+    # each break of that, made on a copy of the files, is refused.
+    which_errors, which_lines = _which_trade_errors(files)
+    errors.extend(which_errors)
+    which_refused = 0
+    if not which_errors and not row_name_errors:
+        def _copy() -> list[dict]:
+            return [{**item, "rows": [list(r) for r in item["rows"]]} for item in files]
+
+        def _drop_from_one_file(copied: list[dict]) -> None:
+            for item in copied:
+                for row in item["rows"]:
+                    named, _ = _which_trade_named(row[1]) if row[0] == "Which Trade" else (set(), [])
+                    if item["slug"] in named and len(named) > 1:
+                        item["rows"].remove(row)
+                        return
+
+        def _reword_one_copy(copied: list[dict]) -> None:
+            for item in copied:
+                for row in item["rows"]:
+                    if row[0] == "Which Trade" and len(_which_trade_named(row[1])[0]) > 1:
+                        row[2] = row[2] + " on this job"
+                        return
+
+        def _second_line_same_work(copied: list[dict]) -> None:
+            for item in copied:
+                for row in item["rows"]:
+                    if row[0] == "Which Trade":
+                        item["rows"].append(["Which Trade", row[1] + " Again", row[2], row[3], row[4]])
+                        return
+
+        def _unknown_carrier(copied: list[dict]) -> None:
+            copied[0]["rows"].append(["Which Trade", "Patching by Others", "The plans show patching", "plans", "Patching"])
+
+        def _millwork_line_off_millwork(copied: list[dict]) -> None:
+            for item in copied:
+                if item["slug"] == "millwork-architectural-woodwork":
+                    item["rows"] = [r for r in item["rows"] if r[1] != "Millwork Install with Finish Carpentry"]
+
+        def _condition_trade_off_its_file(copied: list[dict]) -> None:
+            for item in copied:
+                if item["slug"] == "masonry":
+                    item["rows"] = [r for r in item["rows"] if r[1] != "Dowels from Concrete into Masonry by Concrete"]
+
+        for change in (_drop_from_one_file, _reword_one_copy, _second_line_same_work, _unknown_carrier,
+                       _millwork_line_off_millwork, _condition_trade_off_its_file):
+            copied = _copy()
+            change(copied)
+            if _which_trade_errors(copied)[0]:
+                which_refused += 1
+            else:
+                errors.append(f"the Which Trade check passed the files with {change.__name__} applied")
+
+        def _long_name(copied: list[dict]) -> None:
+            copied[0]["rows"][0][4] = "A row name that runs well past thirty six characters"
+
+        def _one_name_for_two_halves(copied: list[dict]) -> None:
+            for item in copied:
+                for row in item["rows"]:
+                    if ";" in row[4]:
+                        row[4] = row[4].split(";")[0]
+                        return
+
+        def _name_shared_by_two_lines(copied: list[dict]) -> None:
+            copied[0]["rows"][0][4] = copied[1]["rows"][0][4]
+
+        def _comma_in_a_name(copied: list[dict]) -> None:
+            copied[0]["rows"][0][4] = copied[0]["rows"][0][4].replace(" ", ", ", 1)
+
+        for change in (_long_name, _one_name_for_two_halves, _name_shared_by_two_lines, _comma_in_a_name):
+            copied = _copy()
+            change(copied)
+            if _row_name_errors(copied):
+                which_refused += 1
+            else:
+                errors.append(f"the row name check passed the files with {change.__name__} applied")
+
+    try:
+        module = _load_script_module(script_path, "standard_lines")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import standard_lines.py: {e}")
+    version = json.loads((plugin_path / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
+    rows_by_line: dict[str, tuple[str, list[str]]] = {}
+    for item in files:
+        for row in item["rows"]:
+            rows_by_line.setdefault(row[1].lower(), (item["slug"], row))
+
+    def _run(package: str, names: dict[str, str], packages: dict[str, list[str]]) -> tuple[int, str, str]:
+        argv = ["--package", package,
+                "--all", "; ".join(f"{names[tc]}={','.join(codes)}" for tc, codes in packages.items())]
+        return _run_script_main(module, argv)
+
+    def _named_for_code(packages: dict[str, list[str]]) -> dict[str, str]:
+        return {tc: f"Package {tc}" for tc in packages}
+
+    # The production patterns: each package takes the files the case names, the assignment worked
+    # out here agrees, and the script prints exactly the distinct lines of those files, each once,
+    # with its kind, name, condition and place to look as its file gives them.
+    printed_total = 0
+    instruments = 0
+    for label, wanted in _STANDARD_LINES_CASES:
+        packages = {tc: [tc] for tc in wanted}
+        assigned = _standard_lines_assigned(files, packages)
+        for package, slugs in wanted.items():
+            mine = {slug for slug, tc in assigned.items() if tc == package}
+            if mine != slugs:
+                errors.append(f"{label}: {package} takes {sorted(mine)} as worked out here, and the case names {sorted(slugs)}")
+            code, out, err = _run(package, _named_for_code(packages), packages)
+            if code != 0 or err:
+                errors.append(f"{label}: {package} exited {code} with {err!r}")
+                continue
+            expected: list[str] = []
+            first_file: dict[str, str] = {}
+            for item in files:
+                if item["slug"] in slugs:
+                    for r in item["rows"]:
+                        if r[1] not in expected:
+                            expected.append(r[1])
+                            first_file[r[1].lower()] = item["slug"]
+            if not expected:
+                if out != module.NONE_LINE:
+                    errors.append(f"{label}: {package} printed {out[:120]!r} where no file goes to it")
+                continue
+            blocks = _standard_lines_blocks(out)
+            got = [b["line"] for b in blocks]
+            if got != expected:
+                errors.append(f"{label}: {package} printed {len(got)} lines and its files carry {len(expected)} distinct "
+                              f"ones; stray {sorted(set(got) - set(expected))[:3]}, missing {sorted(set(expected) - set(got))[:3]}")
+                continue
+            printed_total += len(got)
+            for block in blocks:
+                row = rows_by_line[block["line"].lower()][1]
+                slug = first_file[block["line"].lower()]
+                if block.get("kind") != row[0]:
+                    errors.append(f"{block['line']!r} printed the kind {block.get('kind')!r}, and its file says {row[0]!r}")
+                if row[0] != "Which Trade" and block.get("name") != f"{row[4]}, Package {package}":
+                    errors.append(f"{block['line']!r} printed the name {block.get('name')!r} for {package}")
+                if row[2]:
+                    if block.get("condition") != row[2] or block.get("where to look") != row[3] or "instrument" in block:
+                        errors.append(f"{block['line']!r} printed {block!r} for its condition")
+                else:
+                    wanted_instrument = f"trade-convention:{slug}@{version}"
+                    if block.get("condition") != "none" or block.get("instrument") != wanted_instrument:
+                        errors.append(f"{block['line']!r} printed {block!r}, and a line with no condition prints {wanted_instrument}")
+                    else:
+                        instruments += 1
+    if not instruments:
+        errors.append("no case printed an instrument for a line with no condition")
+
+    # The Which Trade writers: each case's halves print who writes them and the records beside.
+    writer_halves = 0
+    for packages_arg, line, wanted in _STANDARD_LINES_WRITERS:
+        packages = {tc.strip(): [tc.strip()] for tc in packages_arg.split(";")}
+        for package, halves in wanted.items():
+            code, out, err = _run(package, _named_for_code(packages), packages)
+            block = next((b for b in _standard_lines_blocks(out) if b["line"] == line), None)
+            if code != 0 or block is None:
+                errors.append(f"{line!r} was not printed for {package} beside {packages_arg}: exit {code}, {err!r}")
+                continue
+            got = [(h.get("you write it"), h["records"]) for h in block["halves"]]
+            if got != halves:
+                errors.append(f"{line!r} for {package} beside {packages_arg} printed {got!r}, and the case wants {halves!r}")
+            else:
+                writer_halves += len(halves)
+
+    # Every file on its own package, short names and then 61-character ones: each half of each Which
+    # Trade line has one set of writers that every other package printing it names, every name
+    # printed is `<row name>, <package name>` within 80 characters, or `<row name>, <tradeCode>`, and
+    # a package that does not write a half prints the very name each writer prints for its row.
+    whole = {}
+    for item in files:
+        pairs = item["homes"][0].split(" ")
+        whole[" ".join(pairs + ["00"] * (3 - len(pairs)))] = item
+    whole_packages = {tc: [tc] for tc in whole}
+    names_checked = 0
+    disagreements: list[str] = []
+
+    def _wanted_name(row_name: str, package_name: str, trade_code: str) -> str:
+        full = f"{row_name}, {package_name}"
+        return full if len(full) <= STANDARD_LINES_NAME_MAX else f"{row_name}, {trade_code}"
+
+    for long_names in (False, True):
+        whole_names = {tc: (item["title"] + " " + "x" * 61)[:61] if long_names else item["title"]
+                       for tc, item in whole.items()}
+        said: dict[tuple[str, int], dict] = {}
+        for package, item in whole.items():
+            code, out, err = _run(package, whole_names, whole_packages)
+            if code != 0 or err:
+                errors.append(f"the whole catalog run for {package} exited {code} with {err!r}")
+                continue
+            for block in _standard_lines_blocks(out):
+                slug, row = rows_by_line[block["line"].lower()]
+                half_names = [n.strip() for n in row[4].split(";")]
+                names = [(half_names[0], block.get("name"), [package])] if row[0] != "Which Trade" else []
+                for at, half in enumerate(block["halves"]):
+                    verdict = half.get("you write it", "")
+                    seen = said.setdefault((block["line"], at), {"yes": set(), "named": set(), "rows": {}, "cited": set()})
+                    if verdict == "yes":
+                        seen["yes"].add(package)
+                        seen["rows"][package] = half.get("name")
+                        names.append((half_names[at], half.get("name"), [package]))
+                    else:
+                        writers = verdict.split(" by ", 1)[-1].split(" to ", 1)[-1]
+                        seen["named"].add(writers)
+                        seen["cited"].add(half.get("name"))
+                        names.append((half_names[at], half.get("name"), [] if writers == "no package" else writers.split(", ")))
+                for row_name, printed, by in names:
+                    want = "; ".join(_wanted_name(row_name, whole_names[tc], tc) for tc in by)
+                    if (printed or "") != want or any(len(n) > STANDARD_LINES_NAME_MAX for n in (printed or "").split("; ")):
+                        errors.append(f"{block['line']!r} printed the name {printed!r} for {package}, and wants {want!r}")
+                    names_checked += 1
+        for (line, at), seen in said.items():
+            writers = ", ".join(sorted(seen["yes"])) or "no package"
+            if any(named != writers for named in seen["named"]):
+                disagreements.append(f"{line!r} half {at + 1}: written by {writers}, named {sorted(seen['named'])}")
+            writer_rows = "; ".join(seen["rows"][tc] for tc in sorted(seen["rows"]))
+            if any(cited != writer_rows for cited in seen["cited"]):
+                disagreements.append(f"{line!r} half {at + 1}: its writers print {writer_rows!r}, and another package names {sorted(seen['cited'])}")
+    errors.extend(disagreements[:5])
+
+    # Broken files and calls, each refused in one line with nothing printed.
+    out_dir = Path(__file__).parent / ".test-results" / "standard-lines"
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    breaks = {
+        "a bad kind": ("flooring.md", lambda t: t.replace("| Incidental | Floor Prep", "| Incidentals | Floor Prep", 1)),
+        "an empty line": ("flooring.md", lambda t: t.replace("| Floor Prep and Leveling Under Resilient Flooring |", "|  |", 1)),
+        "a row of four cells": ("flooring.md", lambda t: t.replace(" | Floor prep under resilient flooring |", " |", 1)),
+        "a number claimed by two files": ("hvac.md", lambda t: t.replace("Numbers: 23", "Numbers: 23, 09 65 10", 1)),
+        "a number that is not pairs of digits": ("flooring.md", lambda t: t.replace("Numbers: 09 60", "Numbers: 0960", 1)),
+        "a table with no header": ("flooring.md", lambda t: t.replace("| Kind | Line | Condition | Where to Look | Row Name |", "| Kind | Line |", 1)),
+        "no Home line": ("flooring.md", lambda t: re.sub(r"Home: 09 65\r?\n", "", t, count=1)),
+        "a Home number outside the file's numbers": ("flooring.md", lambda t: t.replace("Home: 09 65", "Home: 09 30", 1)),
+        "a row name over 36 characters": ("flooring.md", lambda t: t.replace("| Floor prep under resilient flooring |", "| Floor prep and leveling under resilient flooring |", 1)),
+        "a row name with a comma": ("flooring.md", lambda t: t.replace("| Floor prep under resilient flooring |", "| Floor prep, resilient flooring |", 1)),
+        "a second Home number outside the file's numbers": ("flooring.md", lambda t: t.replace("Home: 09 65", "Home: 09 65, 09 30", 1)),
+        "an Else line naming no other file": ("paving.md", lambda t: t.replace("Else: Earthwork and Sitework", "Else: Sitework Lines", 1)),
+        "one row name for two halves": ("plumbing.md", lambda t: t.replace("| Heat trace cable; Heat trace power |", "| Heat trace cable |", 1)),
+        "a Which Trade line naming an unknown trade": ("plumbing.md", lambda t: t.replace("Heat Trace Cable by Plumbing,", "Heat Trace Cable by Pipefitters,", 1)),
+    }
+    refusals = 0
+    for label, (file_name, change) in breaks.items():
+        target = out_dir / label.replace(" ", "-").replace("'", "")
+        shutil.copytree(folder, target)
+        before = (target / file_name).read_text(encoding="utf-8")
+        after = change(before)
+        if after == before:
+            errors.append(f"the {label} case changed nothing in {file_name}")
+            continue
+        (target / file_name).write_text(after, encoding="utf-8")
+        code, out, err = _run_script_main(module, ["--package", "09 65 00",
+                                                   "--all", "Flooring=09 65 00", "--folder", str(target)])
+        if code == 1 and not out and err.startswith("standard_lines: ") and "\n" not in err:
+            refusals += 1
+        else:
+            errors.append(f"{label} was not refused in one line: exit {code}, out {out[:80]!r}, err {err[:120]!r}")
+    for label, argv in (
+        ("a code spaced another way", ["--package", "096500", "--all", "Flooring=096500"]),
+        ("another package's code spaced another way", ["--package", "09 65 00", "--all", "Flooring=09 65 00; Tiling=093000"]),
+        ("a package not on --all", ["--package", "09 65 00", "--all", "Tiling=09 30 00"]),
+        ("a package given twice", ["--package", "09 65 00", "--all", "Flooring=09 65 00; Carpet=09 65 00,09 65 19"]),
+        ("a package with no =", ["--package", "09 65 00", "--all", "Flooring 09 65 00"]),
+        ("a package with no tradeCode", ["--package", "09 65 00", "--all", "Flooring=09 65 00; Tiling="]),
+        ("no name", ["--package", "09 65 00", "--all", " =09 65 00"]),
+        ("a folder that is not there", ["--package", "09 65 00", "--all", "Flooring=09 65 00",
+                                        "--folder", str(out_dir / "none")]),
+    ):
+        code, out, err = _run_script_main(module, argv)
+        if code == 1 and not out and err.startswith("standard_lines: ") and "\n" not in err:
+            refusals += 1
+        else:
+            errors.append(f"{label} was not refused in one line: exit {code}, err {err[:120]!r}")
+
+    detail = (
+        f"{len(files)} trade files carrying {len(rows)} lines, {no_condition} of them with no "
+        f"condition, each row of five cells with one of the four kinds, a line and a row name, a "
+        f"place to look wherever there is a condition, each of a file's Home numbers one of its "
+        f"numbers starts, and each Else line another file's title; {row_names} row names, one per "
+        f"half of a Which Trade line and one for any other, each at most "
+        f"{STANDARD_LINES_ROW_NAME_MAX} characters with no comma, none twice in a file and none "
+        f"shared by two lines; {which_lines} Which Trade lines, each naming only trades the check "
+        f"knows (a trade named before `Install` among them), worded the same in every file whose "
+        f"trade its line or its condition names, and sharing its condition with no other line, "
+        f"{which_refused} breaks of those rules refused (a line dropped from one file it names, one "
+        f"copy reworded, a second line for the same work, a carrier named as others, the millwork "
+        f"install line off the millwork file, the dowels line off the masonry file its condition "
+        f"names, a long row name, one name for two halves, a name two lines share, a comma in a "
+        f"name); "
+        f"{len(_STANDARD_LINES_CASES)} production package patterns, each package taking the files the "
+        f"case names as worked out here apart from the script and the script printing exactly their "
+        f"{printed_total} distinct lines with each kind, name, condition and place to look as the files "
+        f"give them and {instruments} instruments at the plugin version (a division package keeping "
+        f"its Home file beside post-tensioning, reinforcing and forming packages, underlayment, "
+        f"support of excavation, piles, flooring, tiling and painting each to their own package and "
+        f"the rest of a division to its division package, support of excavation to a shoring "
+        f"package by its second Home number, site utilities and paving each to their own package "
+        f"and to the earthwork package where they have none, electrical beside an EV charger "
+        f"package, millwork beside finish carpentry, none for 08 33 23 and 01 11 13); {writer_halves} Which "
+        f"Trade halves printing their writer and records as the cases want (an `or` line to the "
+        f"lowest package with a candidate on the other, one carrier with an exclusion on the trade "
+        f"it keeps the work off, two halves each excluding the other, an owner half on the trade "
+        f"beside it, a carrier with no package written by the trade it keeps the work off with the "
+        f"carrier's catalog id, furnish halves for each MEP trade and an install half by drywall, the "
+        f"single-installer firestopping line, the own-penetrations line with an exclusion on the "
+        f"firestopping package its condition names, the dowels line with an exclusion on the "
+        f"masonry package its condition names, the water and sewer halves on plumbing and site "
+        f"utilities); every file on its own package with short and 61-character names, "
+        f"{names_checked} names printed for every half, written or not, each `<row name>, <package name>` within "
+        f"{STANDARD_LINES_NAME_MAX} characters or `<row name>, <tradeCode>` by the package that writes it, "
+        f"and every half of every Which Trade line named for the same writers, and by the same row "
+        f"names its writers print, by every package printing it; {refusals} "
+        f"broken files and calls refused in one line; {len(_STANDARD_LINES_PINS)} phrases held over "
+        f"the reviewer, the runner, the skill, both readers and the reviewer report fixture (the "
+        f"condition before a line, never a "
+        f"Question, the evidence of a line with no condition, writing what the script prints, the "
+        f"writer writing every printed half whatever its paper says, no other review writing it, "
+        f"the paper's place cited on the writer's row or carried to the check-in before that row is "
+        f"written, and the fixture naming those cases, the package list and its `places:` line, the row names, the kind rows of mandate 12, the "
+        f"install row beside a furnishing row, the headings in build order and their saved order, "
+        f"the exclusion and general requirement records), "
+        f"{sum(len(patterns) for _, patterns, _ in _STANDARD_LINES_REFUSED)} patterns refused in the "
+        f"reviewer (a review the script did not name writing a half, the named writer skipping a "
+        f"printed `yes`), {refused} mutations refused; bound: text "
+        f"and invented calls, not how a running review judges a condition"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -12709,6 +13594,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_whole_manual_sections(plugin_path, marketplace_root),
         check_question_writing_sentence(plugin_path, marketplace_root),
         check_question_checker_outcomes(plugin_path, marketplace_root),
+        check_standard_lines(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed
