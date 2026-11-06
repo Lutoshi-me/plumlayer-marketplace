@@ -625,10 +625,12 @@ render only what text cannot give.
   that page's `pages read:` entry. `repeatedNotChecked` on the first answer means you got every
   line and says why: walk the rest of the page from its `nextOffset` with `repeated: "include"` and
   add `repeated lines not checked` to that entry; on a later answer it means the page changed under
-  your walk, so restart it from offset 0 with `repeated: "include"` as above. A block whose
-  `firstSheet` is null was cited nowhere, so read the page again with `repeated: "include"`, whole.
+  your walk, so restart it from offset 0 with `repeated: "include"` as above. A block given
+  `firstSheet: null`, no first sheet at all, was cited nowhere, so read the page again with
+  `repeated: "include"`, whole.
   A callout on your sheet that points at a left-out note (`SEE NOTE 7`) is read with
-  `repeated: "include"` and a `region` around the note. The row written from that note cites the
+  `repeated: "include"` and a `region` around the note; `repeated: "only"` takes no `region`, since
+  it reads the whole file's set. The row written from that note cites the
   block's first sheet; where your sheet adds a place the note applies to, find that row with one
   filtered `list_scope_items` on its category and cite your sheet on it as an update. Without
   `Repeated lines: read in set`, never ask for `omit`: nobody read those lines for your file, and a

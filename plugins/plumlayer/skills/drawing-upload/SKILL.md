@@ -730,7 +730,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    that stay with you to settle, and, for the side the design team has to answer, Questions on
    the board, each citing the index page and the sheets it is about. Those Questions are grouped by
    discipline series, not one per sheet, and a class spanning more than three series becomes a single
-   project-wide Question naming the series and their counts. Read them back with `list_questions`.
+   project-wide Question naming the series and their counts. Where some pages print no sheet
+   number, the sheets the index lists that no page prints are one Question instead, naming those
+   sheets and pages and asking the design team which sheet each page is. Read them back with
+   `list_questions`.
    This is internal work: it needs no go-ahead, and the user corrects anything wrong on the site.
 
 ## 9b. Re-read the open Questions this delivery touches

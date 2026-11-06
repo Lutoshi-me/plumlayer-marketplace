@@ -6969,6 +6969,367 @@ def check_repeated_lines_text(plugin_path: Path, marketplace_root: Path) -> Resu
 
 
 # --------------------------------------------------------------------------- #
+# A repeated block printed only on pages with no sheet number
+# --------------------------------------------------------------------------- #
+#
+# A measured run read a file whose repeated notes printed only on pages with no sheet number, and a
+# legend in the same shape, and recorded nothing from either, though the reader text said to cite
+# such a page with no box. The rule sat in a step after the one that told the reader to cite the
+# block's first sheet with a box, the context read was skipped where no block's first sheet carried
+# a number, and the step for a block with no first sheet at all read `firstSheet` is null, which a
+# first sheet whose `sheet` is null also reads as. So the case runs here off an invented `only`
+# answer for such a file: its blocks pick their step by the same fields the reader decides on, and
+# the step each one lands on must say what to do with it.
+#
+# The failures this check exists for: the context read skipped on a first sheet with no number; the
+# step that decides where a row cites leaving a block with no numbered page to a later step, or
+# coming after the box rule; its cases taken in any order but the first that holds; a case citing
+# nothing, or a numbered case naming any step but the one that builds the box; the case with no
+# numbered page citing anything but the `firstSheet` page itself with no box, or dropping the lost
+# box from `anomalies:` or the updates from `page citations:`; the case stated twice in the section;
+# the step for a block with no first sheet readable as one whose first sheet has no number, or
+# losing the pointer that sends a null `sheet` back to the citing step; a step reference naming a
+# step the section does not have; and either reader leaving unclear that `repeated: "only"` takes
+# no `region`. The check reads the field names, the step numbers and the few words that carry each
+# rule, never the verbs around them, so a reworded sentence that keeps its rule still passes.
+#
+# Honest bound: text against an invented answer. Whether a running reader records the legend's
+# scope is the measured re-read's.
+
+_UNNUMBERED_FIXTURE = "repeated-only-unnumbered.json"
+# The cases of the citing step, in the order the reader takes them, each by the fields it decides on.
+_CITE_CASES = (
+    ("numbered first sheet", "`firstSheet.sheet` carries a sheet number"),
+    ("numbered page listed", "`firstSheet.sheet` is null and a `printedOn` entry carries a sheet number"),
+    ("list cut", "`printedOnMore` is present and no listed entry carries one"),
+    ("no numbered page", "no page of the block carries a sheet number"),
+)
+# The cases that cite a numbered sheet, each with the box the box rule's step builds.
+_BOXED_CASES = ("numbered first sheet", "numbered page listed")
+# Words that leave a case's rows uncited; no case of the citing step carries one.
+_CITE_DROPS = ("cite none", "cite nothing", "record nothing", "no citation")
+_FIRST_SHEET_PAGE = "`firstSheet` page"
+_NO_BOX = "no box"
+_DOCUMENT_PAGE = 'kind: "document-page"'
+_PAGE_EVIDENCE = "`{ fileId, pageInPdf }`"
+_ANOMALIES = "`anomalies:`"
+_PAGE_CITATIONS = "`page citations:`"
+_BOX_RULE = "lowest `x0` and `y0` to the highest `x1` and `y1`"
+_CONTEXT_CALL = "`read_sheet_context`"
+_CONTEXT_SKIPPED = "take none"
+_NO_FIRST_SHEET = "`firstSheet: null`"
+_NULL_SHEET = "null `sheet`"
+_NO_FIRST_SHEET_AMBIGUOUS = "A block whose `firstSheet` is null"
+_ONLY = '`repeated: "only"`'
+_NO_REGION = "no `region`"
+_STEP_REF = re.compile(r"\b[Ss]teps? ([1-9][0-9]*(?:(?:, | and | or )[1-9][0-9]*)*)")
+
+
+def _section_steps(section: str) -> list[str]:
+    """The numbered steps of a section, each as written, the opening paragraph dropped."""
+    return re.split(r"\n(?=[1-9][0-9]*\. )", section)[1:]
+
+
+def _unnumbered_case(block: dict) -> str:
+    """The case a block of an `only` answer falls in, off the fields the reader decides on."""
+    first = block.get("firstSheet")
+    if first is None:
+        return "no first sheet"
+    if first.get("sheet") is not None:
+        return "numbered first sheet"
+    if any(sheet is not None for _, sheet in block.get("printedOn", [])):
+        return "numbered page listed"
+    if block.get("printedOnMore"):
+        return "list cut"
+    return "no numbered page"
+
+
+def _flat(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _clauses(flat: str) -> list[str]:
+    """A flat text cut after each period or semicolon that a space follows."""
+    return [c for c in re.split(r"(?<=[.;])\s+", flat) if c]
+
+
+def _step_refs(text: str) -> list[int]:
+    """Every step number a text names, `steps 4 and 5` as two."""
+    return [int(n) for group in _STEP_REF.findall(text) for n in re.findall(r"[0-9]+", group)]
+
+
+def _repeated_parts(reader_text: str) -> dict:
+    """The repeated lines section of the vocabulary reader, cut into the parts the check reads."""
+    section = reader_text.split(_REPEATED_SECTION_HEADING, 1)[1].split("\n## ", 1)[0]
+    raw = _section_steps(section)
+    numbers = [int(s.split(".", 1)[0]) for s in raw]
+    steps = [_flat(s) for s in raw]
+    pieces = [[_flat(p) for p in re.split(r"\n\s*- ", s)] for s in raw]
+    # The citing step is the one whose bullets carry the cases, whatever verb opens it.
+    cite_at = next(
+        (i for i, p in enumerate(pieces) if any(cond in b for b in p[1:] for _, cond in _CITE_CASES)),
+        None,
+    )
+    preamble, bullets = (pieces[cite_at][0], pieces[cite_at][1:]) if cite_at is not None else ("", [])
+    cases = {label: next((b for b in bullets if cond in b), None) for label, cond in _CITE_CASES}
+    return {
+        "section": section,
+        "raw": raw,
+        "numbers": numbers,
+        "steps": steps,
+        "cite_at": cite_at,
+        "preamble": preamble,
+        "bullets": bullets,
+        "cases": cases,
+        "box_at": next((i for i, s in enumerate(steps) if _BOX_RULE in s), None),
+        "context": [i for i, s in enumerate(steps) if _CONTEXT_CALL in s],
+        "no_first": [i for i, s in enumerate(steps) if _NO_FIRST_SHEET in s and "cite none" in s],
+    }
+
+
+def _order_clause(preamble: str) -> str | None:
+    """The clause that binds the cases to the first that holds."""
+    return next((c for c in _clauses(preamble) if re.search(r"\bfirst\b", c) and re.search(r"\bcases?\b", c)), None)
+
+
+def _recorded_clause(preamble: str) -> str | None:
+    """The clause that has a block with no numbered page read and recorded like any other."""
+    return next((
+        c for c in _clauses(preamble)
+        if "no sheet number" in c and "recorded" in c and not re.search(r"\b(not|nothing|never)\b", c)
+    ), None)
+
+
+def _page_cite_clause(case: str) -> str | None:
+    """The clause of the no numbered page case that cites the page itself with no box."""
+    return next((c for c in _clauses(case) if _FIRST_SHEET_PAGE in c and _NO_BOX in c), None)
+
+
+def _only_clause(text: str) -> str | None:
+    return next((c for c in _clauses(_flat(text)) if _ONLY in c and _NO_REGION in c), None)
+
+
+def _no_number_errors(block: int, case: str | None) -> list[str]:
+    """What the case with no numbered page must carry for a block that lands on it."""
+    at = f"block {block}, printed only on pages with no sheet number, lands on a case that"
+    if case is None:
+        return [f"{at} the citing step does not carry"]
+    errors: list[str] = []
+    if _page_cite_clause(case) is None:
+        errors.append(f"{at} does not cite the {_FIRST_SHEET_PAGE} itself with {_NO_BOX}")
+    if _DOCUMENT_PAGE not in case:
+        errors.append(f"{at} does not carry {_DOCUMENT_PAGE!r}")
+    if not any("evidence" in c and _PAGE_EVIDENCE in c for c in _clauses(case)):
+        errors.append(f"{at} does not give a new row evidence {_PAGE_EVIDENCE}")
+    if not any(_ANOMALIES in c and "box" in c for c in _clauses(case)):
+        errors.append(f"{at} does not name the lost box on {_ANOMALIES}")
+    if _PAGE_CITATIONS not in case:
+        errors.append(f"{at} does not carry {_PAGE_CITATIONS}")
+    return errors
+
+
+def _unnumbered_errors(reader_text: str, sheet_text: str, answer: dict) -> list[str]:
+    errors: list[str] = []
+    if _REPEATED_SECTION_HEADING not in reader_text:
+        return [f"{VOCABULARY_READER} carries no `{_REPEATED_SECTION_HEADING}` section"]
+    parts = _repeated_parts(reader_text)
+    steps, numbers, cite_at = parts["steps"], parts["numbers"], parts["cite_at"]
+    flat = _flat(parts["section"])
+
+    if numbers != list(range(1, len(numbers) + 1)):
+        errors.append(f"the section's steps are numbered {numbers}, not 1 to {len(numbers)}")
+    for number, step in zip(numbers, steps):
+        missing = sorted({n for n in _step_refs(step) if n not in numbers})
+        if missing:
+            errors.append(f"step {number} names step {missing}, which the section does not have")
+
+    if len(parts["context"]) != 1:
+        errors.append(f"the section names {_CONTEXT_CALL} in {len(parts['context'])} steps, expected 1")
+    else:
+        context = _clauses(steps[parts["context"][0]])
+        if not any(_FIRST_SHEET_PAGE in c and _CONTEXT_SKIPPED not in c for c in context):
+            errors.append(
+                f"the context step does not take the read on a {_FIRST_SHEET_PAGE} where no block's first "
+                "sheet carries a number, so a file whose blocks print only on such pages is read with "
+                "no packages, definition kinds or sections"
+            )
+        if any(_CONTEXT_SKIPPED in c for c in context):
+            errors.append(f"the context step still says {_CONTEXT_SKIPPED!r}")
+
+    box_at = parts["box_at"]
+    cases = parts["cases"]
+    if cite_at is None:
+        errors.append("no step of the section carries the citing cases as bullets")
+    else:
+        cite_no = numbers[cite_at]
+        if box_at is None or box_at < cite_at:
+            errors.append("the step that decides where a row cites comes after the box rule, or there is no box rule")
+        if _order_clause(parts["preamble"]) is None:
+            errors.append("the citing step does not say to take the first case that holds, so its order does not bind")
+        if _recorded_clause(parts["preamble"]) is None:
+            errors.append(
+                "the citing step does not say a block that prints only on pages with no sheet number is "
+                "read and recorded"
+            )
+        for (label, cond) in _CITE_CASES:
+            if cases[label] is None:
+                errors.append(f"the citing step does not carry its {label} case, {cond!r}")
+        at = [parts["bullets"].index(cases[label]) for label, _ in _CITE_CASES if cases[label] is not None]
+        if at != sorted(set(at)):
+            errors.append("the citing step's cases are not in the order the reader takes them")
+        for label, case in cases.items():
+            dropped = [d for d in _CITE_DROPS if d in (case or "")]
+            if dropped:
+                errors.append(f"the {label} case says {dropped[0]!r}, so its rows are not cited")
+        if box_at is not None:
+            for label in _BOXED_CASES:
+                if cases[label] is not None and numbers[box_at] not in _step_refs(cases[label]):
+                    errors.append(
+                        f"the {label} case does not name step {numbers[box_at]}, the step that builds the box"
+                    )
+        if len(parts["no_first"]) == 1:
+            pointer = [c for c in _clauses(steps[parts["no_first"][0]]) if _NULL_SHEET in c]
+            if not any(cite_no in _step_refs(c) for c in pointer):
+                errors.append(
+                    f"the step for {_NO_FIRST_SHEET} does not send a first sheet with a {_NULL_SHEET} "
+                    f"to step {cite_no}, the citing step"
+                )
+    others = [s for i, s in enumerate(steps) if i != cite_at and _DOCUMENT_PAGE in s]
+    if others:
+        errors.append("a page with no sheet number is cited by a step other than the citing step, so the rule is stated twice")
+    if _NO_FIRST_SHEET_AMBIGUOUS in flat:
+        errors.append(
+            f"the section still carries {_NO_FIRST_SHEET_AMBIGUOUS!r}, which a first sheet whose `sheet` "
+            "is null also reads as"
+        )
+
+    # The invented file: each block lands on the step its fields pick, and that step must hold it.
+    for block in answer["blocks"]:
+        case = _unnumbered_case(block)
+        if case == "no first sheet":
+            if len(parts["no_first"]) != 1:
+                errors.append(
+                    f"block {block['block']}, with `firstSheet: null`, finds no one step naming "
+                    f"{_NO_FIRST_SHEET} that cites none"
+                )
+        elif case == "no numbered page":
+            errors += _no_number_errors(block["block"], cases["no numbered page"])
+        else:
+            errors.append(f"the fixture's block {block['block']} reads as {case}, not a block with no numbered page")
+
+    if _only_clause(parts["section"]) is None:
+        errors.append(f"{VOCABULARY_READER}'s repeated lines section does not say {_ONLY} takes {_NO_REGION}")
+    omit_bullet = next(
+        (b for b in sheet_text.split("\n- ") if b.startswith("**Leave out what was read once.**")), ""
+    )
+    if _only_clause(omit_bullet) is None:
+        errors.append(f"{SHEET_READER}'s leave-out bullet does not say {_ONLY} takes {_NO_REGION}")
+    return errors
+
+
+def _unnumbered_breaks(reader_text: str, sheet_text: str) -> list[tuple[str, str, str]]:
+    """Each guarded rule broken in the shipped text, every piece found by what it says."""
+    parts = _repeated_parts(reader_text)
+    section, raw, steps, numbers = parts["section"], parts["raw"], parts["steps"], parts["numbers"]
+    cite_raw, box_raw = raw[parts["cite_at"]], raw[parts["box_at"]]
+    cases = parts["cases"]
+    box_no, last_no = numbers[parts["box_at"]], numbers[-1]
+
+    def flat_replace(text: str, old: str, new: str) -> str:
+        # The phrase as the file wraps it, so the lines and the headings stay where they are.
+        return re.sub(r"\s+".join(map(re.escape, old.split())), lambda _: new, text, count=1)
+
+    def in_step(i: int, old: str, new: str) -> str:
+        return reader_text.replace(raw[i], flat_replace(raw[i], old, new), 1)
+
+    def in_case(label: str, old: str, new: str) -> str:
+        case = cases[label]
+        return in_step(parts["cite_at"], case, case.replace(old, new, 1))
+
+    context_at = parts["context"][0]
+    fallback = next(c for c in _clauses(steps[context_at]) if _FIRST_SHEET_PAGE in c)
+    no_first_at = parts["no_first"][0]
+    pointer = next(c for c in _clauses(steps[no_first_at]) if _NULL_SHEET in c)
+    no_number = cases["no numbered page"]
+    page_cite = _page_cite_clause(no_number)
+    anomalies = next(c for c in _clauses(no_number) if _ANOMALIES in c)
+    swapped = section.replace(cite_raw, "\0").replace(box_raw, cite_raw).replace("\0", box_raw)
+    omit_bullet = next(b for b in sheet_text.split("\n- ") if b.startswith("**Leave out what was read once.**"))
+    return [
+        ("the context read on a first sheet with no number dropped", "reader", in_step(context_at, fallback, "")),
+        ("the context read skipped again", "reader", in_step(context_at, fallback, "where no block's does, take none.")),
+        ("the recorded sentence dropped", "reader", in_step(parts["cite_at"], _recorded_clause(parts["preamble"]), "")),
+        ("the order of the cases loosened", "reader", in_step(parts["cite_at"], _order_clause(parts["preamble"]), "Take whichever case holds:")),
+        ("the no numbered page case dropped", "reader", in_case("no numbered page", _CITE_CASES[-1][1], "")),
+        ("the no numbered page case cited with a box", "reader", in_case("no numbered page", page_cite, page_cite.replace(_NO_BOX, "a box"))),
+        ("the no numbered page case recording nothing", "reader", in_case("no numbered page", page_cite, f"Where {_CITE_CASES[-1][1]}, record nothing from the block, with no box.")),
+        ("the numbered first sheet case citing none", "reader", in_case("numbered first sheet", cases["numbered first sheet"], f"Where {_CITE_CASES[0][1]}, cite none.")),
+        ("the numbered first sheet case naming the step after the box step", "reader", in_case("numbered first sheet", f"step {box_no}", f"step {box_no + 1}")),
+        ("the numbered first sheet case naming a step past the last", "reader", in_case("numbered first sheet", f"step {box_no}", f"step {last_no + 1}")),
+        ("the stale step read as a null first sheet", "reader", flat_replace(reader_text, _NO_FIRST_SHEET, "`firstSheet` is null")),
+        ("the pointer from a null `sheet` to the citing step dropped", "reader", in_step(no_first_at, pointer, "")),
+        ("the ambiguous stale wording put back", "reader", reader_text.replace(_REPEATED_SECTION_HEADING, f"{_REPEATED_SECTION_HEADING}\n\n{_NO_FIRST_SHEET_AMBIGUOUS} prints nowhere.", 1)),
+        ("the citing step after the box rule", "reader", reader_text.replace(section, swapped, 1)),
+        ("a second document-page step", "reader", reader_text.replace(section, section.rstrip("\n") + '\n9. Cite it as `kind: "document-page"`.\n', 1)),
+        ("`only` with no region dropped from the vocabulary reader", "reader", reader_text.replace(section, flat_replace(section, _only_clause(section), ""), 1)),
+        ("`only` with no region dropped from the sheet reader", "sheet", sheet_text.replace(omit_bullet, flat_replace(omit_bullet, _only_clause(omit_bullet), ""), 1)),
+        (f"{_DOCUMENT_PAGE} dropped from the no numbered page case", "reader", in_case("no numbered page", _DOCUMENT_PAGE, "")),
+        (f"the evidence {_PAGE_EVIDENCE} dropped from the no numbered page case", "reader", in_case("no numbered page", _PAGE_EVIDENCE, "")),
+        (f"the lost box on {_ANOMALIES} dropped from the no numbered page case", "reader", in_case("no numbered page", anomalies, "")),
+        (f"{_PAGE_CITATIONS} dropped from the no numbered page case", "reader", in_case("no numbered page", _PAGE_CITATIONS, "")),
+    ]
+
+
+def check_unnumbered_repeated_blocks(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "unnumbered-repeated-blocks"
+    reader = plugin_path / "agents" / VOCABULARY_READER
+    sheet_reader = plugin_path / "agents" / SHEET_READER
+    fixture = marketplace_root / "harness" / "fixtures" / _UNNUMBERED_FIXTURE
+    for path in (reader, sheet_reader, fixture):
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+    reader_text = reader.read_text(encoding="utf-8")
+    sheet_text = sheet_reader.read_text(encoding="utf-8")
+    answer = json.loads(fixture.read_text(encoding="utf-8"))
+    errors: list[str] = []
+
+    # The fixture is the case the check is for: one block printed only on pages with no sheet
+    # number, and one with no first sheet at all, and nothing else.
+    cases = sorted(_unnumbered_case(block) for block in answer["blocks"])
+    if cases != ["no first sheet", "no numbered page"] or answer.get("blockCount") != len(answer["blocks"]):
+        errors.append(f"the fixture's blocks read as {cases}, expected one with no numbered page and one with no first sheet")
+
+    errors += _unnumbered_errors(reader_text, sheet_text, answer)
+
+    # Each guarded part broken in the shipped text, so every refusal is shown rather than assumed.
+    refused = 0
+    if not errors:
+        for label, which, broken in _unnumbered_breaks(reader_text, sheet_text):
+            texts = (broken, sheet_text) if which == "reader" else (reader_text, broken)
+            if texts == (reader_text, sheet_text):
+                errors.append(f"the break {label!r} changed nothing")
+            elif _unnumbered_errors(*texts, answer):
+                refused += 1
+            else:
+                errors.append(f"the check passed the text with {label}")
+
+    detail = (
+        f"an invented `only` answer of {len(answer['blocks'])} blocks, one printed only on pages with no "
+        f"sheet number and one with no first sheet, each landing on the step its fields pick: the "
+        f"context read taken on a first sheet with no number, the citing step ahead of the box rule "
+        f"with its {len(_CITE_CASES)} cases taken first that holds, none citing nothing, the numbered "
+        f"ones naming the box step, and the page with no box cited in that step alone, with the lost "
+        f"box on `anomalies:` and the updates on `page citations:`, every step reference a step the "
+        f"section has, the step for no first sheet named {_NO_FIRST_SHEET} and pointing a null `sheet` "
+        f"back to the citing step, and both readers saying `only` takes no region; {refused} "
+        f"mutations refused; bound: text against an invented answer, not a running reader"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # 24. A scope pass belongs to one drawing issue
 # --------------------------------------------------------------------------- #
 #
@@ -13583,6 +13944,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_agent_model_pinned(plugin_path, marketplace_root),
         check_dispatch_foreground(plugin_path, marketplace_root),
         check_repeated_lines_text(plugin_path, marketplace_root),
+        check_unnumbered_repeated_blocks(plugin_path, marketplace_root),
         check_drawing_issue_passes(plugin_path, marketplace_root),
         check_anomaly_notes(plugin_path),
         check_shared_number_pages(plugin_path, marketplace_root),

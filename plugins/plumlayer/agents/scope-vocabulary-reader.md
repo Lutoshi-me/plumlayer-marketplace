@@ -697,7 +697,10 @@ that file leave these lines out of their sheets, so what you do not record from 
    there is nothing to record: say so on `pages read:` with those counts, take no context read,
    and report. Otherwise take one `read_sheet_context` on the first block in the answer's order
    whose `firstSheet` carries a sheet number, for the packages, the definition kinds and the
-   checklist sections; where no block's does, take none.
+   checklist sections; where no block's does, take it all the same, on the `firstSheet` page of
+   the first block that has one. The call takes a file and a page, whether or not it carries a sheet number, and on a
+   page with none it still gives the packages, the definition kinds and the sections, with no rows
+   citing the page and no sheet reading.
 3. Read every block for everything on it, whatever trade, as you read a sheet for the sheet: every
    mandate applies. A block that defines abbreviations, symbols or types is vocabulary, and mandate
    8 applies to it too. The block printed on nearly every page is the fixed part of the title
@@ -709,48 +712,59 @@ that file leave these lines out of their sheets, so what you do not record from 
    prints. Where every listed sheet, every entry with a sheet number, is a left-out sheet and
    `printedOnMore` is absent, record nothing from the block; count it on `pages unread:` as `<n>
    blocks, <m> lines printed only on sheets left out`. Otherwise cite the first entry of
-   `printedOn` whose sheet is one the run reads, with the box step 5 builds from that sheet's own
+   `printedOn` whose sheet is one the run reads, with the box step 6 builds from that sheet's own
    lines. Only where `printedOnMore` is present and no listed entry carries a sheet the run reads
    do the pages left off the list need finding: `search_set_text(projectId, query: <its longest
    line>)`, by delivery as the corpus bullet of How you read says, paged to its end, keeping the
    hits whose `fileId` is this file, then record nothing or
    cite the first hit whose sheet the run reads on the same terms.
-5. Cite where the note is printed first. A row written from a block cites that block's
-   `firstSheet`, its sheet and its page, with a box from the lowest `x0` and `y0` to the highest
-   `x1` and `y1` of that note's lines in the block, so every number in the box is one those lines
-   carry. Those boxes are in the page's own points, the frame `get_page_text` gives every line in
-   and the one the record opens a box in, so send them as they are with `frame: "page-points"`,
-   the label for a box read off the page text, and never convert a number. On a new row's
-   entries the evidence is `{ sheet, pageInPdf, fileId, locator: { pageInPdf, frame:
-   "page-points", bboxPts: [x0, y0, x1, y1] } }`; the citation, on a new row or one that already
-   exists, is one item of the batch's `citations`, `{ subject, kind: "sheet-region", sheet,
-   pageInPdf, fileId, bboxPts, frame: "page-points" }`, and a new row carries both. A Question about a note cites the same sheet, box and file. A note whose lines sit in
-   two blocks cites the first sheet of the block that prints on fewer pages; where that block does
-   not carry every line of the note, read that sheet with `repeated: "include"` and a `region`
-   around the note for the rest of the boxes, never a box taken from another page. Where you cite
-   a sheet other than the block's first sheet, as steps 4 and 6 allow, the box comes off that
-   sheet's own lines: `get_page_text` on its page with `repeated: "include"` and a `region` around
-   where the note sits, the first sheet's box for it grown by 4 points on every side for a
-   `printedOn` entry, or the search hit's `spans` for a hit. Every page of a block prints its lines
-   within 2 points of the spot on the earliest page that prints it, and the first sheet is the
-   first in the set's order, not always that earliest page, so two pages' occurrences can sit up to
-   4 points apart; the box is the lowest `x0` and `y0` to the highest `x1`
-   and `y1` of the lines there that carry the note's text.
-6. A box needs a sheet number. Where `firstSheet.sheet` is null, the first page printing the block
-   carries no sheet number, and a `sheet-region` cannot name it. Cite the first entry of
-   `printedOn` with a sheet number the run reads, with that sheet's own box, as step 5 says; where
-   `printedOnMore` is present and no listed entry carries one, search the block's longest line as
-   step 4 does for the pages left off the list. Where no page carries one, cite the page with no
-   box, a `document-page` citation `{ subject, kind: "document-page", fileId, pageInPdf }` or, on a
-   new row, evidence `{ fileId, pageInPdf }`, and name the box you could not send on `anomalies:`
-   with the file and page, ending `run only`. A page with no sheet number names no sheet your runner can verify by,
-   so every row that existed before and that you cite this way also goes on your `page citations:`
-   line, with its subject, the file and the page.
-7. A block whose `firstSheet` is null prints only on pages the set no longer shows: name each on
-   `pages unread:` with its line count, and cite none.
+5. Decide where each row cites, block by block, before you build a box. A block that prints only
+   on pages with no sheet number is read and recorded like any other, whatever it carries; only its
+   citation differs. Take the first case that holds:
+   - Where `firstSheet.sheet` carries a sheet number, and step 4 has not sent you elsewhere, cite
+     that sheet and page, with the box step 6 builds.
+   - Where `firstSheet.sheet` is null and a `printedOn` entry carries a sheet number the run reads,
+     cite the first such entry, with that sheet's own box as step 6 says. A `sheet-region` needs a
+     sheet number, and the first page printing the block carries none.
+   - Where `printedOnMore` is present and no listed entry carries one, search the block's longest
+     line as step 4 does for the pages left off the list, and cite the first hit whose sheet the
+     run reads, with the box off its `spans`; where no hit carries one, the next case holds.
+   - Where no page of the block carries a sheet number, cite the `firstSheet` page itself with no
+     box. The citation is `{ subject, kind: "document-page", fileId, pageInPdf }`, and a new row
+     carries both it and evidence `{ fileId, pageInPdf }` on its entries. On `anomalies:`, name
+     the box you could not send, one line per block, with the file and page, ending `run only`. A
+     page with no sheet number names no sheet your runner can verify by, so every row that
+     existed before and that you cite this way also goes on your `page citations:` line, with its
+     subject, the file and the page.
+6. Build the box off the lines that carry the note. For a block's `firstSheet`, the box runs from
+   the lowest `x0` and `y0` to the highest `x1` and `y1` of that note's lines in the block, so
+   every number in the box is one those lines carry. Those boxes are in the page's own points, the
+   frame `get_page_text` gives every line in and the one the record opens a box in, so send them as
+   they are with `frame: "page-points"`, the label for a box read off the page text, and never
+   convert a number. On a new row's entries the evidence is `{ sheet, pageInPdf, fileId, locator:
+   { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }`; the citation, on a new row or
+   one that already exists, is one item of the batch's `citations`, `{ subject, kind:
+   "sheet-region", sheet, pageInPdf, fileId, bboxPts, frame: "page-points" }`, and a new row
+   carries both. A Question about a note cites the same sheet, box and file. `repeated: "only"`
+   takes no `region`, since it reads the whole file's set: to box a note on one page, read that
+   page with `repeated: "include"` and a `region`. A note whose lines sit in two blocks cites the
+   first sheet of the block that prints on fewer pages; where that block does not carry every line
+   of the note, read that sheet with `repeated: "include"` and a `region` around the note for the
+   rest of the boxes, never a box taken from another page. Where you cite a sheet other than the
+   block's first sheet, as steps 4 and 5 allow, the box comes off that sheet's own lines:
+   `get_page_text` on its page with `repeated: "include"` and a `region` around where the note
+   sits, the first sheet's box for it grown by 4 points on every side for a `printedOn` entry, or
+   the search hit's `spans` for a hit. Every page of a block prints its lines within 2 points of
+   the spot on the earliest page that prints it, and the first sheet is the first in the set's
+   order, not always that earliest page, so two pages' occurrences can sit up to 4 points apart;
+   the box is the lowest `x0` and `y0` to the highest `x1` and `y1` of the lines there that carry
+   the note's text.
+7. A block the answer gives `firstSheet: null`, no first sheet at all, prints only on pages the set
+   no longer shows: name each on `pages unread:` with its line count, and cite none. A block whose
+   `firstSheet` is there with a null `sheet` is the other case, and step 5 cites it.
 8. On `pages read:`, name each block you read by its first sheet, its page and its line count. On
    `cited sheets:`, name every sheet a row you created, updated or cited names, so your runner
-   finds your work back. On `page citations:`, name every update step 6 cited to a page with no
+   finds your work back. On `page citations:`, name every update step 5 cited to a page with no
    sheet number. On `set version:`, write the `setVersion` your walk ended on.
 
 ## Report back

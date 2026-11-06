@@ -1,0 +1,30 @@
+{
+  "fileId": "file-s1",
+  "form": "lines",
+  "repeated": "only",
+  "setVersion": "4be17c02d9a3f651",
+  "blockCount": 2,
+  "truncated": false,
+  "blocks": [
+    {
+      "block": 1,
+      "firstSheet": { "sheet": null, "fileId": "file-s1", "pageInPdf": 4 },
+      "pages": 6,
+      "printedOn": [[4, null], [5, null], [7, null], [8, null], [9, null], [11, null]],
+      "lines": [
+        ["FINISH LEGEND", 612.0, 48.5, 688.2, 56.1],
+        ["CPT-1 CARPET TILE, SEE SPECIFICATION 09 68 13", 612.0, 60.2, 801.7, 67.8],
+        ["RB-1 RUBBER BASE, 4 IN. COVED, AT ALL CPT-1 AREAS", 612.0, 71.9, 822.4, 79.5]
+      ]
+    },
+    {
+      "block": 2,
+      "firstSheet": null,
+      "pages": 5,
+      "printedOn": [[20, null], [21, null], [22, null], [23, null], [24, null]],
+      "lines": [
+        ["ISSUED FOR COORDINATION ONLY", 40.0, 1180.0, 210.6, 1187.6]
+      ]
+    }
+  ]
+}
