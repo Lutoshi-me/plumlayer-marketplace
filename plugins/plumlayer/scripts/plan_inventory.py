@@ -79,11 +79,13 @@ A number printed on more than one page:
   row, on its first page, and lists every page it prints on under the row's `pageOccurrences`: the
   row's own page marked `selected`, each further page of the row's own delivery with
   `deliveryId: null` and the key it opens as, `opensAs`, and each page an earlier issue printed
-  that the current set keeps beside the number, with that issue's `deliveryId`. The inventory makes
-  each further page a sheet of its own, right after its number's row: the row's discipline and
-  number, and the page's own file, page, title, sheet type and `opensAs`, under the unit key
-  `<sheet>@<fileId>#<page>`. A page of an earlier issue gets no row, since the pass reads its own
-  issue; the bounds line counts and names it, as it counts and names each further page.
+  that the grid keeps beside the number, with that issue's `deliveryId`. The inventory makes each
+  further page a sheet of its own, right after its number's row: the row's discipline and number,
+  and the page's own file, page, title, sheet type and `opensAs`, under the unit key
+  `<sheet>@<fileId>#<page>`. An earlier issue's page is a further page too where `run.json` lists
+  that issue under `readFrom`, as a set's page stays beside an addendum that reprints the number on
+  fewer pages. Any other earlier issue's page gets no row, since the pass reads its own issue; the
+  bounds line counts and names it, as it counts and names each further page.
   `--expect-count` is the grid's `count`, which counts the number once, so it holds against the
   grid's rows. Every window reads a further page as any other sheet, and `--include`, `--exclude`
   and `--only` match the number it prints, so a pattern naming the number takes both pages. Its
@@ -918,7 +920,7 @@ def _check_unit_keys(rows: list[dict], where: str) -> None:
 
 
 def _further_pages(
-    path: Path, row: dict, raw: dict, owner: dict[tuple[str, str], str]
+    path: Path, row: dict, raw: dict, owner: dict[tuple[str, str], str], read_from: frozenset[str]
 ) -> tuple[list[dict], list[dict]]:
     """
     A grid row's further pages, each a row of its own, and the pages of an earlier issue it lists.
@@ -926,10 +928,12 @@ def _further_pages(
     `pageOccurrences` lists every page the row's number prints on, the row's own page marked
     `selected`, once the number prints on more than one. A further page of the row's own delivery
     carries `deliveryId: null` and is a sheet of its own: it takes the row's discipline and number,
-    and its own file, page, title, sheet type and the key it opens as. A page an earlier issue
-    printed carries that issue's `deliveryId`; the pass reads its own issue, so that page gets no
-    row and is named instead. `owner` maps each page some row already stands on to who stands on
-    it, and takes in each further page as it is placed.
+    and its own file, page, title, sheet type and the key it opens as. A page another issue printed
+    carries that issue's `deliveryId`. Where that issue is one of `read_from`, the deliveries the
+    pass reads from, it is a further page the pass reads the same way, as on a set's page an
+    addendum that reprints the number on fewer pages leaves standing. Any other issue's page gets
+    no row and is named instead. `owner` maps each page some row already stands on to who stands
+    on it, and takes in each further page as it is placed.
     """
     number = _text(row["sheetNumber"]) or "(no sheet number)"
     occurrences = raw.get("pageOccurrences")
@@ -964,7 +968,7 @@ def _further_pages(
         file_id = occurrence.get("fileId")
         page = occurrence.get("pageInPdf")
         # The field says whose page this is, so it is read and never defaulted: null is the row's
-        # own issue, a delivery id is an earlier issue's, and anything else names neither.
+        # own issue, a delivery id is another issue's, and anything else names neither.
         where = f"file {_text(file_id) or '(none)'}, page {_text(page) or '(none)'}"
         if "deliveryId" not in occurrence:
             raise PlanError(
@@ -977,7 +981,8 @@ def _further_pages(
                 f"{path}: sheet {number} lists {where} under `pageOccurrences` with a `deliveryId` "
                 f"that is neither null nor a delivery id: {delivery!r}"
             )
-        if delivery is None:
+        read = delivery is None or delivery in read_from
+        if read:
             missing = [
                 what for what, ok in (
                     ("file", isinstance(file_id, str) and file_id != ""),
@@ -998,7 +1003,7 @@ def _further_pages(
                 f"twice under `pageOccurrences`"
             )
         listed.add(place)
-        if delivery is not None:
+        if not read:
             carried.append(
                 {"sheetNumber": number, "fileId": file_id, "pageInPdf": page, "deliveryId": delivery}
             )
@@ -1024,10 +1029,13 @@ def _further_pages(
     return further, carried
 
 
-def _normalize_rows(pages: list) -> tuple[list[dict], list[str], list[dict], list[dict]]:
+def _normalize_rows(
+    pages: list, read_from: frozenset[str]
+) -> tuple[list[dict], list[str], list[dict], list[dict]]:
     """
     The grid's rows in grid order with duplicates dropped, each further page of a number printed on
-    more than one page right after its number's row (`_further_pages`). Returns the rows, the
+    more than one page right after its number's row (`_further_pages`), `read_from` being the
+    deliveries the pass reads from, none for a grid of the current set. Returns the rows, the
     duplicates, the further pages, and the pages of an earlier issue left out.
     """
     seen: set[tuple[str, str, str]] = set()
@@ -1060,7 +1068,7 @@ def _normalize_rows(pages: list) -> tuple[list[dict], list[str], list[dict], lis
     carried: list[dict] = []
     for path, row, raw in grid_rows:
         rows.append(row)
-        row_further, row_carried = _further_pages(path, row, raw, owner)
+        row_further, row_carried = _further_pages(path, row, raw, owner, read_from)
         rows.extend(row_further)
         further.extend(row_further)
         carried.extend(row_carried)
@@ -1247,7 +1255,9 @@ def inventory(grid: Path, expect_count: int, out_dir: Path) -> str:
     files = _grid_files(grid)
     pages, order_rule = _order_pages(_read_grid_pages(files))
     issue = _grid_issue(pages, _read_run(out_dir), out_dir)
-    rows, duplicates, further, carried = _normalize_rows(pages)
+    rows, duplicates, further, carried = _normalize_rows(
+        pages, frozenset(issue["readFrom"]) if issue is not None else frozenset()
+    )
 
     # `--expect-count` is the grid's own `count`, which counts a number printed on more than one
     # page once, so it is held against the grid's rows and never against the further pages.

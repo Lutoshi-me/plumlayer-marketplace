@@ -71,11 +71,11 @@ read the later issue's page in its place.
 
 `Opens as: <key>` means your page is a further page: its number prints on more than one page of
 the drawing issue, the number's own sheet is the first of them, and this page is a sheet of its
-own under that key. Its context answer gives `sheetNumber: null` for that reason, so it carries no
-row citing the number and no sheet reading. Take the sheet number from your dispatch and cite with
-it, on this page and with the `fileId` your dispatch names (mandate 2). The rows that already cite
-the number reach you through mandate 1's searches before a create, and the page's own reading is
-mandate 9's on `sheet:<opens as>`.
+own under that key. Its context answer names the printed number as `sheetNumber` and that key as
+`opensAs`, carries every row citing the number, with `citesThisPage` true only on a row cited on
+this file and page, and gives `sheetReading` off `sheet:<opens as>`. Cite with the sheet number,
+on this page and with the `fileId` your dispatch names (mandate 2), and write the page's own
+reading on `sheet:<opens as>` (mandate 9).
 
 ## The mandates
 
@@ -256,11 +256,11 @@ of them is ever trimmed.
    citation, fix it to what you actually read, and never game the shape. An item already cites the
    pages the index found it on; cite what the index did not, and never re-cite a page the item
    carries. Where the context read names a `sheetNumber`, a row it gives with
-   `citesThisPage: false` does not carry this page (it cites this sheet only on an earlier drawing
-   issue's page, names the sheet with no file, or is there for its codes alone): where you read
-   its work on this page, cite this page on it as an update. Where `sheetNumber` is null, as on a
-   page a later issue replaced or on a further page your dispatch names with `Opens as: <key>`,
-   every row reads `citesThisPage: false` whatever it cites, so before you cite such a row, read
+   `citesThisPage: false` does not carry this page (it cites the number only on another page, an
+   earlier drawing issue's or another page of the number in this file, names the sheet with no
+   file, or is there for its codes alone): where you read its work on this page, cite this page on
+   it as an update. Where `sheetNumber` is null, as on a page a later issue replaced, every row
+   reads `citesThisPage: false` whatever it cites, so before you cite such a row, read
    it with `list_scope_items(subjectPrefix: "<subject>", full: true)`: the row whose `subject` is
    that one carries its `drawingRefs`, the live citations of its current fields, each
    `{ sheet, page, fileId }` (the raw `search` also returns superseded and removed ones). Cite this
@@ -540,9 +540,8 @@ of them is ever trimmed.
    `search(subject: "sheet:<sheet number>")` reads them all before you add one.
    On a further page, where your dispatch says `Opens as: <key>`, the subject is
    `sheet:<opens as>`, that key, and never `sheet:<sheet number>`, which is the number's first
-   page. The context read carries no sheet reading for a page whose `sheetNumber` is null, so take
-   `search(subject: "sheet:<opens as>")` first, read a `reading` it carries instead of writing
-   another, and record only a `resolvesTo` or `references` value it does not list.
+   page. The context read's sheet reading is that record's, and every `sheet:<sheet number>`
+   above reads `sheet:<opens as>` on that page.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
 created only at their own doors. You never close a Question: if you think one should be closed, say

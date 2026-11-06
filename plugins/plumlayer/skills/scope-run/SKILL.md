@@ -887,7 +887,8 @@ lines.
    sheet, then read from `inventory.md` only the count tables and the sheet number digest at its
    tail. Never the sheet lines above them. The inventory can list more sheets than the grid's
    `count`: where one number prints on more than one page of the issue, each further page is a
-   sheet of its own, and the bounds line names those pages and any page of an earlier issue the
+   sheet of its own, as is a set's page of a number its addendum reprints on fewer pages, and the
+   bounds line names those pages and any page of an issue the pass does not read from that the
    grid keeps beside a number, which the pass leaves out.
 
    Then confirm the corpus: `search_set_text(projectId, query: "<the first sheet the inventory's

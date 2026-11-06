@@ -165,7 +165,10 @@ Checks:
       a page of an earlier issue, refuses a missing or malformed page list, and binds the runner's
       own worked dispatch line for a further page. A window 1 file an earlier plugin wrote keeps
       its left-out number out on both pages, and a dispatched pass a further page takes past
-      twelve keeps its part.
+      twelve keeps its part. A set's pass reads, as a further page, the set's page of a number its
+      addendum reprints on fewer pages, since `run.json` reads from the set, and still names a
+      page of a delivery it does not read from. Both readers say what `read_sheet_context`
+      answers on a further page.
   27. Setup reads stay out of the lead: no page read verb (`render_page`, `get_page_text`,
       `search_set_text`, `reconcile_index`) and no `set_grid` other than a `limit: 0` summary call
       on a line a lead session runs, which is project-setup whole, learn-project whole,
@@ -8179,21 +8182,34 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             f"`| {first_row['fileId']} | {first_row['pageInPdf']}`, the shape the reader matches a hit by"
         )
 
-    # The runner checks a unit's sheets on the drawing file the unit read them on, so an earlier
-    # issue's citation of the same sheet never stands in for one on this page. The sheet shape it
-    # sends is the one verify_unit takes: an object of exactly `sheet` and `fileId`, or a number.
+    # The runner checks a unit's sheets on the drawing file and page the unit read them on, so an
+    # earlier issue's citation of the same sheet, or one on another page of a number its file
+    # prints twice, never stands in for one on this page. Every sheet shape it sends is one
+    # verify_unit takes: `sheet` and `fileId`, with `pageInPdf` where the text gives a page, or a
+    # number alone; a shape with no `fileId` would count every file's citations.
     try:
         runner_flat = " ".join((plugin_path / "agents" / "scope-round-runner.md").read_text(encoding="utf-8").split())
     except Exception as e:
         return Result(name, False, detail=f"cannot read the runner: {e}")
-    sheet_shape = '{ "sheet": "<sheet number>", "fileId": "<fileId>" }'
+    sheet_shape = '{ "sheet": "<sheet number>", "fileId": "<fileId>", "pageInPdf": <page> }'
     if sheet_shape not in runner_flat:
         errors.append(f"the runner does not send verify_unit a sheet as {sheet_shape}")
-    elif set(json.loads(sheet_shape)) != {"sheet", "fileId"}:
-        errors.append("the runner's sheet shape is not the sheet and fileId verify_unit takes")
+    for shown_shape in re.findall(r'\{ "sheet": [^{}]*\}', runner_flat):
+        try:
+            shown_keys = set(json.loads(shown_shape.replace("<page>", "1")))
+        except ValueError:
+            errors.append(f"the runner's sheet shape {shown_shape} is not one object")
+            continue
+        if not {"sheet", "fileId"} <= shown_keys <= {"sheet", "fileId", "pageInPdf"}:
+            errors.append(
+                f"the runner's sheet shape {shown_shape} is not the sheet and fileId, with or without "
+                f"the page, that verify_unit takes"
+            )
     for phrase, where in (
-        ("each with the `fileId` its unit line names", "repeated lines unit"),
+        ("with the `fileId` its unit line names and never a `pageInPdf`", "repeated lines unit"),
+        ("For a sheet unit, give each sheet as", "sheet unit's verify shape"),
         ("as the sheet number alone", "sheet with no file"),
+        ("with the file and the page its unit line names", "sheet unit"),
     ):
         if phrase not in runner_flat:
             errors.append(f"the runner's {where} does not read {phrase!r}")
@@ -8220,7 +8236,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         (reviewer_flat, "the reviewer", "with `deliveryId` set to each delivery its `readFrom` names"),
         (reviewer_flat, "the reviewer", "carries the hit's `fileId`"),
         (reviewer_flat, "the reviewer", opened_shape),
-        (runner_flat, "the runner", "with the `fileId` the reviewer's line names for it"),
+        (runner_flat, "the runner", "with the `fileId` and the page the reviewer's line names for it"),
         (runner_flat, "the runner", "`<unit id> touched <catalog id>`"),
         *(
             (reader_flat, label, "trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names")
@@ -8473,7 +8489,10 @@ def check_anomaly_notes(plugin_path: Path) -> Result:
 #      page by the number;
 #   6. a page of an earlier issue gets a unit, or is dropped with nothing said;
 #   7. a page list that is missing or malformed is planned rather than refused;
-#   8. the runner's own dispatch line for a further page does not bind through the ledger reader.
+#   8. the runner's own dispatch line for a further page does not bind through the ledger reader;
+#  11. a set's pass gets no unit for the set's page of a number its addendum reprints once, a page
+#      `set_grid` names under the set's `deliveryId`, which `run.json` lists under `readFrom`, or
+#      plans a page of a delivery outside `readFrom`, or plans such a page with no key it opens as.
 #
 # Honest bound: the grids are invented and built here, so this proves the script's expansion, its
 # counts, its binding and its refusals, not how a real `set_grid` answer arrives.
@@ -8844,6 +8863,86 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
             if "ids kept 2 (ledger 2, plan file 0)" not in grow_bounds:
                 errors.append(f"the twelve to thirteen bounds line does not keep both dispatched ids: {grow_bounds!r}")
 
+    # --- 11: a set's pass reads the set's page of a number its addendum reprints once --- #
+    # The set printed A-5.01 on pages 10 and 11 of its file, and the addendum reprints it once. The
+    # grid by the set's delivery puts the number on the addendum's page and keeps the set's page 11
+    # under `pageOccurrences` with the set's `deliveryId`, which the pass reads from, so page 11 is a
+    # further page the pass reads. C-2.01's page of a delivery the pass does not read from is named.
+    set_file, add_file = "file-set", "file-add"
+    p11_key = _shared_key(set_file, 11)
+
+    def write_json(path: Path, payload) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    def issue_rows(set_page: dict) -> list[dict]:
+        a501 = _shared_row("A", "A-5.01", "detail", 2, "DETAILS", file_id=add_file)
+        a501["pageOccurrences"] = [
+            _shared_occurrence(add_file, 2, "A-5.01", "DETAILS", "detail", selected=True),
+            set_page,
+        ]
+        c201 = _shared_row(
+            "C", "C-2.01", "plan", 8, "GRADING PLAN", carried=((_SHARED_EARLIER_FILE, 8),), file_id=set_file
+        )
+        return [
+            dict(_shared_row("A", "A-1.01", "plan", 1, "FIRST FLOOR PLAN", file_id=set_file), deliveryId="deliv-set"),
+            dict(a501, deliveryId="deliv-add"),
+            dict(c201, deliveryId="deliv-set"),
+        ]
+
+    def issue_inventory(folder: Path, issue_grid_rows: list[dict]) -> tuple[int, str, str]:
+        write_json(folder / "run.json", _issue_run("deliv-set", ["deliv-set", "deliv-add"], "i1"))
+        grid = folder / "grid.json"
+        write_json(grid, _issue_grid(
+            issue_grid_rows, _issue_ref("deliv-set", "set", "deliv-set", 3),
+            [_issue_ref("deliv-set", "set", "deliv-set", 3), _issue_ref("deliv-add", "addendum", "deliv-set", 1)],
+            None,
+        ))
+        return run(["inventory", "--grid", str(grid), "--expect-count", "3", "--out-dir", str(folder)])
+
+    issue_dir = root / "set-pass-addendum"
+    set_page = _shared_occurrence(
+        set_file, 11, p11_key, "DOOR SCHEDULE CONTINUED", "schedule", delivery_id="deliv-set"
+    )
+    code, issue_bounds, err = issue_inventory(issue_dir, issue_rows(set_page))
+    if code != 0:
+        errors.append(f"the set's pass over an addendum that reprints one page refused: {err or issue_bounds}")
+    else:
+        issue_sheets = json.loads((issue_dir / "inventory.json").read_text(encoding="utf-8"))["sheets"]
+        want_order = [f"A-1.01@{set_file}#1", f"A-5.01@{add_file}#2", f"A-5.01@{set_file}#11", f"C-2.01@{set_file}#8"]
+        if [s.get("unitKey") for s in issue_sheets] != want_order:
+            errors.append(
+                f"the set's pass inventory reads {[s.get('unitKey') for s in issue_sheets]}, expected "
+                f"the set's page 11 of A-5.01 right after the addendum's page: {want_order}"
+            )
+        got = next((s for s in issue_sheets if s.get("unitKey") == f"A-5.01@{set_file}#11"), {})
+        want = {"sheetNumber": "A-5.01", "fileId": set_file, "pageInPdf": 11, "opensAs": p11_key,
+                "pageTitle": "DOOR SCHEDULE CONTINUED", "sheetType": "schedule"}
+        if {field: got.get(field) for field in want} != want:
+            errors.append(f"the set's page 11 of A-5.01 reads {got}, expected {want}")
+        for fragment in (
+            "1 further page of a number printed on more than one page (A-5.01 page 11)",
+            "1 page of an earlier issue left out (C-2.01 page 8 of delivery deliv-s0)",
+            "4 sheets to read",
+        ):
+            if fragment not in issue_bounds:
+                errors.append(f"the set's pass bounds line does not name `{fragment}`: {issue_bounds!r}")
+        code, _b, _e, issue_w1 = plan(issue_dir, 1, issue_dir / "inventory.json")
+        if code == 0 and not any(
+            u[1:5] == ("A-5.01", set_file, "11", p11_key) for u in _shared_units(issue_w1)
+        ):
+            errors.append("the set's pass window 1 plans no unit for the set's page 11 of A-5.01 by the key it opens as")
+    refusals += 1
+    # Its own parent folder, since a pass beside the one above with the same tag is refused for that.
+    code, out, err = issue_inventory(
+        root / "set-pass-addendum-refusal" / "no-key", issue_rows(dict(set_page, opensAs=None))
+    )
+    if code != 1 or out or "A-5.01" not in err or "with no key it opens as" not in err:
+        errors.append(
+            f"a set's page the pass reads with no key it opens as exited {code} with stdout "
+            f"{out[:120]!r} and stderr {err[:200]!r}, not a refusal naming A-5.01 and the missing key"
+        )
+
     # --- 6: a page of an earlier issue is named and left out --- #
     if any(s.get("fileId") == _SHARED_EARLIER_FILE for s in sheets):
         errors.append("the inventory holds the page an earlier issue printed as a sheet to read")
@@ -8964,6 +9063,25 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
         for phrase in phrases:
             if phrase not in " ".join(text.split()):
                 errors.append(f"{where} does not carry {phrase}")
+    # `read_sheet_context` on a further page answers the printed number, the key it opens as, the
+    # rows citing the number and the reading off `sheet:<opens as>`, so a reader told the answer is
+    # empty there searches for what it was already given and cites rows the page already carries.
+    for label, text in readers.items():
+        flat = " ".join(text.split())
+        for phrase in (
+            "names the printed number as `sheetNumber` and that key as `opensAs`",
+            "with `citesThisPage` true only on a row cited on this file and page",
+            "gives `sheetReading` off `sheet:<opens as>`",
+        ):
+            if phrase not in flat:
+                errors.append(f"{label} does not carry {phrase!r} for a further page's context answer")
+        for stale in (
+            "Its context answer gives `sheetNumber: null` for that reason",
+            "or on a further page your dispatch names with `Opens as: <key>`",
+            'so take `search(subject: "sheet:<opens as>")` first',
+        ):
+            if stale in flat:
+                errors.append(f"{label} still reads {stale!r}")
 
     detail = (
         "a grid of 7 rows printing two numbers on a further page each and carrying one page of an "
@@ -8976,7 +9094,10 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
         "further page by its key, a window 1 file an earlier plugin wrote keeping its left-out "
         "number out on both pages, a further page past twelve keeping a dispatched part's ids, the "
         "earlier issue's page named and never planned, the runner's worked dispatch line bound "
-        "through the ledger reader, the corpus hit rule in the reader and the reviewer; "
+        "through the ledger reader, the corpus hit rule in the reader and the reviewer, a set's "
+        "pass reading the set's page of a number its addendum reprints once as a further page and "
+        "naming a page of a delivery outside readFrom, both readers saying a further page's context "
+        "answer carries its number, key, rows and reading; "
         f"{refusals} refusals each one line "
         "naming what is wrong; bound: invented grids, not a real set_grid answer"
     )
