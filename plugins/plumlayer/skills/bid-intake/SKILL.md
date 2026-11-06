@@ -284,8 +284,10 @@ page without a text layer is read by OCR and `textSource` says so, and spans are
   on that invitation (its `contactId`), put that id in `contactPerson.directoryContactId`. That case
   and no other. A contact id you settled by matching a name puts a real proposal against the wrong
   person's record; leave the field off and let the name on the proposal stand by itself.
-- **Per-row responses**: for each scope row the proposal addresses, the response along the three
-  axes plus amount, quantity, note, and substitution, per the response value shape (stage 7):
+- **Per-row responses**: judge every scope and allowance row on the package against the whole
+  proposal (its line items, its scope letter, its inclusions and exclusions), and for each row the
+  proposal addresses, record the response along the three axes plus amount, quantity, note, and
+  substitution, per the response value shape (stage 7):
   - **inclusion**: `base` (in the base bid), `adder` (a priced add), or `excluded` (not carried).
   - **routing**: `self` / `by-others` / `NIC`, when the proposal says who carries it. Distinguishes a
     true exclusion from a scope-gap the bidder routes elsewhere. Omit when it is plain base scope.
@@ -387,6 +389,21 @@ These are gates. Write them into every read:
   entry at all. Count it as not addressed for that bidder in the report. Never record a
   `base`/`excluded`/zero to represent it: a row not addressed is unknown, and a bare grid that treats
   it as answered is the exact conflation coverage exists to prevent.
+
+  A row left with no response is a finding: the estimator reads it as not addressed, an open item
+  he has to answer or plug before the bidder's number covers it. So leave a row silent only when the
+  proposal says nothing about it. Before you do, check the proposal's whole text for the row, a
+  blanket statement included. "All drywall work per plans and specifications" answers a drywall
+  row `base`, cited to that line, only after the proposal's specific lines have had their say. A
+  row the proposal excludes or prices as an add takes that answer instead (with "Level 5 finish
+  excluded" beside it, the Level 5 row is `excluded`), and a qualification on a row stays on its
+  answer. An alternate offered on a row leaves the row's `base` answer standing, with the offer in
+  `alternate`, as the alternate rule below says. The blanket line answers no row of another trade the
+  package also holds, such as its ceiling rows. It puts no amount and no quantity on any row, even
+  when the base bid is printed beside it, since that figure is the summary's `base_bid`. It is a
+  statement of scope, not a combined price the proposal prints for rows it names, which is the
+  reverse aggregation case below and keeps that rule's `unclear` flag and shared-figure note. A
+  lump-sum base bid answers no row by itself.
 - **Proposal content matching no known row becomes an Additional item, never a created row.** If a
   proposal says something about the work that maps to none of the stage-3 scope rows, it lands as an
   **Additional item** on the package (stage 7b): the bidder's own word for an unlisted item, cited to the
