@@ -23,7 +23,7 @@ project name in anything you write.
 Pointers only, never pasted text:
 
 - the project id and the unit mode: `earlier`, `set`, `pages`, `index`, or `left`;
-- the delivery the upload reads: its id, its issue label, its kind, its `issuedOn`, its
+- the delivery the upload reads: its id, its issue label, its `issuedOn`, its
   `sequence`, and its `issue`: `set` or `addendum` as the server reads it, or `none` where the
   delivery holds no sheet number. Every entry you write
   for this delivery's sheets carries these;
@@ -133,9 +133,8 @@ grounded it:
 ```
 
 Alongside `appearsOnPage`, add `hasTitle` (the title text you read), `locatedAt` (value
-`{pdf, sourcePdf, fileId, page, pageInPdf, deliveryId, issueLabel, issuedOn, deliveryKind}`),
-`discipline`, and `partOfIssue` (value the delivery's ref `{id, label, deliveryKind, issuedOn,
-sequence}`). Each evidence block cites the render or text span you actually read.
+`{pdf, sourcePdf, fileId, page, pageInPdf, deliveryId, issueLabel, issuedOn}`),
+`discipline`, and `partOfIssue` (value the delivery's ref `{id, label, issuedOn, sequence}`). Each evidence block cites the render or text span you actually read.
 
 Discipline is the sheet number's own leading letter run, uppercased: all letters before the first
 digit or dash (`A-101` is `"A"`, `AD-101` is `"AD"`), matching the server's own rule. Never a full

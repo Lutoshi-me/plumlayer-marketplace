@@ -113,13 +113,12 @@ writing it).
   yet cannot be found by `search_set_text`.
 
 **Delivery** (group uploaded files into a source package)
-- `list_drawing_deliveries`: list a project's registered drawing deliveries (baseline sets and
-  revision packages like bulletins/addenda).
-- `create_drawing_delivery`: register one delivery (e.g. "2025-12-15 Conformed Set" as
-  `deliveryKind: "baseline"`, or "2026-02-09 Bulletin 01" as `"revision"`). Project metadata, not a
-  governing entry. Attach files with `register_file.deliveryId`, then recognize with
+- `list_drawing_deliveries`: list a project's registered drawing deliveries (sets and addenda, as
+  their sheets show).
+- `create_drawing_delivery`: register one delivery (e.g. "2025-12-15 Conformed Set" or
+  "2026-02-09 Bulletin 01"). Project metadata, not a governing entry. Attach files with `register_file.deliveryId`, then recognize with
   `recognize_sheets.deliveryId`.
-- `update_drawing_delivery`: correct a delivery's label, kind, or issue date after the fact; never
+- `update_drawing_delivery`: correct a delivery's label, issue date, or sequence after the fact; never
   renames or mutates the uploaded files themselves.
 
 **Upload** (register a new delivery)

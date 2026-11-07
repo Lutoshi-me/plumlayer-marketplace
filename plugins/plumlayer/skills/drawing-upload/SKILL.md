@@ -154,7 +154,7 @@ agent. A dispatch carries pointers and nothing else:
 subagent_type: plumlayer:sheet-checker
 run_in_background: false
 Project: <projectId>. Mode: <earlier, set, pages, index, or left>.
-Delivery: <deliveryId>, label <issue label>, kind <deliveryKind>, issued <issuedOn>, sequence <sequence>, issue <set, addendum, or none>.
+Delivery: <deliveryId>, label <issue label>, issued <issuedOn>, sequence <sequence>, issue <set, addendum, or none>.
 Jobs: <for set, each recognition jobId with the fileId of the drawing file it reads, as "<jobId> on <fileId>", one per drawing file; otherwise "none">.
 Pages file: <for pages, the path and the lines <a>-<b>; otherwise "none">.
 Index pages: <for index, the fileId and page of each index page you know, or "none">.
@@ -208,11 +208,6 @@ sheet leaves the current set and stays readable in its own delivery. A sheet it 
 that holds takeoff marks or a scale someone set stays current, and so does every sheet of a
 discipline the set leaves out entirely. Step 10 reads both kinds back and reports them as a
 finding. Nothing is retired by this skill, here or anywhere else in it.
-
-Step 3 registers the delivery with `deliveryKind: "baseline"` where `list_drawing_deliveries`
-comes back empty, the project's first delivery, and `"revision"` for any later one. That field
-only orders deliveries that share an issue date and a sequence; it says nothing about whether the
-delivery is a set or an addendum.
 
 **The project's first delivery** is a set by that rule, and step 10's comparison has nothing to
 compare against on this path, and says so plainly rather than reporting an empty finding.
@@ -290,8 +285,6 @@ a dual-source quirk.
 Call `list_drawing_deliveries(projectId)` first. If a delivery with this issue label already exists,
 reuse it rather than registering a duplicate. Otherwise call `create_drawing_delivery`:
 
-- `deliveryKind: "baseline"` for the project's first delivery and `"revision"` for any later one,
-  as step 1b says; never put the question to the user.
 - `label`: the human issue label from step 1.
 - `issuedOn` (`YYYY-MM-DD`) and `sequence`: read these off the documents themselves (a cover sheet, a
   bulletin header), as a `local file` or `file` unit's `files:` line gives them with the page and
