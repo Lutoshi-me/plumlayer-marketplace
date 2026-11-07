@@ -363,9 +363,15 @@ of them is ever trimmed.
    person's call at the package surface; what you read that points toward one goes in
    `notesExternal`.
 5. THE ROW: every new item writes the row the way it reads on a scope sheet, and the citation
-   carries the detail. `name` (required: what is done, to what, where, under about twelve words,
-   the way a sub would say it; a mark or tag belongs here when it is how the sub finds the work,
-   "Grab bar TA-07, 42 inch"), `category` (required: the heading the row sits under on its trade's
+   carries the detail. `name` (required: the line complete on its own, so an estimator reading a
+   package's names top to bottom knows what each row prices without opening its description: what
+   is done, to what, where, the way a sub would say it, with the type, material, finish, size or
+   extent that tells it apart from the row beside it, each read off a page the row cites and never
+   assumed ("Gypsum board ceilings, moisture resistant, unit baths", "Domestic water piping, type L
+   copper"); about twelve words and never past the door's 80 characters, so where everything will
+   not fit, the name keeps what tells the row apart and the description carries the rest; a mark
+   or tag belongs here when it is how the sub finds the work, "Grab bar TA-07, 42 inch"),
+   `category` (required: the heading the row sits under on its trade's
    scope sheet, in Title Case, with a, an, and, as, at, by, for, from, in, into, of, on, or, the, to
    and with lowercase after the first word. On a structure, envelope, site or MEP trade it names the
    kind of work or the system the row is part of, the way a sub groups his own scope ("Foundations",
@@ -384,16 +390,20 @@ of them is ever trimmed.
    read where its rows are
    the same kind of work, or in the same area, as yours; the headings the door refuses are named
    below, after the length bounds), `belongsToTrade` (required, mandate 4), `description` (optional,
-   at most two short sentences and
-   about thirty words, not counting the codes the row names: only what a bidder must know to price
-   the line that the name and citation do not already say, the product or method, the extent or
-   limits, a rated or special condition; never a spec article number, a schedule's values or a tag
-   the row is not for, since the citation carries them; a simple item has none. On a finish row the
-   extent is the rooms or room types the room finish schedule lists it in ("Unit kitchens and
-   baths", "Corridors, levels 2 to 5"), read off the finish schedule and never off a material key or
-   legend alone, which says what a finish is and not where it goes; where your sheet is the key,
-   find the schedule with `search_set_text` for the finish's code and cite it. Mandate 1's two
-   products in a disagreement are the one description that runs longer), `notesExternal` (optional,
+   and most rows have none: write one only where a bidder needs a detail to price the line that the
+   name cannot hold, the product or method, the extent or limits, a rated or special condition,
+   with a page the row cites showing where it comes from; one short sentence is usual, and two
+   short sentences and about thirty words the most, not counting the codes the row names; never a
+   sentence repeating the name, a spec article number, a schedule's values or a tag the row is not
+   for, since the citation carries them. On a finish row the extent is the rooms or room types the
+   room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2 to 5"), read
+   off the finish schedule and never off a material key or legend alone, which says what a finish
+   is and not where it goes; where your sheet is the key, find the schedule with `search_set_text`
+   for the finish's code and cite it. The extent ends the name where it fits ("Porcelain floor
+   tile PT-1, unit kitchens and baths"); where the schedule lists more rooms than the name holds,
+   the name names the finish alone and the description carries the whole extent, never cut short.
+   Mandate 1's two products in a disagreement are the one description that runs longer),
+   `notesExternal` (optional,
    one sentence: an instruction to the bidder about the line, what to break out, what to confirm,
    what is an alternate; work by others is a row of its own, mandate 4), `notesInternal` (optional,
    one sentence: a watch item for the estimator, an open
@@ -455,13 +465,13 @@ of them is ever trimmed.
    medicine cabinet, a walk-off mat, an acoustic underlayment. Where the set names products by a
    model number, or by a legend or schedule code that stands for one product, each product is its
    own row, named with its code and what it is ("Towel bar TA-04, 24 inch", "Medicine cabinet
-   MC-2, 16 by 22 inch"), with the model in the description. Instances are never rows: one towel bar
+   MC-2, 16 by 22 inch"), with the model on the schedule row or section the row cites, and in the
+   description only where no page the row cites shows it. Instances are never rows: one towel bar
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
    where the set counts them the count is its quantity. A schedule of places, such as a room finish
    schedule or a door schedule, is read for
    the products and types it calls for, one row each ("Luxury vinyl tile flooring, LVT"), never one
-   row for the whole schedule, and each finish row's `description` names its extent as mandate 5
-   says. A schedule of one assembly's types that differ only in size or
+   row for the whole schedule, and each finish row names its extent as mandate 5 says. A schedule of one assembly's types that differ only in size or
    spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
    written out. Never copy a schedule's columns into a row: the row names its product and cites
    the schedule row that defines it (mandate 2). A row is never a whole sheet and never a package

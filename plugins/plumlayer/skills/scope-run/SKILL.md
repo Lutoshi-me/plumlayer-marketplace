@@ -179,7 +179,8 @@ that relaxes any one of them reproduces a measured, named failure.
    medicine cabinet, a walk-off mat, an acoustic underlayment. Where the set names products by a
    model number, or by a legend or schedule code that stands for one product, each product is its
    own row, named with its code and what it is ("Towel bar TA-04, 24 inch", "Medicine cabinet
-   MC-2, 16 by 22 inch"), with the model in the description. Instances are never rows: one towel bar
+   MC-2, 16 by 22 inch"), with the model on the schedule row or section the row cites, and in the
+   description only where no page the row cites shows it. Instances are never rows: one towel bar
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
    where the set counts them the count is its quantity. One product is two rows only where the
    drawings or the manual separate its supply from its install, or on a finish trade by area, as the
@@ -236,10 +237,15 @@ their words, one item per call; a row you merely suspect is wrong goes in the re
 
 A newly created scope item is a full row, not a name. Every new item writes:
 
-- **name** (required): the line as it reads on a scope sheet: what is done, to what, where, under
-  about twelve words, the way a sub would say it ("Repoint brick masonry at facade", "Install
-  lintels above CMU openings"; not a recitation of every type mark). A mark or tag belongs here
-  when it is how the sub finds the work.
+- **name** (required): the line as it reads on a scope sheet, complete on its own, so the estimator
+  reads a package's names top to bottom and knows what each row prices without its description:
+  what is done, to what, where, the way a sub would say it, with the type, material, finish, size
+  or extent that tells it apart from the row beside it, read off a page the row cites ("Repoint
+  brick masonry at facade", "Install lintels above CMU openings", "Gypsum board ceilings, moisture
+  resistant, unit baths"; not a recitation of every type mark). About twelve words and never past
+  the door's 80 characters; where everything will not fit, the name keeps what tells the row apart
+  and the description carries the rest. A mark or tag belongs here when it is how the sub finds
+  the work.
 - **category** (required): the heading the row sits under on its trade's scope sheet, in Title Case,
   with a, an, and, as, at, by, for, from, in, into, of, on, or, the, to and with lowercase after the
   first word. On a structure, envelope, site or MEP trade it names the kind of work or the system
@@ -292,15 +298,19 @@ A newly created scope item is a full row, not a name. Every new item writes:
   lines; `ve-alternate` stays the user's to write. A bare word is refused and the batch is atomic,
   so it costs every entry in the batch.
   The `<trade>` in that predicate is the same catalog code, and the door reads it there too.
-- **description** (optional, at most two short sentences and about thirty words, not counting the
-  codes the row names): only what a bidder must know to price the line that the name and citation do
-  not already say: the product or method, the extent or limits, a rated or special condition. Never
-  a spec article number, a schedule's values or a tag the row is not for, since the citation carries
-  them. A simple item has none. On a finish row the extent is the rooms or room types the room
-  finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2 to 5"), read off the
-  finish schedule and never off a material key or legend alone, which says what a finish is and not
-  where it goes. The reader's mandate 1 names the two products of a disagreement in the one
-  description that runs longer. The citation
+- **description** (optional, and most rows have none): written only where a bidder needs a detail
+  to price the line that the name cannot hold: the product or method, the extent or limits, a rated
+  or special condition, with a page the row cites showing where it comes from. One short sentence
+  is usual, and two short sentences and about thirty words the most, not counting the codes the row
+  names. Never a sentence repeating the name, a spec article number, a schedule's values or a tag
+  the row is not for, since the citation carries them. On a finish row the extent is the rooms or
+  room types the room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2
+  to 5"), read off the finish schedule and never off a material key or legend alone, which says
+  what a finish is and not where it goes. The extent ends the name where it fits ("Porcelain floor
+  tile PT-1, unit kitchens and baths"); where the schedule lists more rooms than the name holds,
+  the name names the finish alone and the description carries the whole extent, never cut short.
+  The reader's mandate 1 names the two products of a disagreement in the one description that runs
+  longer. The citation
   points at the sheet, and the doctrine is cite, don't rewrite: never transcribe a schedule's
   columns, the detail, or the bar sizes into the row. How a schedule becomes rows is
   non-negotiable 6.

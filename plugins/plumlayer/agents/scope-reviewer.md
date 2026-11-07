@@ -141,8 +141,9 @@ them is ever trimmed.
      is the object `{ role: "candidate", note: "<why this package might price it>" }`, the
      candidate rule reader mandate 4 gives. Never the bare word: the door refuses it, and
      `record_batch` is atomic, so it costs the whole batch. It is not a create.
-   - The hit is work no row carries. Create it, at the grain of your own mandate 5, after reader
-     mandate 1's search for the row that may already carry it under another name, and with your
+   - The hit is work no row carries. Create it, at the grain of your own mandate 5, its `name` and
+     `description` written as reader mandate 5 says, after reader mandate 1's search for the row
+     that may already carry it under another name, and with your
      batch's own rows held against each other by its test, as a reader's are. The record
      refuses a create whose name this project already carries, on any trade, and names the row that
      holds it; turn such a refusal into the citation and the note on that named row and send again,
@@ -173,9 +174,10 @@ them is ever trimmed.
    other row's `notesInternal`; where it has no room, on the kept row's, naming the other row;
    where neither has room, as reader mandate 5's fallback says. Where the kept row's `name` or
    `description` names a level, plan or room the others do not share, write it over with
-   `supersedesId` so it names the product across the job, with its places in the `description` only
-   where they change the price. Name the pair on your `anomalies:` line as `<sheet> p<page> same
-   work: <kept row's name> and <other row's name>, <the tag, model
+   `supersedesId` so it names the product across the job, with its places named only where they
+   change the price, at the end of the name where they fit and in the `description` where they do
+   not, as reader mandate 5 says for a finish row's extent. Name the pair on your `anomalies:`
+   line as `<sheet> p<page> same work: <kept row's name> and <other row's name>, <the tag, model
    or code they share, or the product and place>, <where the sentence landed>`, the sheet and page
    being one the other row cites, and the landing in the report line's own words: `note on
    <subject>`, `reply <id>`, or `run only`. The other row stays standing until the estimator retires
