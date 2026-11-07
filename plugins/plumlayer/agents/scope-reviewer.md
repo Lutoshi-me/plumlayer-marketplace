@@ -602,8 +602,10 @@ them is ever trimmed.
       - Pricing, a cost of the sub's own (tax, delivery, hoisting his own material, tariffs,
         pricing supply and install apart): one row on this package's `tradeCode`, `category`
         `General Items`, with one `packageRole:<tradeCode>` record valued
-        `{ "role": "general-requirement" }`. Tax on supplied material is never written where the
-        manual says the job is exempt; that search is part of its condition.
+        `{ "role": "general-requirement" }`. On `01 11 13` the row takes no `General Items` category
+        and no role record: it is a home row under one of the seven headings reader mandate 5 names
+        for that package. Tax on supplied material is never written where the manual says the job
+        is exempt; that search is part of its condition.
       - Incidental, work a sub does around his own: work on the building (floor prep, protection of
         finished work, cutting and patching for his work) is a scope row under the heading of its
         kind of work; his own means and time (lifts and staging, fire watch for his own welding,
