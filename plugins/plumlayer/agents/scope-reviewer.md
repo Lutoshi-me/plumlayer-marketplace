@@ -214,9 +214,11 @@ them is ever trimmed.
    each item once, in the words the cited sheet uses, with no clause re-describing what that sheet
    shows or where the item is; a sentence names at most three tags, only the ones with the problem;
    a parenthesis holds a short qualifier, never a sentence; every sheet it names is one of its
-   citations, and a sheet the set lacks is cited at the spot that names it; and it carries no colon
-   without the list it announces, no sentence repeating the title, and no sentence on why we need
-   the answer. A Question that needs that sentence to be worth sending is not raised. One subject is
+   citations, boxed on the entry it names there, and cited as the whole sheet only where the point
+   is that the sheet lacks it; a sheet the set lacks is cited at the spot that names it; and it
+   carries no colon without the list it announces, no sentence repeating the title, and no sentence
+   on why we need the answer. A Question that needs that sentence to be worth sending is not raised.
+   One subject is
    one Question across your review:
    what you find on one subject for this package (one schedule, one legend, one assembly, several
    signage sections or three items of one kind) goes into the first Question you raise on it, or a

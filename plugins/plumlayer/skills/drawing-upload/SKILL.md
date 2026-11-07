@@ -813,9 +813,10 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
   each item once, in the words the cited sheet uses, with no clause re-describing what that sheet
   shows or where the item is; a sentence names at most three tags, only the ones with the problem; a
   parenthesis holds a short qualifier, never a sentence; every sheet it names is one of its
-  citations, and a sheet the set lacks is cited at the spot that names it; and it carries no colon
-  without the list it announces, no sentence repeating the title, and no sentence on why we need the
-  answer. A Question that needs that sentence to be worth sending is not raised.
+  citations, boxed on the entry it names there, and cited as the whole sheet only where the point is
+  that the sheet lacks it; a sheet the set lacks is cited at the spot that names it; and it carries
+  no colon without the list it announces, no sentence repeating the title, and no sentence on why we
+  need the answer. A Question that needs that sentence to be worth sending is not raised.
 - **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
   (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
   1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing
