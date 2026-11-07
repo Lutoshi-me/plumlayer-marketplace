@@ -304,8 +304,10 @@ A newly created scope item is a full row, not a name. Every new item writes:
   is usual, and two short sentences and about thirty words the most, not counting the codes the row
   names. Never a detail already shown by the name or a page the row cites, except for a finish's
   whole extent that the name cannot hold, the reader's mandate 1's two products in a disagreement,
-  an allowance's amount and what it covers, or an assembly's full code list; never a spec article
-  number, a schedule's values or a tag the row is not for, since the citation carries them.
+  an allowance's amount and what it covers, an assembly's full code list, or a row whose name is
+  fixed by its kind (a grouped requirement row or a standard line), which carries in its description
+  the products, sections, amounts and the job's own words its mandate lists, whole; never a spec
+  article number, a schedule's values or a tag the row is not for, since the citation carries them.
   On a finish row the extent is the rooms or
   room types the room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2
   to 5"), read off the finish schedule and never off a material key or legend alone, which says

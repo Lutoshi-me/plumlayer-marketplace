@@ -488,11 +488,9 @@ them is ever trimmed.
       engage (a pressure test, a flood test, testing a system before it is covered).
     - One row per kind for the package. The package's qualifications, its special warranties, its
       extra materials and the field tests its sub performs are one row each, never one row per
-      product or per section: the row cites each article it carries and adds each product or
-      section it covers ("Manufacturer warranties, windows 10 years and glazing 5 years"), and for
-      extra materials what and how much of each, to its `name` where the detail tells the row apart
-      and fits, writing over the name with `supersedesId`, and
-      otherwise to `description` only as reader mandate 5 permits. Each is named for
+      product or per section: the row cites each article it carries and names in its
+      `description` each product or section it covers ("Manufacturer warranties, windows 10 years
+      and glazing 5 years"), and for extra materials what and how much of each. Each is named for
       its kind, `Qualifications`, `Special warranties`, `Extra materials` or `Field tests`, then a
       comma and this package's `name` as the package list shows it, or its `tradeCode` where the
       two together run past 80 characters ("Special warranties, Windows"), since no two rows on the
@@ -502,8 +500,7 @@ them is ever trimmed.
       Requirements section. A qualification, a warranty or extra materials sits on this package's
       `tradeCode`, and a field test on the trade mandate 13 places it on. Where a later section
       adds to a kind whose row already exists, cite the new article on that row and add its product
-      to the `name` where it tells the row apart and fits, writing over the name with `supersedesId`,
-      and otherwise to `description` only as reader mandate 5 permits. A special
+      to the `description`, as reader mandate 5 says for a field already written. A special
       warranty and extra materials always join their kind's row, naming the products they cover;
       the one `notesExternal` sentence that stays is a qualification that governs only some rows
       of a section, written on those rows, as the bullet on qualifications says.
@@ -590,9 +587,7 @@ them is ever trimmed.
       line's short row name in sentence case, a comma, and this package's `name`, or its
       `tradeCode` where the two together run past 80 characters ("Sales tax on materials,
       Plumbing", "Floor prep under resilient flooring, Flooring"). This job's own words, where they
-      differ from the line's, go in the row's `name` where they tell the row apart and fit, writing
-      over the name with `supersedesId`, and otherwise in `description` only as reader mandate 5
-      permits ("Under LVT-1 and LVT-2"). The record
+      differ from the line's, go in the row's `description` ("Under LVT-1 and LVT-2"). The record
       refuses a create whose name the project already carries, on any trade, and names the row that
       holds it; under this name that row is this package's own, so cite your page on it and write
       nothing else there. Every create follows mandate 4's search for a row on this package that
@@ -631,10 +626,8 @@ them is ever trimmed.
           row sits on every package that could carry it and each bidder prices it or excludes it.
           An exclusion on this package's own `tradeCode` is the work of the owner, a utility or a
           trade with no package on this job: the row sits in this package's Exclusions section.
-          Where the half is the owner's or a utility's, name who carries it in the row's `name`
-          where it tells the row apart and fits, writing over the name with `supersedesId`, and
-          otherwise in `description` only as reader mandate 5 permits ("By the water utility").
-          You write this half, always, as printed, whatever this
+          Where the half is the owner's or a utility's, the row's `description` names who carries
+          it ("By the water utility"). You write this half, always, as printed, whatever this
           package's own paper says. Where the drawings, the manual or the packages' `notes` give it
           to another trade, write it all the same, cite that place on the row too, and name it
           `written <subject>, <sheet and page or section, or no condition>, paper gives it to
