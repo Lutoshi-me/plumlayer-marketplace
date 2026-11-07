@@ -529,8 +529,9 @@ them is ever trimmed.
     the general requirements package's `tradeCode`, by the exception reader mandate 4 names for
     work a package's `notes` say it carries, and never on the catalog trade its section resolves
     to, so no package of one row is made and nothing lands on a package that carries that trade in
-    its `codes`. Where the owner pays, it is no row: work the section says the owner contracts for,
-    testing or inspection the owner pays for among it, goes on `sections not checked:` as the
+    its `codes`. Its `category` is the heading of the seven reader mandate 5 names for that
+    package that its kind of cost goes under. Where the owner pays, it is no row: work the section
+    says the owner contracts for, testing or inspection the owner pays for among it, goes on `sections not checked:` as the
     owner's work. What the same section has the contractor do for that test is still a row. An
     allowance puts a material or type that tells the row apart in its `name` where it fits,
     writing over an existing name with `supersedesId`, and otherwise in `description` only as reader
@@ -687,11 +688,18 @@ them is ever trimmed.
       area. A phase or building heading only where the drawings or the manual separate the work
       by phase or by building; a product used in two buildings is otherwise one row under one
       heading.
+    - The general requirements package, the one whose `tradeCode` is `01 11 13`: every home row
+      sits under one of the seven headings reader mandate 5 names for it, written exactly so, each
+      heading only where a row of the package goes under it, and `Miscellaneous` only for a row
+      that fits none of the other six. No heading, package name or row says General Conditions.
     - How many: a package of ten home rows or fewer takes one heading, its work in a few words
       ("Signage"). Otherwise every heading holds at least two rows, except work that is a system of
       its own (a generator, a fire pump), and two headings that name one kind of work are one,
-      under the plainer name.
-    - The order: the way the work is built, never alphabetical. On a structure, envelope, site or
+      under the plainer name. None of this applies to the general requirements package: each of
+      its seven headings holds whatever rows go under it, one row included.
+    - The order: the way the work is built, never alphabetical. On the general requirements
+      package, the order is the seven's own, as reader mandate 5 lists them, and the build order
+      below does not apply. On a structure, envelope, site or
       MEP package, removal and preparation first, then below grade, structure, rough-in, equipment
       and fixtures, and last controls, testing and startup. On a finish package, the areas in the
       order the finish schedule lists them, units first where it gives no order, then the
@@ -862,7 +870,7 @@ compared: <subject + the sources compared + what you found + how it ended: Quest
 sections not checked: <one per line, `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` for the pages the page cap left, or the section code + the reason: "no page range", "manual removed", "not on the package", "the owner's work", "no manual sections on this package", "the manual was not read in"; or "none">
 families not checked: <row family, one per line, or "none">
 standard lines: <each line the script printed + how it ended, one per line, or "none">
-headings written: <the headings in build order on the first line, then each row whose heading you wrote + its subject + the heading, one per line, or "none">
+headings written: <the headings in their order on the first line, then each row whose heading you wrote + its subject + the heading, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 

@@ -256,7 +256,13 @@ A newly created scope item is a full row, not a name. Every new item writes:
   has more than one, in the job's own words for it off the finish schedule or the plans ("Units",
   "Common Area", "Amenity", "Back of House"), and otherwise the kind of work ("Toilet Accessories",
   "Medicine Cabinets", "Postal Specialties", "Kitchen Casework", "Countertops", "Resilient
-  Flooring", "Floor Prep and Underlayment"). A phase or building heading only where the drawings or
+  Flooring", "Floor Prep and Underlayment"). On the general requirements package's trade,
+  `01 11 13`, it is one of seven, written exactly so, in this order: `Utilities`, `Field Office`,
+  `Temporary Services Equipment/Rental`, `Labor`, `Waste Removal Cleaning`, `Site Logistics`,
+  `Miscellaneous`, the last only for a row that fits none of the other six, as the reader's
+  mandate 5 maps each kind of cost to one; that package's headings take this order, never the
+  way the work is built. No heading, package name or row says General Conditions. A phase or
+  building heading only where the drawings or
   the manual separate the work by phase or by building; a product used in two buildings is
   otherwise one row under one heading. Never the sheet, room or drawing it was read on, never
   another trade's name, never a heading for specifications, products or references, and never two
@@ -1341,7 +1347,8 @@ On the go-ahead:
    its continuations are units of the pass like any review, and the record script refuses a count
    that leaves one out. Each review also writes the standard lines whose condition it finds on this
    job's own drawings or manual, each cited to where it found it, and settles its package's headings
-   in the order the work is built.
+   in the order the work is built, or on the general requirements package in the order of its
+   seven headings.
 3. **Check in every few packages.** Where the listing reads `check-in due: yes`,
    four `pass:` lines have landed since the last `checkin:` line: check in (format below) on the
    passes `since the last check-in:` names: the packages finished, their pages ready, what was raised. A
@@ -1729,7 +1736,7 @@ compared: <subject + the sources compared + what you found + how it ended: Quest
 sections not checked: <one per line, `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` for the pages the page cap left, or the section code + the reason: "no page range", "manual removed", "not on the package", "the owner's work", "no manual sections on this package", "the manual was not read in"; or "none">
 families not checked: <row family, one per line, or "none">
 standard lines: <each line the script printed + how it ended, one per line, or "none">
-headings written: <the headings in build order on the first line, then each row whose heading was written + its subject + the heading, one per line, or "none">
+headings written: <the headings in their order on the first line, then each row whose heading was written + its subject + the heading, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 

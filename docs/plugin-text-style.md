@@ -583,7 +583,9 @@ Each of these is a harness check.
     the script, write what the script prints, let the paper give this package's own half to it or
     to another trade over what the script printed, name each row and each
     kind row of mandate 12 for its package, put the headings in build order and save that order,
-    and shape the exclusion and general requirement records. This cannot judge whether a running
+    give the general requirements package its seven headings in their own order, what goes under
+    each and no heading, package name or row saying General Conditions, and shape the exclusion
+    and general requirement records. This cannot judge whether a running
     review finds a condition rightly; that is the measured run's.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here

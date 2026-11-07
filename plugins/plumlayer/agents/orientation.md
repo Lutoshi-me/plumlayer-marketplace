@@ -503,8 +503,9 @@ amendments, stays in `scope-run`.
      elevators, trash chutes and roof anchors are each a package of their own. Fireplaces, flood
      barriers, operable partitions and package systems are each a package of their own apart from
      specialties, and shower doors stay in specialties.
-   - General conditions are a markup line on the estimate, never a package. Division 01 work sits
-     on the general requirements package below.
+   - General conditions are a markup line on the estimate, never a package, and the words never
+     appear as a heading, a package name or a row. Division 01 work sits on the general
+     requirements package below.
 
    These depend on the job, each by what the set shows:
 

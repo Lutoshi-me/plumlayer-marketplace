@@ -13227,6 +13227,26 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "The furnishing row that covers both stays so both bidders price the install, and "
                  "the estimator awards it to one."),
     ("reviewer", "The order: the way the work is built, never alphabetical."),
+    ("reviewer", "every home row sits under one of the seven headings reader mandate 5 names for it"),
+    ("reviewer", "None of this applies to the general requirements package"),
+    ("reviewer", "On the general requirements package, the order is the seven's own"),
+    *((label, "it is one of seven, written exactly so, in this order: `Utilities`, `Field Office`, "
+              "`Temporary Services Equipment/Rental`, `Labor`, `Waste Removal Cleaning`, "
+              "`Site Logistics`, `Miscellaneous`")
+      for label in (SHEET_READER, VOCABULARY_READER, "skill")),
+    *((label, "No heading, package name or row says General Conditions")
+      for label in ("reviewer", SHEET_READER, VOCABULARY_READER, "skill")),
+    *((label, phrase) for label in (SHEET_READER, VOCABULARY_READER) for phrase in (
+        "Temporary power, water, heat and lighting go under Utilities; the field office and its "
+        "trailer, furniture, supplies, phone and internet under Field Office; temporary toilets, "
+        "hoists, cranes, lifts, scaffolding and other equipment rented for the job under Temporary "
+        "Services Equipment/Rental; general labor, a flagger or a watchman a section has the "
+        "contractor provide under Labor; dumpsters, waste management and recycling, and progress "
+        "and final cleaning under Waste Removal Cleaning; layout and surveying, fencing and gates, "
+        "signs, barricades, traffic control, and protecting the work, neighboring property and air "
+        "quality during construction under Site Logistics.",
+        "`Miscellaneous` holds a row that fits none of the other six, and only such a row",
+    )),
     ("reviewer", "`solicitation_update_package({ packageId, categoryOrder: [<the headings>] })` once, "
                  "with no `projectId`"),
     ("runner", "must carry the headings on the review's `headings written:` first line, each trimmed "
@@ -14036,6 +14056,8 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"the paper's place cited on the writer's row or carried to the check-in before that row is "
         f"written, and the fixture naming those cases, the package list and its `places:` line, the row names, the kind rows of mandate 12, the "
         f"install row beside a furnishing row, the headings in build order and their saved order, "
+        f"the general requirements package's seven headings in their order, what goes under each "
+        f"and none saying General Conditions, "
         f"the exclusion and general requirement records), "
         f"{sum(len(patterns) for _, patterns, _ in _STANDARD_LINES_REFUSED)} patterns refused in the "
         f"reviewer (a review the script did not name writing a half, the named writer skipping a "

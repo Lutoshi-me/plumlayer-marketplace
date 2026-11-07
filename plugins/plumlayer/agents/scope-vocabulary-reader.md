@@ -392,7 +392,22 @@ of them is ever trimmed.
    the area the row is in where the job has more than one, in the job's own words for it off the
    finish schedule or the plans ("Units", "Common Area", "Amenity", "Back of House"), and otherwise
    the kind of work ("Toilet Accessories", "Medicine Cabinets", "Postal Specialties", "Kitchen
-   Casework", "Countertops", "Resilient Flooring", "Floor Prep and Underlayment"). A phase or
+   Casework", "Countertops", "Resilient Flooring", "Floor Prep and Underlayment"). On the general
+   requirements package's trade, `01 11 13`, it is one of seven, written exactly so, in this
+   order: `Utilities`, `Field Office`, `Temporary Services Equipment/Rental`, `Labor`, `Waste
+   Removal Cleaning`, `Site Logistics`, `Miscellaneous`. Temporary power, water, heat and lighting
+   go under Utilities; the field office and its trailer, furniture, supplies, phone and internet
+   under Field Office; temporary toilets, hoists, cranes, lifts, scaffolding and other equipment
+   rented for the job under Temporary Services Equipment/Rental; general labor, a flagger or a
+   watchman a section has the contractor provide under Labor; dumpsters, waste management and
+   recycling, and progress and final cleaning under Waste Removal Cleaning; layout and surveying,
+   fencing and gates, signs, barricades, traffic control, and protecting the work, neighboring
+   property and air quality during construction under Site Logistics. `Miscellaneous` holds a row
+   that fits none of the other six, and only such a row: documentation and photographs,
+   certification and its records, mockups, testing and inspection the contractor engages or
+   supports, and commissioning support. An allowance, a unit price or an alternate goes under the
+   heading of the work it prices. No heading, package name or row says General Conditions: those
+   are the contractor's own costs on every job, a markup on the estimate. A phase or
    building heading only where the drawings or the manual separate the work by phase or by
    building; a product used in two buildings is otherwise one row under one heading. Never the
    sheet, room or drawing it was read on, never another trade's name, never a heading for
