@@ -498,7 +498,9 @@ them is ever trimmed.
       `category` `General Items` and, in the same batch, one `packageRole:<that row's trade>`
       record valued `{ "role": "general-requirement" }`, so it sits in that package's General
       Requirements section. A qualification, a warranty or extra materials sits on this package's
-      `tradeCode`, and a field test on the trade mandate 13 places it on. Where a later section
+      `tradeCode`, and a field test on the trade mandate 13 places it on. A row whose trade is
+      `01 11 13` takes no `General Items` category and no role record: it is a home row under one of
+      the seven headings reader mandate 5 names for that package. Where a later section
       adds to a kind whose row already exists, cite the new article on that row and add its product
       to the `description`, as reader mandate 5 says for a field already written. A special
       warranty and extra materials always join their kind's row, naming the products they cover;
