@@ -661,8 +661,10 @@ disk the whole time.
    (`tocOnlyCount` is 0 when the report does not carry it). A read whose `sectionsFound` plus
    `tocOnlyCount` is 0 found no spec sections in that file and wrote nothing: report that file as
    not a spec book, not as a failure. Then `search(projectId, predicate: "inDivision")` returns the
-   sum over every read that wrote: completeness and could-not-read findings ride their own
-   predicate (`hasCompletenessStatus`) and never appear in this read. A mismatch stops the run and
+   sum over every read that wrote: completeness and could-not-read findings ride fields of their
+   own (`hasListingNote`, `hasNumberNote`, `hasTitleNote`, `hasSectionStartsNote`, `hasPageNote`;
+   a manual read before those fields existed keeps them on `hasCompletenessStatus`) and never
+   appear in this read. A mismatch stops the run and
    gets reported, never a guessed correction.
 
 **If `extract_spec_toc` / `extract_spec_toc_status` don't appear in your tool list**, a

@@ -94,7 +94,8 @@ after the drawings and hasn't been filed and extracted, so some projects won't h
 yet, that is a gap in what's been run for this project, not a missing capability.
 
 - **A section the table of contents lists but no page footer confirmed** is on the record too,
-  with a `hasCompletenessStatus` saying no section text was found. It anchors the split like any
+  with a `hasListingNote` saying no section text was found (on a manual read before that field
+  existed, the note is on `hasCompletenessStatus`). It anchors the split like any
   other section (the trade is still bought), and the packet names the count of those separately
   so the split's footing is stated: "110 sections confirmed, 12 more listed in the table of
   contents only". An outline specification at schematic or design development is often all of the
