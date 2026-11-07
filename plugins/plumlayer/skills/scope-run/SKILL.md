@@ -127,14 +127,16 @@ that relaxes any one of them reproduces a measured, named failure.
    own failure path, not raised as a Question. Question text is plain estimator words, and every
    Question meets the standard the `ask_question` verb states: a title, a citation for every place
    it names, and only what is worth the design team's time. Its first sentence states the problem,
-   and it asks one thing. It names each item once, in the words the cited sheet uses, with no clause
-   re-describing what that sheet shows or where the item is; a sentence names at most three tags,
-   only the ones with the problem; a parenthesis holds a short qualifier, never a sentence; every
-   sheet it names is one of its citations, boxed on the entry it names there, and cited as the whole
-   sheet only where the point is that the sheet lacks it; a sheet the set lacks is cited at the spot
-   that names it; and it carries no colon without the list it announces, no sentence repeating the
-   title, and no sentence on why we need the answer. A Question that needs that sentence to be worth
-   sending is not raised. Every Question raised or replied to, by a reader, a reviewer or this run
+   and it asks one thing; finds share a Question only where one answer settles them all. It names
+   each item once, in the words the cited sheet uses, with no clause re-describing what that sheet
+   shows or where the item is; a sentence names at most three tags, only the ones with the problem;
+   a parenthesis holds a short qualifier, never a sentence; every sheet it names is one of its
+   citations, boxed on the entry it names there, and cited as the whole sheet only where the point
+   is that the sheet lacks it or no line of the page's read carries the entry; a sheet the set lacks
+   is cited at the spot that names it; and it carries no colon without the list it announces, no
+   sentence repeating the title, and no sentence on why we need the answer. A Question that needs
+   that sentence to be worth sending is not raised. Every Question raised or replied to, by a
+   reader, a reviewer or this run
    itself, is
    cited on each live row its answer would change, as the reader's mandate 1 decides those rows, so
    the estimator sees it on the trade's scope page, and it never carries an assumption, a value or a
@@ -359,7 +361,8 @@ not clear the bar:
   its shop drawings when that holds: that is a qualification on the row;
 - when a sheet's own note says what to assume, allow or carry, and no other page prints a
   different allowance, amount or product for the same work: that note is the pricing basis;
-- when an open Question asks about the same subject for the same trade: the find is a reply on it;
+- when an open Question asks about the same subject for the same trade and its answer settles the
+  find too: the find is a reply on it;
 - when a Question already asks it: read every Question on the project first, closed ones
   included, with no trade filter (non-negotiable 2);
 - when it is a low-cost gap in a small trade: it is left open for bidders, with no Question and no

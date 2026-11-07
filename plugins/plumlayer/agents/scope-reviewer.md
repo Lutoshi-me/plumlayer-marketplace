@@ -210,19 +210,21 @@ them is ever trimmed.
    about a Plumlayer failure; a read or write that fails is reported to your dispatcher, not raised
    as a Question. Question text is plain estimator words, and every Question meets the standard the
    `ask_question` verb states: a title, a citation for every place it names, and only what is worth
-   the design team's time. Its first sentence states the problem, and it asks one thing. It names
-   each item once, in the words the cited sheet uses, with no clause re-describing what that sheet
-   shows or where the item is; a sentence names at most three tags, only the ones with the problem;
-   a parenthesis holds a short qualifier, never a sentence; every sheet it names is one of its
-   citations, boxed on the entry it names there, and cited as the whole sheet only where the point
-   is that the sheet lacks it; a sheet the set lacks is cited at the spot that names it; and it
-   carries no colon without the list it announces, no sentence repeating the title, and no sentence
-   on why we need the answer. A Question that needs that sentence to be worth sending is not raised.
-   One subject is
-   one Question across your review:
+   the design team's time. Its first sentence states the problem, and it asks one thing; finds share
+   a Question only where one answer settles them all. It names each item once, in the words the
+   cited sheet uses, with no clause re-describing what that sheet shows or where the item is; a
+   sentence names at most three tags, only the ones with the problem; a parenthesis holds a short
+   qualifier, never a sentence; every sheet it names is one of its citations, boxed on the entry it
+   names there, and cited as the whole sheet only where the point is that the sheet lacks it or no
+   line of the page's read carries the entry; a sheet the set lacks is cited at the spot that names
+   it; and it carries no colon without the list it announces, no sentence repeating the title, and
+   no sentence on why we need the answer. A Question that needs that sentence to be worth sending is
+   not raised.
+   One subject is one Question across your review only where one answer settles the finds:
    what you find on one subject for this package (one schedule, one legend, one assembly, several
    signage sections or three items of one kind) goes into the first Question you raise on it, or a
-   reply on the open one, carrying all its sources. Every Question you raise or reply to is cited on
+   reply on the open one, carrying all its sources. A find on that subject that needs a different
+   answer is its own Question. Every Question you raise or reply to is cited on
    each live row its answer would change, on this package or another, as reader mandate 1 decides
    which rows are affected: a `citations` item `{ subject, kind: "question", questionId }`, sent in
    the batch that creates the row when your review creates it, or `cite_source(kind: "question",
@@ -271,7 +273,8 @@ them is ever trimmed.
      `{ type: "spec", section: "specSection:<packed code>" }`, which opens at the start of the
      section, and a `sheet-region` box around the schedule or plan legend where the item would sit
      when the set has one, with this package's trade; every silent product of one section goes into
-     that one Question, as mandate 7 says. It states the absence as a fact after those searches
+     that one Question only where one answer settles them all, as mandate 7 says. It states the
+     absence as a fact after those searches
      ("No sheet shows the dimensional letters Section 10 14 19 specifies"), never "we could not
      find it, please confirm it exists". The section puts the product in this package's work, so
      each silent product is also one row on this package at reader mandate 6's grain, cited to the
@@ -336,8 +339,9 @@ them is ever trimmed.
       by tag or noun. Where the rows on one subject cite different sheets, disciplines or the
       manual, open the cited pages as mandate 2 says and read what each says about the subject's
       material, product, rating, size, extent, and how it meets the work beside it. Where they
-      differ in a way that moves the price, raise one Question citing each source, or reply on the
-      open one; where reader mandate 1 names the difference as no Question, the row carries the
+      differ in a way that moves the price, raise one Question per set of finds one answer settles,
+      citing each source, or reply on the open one only where its answer settles the find too; where
+      reader mandate 1 names the difference as no Question, the row carries the
       qualification it gives. Whether the rows are one piece of work is reader mandate 1's test,
       and where they are, mandate 5's exception for two rows carrying one piece of work governs.
       A schedule row that names a type by code (a door's panel or frame type, a window type, a

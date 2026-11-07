@@ -12961,14 +12961,16 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
 # a Question an agent writes follows the sentence; that stays in review and the measured re-read.
 
 QUESTION_WRITING_SENTENCE = (
-    "Its first sentence states the problem, and it asks one thing. It names each item once, in the "
-    "words the cited sheet uses, with no clause re-describing what that sheet shows or where the item "
-    "is; a sentence names at most three tags, only the ones with the problem; a parenthesis holds a "
-    "short qualifier, never a sentence; every sheet it names is one of its citations, boxed on the "
-    "entry it names there, and cited as the whole sheet only where the point is that the sheet lacks "
-    "it; a sheet the set lacks is cited at the spot that names it; and it carries no colon without "
-    "the list it announces, no sentence repeating the title, and no sentence on why we need the "
-    "answer. A Question that needs that sentence to be worth sending is not raised."
+    "Its first sentence states the problem, and it asks one thing; finds share a Question only "
+    "where one answer settles them all. It names each item once, in the words the cited sheet "
+    "uses, with no clause re-describing what that sheet shows or where the item is; a sentence "
+    "names at most three tags, only the ones with the problem; a parenthesis holds a short "
+    "qualifier, never a sentence; every sheet it names is one of its citations, boxed on the "
+    "entry it names there, and cited as the whole sheet only where the point is that the sheet "
+    "lacks it or no line of the page's read carries the entry; a sheet the set lacks is cited at "
+    "the spot that names it; and it carries no colon without the list it announces, no sentence "
+    "repeating the title, and no sentence on why we need the answer. A Question that needs that "
+    "sentence to be worth sending is not raised."
 )
 
 _QUESTION_WRITING_CARRIERS = (

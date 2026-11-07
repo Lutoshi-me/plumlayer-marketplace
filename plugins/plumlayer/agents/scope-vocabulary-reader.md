@@ -156,10 +156,12 @@ of them is ever trimmed.
    carries only the open ones on its own trades. Then `ask_question` with the trades it affects, as
    when a door schedule row calls a frame type the frame schedule does not carry.
    A REPLY, where an open one already covers the same ask, or asks about the same subject for the
-   same trade (one fixture schedule, one finish legend, one assembly) even where your ask differs:
+   same trade (one fixture schedule, one finish legend, one assembly) only where its answer would
+   settle your find too:
    `reply_question` on it, citing the spot you read the way a Question cites it (below), as when
    that same frame type is called again on a second floor plan; it counts on your
-   `questions replied:` line, never as a new Question.
+   `questions replied:` line, never as a new Question. A find that needs a different answer is its
+   own Question.
    After either one, cite the Question on every live row it affects, so the estimator sees it on
    that row on the trade's scope page: the row you wrote or cited for the ask, and each row on any
    trade the page and your searches showed you whose product, extent, count, or place in the job
@@ -224,14 +226,15 @@ of them is ever trimmed.
    your dispatcher, not raised as a Question. Question text is plain estimator words, and every
    Question meets the standard the `ask_question` verb states: a title, a citation for every place
    it names, and only what is worth the design team's time. Its first sentence states the problem,
-   and it asks one thing. It names each item once, in the words the cited sheet uses, with no clause
-   re-describing what that sheet shows or where the item is; a sentence names at most three tags,
-   only the ones with the problem; a parenthesis holds a short qualifier, never a sentence; every
-   sheet it names is one of its citations, boxed on the entry it names there, and cited as the whole
-   sheet only where the point is that the sheet lacks it; a sheet the set lacks is cited at the spot
-   that names it; and it carries no colon without the list it announces, no sentence repeating the
-   title, and no sentence on why we need the answer. A Question that needs that sentence to be worth
-   sending is not raised. Never a
+   and it asks one thing; finds share a Question only where one answer settles them all. It names
+   each item once, in the words the cited sheet uses, with no clause re-describing what that sheet
+   shows or where the item is; a sentence names at most three tags, only the ones with the problem;
+   a parenthesis holds a short qualifier, never a sentence; every sheet it names is one of its
+   citations, boxed on the entry it names there, and cited as the whole sheet only where the point
+   is that the sheet lacks it or no line of the page's read carries the entry; a sheet the set lacks
+   is cited at the spot that names it; and it carries no colon without the list it announces, no
+   sentence repeating the title, and no sentence on why we need the answer. A Question that needs
+   that sentence to be worth sending is not raised. Never a
    parallel list; never re-create; never silently skip. An UPDATE carries the same evidence a CREATE
    does, the sheet, the page and the drawing file you read it on, and the record refuses any write
    that names no source. The record refuses a CREATE whose name this project already carries, on any

@@ -289,18 +289,21 @@ work the drawings show becomes a Question.
 The one Question this pass raises is a disagreement between two documents it read, cited to both,
 and only when it meets the standard. Read `list_questions(projectId, status: "all")` first, with
 no trade filter, paged with `offset: nextOffset` until it comes back whole: an
-open one on the same topic gets a reply (`reply_question`) rather than a second Question, and a closed one is not
-asked again. A Question is about the project, never about a Plumlayer failure. Question text is
+open one on the same topic gets a reply (`reply_question`) rather than a second Question only where
+its answer settles the find too, and a closed one is not asked again. A Question is about the
+project, never about a Plumlayer failure. Question text is
 plain estimator words, and every Question meets the standard the `ask_question` verb states: a
 title, a citation for every place it names, and only what is worth the design team's time. Its first
-sentence states the problem, and it asks one thing. It names each item once, in the words the cited
-sheet uses, with no clause re-describing what that sheet shows or where the item is; a sentence
-names at most three tags, only the ones with the problem; a parenthesis holds a short qualifier,
-never a sentence; every sheet it names is one of its citations, boxed on the entry it names there,
-and cited as the whole sheet only where the point is that the sheet lacks it; a sheet the set lacks
-is cited at the spot that names it; and it carries no colon without the list it announces, no
-sentence repeating the title, and no sentence on why we need the answer. A Question that needs that
-sentence to be worth sending is not raised. It never names a predicate from the table above, an
+sentence states the problem, and it asks one thing; finds share a Question only where one answer
+settles them all. It names each item once, in the words the cited sheet uses, with no clause
+re-describing what that sheet shows or where the item is; a sentence names at most three tags, only
+the ones with the problem; a parenthesis holds a short qualifier, never a sentence; every sheet it
+names is one of its citations, boxed on the entry it names there, and cited as the whole sheet only
+where the point is that the sheet lacks it or no line of the page's read carries the entry; a sheet
+the set lacks is cited at the spot that names it; and it carries no colon without the list it
+announces, no sentence repeating the title, and no sentence on why we need the answer. A Question
+that needs that sentence to be worth sending is not raised. It never names a predicate from the
+table above, an
 internal
 step, or a field, and it carries no em dash.
 

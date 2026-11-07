@@ -57,14 +57,15 @@ the site exactly like any other user-facing string, so it answers to the same ru
 else in this contract. Question text is plain estimator words: no em dashes, no internal names (a
 predicate, an internal step, a field, or another Question's own internal name), no bold for
 emphasis, one vocabulary the same as section 3 requires. Its first sentence states the problem, and
-it asks one thing. It names each item once, in the words the cited sheet uses, with no clause
-re-describing what that sheet shows or where the item is; a sentence names at most three tags, only
-the ones with the problem; a parenthesis holds a short qualifier, never a sentence; every sheet it
-names is one of its citations, boxed on the entry it names there, and cited as the whole sheet only
-where the point is that the sheet lacks it; a sheet the set lacks is cited at the spot that names
-it; and it carries no colon without the list it announces, no sentence repeating the title, and no
-sentence on why we need the answer. A Question that needs that sentence to be worth sending is not
-raised. What
+it asks one thing; finds share a Question only where one answer settles them all. It names each item
+once, in the words the cited sheet uses, with no clause re-describing what that sheet shows or where
+the item is; a sentence names at most three tags, only the ones with the problem; a parenthesis
+holds a short qualifier, never a sentence; every sheet it names is one of its citations, boxed on
+the entry it names there, and cited as the whole sheet only where the point is that the sheet lacks
+it or no line of the page's read carries the entry; a sheet the set lacks is cited at the spot that
+names it; and it carries no colon without the list it announces, no sentence repeating the title,
+and no sentence on why we need the answer. A Question that needs that sentence to be worth sending
+is not raised. What
 makes a Question worth raising, and its title, its citations and how it reads to the design team, is
 the standard the `ask_question` verb's own description states, where every agent reads it at the
 verb; this section keeps only the plain-words rule, and `learn-project` keeps one worked example.
