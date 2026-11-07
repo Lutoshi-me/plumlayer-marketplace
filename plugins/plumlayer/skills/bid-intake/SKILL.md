@@ -88,9 +88,9 @@ record each bidder's bid entries against that package's existing scope rows. It 
   from, never a created `scopeItem:` subject (see the hard read rules and stage 7b);
 - level or rank the bids (`get_bid_package` computes the leveling projection; this skill only reads it
   for context and records the raw response entries the leveling reads from);
-- plug a bidder's cell or reconcile an additional item. Those are the estimator's calls, made after
-  intake. When the user asks for one, `set_bid_plug` plugs a cell (you carry an amount, another
-  bidder's price stands in, or the plug comes off) and `reconcile_additional_item` attaches,
+- put a number on a bidder's cell or reconcile an additional item. Those are the estimator's calls,
+  made after intake. When the user asks for one, `set_bid_plug` puts his number or another bidder's
+  price on a cell, or takes it off, and `reconcile_additional_item` attaches,
   promotes, routes, or dismisses an item. Both go through the same doors the bid comparison uses and
   are credited to the person who asked for them. Never make either move on your own judgment during intake;
 - sign or submit anything: submitting the bid stays with the user, on plumlayer.com.
@@ -391,7 +391,8 @@ These are gates. Write them into every read:
   it as answered is the exact conflation coverage exists to prevent.
 
   A row left with no response is a finding: the estimator reads it as not addressed, an open item
-  he has to answer or plug before the bidder's number covers it. So leave a row silent only when the
+  he has to answer, or cover with his number or another bidder's price, before the bidder's number
+  covers it. So leave a row silent only when the
   proposal says nothing about it. Before you do, check the proposal's whole text for the row, a
   blanket statement included. "All drywall work per plans and specifications" answers a drywall
   row `base`, cited to that line, only after the proposal's specific lines have had their say. A
