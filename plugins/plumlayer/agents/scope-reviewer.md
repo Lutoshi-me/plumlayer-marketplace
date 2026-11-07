@@ -174,9 +174,10 @@ them is ever trimmed.
    other row's `notesInternal`; where it has no room, on the kept row's, naming the other row;
    where neither has room, as reader mandate 5's fallback says. Where the kept row's `name` or
    `description` names a level, plan or room the others do not share, write it over with
-   `supersedesId` so it names the product across the job, with its places named only where they
-   change the price, at the end of the name where they fit and in the `description` where they do
-   not, as reader mandate 5 says for a finish row's extent. Name the pair on your `anomalies:`
+   `supersedesId` so it names the product across the job, keeping a finish row's whole extent from
+   the finish schedule in the name where it fits and in the `description` where it does not, as
+   reader mandate 5 says; other rows name their places only where they change the price.
+   Name the pair on your `anomalies:`
    line as `<sheet> p<page> same work: <kept row's name> and <other row's name>, <the tag, model
    or code they share, or the product and place>, <where the sentence landed>`, the sheet and page
    being one the other row cites, and the landing in the report line's own words: `note on
@@ -281,8 +282,9 @@ them is ever trimmed.
      find it, please confirm it exists". The section puts the product in this package's work, so
      each silent product is also one row on this package at reader mandate 6's grain, cited to the
      Part 2 page that names it in reader mandate 2's shape for a new row, with no quantity and no
-     value. Its `description` says what the section specifies, and the Question is cited on it and
-     named in its `notesInternal` as mandate 7 says. Before making it, run reader mandate 1's
+     value. Its `name` says what the section specifies that tells the row apart and fits, with
+     other detail in `description` only as reader mandate 5 permits, and the Question is cited on it
+     and named in its `notesInternal` as mandate 7 says. Before making it, run reader mandate 1's
      search for the product under its other names: where a row on any package already carries
      it, the Question goes on that row and no second row is made. A section that governs how work
      shown elsewhere is done
@@ -452,8 +454,9 @@ them is ever trimmed.
       reader mandate 6's grain, cited to its section in reader mandate 2's shape for a new row, on
       the page that names it. Where it is something a bidder locates and counts on the
       sheets and no sheet shows it, it is mandate 9's first silence instead, a Question and the row mandate 9 makes for it.
-      Where a row carries the work and not its material, the material goes in that row's
-      `description`, as reader mandate 5 says for a field already written. Where it does not fit
+      Where a row carries the work and not its material, the material goes in that row's `name`
+      where it tells the row apart and fits, writing over the name with `supersedesId`, and
+      otherwise in `description` only as reader mandate 5 permits. Where it does not fit
       there, it goes as one sentence in the row's `notesExternal`, which bidders read, after any
       text already there and kept whole, as reader mandate 5 keeps a note; where that has no room
       either, it goes on your `anomalies:` line as
@@ -485,9 +488,11 @@ them is ever trimmed.
       engage (a pressure test, a flood test, testing a system before it is covered).
     - One row per kind for the package. The package's qualifications, its special warranties, its
       extra materials and the field tests its sub performs are one row each, never one row per
-      product or per section: the row cites each article it carries and names in its
-      `description` each product or section it covers ("Manufacturer warranties, windows 10 years
-      and glazing 5 years"), and for extra materials what and how much of each. Each is named for
+      product or per section: the row cites each article it carries and adds each product or
+      section it covers ("Manufacturer warranties, windows 10 years and glazing 5 years"), and for
+      extra materials what and how much of each, to its `name` where the detail tells the row apart
+      and fits, writing over the name with `supersedesId`, and
+      otherwise to `description` only as reader mandate 5 permits. Each is named for
       its kind, `Qualifications`, `Special warranties`, `Extra materials` or `Field tests`, then a
       comma and this package's `name` as the package list shows it, or its `tradeCode` where the
       two together run past 80 characters ("Special warranties, Windows"), since no two rows on the
@@ -497,7 +502,8 @@ them is ever trimmed.
       Requirements section. A qualification, a warranty or extra materials sits on this package's
       `tradeCode`, and a field test on the trade mandate 13 places it on. Where a later section
       adds to a kind whose row already exists, cite the new article on that row and add its product
-      to the `description`, as reader mandate 5 says for a field already written. A special
+      to the `name` where it tells the row apart and fits, writing over the name with `supersedesId`,
+      and otherwise to `description` only as reader mandate 5 permits. A special
       warranty and extra materials always join their kind's row, naming the products they cover;
       the one `notesExternal` sentence that stays is a qualification that governs only some rows
       of a section, written on those rows, as the bullet on qualifications says.
@@ -529,7 +535,10 @@ them is ever trimmed.
     its `codes`. Where the owner pays, it is no row: work the section says the owner contracts for,
     testing or inspection the owner pays for among it, goes on `sections not checked:` as the
     owner's work. What the same section has the contractor do for that test is still a row. An
-    allowance carries its amount and what it covers in `description`; a unit price names its unit;
+    allowance puts a material or type that tells the row apart in its `name` where it fits,
+    writing over an existing name with `supersedesId`, and otherwise in `description` only as reader
+    mandate 5 permits, but keeps its amount and what it covers in `description`, since the name
+    cannot hold them; a unit price names its unit;
     an alternate names its number in `notesExternal`, and whether it is an alternate stays the
     estimator's call at the package. A schedule, checklist, rating level or section that a section
     says it carries or attaches and the manual does not (an allowance, unit price or alternate
@@ -581,7 +590,9 @@ them is ever trimmed.
       line's short row name in sentence case, a comma, and this package's `name`, or its
       `tradeCode` where the two together run past 80 characters ("Sales tax on materials,
       Plumbing", "Floor prep under resilient flooring, Flooring"). This job's own words, where they
-      differ from the line's, go in the row's `description` ("Under LVT-1 and LVT-2"). The record
+      differ from the line's, go in the row's `name` where they tell the row apart and fit, writing
+      over the name with `supersedesId`, and otherwise in `description` only as reader mandate 5
+      permits ("Under LVT-1 and LVT-2"). The record
       refuses a create whose name the project already carries, on any trade, and names the row that
       holds it; under this name that row is this package's own, so cite your page on it and write
       nothing else there. Every create follows mandate 4's search for a row on this package that
@@ -620,8 +631,10 @@ them is ever trimmed.
           row sits on every package that could carry it and each bidder prices it or excludes it.
           An exclusion on this package's own `tradeCode` is the work of the owner, a utility or a
           trade with no package on this job: the row sits in this package's Exclusions section.
-          Where the half is the owner's or a utility's, the row's `description` names who carries
-          it ("By the water utility"). You write this half, always, as printed, whatever this
+          Where the half is the owner's or a utility's, name who carries it in the row's `name`
+          where it tells the row apart and fits, writing over the name with `supersedesId`, and
+          otherwise in `description` only as reader mandate 5 permits ("By the water utility").
+          You write this half, always, as printed, whatever this
           package's own paper says. Where the drawings, the manual or the packages' `notes` give it
           to another trade, write it all the same, cite that place on the row too, and name it
           `written <subject>, <sheet and page or section, or no condition>, paper gives it to

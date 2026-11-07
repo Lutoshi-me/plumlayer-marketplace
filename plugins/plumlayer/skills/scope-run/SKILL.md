@@ -302,8 +302,11 @@ A newly created scope item is a full row, not a name. Every new item writes:
   to price the line that the name cannot hold: the product or method, the extent or limits, a rated
   or special condition, with a page the row cites showing where it comes from. One short sentence
   is usual, and two short sentences and about thirty words the most, not counting the codes the row
-  names. Never a sentence repeating the name, a spec article number, a schedule's values or a tag
-  the row is not for, since the citation carries them. On a finish row the extent is the rooms or
+  names. Never a detail already shown by the name or a page the row cites, except for a finish's
+  whole extent that the name cannot hold, the reader's mandate 1's two products in a disagreement,
+  an allowance's amount and what it covers, or an assembly's full code list; never a spec article
+  number, a schedule's values or a tag the row is not for, since the citation carries them.
+  On a finish row the extent is the rooms or
   room types the room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2
   to 5"), read off the finish schedule and never off a material key or legend alone, which says
   what a finish is and not where it goes. The extent ends the name where it fits ("Porcelain floor

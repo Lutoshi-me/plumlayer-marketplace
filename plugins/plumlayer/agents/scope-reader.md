@@ -129,8 +129,10 @@ of them is ever trimmed.
    sheet carries borings with `search_set_text` for the footing and slab elevations over the whole
    current set, as "The corpus for where" says. Rock or water above an excavation is also a row
    whether or not it reaches a Question: one row for rock removal and one for dewatering where both
-   apply, each on its mandate 4 trade, its `description` naming each boring, its elevation and the
-   footing, slab or invert it sits above, cited to the boring sheet, and each held to one row by
+   apply, each on its mandate 4 trade, with each boring, its elevation and the footing, slab or invert
+   it sits above in the `name` where it tells the row apart and fits, writing over an existing name
+   with `supersedesId`, and otherwise in `description` only as mandate 5 permits, cited to the
+   boring sheet, and each held to one row by
    the same-work test above. Where a sheet or the manual says how the removal is paid (unclassified
    excavation, a unit price, an allowance), the set answers that gap: cite that page on the row and
    raise no Question. Which subcontractor carries it is mandate 4's call, never a Question. A
@@ -198,8 +200,11 @@ of them is ever trimmed.
      they are a disagreement under the rule above.
    - A PRICING NOTE ON A SHEET. A note that tells the bidder what to assume, allow or carry ("ALLOW
      $12 PER SQUARE FOOT FOR TILE MATERIAL") is the pricing basis for the work it names:
-     `description` carries it, cited with a box on the note, and nothing about that work's product
-     or price is asked. It settles the work only where no other page prints a different allowance,
+     a detail that tells the row apart goes in its `name` where it fits, writing over an existing
+     name with `supersedesId`, and otherwise in `description` only as mandate 5 permits,
+     cited with a box on the note, and nothing about that work's product or price is asked. An
+     allowance's amount and what it covers stay in `description`, since the name cannot hold them.
+     It settles the work only where no other page prints a different allowance,
      amount or product for the same work; two that differ are a disagreement under the rule above.
    A Question cites the spot: a `sheet-region` box around the callout, schedule row or note, built
    from the line boxes `get_page_text` gave you, in the points it gave them, sent with
@@ -394,8 +399,11 @@ of them is ever trimmed.
    name cannot hold, the product or method, the extent or limits, a rated or special condition,
    with a page the row cites showing where it comes from; one short sentence is usual, and two
    short sentences and about thirty words the most, not counting the codes the row names; never a
-   sentence repeating the name, a spec article number, a schedule's values or a tag the row is not
-   for, since the citation carries them. On a finish row the extent is the rooms or room types the
+   detail already shown by the name or a page the row cites, except for a finish's whole extent
+   that the name cannot hold, mandate 1's two products in a disagreement, an allowance's amount
+   and what it covers, or an assembly's full code list; never a spec article number, a schedule's
+   values or a tag the row is not for, since the citation carries them.
+   On a finish row the extent is the rooms or room types the
    room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2 to 5"), read
    off the finish schedule and never off a material key or legend alone, which says what a finish
    is and not where it goes; where your sheet is the key, find the schedule with `search_set_text`
@@ -442,8 +450,9 @@ of them is ever trimmed.
    the run's own words for it (`grain`, `text layer`, a unit, a pass, a prefix), and never naming
    an agent as the one who judged it. Never transcribe a schedule's columns, a detail, bar sizes,
    or connector parts into any field, and never narrate the set sheet by sheet; how a schedule
-   becomes rows is mandate 6. Where a row names a schedule's codes, write each code out in the
-   `name` or the `description` ("Exhaust fans EF-1, EF-2, EF-3 and EF-4"), never as a range ("EF-1
+   becomes rows is mandate 6. Where a row names a schedule's codes, the `name` names the work and
+   at most two or three codes ("Exhaust fans EF-1 and EF-2"); where an assembly has more codes, its
+   `description` carries the full list ("EF-1, EF-2, EF-3 and EF-4"), never as a range ("EF-1
    through EF-4"): the citation index links a row to a type only where the row carries that code
    as a whole word. Recorded text is what the bidder reads: plain sentences, no em dashes, no
    bolding. The door refuses text over its bound (`name` 80 characters, `mark` 24, `category` 60,
