@@ -809,10 +809,13 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
   into the project as a Question: a Question is about the project, never about a Plumlayer
   failure. Question text is plain estimator words, and every Question meets the standard the
   `ask_question` verb states: a title, a citation for every place it names, and only what is worth
-  the design team's time. Its first sentence states the problem; a sentence names at most three
-  tags, only the ones with the problem; and it carries no colon without the list it announces, no
-  long parenthesis, no clause re-describing what a tag already names, no sentence on why we need the
-  answer, and no sentence repeating the title.
+  the design team's time. Its first sentence states the problem, and it asks one thing. It names
+  each item once, in the words the cited sheet uses, with no clause re-describing what that sheet
+  shows or where the item is; a sentence names at most three tags, only the ones with the problem; a
+  parenthesis holds a short qualifier, never a sentence; every sheet it names is one of its
+  citations, and a sheet the set lacks is cited at the spot that names it; and it carries no colon
+  without the list it announces, no sentence repeating the title, and no sentence on why we need the
+  answer. A Question that needs that sentence to be worth sending is not raised.
 - **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
   (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
   1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing

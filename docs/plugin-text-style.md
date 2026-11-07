@@ -56,15 +56,18 @@ A Question an agent raises with `ask_question` is not shipped plugin text, but t
 the site exactly like any other user-facing string, so it answers to the same rules as everything
 else in this contract. Question text is plain estimator words: no em dashes, no internal names (a
 predicate, an internal step, a field, or another Question's own internal name), no bold for
-emphasis, one vocabulary the same as section 3 requires. Its first sentence states the problem; a
-sentence names at most three tags, only the ones with the problem; and it carries no colon without
-the list it announces, no long parenthesis, no clause re-describing what a tag already names, no
-sentence on why we need the answer, and no sentence repeating the title. What makes a Question worth
-raising, and its title, its citations and how it reads to the design team, is the standard the
-`ask_question` verb's own description states, where every agent reads it at the verb; this section
-keeps only the plain-words rule, and `learn-project` keeps one worked example. Every skill or agent
-file that tells an agent to raise a Question carries the plain-words phrase and points at the verb's
-standard instead of restating either.
+emphasis, one vocabulary the same as section 3 requires. Its first sentence states the problem, and
+it asks one thing. It names each item once, in the words the cited sheet uses, with no clause
+re-describing what that sheet shows or where the item is; a sentence names at most three tags, only
+the ones with the problem; a parenthesis holds a short qualifier, never a sentence; every sheet it
+names is one of its citations, and a sheet the set lacks is cited at the spot that names it; and it
+carries no colon without the list it announces, no sentence repeating the title, and no sentence on
+why we need the answer. A Question that needs that sentence to be worth sending is not raised. What
+makes a Question worth raising, and its title, its citations and how it reads to the design team, is
+the standard the `ask_question` verb's own description states, where every agent reads it at the
+verb; this section keeps only the plain-words rule, and `learn-project` keeps one worked example.
+Every skill or agent file that tells an agent to raise a Question carries the plain-words phrase and
+points at the verb's standard instead of restating either.
 
 ### Record text never carries another entry's name
 
@@ -544,9 +547,9 @@ Each of these is a harness check.
     reader handles a refusal, or a run's real wall time and duplicate groups; those are the measured
     run's.
 33. Question text reads easily. Every shipped skill or agent file, and this file, that carries
-    the phrase "Question text is plain estimator words" carries the one writing sentence after
+    the phrase "Question text is plain estimator words" carries the two writing sentences after
     it, word for word, and the files known to carry the phrase are pinned. This cannot judge
-    whether a Question an agent writes follows it; that stays in review.
+    whether a Question an agent writes follows them; that stays in review.
 34. The question checker settles a Question in three ways. `agents/question-checker.md` carries
     its three outcomes, answered, changed and unchanged, and `never reword it` for a Question
     that has gone out. This cannot judge whether a running checker decides rightly; that is the

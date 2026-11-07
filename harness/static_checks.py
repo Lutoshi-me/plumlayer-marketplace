@@ -232,10 +232,10 @@ Checks:
       package with section pages a continuation still owes a read is refused until the ledger
       records them unread.
   33. Question writing sentence: every shipped skill or agent file, and docs/plugin-text-style.md,
-      that carries "Question text is plain estimator words" carries the one writing sentence
+      that carries "Question text is plain estimator words" carries the two writing sentences
       after it, word for word, and the files known to carry the phrase are pinned so a detection
-      that stops seeing one fails. Run over the shipped text with the sentence taken out of a
-      reader, the question checker and the style doc, and one word of it changed, each refused.
+      that stops seeing one fails. Run over the shipped text with the sentences taken out of a
+      reader, the question checker and the style doc, and one word of them changed, each refused.
   34. Question checker outcomes: agents/question-checker.md carries the three outcomes of its
       decision, answered, changed and unchanged, "never reword it" for a Question that has gone
       out, the guard on a close (every standing place agrees, every part of the ask answered),
@@ -12947,10 +12947,12 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
 # A review of one project's Questions found them hard to read beside the drawing they cite: a first
 # sentence that did not say the problem, a run of tags most of which were fine, a colon with no
 # list after it, a long parenthesis re-describing a tag the schedule already names, and a sentence
-# on why the answer mattered. The `ask_question` and `rewrite_question` verbs state the writing
-# rules where every agent reads them; every file that carries the plain-words phrase carries one
-# sentence that names them, word for word, so no agent that writes a Question reads the phrase
-# without it.
+# on why the answer mattered. A second review found a clause naming an item and every place it goes
+# when the cited sheet already showed both, a sentence inside a parenthesis, a sheet named in the
+# text that the Question did not cite, and a last sentence asking for more than the one thing. The
+# `ask_question` and `rewrite_question` verbs state the writing rules where every agent reads them;
+# every file that carries the plain-words phrase carries the two sentences that name them, word for
+# word, so no agent that writes a Question reads the phrase without them.
 #
 # The check: every shipped skill or agent file and the style doc that carries the phrase carries the
 # sentence, whitespace collapsed since it wraps, and the files known to carry the phrase are pinned,
@@ -12959,10 +12961,13 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
 # a Question an agent writes follows the sentence; that stays in review and the measured re-read.
 
 QUESTION_WRITING_SENTENCE = (
-    "Its first sentence states the problem; a sentence names at most three tags, only the ones with "
-    "the problem; and it carries no colon without the list it announces, no long parenthesis, no "
-    "clause re-describing what a tag already names, no sentence on why we need the answer, and no "
-    "sentence repeating the title."
+    "Its first sentence states the problem, and it asks one thing. It names each item once, in the "
+    "words the cited sheet uses, with no clause re-describing what that sheet shows or where the item "
+    "is; a sentence names at most three tags, only the ones with the problem; a parenthesis holds a "
+    "short qualifier, never a sentence; every sheet it names is one of its citations, and a sheet the "
+    "set lacks is cited at the spot that names it; and it carries no colon without the list it "
+    "announces, no sentence repeating the title, and no sentence on why we need the answer. A "
+    "Question that needs that sentence to be worth sending is not raised."
 )
 
 _QUESTION_WRITING_CARRIERS = (
