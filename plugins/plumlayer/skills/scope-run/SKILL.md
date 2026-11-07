@@ -1107,7 +1107,7 @@ that was skipped has none, and a window 3 that planned no review has none:
    paged to disk: `leftoverCounts` is the whole of what the run keeps, and it rides onto the
    ledger's `phase: index built` line at step 4, where the close-out report reads it. The kinds are
    `unmatchedTag`, `codeNoLocation`, `codeOnlyOnReplacedPages`, `codeTooShort`, `codeIsAWord`,
-   `fragmentUnresolvable`, `pageNotASheet`, `codeOverCap`, `hitNotDrawable` and `overRunCap`, and
+   `fragmentUnresolvable`, `pageNotASheet`, `hitNotDrawable` and `overRunCap`, and
    each is reported by its count alone. The two exceptions are `codeNoLocation` and
    `codeOnlyOnReplacedPages`: where either count is above zero, take one
    `index_citations_leftover(projectId, kind: ...)` read of that kind yourself, so the close out
