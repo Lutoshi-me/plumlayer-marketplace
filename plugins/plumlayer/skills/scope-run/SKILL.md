@@ -314,8 +314,9 @@ A newly created scope item is a full row, not a name. Every new item writes:
   what a finish is and not where it goes. The extent ends the name where it fits ("Porcelain floor
   tile PT-1, unit kitchens and baths"); where the schedule lists more rooms than the name holds,
   the name names the finish alone and the description carries the whole extent, never cut short.
-  The reader's mandate 1 names the two products of a disagreement in the one description that runs
-  longer. The citation
+  The reader's mandate 1 names the two products of a disagreement in the description, and a
+  fixed-name row carries its whole list there; both run past the sentence and word limits, within
+  the field's 400 characters. The citation
   points at the sheet, and the doctrine is cite, don't rewrite: never transcribe a schedule's
   columns, the detail, or the bar sizes into the row. How a schedule becomes rows is
   non-negotiable 6.

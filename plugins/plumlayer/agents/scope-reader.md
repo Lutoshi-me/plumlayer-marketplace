@@ -412,7 +412,8 @@ of them is ever trimmed.
    for the finish's code and cite it. The extent ends the name where it fits ("Porcelain floor
    tile PT-1, unit kitchens and baths"); where the schedule lists more rooms than the name holds,
    the name names the finish alone and the description carries the whole extent, never cut short.
-   Mandate 1's two products in a disagreement are the one description that runs longer),
+   Mandate 1's two products in a disagreement, and a fixed-name row's whole list, run past the
+   sentence and word limits, within the field's 400 characters),
    `notesExternal` (optional,
    one sentence: an instruction to the bidder about the line, what to break out, what to confirm,
    what is an alternate; work by others is a row of its own, mandate 4), `notesInternal` (optional,
