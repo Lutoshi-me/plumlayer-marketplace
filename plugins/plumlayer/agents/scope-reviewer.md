@@ -681,6 +681,10 @@ them is ever trimmed.
 15. THE PACKAGE'S HEADINGS. You settle the headings this package's rows read under, last, after
     every create of your review. Read the package's rows whole as mandate 1 does, and leave the
     rows in a package role as they are: their section is their heading.
+    On `01 11 13`, there is no `General Items` row and no `general-requirement` role; a general
+    cost the contractor carries there is a home row under one of the seven headings. Exclusion
+    rows keep their Exclusions section on this package as on every package. A row shared with
+    another package keeps its category there; the seven apply to rows whose home is `01 11 13`.
     - What a heading names: reader mandate 5's category rules, in Title Case. A structure,
       envelope, site or MEP package groups by the kind of work or the system. A finish package
       groups by area where the job has more than one, in the job's own names off the finish
@@ -690,7 +694,7 @@ them is ever trimmed.
       heading.
     - The general requirements package, the one whose `tradeCode` is `01 11 13`: every home row
       sits under one of the seven headings reader mandate 5 names for it, written exactly so, each
-      heading only where a row of the package goes under it, and `Miscellaneous` only for a row
+      heading only where a home row goes under it, and `Miscellaneous` only for a row
       that fits none of the other six. No heading, package name or row says General Conditions.
     - How many: a package of ten home rows or fewer takes one heading, its work in a few words
       ("Signage"). Otherwise every heading holds at least two rows, except work that is a system of

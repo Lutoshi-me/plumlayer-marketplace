@@ -13227,28 +13227,65 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "The furnishing row that covers both stays so both bidders price the install, and "
                  "the estimator awards it to one."),
     ("reviewer", "The order: the way the work is built, never alphabetical."),
-    ("reviewer", "every home row sits under one of the seven headings reader mandate 5 names for it"),
-    ("reviewer", "None of this applies to the general requirements package"),
-    ("reviewer", "On the general requirements package, the order is the seven's own"),
-    *((label, "it is one of seven, written exactly so, in this order: `Utilities`, `Field Office`, "
+    ("reviewer", "The general requirements package, the one whose `tradeCode` is `01 11 13`: every "
+                 "home row sits under one of the seven headings reader mandate 5 names for it, "
+                 "written exactly so, each heading only where a home row goes under it, and "
+                 "`Miscellaneous` only for a row that fits none of the other six."),
+    ("reviewer", "None of this applies to the general requirements package: each of its seven "
+                 "headings holds whatever rows go under it, one row included."),
+    ("reviewer", "On the general requirements package, the order is the seven's own, as reader "
+                 "mandate 5 lists them, and the build order below does not apply."),
+    ("skill", "For a row whose home is the general requirements package's trade, `01 11 13`, it is "
+              "one of seven, written exactly so, in this order: `Utilities`, `Field Office`, "
               "`Temporary Services Equipment/Rental`, `Labor`, `Waste Removal Cleaning`, "
-              "`Site Logistics`, `Miscellaneous`")
-      for label in (SHEET_READER, VOCABULARY_READER, "skill")),
-    *((label, "No heading, package name or row says General Conditions")
-      for label in ("reviewer", SHEET_READER, VOCABULARY_READER, "skill")),
+              "`Site Logistics`, `Miscellaneous`, the last only for a row that fits none of the "
+              "other six, as the reader's mandate 5 maps each kind of cost to one; that package's "
+              "headings take this order, never the way the work is built, each heading only where "
+              "a home row goes under it."),
+    *((label, "No heading, package name or row says General Conditions.")
+      for label in ("reviewer", "skill")),
+    *((label, phrase)
+      for label in ("reviewer", SHEET_READER, VOCABULARY_READER, "skill")
+      for phrase in (
+        "On `01 11 13`, there is no `General Items` row and no `general-requirement` role; a general "
+        "cost the contractor carries there is a home row under one of the seven headings.",
+        "Exclusion rows keep their Exclusions section on this package as on every package.",
+        "A row shared with another package keeps its category there; the seven apply to rows "
+        "whose home is `01 11 13`.",
+    )),
+    ("skill", "The run writes trade-responsibility candidates, exclusions where the paper says "
+              "work is by others, and every trade except `01 11 13` has its general items in its "
+              "General Requirements section."),
     *((label, phrase) for label in (SHEET_READER, VOCABULARY_READER) for phrase in (
+        "On every trade except `01 11 13`, a note that has a trade carry its own general costs "
+        "(hoisting its own material, protecting its own work, tax on what it supplies, its own "
+        "cleanup) is one row for each such cost on that trade, `category` `General Items`, with "
+        'one `packageRole:<that trade>` record valued `{"role": "general-requirement"}` in the same batch.',
+        "For a row whose home is the general requirements package's trade, `01 11 13`, it is one "
+        "of seven, written exactly so, in this order: `Utilities`, `Field Office`, "
+        "`Temporary Services Equipment/Rental`, `Labor`, `Waste Removal Cleaning`, "
+        "`Site Logistics`, `Miscellaneous`, each heading only where a home row goes under it.",
         "Temporary power, water, heat and lighting go under Utilities; the field office and its "
         "trailer, furniture, supplies, phone and internet under Field Office; temporary toilets, "
         "hoists, cranes, lifts, scaffolding and other equipment rented for the job under Temporary "
-        "Services Equipment/Rental; general labor, a flagger or a watchman a section has the "
-        "contractor provide under Labor; dumpsters, waste management and recycling, and progress "
+        "Services Equipment/Rental; general labor a section has the contractor provide that "
+        "serves none of the other headings under Labor; dumpsters, waste management and recycling, and progress "
         "and final cleaning under Waste Removal Cleaning; layout and surveying, fencing and gates, "
         "signs, barricades, traffic control, and protecting the work, neighboring property and air "
         "quality during construction under Site Logistics.",
-        "`Miscellaneous` holds a row that fits none of the other six, and only such a row",
+        "`Miscellaneous` holds a row that fits none of the other six, and only such a row: "
+        "documentation and photographs, certification and its records, mockups, testing and "
+        "inspection the contractor engages or supports, and commissioning support.",
+        "The heading naming what a cost serves wins over Temporary Services Equipment/Rental and "
+        "Labor: a rented field office trailer goes under Field Office, a rented generator or temporary "
+        "heater under Utilities, and a flagger or traffic control labor under Site Logistics.",
+        "An allowance, a unit price or an alternate goes under the heading of the work it prices.",
+        "No heading, package name or row says General Conditions: those are the contractor's own "
+        "costs on every job, a markup on the estimate.",
     )),
     ("reviewer", "`solicitation_update_package({ packageId, categoryOrder: [<the headings>] })` once, "
-                 "with no `projectId`"),
+                 "with no `projectId`, with this package's home headings in the order of the first "
+                 "line of `headings written:`, and nothing else on the package."),
     ("runner", "must carry the headings on the review's `headings written:` first line, each trimmed "
                "the same way, in that order"),
     ("runner", "a listed heading the review did not write is not one"),
@@ -13692,6 +13729,25 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
                 refused += 1
             else:
                 errors.append(f"the check passed {label} with {phrase!r} taken out")
+        for what, label, before, after in (
+            ("allowances moved to Miscellaneous in one reader", SHEET_READER,
+             "An allowance, a unit price or an alternate goes under the heading of the work it prices.",
+             "An allowance, a unit price or an alternate goes under Miscellaneous."),
+            ("Miscellaneous examples removed", VOCABULARY_READER,
+             ": documentation and photographs, certification and its records, mockups, testing and "
+             "inspection the contractor engages or supports, and commissioning support.", "."),
+            ("empty headings allowed", "reviewer",
+             "each heading only where a home row goes under it", "each heading even where no row goes under it"),
+            ("trade code changed in one reader", SHEET_READER,
+             "home is the general requirements package's trade, `01 11 13`",
+             "home is the general requirements package's trade, `01 11 14`"),
+        ):
+            original = " ".join(texts[label].split())
+            broken = {**texts, label: original.replace(before, after, 1)}
+            if before in original and _standard_lines_text_errors(broken):
+                refused += 1
+            else:
+                errors.append(f"the check passed {label} with {what}")
         # Each refused sentence written into mandate 14 at its Which Trade bullet.
         at = "- Which Trade, a line that says which trade carries a piece of work."
         for what, _, samples in _STANDARD_LINES_REFUSED:
@@ -14056,8 +14112,13 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"the paper's place cited on the writer's row or carried to the check-in before that row is "
         f"written, and the fixture naming those cases, the package list and its `places:` line, the row names, the kind rows of mandate 12, the "
         f"install row beside a furnishing row, the headings in build order and their saved order, "
-        f"the general requirements package's seven headings in their order, what goes under each "
-        f"and none saying General Conditions, "
+        f"the full 01 11 13 home-row rule word for word after whitespace collapse in each carrier: "
+        f"the seven headings in order, the full mapping and Miscellaneous examples, allowances, "
+        f"unit prices and alternates, the tie-breaks, no empty headings, general costs as home rows "
+        f"with no General Items or general-requirement role, Exclusions kept and shared categories "
+        f"unchanged on other packages, and no General Conditions; mutations moving allowances to "
+        f"Miscellaneous in one reader, removing its examples, allowing empty headings and changing "
+        f"one reader's trade code refused, "
         f"the exclusion and general requirement records), "
         f"{sum(len(patterns) for _, patterns, _ in _STANDARD_LINES_REFUSED)} patterns refused in the "
         f"reviewer (a review the script did not name writing a half, the named writer skipping a "

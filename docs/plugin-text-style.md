@@ -583,9 +583,15 @@ Each of these is a harness check.
     the script, write what the script prints, let the paper give this package's own half to it or
     to another trade over what the script printed, name each row and each
     kind row of mandate 12 for its package, put the headings in build order and save that order,
-    give the general requirements package its seven headings in their own order, what goes under
-    each and no heading, package name or row saying General Conditions, and shape the exclusion
-    and general requirement records. This cannot judge whether a running
+    and shape the exclusion and general requirement records. The full rule for home rows on
+    `01 11 13` is pinned word for word after whitespace collapse in each carrier: the seven
+    headings in order, the full mapping and Miscellaneous examples, allowances, unit prices and
+    alternates, the tie-breaks, each heading only where a home row goes under it, general costs as
+    home rows with no General Items or general-requirement role, Exclusions kept and shared
+    categories unchanged on other packages, and no heading, package name or row saying General
+    Conditions. Mutations moving allowances to Miscellaneous in one reader, removing its
+    examples, allowing empty headings and changing one reader's trade code are refused.
+    This cannot judge whether a running
     review finds a condition rightly; that is the measured run's.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here

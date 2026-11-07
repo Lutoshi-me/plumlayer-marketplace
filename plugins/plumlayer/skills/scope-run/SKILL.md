@@ -256,12 +256,13 @@ A newly created scope item is a full row, not a name. Every new item writes:
   has more than one, in the job's own words for it off the finish schedule or the plans ("Units",
   "Common Area", "Amenity", "Back of House"), and otherwise the kind of work ("Toilet Accessories",
   "Medicine Cabinets", "Postal Specialties", "Kitchen Casework", "Countertops", "Resilient
-  Flooring", "Floor Prep and Underlayment"). On the general requirements package's trade,
-  `01 11 13`, it is one of seven, written exactly so, in this order: `Utilities`, `Field Office`,
+  Flooring", "Floor Prep and Underlayment"). For a row whose home is the general requirements
+  package's trade, `01 11 13`, it is one of seven, written exactly so, in this order: `Utilities`, `Field Office`,
   `Temporary Services Equipment/Rental`, `Labor`, `Waste Removal Cleaning`, `Site Logistics`,
   `Miscellaneous`, the last only for a row that fits none of the other six, as the reader's
   mandate 5 maps each kind of cost to one; that package's headings take this order, never the
-  way the work is built. No heading, package name or row says General Conditions. A phase or
+  way the work is built, each heading only where a home row goes under it.
+  No heading, package name or row says General Conditions. A phase or
   building heading only where the drawings or
   the manual separate the work by phase or by building; a product used in two buildings is
   otherwise one row under one heading. Never the sheet, room or drawing it was read on, never
@@ -1871,7 +1872,11 @@ choice: "I put it on Plumbing; move it if it belongs elsewhere."
   baseline package split** (owned by `learn-project`).
 - **Author VE or alternate enrollments**: whether an item is an alternate stays the user's call at
   the package surface. The run writes trade-responsibility candidates, exclusions where the paper
-  says work is by others, and each trade's general items in its General Requirements section.
+  says work is by others, and every trade except `01 11 13` has its general items in its General
+  Requirements section. On `01 11 13`, there is no `General Items` row and no `general-requirement`
+  role; a general cost the contractor carries there is a home row under one of the seven headings.
+  Exclusion rows keep their Exclusions section on this package as on every package. A row shared
+  with another package keeps its category there; the seven apply to rows whose home is `01 11 13`.
 - **Tag trades after the fact.** There is no tagging stage: an item's trade is written with the
   row. An item with no trade is a door refusal, never a backlog.
 - **Keep a copy of the record on disk.** No packet, no definitions files: a reader asks the record.

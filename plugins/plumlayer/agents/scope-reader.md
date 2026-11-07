@@ -361,11 +361,16 @@ of them is ever trimmed.
    own trade is the trade it sits beside, and the exclusion is on that same trade. Name the row the
    way the bidder reads it ("Power to heat trace by electrical", "Retail walls and ceilings not in
    contract"). Where a live row already carries the work, write the exclusion record onto it and
-   cite your page there. A note that has a trade carry its own general costs (hoisting its own
-   material, protecting its own work, tax on what it supplies, its own cleanup) is one row for each
+   cite your page there. On every trade except `01 11 13`, a note that has a trade carry its own
+   general costs (hoisting its own material, protecting its own work, tax on what it supplies,
+   its own cleanup) is one row for each
    such cost on that trade, `category` `General Items`, with one `packageRole:<that trade>` record
-   valued `{"role": "general-requirement"}` in the same batch. Whether a row is an alternate stays a
-   person's call at the package surface; what you read that points toward one goes in
+   valued `{"role": "general-requirement"}` in the same batch. On `01 11 13`, there is no
+   `General Items` row and no `general-requirement` role; a general cost the contractor carries
+   there is a home row under one of the seven headings. Exclusion rows keep their Exclusions
+   section on this package as on every package. A row shared with another package keeps its
+   category there; the seven apply to rows whose home is `01 11 13`. Whether a row is an alternate
+   stays a person's call at the package surface; what you read that points toward one goes in
    `notesExternal`.
 5. THE ROW: every new item writes the row the way it reads on a scope sheet, and the citation
    carries the detail. `name` (required: the line complete on its own, so an estimator reading a
@@ -386,20 +391,24 @@ of them is ever trimmed.
    the area the row is in where the job has more than one, in the job's own words for it off the
    finish schedule or the plans ("Units", "Common Area", "Amenity", "Back of House"), and otherwise
    the kind of work ("Toilet Accessories", "Medicine Cabinets", "Postal Specialties", "Kitchen
-   Casework", "Countertops", "Resilient Flooring", "Floor Prep and Underlayment"). On the general
-   requirements package's trade, `01 11 13`, it is one of seven, written exactly so, in this
-   order: `Utilities`, `Field Office`, `Temporary Services Equipment/Rental`, `Labor`, `Waste
-   Removal Cleaning`, `Site Logistics`, `Miscellaneous`. Temporary power, water, heat and lighting
-   go under Utilities; the field office and its trailer, furniture, supplies, phone and internet
+   Casework", "Countertops", "Resilient Flooring", "Floor Prep and Underlayment"). For a row whose
+   home is the general requirements package's trade, `01 11 13`, it is one of seven, written
+   exactly so, in this order: `Utilities`, `Field Office`, `Temporary Services Equipment/Rental`, `Labor`, `Waste
+   Removal Cleaning`, `Site Logistics`, `Miscellaneous`, each heading only where a home row goes
+   under it. Temporary power, water, heat and lighting go under Utilities; the field office and
+   its trailer, furniture, supplies, phone and internet
    under Field Office; temporary toilets, hoists, cranes, lifts, scaffolding and other equipment
-   rented for the job under Temporary Services Equipment/Rental; general labor, a flagger or a
-   watchman a section has the contractor provide under Labor; dumpsters, waste management and
-   recycling, and progress and final cleaning under Waste Removal Cleaning; layout and surveying,
+   rented for the job under Temporary Services Equipment/Rental; general labor a section has the
+   contractor provide that serves none of the other headings under Labor; dumpsters, waste
+   management and recycling, and progress and final cleaning under Waste Removal Cleaning; layout and surveying,
    fencing and gates, signs, barricades, traffic control, and protecting the work, neighboring
    property and air quality during construction under Site Logistics. `Miscellaneous` holds a row
    that fits none of the other six, and only such a row: documentation and photographs,
    certification and its records, mockups, testing and inspection the contractor engages or
-   supports, and commissioning support. An allowance, a unit price or an alternate goes under the
+   supports, and commissioning support. The heading naming what a cost serves wins over Temporary
+   Services Equipment/Rental and Labor: a rented field office trailer goes under Field Office, a rented
+   generator or temporary heater under Utilities, and a flagger or traffic control labor under Site
+   Logistics. An allowance, a unit price or an alternate goes under the
    heading of the work it prices. No heading, package name or row says General Conditions: those
    are the contractor's own costs on every job, a markup on the estimate. A phase or
    building heading only where the drawings or the manual separate the work by phase or by
