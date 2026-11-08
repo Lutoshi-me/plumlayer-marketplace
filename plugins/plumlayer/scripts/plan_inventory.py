@@ -429,7 +429,7 @@ Exit codes:
      inventory naming a drawing issue in a folder with no `run.json`, and any window in a folder
      with no `run.json` that holds such an inventory or a ledger of tagged unit ids; an inventory
      whose issue differs from `run.json`; a window 1 file planned under another tag; a delivery
-     list with no array, a delivery that is neither a set nor an addendum, or one whose
+     list with no array, a delivery stated as something other than a new set or an addendum, or one whose
      `stillReading` is not true or false; window 3 of a pass on an addendum with no `trades/`
      folder, or a trades line of neither known shape; a trade carrying more packages, with the
      continuations of their reviews, than one pass holds; two passes in flight; and a run folder
@@ -4133,8 +4133,8 @@ def continue_pending(folder: Path, pass_id: str) -> list[str]:
 def _read_deliveries(path: Path) -> list[dict]:
     """
     The `list_drawing_deliveries` answer, copied to disk, in delivery order. Each delivery's
-    `issue` is read as the server gives it: set, addendum, or null while its sheet numbers are
-    still being read or where it holds none. Anything else is a shape change, refused by name.
+    `issue` is read as the server gives it: set or addendum as someone stated it, or null where
+    nobody has stated which. Anything else is a shape change, refused by name.
     """
     data = _read_json(path, "the deliveries file")
     listed = data.get("deliveries") if isinstance(data, dict) else None
@@ -4339,10 +4339,10 @@ def _issue_in(runs: Path, deliveries_path: Path) -> str:
               a pass. A pass on one drawing issue is in flight from its run file until its ledger
               closes out; the old layout's own ledger, in the project folder itself, is in flight
               from its first `phase:` line until it closes out. Two in flight is a refusal.
-      wait    a delivery still being read for its sheet numbers, which may yet be a new set.
+      wait    a delivery still being read for its sheet numbers, which a pass cannot read yet.
       start   the latest set, where no pass names it, or else the earliest addendum of it no pass
               read, with the run folder and the next unit tag.
-      none    nothing to start: no delivery reads as a set, or the latest set and every addendum of
+      none    nothing to start: no delivery is stated as a new set, or the latest set and every addendum of
               it have their pass.
 
     Only the latest set is started. An earlier set with no pass of its own stays unread unless the
@@ -4395,11 +4395,11 @@ def _issue_in(runs: Path, deliveries_path: Path) -> str:
     if reading is not None:
         return (
             f"wait {reading['id']}: {_label(reading)} is still being read for its sheet numbers, so "
-            f"it is neither a set nor an addendum yet"
+            f"a pass on it has nothing to read yet"
         )
     sets = [row for row in deliveries if row.get("issue") == "set"]
     if not sets:
-        return "none: no drawing delivery reads as a set yet"
+        return "none: no drawing delivery is stated as a new set yet"
     latest = sets[-1]
     covered = {d for _child, run, _closed in passes for d in [run["deliveryId"], *run["readFrom"]]}
     earlier = f"; the earlier pass in {runs} names no drawing issue" if root_state == "closed" else ""

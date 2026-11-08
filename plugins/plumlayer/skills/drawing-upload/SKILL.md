@@ -191,29 +191,32 @@ skill does not create projects. Confirm you also know the **issue label** for th
 generic "2025-12-22 CD Set" or "Bulletin 01"): ask the user, or plan to read it off the cover sheet
 during recognition. It is load-bearing for supersession later.
 
-## 1b. Set or addendum: the server's answer
+## 1b. Set or addendum: you state it
 
-You never ask the user whether a delivery is a new set or an addendum, and you never decide it
-yourself. Once its sheet numbers are read (step 5), the `issue` that `list_drawing_deliveries`
-gives the delivery says which it is: walking the deliveries in order, the first one holding sheets
-is a set, a later one printing fewer sheet numbers than the latest set is an addendum of that set,
-and any other is a new set. `issue` is null while its sheet numbers are still being read, so read
-it after step 5, and steps 9b and 10 branch on it.
+Whether a delivery is a new set or an addendum is a statement on the delivery, made by the
+estimator or by you for him. He picks New Set or Addendum when he uploads drawings on Documents, or
+in the set's Drawing Set dialog; you state it with `create_drawing_delivery` or
+`update_drawing_delivery`, always saying where it comes from (step 5b). `list_drawing_deliveries`
+gives each delivery's `issue`, `"set"` or `"addendum"`, and `issueStated`: who stated it, when,
+and from what. Where nobody has stated it, `issue` is null: the delivery belongs to no set, ends no
+sheet, and the sheet list read by its id refuses it, so step 5b states it before step 6. Steps 9b and 10
+branch on it. The sheet count never decides it.
 
-The server combines the deliveries by sheet number either way, and for each sheet the newest
-delivery that carries it wins: a sheet an addendum does not carry keeps showing from the delivery
-that last issued it. A new set ends each sheet an earlier delivery printed in a discipline the set
+An addendum belongs to the latest stated new set before it in delivery order. Each sheet it prints
+replaces the sheet with the same number, and the rest are added: a sheet an addendum does not carry
+keeps showing from the delivery that last issued it. A stated new set ends each sheet an earlier delivery printed in a discipline the set
 reissues and the set leaves out, once the set is dated or sequenced after that delivery: an ended
 sheet leaves the current set and stays readable in its own delivery. A sheet it would have ended
 that holds takeoff marks or a scale someone set stays current, and so does every sheet of a
 discipline the set leaves out entirely. Step 10 reads both kinds back and reports them as a
 finding. Nothing is retired by this skill, here or anywhere else in it.
 
-**The project's first delivery** is a set by that rule, and step 10's comparison has nothing to
-compare against on this path, and says so plainly rather than reporting an empty finding.
+**The project's first delivery** has no new set before it: step 5b reads what its package calls it,
+and step 10's comparison has nothing to compare against on this path, and says so plainly rather
+than reporting an empty finding.
 
 **An already-registered delivery** (the 1c branch below): its `issue` reads off
-`list_drawing_deliveries` like any other's.
+`list_drawing_deliveries` like any other's, and where it is null, step 5b states it.
 
 **A project manual arriving on its own**, with no drawings: this is not a drawing delivery. Register
 nothing, skip steps 3 through 7, and enter at step 8, which files the manual and reads its table of
@@ -224,7 +227,8 @@ report that no drawings came with it.
 ## 1c. Cloud-resident entry (files already in the project, nothing local)
 
 A file with no delivery attached to it needs one registered, as step 3 says, before step 5 reads
-its sheet numbers; whether that delivery is a set or an addendum is the server's answer after.
+its sheet numbers. A cloud-resident delivery whose `issue` is null goes through step 5b, like any
+other.
 
 Not every run starts from a local delivery. When the user points you at a project whose set is
 already in cloud storage (uploaded in a prior session, or they ask you to "read the uploaded set"
@@ -294,6 +298,9 @@ reuse it rather than registering a duplicate. Otherwise call `create_drawing_del
   another), the drawing set's own revision table governs `issuedOn`: it's the
   architect's own record of the issue, ahead of a filename someone typed or a transmittal cover letter.
   Note the disagreement in the packaging report rather than silently picking one.
+- `issue`: pass it here only when the estimator already said which, with `issueSource.asked`
+  carrying his words exactly as he wrote them. Otherwise leave it out: step 5b states it once the
+  delivery's pages are read.
 
 Every file you upload in step 4 attaches to this one `deliveryId`.
 
@@ -456,6 +463,41 @@ two polls you hold, and never a state you inferred. "Last poll at 19:33:10, runn
 pages scanned" is a report; "it has been hanging for an hour" is not.
 <!-- /user-facing -->
 
+## 5b. State the issue
+
+Run this once this delivery's recognition jobs have ended, before step 6, wherever
+`list_drawing_deliveries` gives this delivery `issue` null. Where it already gives `"set"` or
+`"addendum"`, because the estimator picked it on upload or told you at step 3, read its
+`issueStated`, name it to the user, and go on to step 6; change it only where the reads below
+disagree with it, by asking him as point 4 says.
+
+1. Find the latest new set before this delivery: the last delivery before it in
+   `list_drawing_deliveries` whose `issue` is `"set"`. On the project's first delivery there is
+   none.
+2. Read what the delivery shows it is, each with the file and page it is on:
+   - its name: its label, and the transmittal where one came with it;
+   - its cover and the revision marks and dates in its title blocks: write a small pages file
+     naming the cover and two or three title-block pages with the reason `file`, in the line
+     shape "Who reads the pages" gives, dispatch one pages unit over it, and read the label, the
+     date and the sequence its `files:` line gives for each page, against the latest new
+     set's dates;
+   - its sheet list: the `sheetCount` `list_drawing_deliveries` gives it, against the latest new
+     set's, `set_grid(projectId, deliveryId: <that set's id>, limit: 0)`, by discipline.
+3. Where they agree, call `update_drawing_delivery(projectId, deliveryId, issue, issueSource: {
+   read: { fileId, page, sheet } })`, naming the plainest page that shows it, such as a cover that
+   reads "Addendum 1" or a revision row naming the addendum, and pass `replaces` where a kind is
+   already held. On the project's first delivery, a package whose name and cover call it a set, or
+   name no addendum, is a new set read off its cover.
+4. Where they disagree or say nothing, ask the estimator in chat, naming what each shows, for
+   example: "The package is named Addendum 1 and its revision rows name Addendum 1, but it carries
+   all 212 sheets of the bid set. Is it an addendum to the bid set, or a new set?" Then record his
+   answer with `issueSource.asked`, his words exactly as he wrote them.
+
+The sheet count never decides it: an architect hands out an addendum as a full reissue, and a new
+set can print fewer sheets than the one before it. Where `update_drawing_delivery` refuses a
+change naming who stated the kind and when, someone stated it since you read the list: read it
+again, and ask the estimator before stating it over his.
+
 ## 6. Check the pages, one level down
 
 The recognition pass grounds the tokens it reads, but it leaves a tail: pages it could not name,
@@ -482,8 +524,9 @@ run, not left for later.
    never stands for no earlier run.
 2. **The set unit.** First read this delivery's `issue` off `list_drawing_deliveries(projectId)`,
    the read step 1b names, now that its jobs have ended: the recognition status carries no
-   `issue`, so the delivery list is where you read it, and a null `issue` with `stillReading`
-   false goes in the dispatch as `none`. Dispatch one set unit, naming each recognition job id of
+   `issue`, so the delivery list is where you read it. `issue` null means step 5b has not run:
+   run it first. Where the estimator has not answered its question yet, the dispatch says
+   `none`. Dispatch one set unit, naming each recognition job id of
    this delivery with the `fileId` of the drawing file it reads, and that `issue`. It reads the
    pages the pass could not name off the jobs, reads the whole sheet list, types every leftover
    sheet whose title decides it, names the codes off the standard list from the set's own index,
@@ -505,10 +548,10 @@ run, not left for later.
    deliveries'.
 4. **The left unit.** After the last pages unit, read this delivery's `issue` off
    `list_drawing_deliveries(projectId)` again and decide on that read, never on point 2's: a page
-   a pages unit gave a number to can turn a delivery recognition left with no number into a set or
-   an addendum. Where this read gives `issue` null with `stillReading` false, the delivery still
-   holds no sheet number, and the sheet list read by its `deliveryId` refuses it before giving any
-   count. Skip only what needs that read: dispatch no left unit and skip step 7's coverage
+   a pages unit gave a number to can give a delivery recognition left with no number its first
+   sheet. Where this read gives `sheetCount` 0 with `stillReading` false, the delivery still holds
+   no sheet number, and the sheet list read by its `deliveryId` has no row to count; where it gives
+   `issue` null, step 5b has not run, and the sheet list refuses it. Skip only what needs that read: dispatch no left unit and skip step 7's coverage
    comparison. Every other step runs as usual, step 7's other points, the project manual in step 8
    and the index check in step 9 among them, and step 10's handoff names the delivery with no sheet
    number. Otherwise dispatch one left unit, with the `issue` this read gave. Its two lists are the
@@ -563,8 +606,9 @@ unit that read it, in one count-verified write per unit. You verify:
    "appearsOnPage", text: "<a sheet number you saw>")` calls. That spot-check is this step's verify.
    The sheet list's rows are the units' to read, never this conversation's.
 3. **Typing coverage, from two reads of the record.** Only where step 6 point 4's second read of
-   the delivery list gave this delivery an `issue` and the left unit was dispatched; a delivery
-   that still holds no sheet number skips this point and goes on to step 8. Right after the left
+   the delivery list gave this delivery a stated `issue` and a `sheetCount` above 0 and the left
+   unit was dispatched; a delivery whose `sheetCount` is 0 with `stillReading` false holds no
+   sheet number, and it skips this point and goes on to step 8. Right after the left
    unit returns, call
    `set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)` and read its `count`. The left
    unit's `this delivery:` typed count plus its untyped count must equal it. Both read the same
@@ -745,7 +789,7 @@ earlier on the board to re-read, so skip it and leave that file unread.
 ## 10. Close out
 
 Step 9b's re-read of the open Questions is reported before any of this. Point 3 runs on every path
-through this skill. Points 1 and 2 run only where the server reads this delivery as a new set.
+through this skill. Points 1 and 2 run only where this delivery is stated as a new set.
 
 1. **The new-set finding.** Run this where `list_drawing_deliveries` gives this delivery `issue:
    "set"`, and only when a prior delivery existed; on the project's first delivery there is nothing
@@ -783,9 +827,11 @@ through this skill. Points 1 and 2 run only where the server reads this delivery
    sheets it prints, reviewing only the packages that pass writes on. A scope pass already underway
    on this project finishes first, and this delivery's pass comes after it. Two paths name no pass.
    No scope pass reads a project manual on its own: it registered no delivery, and the package
-   reviews of the next pass read the sections it carries. A delivery whose `issue` is null with
+   reviews of the next pass read the sections it carries. A delivery whose `sheetCount` is 0 with
    `stillReading` false holds no sheet number, so a pass would have no sheet to read: name it, say
-   no pass reads it, and point back at what step 5 and step 6 found on its pages.
+   no pass reads it, and point back at what step 5 and step 6 found on its pages. A delivery whose
+   `issue` is still null, its question at step 5b unanswered, gets no pass until the estimator
+   answers: name it and say so.
 <!-- user-facing -->
    Name what comes next in one sentence: for a new set, a full scope pass over it; for an
    addendum, a partial scope pass over the sheets it prints. Say that `scope-run` starts it, and

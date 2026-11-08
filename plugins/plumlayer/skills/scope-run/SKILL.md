@@ -774,7 +774,7 @@ before going on.
    - `none`: there is nothing to start, and the run stops here.
 <!-- user-facing -->
    Say what the line says, plainly: you already ran a scope pass on the latest set, naming it,
-     and on every addendum of it since. Where no delivery reads as a set yet, say the drawings are
+     and on every addendum of it since. Where no delivery is stated as a new set yet, say the drawings are
      not in, and hand off to `drawing-upload`.
 <!-- /user-facing -->
 4. **Drawings are recognized, and their text is read.** Spot-check recognition actually

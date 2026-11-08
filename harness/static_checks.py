@@ -7834,7 +7834,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             listed=deliveries + [delivery("deliv-d5", None, None, None, reading=True)])
     verdict("the tags already handed out", "start", "i4",
             folders={"deliv-d1": (run_d1, closed), "deliv-d2": (_issue_run("deliv-d2", ["deliv-d2"], "i3"), closed)})
-    verdict("no delivery reads as a set", "none",
+    verdict("no delivery is stated as a new set", "none",
             listed=[delivery("deliv-e1", None, None, 0)])
 
     for case, kwargs, needle in (
@@ -8243,7 +8243,8 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             for label, reader_flat in readers_flat.items()
         ),
         (skill_flat, "the skill's copy of the reader report", "trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names"),
-        (upload_flat, "drawing-upload", "You never ask the user whether a delivery is a new set or an addendum"),
+        (upload_flat, "drawing-upload", "The sheet count never decides it"),
+        (upload_flat, "drawing-upload", "record his answer with `issueSource.asked`"),
         (upload_flat, "drawing-upload", "a partial scope pass over the sheets it prints"),
         # A drawing search by delivery counts only that delivery's files, and a manual uploaded on
         # its own sits in none of them, so the manual is asked on its own before it is called silent.
@@ -8285,6 +8286,9 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             errors.append(f"{who} does not read {phrase!r}")
     for phrase in (
         "is this a set of changed sheets, or a full re-issue of the whole set?",
+        # The count rule the server no longer runs, and the sentence that forbade asking.
+        "printing fewer sheet numbers than the latest set",
+        "You never ask the user whether a delivery is a new set or an addendum",
         "is not available yet",
         "A sheet citation names the sheet, not the file",
         # The filter that dropped a set's sheet an addendum of it reprinted.

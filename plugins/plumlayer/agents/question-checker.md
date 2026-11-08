@@ -27,7 +27,7 @@ never put a real client or project name in anything you write.
 Pointers only, never pasted text:
 
 - the project id and the mode, `list` or `questions`;
-- the delivery: its id, its issue label and its `issue`, `set` or `addendum` as the server reads
+- the delivery: its id, its issue label and its `issue`, `set` or `addendum` as someone stated
   it or `none` where it holds no sheet number; or `manual`, with the `fileId` of each file of a
   project manual uploaded on its own;
 - `Asked before:`, a time. A Question asked at or after it was raised during this upload, by the
@@ -67,9 +67,10 @@ blind.
    `search(projectId, subjectPrefix: "specSection:", predicate: "locatedAt")` with `offset` to its
    `count`, and keep each entry whose `sourceInstrument` is `document:<fileId>` for one of the
    manual's files. For a drawing delivery, first read its `issue` off `list_drawing_deliveries`.
-   Where it is null with `stillReading` false, the delivery holds no sheet number: `set_grid`
+   Where it is null, nobody has stated whether it is a new set or an addendum yet: `set_grid`
    refuses it and no sheet is known to have changed, so skip the rest of this step, write both
-   files empty, and say so on your report's `no sheet number:` line. Otherwise the changed sheets
+   files empty, and say so on your report's `no sheet number:` line. Where its `sheetCount` is 0
+   with `stillReading` false, it holds no sheet number: do the same. Otherwise the changed sheets
    are the ones this delivery itself prints, each on its own page of it, read by its own id and
    never off the current set: an addendum uploaded after a later one is not the current set's page
    for any sheet the later one reprints, and it still changed that sheet. Take
