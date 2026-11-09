@@ -37,16 +37,20 @@ never put a real client or project name here.
 
 This skill runs in the conversation, start to finish: every question to the user is put here, and
 every job is waited on here, in the open, with the poll loop in step 5, so each report of a job's
-state is first-hand. Two parts run one level down, since neither takes an answer from the user nor
-a job's state: reading pages goes to the plugin's `sheet-checker` agent, as "Who reads the pages"
-says, and step 9b's re-read of the open Questions goes to its `question-checker` agent, as that
-step's file says. Never hand a question, a job, or a decision to an agent, and never improvise an
-agent for any of them.
+state is first-hand. The one exception is the comparison of a new delivery with the pages it
+replaces, at step 9a: the plugin's `delivery-sizer` agent starts that job and polls it, and hands
+back the plan it sizes off it. Three parts run one level down, since none takes an answer from the
+user: reading pages goes to the plugin's `sheet-checker` agent, as "Who reads the pages" says,
+step 9a's sizing of a new delivery goes to its `delivery-sizer` agent, and step 9b's re-read of
+the open Questions goes to its `question-checker` agent, as those steps' files say. Never hand a
+question or a decision to an agent, never hand it any other job, and never improvise an agent for
+any of them.
 
 Run, or stop and report; never create a consent step. The user's decisions in this skill are:
 which project this delivery belongs to, its issue label, which files are the drawings when the packaging leaves it
-genuinely unclear, and whether to check the pages again when an earlier run's page and type entries
-are on file.
+genuinely unclear, whether to check the pages again when an earlier run's page and type entries
+are on file, and, on a project that already holds scope items or open Questions, the plan step 9a
+puts to him for the new delivery's carry and scope pass, which he approves, changes or stops.
 Ask each of those once, in plain words, and where you already have a reading (off a cover sheet,
 off the file list) put it forward as the answer with its source named, so the user corrects it
 rather than composes it. Everything else the skill does is its own work, recorded with who did it
@@ -68,6 +72,8 @@ How to say each thing as it happens:
   job is running, off the poll you just made, with its time)
 - "N sections found" (step 8, on job success)
 - "checking the drawing index against what we recognized" (step 9, while the reconciliation calls run)
+- "measuring what this delivery changed against the sheets it replaces" (step 9a, while the
+  sizing runs)
 - "re-reading the N open questions against the new paper" (step 9b)
 - "the set uses N discipline codes outside the standard list; I found the set's own name for K of
   them" (step 6)
@@ -124,7 +130,9 @@ five modes:
 
 The re-read of the open Questions at step 9b runs one level down the same way, in the plugin's
 `question-checker` agent, as `reread-questions.md` says: page units one at a time, questions units
-up to four at once. No Question's thread reaches this conversation either.
+up to four at once. No Question's thread reaches this conversation either. Step 9a's sizing of a
+new delivery runs in the plugin's `delivery-sizer` agent, as `size-delivery.md` says, and only its
+summary reaches this conversation.
 
 The upload folder is `<runs root>/<projectId>/upload/<deliveryId>/`, or
 `<runs root>/<projectId>/upload/manual/` for a project manual that came on its own, where
@@ -199,8 +207,8 @@ in the set's Drawing Set dialog; you state it with `create_drawing_delivery` or
 `update_drawing_delivery`, always saying where it comes from (step 5b). `list_drawing_deliveries`
 gives each delivery's `issue`, `"set"` or `"addendum"`, and `issueStated`: who stated it, when,
 and from what. Where nobody has stated it, `issue` is null: the delivery belongs to no set, ends no
-sheet, and the sheet list read by its id refuses it, so step 5b states it before step 6. Steps 9b and 10
-branch on it. The sheet count never decides it.
+sheet, and the sheet list read by its id refuses it, so step 5b states it before step 6. Steps 9a, 9b
+and 10 branch on it. The sheet count never decides it.
 
 An addendum belongs to the latest stated new set before it in delivery order. Each sheet it prints
 replaces the sheet with the same number, and the rest are added: a sheet an addendum does not carry
@@ -764,7 +772,10 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    the number less its letter (`A-501`), recording raises that one Question itself. Only while flagged pages remain can the sheet be on one of them: write those pages to a
    pages file with the reason `unnamed`, in the line shape "Who reads the pages" gives, and
    dispatch pages units over it before you record, twelve lines to a unit as step 6 batches them. Once you have shown the report, note
-   the time with `date -u +%Y-%m-%dT%H:%M:%SZ`, which step 9b passes on as `Asked before:`, then call
+   the time with `date -u +%Y-%m-%dT%H:%M:%SZ`, which step 9b passes on as `Asked before:`. Where a
+   prior delivery existed, take the two counts step 9a reads next: the `count` of
+   `search(projectId, subjectPrefix: "scopeItem:", limit: 1)`, and the `openCount` of
+   `list_questions(projectId, limit: 0)`. Then call
    `reconcile_set(projectId, record: true)` and say what landed. Two things land: the sheet findings
    that stay with you to settle, and, for the side the design team has to answer, Questions on
    the board, each citing the index page and the sheets it is about. Those Questions are grouped by
@@ -775,6 +786,20 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    `list_questions`.
    This is internal work: it needs no go-ahead, and the user corrects anything wrong on the site.
 
+## 9a. Size the new delivery, then carry the unchanged references
+
+Wherever a prior delivery or manual existed, read `size-delivery.md` beside this file, in this
+skill's own folder, and run it before step 9b. On the project's first delivery skip it and leave
+that file unread. Its first step waits for the read of the new paper's text, on every path that
+reads it, since the comparison and the re-read both search that text; step 9b takes that wait's
+result. Its later steps size the delivery only on a project that already held a scope item or an
+open Question before step 9's recording call, and only for a drawing delivery whose kind is stated
+and whose sheet count is above 0: the plugin's `delivery-sizer` agent measures it and writes the
+plan, the user approves, changes or stops it, and on his approval the agent carries forward each
+reference that reads the same. The carry runs before step 9b's re-read, so a place it adds on a
+Question is the one the re-read finds there. Nothing is carried and nothing is read before he
+approves the plan.
+
 ## 9b. Re-read the open Questions this delivery touches
 
 A revised sheet can answer a Question somebody raised against the one it replaces, or move the
@@ -783,8 +808,9 @@ new paper: it closes each one the new paper answers, with one line naming where,
 nobody has sent that the new paper changed, and points the rest at the new pages, replying once on
 a sent one it changed. It runs whenever a prior delivery or manual existed:
 an addendum, a new set, or a manual on its own. There, read `reread-questions.md` beside this
-file, in this skill's own folder, and run it. On the project's first delivery there is nothing
-earlier on the board to re-read, so skip it and leave that file unread.
+file, in this skill's own folder, and run it, once step 9a has run, with the result of step 9a's
+text read. On the project's first delivery there is nothing earlier on the board to re-read, so
+skip it and leave that file unread.
 
 ## 10. Close out
 
@@ -831,10 +857,15 @@ through this skill. Points 1 and 2 run only where this delivery is stated as a n
    `stillReading` false holds no sheet number, so a pass would have no sheet to read: name it, say
    no pass reads it, and point back at what step 5 and step 6 found on its pages. A delivery whose
    `issue` is still null, its question at step 5b unanswered, gets no pass until the estimator
-   answers: name it and say so.
+   answers: name it and say so. Where step 9a sized the delivery, the pass is the plan he
+   approved there, and the plan file names its sheets for `scope-run`; where he stopped the plan,
+   or the sizing stopped with no plan, no pass is planned until he asks for one.
 <!-- user-facing -->
    Name what comes next in one sentence: for a new set, a full scope pass over it; for an
-   addendum, a partial scope pass over the sheets it prints. Say that `scope-run` starts it, and
+   addendum, a partial scope pass over the sheets it prints. Where you sized the delivery, name
+   the pass he approved instead: the sheets it re-reads, or a full scope pass, then the recheck.
+   Where he stopped the plan, or you could not make one, say no scope pass is planned until he
+   asks for one. Say that `scope-run` starts it, and
    where a pass is already underway, that it finishes first. For a manual on its own, say no scope
    pass reads it alone, and that the package reviews of the next pass read its sections. For a
    delivery with no sheet number read, name it and say no scope pass can read it until its sheet
@@ -845,9 +876,11 @@ through this skill. Points 1 and 2 run only where this delivery is stated as a n
 
 - **The questions and the jobs stay in the conversation.** Every question to the user is put
   here, every job is polled here until the server ends it, and every report of a job's state
-  quotes the last payload received and its time. Page reads go to the sheet checker and the
-  re-read of the open Questions to the question checker, page units one at a time and questions
-  units up to four at once, and nothing else leaves this conversation.
+  quotes the last payload received and its time. The one exception is the comparison of a new
+  delivery at step 9a, which the delivery sizer starts and polls. Page reads go to the sheet
+  checker, the sizing of a new delivery and its carry to the delivery sizer, and the re-read of
+  the open Questions to the question checker, page units one at a time and questions units up to
+  four at once, and nothing else leaves this conversation.
 - **Run, or stop and report; never create a consent step.** The user's decisions are the ones
   named at the top of this file; everything else is the skill's own work. A failure is reported
   with its error, retried only when the error names what a retry changes, and never put to the

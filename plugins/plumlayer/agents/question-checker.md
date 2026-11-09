@@ -233,7 +233,8 @@ the same sheet.
 
 A disagreement on another point is not this Question's: it goes on your `new disagreement` line.
 Never raise or reopen a Question. New places are a box on
-this delivery's page for each cited sheet it prints, plus each further sheet of this delivery your
+this delivery's page for each cited callout on a sheet it prints, unless that callout's own new
+place already stands there, as "The places" says, plus each further sheet of this delivery your
 search finds carrying the same problem. Never a sheet the delivery does not print. "The places" says
 which old places come off and what to do at ten.
 
@@ -270,6 +271,14 @@ or its places.
   `get_page_text` gave you for its words, with `frame: "page-points"`, `fileId` this delivery's
   file and `versionScope` the issue label, so the Question opens on the new paper as well as the
   page it was raised on. A section is `{ "type": "spec", "section": "specSection:<packed code>" }`.
+- A place already standing on this delivery's page is the new place of one callout only: the old
+  place it was carried from (the carry before this re-read adds one, on this delivery's file, for
+  each box that read the same), or the old place whose callout's words it boxes on this delivery's
+  page, word for word. It is never the new place of another callout on the same sheet. For
+  its own callout add no second box, and do not count it under `places added`; it still counts as
+  a standing place at ten. Every other cited callout on that sheet still gets its new box, a
+  callout that moved included, and that box goes on before any old place comes off, in the order
+  below.
 - Where no word of the page's read carries the callout, add the sheet with no box
   (`{ "type": "sheet", "sheet": "sheet:<n>" }` with this delivery's `fileId`) and name it on your
   `no box` line.
@@ -282,6 +291,10 @@ or its places.
   an `ended` line that the Question's wording, as you will leave it, does not name. A sheet whose
   `changed` line reads `older` keeps every place, since a delivery issued after this one printed
   it again. A spec section, a reply's place, and every place of a sent or closed Question stay.
+  An old place with a box comes off only once its own callout's new place stands on this
+  delivery's page: the place carried from it, the box you added for it, or the sheet with no box
+  where no word carries the callout; a place there for another callout on the sheet never lets it
+  come off.
   Send `entryId` and `sourceIndex` off that place's `sourceAuthors` entry (its `entryId` and
   `entrySourceIndex`), with `reason` `Replaced by <issue label> <sheet>` or `<sheet> is not in
   <issue label>`.

@@ -1,8 +1,8 @@
 # Drawing upload: re-read the open Questions a delivery touches
 
-Read from `drawing-upload` step 9b, only where a prior delivery or manual existed. Every step this
-file names is a step of `drawing-upload`'s own `SKILL.md`, and every gate there applies here
-unchanged.
+Read from `drawing-upload` step 9b, only where a prior delivery or manual existed, once step 9a has
+run. Every step this file names is a step of `drawing-upload`'s own `SKILL.md`, and every gate
+there applies here unchanged.
 
 The re-read runs one level down, in the plugin's `question-checker` agent, one fresh instance per
 unit, so no Question's thread and no page lands in this conversation. The agent's definition holds
@@ -20,25 +20,10 @@ adds to these counts. The sheet checker's files stay where "Who reads the pages"
 
 1. **The count before.** Call `list_questions(projectId, limit: 0)` and note `openCount` and
    `closedCount`.
-2. **The text read.** The units search the new paper's text, and a search finds no word on a page
-   nobody has read yet, so wait here for the read of each file the new paper came in: each
-   drawing file of this delivery, or each file of the manual. Poll `set_text_status(projectId,
-   fileId)` on each one every few seconds, in this conversation, the way `SKILL.md` step 5 polls
-   recognition. The loop ends on the server's answer only: `state` `succeeded` with
-   `pagesNotRead` 0 is a file whose text is read; `failed`, `stale`, or `succeeded` with
-   `pagesNotRead` above 0 is a file that never finished reading. A file whose `state` is
-   `notStarted` has no read yet: call `read_set_text(projectId, fileId)` once to start it and
-   keep polling; where it still reads `notStarted` after that, it never finished reading. Never
-   wait on `pagesAwaitingImageRead` or `imageReadState`: the read of the page images waits behind
-   every other read, and the checker reads a page's image itself when it judges that page. Name
-   the `fileId` of each file that never finished reading on every unit's `Not read:` line, and
-   tell the user:
-
-   <!-- user-facing -->
-   The text of <filename> was not fully read as of <time of the last poll>: <pagesNotRead> of
-   <pageCount> pages unread. I left alone each Question that needs a search of it, and I name
-   each one below.
-   <!-- /user-facing -->
+2. **The text read.** Step 9a waited for the read of each file the new paper came in, as
+   `size-delivery.md` step 1 says, and told the user of each file that never finished reading.
+   Take that result: name the `fileId` of each such file on every unit's `Not read:` line, or
+   `none` where every file finished reading.
 3. **The list unit.** Dispatch one unit with `Mode: list`. It writes `sheets.txt` and
    `questions.txt` in the re-read folder (Audience: agent), which you count and never read. Where
    its report says it wrote 0 lines, no open Question can be in scope: say so in the closing
@@ -85,7 +70,7 @@ Delivery: <deliveryId>, label <issue label>, issue <set, addendum, or none>; or 
 Asked before: <the time you noted before step 9's recording call>.
 Questions file: <for questions, <re-read folder>/questions.txt lines <a>-<b>; otherwise "none">.
 Since: <for a unit sent again, the time its first dispatch was sent; otherwise "none">.
-Not read: <each fileId whose text never finished reading at the text read; otherwise "none">.
+Not read: <each fileId whose text never finished reading at step 9a's text read; otherwise "none">.
 Re-read folder: <upload folder>/reread-<time>/. Report: <re-read folder>/reports/questions-<list, or <a>-<b>>.md.
 Check your unit as your definition says, write your report to that path, then return it.
 ```

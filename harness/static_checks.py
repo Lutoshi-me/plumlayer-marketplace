@@ -301,9 +301,11 @@ EXPECTED_SKILLS = {
 # or one reviewer per package in window 3; the lead also starts the package
 # folder when window 2 closes. The sheet checker is dispatched by drawing-upload
 # for every page read an upload makes, the question checker by drawing-upload's
-# step 9b for the re-read of the open Questions after a later delivery, and the
-# orientation agent by learn-project for the orientation pass.
+# step 9b for the re-read of the open Questions after a later delivery, the delivery
+# sizer by drawing-upload's step 9a for the plan and the carry of a new delivery on a project
+# that already holds scope, and the orientation agent by learn-project for the orientation pass.
 EXPECTED_AGENTS = {
+    "delivery-sizer",
     "orientation",
     "question-checker",
     "scope-package-folder",
@@ -6210,8 +6212,9 @@ def check_no_fork_subagent(plugin_path: Path) -> Result:
 # the api, so the list is stated here and a new api verb an agent or a skill names means adding it
 # here too, as `count_entries` was for the scope run's lead.
 CONNECTOR_VERBS = {
-    "add_question_source", "ask_question", "assign_sheet_packages", "cite_source",
-    "clear_quantity", "close_question", "count_entries", "create_drawing_delivery",
+    "add_question_source", "ask_question", "assign_sheet_packages", "carry_forward_references",
+    "cite_source", "clear_quantity", "close_question", "compare_delivery", "compare_delivery_status",
+    "count_entries", "create_drawing_delivery",
     "create_project",
     "deliverable_status", "directory_add_certification", "directory_add_company",
     "directory_add_comparable_project", "directory_add_contact", "directory_delete_company",
@@ -9145,7 +9148,10 @@ def check_shared_number_pages(plugin_path: Path, marketplace_root: Path) -> Resu
 #   9. drawing-upload's step 9 stops sending a sheet the index lists and the set lacks straight
 #      to its Question, the case that measured lead read grid rows and searched the record for;
 #  10. drawing-upload's step 9b file loses its `plumlayer:question-checker` dispatch, so the lead
-#      reads every open Question's thread and the new pages itself.
+#      reads every open Question's thread and the new pages itself;
+#  11. drawing-upload's step 9a file loses its `plumlayer:delivery-sizer` dispatch, or a line the
+#      lead runs in drawing-upload or one of its section files names `compare_delivery_status` or
+#      `carry_forward_references`, so the comparison's rows or the carry's land in the lead.
 #
 # Honest bound: this reads the shipped text, not a session. Whether a lead session in fact stays
 # small is measured from its transcript.
@@ -9183,6 +9189,16 @@ _CLOUD_ENTRY_POINTER = "read `cloud-entry.md` beside this file"
 _CLOUD_ENTRY_BODY = "The branch substitutes the local-only stages and reuses everything else unchanged"
 _SHEET_CHECKER_LINE_RE = re.compile(r"^\s*subagent_type\s*:\s*plumlayer:sheet-checker\s*$")
 _QUESTION_CHECKER_LINE_RE = re.compile(r"^\s*subagent_type\s*:\s*plumlayer:question-checker\s*$")
+_DELIVERY_SIZER_LINE_RE = re.compile(r"^\s*subagent_type\s*:\s*plumlayer:delivery-sizer\s*$")
+# The comparison's rows and the carry belong to the delivery sizer: no line the lead runs in
+# drawing-upload or its section files names either verb.
+_LEAD_SIZER_VERB_RE = re.compile(r"\b(compare_delivery_status|carry_forward_references)\b")
+_UPLOAD_LEAD_FILES = {
+    "drawing-upload": "drawing-upload/SKILL.md",
+    "cloud-entry": "drawing-upload/cloud-entry.md",
+    "reread": "drawing-upload/reread-questions.md",
+    "size": "drawing-upload/size-delivery.md",
+}
 _RETIRED_GATES = (
     ("drawing-upload", "No step of it is handed to a background agent or a subagent"),
     ("drawing-upload", "No step is handed to a background agent or a subagent"),
@@ -9258,6 +9274,16 @@ def _lead_shape_errors(texts: dict[str, str]) -> list[str]:
             "drawing-upload's step 9b file carries no dispatch block naming "
             "`subagent_type: plumlayer:question-checker`"
         )
+    size_blocks, _ = _fenced_blocks(texts["size"].splitlines())
+    if not any(any(_DELIVERY_SIZER_LINE_RE.match(l) for l in body) for _, body in size_blocks):
+        errors.append(
+            "drawing-upload's step 9a file carries no dispatch block naming "
+            "`subagent_type: plumlayer:delivery-sizer`"
+        )
+    for key, label in _UPLOAD_LEAD_FILES.items():
+        for at, line in enumerate(texts[key].splitlines(), 1):
+            for m in _LEAD_SIZER_VERB_RE.finditer(line):
+                errors.append(f"{label}:{at}: the lead names `{m.group(1)}`, which the delivery sizer runs")
     for body in checker_blocks:
         jobs = [l for l in body if l.strip().startswith("Jobs:")]
         if len(jobs) != 1 or "fileId" not in jobs[0]:
@@ -9333,6 +9359,7 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
     paths = {skill: skills / skill / "SKILL.md" for skill in ("project-setup", "learn-project", "drawing-upload", "scope-run")}
     paths["cloud-entry"] = skills / "drawing-upload" / "cloud-entry.md"
     paths["reread"] = skills / "drawing-upload" / "reread-questions.md"
+    paths["size"] = skills / "drawing-upload" / "size-delivery.md"
     paths["orientation"] = plugin_path / "agents" / "orientation.md"
     paths["sheet-checker"] = plugin_path / "agents" / "sheet-checker.md"
     for key, path in paths.items():
@@ -9340,14 +9367,16 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
             return Result(name, False, detail=f"not found: {path}")
         texts[key] = path.read_text(encoding="utf-8")
 
-    # drawing-upload's step 10 pages the current set's sheet list, so it is not scanned. Its step 9b
-    # file is: the re-read of the open Questions runs in the question checker it dispatches.
+    # drawing-upload's step 10 pages the current set's sheet list, so it is not scanned. Its step 9a
+    # and 9b files are: the sizing runs in the delivery sizer and the re-read of the open Questions
+    # in the question checker, each dispatched from there.
     scans = (
         ("project-setup", None, ()),
         ("learn-project", None, ()),
         ("drawing-upload", None, ("10.",)),
         ("cloud-entry", None, ()),
         ("reread", None, ()),
+        ("size", None, ()),
     )
     errors: list[str] = []
     lead_lines = 0
@@ -9356,6 +9385,7 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
         label = {
             "cloud-entry": "drawing-upload/cloud-entry.md",
             "reread": "drawing-upload/reread-questions.md",
+            "size": "drawing-upload/size-delivery.md",
         }.get(skill, f"{skill}/SKILL.md")
         errors.extend(_lead_read_errors(texts[skill], label, only, exempt))
     errors.extend(_lead_shape_errors(texts))
@@ -9391,6 +9421,14 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
             "drawing-upload", re.sub(r"(?m)^\s*subagent_type\s*:\s*plumlayer:sheet-checker\s*$", "", texts["drawing-upload"]))))
         mutations.append(("drawing-upload's step 9b file with its question-checker dispatch line taken out", mutated(
             "reread", re.sub(r"(?m)^\s*subagent_type\s*:\s*plumlayer:question-checker\s*$", "", texts["reread"]))))
+        mutations.append(("drawing-upload's step 9a file with its delivery-sizer dispatch line taken out", mutated(
+            "size", re.sub(r"(?m)^\s*subagent_type\s*:\s*plumlayer:delivery-sizer\s*$", "", texts["size"]))))
+        mutations.append(("drawing-upload's step 9a file with the lead polling the comparison itself", mutated(
+            "size", texts["size"] + "\nPoll `compare_delivery_status(projectId, deliveryId)` every 10 seconds.\n")))
+        mutations.append(("drawing-upload with the lead carrying the references itself", mutated(
+            "drawing-upload", texts["drawing-upload"] + "\nCall `carry_forward_references(projectId, deliveryId)`.\n")))
+        mutations.append(("drawing-upload's step 9b file with the lead reading the comparison", mutated(
+            "reread", texts["reread"] + "\nRead `compare_delivery_status` for the changed sheets.\n")))
         mutations.append(("drawing-upload with its `Jobs:` line naming no fileId", mutated(
             "drawing-upload", re.sub(r"(?m)^Jobs:.*$", "Jobs: <every recognition jobId>.", texts["drawing-upload"]))))
         mutations.append(("learn-project with its orientation dispatch taken out", mutated(
@@ -9432,9 +9470,11 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
     detail = (
         f"{lead_lines} lines a lead runs scanned for {len(_LEAD_READ_VERBS)} page read verbs and "
         f"`set_grid` with rows and for the Read tool on a PDF's pages (project-setup whole, "
-        f"learn-project whole, drawing-upload outside step 10, its cloud entry file and its step 9b "
-        f"file whole), the sheet-checker dispatch with each job paired with its fileId, the "
-        f"question-checker dispatch in the step 9b file, the "
+        f"learn-project whole, drawing-upload outside step 10, its cloud entry file and its step 9a "
+        f"and 9b files whole), the sheet-checker dispatch with each job paired with its fileId, the "
+        f"question-checker dispatch in the step 9b file, the delivery-sizer dispatch in the step 9a "
+        f"file and neither `compare_delivery_status` nor `carry_forward_references` on any line of "
+        f"drawing-upload or its section files, the "
         f"orientation dispatch, its steps 1 to 11 and its summary shape in the agent's definition "
         f"and none of the steps in the skill, the pages file line shape given in drawing-upload "
         f"field for field as the sheet checker writes it, step 9 sending a sheet the index lists "
@@ -13109,11 +13149,13 @@ _QUESTION_CHECKER_PINS: tuple[tuple[str, str], ...] = (
                         "`already closed`"),
     ("skills/drawing-upload/reread-questions.md", "Page units go one at a time, and questions units "
                                                   "up to four at once"),
-    # The lead waits on the new paper's text read before any unit searches it.
-    ("skills/drawing-upload/reread-questions.md", "Poll `set_text_status(projectId, fileId)` on each "
-                                                  "one every few seconds"),
-    ("skills/drawing-upload/reread-questions.md", "`state` `succeeded` with `pagesNotRead` 0 is a "
-                                                  "file whose text is read"),
+    # The lead waits on the new paper's text read, at step 9a, before any unit searches it.
+    ("skills/drawing-upload/size-delivery.md", "Poll `set_text_status(projectId, fileId)` on each "
+                                               "one every few seconds"),
+    ("skills/drawing-upload/size-delivery.md", "`state` `succeeded` with `pagesNotRead` 0 is a "
+                                               "file whose text is read"),
+    ("skills/drawing-upload/reread-questions.md", "name the `fileId` of each such file on every "
+                                                  "unit's `Not read:` line"),
     # One folder per re-read, so an earlier re-read of the same delivery never adds to the counts.
     ("skills/drawing-upload/reread-questions.md", "every command below reads it and nothing else, so "
                                                   "a re-read of the same delivery run earlier never "
@@ -13160,6 +13202,154 @@ def check_question_checker_outcomes(plugin_path: Path, marketplace_root: Path) -
         f"on the text read, one folder per re-read, an addendum's pages file count, and the lead's "
         f"four questions units at once), {refused} mutations "
         f"refused; bound: text only, not how a running checker decides"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: delivery sizing
+# --------------------------------------------------------------------------- #
+#
+# On a project that already holds scope items or open Questions, a new drawing delivery is sized
+# before anything reads it: the plugin's `delivery-sizer` agent measures it against the pages it
+# replaces and writes a plan, the estimator approves, changes or stops it, and only on his approval
+# does the agent carry forward each reference that reads the same. The carry runs before the
+# re-read of the open Questions, so the question checker takes a carried place as the sheet's new
+# place and adds no second box. What can fail, one case each below:
+#   1. the sizer's tools line gains a verb (a page read, a Question, the kind) or loses one;
+#   2. the sizer states the kind off the sheet count, or gives the count as its reason;
+#   3. plan mode writes on the record, or names the carry verb outside carry mode;
+#   4. the carry runs without the approval line on the plan file;
+#   5. the lead carries or reads before the approval, or the carry stops coming before step 9b in
+#      drawing-upload or in its step 9a file;
+#   6. the question checker loses the rule that a place on this delivery's page is the new place of
+#      its own callout only, so one carried callout stops a moved callout on the same sheet from
+#      getting its new box and both old places come off;
+#   7. the plan file's status lines change shape between the lead that appends them and the
+#      sizer that reads them.
+# Each phrase is taken out of the shipped text and each structural arm broken, so every refusal is
+# shown. Honest bound: this reads the shipped text, not a run; whether a measured plan is the size
+# the estimator expects is the measured run's.
+
+_SIZER = "agents/delivery-sizer.md"
+_SIZE_FILE = "skills/drawing-upload/size-delivery.md"
+_UPLOAD = "skills/drawing-upload/SKILL.md"
+_SIZER_TOOLS = (
+    "Read", "Write", "Bash",
+    *(f"{CONNECTOR_TOOL_PREFIX}{verb}" for verb in (
+        "list_drawing_deliveries", "compare_delivery", "compare_delivery_status",
+        "carry_forward_references", "solicitation_list_packages", "list_questions",
+    )),
+)
+_SIZER_CARRY_VERB = "carry_forward_references"
+_SIZER_CARRY_SECTION = "Carry mode"
+_SIZING_STATUS_LINES = (
+    "status: shown <time>",
+    'status: approved <time> "<his words>"',
+    'status: stopped <time> "<his words>"',
+)
+_SIZING_PINS: tuple[tuple[str, str], ...] = (
+    (_SIZER, "The sheet count never decides it, and never appears as the reason for it"),
+    (_SIZER, "Plan mode writes nothing on the record"),
+    (_SIZER, "The carry runs in carry mode only, after the plan file's last `status:` line reads "
+             "`status: approved`"),
+    (_SIZER, "Where its last `status:` line is not a `status: approved` line, carry nothing"),
+    (_SIZE_FILE, "Nothing is carried and nothing is read before he approves the plan"),
+    (_SIZE_FILE, "nothing is carried before `status: approved` is on the plan file, and no scope "
+                 "pass reads the delivery before it either"),
+    (_SIZE_FILE, "The carry runs before step 9b's re-read"),
+    (_SIZE_FILE, "Carry nothing, and plan no pass. Step 9b still runs"),
+    (_UPLOAD, "Nothing is carried and nothing is read before he approves the plan"),
+    (_UPLOAD, "The carry runs before step 9b's re-read"),
+    (_UPLOAD, "The one exception is the comparison of a new delivery with the pages it replaces, at "
+              "step 9a"),
+    ("agents/question-checker.md", "A place already standing on this delivery's page is the new "
+                                   "place of one callout only"),
+    ("agents/question-checker.md", "It is never the new place of another callout on the same sheet"),
+    ("agents/question-checker.md", "add no second box, and do not count it under `places added`"),
+    ("agents/question-checker.md", "Every other cited callout on that sheet still gets its new box, a "
+                                   "callout that moved included, and that box goes on before any old "
+                                   "place comes off"),
+    ("agents/question-checker.md", "An old place with a box comes off only once its own callout's "
+                                   "new place stands on this delivery's page"),
+    *((_SIZER, line) for line in _SIZING_STATUS_LINES),
+    *((_SIZE_FILE, f"`{line}`") for line in _SIZING_STATUS_LINES[1:]),
+    (_SIZE_FILE, "printf 'status: shown %s\\n'"),
+)
+
+
+def _sizing_errors(texts: dict[str, str]) -> list[str]:
+    errors: list[str] = []
+    for label, phrase in _SIZING_PINS:
+        if phrase not in _collapsed(texts[label]):
+            errors.append(f"{label} does not read {phrase!r}")
+    # The tools line, exactly: a verb added or taken off is refused.
+    tools_line = next((l for l in texts[_SIZER].splitlines() if l.startswith("tools:")), "")
+    tools = tuple(t.strip() for t in tools_line[len("tools:"):].split(","))
+    if sorted(tools) != sorted(_SIZER_TOOLS):
+        errors.append(f"{_SIZER} tools line reads {tools_line!r}, not the {len(_SIZER_TOOLS)} tools pinned")
+    # The carry verb in carry mode only: nowhere in the body outside its section.
+    body = texts[_SIZER].split("\n---\n", 1)[-1]
+    carry = _section(body, _SIZER_CARRY_SECTION)
+    if carry is None or _SIZER_CARRY_VERB not in carry:
+        errors.append(f"{_SIZER} has no `## {_SIZER_CARRY_SECTION}` naming `{_SIZER_CARRY_VERB}`")
+    elif _SIZER_CARRY_VERB in body.replace(carry, ""):
+        errors.append(f"{_SIZER} names `{_SIZER_CARRY_VERB}` outside `## {_SIZER_CARRY_SECTION}`")
+    # The carry before the re-read: step 9a's section ahead of step 9b's in drawing-upload.
+    at_9a = texts[_UPLOAD].find("\n## 9a. ")
+    at_9b = texts[_UPLOAD].find("\n## 9b. ")
+    if at_9a < 0 or at_9b < 0 or at_9a > at_9b:
+        errors.append(f"{_UPLOAD} does not run step 9a before step 9b")
+    return errors
+
+
+def check_delivery_sizing(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "delivery-sizing"
+    texts: dict[str, str] = {}
+    for label in sorted({label for label, _ in _SIZING_PINS}):
+        path = plugin_path / label
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[label] = path.read_text(encoding="utf-8")
+    errors = _sizing_errors(texts)
+
+    refused = 0
+    if not errors:
+        mutations: list[tuple[str, dict[str, str]]] = []
+        for label, phrase in _SIZING_PINS:
+            # Taken out of the text as it ships, line breaks and all, so the other arms still read it.
+            wrapped = r"\s+".join(map(re.escape, phrase.split()))
+            mutations.append((f"{label} with {phrase!r} taken out",
+                              {**texts, label: re.sub(wrapped, "", texts[label], count=1)}))
+        sizer = texts[_SIZER]
+        mutations.append(("the sizer holding a page read", {**texts, _SIZER: sizer.replace(
+            "list_questions\n", f"list_questions, {CONNECTOR_TOOL_PREFIX}get_page_text\n", 1)}))
+        mutations.append(("the sizer with the carry verb off its tools line", {**texts, _SIZER: sizer.replace(
+            f", {CONNECTOR_TOOL_PREFIX}carry_forward_references", "", 1)}))
+        mutations.append(("the sizer naming the carry in plan mode", {**texts, _SIZER: sizer.replace(
+            "## Plan mode\n", "## Plan mode\n\nCall `carry_forward_references(projectId, deliveryId)` first.\n", 1)}))
+        upload = texts[_UPLOAD]
+        mutations.append(("drawing-upload with step 9b ahead of step 9a", {**texts, _UPLOAD: upload.replace(
+            "\n## 9a. ", "\n## 9x. ", 1).replace("\n## 9b. ", "\n## 9a. ", 1).replace("\n## 9x. ", "\n## 9b. ", 1)}))
+        for label, broken in mutations:
+            if broken == texts:
+                errors.append(f"the {label} case changed nothing")
+            elif _sizing_errors(broken):
+                refused += 1
+            else:
+                errors.append(f"the check passed {label}")
+
+    detail = (
+        f"{len(_SIZING_PINS)} phrases held over {len(texts)} files (the sheet count never deciding "
+        f"the kind, plan mode writing nothing on the record, the carry only after the approval line, "
+        f"the lead carrying and reading nothing before approval, the carry before step 9b in both "
+        f"files, the one job the sizer polls, the question checker's place on the new page standing "
+        f"for its own callout only, and the "
+        f"three status line shapes in the sizer and the lead), the sizer's tools line held to "
+        f"{len(_SIZER_TOOLS)} tools, `{_SIZER_CARRY_VERB}` named only in its carry mode, and step "
+        f"9a ahead of step 9b; {refused} mutations refused; bound: text only, not a measured plan"
     )
     if errors:
         detail += " | " + "; ".join(errors)
@@ -14173,6 +14363,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_question_writing_sentence(plugin_path, marketplace_root),
         check_question_checker_outcomes(plugin_path, marketplace_root),
         check_standard_lines(plugin_path, marketplace_root),
+        check_delivery_sizing(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed
