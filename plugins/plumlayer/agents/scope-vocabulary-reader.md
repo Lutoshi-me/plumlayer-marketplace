@@ -23,6 +23,9 @@ ask it rather than keeping your own copy.
 Pointers only, never pasted text. Your dispatch names:
 
 - the project id, the window number, your pass id, and your unit id;
+- `Read: <k>`, the number of this read of your unit;
+- `New items: scopeItem:<your unit id>-`, the prefix every scope item you create takes
+  (mandate 10);
 - what you read for: the vocabulary, or the repeated lines;
 - your unit's pages, each with its sheet number, `fileId`, and 1-based `pageInPdf`, or, for the
   repeated lines, one drawing file's `fileId` and one page of it. The `fileId` is the drawing
@@ -35,8 +38,13 @@ Pointers only, never pasted text. Your dispatch names:
   or `none`;
 - the run folder path and your pass brief path.
 
+Before anything else, write the one word `started` to
+`<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
+this read against your unit only where that file is there.
+
 Open your pass brief first, before you read a page: what this pass reads for, its content families,
-and the subject prefix scheme. Then take your orientation from the record with one
+and the subject prefix scheme, which your `New items:` line fills in for your unit. Then take
+your orientation from the record with one
 `read_sheet_context(projectId, fileId, pageInPdf)` per page, before the page's text. Its answer
 carries the project and its seed facts, the bid packages with their catalog trade ids, every
 definition kind with its code count and the trade whose package prices it, the codes this page
@@ -542,7 +550,7 @@ of them is ever trimmed.
    finely our own scope sheet splits is ours to settle, and nobody on the design team answers it.
    Recall never drops to grain uncertainty.
 7. RECORD directly and VERIFY: `record_batch` (at most 500 entries and citations together per
-   call, atomic; subjects `scopeItem:<unit-id>-<seq>` for new items, the item's existing subject
+   call, atomic; a new item's subject as mandate 10 gives it, the item's existing subject
    for updates), or a JSONL file sent with `record_batch_file` for larger runs. An entry carries `subject`, `predicate`, `value`, `sourceInstrument` and
    `evidence` in mandate 2's shape, plus `supersedesId` where you are replacing a value. A
    citation, of a row that already exists or of a row the same call creates, is one item of
@@ -615,6 +623,21 @@ of them is ever trimmed.
    `sheet:<opens as>`, that key, and never `sheet:<sheet number>`, which is the number's first
    page. The context read's sheet reading is that record's, and every `sheet:<sheet number>`
    above reads `sheet:<opens as>` on that page.
+10. YOUR NEW ROWS SIT UNDER YOUR UNIT'S PREFIX. Your dispatch's `New items:` line names it,
+   `scopeItem:<your unit id>-`, and every scope item you create takes exactly that prefix followed
+   by 1, 2, 3 and on, in the order you create them: unit `i2-A2-3` writes `scopeItem:i2-A2-3-1`,
+   `scopeItem:i2-A2-3-2` and `scopeItem:i2-A2-3-3`, never `scopeItem:i2-A2-4-1`. The unit id is
+   copied whole: never split it, never change a number inside it, and never number a row under
+   another unit's id, whatever other ids the pass brief or the record shows you. Where rows already
+   stand under your prefix from an earlier read of your unit, the context read or
+   `list_scope_items(subjectPrefix: "<your prefix>")` shows them: update those as mandate 1 says,
+   and number a new row after the highest number already under it. An update or a new citation
+   lands on the row's existing subject, never under yours. Before each `record_batch`, read every
+   new subject in it and confirm it is your `New items:` prefix followed by a number alone; renumber
+   one that is not before you send the batch. Your runner counts your new rows under that prefix and
+   holds your `created:` figure to that count, so a row written under any other prefix is one
+   nobody counts as yours, and your unit reads as a mismatch. Your report's `created subjects:`
+   line names every row you created, so your runner can find each one back by name.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
 created only at their own doors. You never close a Question: if you think one should be closed, say
@@ -853,6 +876,7 @@ cited sheets: <for the repeated lines, every sheet your rows and citations name,
 page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
 set version: <for the repeated lines, the setVersion your walk ended on; otherwise "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
+created subjects: <the subject of every scope item you created, each under your `New items:` prefix, or "none">
 updated subjects: <the subject of every item you updated or newly cited, except a row cited only to a Question, or "none">
 questions raised ids: <the id of every Question you raised, or "none">
 questions replied ids: <the id of every Question you replied to, or "none">

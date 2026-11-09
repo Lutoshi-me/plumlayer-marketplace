@@ -1878,11 +1878,12 @@ def _read_plan_file_units(path: Path, window: int) -> dict[str, str]:
 
 def _read_ledger_verified(path: Path, window: int) -> set[str]:
     """
-    This window's unit ids that carry a `verified <window> <pass> <unit> ... result ok` line: the
-    units a runner already finished, which the plan marks so a pass is finished unit by unit rather
-    than by its `pass:` line. A line whose result is anything but `ok` marks nothing, and an id no
-    planned or held unit carries is ignored here, since the pass summary is where a `verified`
-    line is judged. A missing ledger is nothing verified.
+    This window's unit ids whose last `verified <window> <pass> <unit> ... result <ok|mismatch>`
+    line reads `result ok`: the units a runner already finished, which the plan marks so a pass is
+    finished unit by unit rather than by its `pass:` line. A unit read again after a mismatch carries
+    a line for each check, and the last one says whether it is finished. An id no planned or held
+    unit carries is ignored here, since the pass summary is where a `verified` line is judged. A
+    missing ledger is nothing verified.
     """
     if not path.is_file():
         return set()
@@ -1890,14 +1891,13 @@ def _read_ledger_verified(path: Path, window: int) -> set[str]:
         text = path.read_text(encoding="utf-8")
     except Exception as e:
         raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
-    finished: set[str] = set()
+    last_ok: dict[str, bool] = {}
     for raw in text.splitlines():
         parts = raw.strip().split()
         if len(parts) < 4 or parts[0] != "verified" or parts[1] != str(window):
             continue
-        if "result" in parts and parts[parts.index("result") + 1:][:1] == ["ok"]:
-            finished.add(parts[3])
-    return finished
+        last_ok[parts[3]] = "result" in parts and parts[parts.index("result") + 1:][:1] == ["ok"]
+    return {unit for unit, ok in last_ok.items() if ok}
 
 
 def _read_ledger_pass_lines(path: Path, window: int) -> dict[str, list[str]]:

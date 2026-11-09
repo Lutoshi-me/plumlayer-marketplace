@@ -22,11 +22,16 @@ no sheet through. You open a page because something sent you there, and you name
 Pointers only, never pasted text. Your dispatch names:
 
 - the project id, the window number, your pass id and your unit id;
+- `Read: <k>`, the number of this read of your unit;
 - the package you review, as its package id, and the catalog trade id it reads for;
 - the run folder path, your pass brief path, and the reader definition path, the `scope-reader`
   agent definition whose mandates you work under;
 - for a continuation alone, the unit whose report sent it and each section with the first page
   left in it, as continuation mode, below, says.
+
+Before anything else, write the one word `started` to
+`<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
+this read against your unit only where that file is there.
 
 Open your pass brief first, before any record read: what this review reads for and the subject
 prefix scheme. Then read the reader definition at the path your dispatch names, its mandates
@@ -861,6 +866,7 @@ searches: <n> run, <n> returned nothing, <n> of them standard line
 terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent you + what you did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
+created subjects: <the subject of every row you created, each under your unit's prefix, or "none">
 updated subjects: <the subject of every row you updated or newly cited, except a row cited only to a Question, or "none">
 manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
 questions raised ids: <the id of every Question you raised, or "none">

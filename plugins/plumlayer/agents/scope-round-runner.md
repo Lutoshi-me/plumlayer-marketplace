@@ -24,7 +24,9 @@ are matched there.
 Pointers only, never pasted text: the project id, the window number, or `r` for the recheck, your
 pass id (or `review-<pass id>`, `recheck-<pass id>`, `retire-<pass id>`, or `boundary`), the run
 folder path, and the scripts path, the plugin's own scripts
-directory, which your dispatch names on its `Scripts:` line. The read plan is
+directory, which your dispatch names on its `Scripts:` line. Its `Read again:` line names a unit
+the user said to read again after two reads ended with no check confirming it, and the read that
+allows, `<unit id> read <n>`, or reads `none`. The read plan is
 `<run folder>/read-plan.md`. Read your own pass's section of it and nothing else from it: what the pass reads for (the vocabulary,
 the sheet, the repeated lines, or package reviews), and its units. In windows 1
 and 2 a unit is one sheet with its sheet number, `fileId`, and 1-based `pageInPdf`. Where one
@@ -46,7 +48,10 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
 ## Pass mode
 
 1. **Write your pass brief** at `<run folder>/briefs/<pass-id>.md` if it is not already there: what
-   the pass reads for, the content families it carries, and the subject prefix scheme. Create
+   the pass reads for, the content families it carries, and the subject prefix scheme, written as
+   the scheme alone: each new item is `scopeItem:<unit id>-` followed by 1, 2, 3, the unit id the
+   one its reader's dispatch names on its `New items:` line. The brief never lists a unit id: a
+   reader handed every id of the pass numbered its rows under the next units' ids. Create
    `<run folder>/trades/<pass-id>.txt` empty beside it if it is not already there, so the summary
    script finds it even when the pass stops before any unit verifies. That is the whole of what you
    write before your first unit, and the brief is the whole of what a reader opens off disk.
@@ -58,14 +63,42 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    other; the recheck's window `r` dispatches `plumlayer:scope-rechecker`, as recheck mode says. The parenthesized list on your `tools` line
    records that intent and does not enforce it, since a type list inside `Agent(...)` is ignored
    for an agent running as a subagent, so keeping to it is yours to do. Before each unit, look for
-   a `verified` line carrying your window and that unit id, whatever pass it names, and that unit's
-   `anomaly`, `grain` and `door` notes, with a local filter on the ledger (the one read of it you
-   ever make): a replan
-   can put a unit in another pass, and its unit id is what stays. A unit whose line carries `result ok` is finished, so dispatch
+   the `dispatch` and `verified` lines carrying your window and that unit id, whatever pass they
+   name, and that unit's `anomaly`, `grain`, `door`, `deviation` and `unread` notes, with a local
+   filter on the ledger (the one read of it you ever make): a replan
+   can put a unit in another pass, and its unit id is what stays. A unit read again carries one
+   `verified` line per check, and its latest line is the one that counts. A unit whose latest line carries `result ok`, with no `dispatch` line after it, is finished, so dispatch
    nothing for it, append nothing, and go to the next unit. Its counts still reach your summary:
-   the script sums the `verified` line of every unit your pass carries, matched the same way on
-   window and unit id whatever pass it names, each unit once. A unit with a `dispatch` line and no
-   `verified` line is re-run as below. Append the unit's
+   the script sums the latest `verified` line of every unit your pass carries, matched the same way on
+   window and unit id whatever pass it names, each unit once.
+
+   Every other unit is read, and you count its reads one way. A unit's reads are its `dispatch`
+   lines in your window, whatever pass they name, each with a reader started after it, and each
+   counts the same whatever ended it: a check that found a mismatch, a reader that stopped
+   answering, a recheck report the check refused, or a runner that stopped before its check. A
+   reader shows it started by writing `<run folder>/reports/<unit id>.read-<k>.started` before
+   anything else, `<k>` the read its dispatch's `Read:` line names. A read that ended any way but a
+   check confirming it carries one `deviation` note or more ending `, read <k>`, `<k>` the number of
+   that read. Where a unit's latest `dispatch` line has no `verified` line and no such note after
+   it, its runner stopped before its check: where its report is on file, verify off that report as
+   step 3 says, which is that read's end and no new read; where only that read's `.started` file
+   is there, append `note <window> <pass> <unit> deviation <sheet> no report, read <k>` first; and
+   where neither is there, no reader started after that line, so it is no read: count the unit's
+   reads without it, and dispatch that read's reader under that same line, appending no second
+   `dispatch` line for it. A unit with fewer than two reads is then read. A unit with two reads or
+   more is read again only where your dispatch's `Read again:` line names it with `read <n>`, `<n>`
+   one more than its reads: append
+   `note <window> <pass> <unit> deviation <sheet> read again granted for read <n>` where the look
+   did not already find that note, then read the unit once. That note is the user's go-ahead
+   spent, so a resume carrying the same `Read again:` line finds the unit's reads at `<n>` already
+   and grants no further read. Any other unit with two reads or more is not dispatched again by
+   you: append `note <window> <pass> <unit> unread <sheet> read <k> times, not read again`, `<k>`
+   its reads, where the look did not already find that note, and stop the pass there, going
+   straight to your summary. A resume counts the same lines, so it reads a unit no more often than
+   one runner would. Before every read after
+   a unit's first, rename `<run folder>/reports/<unit id>.md`, where it is there, to
+   `<run folder>/reports/<unit id>.read-<k>.md`, `<k>` the reads so far, so the next report does
+   not overwrite it; a report already renamed is left as it is. Append the unit's
    `dispatch` line first, in one append, then dispatch the reader. Never the other way round and
    never in a batch at the end: the line is what a resume reads to know the unit was started, and a
    run that batched them reported six units as nothing-landed when their work was on the record.
@@ -85,9 +118,10 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    setting appears to force a tool call every turn, name that in your deviations
    line rather than inventing a call to satisfy it. A reader that has ended and whose report did not
    arrive in the message wrote it first to `<run folder>/reports/<unit-id>.md`: open that file and
-   verify off it. A unit whose report file is also absent is re-run on its own unit: whatever it
-   already recorded is on the record, and the re-run creates or updates against the live list, so
-   nothing is created twice.
+   verify off it. A unit whose report file is also absent ends that read: append
+   `note <window> <pass> <unit> deviation <sheet> no report, read <k>` and read the unit again as
+   the count above allows. Whatever it already recorded is on the record, and the next read
+   creates or updates against the live list, so nothing is created twice.
 
    A reader that stops answering partway is ended by the client, not by you: a reply that goes
    silent for five minutes is retried once, and a reader with no progress for ten minutes is
@@ -95,16 +129,26 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    `[Request interrupted by user for tool use]`. While you are still running, that text never means
    the user interrupted, since a user's interrupt stops you too: it means the reader stopped
    answering. Treat it as a reader with no report: open its report file, and where that is absent,
-   append `note <window> <pass> <unit> deviation <sheet> reader stopped answering, read again once`
-   and re-run the unit once, its `dispatch` line appended again first. A unit whose second reader
-   also stops answering is not dispatched again by you: append
-   `note <window> <pass> <unit> unread <sheet> reader stopped answering twice`, write no `verified`
-   line for it, and stop the pass there as a mismatch does, going straight to your summary. The unit
-   stays dispatched with no `verified` line, so the next dispatch of the pass starts at it and reads
-   the units after it. The dispatch carries the project id, the window, the pass id, the unit
+   append `note <window> <pass> <unit> deviation <sheet> reader stopped answering, read <k>` and
+   read the unit again as the count above allows, its `dispatch` line appended again first. Where
+   its reads are spent, the `unread` note above goes on, no `verified` line is written for that
+   read, and the pass stops there. The unit stays dispatched with no `verified` line, so the next
+   dispatch of the pass, once the user says to read it again, starts at it and reads the units
+   after it. The dispatch carries the project id, the window, the pass id, the unit
    id, what the pass reads for, the unit's pages (sheet number, `fileId`, 1-based `pageInPdf`), the
    run folder path, and the pass brief path. Paste nothing from that file into it. The unit id is
    the unit's run-prefix, so concurrent readers can never collide on a created subject.
+   It also says `New items: scopeItem:<unit id>-`, that unit's own id written out whole, the
+   prefix every scope item its reader creates takes, numbered 1, 2, 3 after it.
+   It also says `Read: <k>`, the number of this read, its own `dispatch` line counted, which names
+   the `.started` file its reader writes first.
+   Before you dispatch a unit that already carries a `dispatch` line, hold the subjects an earlier
+   read left under its prefix, which step 3's created check takes off: the `subjectCount` of its
+   last check where you made one in this run, and otherwise the `subjectCount` of one `verify_unit`
+   call against its prefix over the sheets its unit line names, or on a repeated lines unit or a
+   review over the sheets its earlier report cited or opened. The call answers the whole prefix
+   whatever sheets it is given. A unit's first dispatch holds 0, and so does a unit with no sheet
+   to name.
    It also says `Repeated lines: read in set <version>`, the version copied off the unit line,
    where the unit line ends with `, repeated lines read in set <version>`, and
    `Repeated lines: not read` on every other unit, so a reader leaves a file's repeated lines out
@@ -150,7 +194,27 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    - **Created, by count.** The entry count under the prefix goes on the `verified` line as
      `created`: an entry count, never copied from the reader's report and never an item count.
    - **Items, from the reader.** The reader's own `created:` figure, its count of scope items, goes
-     on the `verified` line as `items`, carried as reported.
+     on the `verified` line as `items`, carried as reported. It has to equal the result's
+     `subjectCount` less the subjects that stood under the prefix before the reader started, the
+     count step 2 held. A difference is a mismatch: a reader that
+     numbered a new row under another prefix leaves it out of this count. The reader's
+     `created subjects:` line names as many subjects as its `created:` figure, each starting with
+     the unit's prefix. A report with no `created subjects:` line, a line that names another
+     number, and a line naming a subject outside the prefix are each a mismatch too, with one
+     `created subjects` deviation note per subject outside the prefix, written at the check that
+     first finds it, so the check-in names each one to the estimator whatever a later read ends
+     in. A later read whose reader finds those rows on the live list and updates them, creating
+     nothing new, passes its check against the count step 2 held: the record is right, and those
+     notes are what the estimator sees. A unit counts only the rows under its own prefix, and never
+     claims a row outside it, whoever wrote it.
+   - **No subject count where the unit is verified by count.** A unit checked with one
+     `search(subjectPrefix: ..., limit: 1)` in place of `verify_unit`, as a repeated lines unit
+     that cited no sheet and a review that opened no page are below, has no `subjectCount`, so its
+     created rows are found back by name: one `search(subject: "<subject>", limit: 1)` per subject
+     on its `created subjects:` line, whose `count` must be above 0. A subject not found is a
+     mismatch, and the unit verifies only once every subject it names is found. The search's
+     `count` under the prefix is still `created`, the entry check, the line is held to the
+     reader's `created:` figure and to the prefix as above, and that figure goes on as `items`.
    - **Sent and landed, from the reader.** The reader's `sent:` and `landed:` figures cover every
      write call it made for the unit, its batch with the citations it carries, and any individual
      record call. Carry them onto the `verified` line as reported.
@@ -209,7 +273,50 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    only the lines step 2's look did not already find among that unit's notes. Then
    append the unit's `verified` line, last, so a `verified` line still means its unit is complete.
    The reader's own verification and yours are two separate boundaries and neither replaces the
-   other. Start the next unit only when this unit's counts confirm. A mismatch stops the pass and gets investigated, never papered over.
+   other. Start the next unit only when this unit's counts confirm.
+
+   A mismatch ends its read, and the unit is read again as step 2 counts its reads, in one settle
+   path. Where a check finds a mismatch, append its `verified` line reading `result mismatch`, then
+   one `note <window> <pass> <unit> deviation <sheet> <check> <value>, read <k>` per thing the
+   check could not find back: `<sheet>` the unit's sheet, or its package's name on a review;
+   `<check>` the check's name as the bullets above give it (`created`, `created subjects`,
+   `updated`, `questions raised`, `questions replied`, `questions linked`, `trades`,
+   `page citations`, `manual updates`, `headings`); and `<value>` the subject or id it named, or for
+   `created` the subject count and the reader's figure. A `verified`
+   line reading mismatch takes no kinds, trades or names lines. Then, where step 2's count allows
+   another read, rename the report as step 2 says, append the unit's `dispatch` line again,
+   dispatch its reader again as step 2 says, against the live list, and verify the new report with
+   the same calls. Where the count allows none, the `unread` note of step 2 goes on and the pass
+   stops there.
+
+   The check of any read after a unit's first, whatever ended the reads before it, makes the same
+   calls as a first read's and holds the new report to the same checks, its `created subjects:`
+   line among them. Where `verify_unit` checked the unit, the new report's `created:` figure still
+   has to equal the result's `subjectCount` less the count step 2 held. That read's `verified`
+   line carries:
+   - `created`, the check's `entryCount` off the record, the entry count under the prefix alone;
+   - `items`, the check's `subjectCount`, every subject under the prefix, since two reads' rows
+     are never added up from two reports; on a unit verified by count, with no `subjectCount`, the
+     subjects every report of the unit names on its `created subjects:` line under the prefix,
+     each once and each found back by one search of this check as the bullet above finds them,
+     never the reports' `created:` figures added up;
+   - `updated`, `questions` and `replied`, the merged lists: each earlier report's lists, less only
+     the claims its own read's checks failed, plus the new report's lists, each subject or id once.
+     A subject an earlier read's `updated`, `page citations` or `manual updates` note names comes
+     off that report's `updated subjects:`, an id its `questions raised` note names off its
+     `questions raised ids:`, and an id its `questions replied` note names off its
+     `questions replied ids:`. A note of another check takes nothing off these lists, so a heading
+     that did not land leaves the row's other update counted;
+   - `sent`, `landed` and `conflicts`, the reports' figures added up;
+   - `result`, that check's.
+
+   The new report's `anomaly`, `grain` and `door` lines go on the ledger before that line, only
+   those an earlier report of the unit did not carry. Where that check reads ok, the unit is
+   finished: its kinds, trades and names lines go on as for any unit, off that check and
+   every report of the unit, each kind and catalog id once, and you go on to the next unit. Where
+   it finds a mismatch again, step 2's count says whether the unit is read again. A mismatch is
+   never papered over: no line of yours reads `result ok`
+   that a check of yours did not confirm, and no line is ever taken off the ledger.
 
    Also append the kinds off the unit's `definitions kinds added:` line, one per line, to
    `<run folder>/kinds/<pass-id>.txt`, creating the folder the first time it is needed. Where that
@@ -245,9 +352,11 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    prints is the hand-back, a few lines that name that file. Your final message is that printed
    output exactly, with nothing before it and nothing after it, and then you end. You add nothing
    to those numbers and you re-add none of them: the script sums what you already verified, and a
-   figure you work out beside it is a second answer to a settled question. A refusal names one
-   thing wrong with a line you wrote: fix that line and run it again, never hand-assemble the
-   summary or the hand-back instead.
+   figure you work out beside it is a second answer to a settled question. It reads
+   `<run folder>/ledger.md` and nothing else: never copy the ledger, filter it into a file, or edit
+   a line of it to get a summary through. The lead's record script refuses a summary summed off any
+   other file. A refusal names one thing wrong with a line you wrote: fix that line and run it
+   again, never hand-assemble the summary or the hand-back instead.
 
 ## The ledger lines
 
@@ -332,7 +441,7 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   trade and its package id. The `review-` your dispatch puts in front is how it names the
   mode; your pass id on every ledger line and every path is the bare id the plan gives, without it.
   Write the pass brief as pass mode's step 1 says, with each unit's trade and package as what the
-  pass reads for and `scopeItem:<unit id>-` of each unit as the subject prefix scheme. Run the
+  pass reads for and the subject prefix scheme as step 1 writes it. Run the
   reviews in the order the block lists them, one at a time, as pass mode runs its units: two
   packages on one trade sit in one pass, so they run one after the other. The summary script reads
   each verified review's own report for the pages it opened and the searches it ran.
@@ -341,8 +450,9 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   `dispatch` line first, in one append, then dispatch, exactly as pass mode's step 2 says. That
   line's `sheets` field reads `none`, because a review is planned off the record and opens a page
   only where a hit sends it, and its `purpose` names the package. The dispatch carries the project
-  id, the window, the pass id, the unit id, the catalog trade id and the package id its unit line
-  names, the run folder path, the pass brief path, and the reader definition path,
+  id, the window, the pass id, the unit id, `Read: <k>` as pass mode's step 2 gives it, the
+  catalog trade id and the package id its unit line names, the run folder path, the pass brief
+  path, and the reader definition path,
   `<scripts path>/../agents/scope-reader.md` written out in full with the scripts path off your
   dispatch, since the reviewer works under the reader's mandates and has no other way to find
   them. Paste nothing from those files into it, and never the package's `codes` or `manualSections`: the reviewer reads
@@ -447,6 +557,7 @@ delivery, `Delivery: <deliveryId>, label <label>.`, and `Plan file: <path>.`, th
   subagent_type: plumlayer:scope-rechecker
   run_in_background: false
   Project: <projectId>. Window: r. Pass: <pass id>. Unit: <unit id>. Mode: <sheet or retire>.
+  Read: <the number of this read, as pass mode's step 2 gives it>.
   Delivery: <deliveryId>, label <label>.
   Sheet: <sheet number>. Old page: <each fileId + page>. New page: <each fileId + page, or none>.
   Rows file: <run folder>/recheck/units/<unit id>.json, or Items file: <run folder>/recheck/retire/<unit id>.json.
@@ -463,8 +574,9 @@ delivery, `Delivery: <deliveryId>, label <label>.`, and `Plan file: <path>.`, th
   Bash tool, single quoted. It holds every outcome line to the unit's rows exactly once and prints
   the counts, the sheets to verify on and a `find back:` line for each item cited again or changed,
   with the page it was cited on. A refusal is the rechecker's report missing a row or carrying one
-  twice: append `note r <pass> <unit> deviation recheck report refused, read again once` and run the
-  unit once more, its `dispatch` line again first; a second refusal is a mismatch.
+  twice: append `note r <pass> <unit> deviation <sheet> recheck report refused, read <k>`, which ends
+  that read, and read the unit again as pass mode's step 2 counts its reads, its `dispatch` line
+  again first.
 - **Verify on the pages it cited.** One `verify_unit(projectId, subjectPrefix:
   "scopeItem:<unit id>-", sheets: [<the sheets the check printed, at most 20>])`. Its `entryCount`
   must be 0, since a rechecker creates nothing, and each `find back:` subject must sit among the
@@ -511,8 +623,9 @@ file, `recheck/retire/<unit id>.json`. Run it as recheck mode runs a sheet, with
   suggestion toward one travels up in your summary; a person acts at the door.
 - Append a `phase:` line, decide whether the run continues, start the index, or amend packages.
 - Write anything in the ledger that is not one of the three fixed line shapes, or read the ledger
-  beyond the filtered look for a unit's own `verified` line and its `anomaly`, `grain` and `door`
-  notes. You append your own lines; you never read back what other passes wrote.
+  beyond the filtered look for a unit's own `dispatch` and `verified` lines, its `anomaly`, `grain`,
+  `door`, `deviation` and `unread` notes. You append your own lines; you never read back what other
+  passes wrote.
 - Retire an item yourself, or dispatch a rechecker in retire mode for anything but a retire pass the
   recheck script planned.
 - Supervise more than one pass, or more than twelve units. A pass longer than that is a plan defect
@@ -521,8 +634,11 @@ file, `recheck/retire/<unit id>.json`. Run it as recheck mode runs a sheet, with
   dispatch any agent whose job is to wait for another agent or to do nothing. A dispatch that comes
   back with an agent id is waited on by ending the turn, never by a sleep, a shell loop or a look
   at a file, and a report from an agent you did not dispatch is not a report you verify against.
-- Dispatch a unit a third time. A reader that stopped answering is read again once; a second stop
-  ends the pass.
+- Dispatch a unit that already has two reads, counted as pass mode's step 2 counts them, unless
+  your dispatch's `Read again:` line names it with the read that comes next, and then once. A reader that stopped answering, a recheck report the
+  check refused, a check that found a mismatch and a runner that stopped before its check each end
+  one read, and the read after the first that ends any of those ways ends the pass.
+- Copy the ledger, filter it into another file, or edit or take off a line already on it.
 - Dispatch an agent with nothing real to give it. A reader is dispatched only with a unit and its
   pages, a reviewer only with a package; a turn with nothing left to dispatch ends by returning to
   your summary or moving to the next step, never by a placeholder call carrying a "do nothing",
@@ -539,7 +655,7 @@ the next pass reads it from. The file carries this shape, the `review:` line in 
 ```text
 window: <n>   pass: <pass id>
 units read: <unit ids, in reading order>
-per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> verified <yes/no>
+per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> <"read twice" where its runner read it again> verified <yes/no>
 totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n> replied <n>
 trades: <trade id + item count, one per trade; candidates <n>>
 conflicting rows: <n>, on units <unit ids>, or "none"
@@ -552,6 +668,7 @@ definitions kinds added: <kinds, or "none">
 deviations and repairs: <one line each, or "none">
 review: pages opened <n>, searches <n>
 ledger: <path>, appended through <last line written>
+ledger lines: <whole lines read> sha256 <the hash of those lines>
 ```
 
 Your final message is the hand-back the script prints, this shape and nothing else, with the

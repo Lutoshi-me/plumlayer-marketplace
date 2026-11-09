@@ -94,11 +94,12 @@ Project: <projectId>. Window: r.
 Pass: <"recheck-<pass id>" or "retire-<pass id>">.
 Delivery: <deliveryId>, label <the delivery's label>. Plan file: <plan file>.
 Run folder: <path>. Scripts: <path to the plugin's scripts directory>.
+Read again: <"<unit id> read <n>", the unit the user said to read again and its next read, one more than the reads its unread note names, or none>.
 Run your pass as your definition says.
 ```
 
 `recheck-<pass id>` runs a pass whose `reads for:` reads `the recheck`; `retire-<pass id>` one that
-reads `retiring`. A mismatch or a sheet that stopped answering twice stops the recheck as stage 4
+reads `retiring`. A sheet read twice with no check confirming it stops the recheck as stage 4
 step 3 says.
 
 <!-- user-facing -->

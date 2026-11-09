@@ -482,7 +482,11 @@ record files, never recorded as project entries:
   line prefix), the
   close-out report is written off its `pass:` and `phase:` lines the same way, and off the window 3
   `anomaly` notes that carry `same work:` (stage 9), and a runner reads only its own filtered look
-  for a unit's `verified` line and `anomaly` notes, as the runner definition says. Audience: agent, and it feeds the close-out report, so whatever crosses into that
+  for a unit's `verified` line and `anomaly` notes, as the runner definition says. A unit carries
+  one `verified` line, or after a mismatch one per check, the runner having read the unit again
+  with its `dispatch` line between the two, and the latest line counts. The summary script sums a
+  pass off this file alone, and the lead's record script holds the summary to its first lines, so
+  nobody copies it, filters it into another file, or edits a line of it. Audience: agent, and it feeds the close-out report, so whatever crosses into that
   report becomes user-facing at the crossing and is translated there.
 
   The lead's own three line shapes, which the runner never writes:
@@ -499,9 +503,9 @@ record files, never recorded as project entries:
   check-in section says. Its second field is `window` for the check-in that follows a window's
   closing lines (window 1's after its index, window 2's after the fold or after a paused slice's
   index), whatever else it shows, the id of the last pass recorded when it was shown for one inside a
-  window, a check-in on a sheet that stopped answering included, and `none` for one inside a window
-  shown before any pass of that window is recorded, as a check-in on a sheet that stopped answering
-  in the window's first pass.
+  window, a check-in on a sheet read twice with no check confirming it included, and `none` for one
+  inside a window shown before any pass of that window is recorded, as a check-in on a sheet read
+  twice in the window's first pass.
   A pass recorded while a check-in stands open sits below the pass that field names and above the
   `checkin:` line, which is how the next check-in comes to report it. Its last field is `go` where
   the user sent the run on and `pause` where they stopped it there.
@@ -543,7 +547,8 @@ record files, never recorded as project entries:
   Audience: agent.
 - `reports/`: one file per read unit and per review, the report in its fixed shape, written by the
   reader or reviewer before it returns, so a dispatch that returns without the report in hand loses
-  nothing. A review also writes `<unit id>-terms.txt` here, the words it harvested, so it ranks
+  nothing. A unit read again after a mismatch keeps its earlier report here as
+  `<unit id>.read-<k>.md` beside the new one. A review also writes `<unit id>-terms.txt` here, the words it harvested, so it ranks
   them on disk rather than in its context. One file per pass holds the pass summary, written by
   the summary script the runner runs, and the runner returns only the hand-back; `lead_pass.py`
   and the plan script read the summary here. The package folder writes `fold.md` here, one act
@@ -647,8 +652,9 @@ file is also absent is re-run on its own unit, against the live list, so nothing
 An agent that stops answering partway is ended by the client within about ten minutes, and its
 dispatch comes back as an error whose whole text is `[Request interrupted by user for tool use]`.
 While the caller is still running, that is never the user: their interrupt would have stopped the
-caller too. It is an agent that stopped answering. A reader that stops is read again once by its
-runner, as the runner's definition says, and a second stop ends that pass. A waiting runner is
+caller too. It is an agent that stopped answering. A reader that stops ends one read, and its
+runner reads the unit again as the runner's definition counts its reads: a second read that ends
+with no check confirming it, however either read ended, ends that pass. A waiting runner is
 never ended for its reader's silence, so a runner that comes back this way stopped on its own
 reply: start no further pass and check in at once, naming the pass and its sheets. On the
 go-ahead, dispatch that pass again; its runner skips every unit already verified. Every further
@@ -1084,7 +1090,7 @@ nothing else:
    pass is once a replan adds sheets to it, folds a part into it or cuts a sheet it read: its
    runner skips the units already verified, and its new `pass:` line carries the whole pass. The
    repeated lines pass, `RS1` and any lettered part of it, waits for nothing, nothing waits for it,
-   and it takes the same runner dispatch. A mismatch, or a sheet that stopped answering twice, stops
+   and it takes the same runner dispatch. A sheet read twice with no check confirming it stops
    the run as step 3 says, whatever `start now:` names: passes already out finish and are recorded,
    and you start nothing until it is settled. What a pass leaves in the lead's context is its
    dispatch, its hand-back, the prefixes line and the closing lines of step 3's two calls, its count
@@ -1099,12 +1105,24 @@ nothing else:
 3. **Take a pass's count when it reports, then record it.** A runner returns one short hand-back
    (shape below) that names the pass's summary file. Read its `unverified:` and `unread:` lines
    first. A pass with a unit on `unverified:` gets no `pass:` line, and the record script refuses
-   it. Where that unit reads `mismatch`, the run stops and gets investigated, never papered over.
-   Where the `unread:` line names it as stopped answering twice, start no further pass, check in at
-   once naming that sheet, and on the go-ahead dispatch that pass again, which starts at that sheet
-   and reads the ones after it; once that unit reads verified, the earlier stop is history and
-   stops nothing. A unit with no verified line and no such stop is a runner that stopped partway,
-   handled as the windows section says.
+   it. Where the `unread:` line names a unit as `read <k> times, not read again`, its runner read
+   it twice and no check confirmed it. Every read counts the same, whatever ended it: a check that
+   found a mismatch, a reader that stopped answering, a recheck report the check refused, or a
+   runner that stopped before its check. Start no further pass, and check in at once naming the
+   sheet, or the package on a review, and what each read ended in, which the check-in prints off
+   the pass's deviation notes, each ending with the number of its read. A reader that numbered a
+   new row under another unit's prefix left a `created subjects` note naming that row, so the
+   check-in names each such row and the estimator sees where it sits. Name each one to the
+   estimator by the row's name and its package, read off the record with `search(subject:)`, never
+   by its id. Any further read waits for
+   the user's go-ahead: on it, dispatch that pass again with `Read again: <unit id> read <n>` on
+   the runner dispatch, `<n>` one more than the reads its `unread` note names, and its runner
+   reads the unit once more and then the ones after it; once that unit reads verified, the earlier
+   reads are history and stop nothing. Only a runner writes a
+   `verified` line, never you by hand, and nobody copies the ledger, filters it into a file or
+   edits it to get a pass through: a mismatch gets investigated, never papered over. A unit with
+   no verified line and no such note is a runner that stopped partway, handled as the windows
+   section says.
 
    Otherwise, before you say a number out loud, list that pass with one call, the pass that handed
    back after `--reported` and every other pass you started and have not recorded after `--running`,
@@ -1605,6 +1623,7 @@ run_in_background: false
 Project: <projectId>. Window: <1, 2, or 3>.
 Pass: <pass id, or "review-<pass id>", or "boundary">.
 Run folder: <path>. Scripts: <path to the plugin's scripts directory>.
+Read again: <"<unit id> read <n>", the unit the user said to read again and its next read, one more than the reads its unread note names, or none>.
 Run your pass as your definition says.
 ```
 
@@ -1648,6 +1667,7 @@ report: <run folder>/reports/fold.md
 subagent_type: <plumlayer:scope-vocabulary-reader in window 1, plumlayer:scope-reader in window 2>
 run_in_background: false
 Project: <projectId>. Window: <n>. Pass: <pass id>. Unit: <unit id>.
+Read: <the number of this read of the unit, its own dispatch line counted>.
 Reading for: <"the vocabulary", "the sheet", or "the repeated lines">.
 Pages: <sheet number + fileId + 1-based pageInPdf, one per page>.
 Repeated lines: <"read in set <version>" or "not read">.
@@ -1668,6 +1688,7 @@ line ends with `, repeated lines read in set <version>`, and `not read` on every
 subagent_type: plumlayer:scope-reviewer
 run_in_background: false
 Project: <projectId>. Window: 3. Pass: <pass id>. Unit: <unit id>.
+Read: <the number of this read of the unit, its own dispatch line counted>.
 Reviewing: <the package's catalog trade id>. Package: <the package id>.
 Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>.
 Reader definition: <scripts path>/../agents/scope-reader.md, written out in full.
@@ -1688,6 +1709,7 @@ unit line):
 subagent_type: plumlayer:scope-reviewer
 run_in_background: false
 Project: <projectId>. Window: 3. Pass: <pass id>. Unit: <continuation unit id>.
+Read: <the number of this read of the unit, its own dispatch line counted>.
 Reviewing: <the package's catalog trade id>. Package: <the package id>.
 Continues: <the unit id after "continues" on the unit line>.
 Sections: <the sections after "sections" on the unit line, as "<code> from page <n> of <fileId> p<start>-p<end>", comma separated>.
@@ -1711,6 +1733,7 @@ cited sheets: <for the repeated lines, every sheet the unit's rows and citations
 page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
 set version: <for the repeated lines, the setVersion the unit's walk ended on; otherwise "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
+created subjects: <the subject of every scope item created, each under the unit's prefix, or "none">
 updated subjects: <the subject of every item updated or newly cited, except a row cited only to a Question, or "none">
 questions raised ids: <the id of every Question raised, or "none">
 questions replied ids: <the id of every Question replied to, or "none">
@@ -1736,7 +1759,9 @@ its first batch.
 The `updated subjects:`, `questions raised ids:` and `questions replied ids:` lines are what let
 the runner find those writes back: a create is findable by its `scopeItem:<unit-id>-` prefix, an
 update lands on a subject that already existed, a raise on a fresh Question id and a reply on the
-id of a Question somebody else raised, and nothing else in the report names them.
+id of a Question somebody else raised, and nothing else in the report names them. The
+`created subjects:` line names each create, which the runner holds to the unit's prefix and, on a
+unit it checks by count, finds back by name; a report without it reads as a mismatch.
 
 **The runner's summary** is written in this shape by the summary script the runner runs, to
 `<run folder>/reports/<pass id>.md`, where `lead_pass.py` reads it when you record the pass and
@@ -1747,7 +1772,7 @@ window 3's only, the pages opened and the searches run added up over the pass's 
 ```text
 window: <n>   pass: <pass id>
 units read: <unit ids, in reading order>
-per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> verified <yes/no>
+per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> <"read twice" where its runner read it again> verified <yes/no>
 totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n> replied <n>
 trades: <trade id + item count, one per trade; candidates <n>>
 conflicting rows: <n>, on units <unit ids>, or "none"
@@ -1760,6 +1785,7 @@ definitions kinds added: <kinds, or "none">
 deviations and repairs: <one line each, or "none">
 review: pages opened <n>, searches <n>
 ledger: <path>, appended through <last line written>
+ledger lines: <whole lines read> sha256 <the hash of those lines>
 ```
 
 **The runner's hand-back** is what the runner returns to you, printed by the same script, and the
@@ -1787,6 +1813,7 @@ searches: <n> run, <n> returned nothing, <n> of them standard line
 terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent it + what it did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
+created subjects: <the subject of every row created, each under the unit's prefix, or "none">
 updated subjects: <the subject of every row updated or newly cited, except a row cited only to a Question, or "none">
 manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
 questions raised ids: <the id of every Question raised, or "none">
@@ -1883,8 +1910,8 @@ run folder section gives: `go` once every change they asked for at that check-in
 next step is about to start, or `pause` where they stop the run there. Its second field takes one
 of three values. It reads `window` after a window's closing lines, whatever `since the last check-in:`
 shows. Inside a window it reads the pass that was last on `since the last check-in:` when you showed
-it, whatever has been recorded since. Inside a window where that line read `none`, as on a sheet that
-stopped answering right after a check-in, it reads the pass of the last `pass:` line of this window on
+it, whatever has been recorded since. Inside a window where that line read `none`, as on a sheet
+read twice right after a check-in, it reads the pass of the last `pass:` line of this window on
 the ledger when you showed it, and `none` only where the window has no `pass:` line yet, since a
 `none` past that first line reports the whole window again.
 

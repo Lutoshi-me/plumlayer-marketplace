@@ -70,6 +70,11 @@ Three modes:
         with its unit by its prefix, never by its place in the list, and the prefixes have to be
         exactly the ones the plan block yields, each once. Reads the pass's summary,
         `reports/<pass id>.md` beside the ledger, and compares it unit by unit with the counts.
+        The summary's `ledger lines: <n> sha256 <hash>` line has to name the first n whole lines
+        of this ledger as they stand, so a summary summed off a copy of the ledger, or off a ledger
+        a line was taken out of, is refused before any count is compared. A unit the summary reads
+        verified whose latest `verified` line after those lines reads mismatch is refused too, since
+        the summary no longer speaks for it.
         Where every count holds, it appends one `pass:` line to the ledger and prints it:
 
             pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified yes
@@ -177,8 +182,10 @@ Exit codes:
      pass the plan does not carry, a `--running` or `--reported` naming a pass the plan does not
      carry, counts that are not a JSON list of
      prefixes with whole numbers or whose prefixes are not exactly the plan block's, each once, a
-     summary of another window or pass, one naming other units than the plan block carries, one
-     with a unit it reads `verified no`, or one with no totals line, no candidates count, or in
+     summary of another window or pass, one with no `ledger lines:` line or whose line does not
+     name this ledger's first lines, one naming other units than the plan block carries, one
+     with a unit it reads `verified no`, one with a unit it reads verified whose latest
+     `verified` line past those lines reads mismatch, or one with no totals line, no candidates count, or in
      window 3 no `review:` line, or in window r no `recheck:` line; at the check-in, a `--start` that is not a count of lines and
      characters or names a character past its line, and pass lines and totals that alone leave no
      room under the cap.
@@ -245,7 +252,7 @@ _LANDED_RE = re.compile(
 # continues that note.
 SUMMARY_LABELS = tuple(CHECKIN_LABELS) + (
     "window", "units read", "per unit", "totals verified", "trades", "conflicting rows", "review",
-    "ledger",
+    "ledger", "ledger lines",
 )
 
 # A pair of rows carrying the same work, as the reviewer names it, asks the estimator to retire
@@ -282,6 +289,7 @@ _PER_UNIT_RE = re.compile(r"^per unit: (\S+) created (\d+|-) .* verified (yes|no
 _TOTALS_RE = re.compile(r"updated (\d+), questions (\d+) replied (\d+)")
 _CANDIDATES_RE = re.compile(r"; candidates (\d+)$")
 _REVIEW_RE = re.compile(r"^review: pages opened (\d+), searches (\d+)$")
+_LEDGER_LINES_RE = re.compile(r"^ledger lines: (\d+) sha256 ([0-9a-f]{64})$")
 _RECHECK_RE = re.compile(
     r"^recheck: rows recited (\d+), updated (\d+), removed (\d+), not found (\d+); "
     r"items retired (\d+), kept (\d+), refused (\d+)$"
@@ -504,7 +512,7 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         )
 
     per_unit: dict[str, tuple[str, str]] = {}
-    totals = candidates = review = trades = recheck = None
+    totals = candidates = review = trades = recheck = ledger_lines = None
     for raw in lines:
         line = raw.strip()
         unit = _PER_UNIT_RE.match(line)
@@ -519,6 +527,13 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
             review = _REVIEW_RE.match(line)
         elif line.startswith("recheck:"):
             recheck = _RECHECK_RE.match(line)
+        elif line.startswith("ledger lines:"):
+            ledger_lines = _LEDGER_LINES_RE.match(line)
+    if ledger_lines is None:
+        raise LeadPassError(
+            f"{path} carries no `ledger lines: <n> sha256 <hash>` line, so nothing shows which "
+            f"ledger it was summed off; the pass is summed again off the run folder's ledger"
+        )
     if totals is None:
         raise LeadPassError(f"{path} carries no totals line")
     if candidates is None:
@@ -540,7 +555,49 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         "pagesOpened": review.group(1) if review else None,
         "searches": review.group(2) if review else None,
         "recheck": dict(zip(RECHECK_FIGURES, recheck.groups())) if recheck else None,
+        "ledgerLines": int(ledger_lines.group(1)),
+        "ledgerHash": ledger_lines.group(2),
     }
+
+
+def _summed_off(ledger: Path, summary_path: Path, summary: dict) -> bytes:
+    """
+    The summary was summed off this ledger: its first lines, as many as the summary counted, hash
+    as the summary says. The ledger is only ever appended, so the lines a runner summed stay as
+    they were while later passes write after them. Returns the ledger's bytes.
+    """
+    if not ledger.is_file():
+        raise LeadPassError(f"no ledger at {ledger}")
+    try:
+        data = ledger.read_bytes()
+    except OSError as e:
+        raise LeadPassError(f"cannot read the ledger at {ledger}: {e}") from e
+    digest = pass_summary.ledger_digest(data, summary["ledgerLines"])
+    if digest != summary["ledgerHash"]:
+        raise LeadPassError(
+            f"{summary_path} was summed from another ledger: its first {summary['ledgerLines']} "
+            f"lines are not the first lines of {ledger}; the pass is summed again off that ledger, "
+            f"and nothing was written to it"
+        )
+    return data
+
+
+def _mismatched_since(data: bytes, lines: int, window: int, units: list[str]) -> list[str]:
+    """
+    The units, of those given, whose latest `verified` line of this window past the ledger's first
+    `lines` lines reads anything but `result ok`: a unit checked again after its summary was
+    written, and found wanting, which that summary cannot speak for. Only whole lines, each ending
+    in a newline, are read, as the summary script reads them, so a line another runner is still
+    appending is not read until it is whole.
+    """
+    whole = data[: data.rfind(b"\n") + 1]
+    later = whole.split(b"\n")[lines:]
+    latest: dict[str, bool] = {}
+    for raw in later:
+        parts = raw.decode("utf-8", errors="replace").strip().split()
+        if len(parts) >= 4 and parts[0] == "verified" and parts[1] == str(window) and parts[3] in units:
+            latest[parts[3]] = "result" in parts and parts[parts.index("result") + 1:][:1] == ["ok"]
+    return [unit for unit in units if latest.get(unit) is False]
 
 
 def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text: str) -> list[str]:
@@ -549,6 +606,7 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
     counts = _parse_counts(counts_text, pass_id, units)
     summary_path = _summary_path(ledger.parent, window, pass_id)
     summary = read_summary(summary_path, window, pass_id)
+    data = _summed_off(ledger, summary_path, summary)
 
     named = list(summary["perUnit"])
     without = [unit for unit in units if unit not in named]
@@ -565,6 +623,13 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
         raise LeadPassError(
             f"{summary_path} reads verified no for {_named(unverified)}, so the pass gets no "
             f"pass line until its runner verifies every unit"
+        )
+    checked_again = _mismatched_since(data, summary["ledgerLines"], window, units)
+    if checked_again:
+        raise LeadPassError(
+            f"{summary_path} reads verified yes for {_named(checked_again)}, and a later verified "
+            f"line on {ledger} reads mismatch for it, so the pass gets no pass line until its "
+            f"runner verifies every unit"
         )
 
     below: list[str] = []
@@ -686,21 +751,21 @@ def _reviews_of(plan_path: Path) -> dict[str, str]:
 
 def _verified_ok(ledger: Path, window: int) -> set[str]:
     """
-    This window's unit ids with a `verified` line reading `result ok`, whatever pass it names, the
-    way the plan script reads them. The ledger is where a runner writes it; the read plan carries
-    it only once the window is planned again, which the lead does not do between passes.
+    This window's unit ids whose latest `verified` line reads `result ok`, whatever pass it names,
+    the way the plan script reads them: a unit read again carries a line for each check, and the
+    last one says whether it is finished. The ledger is where a runner writes it; the read plan
+    carries it only once the window is planned again, which the lead does not do between passes.
     """
     try:
         text = ledger.read_text(encoding="utf-8")
     except OSError:
         return set()
-    finished: set[str] = set()
+    last_ok: dict[str, bool] = {}
     for raw in text.splitlines():
         parts = raw.strip().split()
         if len(parts) >= 4 and parts[0] == "verified" and parts[1] == str(window):
-            if "result" in parts and parts[parts.index("result") + 1:][:1] == ["ok"]:
-                finished.add(parts[3])
-    return finished
+            last_ok[parts[3]] = "result" in parts and parts[parts.index("result") + 1:][:1] == ["ok"]
+    return {unit for unit, ok in last_ok.items() if ok}
 
 
 def _sections_read_to_end(plan_path: Path, ledger: Path) -> set[tuple[str, str, int]]:

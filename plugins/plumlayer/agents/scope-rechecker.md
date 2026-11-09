@@ -33,6 +33,7 @@ Pointers only, never pasted text:
 
 - `Project:`, the project id, then the window, always `r`, the pass and unit ids, and the mode,
   `sheet` or `retire`;
+- `Read:`, the number of this read of your unit;
 - `Delivery:`, the new delivery's id and its label;
 - `Sheet:`, the sheet number, every old page and every new page the unit line names, or `none`
   where the delivery no longer prints the sheet (sheet mode);
@@ -42,6 +43,10 @@ Pointers only, never pasted text:
   `status:` lines only;
 - `Reader definition:`, the full path of `agents/scope-reader.md`;
 - `Run folder:`, where you write your report, `<run folder>/reports/<unit id>.md`.
+
+Before anything else, write the one word `started` to
+`<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
+this read against your unit only where that file is there.
 
 A row in the rows file is the comparison's own: `subject`, `sheetNumber`, `old` and `new` pages
 (`fileId`, `page`), `box` on the old page or null for a reference to the whole sheet, `answer`

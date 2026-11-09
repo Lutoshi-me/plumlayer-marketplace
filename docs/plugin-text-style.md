@@ -305,7 +305,14 @@ Each of these is a harness check.
     each opened and the searches each ran off its own report, a review that ran no search and one
     that opened no page included, stopping at the labels of the skill's own reviewer block, which
     `agents/scope-reviewer.md`'s report shape has to equal, and a review with no verified line
-    adds nothing and is named on the hand-back. Its
+    adds nothing and is named on the hand-back. A unit read again after a mismatch counts its
+    latest verified line alone, a verified line after an ok one or after a mismatch with no
+    dispatch line between is refused, and a ledger not named `ledger.md` beside its read plan is
+    refused. A review or a recheck unit is summed off the report of the read its latest verified
+    line checked, that read numbered by the unit's `dispatch` lines above the line: its renamed
+    `<unit id>.read-<k>.md` where a later read followed, never a newer report no check read and
+    never just the highest renamed one; and a last line still being written, with no newline yet,
+    is neither read nor hashed. Its
     bound is stated in the harness README entry and in the check's own detail line: the fixtures
     are ledger text, so this proves the arithmetic and not a real verification.
 19. No dispatch names `fork` as a subagent type, in either the `subagent_type:` dispatch-line
@@ -463,7 +470,11 @@ Each of these is a harness check.
     check-in, one naming no pass before the window's first `pass:` line among them, is read past by
     the summary, plan and lead scripts, and the skill carries its shape with the `none` value, the
     resume read of it, the rule that a check-in it records is never shown again, and each resume
-    rule, `go`, `pause` and a check-in with no line after it, so deleting one fails the check. This cannot judge a count the record returns: the counts are the check's
+    rule, `go`, `pause` and a check-in with no line after it, so deleting one fails the check. A
+    record whose summary reads a unit verified, where a later `verified` line of that unit past
+    the summary's lines reads mismatch, is refused, a line past them still being written, with no
+    newline yet, is not read, and the lead reads a unit finished off its latest `verified` line,
+    as the plan script does. This cannot judge a count the record returns: the counts are the check's
     own.
 29. The package fold runs one level down. The scope run's lead dispatches the package folder at
     stage 6 step 5 and reads its report with the shipped `fold_report.py`, so no package list, row
@@ -593,6 +604,22 @@ Each of these is a harness check.
     examples, allowing empty headings and changing one reader's trade code are refused.
     This cannot judge whether a running
     review finds a condition rightly; that is the measured run's.
+36. A runner counts every read of a unit one way. `agents/scope-round-runner.md` counts a unit's
+    reads by its `dispatch` lines with a reader started after each, whatever ended each, a line
+    with no `.started` file and no report after it no read; it notes each read that no check
+    confirmed with its number, stops at two reads unless the user's `Read again:` names the unit
+    with its next read, which one note spends once, and says a resume counts the same lines. It
+    checks a unit against its own prefix alone, its first dispatch holding 0: a report with no
+    `created subjects:` line, or one naming a row outside the prefix, is a mismatch, each such row
+    named on a note written at the check that first finds it, which the check-in prints whatever a
+    later read ends in; a later read that updates those rows and creates nothing new passes. A unit checked by count, with no subject count, verifies
+    only once every created subject it names is found on the record by name, never by figures
+    added up. It takes a failed claim off only the list its own check read. The reader, the
+    vocabulary reader, the reviewer and the rechecker each write their `.started` file first, every
+    report shape carries `created subjects:`, and the skill routes every unit whose reads are spent
+    the same way. Each phrase taken out, and each retired phrase of the old rules put back, is
+    refused. This cannot judge whether a running runner counts and checks as written; that is the
+    measured pass's.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

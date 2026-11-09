@@ -21,13 +21,28 @@ Which lines are the pass's own comes off the read plan, not off the pass field. 
 discipline's part into another pass, and a unit the runner already verified under the part's own
 pass id keeps its unit id and its `verified` line, and is skipped rather than read again. So the
 script reads the pass's block in the read plan, and counts every line of this window whose unit
-the block carries, whatever pass the line names, each unit verified once. A note on no unit (`-`)
+the block carries, whatever pass the line names, each unit counted once. A note on no unit (`-`)
 counts when it names this pass or a part the block's `folded in:` line names. A line naming this
 pass for a unit the block no longer carries reaches no total and is named on the bounds line.
 
+A unit is verified once, except after a mismatch. A runner whose check of a unit reads mismatch
+reads the unit again and checks it again, so the unit then carries a second `verified` line,
+with a `dispatch` line for it between the two. The summary takes another `verified` line for a
+unit only where its line before reads `result mismatch` and a `dispatch` line for that unit sits
+between them, counts the latest line alone, and says `read twice` on the unit's `per unit:` line.
+Another `verified` line after one reading `result ok` is refused, and so is one after a mismatch
+with no `dispatch` line between.
+
+The summary is summed off the run folder's own ledger and nothing else: the ledger has to be named
+`ledger.md` and sit in the folder the read plan sits in, and the `--out` file has to sit in its
+`reports` folder. It reads the ledger's whole lines alone, each ending in a newline, so a line
+another runner is still appending is neither read nor hashed. The summary's `ledger lines:` line
+names how many whole lines of the ledger it read and the sha256 of those lines' bytes, so the
+lead's record script can show the summary was summed off this ledger and not off a copy of it.
+
 Usage:
 
-    python pass_summary.py <run folder>/ledger.md <window> <pass id> --plan <read plan>
+    python pass_summary.py <run folder>/ledger.md <window> <pass id> --plan <run folder>/read-plan.md
         --out <run folder>/reports/<pass id>.md [--trades <path>]
 
 The full summary goes to the `--out` file, where the lead's record script and the plan script read
@@ -38,7 +53,7 @@ notes the pass carries. The bounds line saying what was read goes to stderr besi
 The hand-back, in this order:
 
     window: <n>   pass: <pass id>
-    units: <units the plan block carries>, verified <those whose verified line reads result ok>
+    units: <units the plan block carries>, verified <those whose latest verified line reads result ok>
     unverified: <unit id> mismatch | <unit id> no verified line, one line each, or "none"
     unread: <unit id> <clause>, one line per `unread` note, or "none"
     notes: anomalies <n>, overlaps <n>, deviations <n>, kinds <n>
@@ -80,7 +95,13 @@ Window 3:
   line under its `pages opened:` label up to the next label of the reviewer's report shape (the
   label's own line counts where it names a page, and a line reading `none` counts nothing). A
   review with no `verified` line has no report to read and adds nothing; the hand-back names it on
-  `unverified:`, and where no review of the pass carries one the `review:` line says so.
+  `unverified:`, and where no review of the pass carries one the `review:` line says so. A runner
+  renames a report to `<unit id>.read-<k>.md` before read k + 1, k the unit's `dispatch` lines so
+  far, so the report read is the one of the read the unit's latest `verified` line checked, that
+  line's read being the unit's `dispatch` lines above it: `<unit id>.read-<k>.md` where a later
+  `dispatch` line follows it, and `<unit id>.md` where none does, or `<unit id>.read-<k>.md` where
+  the runner renamed it and stopped before the next `dispatch` line. A newer report no check read,
+  and the report of any other read, are never read, in this window and in window r.
 
   A continuation, the unit that reads on in a review's manual sections where the review's page cap
   left pages, is a unit of its review's pass like any review: it is counted in `units:`, its
@@ -108,11 +129,14 @@ The recheck, window r:
 
 Exit codes:
   0  the summary written to the --out file, the hand-back on stdout, one bounds line on stderr.
-  1  a named failure, one line on stderr: a read plan or ledger file that is not there, a read plan
+  1  a named failure, one line on stderr: a ledger not named `ledger.md`, one in another folder
+     than the read plan, or an `--out` file outside the ledger's `reports` folder, a read plan or
+     ledger file that is not there, a read plan
      of another window, one with no block for the pass, or a block whose unit lines are not its
      `units:` count, a line whose first word is none of the three shapes, a `verified` line missing
-     a field the shape names or carrying a count that is not a whole number, two `verified` lines
-     for one unit under any passes, a `dispatch` line with no `sheets` field, a `note` line whose
+     a field the shape names or carrying a count that is not a whole number, a `verified` line for
+     a unit, under any pass, after one reading `result ok`, or after one reading `result mismatch`
+     with no `dispatch` line for the unit between them, a `dispatch` line with no `sheets` field, a `note` line whose
      kind is outside the closed set, a pass with no lines at all, a trades file that is not there,
      a trades file line in neither of its two shapes, a summary file that cannot be written, and
      in window 3 any verified review whose report is not there or carries no `searches:` line
@@ -128,7 +152,9 @@ the summary shape has no line for is counted on the bounds line rather than drop
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -260,11 +286,14 @@ MAX_NAMED = 5
 # Where the summary and a review's own report sit, beside the ledger.
 REPORTS_FOLDER = "reports"
 
+# The one ledger a summary is summed off: the run folder's own.
+LEDGER_NAME = "ledger.md"
+
 # The labels of the reviewer's report shape, in its order, as the skill publishes it. The pages a
 # review opened are the lines under `pages opened:` up to the next of these.
 REVIEWER_LABELS = (
     "unit", "harvested", "notes read", "searches", "terms too general", "pages opened", "created",
-    "updated subjects", "manual updates", "questions raised ids", "questions replied ids",
+    "created subjects", "updated subjects", "manual updates", "questions raised ids", "questions replied ids",
     "questions linked", "questions alone", "sent", "trades", "sheet readings written", "anomalies",
     "grain questions", "silent sections", "unspecified work", "compared", "sections not checked",
     "families not checked", "standard lines", "headings written", "door-owned suggestions",
@@ -424,8 +453,12 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
     """
     if not path.is_file():
         raise SummaryError(f"no ledger at {path}")
+    # Only the whole lines, each ending in a newline, are read and hashed, so a line another runner
+    # is still appending is outside both, and the lead finds these bytes again unchanged.
     try:
-        text = path.read_text(encoding="utf-8")
+        data = path.read_bytes()
+        whole = data[: data.rfind(b"\n") + 1]
+        text = whole.decode("utf-8")
     except Exception as e:
         raise SummaryError(f"cannot read the ledger at {path}: {e}") from e
 
@@ -434,7 +467,14 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
     parts_named = {pass_id, *plan["foldedIn"]}
     dispatched: list[str] = []
     verified: list[dict] = []
-    verified_units: dict[str, tuple[int, str]] = {}
+    # Each unit's latest verified line: its line number, its pass, its result, and where it sits
+    # in `verified`, which keeps a unit read again at the place its first line put it.
+    verified_units: dict[str, dict] = {}
+    # The units with a dispatch line after their latest verified line, that is, read again.
+    dispatched_since: set[str] = set()
+    reads: dict[str, int] = {}
+    # Each unit's dispatch lines so far, which number its reads.
+    dispatch_count: dict[str, int] = {}
     notes: list[dict] = []
     notes_by_kind: dict[str, int] = {kind: 0 for kind in NOTE_KINDS}
     left_behind: dict[str, int] = {}
@@ -483,16 +523,36 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
                 raise SummaryError(f"{where}: the dispatch line names no `sheets` field")
             if unit not in dispatched:
                 dispatched.append(unit)
+            dispatched_since.add(unit)
+            dispatch_count[unit] = dispatch_count.get(unit, 0) + 1
         elif keyword == "verified":
             entry = _read_verified(parts, where)
-            if unit in verified_units:
-                at, under = verified_units[unit]
+            entry["read"] = dispatch_count.get(unit, 0)
+            before = verified_units.get(unit)
+            if before is None:
+                verified_units[unit] = {
+                    "line": number, "pass": parts[2], "result": entry["result"], "at": len(verified),
+                }
+                verified.append(entry)
+                reads[unit] = 1
+            elif before["result"] != "mismatch":
                 raise SummaryError(
-                    f"{where}: unit {unit} already carries a verified line at line {at}, under "
-                    f"pass {under}; one unit is verified once"
+                    f"{where}: unit {unit} already carries a verified line at line "
+                    f"{before['line']}, under pass {before['pass']}, reading result "
+                    f"{before['result']}; a unit is verified again only after a mismatch"
                 )
-            verified_units[unit] = (number, parts[2])
-            verified.append(entry)
+            elif unit not in dispatched_since:
+                raise SummaryError(
+                    f"{where}: unit {unit}'s verified line at line {before['line']}, under pass "
+                    f"{before['pass']}, reads result mismatch and no dispatch line for it sits "
+                    f"between the two; a unit is verified again only after it is read again"
+                )
+            else:
+                verified[before["at"]] = entry
+                before.update(line=number, result=entry["result"])
+                before["pass"] = parts[2]
+                reads[unit] += 1
+            dispatched_since.discard(unit)
         else:
             if len(parts) < 5:
                 raise SummaryError(f"{where}: the note line carries no kind and no clause")
@@ -514,6 +574,10 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
     return {
         "dispatched": dispatched,
         "verified": verified,
+        "reads": reads,
+        "dispatchCount": dispatch_count,
+        "ledgerLines": whole.count(b"\n"),
+        "ledgerHash": hashlib.sha256(whole).hexdigest(),
         "notes": notes,
         "notesByKind": notes_by_kind,
         "leftBehind": left_behind,
@@ -634,7 +698,8 @@ def summary_lines(
             continue
         counts = " ".join(f"{field} {entry['fields'][field]}" for field in SUMMARY_FIELDS)
         verdict = "yes" if entry["result"] == "ok" else "no"
-        lines.append(f"per unit: {unit} {counts} verified {verdict}")
+        again = _read_again(pass_data["reads"][unit])
+        lines.append(f"per unit: {unit} {counts}{again} verified {verdict}")
 
     totals = {
         field: sum(entry["fields"][field] for entry in pass_data["verified"])
@@ -673,7 +738,56 @@ def summary_lines(
 
     through = pass_data["lastLine"] or "nothing"
     lines.append(f"ledger: {ledger}, appended through {through}")
+    lines.append(f"ledger lines: {pass_data['ledgerLines']} sha256 {pass_data['ledgerHash']}")
     return lines
+
+
+def _read_again(reads: int) -> str:
+    """What a unit's `per unit:` line says where its runner read it again after a mismatch."""
+    if reads == 1:
+        return ""
+    return " read twice" if reads == 2 else f" read {reads} times"
+
+
+def ledger_digest(data: bytes, lines: int) -> str | None:
+    """
+    The sha256 of a ledger's first whole lines, as the summary's `ledger lines:` line names it, or
+    None where the ledger holds fewer whole lines than that.
+    """
+    end = 0
+    for _ in range(lines):
+        at = data.find(b"\n", end)
+        if at < 0:
+            return None
+        end = at + 1
+    return hashlib.sha256(data[:end]).hexdigest()
+
+
+def _same_place(one: Path, other: Path) -> bool:
+    return os.path.normcase(str(one.resolve())) == os.path.normcase(str(other.resolve()))
+
+
+def check_placement(ledger: Path, plan: Path, out: Path) -> None:
+    """
+    The ledger is the run folder's own: named `ledger.md`, in the folder the read plan sits in, its
+    summary written into the `reports` folder beside it. A copy of the ledger, or a ledger filtered
+    into another file, is refused, since a summary of it is no summary of the pass.
+    """
+    if ledger.name != LEDGER_NAME:
+        raise SummaryError(
+            f"{ledger} is not the run folder's {LEDGER_NAME}; a pass is summed off that file alone, "
+            f"never off a copy or a filtered part of it"
+        )
+    if not _same_place(ledger.parent, plan.parent):
+        raise SummaryError(
+            f"{ledger} is not in the folder of the read plan {plan}; a pass is summed off the run "
+            f"folder's own {LEDGER_NAME}"
+        )
+    if not _same_place(out.parent, ledger.parent / REPORTS_FOLDER):
+        raise SummaryError(
+            f"{out} is not in {ledger.parent / REPORTS_FOLDER}, where the lead's record script "
+            f"reads the summary"
+        )
 
 
 def _note_lines(notes: list[dict], kind: str) -> list[str]:
@@ -744,6 +858,23 @@ def read_review(path: Path) -> dict:
     if not pages_seen:
         raise SummaryError(f"{path} carries no `pages opened:` line")
     return {"pagesOpened": pages, "searches": searches}
+
+
+def unit_report(folder: Path, unit: str, read: int, dispatched: int) -> Path:
+    """
+    The report of the read a unit's latest verified line checked, `read` the unit's dispatch lines
+    above that line and `dispatched` all of them. A runner renames `<unit id>.md` to
+    `<unit id>.read-<k>.md` before read k + 1, so a read that a later dispatch line follows left
+    its report at `<unit id>.read-<read>.md`, and the latest read's report is `<unit id>.md`, or
+    `<unit id>.read-<read>.md` where the runner renamed it and stopped before the next dispatch
+    line. A newer report that no check read, and any other read's, are never taken. Where the one
+    named is not there, the reader of the report refuses it by name.
+    """
+    current = folder / f"{unit}.md"
+    renamed = folder / f"{unit}.read-{read}.md"
+    if read < dispatched:
+        return renamed
+    return renamed if not current.is_file() and renamed.is_file() else current
 
 
 def review_line(reviews: list[dict]) -> str:
@@ -817,6 +948,9 @@ def bounds_line(
         f"{entry['unit']} ({entry['pass']})"
         for entry in pass_data["verified"] if entry["pass"] != pass_id
     ]
+    read_again = [
+        f"{unit} ({n} verified lines)" for unit, n in pass_data["reads"].items() if n > 1
+    ]
     folded_in = ", ".join(plan["foldedIn"]) if plan["foldedIn"] else "none"
     if trades is None or trades_read is None:
         trades_said = "none given"
@@ -836,7 +970,8 @@ def bounds_line(
         f"lines of another window or pass {pass_data['otherLines']}, lead lines "
         f"{pass_data['leadLines']}; dispatched with no verified line: "
         f"{_named(unverified) if unverified else 'none'}; verified under another pass: "
-        f"{_named(moved) if moved else 'none'}; lines naming this pass for a unit its plan block "
+        f"{_named(moved) if moved else 'none'}; verified again after a mismatch: "
+        f"{_named(read_again) if read_again else 'none'}; lines naming this pass for a unit its plan block "
         f"does not carry: {_lines_named(pass_data['leftBehind'])}; trades file {trades_said}"
     )
 
@@ -868,6 +1003,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        check_placement(args.ledger, args.plan, args.out)
         plan = read_plan(args.plan, args.window, args.pass_id)
         pass_data = read_pass(args.ledger, args.window, args.pass_id, plan)
         trades_read = None
@@ -878,20 +1014,19 @@ def main(argv: list[str] | None = None) -> int:
             trades_line = _trades_line(by_trade, candidates)
         review = None
         review_paths: list[Path] = []
-        if args.window == 3:
-            verified_units = {entry["unit"] for entry in pass_data["verified"]}
+        if args.window in (3, RECHECK_WINDOW):
+            read_of = {entry["unit"]: entry["read"] for entry in pass_data["verified"]}
             review_paths = [
-                args.ledger.parent / REPORTS_FOLDER / f"{unit}.md"
-                for unit in plan["units"] if unit in verified_units
+                unit_report(
+                    args.ledger.parent / REPORTS_FOLDER, unit, read_of[unit],
+                    pass_data["dispatchCount"].get(unit, 0),
+                )
+                for unit in plan["units"] if unit in read_of
             ]
-            review = review_line([read_review(path) for path in review_paths])
-        elif args.window == RECHECK_WINDOW:
-            verified_units = {entry["unit"] for entry in pass_data["verified"]}
-            review_paths = [
-                args.ledger.parent / REPORTS_FOLDER / f"{unit}.md"
-                for unit in plan["units"] if unit in verified_units
-            ]
-            review = recheck_line([read_outcomes(path) for path in review_paths])
+            if args.window == 3:
+                review = review_line([read_review(path) for path in review_paths])
+            else:
+                review = recheck_line([read_outcomes(path) for path in review_paths])
         summary = summary_lines(
             pass_data, args.window, args.pass_id, args.ledger, trades_line, review,
         )
