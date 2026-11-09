@@ -14959,6 +14959,69 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# Check: kept sheet conflict
+# --------------------------------------------------------------------------- #
+#
+# The pass on the latest set also reads every sheet that set keeps from an earlier delivery,
+# marked `keptFrom`, and the newer drawing governs where a kept sheet disagrees with it. Without a
+# rule a reader picks one side silently, or names both on the row the way two current documents
+# are. Both readers hold four phrases: one Question citing both sheets that says the newer drawing
+# governs and names which is which; a draft RFI for the design team, cold-readable, with a title
+# and both citations; the newer reading recorded on the row, cited to the newer sheet; and no
+# Question where the difference changes nothing in scope. Each is taken out of the shipped text
+# and refused. Honest bound: text only; whether a running reader raises such a Question is the
+# measured pass's.
+
+_KEPT_CONFLICT_READERS = ("agents/scope-reader.md", "agents/scope-vocabulary-reader.md")
+_KEPT_CONFLICT_PHRASES = (
+    "raise one Question citing both sheets, saying the newer drawing governs and naming which sheet "
+    "is the kept older drawing and which is the newer one",
+    "It is a draft RFI for the design team, written for a reader coming to it cold, with a title "
+    "and both citations",
+    "Record the newer drawing's reading on the scope row, cited to the newer sheet",
+    "A difference that changes nothing in scope is not a Question",
+)
+_KEPT_CONFLICT_PINS: tuple[tuple[str, str], ...] = tuple(
+    (reader, phrase) for reader in _KEPT_CONFLICT_READERS for phrase in _KEPT_CONFLICT_PHRASES)
+
+
+def _kept_conflict_errors(texts: dict[str, str]) -> list[str]:
+    return [f"{label} does not read {phrase!r}" for label, phrase in _KEPT_CONFLICT_PINS
+            if phrase not in _collapsed(texts[label])]
+
+
+def check_kept_sheet_conflict(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "kept-sheet-conflict"
+    texts: dict[str, str] = {}
+    for label in _KEPT_CONFLICT_READERS:
+        path = plugin_path / label
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[label] = path.read_text(encoding="utf-8")
+    errors = _kept_conflict_errors(texts)
+
+    # Each pin taken out of the shipped text, so every refusal is shown rather than assumed.
+    refused = 0
+    if not errors:
+        for label, phrase in _KEPT_CONFLICT_PINS:
+            broken = {**texts, label: _collapsed(texts[label]).replace(phrase, "")}
+            if _kept_conflict_errors(broken):
+                refused += 1
+            else:
+                errors.append(f"the check passed {label} with {phrase!r} taken out")
+
+    detail = (
+        f"{len(_KEPT_CONFLICT_PINS)} phrases held over {len(texts)} readers (one Question citing "
+        f"both sheets with the newer drawing governing, a draft RFI with a title and both "
+        f"citations, the newer reading on the row, no Question where nothing in scope changes), "
+        f"{refused} mutations refused; bound: text only, not how a running reader decides"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -15000,6 +15063,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_standard_lines(plugin_path, marketplace_root),
         check_delivery_sizing(plugin_path, marketplace_root),
         check_recheck(plugin_path, marketplace_root),
+        check_kept_sheet_conflict(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

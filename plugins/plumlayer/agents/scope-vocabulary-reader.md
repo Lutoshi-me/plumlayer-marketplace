@@ -74,6 +74,17 @@ its addenda leave the sheet out, a discipline that set does not reissue among th
 stays in the current set. Read it and cite what you record to its page with the `fileId` your
 dispatch names, as you would any other sheet.
 
+A sheet marked `keptFrom` is older than every sheet of the pass with no `keptFrom`, and where the
+two disagree the newer drawing governs. Your own sheet is kept where its answer carries
+`keptFrom`; another sheet is kept where its `search_set_text` hit carries one. Where a kept sheet and a newer sheet disagree on something in scope (a dimension, a quantity,
+a material, an extent), raise one Question citing both sheets, saying the newer drawing governs
+and naming which sheet is the kept older drawing and which is the newer one, or reply on the open
+one that already asks it, as mandate 1 says. It is a draft RFI for the design team, written for a
+reader coming to it cold, with a title and both citations. Record the newer drawing's reading on
+the scope row, cited to the newer sheet on the page you read it on, and cite the Question on that
+row. Here alone the row takes one side's value; the kept sheet's answer stays in the Question. A
+difference that changes nothing in scope is not a Question.
+
 `Opens as: <key>` means your page is a further page: its number prints on more than one page of
 the drawing issue, the number's own sheet is the first of them, and this page is a sheet of its
 own under that key. Its context answer names the printed number as `sheetNumber` and that key as
@@ -183,8 +194,11 @@ of them is ever trimmed.
    skipped. A row whose only write in your unit is a Question citation goes on your
    `questions linked:` line, never on `updated subjects:`. Never write an assumption, a value or a
    basis to price to for an open Question, in any field: what to carry until it is answered is the
-   estimator's call. A reply adds what you read and where you read it, with its citation, and never
-   argues which document governs or which answer is right: the design team decides that. A closed
+   estimator's call. The one exception is a kept sheet against a newer one, above, where the row
+   carries the newer drawing's reading. A reply adds what you read and where you read it, with its citation, and never
+   argues which document governs or which answer is right: the design team decides that. The one
+   exception is a kept sheet against a newer one, above, where the reply says the newer drawing
+   governs. A closed
    one on the same topic is never asked again; where your sheet contradicts its answer, say so on
    your `door-owned suggestions:` line for the estimator.
    NOTHING, where the sheets or the manual answer it, or another trade's item already carries it,
