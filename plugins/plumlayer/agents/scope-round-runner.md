@@ -1,8 +1,8 @@
 ---
 name: scope-round-runner
-description: Runs one pass of a Plumlayer scope run, over sheets or over up to four package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, or one scope-reviewer per package, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
+description: Runs one pass of a Plumlayer scope run, over sheets or over up to four package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, one scope-reviewer per package, or in the recheck of a new delivery one scope-rechecker per sheet or batch of items to retire, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 model: sonnet
-tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
+tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-rechecker), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
 
 You own one pass of a scope run, from its first dispatch line to its last, and then you end. Your
@@ -21,8 +21,9 @@ are matched there.
 
 ## What your dispatch gives you
 
-Pointers only, never pasted text: the project id, the window number, your pass id (or `review-<pass
-id>`, or `boundary`), the run folder path, and the scripts path, the plugin's own scripts
+Pointers only, never pasted text: the project id, the window number, or `r` for the recheck, your
+pass id (or `review-<pass id>`, `recheck-<pass id>`, `retire-<pass id>`, or `boundary`), the run
+folder path, and the scripts path, the plugin's own scripts
 directory, which your dispatch names on its `Scripts:` line. The read plan is
 `<run folder>/read-plan.md`. Read your own pass's section of it and nothing else from it: what the pass reads for (the vocabulary,
 the sheet, the repeated lines, or package reviews), and its units. In windows 1
@@ -54,7 +55,7 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
 2. **Run your units in reading order, one at a time.** You dispatch exactly one agent type per
    window: `plumlayer:scope-vocabulary-reader` for every unit of window 1, a vocabulary sheet or a
    file's repeated lines, and `plumlayer:scope-reader` for every unit of window 2, and never any
-   other. The parenthesized list on your `tools` line
+   other; the recheck's window `r` dispatches `plumlayer:scope-rechecker`, as recheck mode says. The parenthesized list on your `tools` line
    records that intent and does not enforce it, since a type list inside `Agent(...)` is ignored
    for an agent running as a subagent, so keeping to it is yours to do. Before each unit, look for
    a `verified` line carrying your window and that unit id, whatever pass it names, and that unit's
@@ -427,6 +428,77 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   prints that opens with `note ` to the ledger as printed, then read your pass block again: a
   continuation it bound carries no `verified` line and runs as any unit. Any refusal is a mismatch.
 
+## Recheck mode
+
+When your dispatch names window `r` and `recheck-<pass id>`, you run a pass of the recheck of a new
+delivery: pass mode, over up to twelve sheets, with these differences. Your dispatch also names the
+delivery, `Delivery: <deliveryId>, label <label>.`, and `Plan file: <path>.`, the plan he approved.
+
+- **Each unit is one sheet's open rows.** Your pass block's `reads for:` reads `the recheck`, and
+  each unit line names its unit id, the sheet number, the new page or pages (`file none` where the
+  delivery no longer prints the sheet), the old page or pages with the delivery each came in, and
+  its rows file, `recheck/units/<unit id>.json` in the run folder. Every line you write carries
+  window `r`.
+- **You dispatch exactly one agent type here, `plumlayer:scope-rechecker`**, one per unit in turn,
+  its `dispatch` line first, as pass mode's step 2 says, with `sheets <sheet number>` and
+  `purpose recheck the rows on <sheet number>`:
+
+  ```text
+  subagent_type: plumlayer:scope-rechecker
+  run_in_background: false
+  Project: <projectId>. Window: r. Pass: <pass id>. Unit: <unit id>. Mode: <sheet or retire>.
+  Delivery: <deliveryId>, label <label>.
+  Sheet: <sheet number>. Old page: <each fileId + page>. New page: <each fileId + page, or none>.
+  Rows file: <run folder>/recheck/units/<unit id>.json, or Items file: <run folder>/recheck/retire/<unit id>.json.
+  Plan file: <path to plan.md>.
+  Reader definition: <scripts path>/../agents/scope-reader.md, written out in full.
+  Run folder: <path>.
+  Recheck your unit as your definition says, write your report to <run folder>/reports/<unit id>.md, then return it.
+  ```
+
+  In sheet mode the `Sheet:` and `Rows file:` lines are filled; in retire mode `Sheet: none` and
+  `Items file:`. Paste nothing from those files into it.
+- **Hold the report to its rows first.** Run
+  `python3 '<scripts path>/recheck.py' check --report '<run folder>/reports/<unit id>.md'` with the
+  Bash tool, single quoted. It holds every outcome line to the unit's rows exactly once and prints
+  the counts, the sheets to verify on and a `find back:` line for each item cited again or changed,
+  with the page it was cited on. A refusal is the rechecker's report missing a row or carrying one
+  twice: append `note r <pass> <unit> deviation recheck report refused, read again once` and run the
+  unit once more, its `dispatch` line again first; a second refusal is a mismatch.
+- **Verify on the pages it cited.** One `verify_unit(projectId, subjectPrefix:
+  "scopeItem:<unit id>-", sheets: [<the sheets the check printed, at most 20>])`. Its `entryCount`
+  must be 0, since a rechecker creates nothing, and each `find back:` subject must sit among the
+  subjects citing that sheet on that file and page; one that does not is a mismatch. Questions are
+  found back by id as pass mode's step 3 says. The `verified` line carries `created` the entry
+  count, `items 0`, and the report's `updated`, `questions`, `replied`, `sent`, `landed` and
+  `conflicts`. Where the check prints `verify sheets (0): none`, every row reads removed or not
+  found and the unit wrote nothing: make no `verify_unit` call, which needs a sheet. The check has
+  confirmed the report claims no write instead, refusing one whose created, updated, Questions
+  raised or replied, sent or landed reads above 0, and the `verified` line carries `created 0 items
+  0 updated 0 questions 0 replied 0 sent 0 landed 0` and the report's `conflicts`.
+- **The trades file** takes one `<unit id> candidates 0` line, and one `<unit id> touched <catalog
+  id>` line per catalog id on the report's `trades touched:` line, so window 3 of a pass on an
+  addendum reviews the packages the recheck wrote on. No names file: the unit created nothing.
+- Its anomaly, grain and door notes go on the ledger as pass mode's step 3 says, and the pass is
+  summed with pass mode's step 5 call, its window `r`. The summary script reads each verified
+  unit's outcome lines off its report and counts them on its `recheck:` line.
+
+## Retire mode
+
+When your dispatch names window `r` and `retire-<pass id>`, your pass block's `reads for:` reads
+`retiring`, and each unit line names a batch of up to 25 items, `retire, items <n>`, and its items
+file, `recheck/retire/<unit id>.json`. Run it as recheck mode runs a sheet, with these differences.
+
+- The rechecker goes out in retire mode, with `Sheet: none` and the `Items file:` line, its
+  `dispatch` line reading `sheets none purpose retire the items removed`.
+- The check prints a `find back:` line for each item retired, with the delivery's label. For each,
+  one `search(projectId, subject: "<subject>", predicate: "scopeItemRetraction")`, which must carry
+  a live entry whose `versionScope` is that label; one it does not carry is a mismatch. An item the
+  report keeps or names as refused wrote nothing, and nothing is found back for it.
+- No `verify_unit` call: a retire writes on no sheet of this unit. The `verified` line carries
+  `created 0 items 0`, the items retired as `updated`, and the report's `sent`, `landed` and
+  `conflicts`.
+
 ## What you never do
 
 - Talk to the user. You have no user-facing output. Your hand-back goes to the lead, which does the
@@ -441,6 +513,8 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
 - Write anything in the ledger that is not one of the three fixed line shapes, or read the ledger
   beyond the filtered look for a unit's own `verified` line and its `anomaly`, `grain` and `door`
   notes. You append your own lines; you never read back what other passes wrote.
+- Retire an item yourself, or dispatch a rechecker in retire mode for anything but a retire pass the
+  recheck script planned.
 - Supervise more than one pass, or more than twelve units. A pass longer than that is a plan defect
   and you stop before running it, rather than absorbing it.
 - Fork yourself, leave `run_in_background: false` off a dispatch where the Agent tool takes it, or

@@ -168,6 +168,20 @@ The repeated lines, in windows 1 and 2:
   line carries no mark and its reader reads the page whole, so no line a reader leaves out goes
   unread.
 
+The plan he approved, in windows 1 and 2:
+
+  A new delivery on a project that already holds scope is sized before any pass reads it, and the
+  estimator approves the plan file the delivery sizer writes, `<upload folder>/plan.md`. Window 1
+  takes that file as `--delivery-plan`. Its `plan:` line must name the delivery `run.json` names,
+  and its last `status:` line must read `approved`; a plan shown and not answered, a stopped one,
+  and another delivery's plan are refused. A plan reading `pass: full` restricts nothing. A plan
+  reading `pass: partial` reads only the sheet numbers on its `read:` line, comma separated, every
+  page of each, and a number the inventory does not carry is refused. Every other sheet is left by
+  the plan he approved: window 1 plans none of them, names them in a section of their own, counts
+  them on the bounds line apart from the sheets left out, and writes them to
+  `plan/window-1.json` as `leftByPlan` with the plan file's path, so window 2 subtracts them as it
+  subtracts what window 1 read and left out, and a resume runs window 1 again with the same file.
+
 Unit ids across a replan, in windows 1 and 2:
 
   A unit id is a live subject prefix on the project record. A reader records
@@ -371,7 +385,8 @@ Usage:
     python plan_inventory.py inventory --grid <dir or file> --expect-count 209 --out-dir <dir>
 
     python plan_inventory.py plan --window 1 --inventory <path>
-        [--include <pattern>:<reason>] [--exclude <pattern>:<reason>] --out <path>
+        [--include <pattern>:<reason>] [--exclude <pattern>:<reason>]
+        [--delivery-plan <upload folder>/plan.md] --out <path>
 
     python plan_inventory.py plan --window 2 --inventory <path> --window-1 <path>
         [--only <pattern>:<reason>] --out <path>
@@ -412,7 +427,10 @@ Exit codes:
      a read plan whose window 3 blocks bind one unit id or one package to two, a
      window 1 file naming a unit key
      the inventory does not hold or naming one as both selected and excluded, an `--include`,
-     `--exclude` or `--only` with no colon or matching no sheet it may select, an inventory file
+     `--exclude` or `--only` with no colon or matching no sheet it may select, a `--delivery-plan`
+     that is no plan file the delivery sizer wrote, names another delivery than `run.json`, has no
+     `run.json` to be held to, has no approval as its last `status:` line, or reads a sheet number
+     the inventory does not carry, a window 1 file whose `leftByPlan` is malformed, an inventory file
      this script did not write, a window 2 plan whose planned and deferred sheets are not a
      partition of what window 1 left, a discipline whose window 1 pass id would be `RS1`, and a
      window 1 file whose `repeatedSets` is malformed or names a file the inventory does not hold.
@@ -552,6 +570,16 @@ _REPEATED_PART_RE = re.compile(r"^(?:i[1-9][0-9]*-)?RS1[a-z]?$")
 _REPEATED_KEY_PREFIX = "repeated lines@"
 
 WINDOW_1_FILE = ("plan", "window-1.json")
+
+# The plan file the delivery sizer writes and the session appends its status lines to, as
+# `agents/delivery-sizer.md` gives its shape. Only the lines a pass is held to are read here.
+_DELIVERY_PLAN_LINE_RE = re.compile(r"^plan: (\S+) \| (.+?) \| written (\S+)$")
+_DELIVERY_PLAN_RULE_RE = re.compile(r"\brule version ([0-9]+)\b")
+_DELIVERY_PLAN_STATUS_RE = re.compile(r'^status: (shown|approved|stopped) (\S+)(?: "(.*)")?$')
+DELIVERY_PLAN_PASSES = ("full", "partial")
+
+# The words a sheet the plan left carries, apart from a sheet the lead left out by pattern.
+LEFT_BY_PLAN = "left by the plan he approved"
 
 # The run ledger sits beside the plan file, and its `dispatch` lines are the only append-only
 # record of which unit id was actually handed out.
@@ -1518,8 +1546,20 @@ def _read_window_1(
             f"({_named(both)}); the two lists are a partition of what window 1 saw"
         )
 
+    # The sheets the plan he approved left, absent from a file written with no delivery plan. They
+    # are a third part of the same partition.
+    left_by_plan = data.get("leftByPlan", [])
+    if not isinstance(left_by_plan, list) or not all(isinstance(v, str) for v in left_by_plan):
+        raise PlanError(f"{path}: `leftByPlan` is not a list of unit keys")
+    twice = sorted(set(left_by_plan) & (set(lists["selected"]) | set(lists["excluded"])))
+    if twice:
+        raise PlanError(
+            f"{path} names {len(twice)} unit key(s) as {LEFT_BY_PLAN} and as selected or excluded "
+            f"({_named(twice)}); the lists are a partition of what window 1 saw"
+        )
+
     known = {r["unitKey"] for r in rows}
-    keys = set(lists["selected"]) | set(lists["excluded"])
+    keys = set(lists["selected"]) | set(lists["excluded"]) | set(left_by_plan)
     strangers = sorted(k for k in keys if k not in known)
     if strangers:
         raise PlanError(
@@ -1556,8 +1596,81 @@ def _read_window_1(
     keys |= {row["unitKey"] for row in left_with_number}
     return (
         keys, len(lists["selected"]), len(lists["excluded"]) + len(left_with_number), repeated_sets,
-        left_with_number,
+        left_with_number, len(left_by_plan),
     )
+
+
+def read_delivery_plan(path: Path) -> dict:
+    """
+    The lines of a delivery's plan file a pass is held to: the delivery its `plan:` line names, its
+    label and the rule version it was measured under, `pass:`, `read:` and `carry:`, every
+    `status:` line in order with the last one apart, the approval's words, and the last `carried:`
+    line. A file with no `plan:` line or no `pass:` line of either kind is no plan file the
+    delivery sizer wrote. Nothing here is read for its meaning beyond those lines.
+    """
+    if not path.is_file():
+        raise PlanError(f"no plan file at {path}")
+    try:
+        lines = [line.rstrip() for line in path.read_text(encoding="utf-8").splitlines()]
+    except Exception as e:
+        raise PlanError(f"cannot read the plan file at {path}: {e}") from e
+    found: dict[str, str] = {}
+    statuses: list[tuple[str, str, str | None]] = []
+    carried: list[str] = []
+    for line in lines:
+        status = _DELIVERY_PLAN_STATUS_RE.match(line)
+        if status:
+            statuses.append((status.group(1), status.group(2), status.group(3)))
+            continue
+        key, sep, value = line.partition(": ")
+        if not sep:
+            continue
+        if key == "carried":
+            carried.append(value.strip())
+        elif key in ("plan", "measured", "pass", "read", "carry") and key not in found:
+            found[key] = value.strip()
+    head = _DELIVERY_PLAN_LINE_RE.match(f"plan: {found['plan']}") if "plan" in found else None
+    if head is None:
+        raise PlanError(f"{path} carries no `plan: <deliveryId> | <label> | written <time>` line, so it is no plan file the delivery sizer wrote")
+    if found.get("pass") not in DELIVERY_PLAN_PASSES:
+        raise PlanError(f"{path}: its `pass:` line reads {found.get('pass')!r}, not full or partial")
+    rule = _DELIVERY_PLAN_RULE_RE.search(found.get("measured", ""))
+    read = None
+    if found["pass"] == "partial":
+        listed = found.get("read", "")
+        read = [] if listed in ("", "none") else [part.strip() for part in listed.split(",") if part.strip()]
+    last = statuses[-1] if statuses else None
+    return {
+        "path": path,
+        "deliveryId": head.group(1),
+        "label": head.group(2),
+        "ruleVersion": int(rule.group(1)) if rule else None,
+        "pass": found["pass"],
+        "read": read,
+        "carry": found.get("carry"),
+        "statuses": statuses,
+        "status": last[0] if last else None,
+        "approvedWords": last[2] if last and last[0] == "approved" else None,
+        "carried": carried[-1] if carried else None,
+    }
+
+
+def approved_delivery_plan(path: Path, run: dict | None) -> dict:
+    """The plan file, held to the pass `run.json` names and to an approval as its last status line."""
+    plan_doc = read_delivery_plan(path)
+    if run is None:
+        raise PlanError(f"{path} is a delivery's plan, and the folder holds no {RUN_FILE} naming the pass it is held to")
+    if plan_doc["deliveryId"] != run["deliveryId"]:
+        raise PlanError(
+            f"{path} is the plan of delivery {plan_doc['deliveryId']}, and this pass reads "
+            f"{run['deliveryId']}; pass the plan file of this pass's own delivery"
+        )
+    if plan_doc["status"] != "approved":
+        raise PlanError(
+            f"{path}: its last status line reads {plan_doc['status'] or 'nothing'}, not approved; "
+            f"no pass reads a delivery before he approves its plan"
+        )
+    return plan_doc
 
 
 # --------------------------------------------------------------------------- #
@@ -3105,6 +3218,15 @@ def _render_slice(plan: dict, show_file: bool) -> list[str]:
     return lines
 
 
+def _left_by_plan_clause(plan: dict) -> str:
+    """The window 1 bounds line's account of the plan he approved, where one was given."""
+    if not plan.get("deliveryPlan"):
+        return ""
+    if plan["deliveryPlan"]["read"] is None:
+        return "the plan he approved reads every sheet, "
+    return f"{LEFT_BY_PLAN} {len(plan['leftByPlan'])}, "
+
+
 def _left_with_number_clause(plan: dict) -> str:
     """
     The further pages window 2 leaves out because an earlier window 1 file left their number out by
@@ -3227,6 +3349,19 @@ def _render(
             lines.append(_unit_line(str(number), row, show_file))
         lines.append("")
 
+    if window == 1 and plan.get("deliveryPlan"):
+        lines.append(f"## Sheets {LEFT_BY_PLAN}")
+        lines.append("")
+        if plan["leftByPlan"]:
+            lines.append(f"plan: {plan['deliveryPlan']['path']}")
+            lines.append(f"sheets: {len(plan['leftByPlan'])}")
+            lines.append("")
+            for number, row in enumerate(plan["leftByPlan"], 1):
+                lines.append(_unit_line(str(number), row, show_file))
+        else:
+            lines.append("Nothing. The plan he approved reads every sheet of this pass.")
+        lines.append("")
+
     if plan.get("only"):
         lines.extend(_render_slice(plan, show_file))
 
@@ -3273,7 +3408,8 @@ def _render(
         lines.append(_marked_clause(plan))
     if window == 1:
         lines.append(
-            f"sheets left out {plan['excludedCount']}, sheets this window does not read "
+            f"sheets left out {plan['excludedCount']}, sheets {LEFT_BY_PLAN} "
+            f"{len(plan['leftByPlan'])}, sheets this window does not read "
             f"{len(plan['unassigned'])}, sheets in the inventory {len(rows)}"
         )
         lines.append(
@@ -3285,8 +3421,8 @@ def _render(
             lines.append(f"sheets deferred {len(plan['deferred'])} by --only")
         lines.append(
             f"sheets window 1 selected {plan['window1Selected']}, sheets window 1 left out "
-            f"{plan['window1Excluded']}{_left_with_number_clause(plan)}, sheets in the inventory "
-            f"{len(rows)}"
+            f"{plan['window1Excluded']}{_left_with_number_clause(plan)}, sheets {LEFT_BY_PLAN} "
+            f"{plan['leftByPlanCount']}, sheets in the inventory {len(rows)}"
         )
         lines.append(
             "sheets by type: " + ", ".join(f"{name} {count}" for name, count in plan["byType"])
@@ -3316,7 +3452,7 @@ def _render(
 # Which window each argument belongs to. An argument some other window takes is refused rather than
 # dropped quietly: dropping it would lose the caller's intent with nothing said about it.
 ALLOWED_BY_WINDOW = {
-    1: ("--inventory", "--include", "--exclude"),
+    1: ("--inventory", "--include", "--exclude", "--delivery-plan"),
     2: ("--inventory", "--window-1", "--only"),
     3: ("--packages",),
 }
@@ -3343,6 +3479,7 @@ def _check_arguments(args, window: int) -> None:
         "--include": args.include,
         "--exclude": args.exclude,
         "--only": args.only,
+        "--delivery-plan": args.delivery_plan,
     }
     for flag, reason in RETIRED_ARGUMENTS.items():
         if values[flag]:
@@ -3457,21 +3594,41 @@ def plan(args) -> str:
         show_file = len({_text(r.get("fileId")) for r in rows}) > 1 or tag is not None
 
     window_1_path: Path | None = None
+    inventory_rows = rows
+    left_by_plan: list[dict] = []
+    delivery_plan: dict | None = None
+    if window == 1 and args.delivery_plan:
+        delivery_plan = approved_delivery_plan(args.delivery_plan, run)
+        if delivery_plan["read"] is not None:
+            # A partial pass reads only the sheet numbers the plan names, every page of each.
+            wanted = set(delivery_plan["read"])
+            printed = {_text(r.get("sheetNumber")) for r in rows}
+            missing = [number for number in delivery_plan["read"] if number not in printed]
+            if missing:
+                raise PlanError(
+                    f"{args.delivery_plan} reads {_named(missing)}, which the inventory of this pass "
+                    f"does not carry; nothing written"
+                )
+            left_by_plan = [r for r in rows if _text(r.get("sheetNumber")) not in wanted]
+            rows = [r for r in rows if _text(r.get("sheetNumber")) in wanted]
     if window == 1:
         includes = [_split_pattern_argument(raw, "--include") for raw in (args.include or [])]
         excludes = [_split_pattern_argument(raw, "--exclude") for raw in (args.exclude or [])]
         result = _window_1(rows, includes, excludes, tag)
+        result["leftByPlan"] = left_by_plan
+        result["deliveryPlan"] = delivery_plan
         # The run folder is the folder the plan file sits in; window 2 subtracts this file rather
         # than recomputing window 1's selection from arguments it might not be given identically.
         window_1_path = args.out.parent.joinpath(*WINDOW_1_FILE)
     elif window == 2:
-        keys, selected, excluded, repeated_sets, left_with_number = _read_window_1(
+        keys, selected, excluded, repeated_sets, left_with_number, left_by_plan_count = _read_window_1(
             args.window_1, rows, tag
         )
         only = [_split_pattern_argument(raw, "--only") for raw in (args.only or [])]
         result = _window_2(rows, keys, selected, excluded, only, tag)
         result["repeatedSets"] = repeated_sets
         result["leftWithNumber"] = left_with_number
+        result["leftByPlanCount"] = left_by_plan_count
         result["repeatedRead"] = _read_repeated_read(args.out.parent / LEDGER_FILE, repeated_sets)
     else:
         packages = _read_packages(args.packages)
@@ -3544,7 +3701,7 @@ def plan(args) -> str:
         window, runner_passes, args.out.parent, _read_ledger_pass_lines(ledger_path, window)
     )
     result["startsAfter"] = _starts_after(window, runner_passes, result["verified"])
-    body, total_units, total_passes = _render(window, result, rows, show_file, runner_passes)
+    body, total_units, total_passes = _render(window, result, inventory_rows, show_file, runner_passes)
     payload = body.encode("utf-8")
     _write_atomically(args.out, payload)
 
@@ -3588,6 +3745,12 @@ def plan(args) -> str:
                         {"pattern": block["pattern"], "reason": block["reason"]}
                         for block in result["excludes"]
                     ],
+                    # The sheets the plan he approved left, and the plan file, so window 2
+                    # subtracts them and a resume plans again with the same file.
+                    "leftByPlan": [row["unitKey"] for row in result["leftByPlan"]],
+                    **(
+                        {"deliveryPlan": str(args.delivery_plan)} if result["deliveryPlan"] else {}
+                    ),
                     # Kept apart from `selected`: window 2 subtracts sheets, and these are files.
                     "repeatedSets": [
                         {
@@ -3612,6 +3775,7 @@ def plan(args) -> str:
         return (
             f"wrote {args.out} and {window_1_path}: window 1{tag_clause}, units {total_units}, passes "
             f"{total_passes}, {_fold_clause(sheet_passes)}, excluded {result['excludedCount']}, "
+            f"{_left_by_plan_clause(result)}"
             f"unassigned {len(result['unassigned'])}{ids_clause}, "
             f"{_repeated_clause(result, repeated_count, runner_passes)}; "
             f"{written:,} bytes"
@@ -3659,7 +3823,7 @@ def plan(args) -> str:
             f"{_every_sheet_once(result)}"
             f"{deferred}, sheets window 1 selected "
             f"{result['window1Selected']}, sheets window 1 left out {result['window1Excluded']}"
-            f"{_left_with_number_clause(result)}, "
+            f"{_left_with_number_clause(result)}, sheets {LEFT_BY_PLAN} {result['leftByPlanCount']}, "
             f"sheets in the inventory {len(rows)}, sheets by type {by_type}, sheets typed other or "
             f"untyped {result['otherOrUntyped']}{ids_clause}, {_marked_clause(result)}{unordered}; "
             f"{written:,} bytes"
@@ -4474,6 +4638,13 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "window 2 only: a sheet number pattern to read in this run, and why; every other sheet "
             "is deferred to the next window 2 plan run without it; repeatable"
+        ),
+    )
+    win.add_argument(
+        "--delivery-plan", type=Path,
+        help=(
+            "window 1 only: the delivery's plan file the estimator approved; a partial plan reads "
+            "only its sheets"
         ),
     )
     win.add_argument("--out", required=True, type=Path, help="the read plan file to write")

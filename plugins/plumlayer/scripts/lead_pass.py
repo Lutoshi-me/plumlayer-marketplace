@@ -155,6 +155,21 @@ Three modes:
         how many of the first pass's printed lines an earlier call already printed, and after a
         colon (`--start 4:23000`) how many characters of the line after them.
 
+The recheck, window r:
+
+    The recheck of a new delivery runs its passes as window `r` (`record <ledger> r <pass id>`,
+    `checkin <run folder> r`). Its units create nothing, so the lead's counts read 0 under every
+    prefix, and its `pass:` line carries, after the figures every window carries, what its units
+    found, copied off the summary's `recheck:` line, which the summary script counts off each
+    unit's own report:
+
+        pass: r <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> recited <n> rows-changed <n> removed <n> not-found <n> retired <n> kept <n> refused <n> lead-verified yes
+
+    A pass names its sheets as `<n> sheets rechecked (<sheet numbers>)`, and a retire pass its units
+    as `<n> items checked for retiring`; the line under a recorded pass, and each pass of a
+    check-in, says the rows re-cited, changed, read as removed and not found, and the items
+    retired, kept and not retired, never the entries.
+
 Exit codes:
   0  printed, and in record mode the `pass:` line appended.
   1  a named failure, one line on stderr: a read plan, ledger or summary file that is not there,
@@ -164,7 +179,7 @@ Exit codes:
      prefixes with whole numbers or whose prefixes are not exactly the plan block's, each once, a
      summary of another window or pass, one naming other units than the plan block carries, one
      with a unit it reads `verified no`, or one with no totals line, no candidates count, or in
-     window 3 no `review:` line; at the check-in, a `--start` that is not a count of lines and
+     window 3 no `review:` line, or in window r no `recheck:` line; at the check-in, a `--start` that is not a count of lines and
      characters or names a character past its line, and pass lines and totals that alone leave no
      room under the cap.
   2  argparse rejected the invocation.
@@ -262,11 +277,22 @@ _PLAN_UNIT_RE = re.compile(r"^(\S+-[1-9][0-9]*)\. (.+?), (?:file |page |from pag
 PASS_FIGURES = ("units", "created", "updated", "questions", "replied", "candidates")
 REVIEW_FIGURES = ("pages-opened", "searches")
 
-_SUMMARY_HEADER_RE = re.compile(r"^window: ([1-9][0-9]*)\s+pass: (\S+)$")
+_SUMMARY_HEADER_RE = re.compile(r"^window: ([1-9][0-9]*|r)\s+pass: (\S+)$")
 _PER_UNIT_RE = re.compile(r"^per unit: (\S+) created (\d+|-) .* verified (yes|no)$")
 _TOTALS_RE = re.compile(r"updated (\d+), questions (\d+) replied (\d+)")
 _CANDIDATES_RE = re.compile(r"; candidates (\d+)$")
 _REVIEW_RE = re.compile(r"^review: pages opened (\d+), searches (\d+)$")
+_RECHECK_RE = re.compile(
+    r"^recheck: rows recited (\d+), updated (\d+), removed (\d+), not found (\d+); "
+    r"items retired (\d+), kept (\d+), refused (\d+)$"
+)
+
+# The recheck's figures on its `pass:` line, in the order of the summary's `recheck:` line.
+RECHECK_WINDOW = pass_summary.RECHECK_WINDOW
+RECHECK_FIGURES = ("recited", "rows-changed", "removed", "not-found", "retired", "kept", "refused")
+
+# A retire unit's line as recheck.py writes it.
+_RETIRE_LINE_RE = re.compile(r"^(\S+-[1-9][0-9]*)\. retire, items ([1-9][0-9]*), ")
 
 
 class LeadPassError(Exception):
@@ -471,14 +497,14 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
     header = _SUMMARY_HEADER_RE.match(lines[0].strip()) if lines else None
     if header is None:
         raise LeadPassError(f"{path} does not open with `window: <n>   pass: <pass id>`")
-    if int(header.group(1)) != window or header.group(2) != pass_id:
+    if pass_summary._window_of(header.group(1)) != window or header.group(2) != pass_id:
         raise LeadPassError(
             f"{path} is the summary of window {header.group(1)} pass {header.group(2)}, and this is "
             f"window {window} pass {pass_id}"
         )
 
     per_unit: dict[str, tuple[str, str]] = {}
-    totals = candidates = review = trades = None
+    totals = candidates = review = trades = recheck = None
     for raw in lines:
         line = raw.strip()
         unit = _PER_UNIT_RE.match(line)
@@ -491,6 +517,8 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
             trades = _trades_of(line)
         elif line.startswith("review:"):
             review = _REVIEW_RE.match(line)
+        elif line.startswith("recheck:"):
+            recheck = _RECHECK_RE.match(line)
     if totals is None:
         raise LeadPassError(f"{path} carries no totals line")
     if candidates is None:
@@ -500,6 +528,8 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         )
     if window == 3 and review is None:
         raise LeadPassError(f"{path} carries no `review: pages opened <n>, searches <n>` line")
+    if window == RECHECK_WINDOW and recheck is None:
+        raise LeadPassError(f"{path} carries no `recheck: rows ...; items ...` line, the counts its units found")
     return {
         "perUnit": per_unit,
         "updated": totals.group(1),
@@ -509,6 +539,7 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         "items": sum(trades[0].values()) if trades else None,
         "pagesOpened": review.group(1) if review else None,
         "searches": review.group(2) if review else None,
+        "recheck": dict(zip(RECHECK_FIGURES, recheck.groups())) if recheck else None,
     }
 
 
@@ -563,6 +594,8 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
     ]
     if window == 3:
         figures += [("pages-opened", summary["pagesOpened"]), ("searches", summary["searches"])]
+    if window == RECHECK_WINDOW:
+        figures += list(summary["recheck"].items())
     line = f"pass: {window} {pass_id} " + " ".join(f"{k} {v}" for k, v in figures)
     line += " lead-verified yes"
 
@@ -578,8 +611,9 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
     # The pass as the estimator hears it, for the one line the lead says as each pass is recorded.
     read_on = _sections_read_to_end(plan_path, ledger) if window == 3 else set()
     reads = _plan_reads(plan_path, window, read_on)[0]
-    said = {field: int(value) for field, value in figures if field in PASS_FIGURES}
-    out = [line, f"{reads.get(pass_id, 'nothing planned')}: {_said_figures(summary['items'], said)}"]
+    said = {field: int(value) for field, value in figures if field in PASS_FIGURES + RECHECK_FIGURES}
+    words = _said_recheck(said) if window == RECHECK_WINDOW else _said_figures(summary["items"], said)
+    out = [line, f"{reads.get(pass_id, 'nothing planned')}: {words}"]
     out.extend(f"above the runner's count: {entry}" for entry in above)
     return out
 
@@ -731,6 +765,7 @@ def _plan_reads(
         return {}, {}
     sheets: dict[str, list[str]] = {}
     files: dict[str, int] = {}
+    retire_items: dict[str, int] = {}
     packages: dict[str, list[str]] = {}
     read_on: dict[str, list[str]] = {}
     named: dict[str, str] = {}
@@ -746,6 +781,7 @@ def _plan_reads(
         if heading:
             current = heading.group(1)
             sheets[current], files[current], packages[current], read_on[current] = [], 0, [], []
+            retire_items[current] = 0
             continue
         if current is None:
             continue
@@ -771,6 +807,11 @@ def _plan_reads(
             reads_on_in[continuation.group(1)] = {start.group(1) for start in starts}
             named[continuation.group(1)] = continuation.group(2)
             continue
+        retire = _RETIRE_LINE_RE.match(line) if window == RECHECK_WINDOW else None
+        if retire:
+            retire_items[current] += int(retire.group(2))
+            named[retire.group(1)] = "the items checked for retiring"
+            continue
         unit = _PLAN_UNIT_RE.match(line)
         if unit is None:
             continue
@@ -795,8 +836,12 @@ def _plan_reads(
             )
         if sheets[pass_id]:
             parts.append(
-                f"{len(sheets[pass_id])} sheet{'' if len(sheets[pass_id]) == 1 else 's'} read "
-                f"({', '.join(sheets[pass_id])})"
+                f"{len(sheets[pass_id])} sheet{'' if len(sheets[pass_id]) == 1 else 's'} "
+                f"{'rechecked' if window == RECHECK_WINDOW else 'read'} ({', '.join(sheets[pass_id])})"
+            )
+        if retire_items[pass_id]:
+            parts.append(
+                f"{retire_items[pass_id]} item{'' if retire_items[pass_id] == 1 else 's'} checked for retiring"
             )
         if files[pass_id]:
             parts.append(
@@ -823,6 +868,16 @@ def _said_figures(items: int | None, figures: dict[str, int]) -> str:
         (f"new items {items}" if items is not None else "new items not counted, a summary or its trades count missing")
         + f", items updated {figures['updated']}, Questions raised {figures['questions']}, "
         f"replies {figures['replied']}, new items with a candidate trade {figures['candidates']}"
+    )
+
+
+def _said_recheck(figures: dict[str, int]) -> str:
+    """A recheck pass line's figures as the estimator hears them, rows and items apart."""
+    return (
+        f"rows cited again {figures['recited']}, rows changed {figures['rows-changed']}, rows read "
+        f"as removed {figures['removed']}, rows not found {figures['not-found']}, items retired "
+        f"{figures['retired']}, items kept on a current sheet {figures['kept']}, items not retired "
+        f"{figures['refused']}, Questions raised {figures['questions']}, replies {figures['replied']}"
     )
 
 
@@ -922,7 +977,7 @@ def checkin_lines(
     # line counts entries, every citation and trade written with those items, and is never an item
     # count, so it goes on the lead's own line below and never on these.
     head: list[str] = [f"window {window}, {len(pass_ids)} pass{'' if len(pass_ids) == 1 else 'es'}"]
-    totals = {field: 0 for field in PASS_FIGURES + REVIEW_FIGURES}
+    totals = {field: 0 for field in PASS_FIGURES + REVIEW_FIGURES + RECHECK_FIGURES}
     with_line: list[str] = []
     items: int | None = 0
     for pass_id in pass_ids:
@@ -934,10 +989,16 @@ def checkin_lines(
         with_line.append(pass_id)
         for field in totals:
             totals[field] += _figure(line, field) or 0
-        figures = {field: _figure(line, field) or 0 for field in PASS_FIGURES}
-        head.append(f"{name}: {_said_figures(items_of.get(pass_id), figures)}")
+        figures = {field: _figure(line, field) or 0 for field in PASS_FIGURES + RECHECK_FIGURES}
+        head.append(
+            f"{name}: "
+            + (_said_recheck(figures) if window == RECHECK_WINDOW else _said_figures(items_of.get(pass_id), figures))
+        )
         items = None if items is None or pass_id not in items_of else items + items_of[pass_id]
-    head.append(f"over {len(with_line)} pass{'' if len(with_line) == 1 else 'es'}: " + _said_figures(items, totals))
+    head.append(
+        f"over {len(with_line)} pass{'' if len(with_line) == 1 else 'es'}: "
+        + (_said_recheck(totals) if window == RECHECK_WINDOW else _said_figures(items, totals))
+    )
     head.append(
         f"your own check over {len(with_line)} pass line{'' if len(with_line) == 1 else 's'} ({', '.join(with_line) or 'none'}), "
         f"never said to the estimator: units {totals['units']}, entries {totals['created']}"
@@ -1081,7 +1142,7 @@ def main(argv: list[str] | None = None) -> int:
 
     rec = modes.add_parser("record", help="compare a pass's counts and append its pass line")
     rec.add_argument("ledger", type=Path, help="the run folder's ledger.md")
-    rec.add_argument("window", type=int, help="the window the pass belongs to")
+    rec.add_argument("window", type=pass_summary.parse_window, help="the window the pass belongs to: 1, 2, 3, or r")
     rec.add_argument("pass_id", metavar="pass", help="the pass id, exactly as the plan spells it")
     rec.add_argument("--plan", type=Path, required=True, help="the window's read-plan.md")
     rec.add_argument(
@@ -1091,7 +1152,7 @@ def main(argv: list[str] | None = None) -> int:
 
     check = modes.add_parser("checkin", help="what a check-in needs, off the pass lines and summaries")
     check.add_argument("run_folder", type=Path, help="the run folder")
-    check.add_argument("window", type=int, help="the window the passes belong to")
+    check.add_argument("window", type=pass_summary.parse_window, help="the window the passes belong to: 1, 2, 3, or r")
     check.add_argument("--passes", required=True, help="the pass ids, comma separated")
     check.add_argument(
         "--start", default="0",

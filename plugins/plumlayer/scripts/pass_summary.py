@@ -86,6 +86,26 @@ Window 3:
   left pages, is a unit of its review's pass like any review: it is counted in `units:`, its
   `verified` line is summed, and its pages opened and searches are read off its own report.
 
+The recheck, window r:
+
+  The recheck of a new delivery reads, one unit per sheet, the scope items' references on the pages
+  the delivery replaced that nothing cited again on the new page, and in its retire passes one unit
+  per batch of up to 25 items. Its window is `r` on every line, its unit lines are a sheet unit's
+  shape, and its `pass:` line carries what the units found. So the summary reads each verified
+  unit's own report, `<run folder>/reports/<unit id>.md`, and counts its outcome lines:
+
+      row: <row key> | <recited, updated, removed or not found> | <page> | <item name as a JSON string> | <what>
+      item: <subject> | <retired, kept or refused> | <what>
+
+  one per row of a sheet unit and one per item of a retire unit, and writes them on one line, in
+  the summary and in the hand-back:
+
+      recheck: rows recited <n>, updated <n>, removed <n>, not found <n>; items retired <n>, kept <n>, refused <n>
+
+  A verified unit whose report is not there, or that carries an outcome line in neither shape or
+  with an outcome outside these, is refused. Every count is a count of lines; nothing is added
+  beside them.
+
 Exit codes:
   0  the summary written to the --out file, the hand-back on stdout, one bounds line on stderr.
   1  a named failure, one line on stderr: a read plan or ledger file that is not there, a read plan
@@ -96,7 +116,8 @@ Exit codes:
      kind is outside the closed set, a pass with no lines at all, a trades file that is not there,
      a trades file line in neither of its two shapes, a summary file that cannot be written, and
      in window 3 any verified review whose report is not there or carries no `searches:` line
-     with a whole number on it or no `pages opened:` line.
+     with a whole number on it or no `pages opened:` line, and in window r any verified unit whose
+     report is not there or carries an outcome line this summary cannot read.
   2  argparse rejected the invocation, a summary with no read plan among them.
 
 Grounding role: reads a file and copies byte values. Nothing here fills a gap. A unit dispatched
@@ -107,9 +128,101 @@ the summary shape has no line for is counted on the bounds line rather than drop
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
+
+# The recheck's window, which the ledger writes as `r` beside the three numbered ones.
+RECHECK_WINDOW = "r"
+
+# The outcomes a rechecker gives a row of a sheet unit and an item of a retire unit, in the order
+# the summary's `recheck:` line counts them.
+ROW_OUTCOMES = ("recited", "updated", "removed", "not found")
+ITEM_OUTCOMES = ("retired", "kept", "refused")
+_ROW_LINE_RE = re.compile(r"^row: (\S+) \| (recited|updated|removed|not found) \| (.+?) \| (.*)$")
+_ITEM_LINE_RE = re.compile(r"^item: (scopeItem:\S+) \| (retired|kept|refused) \| (.+)$")
+
+
+def parse_window(text: str):
+    """A window as the ledger writes it: 1, 2 or 3 as a number, or `r` for the recheck."""
+    if text == RECHECK_WINDOW:
+        return RECHECK_WINDOW
+    try:
+        number = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a window: 1, 2, 3 or r") from None
+    if number not in (1, 2, 3):
+        raise argparse.ArgumentTypeError(f"{text!r} is not a window: 1, 2, 3 or r")
+    return number
+
+
+def _window_of(text: str):
+    """The window a header names, as `parse_window` reads it."""
+    return RECHECK_WINDOW if text == RECHECK_WINDOW else int(text)
+
+
+def read_outcome_line(line: str, where: str) -> dict | None:
+    """
+    One outcome line of a rechecker's report, as a row's key, outcome, page, item name and what it
+    found, or an item's subject, outcome and what it found. None for a line that opens with neither
+    label; a refusal for one that opens with a label and is in neither shape.
+    """
+    if line.startswith("row: "):
+        row = _ROW_LINE_RE.match(line)
+        if row is None:
+            raise SummaryError(
+                f"{where}: `{line[:120]}` is no `row: <row key> | <outcome> | <page> | <item name> | "
+                f"<what>` line with an outcome of {', '.join(ROW_OUTCOMES)}"
+            )
+        try:
+            name, end = json.JSONDecoder().raw_decode(row.group(4))
+        except json.JSONDecodeError:
+            raise SummaryError(f"{where}: row {row.group(1)} carries no item name as a JSON string") from None
+        rest = row.group(4)[end:]
+        if not isinstance(name, str) or not rest.startswith(" | "):
+            raise SummaryError(f"{where}: row {row.group(1)} carries no item name as a JSON string before ` | <what>`")
+        return {
+            "kind": "row", "key": row.group(1), "outcome": row.group(2), "page": row.group(3),
+            "name": name, "what": rest[3:],
+        }
+    if line.startswith("item: "):
+        item = _ITEM_LINE_RE.match(line)
+        if item is None:
+            raise SummaryError(
+                f"{where}: `{line[:120]}` is no `item: <subject> | <outcome> | <what>` line with an "
+                f"outcome of {', '.join(ITEM_OUTCOMES)}"
+            )
+        return {"kind": "item", "subject": item.group(1), "outcome": item.group(2), "what": item.group(3)}
+    return None
+
+
+def read_outcomes(path: Path) -> list[dict]:
+    """Every outcome line of one rechecker's report, in its order."""
+    if not path.is_file():
+        raise SummaryError(f"no recheck report at {path}, so what its unit found cannot be counted")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except Exception as e:
+        raise SummaryError(f"cannot read the recheck report at {path}: {e}") from e
+    found: list[dict] = []
+    for number, raw in enumerate(text.splitlines(), 1):
+        outcome = read_outcome_line(raw.strip(), f"{path} line {number}")
+        if outcome is not None:
+            found.append(outcome)
+    return found
+
+
+def recheck_line(reports: list[list[dict]]) -> str:
+    """The outcome lines of the pass's verified units, counted by outcome."""
+    counts = {outcome: 0 for outcome in ROW_OUTCOMES + ITEM_OUTCOMES}
+    for outcomes in reports:
+        for outcome in outcomes:
+            counts[outcome["outcome"]] += 1
+    rows = ", ".join(f"{outcome} {counts[outcome]}" for outcome in ROW_OUTCOMES)
+    items = ", ".join(f"{outcome} {counts[outcome]}" for outcome in ITEM_OUTCOMES)
+    return f"recheck: rows {rows}; items {items}"
+
 
 # The closed set the runner definition declares, copied here so a kind added in one place and not
 # the other is a refusal rather than a note with nowhere to go.
@@ -185,7 +298,7 @@ def _whole_number(text: str, field: str, where: str) -> int:
 
 # The shapes plan_inventory.py writes. A sheet unit line leads with its unit id, a part id and a
 # number; a review unit line leads with an ordinal and carries the unit id after it.
-_PLAN_HEADER_RE = re.compile(r"^# Read plan: window ([1-9][0-9]*)$")
+_PLAN_HEADER_RE = re.compile(r"^# Read plan: window ([1-9][0-9]*|r)$")
 _PASS_HEADING_RE = re.compile(r"^### (\S+?)\.\s")
 _SHEET_UNIT_RE = re.compile(r"^(\S+-[1-9][0-9]*)\. ")
 _REVIEW_UNIT_RE = re.compile(r"^[1-9][0-9]*\. (\S+): ")
@@ -215,7 +328,7 @@ def plan_passes(path: Path) -> tuple[int, list[str]]:
         heading = _PASS_HEADING_RE.match(line)
         if heading:
             pass_ids.append(heading.group(1))
-    return int(header.group(1)), pass_ids
+    return _window_of(header.group(1)), pass_ids
 
 
 def read_plan(path: Path, window: int, pass_id: str) -> dict:
@@ -235,7 +348,7 @@ def read_plan(path: Path, window: int, pass_id: str) -> dict:
     header = _PLAN_HEADER_RE.match(first)
     if header is None:
         raise SummaryError(f"{path} does not open with `# Read plan: window <n>`, so it is no read plan")
-    if int(header.group(1)) != window:
+    if _window_of(header.group(1)) != window:
         raise SummaryError(
             f"{path} is the read plan for window {header.group(1)}, and this summary is for window "
             f"{window}"
@@ -737,7 +850,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Sum one pass of a scope run off the run ledger, into the pass summary shape.",
     )
     parser.add_argument("ledger", type=Path, help="the run folder's ledger.md")
-    parser.add_argument("window", type=int, help="the window the pass belongs to")
+    parser.add_argument("window", type=parse_window, help="the window the pass belongs to: 1, 2, 3, or r for the recheck")
     parser.add_argument("pass_id", metavar="pass", help="the pass id, exactly as the ledger spells it")
     parser.add_argument(
         "--plan", type=Path, required=True,
@@ -772,6 +885,13 @@ def main(argv: list[str] | None = None) -> int:
                 for unit in plan["units"] if unit in verified_units
             ]
             review = review_line([read_review(path) for path in review_paths])
+        elif args.window == RECHECK_WINDOW:
+            verified_units = {entry["unit"] for entry in pass_data["verified"]}
+            review_paths = [
+                args.ledger.parent / REPORTS_FOLDER / f"{unit}.md"
+                for unit in plan["units"] if unit in verified_units
+            ]
+            review = recheck_line([read_outcomes(path) for path in review_paths])
         summary = summary_lines(
             pass_data, args.window, args.pass_id, args.ledger, trades_line, review,
         )

@@ -1,0 +1,409 @@
+{
+  "page": {
+    "delivery": {
+      "id": "deliv-0002",
+      "label": "Invented set two",
+      "sequence": 2,
+      "issuedOn": null,
+      "issue": "addendum"
+    },
+    "ruleVersion": 3,
+    "job": {
+      "jobId": "job-0001",
+      "status": "succeeded"
+    },
+    "stillReading": [],
+    "complete": true,
+    "referencesShort": false,
+    "referenceRows": {
+      "total": 11,
+      "offset": 0,
+      "limit": 200,
+      "rows": [
+        {
+          "subject": "scopeItem:i1-A1-1-1",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-1"
+          ],
+          "sheetNumber": "A-101",
+          "old": {
+            "fileId": "file-0101",
+            "page": 3
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 3
+          },
+          "box": [
+            10,
+            10,
+            60,
+            20
+          ],
+          "answer": "same",
+          "packages": [
+            "09 99 99"
+          ],
+          "open": false,
+          "frames": [
+            "page-points"
+          ]
+        },
+        {
+          "subject": "scopeItem:i1-A1-1-2",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-2"
+          ],
+          "sheetNumber": "A-101",
+          "old": {
+            "fileId": "file-0101",
+            "page": 3
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 3
+          },
+          "box": [
+            10,
+            10,
+            60,
+            20
+          ],
+          "answer": "moved",
+          "packages": [
+            "09 99 99"
+          ],
+          "open": false,
+          "frames": [
+            "page-points"
+          ],
+          "movedTo": [
+            12,
+            30,
+            62,
+            40
+          ]
+        },
+        {
+          "subject": "scopeItem:i1-A1-1-3",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-3"
+          ],
+          "sheetNumber": "A-101",
+          "old": {
+            "fileId": "file-0101",
+            "page": 3
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 3
+          },
+          "box": [
+            100,
+            10,
+            150,
+            20
+          ],
+          "answer": "moved",
+          "packages": [
+            "09 99 99",
+            "09 99 98"
+          ],
+          "open": true,
+          "frames": [
+            "page-points"
+          ],
+          "movedTo": [
+            101,
+            50,
+            151,
+            60
+          ]
+        },
+        {
+          "subject": "scopeItem:i1-A1-1-4",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-4"
+          ],
+          "sheetNumber": "A-101",
+          "old": {
+            "fileId": "file-0101",
+            "page": 3
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 3
+          },
+          "box": [
+            200,
+            10,
+            250,
+            20
+          ],
+          "answer": "gone",
+          "packages": [
+            "09 99 99"
+          ],
+          "open": true,
+          "frames": [
+            "page-points"
+          ]
+        },
+        {
+          "subject": "scopeItem:i1-A1-1-8",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-8"
+          ],
+          "sheetNumber": "A-101",
+          "old": {
+            "fileId": "file-0101",
+            "page": 3
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 3
+          },
+          "box": [
+            300,
+            10,
+            350,
+            20
+          ],
+          "answer": "gone",
+          "packages": [
+            "09 99 99"
+          ],
+          "open": true,
+          "frames": [
+            "page-points"
+          ]
+        },
+        {
+          "subject": "scopeItem:i1-A1-1-5",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-5"
+          ],
+          "sheetNumber": "A-102",
+          "old": {
+            "fileId": "file-0101",
+            "page": 4
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 4
+          },
+          "box": [
+            10,
+            10,
+            60,
+            20
+          ],
+          "answer": "gone",
+          "packages": [
+            "09 99 98"
+          ],
+          "open": true,
+          "frames": [
+            "page-points"
+          ]
+        },
+        {
+          "subject": "scopeItem:i1-A1-1-6",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-6"
+          ],
+          "sheetNumber": "A-102",
+          "old": {
+            "fileId": "file-0101",
+            "page": 4
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 4
+          },
+          "box": [
+            100,
+            100,
+            150,
+            110
+          ],
+          "answer": "gone",
+          "packages": [
+            "09 99 98"
+          ],
+          "open": true,
+          "frames": [
+            "page-points"
+          ]
+        },
+        {
+          "subject": "scopeItem:i1-A1-1-7",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-7"
+          ],
+          "sheetNumber": "A-102",
+          "old": {
+            "fileId": "file-0101",
+            "page": 4
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 4
+          },
+          "box": [
+            200,
+            100,
+            250,
+            110
+          ],
+          "answer": "gone",
+          "packages": [
+            "09 99 98"
+          ],
+          "open": true,
+          "frames": [
+            "page-points"
+          ]
+        },
+        {
+          "subject": "scopeItem:i1-A1-1-6",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-6"
+          ],
+          "sheetNumber": "A-103",
+          "old": {
+            "fileId": "file-0101",
+            "page": 5
+          },
+          "new": null,
+          "box": [
+            10,
+            10,
+            60,
+            20
+          ],
+          "answer": "noLongerPrinted",
+          "packages": [
+            "09 99 98"
+          ],
+          "open": true,
+          "frames": [
+            "page-points"
+          ]
+        },
+        {
+          "subject": "scopeItem:i1-S1-1-1",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-S1-1-1"
+          ],
+          "sheetNumber": "S-201",
+          "old": {
+            "fileId": "file-0101",
+            "page": 6
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 6
+          },
+          "box": null,
+          "answer": "noBox",
+          "packages": [
+            null
+          ],
+          "open": true,
+          "frames": []
+        },
+        {
+          "subject": "scopeItem:i1-A1-1-8",
+          "kind": "scopeItem",
+          "entryIds": [
+            "ent-i1-A1-1-8"
+          ],
+          "sheetNumber": "A-104",
+          "old": {
+            "fileId": "file-0101",
+            "page": 7
+          },
+          "new": {
+            "fileId": "file-0202",
+            "page": 7
+          },
+          "box": [
+            10,
+            10,
+            60,
+            20
+          ],
+          "answer": "same",
+          "packages": [
+            "09 99 99"
+          ],
+          "open": false,
+          "frames": [
+            "page-points"
+          ]
+        }
+      ]
+    }
+  },
+  "files": {
+    "count": 2,
+    "files": [
+      {
+        "id": "file-0101",
+        "deliveryId": "deliv-0001",
+        "filename": "invented-one.pdf",
+        "kind": "drawing"
+      },
+      {
+        "id": "file-0202",
+        "deliveryId": "deliv-0002",
+        "filename": "invented-two.pdf",
+        "kind": "drawing"
+      }
+    ]
+  },
+  "deliveries": {
+    "count": 2,
+    "deliveries": [
+      {
+        "id": "deliv-0001",
+        "label": "Invented set one",
+        "issue": "set",
+        "setId": "deliv-0001",
+        "sheetCount": 5
+      },
+      {
+        "id": "deliv-0002",
+        "label": "Invented set two",
+        "issue": "addendum",
+        "setId": "deliv-0001",
+        "sheetCount": 3
+      }
+    ]
+  },
+  "packages": {
+    "packages": [
+      {
+        "id": "pkg-0001",
+        "name": "Invented package one",
+        "tradeCode": "09 99 99"
+      },
+      {
+        "id": "pkg-0002",
+        "name": "Invented package two",
+        "tradeCode": "09 99 98"
+      }
+    ]
+  }
+}

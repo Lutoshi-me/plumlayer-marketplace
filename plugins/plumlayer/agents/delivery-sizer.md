@@ -155,7 +155,7 @@ not compared: <each sheet number + why, or "none">
 references: boxes <n>   same <n>   moved <n>   found at several places <n>   gone <n>   not comparable <n>   no longer printed <n>   names no single page <n>   open Questions on the project <n>
 package | <name, or "No Package"> | <trade code, or "none"> | same <n> | moved <n> | gone <n> | other <n> | items <n> | open Questions <n>
 pass: <full or partial>
-read: <every sheet the set prints, <n>; or each sheet number>
+read: <every sheet the set prints, <n>; or each sheet number, comma separated, or "none">
 carry: <n> references that read the same, onto the new pages; or "left out"
 recheck: <every scope item on the project; or the references that did not read the same, by answer + count>
 changes: <each change applied, "<his words>", earliest first, or "none">; not applied: <each change, "<his words>" + why, or "none">
@@ -182,8 +182,12 @@ status: stopped <time> "<his words>"
 Carry mode appends one line:
 
 ```text
-carried: <n> boxes over <n> calls, <n> on scope items and <n> on Questions; last call: carried <n>, already there <n>, not carried <n by why>, left <n by answer>; <the sum> against <n> boxes before the first carry, <equal, or "differ by <n>">
+carried: <n> boxes over <n> calls, <n> on scope items and <n> on Questions; last call: carried <n> on scope items and <n> on Questions, already there <n> on scope items and <n> on Questions, not carried <n by why>, left <n by answer>; <the sum> against <n> boxes before the first carry, <equal, or "differ by <n>">
 ```
+
+The last call's `carried` and `alreadyThere` go on the line by kind, the scope items apart from the
+Questions: the scope run's recheck holds the references it finds carried forward against the scope
+items' two, and a sum with the Questions' in it holds them to nothing.
 
 ## Your summary
 

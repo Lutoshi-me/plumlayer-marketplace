@@ -234,7 +234,9 @@ the session: their reason goes in `note` in their own words, and a Question you 
 answered stays open. `reopen_question` puts one back when they tell you it was closed in error.
 Removing a scope item is different: `retire_scope_item` is the one door for that act, for a person
 and an agent alike. Use it only for a row the user asked removed, put the user's ask in `basis` in
-their words, one item per call; a row you merely suspect is wrong goes in the report.
+their words, one item per call; a row you merely suspect is wrong goes in the report. An approved
+recheck plan, which retires the rows the new delivery removed, is that ask: the recheck's retire
+step puts the words the user approved the plan with in `basis`, and nothing else it retires.
 
 ## The scope item row
 
@@ -488,6 +490,7 @@ record files, never recorded as project entries:
   ```text
   pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified <yes|no>
   pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified <yes|no>
+  pass: r <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> recited <n> rows-changed <n> removed <n> not-found <n> retired <n> kept <n> refused <n> lead-verified <yes|no>
   phase: <boundary name>
   checkin: <window> <window, the id of the last pass recorded when it was shown, or none> <go|pause>
   ```
@@ -661,7 +664,8 @@ from that line once it is written.
 Phase boundaries are the ledger's `phase:` lines, one appended by the lead at each of: plan
 approved; window 1 complete, or window 1 skipped where a pass on an addendum planned no window 1
 unit; index built; window 2 complete, or window 2 paused where a slice
-deferred sheets; packages folded; window 3 complete; packages amended; closed out. Inside a window the `pass:`
+deferred sheets; packages folded; recheck complete, on a pass whose delivery was sized; window 3
+complete; packages amended; closed out. Inside a window the `pass:`
 lines are the boundaries: one per pass in every window. A pass run
 again to finish it carries a second `pass:` line, and its last one carries the whole pass: every
 total taken over a window, and the close-out report, counts that one, for each pass the window's
@@ -672,8 +676,10 @@ file: a run in flight resumes at the phase after the last line. A check-in a `ch
 records was shown and answered, and is never shown again:
 
 - Where the last of those lines is a `checkin:` line reading `go`, start the step that follows
-  that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 7
-  step 1, or stage 6 step 1 again after a paused slice; after one inside a window, its second field
+  that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 6
+  step 6, the recheck, on a pass whose delivery was sized, and stage 7 step 1 otherwise, or stage
+  6 step 1 again after a paused slice; inside the recheck and after its own, as `recheck.md`
+  step 7 says; after one inside a window, its second field
   a pass id or `none`, the passes that are not finished, or the window's close where every pass is
   finished.
 - Where it reads `pause`, the user stopped the run there: say in one sentence what the run does
@@ -801,7 +807,9 @@ Tell them what the run will do: you read the set in three windows, the schedules
    first, then every sheet once, then each package reviewed on its own against what landed,
    several at a time, and you stop for a check-in after the first window and at regular points
    through the sheets and the packages after that; after the first window
-   every trade's page already has its items. They can stop or change course at any check-in. Give a
+   every trade's page already has its items. Where the delivery was sized, say that after the
+   sheets you recheck every scope item still on a replaced sheet, as the plan they approved says.
+   They can stop or change course at any check-in. Give a
    rough sense of how long this set will take from its size, and confirm they are staying for the
    check-ins.
 <!-- /user-facing -->
@@ -810,6 +818,28 @@ Tell them what the run will do: you read the set in three windows, the schedules
    six. Say that the time waiting on their go-ahead at check-ins is apart from that.
    Where it can, the run starts from a clean conversation, but it never raises sessions,
    compaction, context, or usage with the user, at run start or at any point after it.
+7. **The plan the user approved for the delivery.** On `start <deliveryId>`, and on a resume whose
+   ledger carries no `phase: plan approved` yet, look for the delivery's plan file,
+   `<runs root>/<projectId>/upload/<deliveryId>/plan.md`, with a local command (`ls`), the file
+   `drawing-upload`'s step 9a writes and appends to as its `size-delivery.md` says. Read its
+   `status:`, `carry:`, `carried:` and `stopped:` lines with a local filter on the line prefix and
+   never the file whole (Audience: agent).
+   - Its last `status:` line reads `approved`, and a `carried:` line follows it or its `carry:`
+     line reads `left out`: go on. The pass reads what the plan says, and the recheck runs after
+     the pass's packages are folded (stage 6 step 6).
+   - Its last `status:` line reads `approved` and no `carried:` line follows it: the carry has not
+     run. Dispatch the delivery sizer in carry mode first, with the dispatch `size-delivery.md`
+     step 3 gives and `Change: none`, and say its result in one line as its step 5 does. Where the
+     sizer appends a `stopped:` line instead, the run ends here: say why in one sentence, and that
+     the pass starts once the references are carried.
+   - Its last `status:` line reads `shown` or `stopped`, or there is no plan file where
+     `size-delivery.md` step 2 says the delivery is sized, its counts taken now: dispatch the
+     sizer in plan mode as its step 3 says, with `Change: none`, put the plan to the user in its
+     step 4's words, and take their answer as its step 5 does, each line it appends included. Where
+     they stop it again, the run ends with no pass: say so in one sentence.
+   - Where no plan file is there and `size-delivery.md` step 2 does not size the delivery, as on a
+     project with no scope item and no open Question, the pass runs as a first pass does, with no
+     plan file and no recheck.
 
 ## 2. Orientation
 
@@ -943,8 +973,17 @@ lines.
    ```sh
    python3 '<plugin root>/scripts/plan_inventory.py' plan --window 1 \
      --inventory '<run folder>/inventory.json' \
+     [--delivery-plan '<plan file>'] \
      --out '<run folder>/read-plan.md'
    ```
+
+   Where precondition 7 found the delivery's plan approved, pass its plan file as
+   `--delivery-plan`, on every window 1 plan run of the pass. A plan reading `pass: partial` reads
+   only the sheets on its `read:` line, and the script names every other sheet of the pass as `left
+   by the plan he approved`, apart from what `--exclude` leaves out; window 2 reads its window 1
+   file and leaves them out too. A plan reading `pass: full` leaves nothing out. The script refuses
+   a plan whose last status line is not approved, one naming another delivery, and one reading a
+   sheet this pass does not carry: take the plan again at precondition 7, never plan around it.
 
    It also plans the repeated lines: one unit per drawing file holding five or more of the sheets
    the run reads, in its own pass `RS1`, which never folds, each unit reading that file's repeated
@@ -995,6 +1034,13 @@ about how the run is executed. Never offer a recommended option.
 <!-- /user-facing -->
 
 Work out when the first check-in will be as precondition 6 does, off window 1's sheets.
+
+Where precondition 7 found the delivery's plan approved, their approval of it is the go-ahead
+on what to read, and the read plan is not put to them again. Tell them in one sentence what you
+read first and that you read what the plan they approved says, then append
+`phase: plan approved`. Only where you add an `--include` or an `--exclude` of your own, a
+judgment the plan they approved does not carry, put that change alone to them as the read plan's
+check-in, and append the line on their go-ahead.
 
 On the go-ahead, append `phase: plan approved` to the ledger. Nothing reads before that line exists.
 
@@ -1264,7 +1310,8 @@ At this check-in, when nothing was deferred, say plainly that every sheet in the
 read, once each, and that nothing was left unread except what was deliberately left out at the
 start. Name what landed by trade, say each trade's page carries its items and shows every sheet
 each one appears on, and say what comes next in one sentence: each package reviewed on its own
-against what landed, several at a time. Name each package you folded into another, with the reason in one sentence, and each
+against what landed, several at a time, or, where the delivery was sized, first the recheck of
+every scope item still on a replaced sheet, then the reviews. Name each package you folded into another, with the reason in one sentence, and each
 package you split into the ones its subs bid, each package a supplier furnishes with the package
 that installs its items, each sealant or firestopping package you kept with the packages whose
 work its rows seal or pass through, and that the estimator can keep it or have its rows moved to
@@ -1276,6 +1323,13 @@ whose trades or sections changed while the fold was stopped, with what changed. 
 that the rest of the set, <m> sheets, is still waiting, and that the next go-ahead reads it. Never
 say every sheet has been read while any is waiting.
 <!-- /user-facing -->
+
+6. **Recheck the scope items on a new delivery.** On a pass whose delivery precondition 7 found
+   sized, after this window's check-in and its go-ahead, read `recheck.md` beside this file and
+   run it: the comparison's open rows copied to disk, one rechecker per sheet, the retire step for
+   the rows the new delivery removed, its report by package, and `phase: recheck complete` with
+   its own check-in. Stage 7 starts on that check-in's go-ahead. A pass whose delivery was not
+   sized runs no recheck and goes from this window's check-in to stage 7.
 
 ## 7. Window 3: one review per package
 
@@ -1486,6 +1540,10 @@ Report to the user, in plain words:
   made this run (created / split / collapsed / renamed), each with its rationale, the packages derived here from scratch only in the no-spec-book case,
   and how many manual sections you placed on a package at the start of the run, if any, and the
   general requirements package with the Division 01 sections it carries.
+- **The recheck**, on a pass whose delivery was sized: the final figures by package, the
+  references carried forward, cited again by this pass and by the recheck, the rows changed, the
+  rows removed and the rows left for them, each row left for them named again, and the sheets
+  left by the plan they approved, named apart from the sheets left out of the read plan.
 - **How long it took**: wall-clock from the read plan's approval to this report.
 <!-- /user-facing -->
 
@@ -1513,8 +1571,11 @@ took, the only leftover rows the run holds. The package split's folds, splits, m
 deletes before the reviews come off one `fold_report.py print` call, as stage 6 step 5 gathers
 them, its recheck deletes included. The general requirements package's Division 01
 sections come off one fresh `solicitation_get_package` of the package whose `tradeCode` is
-`01 11 13`, its id taken from `<run folder>/plan/packages.json` with a local filter. When the
-report has been given, append `phase: closed out`.
+`01 11 13`, its id taken from `<run folder>/plan/packages.json` with a local filter. The recheck's
+figures come off one more `recheck.py report` call, as `recheck.md` step 6 makes it, and the sheets
+left by the plan they approved off the `leftByPlan` keys of `<run folder>/plan/window-1.json`, each
+key's sheet number the text before its `@`, taken with a local filter. When the report has been
+given, append `phase: closed out`.
 
 ## The dispatches and the report shapes
 
@@ -1526,9 +1587,9 @@ takes it, where the call is then the wait, because a headless session stops a ba
 after ten idle minutes. Where the call comes back with an agent id, you wait as the windows section
 says, by ending the turn.
 
-The mandates are not in these templates. They live in the five agent definitions the plugin ships
-for this run, `scope-round-runner`, `scope-vocabulary-reader`, `scope-reader`, `scope-reviewer` and
-`scope-package-folder`,
+The mandates are not in these templates. They live in the six agent definitions the plugin ships
+for this run, `scope-round-runner`, `scope-vocabulary-reader`, `scope-reader`, `scope-reviewer`,
+`scope-rechecker` and `scope-package-folder`,
 where each dispatched instance reads them fresh. They are never trimmed there and never restated here: a run that relaxes one reproduces
 a measured failure.
 
@@ -1547,7 +1608,8 @@ Run folder: <path>. Scripts: <path to the plugin's scripts directory>.
 Run your pass as your definition says.
 ```
 
-The runner's definition owns every path under the run folder: the read plan is always
+The recheck's runners take the dispatch `recheck.md` step 4 gives, with window `r`. The runner's
+definition owns every path under the run folder: the read plan is always
 `<run folder>/read-plan.md`, and the summary file and the hand-back it returns are its own to
 write. The `Scripts:` line is the plugin's own scripts directory, the path you already resolved for
 your plan script calls: the runner sums its pass with the script that sits there, and a runner

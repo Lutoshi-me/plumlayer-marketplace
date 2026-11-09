@@ -310,6 +310,7 @@ EXPECTED_AGENTS = {
     "question-checker",
     "scope-package-folder",
     "scope-reader",
+    "scope-rechecker",
     "scope-reviewer",
     "scope-round-runner",
     "scope-vocabulary-reader",
@@ -1918,6 +1919,8 @@ EXPECTED_RUNNER_MODE_HEADINGS = {
     "The ledger lines",
     "Boundary mode",
     "Review mode",
+    "Recheck mode",
+    "Retire mode",
     "What you never do",
     "Your summary",
 }
@@ -9820,8 +9823,10 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         # step after the check-in and never shows it again, `pause` asks before starting it, and a
         # check-in with no `checkin:` line after it is shown.
         "Where the last of those lines is a `checkin:` line reading `go`, start the step that follows "
-        "that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 7 "
-        "step 1, or stage 6 step 1 again after a paused slice; after one inside a window, its second "
+        "that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 6 "
+        "step 6, the recheck, on a pass whose delivery was sized, and stage 7 step 1 otherwise, or stage "
+        "6 step 1 again after a paused slice; inside the recheck and after its own, as `recheck.md` "
+        "step 7 says; after one inside a window, its second "
         "field a pass id or `none`, the passes that are not finished, or the window's close where "
         "every pass is finished.",
         "Where it reads `pause`, the user stopped the run there: say in one sentence what the run does "
@@ -13023,6 +13028,7 @@ _QUESTION_WRITING_CARRIERS = (
     "plugins/plumlayer/agents/question-checker.md",
     "plugins/plumlayer/agents/scope-package-folder.md",
     "plugins/plumlayer/agents/scope-reader.md",
+    "plugins/plumlayer/agents/scope-rechecker.md",
     "plugins/plumlayer/agents/scope-reviewer.md",
     "plugins/plumlayer/agents/scope-vocabulary-reader.md",
     "plugins/plumlayer/skills/drawing-upload/SKILL.md",
@@ -14324,6 +14330,635 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
     return Result(name, passed=not errors, detail=detail)
 
 
+
+# --------------------------------------------------------------------------- #
+# Check: the recheck of a new delivery, and the plan he approved
+# --------------------------------------------------------------------------- #
+#
+# A new delivery on a project that already holds scope is sized and the estimator approves its
+# plan. The scope run then reads only what that plan reads, and after the pass's packages are
+# folded it rechecks every scope item's reference on a replaced page that nothing cited again: a
+# fresh agent copies the comparison's rows to disk, `recheck.py` plans one unit per sheet over the
+# open rows, a rechecker reads each sheet and gives every row one outcome, and a retire step takes
+# off only the items each of whose open rows reads removed. A row not found is the estimator's,
+# never retired. The last check-in counts it all by package off the script, never by hand.
+#
+# The arms: the plan script's `--delivery-plan` reading an approved partial plan's sheets only and
+# refusing a plan shown, stopped, of another delivery, or reading a sheet the inventory lacks; the
+# recheck plan taking only the open rows, one unit per sheet, at most twelve to a pass, a sheet no
+# longer printed under its old number, ids kept on a run again, row keys following each row's own
+# identity over a refetch in another order, a sheet whose rows changed taking a new id, and refusing
+# a page of another delivery or rule version or one row carried twice in place of another; a unit's
+# outcome lines held to its rows exactly once, and a unit that cited nothing held to no write and no
+# verify_unit call; window r through the summary and the lead's record and check-in; the retire
+# step retiring an item all removed and listing an item with a row not found, never both, and a
+# reason kept under the 2,000 characters a retire takes; the report by package off invented
+# fetches, an item on two packages counted in each, a carried figure differing from the plan named,
+# a carried line with no split by kind read, and a plan with the carry left out carrying nothing;
+# and the shipped text pinned: the rechecker's tools and modes, a moved box never written as the
+# citation, a current page never read off a sheet number, the dispatch shape the runner sends, the
+# check-in's passes, and the plan status words in the skill.
+#
+# Honest bound: this proves the scripts and the text. It cannot prove a rechecker reads a sheet
+# well, or that the record door takes the citations it sends.
+
+RECHECK_SCRIPT = ("scripts", "recheck.py")
+RECHECKER = "agents/scope-rechecker.md"
+RECHECKER_TOOLS = (
+    "Read", "Write", "Bash", "Grep",
+    *(f"{CONNECTOR_TOOL_PREFIX}{verb}" for verb in (
+        "get_page_text", "render_page", "read_sheet_context", "search_set_text", "search",
+        "list_scope_items", "cite_source", "record_batch", "list_questions", "ask_question",
+        "reply_question", "retire_scope_item",
+    )),
+)
+RECHECKER_MODES = {"What your dispatch gives you", "What you never do", "Sheet mode", "Retire mode", "Your report"}
+RECHECK_SKILL_FILE = "skills/scope-run/recheck.md"
+_RECHECK_PINS: tuple[tuple[str, str], ...] = (
+    (RECHECKER, "Never write `movedTo` as a box"),
+    (RECHECKER, "the box comes from the lines that page's text read gives you there"),
+    (RECHECKER, "A row you read as removed or not found writes nothing"),
+    (RECHECKER, "Before you read a `gone` or `noLongerPrinted` row as removed or not found, search the current set for it"),
+    (RECHECKER, "Never create a scope item"),
+    (RECHECKER, "retire_scope_item(projectId, subject, basis, reason, sources, deliveryId)"),
+    (RECHECKER, "the reader's mandates, by path"),
+    (RECHECKER, "any of its rows in `<run folder>/recheck/rows-after/` reads `open: false`"),
+    (RECHECKER, "That is a current page whether or not the answer names a `sheetNumber`"),
+    (RECHECKER, "A null `sheetNumber` never makes a page not current"),
+    ("agents/scope-round-runner.md", "make no `verify_unit` call, which needs a sheet"),
+    ("agents/scope-round-runner.md", "Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-rechecker)"),
+    ("agents/scope-round-runner.md", "subagent_type: plumlayer:scope-rechecker"),
+    ("agents/scope-round-runner.md", "recheck.py' check --report"),
+    ("agents/scope-round-runner.md", 'search(projectId, subject: "<subject>", predicate: "scopeItemRetraction")'),
+    ("skills/scope-run/SKILL.md", "Its last `status:` line reads `approved`, and a `carried:` line follows it or its `carry:` line reads `left out`: go on"),
+    ("skills/scope-run/SKILL.md", "reads `shown` or `stopped`"),
+    ("skills/scope-run/SKILL.md", "no `carried:` line"),
+    ("skills/scope-run/SKILL.md", "pass its plan file as `--delivery-plan`, on every window 1 plan run of the pass"),
+    ("skills/scope-run/SKILL.md", "An approved recheck plan, which retires the rows the new delivery removed, is that ask"),
+    ("skills/scope-run/SKILL.md", "phase: recheck complete"),
+    (RECHECK_SKILL_FILE, "recheck.py' plan --run"),
+    (RECHECK_SKILL_FILE, "recheck.py' retire --run"),
+    (RECHECK_SKILL_FILE, "recheck.py' report --run"),
+    (RECHECK_SKILL_FILE, 'compare_delivery_status(projectId: "<projectId>", deliveryId: "<deliveryId>", kind: "scopeItem", limit: 200, offset: 0)'),
+    (RECHECK_SKILL_FILE, "Nothing else goes in the ledger"),
+    (RECHECK_SKILL_FILE, "lead_pass.py' checkin '<run folder>' r --passes <pass id>,<pass id>"),
+    (RECHECK_SKILL_FILE, "make no `checkin` call, which refuses an empty list"),
+)
+# A current page read off a sheet number: an unnumbered current page then reads as not current.
+_RECHECK_SHEET_NUMBER_CURRENT_RE = re.compile(r"names\s+a\s+`sheetNumber`\s+and\s+an\s+empty", re.I)
+# The lines the runner's rechecker dispatch carries, in order, as the rechecker's definition reads them.
+_RECHECK_DISPATCH_LINES = (
+    "subagent_type: plumlayer:scope-rechecker",
+    "run_in_background: false",
+    "Project: <projectId>. Window: r. Pass: <pass id>. Unit: <unit id>. Mode: <sheet or retire>.",
+    "Delivery: <deliveryId>, label <label>.",
+    "Sheet: <sheet number>. Old page: <each fileId + page>. New page: <each fileId + page, or none>.",
+    "Rows file: <run folder>/recheck/units/<unit id>.json, or Items file: <run folder>/recheck/retire/<unit id>.json.",
+    "Plan file: <path to plan.md>.",
+    "Reader definition: <scripts path>/../agents/scope-reader.md, written out in full.",
+    "Run folder: <path>.",
+)
+
+
+def _recheck_text_errors(texts: dict[str, str]) -> list[str]:
+    errors: list[str] = []
+    for label, phrase in _RECHECK_PINS:
+        if phrase not in _collapsed(texts[label]):
+            errors.append(f"{label} does not read {phrase!r}")
+    rechecker = texts[RECHECKER]
+    tools_line = next((l for l in rechecker.splitlines() if l.startswith("tools:")), "")
+    tools = tuple(t.strip() for t in tools_line[len("tools:"):].split(","))
+    if sorted(tools) != sorted(RECHECKER_TOOLS):
+        errors.append(f"{RECHECKER} tools line reads {tools_line!r}, not the {len(RECHECKER_TOOLS)} tools pinned")
+    headings = {line[3:].strip() for line in rechecker.splitlines() if line.startswith("## ")}
+    if headings != RECHECKER_MODES:
+        errors.append(f"{RECHECKER} headings are {sorted(headings)}, not {sorted(RECHECKER_MODES)}")
+    # A moved box written as the citation: a sentence telling the rechecker to send movedTo as bboxPts.
+    if re.search(r"(?:send|use)\s+`?movedTo`?\s+as\s+(?:the\s+)?(?:box|`bboxPts`)", _collapsed(rechecker), re.I):
+        errors.append(f"{RECHECKER} tells the rechecker to write `movedTo` as the box")
+    if _RECHECK_SHEET_NUMBER_CURRENT_RE.search(_collapsed(rechecker)):
+        errors.append(f"{RECHECKER} reads a page as current only where it names a `sheetNumber`")
+    # The check-in inside the passes and the one closing the recheck each name their passes,
+    # since `checkin` refuses a call without --passes.
+    checkins = re.findall(r"lead_pass\.py'? checkin [^\n`]*", texts[RECHECK_SKILL_FILE])
+    if checkins != ["lead_pass.py' checkin '<run folder>' r --passes <pass id>,<pass id>"] * 2:
+        errors.append(f"{RECHECK_SKILL_FILE} carries the checkin commands {checkins}, not the two naming --passes")
+    runner_blocks = [body for _at, body in _fenced_blocks(texts["agents/scope-round-runner.md"].splitlines())[0]]
+    dispatch = next((b for b in runner_blocks if any("plumlayer:scope-rechecker" in l for l in b)), None)
+    if dispatch is None:
+        errors.append("agents/scope-round-runner.md carries no rechecker dispatch template")
+    else:
+        lines = [l.strip() for l in dispatch if l.strip()]
+        if lines[:len(_RECHECK_DISPATCH_LINES)] != list(_RECHECK_DISPATCH_LINES):
+            errors.append(f"the runner's rechecker dispatch reads {lines}, not the pinned shape")
+    for line in _RECHECK_DISPATCH_LINES[2:]:
+        field = line.split(":", 1)[0] + ":"
+        if f"`{field}`" not in rechecker and field not in rechecker:
+            errors.append(f"{RECHECKER} names no `{field}` its dispatch carries")
+    return errors
+
+
+def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "recheck"
+    fixtures = marketplace_root / "harness" / "fixtures"
+    try:
+        plan_module = _load_script_module(plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT), "plan_inventory")
+        recheck = _load_script_module(plugin_path.joinpath(*RECHECK_SCRIPT), "recheck")
+        summary_module = _load_script_module(plugin_path.joinpath(*PASS_SUMMARY_SCRIPT), "pass_summary")
+        lead = _load_script_module(plugin_path.joinpath(*LEAD_PASS_SCRIPT), "lead_pass")
+        rows = json.loads((fixtures / "set-grid-fixture.json").read_text(encoding="utf-8"))["sheets"]
+        recheck_fixture = json.loads((fixtures / "recheck-rows-fixture.json").read_text(encoding="utf-8"))
+        plan_fixture = (fixtures / "recheck-plan-fixture.md").read_text(encoding="utf-8")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot load the scripts or their fixtures: {e}")
+    root = Path(__file__).parent / ".test-results" / "recheck"
+    shutil.rmtree(root, ignore_errors=True)
+    errors: list[str] = []
+    refusals = 0
+
+    def write(path: Path, payload) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(payload if isinstance(payload, str) else json.dumps(payload, indent=2), encoding="utf-8")
+        return path
+
+    def run(module, argv: list[str]) -> tuple[int, str, str]:
+        try:
+            return _run_script_main(module, argv)
+        except SystemExit as e:
+            return int(e.code or 0), "", "argparse exit"
+        except Exception as e:
+            return 99, "", f"raised {type(e).__name__}: {e}"
+
+    def refused(module, argv: list[str], case: str, needle: str) -> None:
+        nonlocal refusals
+        refusals += 1
+        code, out, err = run(module, argv)
+        if code != 1 or out or len(err.splitlines()) != 1:
+            errors.append(f"{case}: exited {code} with stdout {out[:120]!r} and stderr {err[:200]!r}, not one refusal line")
+        elif needle not in err:
+            errors.append(f"{case}: refused without naming {needle!r}: {err[:240]}")
+
+    # ------------------------------------------------------------------ #
+    # --delivery-plan: the plan he approved reads only its sheets
+    # ------------------------------------------------------------------ #
+    numbers = [r["sheetNumber"] for r in rows]
+    read = [numbers[0], numbers[9], numbers[20]]
+    s1 = _issue_ref("deliv-s1", "addendum", "deliv-s0", len(rows))
+
+    def plan_text(delivery: str, pass_kind: str, read_line: str, status: str) -> str:
+        return (
+            f"plan: {delivery} | Label of {delivery} | written 2026-01-05T10:00:00Z\n"
+            f"measured: last poll 2026-01-05T10:02:00Z, rule version 3, complete yes, references cut short no\n"
+            f"pass: {pass_kind}\nread: {read_line}\ncarry: left out\nstopped: no\n"
+            f"status: shown 2026-01-05T10:03:00Z\n{status}\n"
+        )
+
+    approved = 'status: approved 2026-01-05T10:04:00Z "go ahead"'
+
+    def pass_folder(case: str) -> Path:
+        # Each case in a project folder of its own, since two run folders of one project never share a tag.
+        folder = root / "delivery-plan" / case / "deliv-s1"
+        write(folder / "run.json", dict(_issue_run("deliv-s1", ["deliv-s1"], "i1"), issue="addendum"))
+        grid = write(folder / "grid" / "page-000.json", _issue_grid(rows, s1, [s1], "deliv-s1"))
+        code, out, err = run(plan_module, ["inventory", "--grid", str(grid), "--expect-count", str(len(rows)), "--out-dir", str(folder)])
+        if code != 0:
+            errors.append(f"{case}: the inventory refused its own grid: {err or out}")
+        return folder
+
+    def window_1(folder: Path, plan_file: Path | None) -> list[str]:
+        return ["plan", "--window", "1", "--inventory", str(folder / "inventory.json"), "--out", str(folder / "read-plan.md")] + (
+            ["--delivery-plan", str(plan_file)] if plan_file else [])
+
+    partial = pass_folder("partial")
+    partial_plan = write(partial / "plan.md", plan_text("deliv-s1", "partial", ", ".join(read), approved))
+    code, bounds, err = run(plan_module, window_1(partial, partial_plan))
+    if code != 0:
+        errors.append(f"an approved partial plan was refused at window 1: {err}")
+    else:
+        left = len([n for n in numbers if n not in read])
+        if f"left by the plan he approved {left}," not in bounds:
+            errors.append(f"window 1's bounds line does not count {left} sheets left by the plan he approved: {bounds!r}")
+        w1 = json.loads((partial / "plan" / "window-1.json").read_text(encoding="utf-8"))
+        if len(w1.get("leftByPlan", [])) != left or w1.get("deliveryPlan") != str(partial_plan):
+            errors.append(f"window-1.json does not carry the {left} sheets left by the plan and the plan file")
+        code, bounds2, err = run(plan_module, [
+            "plan", "--window", "2", "--inventory", str(partial / "inventory.json"),
+            "--window-1", str(partial / "plan" / "window-1.json"), "--out", str(partial / "read-plan-2.md")])
+        if code != 0:
+            errors.append(f"window 2 after an approved partial plan was refused: {err}")
+        else:
+            planned = set()
+            for text in ((partial / "read-plan.md").read_text(encoding="utf-8"), (partial / "read-plan-2.md").read_text(encoding="utf-8")):
+                for line in text.split(_LEFT_OUT_HEADING)[0].splitlines():
+                    unit = _ISSUE_UNIT_RE.match(line)
+                    if unit and "repeated lines" not in line:
+                        planned.add(line.split(". ", 1)[1].split(",", 1)[0])
+            if planned != set(read):
+                errors.append(f"windows 1 and 2 of a partial plan read {sorted(planned)}, not the plan's {sorted(read)}")
+            if f"sheets left by the plan he approved {left}," not in bounds2:
+                errors.append(f"window 2's bounds line does not count the sheets left by the plan: {bounds2!r}")
+    for case, delivery, kind, read_line, status, needle in (
+        ("a plan shown and not answered", "deliv-s1", "partial", ", ".join(read), "", "not approved"),
+        ("a stopped plan", "deliv-s1", "partial", ", ".join(read), 'status: stopped 2026-01-05T10:04:00Z "stop"', "not approved"),
+        ("a plan reading a sheet the pass lacks", "deliv-s1", "partial", f"{read[0]}, Z-999", approved, "Z-999"),
+        ("another delivery's plan", "deliv-zz", "partial", ", ".join(read), approved, "plan of delivery deliv-zz"),
+    ):
+        folder = pass_folder(case.replace(" ", "-").replace("'", ""))
+        refused(plan_module, window_1(folder, write(folder / "plan.md", plan_text(delivery, kind, read_line, status))), case, needle)
+    full = pass_folder("full")
+    code, _b, err = run(plan_module, window_1(full, write(full / "plan.md", plan_text("deliv-s1", "full", f"every sheet the set prints, {len(rows)}", approved))))
+    full_text = (full / "read-plan.md").read_text(encoding="utf-8") if code == 0 else ""
+    bare = pass_folder("bare")
+    code2, _b2, err2 = run(plan_module, window_1(bare, None))
+    if code != 0 or code2 != 0:
+        errors.append(f"a full plan or no plan was refused at window 1: {err or err2}")
+    elif [l for l in full_text.split(_LEFT_OUT_HEADING)[0].splitlines() if _ISSUE_UNIT_RE.match(l)] != [
+            l for l in (bare / "read-plan.md").read_text(encoding="utf-8").split(_LEFT_OUT_HEADING)[0].splitlines() if _ISSUE_UNIT_RE.match(l)]:
+        errors.append("a full plan restricted window 1: its unit lines differ from a plan with no delivery plan")
+
+    # ------------------------------------------------------------------ #
+    # recheck.py plan: only the open rows, one unit per sheet
+    # ------------------------------------------------------------------ #
+    page = recheck_fixture["page"]
+    project = root / "project"
+    write(project / "deliveries.json", recheck_fixture["deliveries"])
+
+    def recheck_folder(case: str, pages: list[dict], plan_md: str = plan_fixture) -> Path:
+        folder = project / case / "deliv-0002"
+        write(folder / "run.json", dict(_issue_run("deliv-0002", ["deliv-0002"], "i2"), issue="addendum", label="Invented set two"))
+        for index, body in enumerate(pages):
+            write(folder / "recheck" / "rows-before" / f"page-{index:03d}.json", body)
+        write(folder / "recheck" / "files.json", recheck_fixture["files"])
+        write(folder / "recheck" / "packages.json", recheck_fixture["packages"])
+        write(folder / "plan.md", plan_md)
+        return folder
+
+    def plan_args(folder: Path) -> list[str]:
+        return ["plan", "--run", str(folder), "--delivery-plan", str(folder / "plan.md"), "--deliveries", str(project / "deliveries.json")]
+
+    main = recheck_folder("main", [page])
+    code, bounds, err = run(recheck, plan_args(main))
+    blocks = []
+    if code != 0:
+        errors.append(f"the recheck plan refused the fixture: {err}")
+    else:
+        plan_text_r = (main / "read-plan.md").read_text(encoding="utf-8")
+        blocks = _plan_passes(plan_text_r)
+        unit_lines = [l for l in plan_text_r.split(_LEFT_OUT_HEADING)[0].splitlines() if re.match(r"^i2-R\S+-[0-9]+\. ", l)]
+        sheets = [l.split(". ", 1)[1].split(",", 1)[0] for l in unit_lines]
+        if sheets != ["A-101", "A-102", "A-103", "S-201"]:
+            errors.append(f"the recheck plans the sheets {sheets}, not one unit per sheet with an open row")
+        open_rows = sum(1 for r in page["referenceRows"]["rows"] if r["open"])
+        unit_rows = sum(len(json.loads(p.read_text(encoding="utf-8"))["rows"]) for p in (main / "recheck" / "units").glob("*.json"))
+        if unit_rows != open_rows or "open 8," not in bounds:
+            errors.append(f"the units carry {unit_rows} rows and the bounds line reads {bounds!r}; the open rows are {open_rows}")
+        if not any("A-103, file none, " in l and "no new page" in l for l in unit_lines):
+            errors.append("the sheet the delivery no longer prints is not planned under its old number with no new page")
+        if [b["id"] for b in blocks] != ["i2-RA"] or "folded in: i2-RS" not in plan_text_r:
+            errors.append(f"the recheck passes are {[b['id'] for b in blocks]}, not one pass with the one S sheet folded in")
+        first_ids = [l.split(". ", 1)[0] for l in unit_lines]
+        reversed_page = json.loads(json.dumps(page))
+        reversed_page["referenceRows"]["rows"].reverse()
+        for path in (main / "recheck" / "rows-before").glob("*.json"):
+            path.unlink()
+        write(main / "recheck" / "rows-before" / "page-000.json", reversed_page)
+        code, _b, err = run(recheck, plan_args(main))
+        again = (main / "read-plan.md").read_text(encoding="utf-8")
+        again_ids = {l.split(". ", 1)[1].split(",", 1)[0]: l.split(". ", 1)[0] for l in again.splitlines() if re.match(r"^i2-R\S+-[0-9]+\. ", l)}
+        if code != 0 or any(again_ids.get(sheet) != unit_id for sheet, unit_id in zip(sheets, first_ids)):
+            errors.append(f"a run again over the rows in another order did not keep every unit id: {err or again_ids}")
+        write(main / "recheck" / "rows-before" / "page-000.json", page)
+        run(recheck, plan_args(main))
+    many = json.loads(json.dumps(page))
+    many["referenceRows"]["rows"] = [
+        dict(page["referenceRows"]["rows"][2], subject=f"scopeItem:i1-B1-1-{n}", sheetNumber=f"B-{n:03d}") for n in range(1, 16)
+    ]
+    many["referenceRows"]["total"] = 15
+    big = recheck_folder("fifteen-sheets", [many])
+    code, _b, err = run(recheck, plan_args(big))
+    sizes = [int(b["fields"]["units"]) for b in _plan_passes((big / "read-plan.md").read_text(encoding="utf-8"))] if code == 0 else []
+    if code != 0 or sizes != [8, 7]:
+        errors.append(f"fifteen sheets of one letter plan passes of {sizes}, not 8 and 7: {err}")
+    for case, change, needle in (
+        ("a page of another delivery", {"delivery": dict(page["delivery"], id="deliv-9999")}, "delivery deliv-9999"),
+        ("a page of another rule version", {"ruleVersion": 4}, "rule version 4"),
+        ("a page whose comparison is not complete", {"complete": False}, "not complete"),
+        ("a Question's row", {"referenceRows": dict(page["referenceRows"], rows=[dict(page["referenceRows"]["rows"][0], kind="question")] + page["referenceRows"]["rows"][1:])}, "no scope item's"),
+        ("pages that leave rows out", {"referenceRows": dict(page["referenceRows"], total=20)}, "of 20"),
+        # Offsets and the count still add up, so only the rows' own identities show the one missing.
+        ("pages carrying one row twice in place of another", {"referenceRows": dict(page["referenceRows"], rows=[
+            page["referenceRows"]["rows"][0]] * 2 + page["referenceRows"]["rows"][2:])}, "twice"),
+    ):
+        refused(recheck, plan_args(recheck_folder(case.replace(" ", "-").replace("'", ""), [dict(page, **change)])), f"the recheck plan over {case}", needle)
+
+    # A row's key follows its own identity: rows fetched in another order keep their keys, so an
+    # old report's outcome never lands on another item; a sheet whose rows changed takes an id never
+    # handed out before, so a report over the old rows counts for nothing.
+    ident = recheck_folder("row-identity", [page])
+    run(recheck, plan_args(ident))
+
+    def keys_of(folder: Path) -> dict[str, dict[str, str]]:
+        state = json.loads((folder / "recheck" / "plan.json").read_text(encoding="utf-8"))
+        out: dict[str, dict[str, str]] = {}
+        for entry in state["units"]:
+            unit = json.loads((folder / "recheck" / "units" / f"{entry['id']}.json").read_text(encoding="utf-8"))
+            out[entry["key"]] = {"id": entry["id"], **{r["key"]: r["row"]["subject"] for r in unit["rows"]}}
+        return out
+
+    first_keys = keys_of(ident)
+    swapped = json.loads(json.dumps(page))
+    order = swapped["referenceRows"]["rows"]
+    order[5], order[6] = order[6], order[5]
+    write(ident / "recheck" / "rows-before" / "page-000.json", swapped)
+    code, _b, err = run(recheck, plan_args(ident))
+    again_keys = keys_of(ident) if code == 0 else {}
+    if again_keys != first_keys:
+        errors.append(f"rows fetched in another order moved a row key onto another item: A-102 reads "
+                      f"{again_keys.get('A-102')} against {first_keys.get('A-102')} {err}")
+    changed = json.loads(json.dumps(swapped))
+    changed["referenceRows"]["rows"][3] = dict(changed["referenceRows"]["rows"][3], answer="moved", movedTo=[201, 30, 251, 40])
+    write(ident / "recheck" / "rows-before" / "page-000.json", changed)
+    code, bounds_c, err = run(recheck, plan_args(ident))
+    now_keys = keys_of(ident) if code == 0 else {}
+    handed_out = {k["id"] for k in first_keys.values()}
+    if (code != 0 or now_keys.get("A-101", {}).get("id") in handed_out | {None}
+            or any(now_keys.get(s, {}).get("id") != k["id"] for s, k in first_keys.items() if s != "A-101")
+            or "of them for a sheet whose rows changed 1," not in bounds_c):
+        errors.append(f"a sheet whose rows changed did not take a new id while the others kept theirs: "
+                      f"{ {s: k.get('id') for s, k in now_keys.items()} } {bounds_c!r} {err}")
+
+    # ------------------------------------------------------------------ #
+    # A unit's outcome lines, window r through the summary and the lead
+    # ------------------------------------------------------------------ #
+    reports = {
+        "i2-RA-1": [
+            'row: i2-RA-1.1 | recited | A-101 file-0202 p3 | "Invented item three" | box [101, 50, 151, 60] INVENTED WORDS',
+            'row: i2-RA-1.2 | removed | A-101 file-0202 p3 | "Invented item four" | box [200, 10, 250, 20] ITEM FOUR DELETED',
+            'row: i2-RA-1.3 | removed | A-101 file-0202 p3 | "Invented item eight" | whole sheet: the plan shows no item eight',
+        ],
+        "i2-RA-2": [
+            'row: i2-RA-2.1 | not found | none | "Invented item five" | searched the set for ITEM FIVE and found it nowhere',
+            'row: i2-RA-2.2 | removed | A-102 file-0202 p4 | "Invented item six" | whole sheet: the plan shows no item six',
+            'row: i2-RA-2.3 | updated | A-102 file-0202 p4 | "Invented item seven" | box [200, 100, 250, 110] SIZE 12',
+        ],
+        "i2-RA-3": ['row: i2-RA-3.1 | not found | none | "Invented item six" | searched the set for ITEM SIX'],
+        "i2-RS-1": ['row: i2-RS-1.1 | removed | S-201 file-0202 p6 | "Invented structural item" | box [5, 5, 50, 15] ITEM REMOVED'],
+    }
+
+    def report_file(folder: Path, unit: str, lines: list[str], updated: int | None = None) -> Path:
+        cited = sum(1 for l in lines if "| recited |" in l or "| updated |" in l) if updated is None else updated
+        return write(folder / "reports" / f"{unit}.md", f"unit: {unit}   pass: i2-RA   window: r\n" + "\n".join(lines)
+                     + f"\ncreated: 0   updated: {cited}   questions raised: 0   questions replied: 0\n"
+                     + f"sent: {cited}   landed: {cited}   conflicts: none\nanomalies: none\n")
+
+    for unit, lines in reports.items():
+        report_file(main, unit, lines)
+    code, out, err = run(recheck, ["check", "--report", str(main / "reports" / "i2-RA-1.md")])
+    if code != 0 or "recited 1, updated 0, removed 2, not found 0" not in out or "find back: scopeItem:i1-A1-1-3 on A-101 file-0202 p3" not in out:
+        errors.append(f"the check of a whole unit reads {out!r} {err!r}")
+    # A unit whose every row reads removed wrote nothing, so it names no sheet for verify_unit, which
+    # needs one; the check holds its report to no write instead.
+    code, out, err = run(recheck, ["check", "--report", str(main / "reports" / "i2-RS-1.md")])
+    if code != 0 or "verify sheets (0): none; the unit wrote nothing, so no verify_unit call" not in out.splitlines():
+        errors.append(f"the check of a unit that cited nothing reads {out!r} {err!r}, not that it makes no verify_unit call")
+    report_file(main, "i2-RS-1", reports["i2-RS-1"], updated=1)
+    refused(recheck, ["check", "--report", str(main / "reports" / "i2-RS-1.md")],
+            "the check of a unit that cited nothing and claims a write", "no verify_unit call could find")
+    # Count lines of no write with corrected ones under them: the first pair alone reads as no
+    # write, so a report repeating either count line is refused.
+    for prefix, second in (("created:", "created: 0   updated: 1   questions raised: 0   questions replied: 0"),
+                           ("sent:", "sent: 1   landed: 1   conflicts: none")):
+        zero = report_file(main, "i2-RS-1", reports["i2-RS-1"])
+        write(zero, zero.read_text(encoding="utf-8").replace("anomalies: none\n", f"{second}\nanomalies: none\n"))
+        refused(recheck, ["check", "--report", str(zero)],
+                f"the check of a unit that cited nothing with a second `{prefix}` line", f"2 `{prefix}` lines")
+    report_file(main, "i2-RS-1", reports["i2-RS-1"])
+    bad = main / "bad-reports"
+    for case, lines, needle in (
+        ("a row with no outcome line", reports["i2-RA-1"][:2], "no outcome line for row i2-RA-1.3"),
+        ("a row with two outcome lines", reports["i2-RA-1"] + [reports["i2-RA-1"][0]], "two outcome lines"),
+        ("a row the unit does not carry", reports["i2-RA-1"] + ['row: i2-RA-1.9 | removed | A-101 file-0202 p3 | "x" | whole sheet: none'], "no such row"),
+        ("a removed row naming no sheet", reports["i2-RA-1"][:2] + ['row: i2-RA-1.3 | removed | none | "x" | whole sheet: gone'], "no `<sheet> <fileId> p<page>`"),
+        ("a row not found naming a page", reports["i2-RA-1"][:2] + ['row: i2-RA-1.3 | not found | A-101 file-0202 p3 | "x" | searched'], "names no page"),
+        ("a cited row with no box and no whole sheet", reports["i2-RA-1"][:2] + ['row: i2-RA-1.3 | recited | A-101 file-0202 p3 | "x" | moved to 1,2,3,4'], "neither `box"),
+    ):
+        path = report_file(main, "i2-RA-1", lines)
+        refused(recheck, ["check", "--report", str(path)], f"the check of {case}", needle)
+    report_file(main, "i2-RA-1", reports["i2-RA-1"])
+
+    ledger = main / "ledger.md"
+    ledger_lines = ["phase: plan approved", "phase: packages folded"]
+    for unit, lines in reports.items():
+        updated = sum(1 for l in lines if "| recited |" in l or "| updated |" in l)
+        ledger_lines += [f"dispatch r i2-RA {unit} sheets x purpose recheck",
+                         f"verified r i2-RA {unit} created 0 items 0 updated {updated} questions 0 replied 0 sent {updated} landed {updated} conflicts 0 result ok"]
+    write(ledger, "\n".join(ledger_lines) + "\n")
+    write(main / "trades" / "i2-RA.txt", "".join(f"{unit} candidates 0\n" for unit in reports))
+    code, out, err = run(summary_module, [str(ledger), "r", "i2-RA", "--plan", str(main / "read-plan.md"),
+                                          "--trades", str(main / "trades" / "i2-RA.txt"), "--out", str(main / "reports" / "i2-RA.md")])
+    want_line = "recheck: rows recited 1, updated 1, removed 4, not found 2; items retired 0, kept 0, refused 0"
+    if code != 0 or want_line not in out.splitlines():
+        errors.append(f"the summary of a window r pass does not print {want_line!r}: {out!r} {err!r}")
+    counts = json.dumps([{"subjectPrefix": f"scopeItem:{u}-", "entryCount": 0} for u in reports])
+    code, out, err = run(lead, ["record", str(ledger), "r", "i2-RA", "--plan", str(main / "read-plan.md"), "--counts-json", counts])
+    if code != 0 or "recited 1 rows-changed 1 removed 4 not-found 2 retired 0 kept 0 refused 0 lead-verified yes" not in out:
+        errors.append(f"the lead's record of a window r pass reads {out!r} {err!r}")
+    elif "4 sheets rechecked (A-101, A-102, A-103, S-201)" not in out:
+        errors.append(f"the line under the recorded recheck pass does not name its sheets: {out!r}")
+    code, out, err = run(lead, ["checkin", str(main), "r", "--passes", "i2-RA"])
+    if code != 0 or "rows cited again 1, rows changed 1, rows read as removed 4, rows not found 2" not in out:
+        errors.append(f"the recheck check-in reads {out[:400]!r} {err!r}")
+
+    # ------------------------------------------------------------------ #
+    # The retire step: all removed retires, one row not found lists it, never both
+    # ------------------------------------------------------------------ #
+    retire_args = ["retire", "--run", str(main), "--delivery-plan", str(main / "plan.md")]
+    early = recheck_folder("early-retire", [page])
+    run(recheck, plan_args(early))
+    refused(recheck, ["retire", "--run", str(early), "--delivery-plan", str(early / "plan.md")], "the retire step before any sheet unit is verified", "carry no `verified r` line")
+    after = json.loads(json.dumps(page))
+    for r in after["referenceRows"]["rows"]:
+        if r["subject"] in ("scopeItem:i1-A1-1-3", "scopeItem:i1-A1-1-7"):
+            r["open"] = False
+    write(main / "recheck" / "rows-after" / "page-000.json", after)
+    code, out, err = run(recheck, retire_args)
+    items = {}
+    if code != 0:
+        errors.append(f"the retire step refused the fixture: {err}")
+    else:
+        for path in (main / "recheck" / "retire").glob("*.json"):
+            for item in json.loads(path.read_text(encoding="utf-8"))["items"]:
+                items[item["subject"]] = item
+        if sorted(items) != ["scopeItem:i1-A1-1-4", "scopeItem:i1-S1-1-1"]:
+            errors.append(f"the retire step chose {sorted(items)}, not the two items each of whose open rows reads removed")
+        four = items.get("scopeItem:i1-A1-1-4", {})
+        if four.get("basis") != "go ahead with the plan" or four.get("reason") != (
+                "Removed by Invented set two: on A-101 in Invented set one, no longer on A-101"):
+            errors.append(f"the retire of item four carries basis {four.get('basis')!r} and reason {four.get('reason')!r}")
+        if four.get("sources") != [{"kind": "sheet-region", "sheet": "A-101", "fileId": "file-0202", "pageInPdf": 3,
+                                    "bboxPts": [200.0, 10.0, 250.0, 20.0], "frame": "page-points"}]:
+            errors.append(f"the retire of item four cites {four.get('sources')}, not the box on the sheet that shows the removal")
+        if "items his to settle 2" not in out or "kept on a current page 1" not in out:
+            errors.append(f"the retire step's bounds line does not list two items for him and one kept: {out!r}")
+    # Never both: the item with one row not found turned removed retires, and stays off his list.
+    flipped = recheck_folder("never-both", [page])
+    run(recheck, plan_args(flipped))
+    for unit, lines in reports.items():
+        report_file(flipped, unit, [l.replace("row: i2-RA-3.1 | not found | none |", "row: i2-RA-3.1 | removed | A-103 file-0101 p5 |")
+                                    .replace("searched the set for ITEM SIX", "whole sheet: the index no longer lists A-103") for l in lines])
+    shutil.copy(ledger, flipped / "ledger.md")
+    write(flipped / "recheck" / "rows-after" / "page-000.json", after)
+    code, out, err = run(recheck, ["retire", "--run", str(flipped), "--delivery-plan", str(flipped / "plan.md")])
+    chosen = set()
+    for path in (flipped / "recheck" / "retire").glob("*.json"):
+        chosen.update(item["subject"] for item in json.loads(path.read_text(encoding="utf-8"))["items"])
+    if code != 0 or "scopeItem:i1-A1-1-6" not in chosen or "items his to settle 1" not in out:
+        errors.append(f"an item whose rows all read removed is not retired once its not found row reads removed: {chosen} {out!r} {err!r}")
+
+    # A reason past the 2,000 characters retire_scope_item takes names its sheets together, then
+    # only their count; it is never cut. One item on 150 sheets, each read removed off the index.
+    long_rows = [dict(page["referenceRows"]["rows"][3], subject="scopeItem:i1-L1-1-1", entryIds=[f"ent-l-{n}"],
+                      sheetNumber=f"L-{n:04d}", old={"fileId": "file-0101", "page": n}, new={"fileId": "file-0202", "page": n})
+                 for n in range(1, 151)]
+    long_page = dict(page, referenceRows={"total": len(long_rows), "offset": 0, "limit": 200, "rows": long_rows})
+    lengthy = recheck_folder("long-reason", [long_page])
+    run(recheck, plan_args(lengthy))
+    long_units = json.loads((lengthy / "recheck" / "plan.json").read_text(encoding="utf-8"))["units"]
+    for entry in long_units:
+        report_file(lengthy, entry["id"], [f'row: {entry["id"]}.1 | removed | G-001 file-0202 p1 | "Invented long item" | whole sheet: the index no longer lists the sheet'])
+    write(lengthy / "ledger.md", "".join(
+        f"verified r i2-RL {e['id']} created 0 items 0 updated 0 questions 0 replied 0 sent 0 landed 0 conflicts 0 result ok\n" for e in long_units))
+    write(lengthy / "recheck" / "rows-after" / "page-000.json", long_page)
+    code, out, err = run(recheck, ["retire", "--run", str(lengthy), "--delivery-plan", str(lengthy / "plan.md")])
+    long_items = [item for path in (lengthy / "recheck" / "retire").glob("*.json")
+                  for item in json.loads(path.read_text(encoding="utf-8"))["items"]] if code == 0 else []
+    want_reason = ("Removed by Invented set two: on " + ", ".join(f"L-{n:04d}" for n in range(1, 151))
+                   + " in Invented set one, no longer on them")
+    if len(long_items) != 1 or long_items[0]["reason"] != want_reason:
+        errors.append(f"an item on 150 sheets retires with reason {[i['reason'][:120] for i in long_items]} of "
+                      f"{[len(i['reason']) for i in long_items]} characters, not its sheets named together under 2,000 {err}")
+    reason_of = getattr(recheck, "retire_reason", None)
+    counted = reason_of("Invented set two", [(f"L-{n:04d}", "Invented set one", True) for n in range(1, 301)]) if reason_of else None
+    if counted != "Removed by Invented set two: on 300 sheets in Invented set one; its sources are the sheets that show the removal":
+        errors.append(f"an item on 300 sheets, too many to name under 2,000 characters, retires with reason {str(counted)[:160]!r}")
+
+    # ------------------------------------------------------------------ #
+    # The report by package
+    # ------------------------------------------------------------------ #
+    retire_unit = "i2-rt-1"
+    report_file(main, retire_unit, [
+        "item: scopeItem:i1-A1-1-4 | retired | clm-0001",
+        "item: scopeItem:i1-S1-1-1 | retired | clm-0002",
+    ])
+    code, out, err = run(recheck, ["report", "--run", str(main), "--delivery-plan", str(main / "plan.md")])
+    lines = out.splitlines()
+    want = (
+        "phase: recheck complete carried 2 pass 1 recited 1 updated 1 removed 2 left 2 kept 1 held 1 refused 0",
+        "carried forward 2, against 2 the carry wrote and found there on scope items: equal",
+        "package Invented package one (09 99 99): carried forward 2, re-cited by the pass 1, re-cited by the recheck 1, rows changed 0, rows removed 1, rows left for you 0, rows read removed, the item kept on a current page 1",
+        "package Invented package two (09 99 98): carried forward 0, re-cited by the pass 0, re-cited by the recheck 1, rows changed 1, rows removed 0, rows left for you 2, rows read removed, the item on your list 1",
+        "package No Package (none): carried forward 0, re-cited by the pass 0, re-cited by the recheck 0, rows changed 0, rows removed 1, rows left for you 0",
+        "an item on two or more packages counts in each package: 1 item does",
+    )
+    if code != 0:
+        errors.append(f"the report refused the fixture: {err}")
+    else:
+        missing = [w for w in want if w not in lines]
+        if missing:
+            errors.append(f"the report does not print {missing[0]!r}; it reads {lines[:8]}")
+        if sum(1 for l in lines if l.startswith("left for you: ")) != 2 or sum(1 for l in lines if l.startswith("removed: ")) != 2:
+            errors.append("the report does not name each of the two rows left for him and the two rows removed")
+    write(main / "plan.md", plan_fixture.replace("last call: carried 2 on scope items", "last call: carried 3 on scope items"))
+    code, out, _err = run(recheck, ["report", "--run", str(main), "--delivery-plan", str(main / "plan.md")])
+    if "carried forward 2, against 3 the carry wrote and found there on scope items: differ by 1" not in out.splitlines():
+        errors.append(f"a carried total differing from the plan is not named: {out.splitlines()[:3]}")
+    # A plan whose `carried:` line splits no last call by kind is read, saying where its figure comes from.
+    split_line = next(l for l in plan_fixture.splitlines() if l.startswith("carried: "))
+    unsplit = ("carried: 2 boxes over 1 calls, 2 on scope items and 0 on Questions; last call: carried 2, already there 0, "
+               "not carried 0, left 9 by answer; 2 against 11 boxes before the first carry, equal")
+    for case, carried_line, want_line in (
+        ("a carried line with no split by kind", unsplit,
+         "carried forward 2, against 2 the carry wrote on scope items over every call, off a carried line that splits no "
+         "last call by kind, whose last call found none already there: equal"),
+        ("a carried line with no split by kind and boxes already there", unsplit.replace("already there 0", "already there 1"),
+         "carried forward 2, counted off the rows alone: the plan's carried line splits neither its last call nor what it "
+         "found already there by kind"),
+    ):
+        write(main / "plan.md", plan_fixture.replace(split_line, carried_line))
+        code, out, err = run(recheck, ["report", "--run", str(main), "--delivery-plan", str(main / "plan.md")])
+        if code != 0 or want_line not in out.splitlines():
+            errors.append(f"the report over {case} reads {out.splitlines()[:3]} {err!r}")
+    # With the carry left out, a closed row that read the same was cited again by the pass, never carried.
+    write(main / "plan.md", plan_fixture.replace("carry: 2 references that read the same, onto the new pages", "carry: left out")
+          .replace(split_line, "carried: none, the estimator left the carry out of the plan"))
+    code, out, err = run(recheck, ["report", "--run", str(main), "--delivery-plan", str(main / "plan.md")])
+    if code != 0 or not out.startswith("phase: recheck complete carried 0 pass 3 recited 1 "):
+        errors.append(f"the report of a plan with the carry left out counts {out.splitlines()[:1]} {err!r}, not every closed row under the pass")
+    write(main / "plan.md", plan_fixture)
+    report_file(main, retire_unit, ["item: scopeItem:i1-A1-1-4 | retired | clm-0001"])
+    refused(recheck, ["report", "--run", str(main), "--delivery-plan", str(main / "plan.md")], "the report while a chosen item has no retire outcome", "no outcome line for item scopeItem:i1-S1-1-1")
+
+    # ------------------------------------------------------------------ #
+    # The text
+    # ------------------------------------------------------------------ #
+    texts: dict[str, str] = {}
+    for label in sorted({label for label, _ in _RECHECK_PINS}):
+        path = plugin_path / label
+        if not path.is_file():
+            errors.append(f"not found: {path}")
+            continue
+        texts[label] = path.read_text(encoding="utf-8")
+    text_mutations = 0
+    if len(texts) == len({label for label, _ in _RECHECK_PINS}):
+        text_errors = _recheck_text_errors(texts)
+        errors.extend(text_errors)
+        if not text_errors:
+            mutations: list[tuple[str, dict[str, str]]] = []
+            for label, phrase in _RECHECK_PINS:
+                wrapped = r"\s+".join(map(re.escape, phrase.split()))
+                mutations.append((f"{label} with {phrase!r} taken out", {**texts, label: re.sub(wrapped, "", texts[label], count=1)}))
+            rechecker = texts[RECHECKER]
+            mutations.append(("the rechecker holding a takeoff verb", {**texts, RECHECKER: rechecker.replace(
+                "retire_scope_item\n", f"retire_scope_item, {CONNECTOR_TOOL_PREFIX}takeoff_record\n", 1)}))
+            mutations.append(("the rechecker told to write movedTo as the box", {**texts, RECHECKER: rechecker.replace(
+                "## Sheet mode\n", "## Sheet mode\n\nWhere a row moved, send `movedTo` as the box.\n", 1)}))
+            mutations.append(("the rechecker with a mode of its own added", {**texts, RECHECKER: rechecker + "\n## Create mode\n"}))
+            mutations.append(("the rechecker keeping an item only on a page that names a sheetNumber", {**texts, RECHECKER: rechecker.replace(
+                "\n```text\nitem: scopeItem:", "\nA page whose answer names a `sheetNumber` and an empty `replacedBy` and `endedBy` is a current page.\n\n```text\nitem: scopeItem:", 1)}))
+            runner = texts["agents/scope-round-runner.md"]
+            mutations.append(("the runner's rechecker dispatch with no plan file line", {**texts, "agents/scope-round-runner.md": runner.replace(
+                "Plan file: <path to plan.md>.\n", "", 1)}))
+            mutations.append(("the check-in inside the passes naming no --passes", {**texts, RECHECK_SKILL_FILE: texts[RECHECK_SKILL_FILE].replace(
+                "checkin '<run folder>' r --passes <pass id>,<pass id>", "checkin '<run folder>' r", 1)}))
+            for label, broken in mutations:
+                text_mutations += 1
+                if broken == texts:
+                    errors.append(f"the {label} case changed nothing")
+                elif not _recheck_text_errors(broken):
+                    errors.append(f"the check passed {label}")
+
+    detail = (
+        f"--delivery-plan over the {len(rows)}-sheet fixture reading only an approved partial plan's "
+        f"{len(read)} sheets in windows 1 and 2 and a full plan restricting nothing; the recheck plan "
+        f"over invented rows taking the 8 open rows as one unit per sheet, a sheet no longer printed "
+        f"under its old number, 15 sheets split 8 and 7, ids and row keys kept over the rows "
+        f"reordered, a sheet whose rows changed taking a new id; a unit's outcome lines held to its "
+        f"rows once each, a unit that cited nothing held to no write; window r summed, recorded and "
+        f"checked in; the retire step retiring the 2 items all removed, listing 2 with a row not "
+        f"found and keeping 1 on a current page, never both, an item on 150 and on 300 sheets "
+        f"retired with a reason under 2,000 characters; the report by package with an item on two "
+        f"packages counted in each, a carried total differing from the plan named, a carried line "
+        f"with no split by kind read both ways, and the carry left out counting nothing carried; "
+        f"{len(_RECHECK_PINS)} phrases, "
+        f"the rechecker's {len(RECHECKER_TOOLS)} tools and {len(RECHECKER_MODES)} headings and the "
+        f"dispatch shape held; {refusals} refusals and {text_mutations} text mutations refused; "
+        f"bound: scripts and text, not a rechecker's reading"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -14364,6 +14999,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_question_checker_outcomes(plugin_path, marketplace_root),
         check_standard_lines(plugin_path, marketplace_root),
         check_delivery_sizing(plugin_path, marketplace_root),
+        check_recheck(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed
