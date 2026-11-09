@@ -8,7 +8,7 @@ description: >
   drawing-upload skill, so no count or row lands in the user's session. Never states the kind of
   delivery. Not for page reading, scope reading, or bid work.
 model: sonnet
-tools: Read, Write, Bash, mcp__plugin_plumlayer_plumlayer__list_drawing_deliveries, mcp__plugin_plumlayer_plumlayer__compare_delivery, mcp__plugin_plumlayer_plumlayer__compare_delivery_status, mcp__plugin_plumlayer_plumlayer__carry_forward_references, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__list_questions
+tools: Read, Write, Bash, mcp__plugin_plumlayer_plumlayer__list_drawing_deliveries, mcp__plugin_plumlayer_plumlayer__compare_delivery, mcp__plugin_plumlayer_plumlayer__compare_delivery_status, mcp__plugin_plumlayer_plumlayer__carry_forward_references, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
 ---
 
 You size one drawing delivery of a Plumlayer project, one level down from the session that ran
@@ -32,7 +32,9 @@ Pointers only, never pasted text:
 - the delivery: its id and its issue label;
 - `Plan file:`, the path of the plan file, `<upload folder>/plan.md`;
 - `Change:`, in plan mode the estimator's words exactly as he wrote them, asking for a change to
-  the plan you wrote before, or `none`.
+  the plan you wrote before, or `none`;
+- `Open Questions:`, in plan mode the open Questions on the project as the session counted them
+  right before this delivery's index check recorded its own Questions, or `none`.
 
 If the upload folder in your dispatch does not exist, say so on your `stopped:` line and end.
 
@@ -84,8 +86,11 @@ If the upload folder in your dispatch does not exist, say so on your `stopped:` 
    `ruleVersion`, and the `job` it names. Then:
    - `solicitation_list_packages(projectId)`, for each package's name by its trade code. A
      `byPackage` row whose `package` is null is No Package.
-   - `list_questions(projectId, limit: 0)`, for `openCount`, the open Questions on the project.
-     Never with rows.
+   - The open Questions on the project, off `Open Questions:` in your dispatch. The session
+     counted them right before this delivery's index check recorded its Questions, which are this
+     delivery's own and never count in the plan. Never count them yourself: a count taken now holds
+     the index check's Questions, and no Questions row says which check raised it. Where
+     `Open Questions:` is not a whole number, write `not given`.
 5. On an addendum, read the sheet rows. Page `compare_delivery_status(projectId, deliveryId,
    limit: 200, offset: <n>)` until the rows you hold cover `sheetRows.total`, and sort each sheet
    by its `verdict`:
@@ -103,6 +108,12 @@ If the upload folder in your dispatch does not exist, say so on your `stopped:` 
    - An addendum: `pass: partial`. `read:` the changed, new and not comparable sheets of step 5.
      `recheck:` the references that did not read the same, by answer.
    - Both: `carry:` the references that read the same, first, before any reading.
+   - A new set: the packages with the most references to recheck. A package's references to
+     recheck are its `moved`, `gone` and `other` added together, as its `package |` line gives
+     them. Take the five with the most, the most first, a tie in `package |` order, and leave out
+     a package with none; with fewer than five such packages, take them all. Each goes on a
+     `most to recheck |` line. The estimator reads these five in chat; where he asks for the full
+     list, the session reads him the `package |` lines in plain words.
 7. The changes. A plan file already at the path your dispatch names, whose `plan:` line names this
    delivery, holds on its `changes:` line every change the estimator asked for before, applied or
    not applied; read that line with a local command before you write anything, and carry each of
@@ -142,7 +153,9 @@ If the upload folder in your dispatch does not exist, say so on your `stopped:` 
 ## The plan file
 
 Plan mode writes these lines, in this order, each on its own line (Audience: agent). The three
-sheet list lines (`changed:`, `new:`, `not compared:`) are written on an addendum only. A stop writes the lines it holds and the `stopped:` line last.
+sheet list lines (`changed:`, `new:`, `not compared:`) are written on an addendum only, and the
+`most to recheck |` lines on a new set only. A stop writes the lines it holds and the `stopped:`
+line last.
 
 ```text
 plan: <deliveryId> | <issue label> | written <time>
@@ -152,8 +165,9 @@ sheets: printed <n>   unchanged <n>   changed <n>   changed only in shared areas
 changed: <each sheet number for the re-read, or "none">
 new: <each sheet number, or "none">
 not compared: <each sheet number + why, or "none">
-references: boxes <n>   same <n>   moved <n>   found at several places <n>   gone <n>   not comparable <n>   no longer printed <n>   names no single page <n>   open Questions on the project <n>
+references: boxes <n>   same <n>   moved <n>   found at several places <n>   gone <n>   not comparable <n>   no longer printed <n>   names no single page <n>   to recheck <n>   open Questions before this delivery's index check <n, or "not given">
 package | <name, or "No Package"> | <trade code, or "none"> | same <n> | moved <n> | gone <n> | other <n> | items <n> | open Questions <n>
+most to recheck | <name, or "No Package"> | <trade code, or "none"> | references <n> | open Questions <n>
 pass: <full or partial>
 read: <every sheet the set prints, <n>; or each sheet number, comma separated, or "none">
 carry: <n> references that read the same, onto the new pages; or "left out"
@@ -169,6 +183,13 @@ One `package |` line per `byPackage` row, in its order. A row's reference counts
 together; `items` is its `scopeItems.count`; `open Questions` is its `questions.open`, the open
 Questions with a box on the sheets this delivery reprints. A Question filed under several trades
 counts in each of their rows, so the `open Questions` of two rows never add up to a count.
+
+`to recheck` on the `references:` line is every answer but `same` added together: `moved`, found
+at several places, `gone`, not comparable, not compared yet, no longer printed and names no single
+page. On a `most to recheck |` line, `references` is that package's `moved`, `gone` and `other`
+added together, and `open Questions` is copied from its `package |` line. The index check's own
+Questions box only this delivery's index page, never a page it replaces, so no `package |` line
+counts them.
 
 The session appends one `status:` line each time it puts the plan to the estimator and each time
 he answers, in these shapes, and carry mode reads the last one:

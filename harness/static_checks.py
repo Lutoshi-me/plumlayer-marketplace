@@ -13700,7 +13700,17 @@ def check_question_checker_outcomes(plugin_path: Path, marketplace_root: Path) -
 #      its own callout only, so one carried callout stops a moved callout on the same sheet from
 #      getting its new box and both old places come off;
 #   7. the plan file's status lines change shape between the lead that appends them and the
-#      sizer that reads them.
+#      sizer that reads them;
+#   8. a new set's plan in chat lists every package: on a set of 290 sheets it was 50 lines, so the
+#      estimator reads the totals and the five packages with the most references to recheck, and
+#      the full list stays in the plan file, behind a link reading `the plan`, since the file's
+#      path holds the project's and the delivery's ids, and read to him in plain words on request;
+#   9. an addendum's plan in chat names only those five, where he reads every package;
+#  10. the plan's count of open Questions holds the Questions this delivery's own index check
+#      raised: no Questions row says which check raised one, so the lead's count from right before
+#      the index check's recording call goes to the sizer, which counts none itself; the count
+#      taken after that call, in drawing-upload's step 9 or in size-delivery, or taken again on a
+#      resume that no longer holds it, holds them again.
 # Each phrase is taken out of the shipped text and each structural arm broken, so every refusal is
 # shown. Honest bound: this reads the shipped text, not a run; whether a measured plan is the size
 # the estimator expects is the measured run's.
@@ -13712,7 +13722,7 @@ _SIZER_TOOLS = (
     "Read", "Write", "Bash",
     *(f"{CONNECTOR_TOOL_PREFIX}{verb}" for verb in (
         "list_drawing_deliveries", "compare_delivery", "compare_delivery_status",
-        "carry_forward_references", "solicitation_list_packages", "list_questions",
+        "carry_forward_references", "solicitation_list_packages",
     )),
 )
 _SIZER_CARRY_VERB = "carry_forward_references"
@@ -13749,7 +13759,60 @@ _SIZING_PINS: tuple[tuple[str, str], ...] = (
     *((_SIZER, line) for line in _SIZING_STATUS_LINES),
     *((_SIZE_FILE, f"`{line}`") for line in _SIZING_STATUS_LINES[1:]),
     (_SIZE_FILE, "printf 'status: shown %s\\n'"),
+    (_SIZER, "and the `most to recheck |` lines on a new set only"),
+    (_SIZER, "Take the five with the most, the most first, a tie in `package |` order"),
+    (_SIZER, 'most to recheck | <name, or "No Package"> | <trade code, or "none"> | references <n> | '
+             "open Questions <n>"),
+    (_SIZER, "On a `most to recheck |` line, `references` is that package's `moved`, `gone` and "
+             "`other` added together"),
+    (_SIZER, "to recheck <n> open Questions before this delivery's index check <n, or \"not given\">"),
+    (_SIZER, "The open Questions on the project, off `Open Questions:` in your dispatch"),
+    (_SIZER, "Never count them yourself: a count taken now holds the index check's Questions"),
+    (_SIZE_FILE, "Open Questions: <in plan mode, the openCount you took right before step 9's recording "
+                 "call, or \"not given\" where you no longer hold it; otherwise \"none\">."),
+    (_SIZE_FILE, "the two counts you took right before step 9's `reconcile_set(projectId, record: true)`"),
+    (_SIZE_FILE, "Where you no longer hold it, as on a resume after a crash, never count the open "
+                 "Questions again, since a count taken now holds the index check's: pass "
+                 "`Open Questions: not given`, and the plan reads that the count was not taken."),
+    (_SIZE_FILE, "On an addendum, each package on its own, for the packages that hold any"),
+    (_SIZE_FILE, "Then the packages on the `most to recheck` lines alone, at most five, the most first"),
+    (_SIZE_FILE, "Say the full list by package is in the plan, as a link whose words are `the plan` and "
+                 "whose target is the plan file's full path, and offer to read him the full list. The "
+                 "path and its ids never appear in the text he reads."),
+    (_SIZE_FILE, "The full list by package is in [the plan](<the plan file's full path>), and I can read "
+                 "it to you."),
+    (_SIZE_FILE, "He asks for the full list by package. Read it to him off the summary's `package |` "
+                 "lines"),
+    (_SIZE_FILE, "Never the lines as written, a trade code, or an id. The plan stays as shown: append no "
+                 "`status:` line"),
 )
+
+# Text that brings the old plan back, each with what it does, read over the text with whitespace
+# collapsed: a new set's package list given whole, an addendum's cut to five, and the sizer counting
+# the open Questions itself after the index check recorded its own.
+_SIZING_REFUSED: tuple[tuple[str, str, str], ...] = (
+    (_SIZE_FILE, r"(?<!On an addendum, )\b[Ee]ach package on its own",
+     "gives every package on its own on a new set too"),
+    (_SIZE_FILE, r"On an addendum,[^.]{0,160}(?:\bfive\b|most to recheck)",
+     "cuts an addendum's packages to five"),
+    (_SIZER, r"`most to recheck \|` lines on (?:an addendum|both|either|every)",
+     "writes the five on an addendum"),
+    (_SIZER, r"list_questions\(", "counts the open Questions itself, the index check's among them"),
+    (_SIZE_FILE, r"<its path>|with its path|~/\.plumlayer|\b(?:proj|deliv)-[0-9a-f]",
+     "puts the plan file's path, and the ids in it, in the text the estimator reads"),
+    *((label, r"\b(?:after|once|since)\b(?: you (?:call|made))? step 9's (?:recording call|"
+              r"`reconcile_set\(projectId, record: true\)`)",
+       "takes a count after the index check recorded its Questions")
+      for label in (_SIZE_FILE, _UPLOAD)),
+)
+# drawing-upload's step 9 takes the open Questions' count, then makes the recording call, in that
+# order: the count taken after the call holds the index check's own Questions.
+_SIZING_COUNT_PHRASE = "the `openCount` of `list_questions(projectId, limit: 0)`"
+_SIZING_RECORD_CALL = "`reconcile_set(projectId, record: true)`"
+# The new set's example in chat: one to five packages, each a count of references and of open
+# Questions (`402 references and 21 open Questions`, `355 and 14`).
+_SIZING_NEW_SET_EXAMPLE_RE = re.compile(r'For a new set: "(.*?)"', re.DOTALL)
+_SIZING_EXAMPLE_PACKAGE_RE = re.compile(r"\b\d[\d,]*(?: references)? and \d+\b")
 
 
 def _sizing_errors(texts: dict[str, str]) -> list[str]:
@@ -13774,6 +13837,22 @@ def _sizing_errors(texts: dict[str, str]) -> list[str]:
     at_9b = texts[_UPLOAD].find("\n## 9b. ")
     if at_9a < 0 or at_9b < 0 or at_9a > at_9b:
         errors.append(f"{_UPLOAD} does not run step 9a before step 9b")
+    # The open Questions' count before the recording call, inside drawing-upload's step 9.
+    at_9 = texts[_UPLOAD].find("\n## 9. ")
+    step_9 = _collapsed(texts[_UPLOAD][at_9:at_9a]) if 0 <= at_9 < at_9a else ""
+    count_at = step_9.find(_SIZING_COUNT_PHRASE)
+    record_at = step_9.find(_SIZING_RECORD_CALL)
+    if count_at < 0 or record_at < 0 or count_at > record_at:
+        errors.append(f"{_UPLOAD}'s step 9 does not take {_SIZING_COUNT_PHRASE} before "
+                      f"{_SIZING_RECORD_CALL}")
+    for label, pattern, what in _SIZING_REFUSED:
+        found = re.search(pattern, _collapsed(texts[label]))
+        if found:
+            errors.append(f"{label} reads {found.group(0)!r}, which {what}")
+    example = _SIZING_NEW_SET_EXAMPLE_RE.search(texts[_SIZE_FILE])
+    named = len(_SIZING_EXAMPLE_PACKAGE_RE.findall(_collapsed(example.group(1)))) if example else 0
+    if not 1 <= named <= 5:
+        errors.append(f"{_SIZE_FILE}'s new set example names {named} packages, not one to five")
     return errors
 
 
@@ -13797,11 +13876,62 @@ def check_delivery_sizing(plugin_path: Path, marketplace_root: Path) -> Result:
                               {**texts, label: re.sub(wrapped, "", texts[label], count=1)}))
         sizer = texts[_SIZER]
         mutations.append(("the sizer holding a page read", {**texts, _SIZER: sizer.replace(
-            "list_questions\n", f"list_questions, {CONNECTOR_TOOL_PREFIX}get_page_text\n", 1)}))
+            "solicitation_list_packages\n", f"solicitation_list_packages, {CONNECTOR_TOOL_PREFIX}get_page_text\n", 1)}))
         mutations.append(("the sizer with the carry verb off its tools line", {**texts, _SIZER: sizer.replace(
             f", {CONNECTOR_TOOL_PREFIX}carry_forward_references", "", 1)}))
         mutations.append(("the sizer naming the carry in plan mode", {**texts, _SIZER: sizer.replace(
             "## Plan mode\n", "## Plan mode\n\nCall `carry_forward_references(projectId, deliveryId)` first.\n", 1)}))
+        size = texts[_SIZE_FILE]
+        new_set_bullet = re.search(r"- On a new set, the references in all.*?(?=\n- )", size, re.DOTALL)
+        addendum_bullet = re.search(r"- On an addendum, each package on its own.*?(?=\n- )", size, re.DOTALL)
+        if new_set_bullet is None or addendum_bullet is None:
+            errors.append(f"{_SIZE_FILE} carries no new set and addendum package bullets to break")
+        else:
+            mutations.append(("a new set's plan listing every package to the estimator", {**texts, _SIZE_FILE: size.replace(
+                new_set_bullet.group(0),
+                "- Each package on its own, for the packages that hold any: its references to recheck "
+                "and its open\n  Questions on the sheets it reprints.", 1)}))
+            mutations.append(("an addendum's plan listing only five packages", {**texts, _SIZE_FILE: size.replace(
+                addendum_bullet.group(0),
+                "- On an addendum, the packages on the `most to recheck` lines alone, at most five, "
+                "each with its\n  references to recheck and its open Questions.", 1)}))
+        mutations.append(("a new set's example naming a sixth package", {**texts, _SIZE_FILE: size.replace(
+            "and Doors, 120 and 5.", "Doors, 120 and 5; and Roofing, 60 and 2.", 1)}))
+        mutations.append(("the sizer writing the five on an addendum too", {**texts, _SIZER: sizer.replace(
+            "`most to recheck |` lines on a new set only", "`most to recheck |` lines on both", 1)}))
+        mutations.append(("the sizer counting the open Questions after the index check", {**texts, _SIZER: sizer.replace(
+            "   - The open Questions on the project, off `Open Questions:` in your dispatch.",
+            "   - `list_questions(projectId, limit: 0)`, for `openCount`, the open Questions on the project.", 1)}))
+        dispatch_count = re.search(r"Open Questions: <in plan mode, [^\n]*\n", size)
+        mutations.append(("the lead's dispatch without its count from before the index check", {**texts, _SIZE_FILE: size.replace(
+            dispatch_count.group(0) if dispatch_count else "Open Questions: <", "", 1)}))
+        mutations.append(("the lead's dispatch passing a count taken after the recording call", {**texts, _SIZE_FILE: size.replace(
+            "the openCount you took right before step 9's recording call",
+            "the openCount you took right after step 9's recording call", 1)}))
+        mutations.append(("size-delivery holding counts taken after the recording call", {**texts, _SIZE_FILE: size.replace(
+            "the two counts you took right before step 9's",
+            "the two counts you took once step 9's", 1)}))
+        mutations.append(("a resume counting the open Questions again", {**texts, _SIZE_FILE: re.sub(
+            r"Where\s+you no longer hold it, as on a resume after a crash,.*?not taken\.",
+            "Where you no longer hold it, as on a resume after a crash, take the `openCount` of\n"
+            "  `list_questions(projectId, limit: 0)` again.", size, count=1, flags=re.DOTALL)}))
+        mutations.append(("the new set's example giving the plan file's path", {**texts, _SIZE_FILE: size.replace(
+            "[the plan](<the plan file's full path>)",
+            "the plan file, ~/.plumlayer/runs/proj-4de4bb8b/upload/deliv-0038d6f6/plan.md", 1)}))
+        upload_text = texts[_UPLOAD]
+        count_then_record = re.search(
+            r"take the two counts step 9a reads next:(.*?)\.\s+Then call\s+"
+            r"(`reconcile_set\(projectId, record: true\)`) and say what landed\.", upload_text, re.DOTALL)
+        if count_then_record is None:
+            errors.append(f"{_UPLOAD} carries no count then recording call in step 9 to break")
+        else:
+            mutations.append(("drawing-upload taking the count after the recording call", {**texts, _UPLOAD: upload_text.replace(
+                count_then_record.group(0),
+                f"call {count_then_record.group(2)} and say what landed, then take the two counts step 9a "
+                f"reads next:{count_then_record.group(1)}.", 1)}))
+        mutations.append(("the sizer with `list_questions` back on its tools line", {**texts, _SIZER: sizer.replace(
+            f"{CONNECTOR_TOOL_PREFIX}solicitation_list_packages\n",
+            f"{CONNECTOR_TOOL_PREFIX}solicitation_list_packages, {CONNECTOR_TOOL_PREFIX}list_questions\n", 1)}))
         upload = texts[_UPLOAD]
         mutations.append(("drawing-upload with step 9b ahead of step 9a", {**texts, _UPLOAD: upload.replace(
             "\n## 9a. ", "\n## 9x. ", 1).replace("\n## 9b. ", "\n## 9a. ", 1).replace("\n## 9x. ", "\n## 9b. ", 1)}))
@@ -13820,8 +13950,12 @@ def check_delivery_sizing(plugin_path: Path, marketplace_root: Path) -> Result:
         f"files, the one job the sizer polls, the question checker's place on the new page standing "
         f"for its own callout only, and the "
         f"three status line shapes in the sizer and the lead), the sizer's tools line held to "
-        f"{len(_SIZER_TOOLS)} tools, `{_SIZER_CARRY_VERB}` named only in its carry mode, and step "
-        f"9a ahead of step 9b; {refused} mutations refused; bound: text only, not a measured plan"
+        f"{len(_SIZER_TOOLS)} tools, `{_SIZER_CARRY_VERB}` named only in its carry mode, step "
+        f"9a ahead of step 9b, a new set's plan in chat naming at most five packages, the full list "
+        f"behind a link reading `the plan` with no path, and an addendum's every one, the sizer counting no open "
+        f"Questions itself, and step 9's count taken before its recording call; {refused} mutations "
+        f"refused; "
+        f"bound: text only, not a measured plan"
     )
     if errors:
         detail += " | " + "; ".join(errors)

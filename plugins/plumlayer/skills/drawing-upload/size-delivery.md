@@ -45,7 +45,11 @@ handoff is the one it gives when this step does not size:
   scope item (the `count` of `search(projectId, subjectPrefix: "scopeItem:", limit: 1)` above 0)
   or an open Question (`openCount` of `list_questions(projectId, limit: 0)` above 0). Those counts
   come from before the index check recorded its own Questions, which are this delivery's and
-  never a reason to size it.
+  never a reason to size it. Hold that `openCount`: every plan mode dispatch passes it as
+  `Open Questions:`, so the plan's count of open Questions leaves the index check's out too. Where
+  you no longer hold it, as on a resume after a crash, never count the open Questions again, since
+  a count taken now holds the index check's: pass `Open Questions: not given`, and the plan reads
+  that the count was not taken.
 
 ## 3. The plan
 
@@ -60,6 +64,7 @@ Project: <projectId>. Mode: <plan or carry>.
 Delivery: <deliveryId>, label <issue label>.
 Plan file: <upload folder>/plan.md.
 Change: <in plan mode, the estimator's words exactly as he wrote them; otherwise "none">.
+Open Questions: <in plan mode, the openCount you took right before step 9's recording call, or "not given" where you no longer hold it; otherwise "none">.
 Size the delivery as your definition says, write the plan file, then return your summary.
 ```
 
@@ -93,11 +98,19 @@ Tell him, in a few plain sentences, never a table:
   He picked it on upload ("you picked Addendum when you uploaded it"), he told you, or you read it
   off a sheet ("its cover reads Bulletin 3"). Never the sheet count.
 - How much changed: on an addendum, the sheets it changes and adds, by number when there are a
-  handful; on a new set, how many of its sheets changed and how many sheets of the old set it no longer prints.
-- Each package on its own, for the packages that hold any: its references to recheck and its open
-  Questions on the sheets it reprints. Never add two packages' counts together: a Question filed
-  under several trades counts in each of their packages. Then how many references are unchanged,
-  which you carry forward.
+  handful; on a new set, how many of its sheets changed and are new, how many sheets of the old
+  set it no longer prints, and how many could not be compared, with why.
+- On an addendum, each package on its own, for the packages that hold any: its references to
+  recheck and its open Questions on the sheets it reprints. Then how many references are
+  unchanged, which you carry forward.
+- On a new set, the references in all, off `boxes`, how many read the same and carry forward, and
+  how many go to the recheck, off `to recheck`. Then the packages on the `most to recheck` lines
+  alone, at most five, the most first, each with its references to recheck and its open Questions
+  on the sheets it reprints. Name no other package. Say the full list by package is in the plan,
+  as a link whose words are `the plan` and whose target is the plan file's full path, and offer
+  to read him the full list. The path and its ids never appear in the text he reads.
+- On either, never add two packages' counts together: a Question filed under several trades
+  counts in each of their packages.
 - The plan: carry those references forward first, then the pass, a re-read of the sheets named
   or a full scope pass, then the recheck. Say what the recheck does: each row is cited again on
   the new page, updated, or retired as removed by this delivery where its sheets show the work gone,
@@ -110,10 +123,15 @@ sheets; Storefront has 12 references to recheck and 2 open Questions on them. 51
 unchanged. Plan: carry the 512 forward, re-read the 7 sheets, then recheck each reference that
 did not read the same, retiring the rows these sheets show removed. Approve it, change it, or stop it."
 
-For a new set: "The Permit set is a new set; its cover reads Permit Set. 280 of its 290 sheets
-changed, and it no longer prints 12 sheets of the Conceptual set. 96 references are unchanged.
-Plan: carry the 96 forward, run a full scope pass, then recheck every scope item, retiring the rows the new set shows removed. Approve it,
-change it, or stop it."
+For a new set: "The Permit set is a new set; its cover reads Permit Set. 240 of its 290 sheets
+changed, 46 are new, and 4 could not be compared because their page size differs from the sheet
+they replace; it no longer prints 12 sheets of the Conceptual set. The project holds 2,410
+references: 96 read the same and carry forward, and 2,314 go to the recheck. The most to recheck
+are Electrical, 402 references and 21 open Questions; HVAC, 355 and 14; Plumbing, 230 and 9;
+Drywall, 198 and 7; and Doors, 120 and 5. The full list by package is in
+[the plan](<the plan file's full path>), and I can read it to you. Plan: carry the 96 forward,
+run a full scope pass over all 290 sheets, then recheck every scope item, retiring the rows the
+new set shows removed. Approve it, change it, or stop it."
 <!-- /user-facing -->
 
 ## 5. His answer
@@ -137,6 +155,12 @@ Take his answer in his words, and note the time of it with `date -u +%Y-%m-%dT%H
   pass. Step 9b still runs: say in one line that you carried nothing and planned no pass, and that
   you are re-reading the open Questions against the new sheets. Step 10 says no scope pass is
   planned until he asks for one.
+- He asks for the full list by package. Read it to him off the summary's `package |` lines, in
+  their order, each package that holds any references to recheck in plain words as an addendum's
+  are given: its name, its references to recheck (its `moved`, `gone` and `other` added
+  together) and its open Questions on the sheets it reprints. Never the lines as written, a
+  trade code, or an id. The plan stays as shown: append no `status:` line, and ask again whether
+  he approves it, changes it, or stops it.
 
 The plan is his decision, and every answer goes through this step: nothing is carried before
 `status: approved` is on the plan file, and no scope pass reads the delivery before it either.
