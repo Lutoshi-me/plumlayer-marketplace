@@ -67,7 +67,10 @@ at any pass boundary, and resume later with nothing lost.
 A run is one pass over one drawing issue. A project goes through several sets before it is built,
 and each new set gets a full pass of its own over every sheet it prints, the way a new project
 does, read against the record the earlier passes built: readers update the rows the door names,
-reply to the open Questions, and cite the new set's pages. A pass underway is never interrupted by
+reply to the open Questions, and cite the new set's pages. The pass on the latest set also reads
+every sheet that set keeps from an earlier delivery, a whole discipline it does not reissue among
+them, each marked `keptFrom` with the delivery it came from, so its readers see the older drawings
+beside the newer ones. A pass underway is never interrupted by
 a later delivery; it finishes the issue it started on, and the later one waits for a pass of its
 own. Whether a delivery is a set or an addendum is the `issue` that `list_drawing_deliveries`
 gives it, never a question for the user.
@@ -766,7 +769,8 @@ before going on.
      free where no subject starts `scopeItem:<unit tag>-`; a count above zero is rows from a pass
      whose run folder is not on this seat, so take the next number and count again until one reads
      zero. That count goes into `run.json` at stage 3 step 1. The pass on a set is a full pass over
-     every sheet the set and its addenda print; the pass on an addendum is a partial pass over the
+     every sheet the set and its addenda print, and on the latest set over every sheet it keeps
+     from an earlier delivery too, each marked `keptFrom`; the pass on an addendum is a partial pass over the
      sheets it prints, since `set_grid` by an addendum's `deliveryId` gives only those. Where the line ends by saying the earlier pass in the
      project folder names no drawing issue, a pass from before passes had folders of their own is
      closed out there, and nothing records which set it read: start all the same, never guess
@@ -861,9 +865,10 @@ You never read a sheet row. The grid is fetched to disk by a fresh agent, a scri
 counts and into the plan's unit lines, and what you read is the counts and the script's bounds
 lines.
 
-1. **Take the set's shape, and nothing else.** `set_grid(projectId, deliveryId, limit: 0)`, with
-   the delivery precondition 3 named. That is a summary-only call: metadata, `disciplineCounts`,
-   the `delivery` you asked for and `readFrom`, the deliveries its rows come from, and zero rows.
+1. **Take the set's shape, and nothing else.** `set_grid(projectId, deliveryId, includeKept: true, limit: 0)`,
+   with the delivery precondition 3 named. That is a summary-only call: metadata, `disciplineCounts`,
+   the `delivery` you asked for and `readFrom`, the deliveries its rows come from, the earlier
+   deliveries of the sheets the latest set keeps among them, and zero rows.
    Read `count` and the discipline distribution off it. These are the only `set_grid` calls the
    run makes, at any set size: this one, taken again only where step 3 sends you back to it
    before the plan is approved, and the fetch agent's paged calls in step 2, sent again where the
@@ -887,7 +892,7 @@ lines.
    Fetch the sheet grid for project <projectId> to disk. This is your whole job. Do nothing else,
    and end when it is done.
 
-   1. Call set_grid(projectId: "<projectId>", deliveryId: "<deliveryId>", limit: 500, offset: 0),
+   1. Call set_grid(projectId: "<projectId>", deliveryId: "<deliveryId>", includeKept: true, limit: 500, offset: 0),
       then again at offset 500, 1000, and so on, until the rows you have seen cover the response's
       own `count`.
    2. Where a call's result came back as a path to a file on disk, copy that file into

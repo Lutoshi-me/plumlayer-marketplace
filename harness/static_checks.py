@@ -8115,8 +8115,8 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             errors.append(f"the run.json the skill shows is refused by the script: {e}")
 
     for phrase, where in (
-        ('set_grid(projectId: "<projectId>", deliveryId: "<deliveryId>", limit: 500, offset: 0)', "the grid fetch"),
-        ("set_grid(projectId, deliveryId, limit: 0)", "the shape call"),
+        ('set_grid(projectId: "<projectId>", deliveryId: "<deliveryId>", includeKept: true, limit: 500, offset: 0)', "the grid fetch"),
+        ("set_grid(projectId, deliveryId, includeKept: true, limit: 0)", "the shape call"),
         ("`scopeItem:<unit tag>-`", "the tag check"),
         ("These are the only `set_grid` calls the run makes", "list of the set_grid calls it permits"),
         ("the first sheet the inventory's bounds line names", "corpus probe"),

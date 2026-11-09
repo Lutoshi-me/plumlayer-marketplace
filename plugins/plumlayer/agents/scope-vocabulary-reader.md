@@ -69,6 +69,11 @@ cite what you record to that page with the `fileId` your dispatch names, and on 
 line name the page as replaced, with the sheet and page each entry names in the later issue. Never
 read the later issue's page in its place.
 
+A `keptFrom` on the answer names the earlier delivery your sheet came from: the latest new set and
+its addenda leave the sheet out, a discipline that set does not reissue among them, and the sheet
+stays in the current set. Read it and cite what you record to its page with the `fileId` your
+dispatch names, as you would any other sheet.
+
 `Opens as: <key>` means your page is a further page: its number prints on more than one page of
 the drawing issue, the number's own sheet is the first of them, and this page is a sheet of its
 own under that key. Its context answer names the printed number as `sheetNumber` and that key as
