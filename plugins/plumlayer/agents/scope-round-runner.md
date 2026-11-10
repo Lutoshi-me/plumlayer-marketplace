@@ -281,8 +281,9 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    check could not find back: `<sheet>` the unit's sheet, or its package's name on a review;
    `<check>` the check's name as the bullets above give it (`created`, `created subjects`,
    `updated`, `questions raised`, `questions replied`, `questions linked`, `trades`,
-   `page citations`, `manual updates`, `headings`); and `<value>` the subject or id it named, or for
-   `created` the subject count and the reader's figure. A `verified`
+   `page citations`, `manual updates`, `field updates`, `headings`); and `<value>` the subject or id it named, for
+   `field updates` the subject and the predicate, or for `created` the subject count and the
+   reader's figure. A `verified`
    line reading mismatch takes no kinds, trades or names lines. Then, where step 2's count allows
    another read, rename the report as step 2 says, append the unit's `dispatch` line again,
    dispatch its reader again as step 2 says, against the live list, and verify the new report with
@@ -302,7 +303,7 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
      never the reports' `created:` figures added up;
    - `updated`, `questions` and `replied`, the merged lists: each earlier report's lists, less only
      the claims its own read's checks failed, plus the new report's lists, each subject or id once.
-     A subject an earlier read's `updated`, `page citations` or `manual updates` note names comes
+     A subject an earlier read's `updated`, `page citations`, `manual updates` or `field updates` note names comes
      off that report's `updated subjects:`, an id its `questions raised` note names off its
      `questions raised ids:`, and an id its `questions replied` note names off its
      `questions replied ids:`. A note of another check takes nothing off these lists, so a heading
@@ -457,10 +458,20 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   dispatch, since the reviewer works under the reader's mandates and has no other way to find
   them. Paste nothing from those files into it, and never the package's `codes` or `manualSections`: the reviewer reads
   those off the record, so the sections it checks have one source.
+  Right before each dispatch, after its `dispatch` line, note the time you dispatch it: run
+  `date -u +%Y-%m-%dT%H:%M:%SZ > '<run folder>/reports/<unit id>.read-<k>.dispatched'` with the
+  Bash tool, single quoted, `<k>` the dispatch's `Read:` number. It writes over any file already
+  there, so a review dispatched again under the same `dispatch` line carries the time of its own
+  dispatch. That file is where the check below reads the time this read was dispatched, a resume
+  included.
 - **Verify against the pages the review opened.** The reviewer names every page it opened on its
-  `pages opened:` line, and those sheets are what you check. A line naming `section <code>` is a
-  manual page the review read, not a sheet, and never goes into the call; a
-  review whose only pages were manual pages is one that opened no page, below. Each sheet goes as
+  `pages opened:` line, and those sheets are what you check: every line of `pages opened:`, under
+  the label or on the label written again, whatever it says the review did there. None is left
+  out, and a sheet named on several lines with one file and page goes in once. A line naming
+  `section <code>` is a manual page the review read, not a sheet, and never goes into the call; a
+  review whose only pages were manual pages is one that opened no page, below. The sheets its
+  `field updates:` line names never go into the call: each line of it is checked by a search of
+  its own, below. Each sheet goes as
   `{ "sheet": "<sheet number>", "fileId": "<fileId>", "pageInPdf": <page> }` with the `fileId` and
   the page the reviewer's line names for it, the page it opened, and as the sheet number alone
   where the line names no file:
@@ -472,13 +483,22 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   ```
 
   Everything else is pass mode's step 3 unchanged: the entry count under the prefix is `created`,
-  the reviewer's own item count travels as `items`, every subject on its `updated subjects:` line
-  is found back among the subjects citing one of those sheets, except one its `manual updates:`
-  line names, written off manual pages alone, which is found back by subject as a page citation
-  is in pass mode: one `search(subject: "<that subject>", full: true)` per line, paged with
-  `offset` until it comes back whole, which must carry an entry that no other entry's
-  `supersedesId` names and whose evidence names that section (`specSection:<packed code>`) and
-  that page; one it does not carry is a mismatch. Each row on the review's `headings written:` line
+  the reviewer's own item count travels as `items`, and every subject on its `updated subjects:`
+  line is found back where it is found among the subjects citing one of those sheets, on its
+  `manual updates:` line, or on its `field updates:` line; one found in none of the three is a
+  mismatch. Each line of `manual updates:`, a new citation of a manual page, is found back by
+  subject as a page citation is in pass mode: one `search(subject: "<that subject>", full: true)`
+  per line, paged with `offset` until it comes back whole, which must carry an entry that no other
+  entry's `supersedesId` names and whose evidence names that section (`specSection:<packed code>`)
+  and that page; one it does not carry is a mismatch. Each line of `field updates:`, one write that
+  carries no new citation, is found back as a write this review made: one
+  `search(subject: "<that subject>", predicate: "<the predicate the line names>", full: true)` per
+  line, paged with `offset` until it comes back whole, which must carry an entry that no other
+  entry's `supersedesId` names, written at or after the time this read's `.dispatched` file holds,
+  its `assertedAt` that time or later, and, where the line names a page, whose evidence names that
+  `fileId` and that page; a line reading `no page` asks nothing of the evidence. One it does not
+  carry is a mismatch, and so is every line of a read with no `.dispatched` file: an entry written
+  before you dispatched the review is never its write. Each row on the review's `headings written:` line
   after its first is found back with one `search(subject: "<subject>", predicate: "category")`,
   whose live entry, the one no other entry's `supersedesId` names, must carry that heading; one it
   does not carry is a mismatch. Where the first line of `headings written:` names headings, the
@@ -493,10 +513,12 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   mode, and a created subject with no trade and no candidate is a mismatch. A Question the
   reviewer raised or replied to that is on neither its `questions linked:` line nor its
   `questions alone:` line is a mismatch too: a reviewer puts every Question it raises or replies
-  to on a row, or names why no row carries it. The call takes at most 20 sheets, so a review that opened more needs one call per 20
-  against the same prefix. Every call answers the whole prefix, so `created` and the trades come
-  off the first call alone and are never added across calls; each later call, with the next 20
-  sheets, adds only its `sheets` rows, which is where the updated subjects are found back. Write
+  to on a row, or names why no row carries it. The call takes at most 20 sheets, so a review that
+  opened more needs one call per 20 against the same prefix. Every call answers the whole
+  prefix, so `created` and the trades come off the first call alone and are never added across
+  calls; each later call, with the next 20 sheets, adds only its `sheets` rows. An updated subject
+  is found back where the `sheets` rows of any of the calls carry it, so it does not matter which
+  call holds its sheet, and it is a mismatch only where none of them does. Write
   one `verified` line and append one
   `note <window> <pass> <unit> deviation verify split over <n> calls` line beside it. The call also
   takes at least one sheet, so a review that opened no page is verified instead with one

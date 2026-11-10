@@ -205,6 +205,9 @@ them is ever trimmed.
    manual page mandates 9, 12, 13 or 14 sent you to is named the same way, with `section <code>` in
    place of the sheet number. A
    review that opens twenty pages and names two leaves the other eighteen with no reason given.
+   A page you did not open in this read is never on that line, whatever a row's citation or a
+   field's evidence names: the page a field you wrote takes as its evidence goes on your
+   `field updates:` line with that write.
 7. QUESTIONS, AT THE SAME BAR. Reader mandate 1 governs the bar and its three shapes, whole and
    unrestated here, the read before a new Question among them: every Question on the project,
    `list_questions(projectId, status: "all")` with no trade filter, paged with `offset:
@@ -868,7 +871,8 @@ pages opened: <sheet number + fileId + page + the term that sent you + what you 
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
 created subjects: <the subject of every row you created, each under your unit's prefix, or "none">
 updated subjects: <the subject of every row you updated or newly cited, except a row cited only to a Question, or "none">
-manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
+manual updates: <each new citation of a manual page you made in this review on a row on `updated subjects:`: the subject + the section code + the page, one per line, or "none">
+field updates: <each write you made in this review onto a row on `updated subjects:` that carries no new citation, a heading aside, one write per line: the subject + the predicate written + the page its evidence names, as that page's sheet number, `section <code>` on a manual page or `none` where it prints no number, + its fileId + its page, or `no page` where its evidence names none; or "none">
 questions raised ids: <the id of every Question you raised, or "none">
 questions replied ids: <the id of every Question you replied to, or "none">
 questions linked: <the id of every Question raised or replied to + the subject of every row you cited it on, one Question per line, or "none">
@@ -898,9 +902,21 @@ load-bearing, not bookkeeping. Your creates are findable by their `scopeItem:<un
 but an update lands on a subject that already existed, a Question you raise on its own id, and a
 reply on the id of a Question somebody else raised, so nothing else in your report lets the runner
 find them back. Name every one. The runner finds an update back among the rows citing the sheets
-on your `pages opened:` line, so a row you wrote onto off manual pages alone, a material in its
-`description` or a qualification in its `notesExternal`, is named on `manual updates:` too, with
-the section and page, and found back there instead.
+on your `pages opened:` line, on your `manual updates:` line or on your `field updates:` line, so
+every row on `updated subjects:` is found on a pages-opened sheet, on `manual updates:`, or on
+`field updates:`. Each new citation of a manual page you made is named on `manual updates:` with
+its subject, the section and the page, and found back there. Each other write you made onto a row
+on `updated subjects:` that carries no new citation, a note, a name, a description, a value, or a
+`packageRole:<trade>` record naming the row a candidate, is named on `field updates:` on a line of
+its own, with its subject, the predicate you wrote (`notesInternal`, `description`,
+`packageRole:26 00 00`), and the page its evidence names, whether or not you opened that page in
+this read, or `no page` where its evidence names none. A field you wrote more than once in this
+review is named once, for its last write. The runner finds each of those lines back as a write
+this review made, the current entry on that subject with that predicate written at or after it
+dispatched you, so a write that did not land reads mismatch and an older entry never stands in
+for it. A heading is on neither line: `headings written:` carries it. A row with a new citation
+on a drawing page you opened is found on `pages opened:`, and its writes that carry no new
+citation are on `field updates:` all the same.
 
 The `pages opened:` line is what your runner verifies you against, so it carries every page and not
 a sample. A page you opened and did nothing with is still named, with what you found there.

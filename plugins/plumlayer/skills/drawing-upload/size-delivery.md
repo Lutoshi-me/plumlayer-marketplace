@@ -17,7 +17,8 @@ he approves the plan.
 This runs on every path that reads this file, before anything else in it. The comparison and the
 re-read of the open Questions both read the new paper's text, and neither finds a word on a page
 nobody has read yet, so wait here for the read of each file the new paper came in: each drawing
-file of this delivery, or each file of the manual. Poll `set_text_status(projectId, fileId)` on
+file of this delivery and each file of a manual step 8 filed beside it, or each file of a manual
+on its own. Poll `set_text_status(projectId, fileId)` on
 each one every few seconds, in this conversation, the way `SKILL.md` step 5 polls recognition. The
 loop ends on the server's answer only: `state` `succeeded` with `pagesNotRead` 0 is a file whose
 text is read; `failed`, `stale`, or `succeeded` with `pagesNotRead` above 0 is a file that never
@@ -103,7 +104,7 @@ Tell him, in a few plain sentences, never a table:
 - On an addendum, each package on its own, for the packages that hold any: its references to
   recheck and its open Questions on the sheets it reprints. Then how many references are
   unchanged, which you carry forward.
-- On a new set, the references in all, off `boxes`, how many read the same and carry forward, and
+- On a new set, the references in all, off `in all`, how many read the same and carry forward, and
   how many go to the recheck, off `to recheck`. Then the packages on the `most to recheck` lines
   alone, at most five, the most first, each with its references to recheck and its open Questions
   on the sheets it reprints. Name no other package. Say the full list by package is in the plan,

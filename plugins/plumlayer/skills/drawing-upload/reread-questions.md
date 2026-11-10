@@ -12,6 +12,12 @@ answers, with one line naming where, rewrites each one nobody has sent that the 
 replies once on each sent one it changed, and points each one it still applies to at the new pages,
 taking the old pages off an unsent one. It raises none.
 
+Where step 8 filed a project manual in the same upload as a drawing delivery, one re-read reads
+both: every unit's `Delivery:` line names the delivery and the `fileId` of each file step 8 filed.
+The list unit then puts the manual's sections on `sheets.txt` beside the delivery's sheets, so a
+Question citing only a section of the new manual is read against it, and each Question is read
+once, in the one unit its line falls in.
+
 Each re-read has a folder of its own. When step 9b starts, note the time with
 `date -u +%Y%m%dT%H%M%SZ` and make `<upload folder>/reread-<that time>/reports/` with
 `mkdir -p`. That re-read folder holds this re-read's `sheets.txt`, `questions.txt` and reports, and
@@ -66,7 +72,7 @@ twice.
 subagent_type: plumlayer:question-checker
 run_in_background: false
 Project: <projectId>. Mode: <list or questions>.
-Delivery: <deliveryId>, label <issue label>, issue <set, addendum, or none>; or "manual", with the fileId of each manual file.
+Delivery: <deliveryId>, label <issue label>, issue <set, addendum, or none>, manual <the fileId of each manual file step 8 filed in this upload, or "none">; or "manual", with the fileId of each manual file.
 Asked before: <the time you noted before step 9's recording call>.
 Questions file: <for questions, <re-read folder>/questions.txt lines <a>-<b>; otherwise "none">.
 Since: <for a unit sent again, the time its first dispatch was sent; otherwise "none">.
@@ -81,7 +87,8 @@ conversation, one after another, exactly as the definition says, writing the sam
 once in the closing report that you read the Questions in this conversation.
 
 <!-- user-facing -->
-Report: how many open Questions I read against the new set, the new addendum or the new manual, and
+Report: how many open Questions I read against the new set, the new addendum or the new manual,
+naming the manual that came in with the new set or addendum where one did, and
 how many of them cite, in the ask or a reply, a sheet or section the new paper prints or a sheet
 the new set ended. Then the Questions I closed because the new set answers them, each by its title,
 or by its RFI number ("RFI 22") once it holds one, with the line naming where, and say: these are

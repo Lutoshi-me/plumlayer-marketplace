@@ -50,7 +50,9 @@ Run, or stop and report; never create a consent step. The user's decisions in th
 which project this delivery belongs to, its issue label, which files are the drawings when the packaging leaves it
 genuinely unclear, whether to check the pages again when an earlier run's page and type entries
 are on file, and, on a project that already holds scope items or open Questions, the plan step 9a
-puts to him for the new delivery's carry and scope pass, which he approves, changes or stops.
+puts to him for the new delivery's carry and scope pass, which he approves, changes or stops,
+and, on a new set, whether to change the project description's sentence that names the earlier
+set (step 10), an offer at the close that holds up nothing.
 Ask each of those once, in plain words, and where you already have a reading (off a cover sheet,
 off the file list) put it forward as the answer with its source named, so the user corrects it
 rather than composes it. Everything else the skill does is its own work, recorded with who did it
@@ -809,13 +811,15 @@ nobody has sent that the new paper changed, and points the rest at the new pages
 a sent one it changed. It runs whenever a prior delivery or manual existed:
 an addendum, a new set, or a manual on its own. There, read `reread-questions.md` beside this
 file, in this skill's own folder, and run it, once step 9a has run, with the result of step 9a's
-text read. On the project's first delivery there is nothing earlier on the board to re-read, so
-skip it and leave that file unread.
+text read. Where step 8 filed a project manual in this upload beside a drawing delivery, the same
+re-read also reads each open Question citing a section of the new manual, so hold the `fileId` of
+each file step 8 filed for it. On the project's first delivery there is nothing earlier on the
+board to re-read, so skip it and leave that file unread.
 
 ## 10. Close out
 
 Step 9b's re-read of the open Questions is reported before any of this. Point 3 runs on every path
-through this skill. Points 1 and 2 run only where this delivery is stated as a new set.
+through this skill. Points 1, 2 and 4 run only where this delivery is stated as a new set.
 
 1. **The new-set finding.** Run this where `list_drawing_deliveries` gives this delivery `issue:
    "set"`, and only when a prior delivery existed; on the project's first delivery there is nothing
@@ -870,6 +874,20 @@ through this skill. Points 1 and 2 run only where this delivery is stated as a n
    pass reads it alone, and that the package reviews of the next pass read its sections. For a
    delivery with no sheet number read, name it and say no scope pass can read it until its sheet
    numbers are read.
+<!-- /user-facing -->
+4. **The project description.** Where this new set follows a prior delivery, read `description`
+   off `get_project(projectId)`. Where it names the earlier set as the job's drawings (its
+   deliverable, such as 100% Design Development, or its issue date), the description now reads as
+   of a set this one replaced. Write nothing on your own: the description may be a person's words.
+   The new sentence names this set by its `label` on `list_drawing_deliveries` and, where that row
+   gives one, its issue date, and by nothing you did not read there. Put the offer once, after
+   point 3; it holds up nothing, and the scope pass he approved goes ahead whatever he answers.
+   Where he says yes, call `update_project(projectId, description: "<the description with that
+   sentence replaced by the one you offered>")`, changing only that sentence.
+<!-- user-facing -->
+   Quote the sentence that names the earlier set, say it still describes the earlier set, and give
+   the sentence you would put in its place, naming this set as its delivery is labeled. Offer to
+   make that change. Where the description names no set, say nothing about it.
 <!-- /user-facing -->
 
 ## Gates (non-negotiable)

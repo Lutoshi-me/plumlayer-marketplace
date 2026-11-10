@@ -9,9 +9,13 @@ pages opened:
 
 - section 099999 file-1111 p12 (invented term) read Part 2, one row updated
 pages opened: X-3.01 file-0000 p9 (invented term, the label written again) read one callout, nothing new
-created: 1   updated: 1   questions raised: 0   questions replied: 0
-updated subjects: scopeItem:A1-1-1
+created: 1   updated: 2   questions raised: 0   questions replied: 0
+updated subjects: scopeItem:A1-1-1 scopeItem:A1-1-2
 manual updates: scopeItem:A1-1-1 specSection:099999 p12
+field updates:
+- scopeItem:A1-1-1 notesInternal X-4.01 file-0000 p11
+- scopeItem:A1-1-2 description X-4.01 file-0000 p11
+- scopeItem:A1-1-2 packageRole:26 00 00 no page
 questions raised ids: none
 questions replied ids: none
 questions linked: none

@@ -293,8 +293,8 @@ LEDGER_NAME = "ledger.md"
 # review opened are the lines under `pages opened:` up to the next of these.
 REVIEWER_LABELS = (
     "unit", "harvested", "notes read", "searches", "terms too general", "pages opened", "created",
-    "created subjects", "updated subjects", "manual updates", "questions raised ids", "questions replied ids",
-    "questions linked", "questions alone", "sent", "trades", "sheet readings written", "anomalies",
+    "created subjects", "updated subjects", "manual updates", "field updates", "questions raised ids",
+    "questions replied ids", "questions linked", "questions alone", "sent", "trades", "sheet readings written", "anomalies",
     "grain questions", "silent sections", "unspecified work", "compared", "sections not checked",
     "families not checked", "standard lines", "headings written", "door-owned suggestions",
 )

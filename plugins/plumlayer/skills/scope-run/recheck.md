@@ -118,8 +118,12 @@ python3 '<plugin root>/scripts/recheck.py' retire --run '<run folder>' --deliver
 
 Read back only its bounds line: the items to retire, the items theirs to settle, and the items kept on
 a current page. It retires an item only where each of its open rows reads removed and none of its
-rows now cites a current page; an item with a row not found is never retired, and goes on the
-list for them. Each retire carries their approval's words as its basis, the reason naming the sheet
+rows now cites a current page: none reads `open: false`, and none reads `itemOnCurrentPage: true`,
+which says the item holds a source other than one index_citations wrote on some page of the
+current set, such as a sheet its work moved to. Those items count with the items kept on a current
+page. Where rows-after holds rows the comparison wrote before it gave `itemOnCurrentPage`, the
+bounds line counts them, and for those rows only `open: false` keeps an item off the retire. An
+item with a row not found is never retired, and goes on the list for them. Each retire carries their approval's words as its basis, the reason naming the sheet
 it was on and the delivery that dropped it, and the sheet that shows the removal as its source.
 List the passes again and run the retire passes as step 4 runs the sheet passes, with
 `retire-<pass id>`.

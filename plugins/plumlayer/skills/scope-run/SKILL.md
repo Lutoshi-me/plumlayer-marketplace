@@ -1815,7 +1815,8 @@ pages opened: <sheet number + fileId + page + the term that sent it + what it di
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
 created subjects: <the subject of every row created, each under the unit's prefix, or "none">
 updated subjects: <the subject of every row updated or newly cited, except a row cited only to a Question, or "none">
-manual updates: <each subject on `updated subjects:` whose writes cite manual pages only + the section code + the page, one per line, or "none">
+manual updates: <each new citation of a manual page made in the review on a row on `updated subjects:`: the subject + the section code + the page, one per line, or "none">
+field updates: <each write made in the review onto a row on `updated subjects:` that carries no new citation, a heading aside, one write per line: the subject + the predicate written + the page its evidence names, as that page's sheet number, `section <code>` on a manual page or `none` where it prints no number, + its fileId + its page, or `no page` where its evidence names none; or "none">
 questions raised ids: <the id of every Question raised, or "none">
 questions replied ids: <the id of every Question replied to, or "none">
 questions linked: <the id of every Question raised or replied to + the subject of every row it was cited on, one Question per line, or "none">

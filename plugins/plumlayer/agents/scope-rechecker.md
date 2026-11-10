@@ -129,6 +129,9 @@ each item. Each item in your items file carries its `subject`, `name`, `basis`, 
    - any of its rows in `<run folder>/recheck/rows-after/` reads `open: false`: the comparison
      found it holds a source on that row's new page. Read those pages with one local filter on
      the subjects of your items file, never whole;
+   - any of its rows there reads `itemOnCurrentPage: true`: the comparison found it holds a
+     source other than one index_citations wrote on some page of the current set, such as a
+     sheet its work moved to. Find and name that page as the next check reads it;
    - `list_scope_items(projectId, subjectPrefix: <subject>, full: true)` names, among the pages of
      its citations and its fields' sources, one that is not one of its `oldPages` and whose
      `read_sheet_context` on that file and page answers an empty `replacedBy` and an empty

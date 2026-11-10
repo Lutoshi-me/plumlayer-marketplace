@@ -256,9 +256,9 @@ Checks:
       disagrees, the rule that a missed search never makes a Question answered, an absence only
       off a whole read, and a copy sent again taking in its first copy's work before it counts
       `already closed`; drawing-upload and its step 9b file carry the questions units up to four
-      at once, the wait on the text read, one folder per re-read, and an addendum's pages file
-      counted with the earlier deliveries' pages. Run over the shipped text with each taken out,
-      each refused.
+      at once, the wait on the text read, one folder per re-read, an addendum's pages file
+      counted with the earlier deliveries' pages, and a manual filed beside a drawing delivery
+      read in the same re-read. Run over the shipped text with each taken out, each refused.
   32. Passes at once: the shipped scripts/plan_inventory.py writes `starts after:` under every pass
       block off the classes of sheet each window pins, and window 1 reads its vocabulary ahead of
       what `--include` added; the shipped scripts/lead_pass.py says what to start off those lines,
@@ -8473,6 +8473,8 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             errors.append(f"the runner's {where} does not read {phrase!r}")
     if "sheets: [<the unit's sheet numbers>]" in runner_flat:
         errors.append("the runner still verifies a unit by its sheet numbers alone")
+    if "`pages opened:` and `field updates:` lines" in runner_flat:
+        errors.append("the runner still sends verify_unit the sheets a review's field updates name")
 
     # An addendum's pass, in the text that drives it: the lead's partial pass, the reviewer searching
     # the pass's own deliveries and naming the file it opened, the runner checking a review on that
@@ -8495,6 +8497,27 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         (reviewer_flat, "the reviewer", "carries the hit's `fileId`"),
         (reviewer_flat, "the reviewer", opened_shape),
         (runner_flat, "the runner", "with the `fileId` and the page the reviewer's line names for it"),
+        # A review rewords rows it does not cite again, on pages it did not open in that read, and
+        # records a candidate trade with no page at all. The reviewer names each such write on its
+        # own line with its predicate, and the runner finds each one back as written by this review:
+        # the current entry of that predicate, written at or after the dispatch, on the page named.
+        (reviewer_flat, "the reviewer", "field updates: <each write you made in this review onto a row on `updated subjects:` that carries no new citation, a heading aside, one write per line: the subject + the predicate written + the page its evidence names"),
+        (reviewer_flat, "the reviewer", "or `no page` where its evidence names none; or \"none\">"),
+        (reviewer_flat, "the reviewer", "manual updates: <each new citation of a manual page you made in this review"),
+        (reviewer_flat, "the reviewer", "A page you did not open in this read is never on that line"),
+        (reviewer_flat, "the reviewer", "so every row on `updated subjects:` is found on a pages-opened sheet, on `manual updates:`, or on `field updates:`"),
+        (reviewer_flat, "the reviewer", "the current entry on that subject with that predicate written at or after it dispatched you"),
+        (skill_flat, "the skill's copy of the reviewer report", "field updates: <each write made in the review onto a row on `updated subjects:` that carries no new citation, a heading aside, one write per line: the subject + the predicate written + the page its evidence names"),
+        (runner_flat, "the runner", "every line of `pages opened:`, under the label or on the label written again, whatever it says the review did there. None is left out"),
+        (runner_flat, "the runner", "sheets: [<the sheets on the reviewer's `pages opened:` line, at most 20>]"),
+        (runner_flat, "the runner", "The sheets its `field updates:` line names never go into the call"),
+        (runner_flat, "the runner", "is found back where it is found among the subjects citing one of those sheets, on its `manual updates:` line, or on its `field updates:` line"),
+        (runner_flat, "the runner", "`date -u +%Y-%m-%dT%H:%M:%SZ > '<run folder>/reports/<unit id>.read-<k>.dispatched'`"),
+        (runner_flat, "the runner", "`search(subject: \"<that subject>\", predicate: \"<the predicate the line names>\", full: true)`"),
+        (runner_flat, "the runner", "written at or after the time this read's `.dispatched` file holds, its `assertedAt` that time or later"),
+        (runner_flat, "the runner", "where the line names a page, whose evidence names that `fileId` and that page"),
+        (runner_flat, "the runner", "and so is every line of a read with no `.dispatched` file"),
+        (runner_flat, "the runner", "An updated subject is found back where the `sheets` rows of any of the calls carry it"),
         (runner_flat, "the runner", "`<unit id> touched <catalog id>`"),
         *(
             (reader_flat, label, "trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names")
@@ -13586,7 +13609,8 @@ def check_question_writing_sentence(plugin_path: Path, marketplace_root: Path) -
 # place to agree, a part answered is a change, and neither a search that found nothing nor a read
 # that covered the page in part answers one. A copy sent again takes in its first copy's work before
 # it counts a close as already made. The lead waits on the new paper's text read, gives each re-read
-# its own folder, counts an addendum's pages file with the earlier deliveries' pages, and runs the
+# its own folder, counts an addendum's pages file with the earlier deliveries' pages, reads a
+# manual filed beside a drawing delivery in that delivery's one re-read, and runs the
 # questions units up to four at once and the page units one at a time. The check
 # holds each of those rules by phrase in the file that carries it, and runs over the shipped text
 # with each taken out. What it cannot judge: whether a running checker decides a Question rightly;
@@ -13636,6 +13660,13 @@ _QUESTION_CHECKER_PINS: tuple[tuple[str, str], ...] = (
     # An addendum's pages file carries the earlier deliveries' rows too.
     ("skills/drawing-upload/SKILL.md", "plus the `pages to look at` on its `earlier deliveries:` "
                                        "line"),
+    # A manual filed in the same upload as drawings joins the one re-read, so a Question citing
+    # only one of its sections is read, and no Question is read by two re-reads.
+    ("skills/drawing-upload/reread-questions.md", "Where step 8 filed a project manual in the same "
+                                                  "upload as a drawing delivery, one re-read reads "
+                                                  "both"),
+    (_QUESTION_CHECKER, "Where your dispatch names a manual's files beside a drawing delivery, read "
+                        "the manual's sections the same way before the delivery's sheets"),
 )
 
 
@@ -13671,8 +13702,9 @@ def check_question_checker_outcomes(plugin_path: Path, marketplace_root: Path) -
         f"{len(_QUESTION_CHECKER_PINS)} phrases held over {len(texts)} files (the question checker's "
         f"three outcomes, the sent rule, the guard on a close, the unsent condition, a missed search "
         f"or a partial read never answering one, a copy sent again counted first, the lead's wait "
-        f"on the text read, one folder per re-read, an addendum's pages file count, and the lead's "
-        f"four questions units at once), {refused} mutations "
+        f"on the text read, one folder per re-read, an addendum's pages file count, a manual filed "
+        f"beside drawings read in the same re-read, and the lead's four questions units at once), "
+        f"{refused} mutations "
         f"refused; bound: text only, not how a running checker decides"
     )
     if errors:
@@ -14951,8 +14983,9 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
 # a page of another delivery or rule version or one row carried twice in place of another; a unit's
 # outcome lines held to its rows exactly once, and a unit that cited nothing held to no write and no
 # verify_unit call; window r through the summary and the lead's record and check-in; the retire
-# step retiring an item all removed and listing an item with a row not found, never both, and a
-# reason kept under the 2,000 characters a retire takes; the report by package off invented
+# step retiring an item all removed and listing an item with a row not found, never both, keeping
+# an item the comparison reads on another page of the current set and counting rows that carry no
+# such answer, and a reason kept under the 2,000 characters a retire takes; the report by package off invented
 # fetches, an item on two packages counted in each, a carried figure differing from the plan named,
 # a carried line with no split by kind read, and a plan with the carry left out carrying nothing;
 # and the shipped text pinned: the rechecker's tools and modes, a moved box never written as the
@@ -14983,6 +15016,7 @@ _RECHECK_PINS: tuple[tuple[str, str], ...] = (
     (RECHECKER, "retire_scope_item(projectId, subject, basis, reason, sources, deliveryId)"),
     (RECHECKER, "the reader's mandates, by path"),
     (RECHECKER, "any of its rows in `<run folder>/recheck/rows-after/` reads `open: false`"),
+    (RECHECKER, "any of its rows there reads `itemOnCurrentPage: true`"),
     (RECHECKER, "That is a current page whether or not the answer names a `sheetNumber`"),
     (RECHECKER, "A null `sheetNumber` never makes a page not current"),
     ("agents/scope-round-runner.md", "make no `verify_unit` call, which needs a sheet"),
@@ -15456,8 +15490,29 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
         if four.get("sources") != [{"kind": "sheet-region", "sheet": "A-101", "fileId": "file-0202", "pageInPdf": 3,
                                     "bboxPts": [200.0, 10.0, 250.0, 20.0], "frame": "page-points"}]:
             errors.append(f"the retire of item four cites {four.get('sources')}, not the box on the sheet that shows the removal")
-        if "items his to settle 2" not in out or "kept on a current page 1" not in out:
+        if "items his to settle 2" not in out or "kept on a current page 1," not in out:
             errors.append(f"the retire step's bounds line does not list two items for him and one kept: {out!r}")
+        # The fixture's rows predate itemOnCurrentPage, so the bounds line counts every row as unanswered.
+        if f"rows-after rows with no itemOnCurrentPage answer {len(after['referenceRows']['rows'])}," not in out:
+            errors.append(f"the retire step over rows with no itemOnCurrentPage does not count them: {out!r}")
+    # An item whose rows all read removed and that the comparison reads on another page of the
+    # current set, as on a sheet its work moved to, is kept and counted with the items kept.
+    moved = recheck_folder("moved-sheet", [page])
+    run(recheck, plan_args(moved))
+    for unit, lines in reports.items():
+        report_file(moved, unit, lines)
+    shutil.copy(ledger, moved / "ledger.md")
+    answered = json.loads(json.dumps(after))
+    for r in answered["referenceRows"]["rows"]:
+        r["itemOnCurrentPage"] = r["subject"] == "scopeItem:i1-A1-1-4"
+    write(moved / "recheck" / "rows-after" / "page-000.json", answered)
+    code, out, err = run(recheck, ["retire", "--run", str(moved), "--delivery-plan", str(moved / "plan.md")])
+    moved_chosen = {item["subject"] for path in (moved / "recheck" / "retire").glob("*.json")
+                    for item in json.loads(path.read_text(encoding="utf-8"))["items"]} if code == 0 else set()
+    if (code != 0 or moved_chosen != {"scopeItem:i1-S1-1-1"}
+            or "kept on a current page 2, of them cited on another page of the current set 1," not in out
+            or "no itemOnCurrentPage answer" in out):
+        errors.append(f"an item the comparison reads on another page of the current set is not kept and counted: {moved_chosen} {out!r} {err!r}")
     # Never both: the item with one row not found turned removed retires, and stays off his list.
     flipped = recheck_folder("never-both", [page])
     run(recheck, plan_args(flipped))
@@ -15605,7 +15660,8 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
         f"checked in, a unit read again summed off the report of the read its latest verified line "
         f"checked, whether that report alone is renamed or a later refused one sits renamed above "
         f"it; the retire step retiring the 2 items all removed, listing 2 with a row not "
-        f"found and keeping 1 on a current page, never both, an item on 150 and on 300 sheets "
+        f"found and keeping 1 on a current page, never both, keeping 1 the comparison reads on another page of the current set, "
+        f"an item on 150 and on 300 sheets "
         f"retired with a reason under 2,000 characters; the report by package with an item on two "
         f"packages counted in each, a carried total differing from the plan named, a carried line "
         f"with no split by kind read both ways, and the carry left out counting nothing carried; "

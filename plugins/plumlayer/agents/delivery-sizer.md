@@ -137,7 +137,8 @@ If the upload folder in your dispatch does not exist, say so on your `stopped:` 
    `carried: none, the estimator left the carry out of the plan`, return that line, and end.
 2. Read `compare_delivery_status(projectId, deliveryId, limit: 1)` again. `complete` must be true;
    where it is not, append `stopped: the comparison is not complete:` and the counts that read
-   `notComparedYet`, return that line, and end. Note its `references.boxes`: the boxes before the
+   `notComparedYet`, return that line, and end. Note its `references.boxes` and
+   `references.noBox`: the boxes, and the references to a whole sheet with no box, before the
    first carry.
 3. Call `carry_forward_references(projectId, deliveryId)`, and again while its answer's
    `remaining` is above 0. Sum `carried.scopeItems.boxes` and `carried.questions.boxes` over every
@@ -145,8 +146,10 @@ If the upload folder in your dispatch does not exist, say so on your `stopped:` 
    calls before it carried, return those lines, and end.
 4. Check the call that answered `remaining` 0: its `carried` boxes, plus its `alreadyThere`
    (`scopeItems` and `questions`), plus every count in `notCarried`, plus every count in `left`,
-   against the boxes step 2 noted. Where the two differ, name both counts on the `carried:` line;
-   never adjust either.
+   against step 2's `boxes` and `noBox` added together. `left` holds the references to a whole
+   sheet with no box under its `noBox`, and no call carries them, so a sum against the boxes alone
+   differs by them. Where the two differ, name both counts on the `carried:` line; never adjust
+   either.
 5. Append the `carried:` line to the plan file, in the shape "The plan file" gives, return it, and
    end.
 
@@ -165,7 +168,7 @@ sheets: printed <n>   unchanged <n>   changed <n>   changed only in shared areas
 changed: <each sheet number for the re-read, or "none">
 new: <each sheet number, or "none">
 not compared: <each sheet number + why, or "none">
-references: boxes <n>   same <n>   moved <n>   found at several places <n>   gone <n>   not comparable <n>   no longer printed <n>   names no single page <n>   to recheck <n>   open Questions before this delivery's index check <n, or "not given">
+references: in all <n>   boxes <n>   same <n>   moved <n>   found at several places <n>   gone <n>   not comparable <n>   no longer printed <n>   names no single page <n>   on a whole sheet with no box <n>   to recheck <n>   open Questions before this delivery's index check <n, or "not given">
 package | <name, or "No Package"> | <trade code, or "none"> | same <n> | moved <n> | gone <n> | other <n> | items <n> | open Questions <n>
 most to recheck | <name, or "No Package"> | <trade code, or "none"> | references <n> | open Questions <n>
 pass: <full or partial>
@@ -179,17 +182,21 @@ stopped: <why, or "no">
 One `package |` line per `byPackage` row, in its order. A row's reference counts sit under its
 `references`: `same` is `references.same`, `moved` is `references.moved`, `gone` is
 `references.gone`, and `other` is `references.foundAtSeveralPlaces`, `references.notComparable`,
-`references.notComparedYet`, `references.noLongerPrinted` and `references.namesNoSinglePage`
-together; `items` is its `scopeItems.count`; `open Questions` is its `questions.open`, the open
-Questions with a box on the sheets this delivery reprints. A Question filed under several trades
-counts in each of their rows, so the `open Questions` of two rows never add up to a count.
+`references.notComparedYet`, `references.noLongerPrinted`, `references.namesNoSinglePage` and
+`references.noBox` together; `items` is its `scopeItems.count`; `open Questions` is its
+`questions.open`, the open Questions with a box on the sheets this delivery reprints. A Question
+filed under several trades counts in each of their rows, so the `open Questions` of two rows never
+add up to a count.
 
-`to recheck` on the `references:` line is every answer but `same` added together: `moved`, found
-at several places, `gone`, not comparable, not compared yet, no longer printed and names no single
-page. On a `most to recheck |` line, `references` is that package's `moved`, `gone` and `other`
-added together, and `open Questions` is copied from its `package |` line. The index check's own
-Questions box only this delivery's index page, never a page it replaces, so no `package |` line
-counts them.
+On the `references:` line, `boxes` is `references.boxes`, `on a whole sheet with no box` is
+`references.noBox`, each place a scope item cites on a whole sheet with no box, which nothing
+carries and the recheck reads, and `in all` is the two added together. `to recheck` is every answer
+but `same` added together: `moved`, found at several places, `gone`, not comparable, not compared
+yet, no longer printed, names no single page and on a whole sheet with no box, so `same` and
+`to recheck` add up to `in all`. On a `most to recheck |` line, `references` is that package's
+`moved`, `gone` and `other` added together, and `open Questions` is copied from its `package |`
+line. The index check's own Questions box only this delivery's index page, never a page it replaces,
+so no `package |` line counts them.
 
 The session appends one `status:` line each time it puts the plan to the estimator and each time
 he answers, in these shapes, and carry mode reads the last one:
@@ -203,7 +210,7 @@ status: stopped <time> "<his words>"
 Carry mode appends one line:
 
 ```text
-carried: <n> boxes over <n> calls, <n> on scope items and <n> on Questions; last call: carried <n> on scope items and <n> on Questions, already there <n> on scope items and <n> on Questions, not carried <n by why>, left <n by answer>; <the sum> against <n> boxes before the first carry, <equal, or "differ by <n>">
+carried: <n> boxes over <n> calls, <n> on scope items and <n> on Questions; last call: carried <n> on scope items and <n> on Questions, already there <n> on scope items and <n> on Questions, not carried <n by why>, left <n by answer>; <the sum> against <n> before the first carry, <n> boxes and <n> on a whole sheet with no box, <equal, or "differ by <n>">
 ```
 
 The last call's `carried` and `alreadyThere` go on the line by kind, the scope items apart from the

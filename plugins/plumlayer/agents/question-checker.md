@@ -28,8 +28,9 @@ Pointers only, never pasted text:
 
 - the project id and the mode, `list` or `questions`;
 - the delivery: its id, its issue label and its `issue`, `set` or `addendum` as someone stated
-  it or `none` where it holds no sheet number; or `manual`, with the `fileId` of each file of a
-  project manual uploaded on its own;
+  it or `none` where it holds no sheet number, and `manual` with the `fileId` of each file of a
+  project manual filed in the same upload, or `manual none`; or `manual`, with the `fileId` of
+  each file of a project manual uploaded on its own;
 - `Asked before:`, a time. A Question asked at or after it was raised during this upload, by the
   index check, and is left alone;
 - `Questions file:`, in questions mode the path of `questions.txt` and the lines that are your
@@ -66,10 +67,13 @@ blind.
 1. Which sheets changed. For a manual on its own, the sections the new manual carries: page
    `search(projectId, subjectPrefix: "specSection:", predicate: "locatedAt")` with `offset` to its
    `count`, and keep each entry whose `sourceInstrument` is `document:<fileId>` for one of the
-   manual's files. For a drawing delivery, first read its `issue` off `list_drawing_deliveries`.
+   manual's files. Where your dispatch names a manual's files beside a drawing delivery, read the
+   manual's sections the same way before the delivery's sheets, so this re-read also reads each
+   Question citing only a section of it. For a drawing delivery, first read its `issue` off
+   `list_drawing_deliveries`.
    Where it is null, nobody has stated whether it is a new set or an addendum yet: `set_grid`
-   refuses it and no sheet is known to have changed, so skip the rest of this step, write both
-   files empty, and say so on your report's `no sheet number:` line. Where its `sheetCount` is 0
+   refuses it and no sheet is known to have changed, so skip the rest of this step, write no sheet
+   line, and say so on your report's `no sheet number:` line. Where its `sheetCount` is 0
    with `stillReading` false, it holds no sheet number: do the same. Otherwise the changed sheets
    are the ones this delivery itself prints, each on its own page of it, read by its own id and
    never off the current set: an addendum uploaded after a later one is not the current set's page
@@ -227,7 +231,7 @@ the same sheet.
   for a manual on its own the section, `Section <number> <title>`), and write no reply. Any other
   state: the design team holds the words it was sent with, so never reword it. Add the new
   places and one `reply_question` of one or two sentences saying what changed and where, citing
-  the box, or for a manual on its own naming the section by its number and title.
+  the box, or where the change is in a section, naming the section by its number and title.
 - UNCHANGED: the new paper says on the point what it said before. Add the new places it still
   applies to and write nothing else.
 

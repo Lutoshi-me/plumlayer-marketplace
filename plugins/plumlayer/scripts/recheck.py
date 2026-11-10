@@ -55,8 +55,12 @@ Four modes:
 
         Once every sheet unit carries a `verified r` line reading ok, reads rows-after and each
         sheet unit's report. An item each of whose open rows reads removed, none not found, and
-        none of whose rows on the replaced pages reads `open: false` in rows-after, is retired:
-        up to 25 to a unit, `<tag>-rt-<n>`, each with the approval's words as its basis, its
+        none of whose rows on the replaced pages reads `open: false` or `itemOnCurrentPage: true`
+        in rows-after, is retired; `itemOnCurrentPage` is the comparison's answer that the item
+        holds a source other than one index_citations wrote on some page of the current set, such
+        as a sheet its work moved to. A row the comparison wrote before it gave that answer carries
+        none: only its `open` keeps the item, and the printed line counts those rows. Items to
+        retire go up to 25 to a unit, `<tag>-rt-<n>`, each with the approval's words as its basis, its
         reason `Removed by <label>: on <old sheet> in <old label>, no longer on <new sheet>`, and
         as its sources the sheets its rows name as showing the removal, at most 10. A reason past
         the REASON_MAX characters retire_scope_item takes names its old sheets by group, then only
@@ -237,6 +241,8 @@ def read_rows(folder: Path, run: dict, plan_doc: dict) -> list[dict]:
                 raise PlanError(f"{path} carries a row that is no scope item's; fetch with kind scopeItem")
             if not isinstance(row.get("open"), bool) or not isinstance(row.get("subject"), str):
                 raise PlanError(f"{path} carries a scope item's row with no `open` answer or no subject")
+            if "itemOnCurrentPage" in row and not isinstance(row["itemOnCurrentPage"], bool):
+                raise PlanError(f"{path} carries a scope item's row whose `itemOnCurrentPage` is no true or false")
             identity = row_identity(row)
             if identity in seen:
                 raise PlanError(
@@ -657,6 +663,11 @@ def _selection(folder: Path, run: dict, plan_doc: dict, sheet_units: list[dict])
     outcomes = _sheet_outcomes(folder, sheet_units)
     after = read_rows(folder / FOLDER / ROWS_AFTER, run, plan_doc)
     current = {row["subject"] for row in after if not row["open"]}
+    # An item cited on any page of the current set, other than by the citation index, whatever
+    # each row's new page: the work moved to another sheet. A row with no such answer is unknown,
+    # so for it only `open` counts.
+    on_set = {row["subject"] for row in after if row.get("itemOnCurrentPage") is True}
+    unanswered = sum(1 for row in after if "itemOnCurrentPage" not in row)
     items: dict[str, list[tuple[dict, dict, dict]]] = {}
     for unit in sheet_units:
         for row in unit["rows"]:
@@ -673,6 +684,9 @@ def _selection(folder: Path, run: dict, plan_doc: dict, sheet_units: list[dict])
             continue
         if subject in current:
             kept[subject] = "cited on a current page"
+            continue
+        if subject in on_set:
+            kept[subject] = "cited on another page of the current set"
             continue
         sources: list[dict] = []
         olds: list[tuple[str, str | None, bool]] = []
@@ -702,7 +716,9 @@ def _selection(folder: Path, run: dict, plan_doc: dict, sheet_units: list[dict])
             "rows": [row["key"] for _unit, row, _outcome in rows],
             "oldPages": [row["row"]["old"] for _unit, row, _outcome in rows if row["row"].get("old")],
         })
-    return {"retire": retire, "his": his, "kept": kept, "items": items, "outcomes": outcomes, "after": after}
+    return {"retire": retire, "his": his, "kept": kept, "items": items, "outcomes": outcomes, "after": after,
+            "keptOnSet": sum(1 for why in kept.values() if why == "cited on another page of the current set"),
+            "unanswered": unanswered}
 
 
 def _sheet_units_from_disk(folder: Path, state: dict) -> list[dict]:
@@ -755,7 +771,11 @@ def retire(folder: Path, plan_path: Path) -> str:
     return (
         f"wrote {folder / READ_PLAN} and {folder / FOLDER / PLAN_FILE}: window r, items to retire "
         f"{len(chosen['retire'])} in {len(units)} units, items his to settle {len(chosen['his'])}, items "
-        f"kept on a current page {len(chosen['kept'])}, passes {passes}; {written:,} bytes"
+        f"kept on a current page {len(chosen['kept'])}, of them cited on another page of the current set "
+        f"{chosen['keptOnSet']}, passes {passes}"
+        + (f"; rows-after rows with no itemOnCurrentPage answer {chosen['unanswered']}, each kept off "
+           f"the retire only by `open: false`" if chosen["unanswered"] else "")
+        + f"; {written:,} bytes"
     )
 
 
