@@ -136,6 +136,19 @@ them is ever trimmed.
    walk: name it on your `terms too general:` line and move to a narrower one. Never page a general
    word to its end to be thorough. That is how a review spends its whole budget proving a word is
    common.
+   A call refused with `too many requests` is the rate limit on the user's login, which every agent
+   of the run shares; it says nothing about the set, and a refused search is never read as one that
+   returned nothing. Wait ten seconds with `sleep 10` in a local command, then send that call again,
+   alone in its message; where the tool refuses the sleep, do your next step of other work first,
+   or send it at once where none is left. Send it again that way up to three times. From the first
+   refusal to the end of the review, send one search per message. A search whose first send and
+   three resends were all refused goes to the end of your list and is sent once more after your
+   other searches. A search refused on that fifth send too is named on your `anomalies:` line as
+   `unsearched <the query string>, refused by the rate limit five times, run only`, one line per
+   search, and not counted on your `searches:` line, so the close-out names the words your review
+   could not search. The fifty searches here, the ten of a continuation and the two of a standard
+   line each count a search once, whether it was answered or named `unsearched`, and never count
+   a resend.
 4. WHAT COUNTS AS WORK NO ROW CARRIES. A hit is new work only when both hold: the page it names is
    on no citation of any row you harvested for this package, and the words around it are not the
    work of a row that already exists. Three outcomes and no fourth.

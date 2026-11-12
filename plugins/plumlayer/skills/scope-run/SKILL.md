@@ -1551,7 +1551,9 @@ Report to the user, in plain words:
   or that the count of them is incomplete when it was cut short. Name each manual section no
   review could read, with the reason: the manual lists it and holds none of its pages, its manual
   was removed, it left its package before the rest of it was read, or a pass had no room left to
-  read its last pages, with those pages. On a pass
+  read its last pages, with those pages. Name each package you could not finish searching, with
+  the exact words you could not search. Say that you may have missed work for that package, and
+  that they can search those words in the drawings on plumlayer.com. On a pass
   on an addendum, also name the packages you did not review, and say why: this pass wrote no row
   on their trade, so the addendum's sheets changed nothing they price that the readers found.
 - **The package split**: the packages folded into another before the reviews, and the amendments
@@ -1566,7 +1568,7 @@ Report to the user, in plain words:
 <!-- /user-facing -->
 
 The report is written off the ledger's `pass:` and `phase:` lines, and the `grain`, `same work:`,
-`not read:` and window 3 `unread` notes named below, read with a local filter, and the one package read named below,
+`not read:`, `unsearched` and window 3 `unread` notes named below, read with a local filter, and the one package read named below,
 never off memory and never off the whole file. Everything the report needs is on those lines: the
 wall-clock between the first and last of them, the counts, the deviations, and what is still open.
 Read them with one filter each and count them locally: the sheet reads are the `dispatch` lines,
@@ -1580,7 +1582,9 @@ window 3 `note` lines of kind `anomaly` that carry `same work:`, each pair named
 manual sections no review could read are the window 3 `anomaly` notes that carry `not read:`,
 which a review writes only for a section with no page range or whose manual was removed, and a
 continuation for one no longer on its package, and the
-window 3 `unread` notes that name a section, each section named once. A `continued:` note names
+window 3 `unread` notes that name a section, each section named once. The words a review could not
+search are the window 3 `anomaly` notes that carry `unsearched`, named under the package of the
+review whose unit the note names, each word once. A `continued:` note names
 pages a continuation went on to read, and is named nowhere in the close-out. What the index left
 open comes off the
 `phase: index built` lines, which carry its counts, and the codes found nowhere and the codes a
