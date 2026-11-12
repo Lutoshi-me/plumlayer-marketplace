@@ -36,7 +36,8 @@ Pointers only, never pasted text:
 - `Read:`, the number of this read of your unit;
 - `Delivery:`, the new delivery's id and its label;
 - `Sheet:`, the sheet number, every old page and every new page the unit line names, or `none`
-  where the delivery no longer prints the sheet (sheet mode);
+  where the delivery no longer prints the sheet (sheet mode); on a unit of a manual section it
+  reads `section <number>`, as the section below says;
 - `Rows file:`, the unit's rows, each copied whole off the comparison with its row key, in sheet
   mode; or `Items file:`, the unit's items with what each retire sends, in retire mode;
 - `Plan file:`, the plan he approved for the delivery, which you read with a local filter on its
@@ -114,6 +115,42 @@ row: i2-RA-1.5 | removed | A-101 file-0202 p3 | "Entry canopy" | box [40.2, 700.
 row: i2-RA-1.6 | not found | none | "Bench B-1" | searched B-1 and BENCH in the drawings and the manual, no hit on a current page
 ```
 
+A unit of a manual section. Where your `Sheet:` line reads `section <number>`, such as `section
+233113`, each row is a scope item citing that section of an earlier project manual, and the new
+delivery came with a manual of its own. The row carries `section`, `old` (the earlier manual's file
+and the page cited) and `answer`, with `newPages` and `new`, in place of a sheet, a box and the
+drawing answers. Its answer says how the new manual carries the section: `sectionReprinted`, where
+`newPages` names each file and page range that prints it; `sectionNotPrinted`, listed in its
+contents with no page printed; `sectionNotInManual`, not carried at all; or `manualNotReadYet`, a
+file of the new manual not read yet.
+
+1. Read the item as step 1 says, then the page it cited: `get_page_text(projectId, fileId: <old
+   fileId>, pageNum: <old page>, form: "lines")`. Those words are what you look for.
+2. Where the section is reprinted, read its pages in the new manual with `get_page_text` on each
+   file and page range `newPages` names, walked on `nextOffset`, and give the row its outcome as
+   step 4 says, on the new manual's page. Recited: `cite_source` with `kind: "spec-section"`, the
+   section's number as `specSection`, and the `fileId` and `pageInPdf` you read it on, with a box
+   from the lines that carry it where one does. Updated: the field written as step 4 says, cited
+   the same way. Removed: the new manual's page that shows the work gone, such as the paragraph
+   that no longer lists it.
+3. Where the section is not printed, not in the manual or not read yet, or the reprinted section
+   no longer carries the work, search the current set as step 5 says, the drawings and then `kind:
+   document`. A current sheet that carries the work is cited as recited, on that sheet. A document
+   page is a place to cite only where its file is one of the `manualFiles` your rows file names, the
+   new manual: the search also reaches the earlier manual, and a page of it is never cited. Where
+   you find the work nowhere, the row is not found, naming what you searched and how the new manual
+   carries the section. A section the new manual lists and does not print is never read as removed
+   on that alone.
+
+An outcome line on the new manual names its page as `section <number> <fileId> p<page>`, and what
+you found opens with `box [x0, y0, x1, y1]` and the words read there, or with `section:` and what
+the page says there:
+
+```text
+row: i2-RSPEC-2.1 | recited | section 233113 file-0303 p812 | "Duct insulation" | section: 3.4 A. INSULATE SUPPLY DUCTS
+row: i2-RSPEC-1.1 | not found | none | "Cast-in-place footings" | the new manual lists 033000 and prints no page of it; searched FOOTING in the drawings, no hit on a current sheet
+```
+
 ## Retire mode
 
 The estimator approved the plan, which said the recheck retires the rows the new delivery
@@ -133,9 +170,11 @@ each item. Each item in your items file carries its `subject`, `name`, `basis`, 
      source other than one index_citations wrote on some page of the current set, such as a
      sheet its work moved to. Find and name that page as the next check reads it;
    - `list_scope_items(projectId, subjectPrefix: <subject>, full: true)` names, among the pages of
-     its citations and its fields' sources, one that is not one of its `oldPages` and whose
-     `read_sheet_context` on that file and page answers an empty `replacedBy` and an empty
-     `endedBy`. That is a current page whether or not the answer names a `sheetNumber`. A null
+     its citations and its fields' sources on a file `<run folder>/recheck/files.json` lists as
+     kind `drawing`, one that is not one of its `oldPages` and whose `read_sheet_context` on that
+     file and page answers an empty `replacedBy` and an empty `endedBy`. A page of a manual or
+     another document is current only where the two checks above read it so, since every page of
+     an earlier manual answers an empty `replacedBy` too. That is a current page whether or not the answer names a `sheetNumber`. A null
      `sheetNumber` never makes a page not current: an unnumbered page and a page two sheets name
      are current pages all the same.
 3. Otherwise call `retire_scope_item(projectId, subject, basis, reason, sources, deliveryId)`, one

@@ -569,8 +569,10 @@ delivery, `Delivery: <deliveryId>, label <label>.`, and `Plan file: <path>.`, th
 - **Each unit is one sheet's open rows.** Your pass block's `reads for:` reads `the recheck`, and
   each unit line names its unit id, the sheet number, the new page or pages (`file none` where the
   delivery no longer prints the sheet), the old page or pages with the delivery each came in, and
-  its rows file, `recheck/units/<unit id>.json` in the run folder. Every line you write carries
-  window `r`.
+  its rows file, `recheck/units/<unit id>.json` in the run folder. A unit of a manual section names
+  `section <number>` in place of the sheet number, the page ranges of the new manual that print it,
+  and the earlier manual's pages by the delivery or the file each came in; the `Sheet:` line of its
+  dispatch reads `section <number>`. Every line you write carries window `r`.
 - **You dispatch exactly one agent type here, `plumlayer:scope-rechecker`**, one per unit in turn,
   its `dispatch` line first, as pass mode's step 2 says, with `sheets <sheet number>` and
   `purpose recheck the rows on <sheet number>`:
@@ -605,11 +607,20 @@ delivery, `Delivery: <deliveryId>, label <label>.`, and `Plan file: <path>.`, th
   subjects citing that sheet on that file and page; one that does not is a mismatch. Questions are
   found back by id as pass mode's step 3 says. The `verified` line carries `created` the entry
   count, `items 0`, and the report's `updated`, `questions`, `replied`, `sent`, `landed` and
-  `conflicts`. Where the check prints `verify sheets (0): none`, every row reads removed or not
-  found and the unit wrote nothing: make no `verify_unit` call, which needs a sheet. The check has
+  `conflicts`. Where the check prints `verify sheets (0): none; the unit wrote nothing`, every row
+  reads removed or not found and the unit wrote nothing: make no `verify_unit` call, which needs a sheet. The check has
   confirmed the report claims no write instead, refusing one whose created, updated, Questions
   raised or replied, sent or landed reads above 0, and the `verified` line carries `created 0 items
   0 updated 0 questions 0 replied 0 sent 0 landed 0` and the report's `conflicts`.
+- **Verify what it cited on the manual.** Where the check prints `verify manual (<n>): [...]`,
+  also call `verify_unit(projectId, subjectPrefix: "scopeItem:<unit id>-", sheets: [], claims: {
+  manualUpdates: <that list> })`, at most 200 claims to a call and the rest in further calls, which
+  checks each item holds a current citation of that section on that file and page. Each call's
+  `result` must read `ok` and its `entryCount` 0; each of its `mismatches` is a mismatch. So a
+  unit makes the sheet call where the check prints sheets, the manual calls where it prints
+  `verify manual`, and both where it prints both. Where it prints `verify sheets (0): none; the
+  manual claims below go in a verify_unit call of their own`, the manual calls are the only ones,
+  and the `verified` line carries the report's figures as a unit that cited on a sheet does.
 - **The trades file** takes one `<unit id> candidates 0` line, and one `<unit id> touched <catalog
   id>` line per catalog id on the report's `trades touched:` line, so window 3 of a pass on an
   addendum reviews the packages the recheck wrote on. No names file: the unit created nothing.

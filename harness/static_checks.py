@@ -15613,6 +15613,98 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
     refused(recheck, ["report", "--run", str(main), "--delivery-plan", str(main / "plan.md")], "the report while a chosen item has no retire outcome", "no outcome line for item scopeItem:i1-S1-1-1")
 
     # ------------------------------------------------------------------ #
+    # The manual rows: one unit per section, read on the delivery's own manual
+    # ------------------------------------------------------------------ #
+    def manual_row(subject: str, section: str, page_no: int, answer: str, new_pages: list[dict], packages: list[str]) -> dict:
+        return {"subject": subject, "kind": "scopeItem", "entryIds": [f"ent-{subject[10:]}"], "section": section,
+                "old": {"fileId": "file-man1", "page": page_no},
+                "new": {"fileId": new_pages[0]["fileId"], "page": new_pages[0]["pageStart"]} if new_pages else None,
+                "newPages": new_pages, "answer": answer, "packages": packages, "open": True, "itemOnCurrentPage": False}
+
+    printed = [{"fileId": "file-man2", "pageStart": 794, "pageEnd": 858}]
+    manual_rows = [
+        manual_row("scopeItem:i1-A1-1-1", "033000", 12, "sectionNotPrinted", [], ["09 99 99"]),
+        manual_row("scopeItem:i1-A1-1-2", "230000", 856, "sectionReprinted", printed, ["09 99 99"]),
+        manual_row("scopeItem:i1-S1-1-1", "230000", 860, "sectionReprinted", printed, ["09 99 98"]),
+    ]
+    manual_page = {**page, "referenceRows": {"total": 0, "offset": 0, "limit": 200, "rows": []},
+                   "manual": {"files": [{"fileId": "file-man2", "filename": "invented-manual-two.pdf"}]},
+                   "manualRows": {"total": 3, "offset": 0, "limit": 200, "rows": manual_rows}}
+    manual_files_copy = {"count": 4, "files": recheck_fixture["files"]["files"] + [
+        {"id": "file-man1", "deliveryId": None, "filename": "invented-manual-one.pdf", "kind": "document"},
+        {"id": "file-man2", "deliveryId": "deliv-0002", "filename": "invented-manual-two.pdf", "kind": "document"},
+    ]}
+    spec = recheck_folder("manual", [manual_page])
+    write(spec / "recheck" / "files.json", manual_files_copy)
+    code, bounds, err = run(recheck, plan_args(spec))
+    spec_lines = [] if code != 0 else [l for l in (spec / "read-plan.md").read_text(encoding="utf-8").splitlines() if l.startswith("i2-RSPEC-")]
+    want_spec = [
+        "i2-RSPEC-1. section 033000, file none, old file file-man1 page 12 in invented-manual-one.pdf, rows 1, no new page, rows file recheck/units/i2-RSPEC-1.json",
+        "i2-RSPEC-2. section 230000, file file-man2 pages 794-858, old file file-man1 page 856 in invented-manual-one.pdf and file file-man1 page 860 in invented-manual-one.pdf, rows 2, rows file recheck/units/i2-RSPEC-2.json",
+    ]
+    if code != 0 or spec_lines != want_spec or "open 3," not in bounds:
+        errors.append(f"the recheck plans the manual rows as {spec_lines} with {bounds!r} {err!r}, not one unit per section named by its file")
+    # The two lists paged with one offset, the manual list running past the reference list's end.
+    paged = recheck_folder("manual-paged", [
+        {**manual_page, "manualRows": {"total": 3, "offset": 0, "limit": 2, "rows": manual_rows[:2]}},
+        {**manual_page, "referenceRows": {"total": 0, "offset": 2, "limit": 2, "rows": []},
+         "manualRows": {"total": 3, "offset": 2, "limit": 2, "rows": manual_rows[2:]}},
+    ])
+    write(paged / "recheck" / "files.json", manual_files_copy)
+    code, out, err = run(recheck, plan_args(paged))
+    if code != 0 or "open 3," not in out:
+        errors.append(f"the recheck over the manual rows on two pages reads {out!r} {err!r}")
+    nameless = recheck_folder("manual-nameless", [{**manual_page, "manualRows": {
+        "total": 1, "offset": 0, "limit": 200, "rows": [{k: v for k, v in manual_rows[0].items() if k != "section"}]}}])
+    write(nameless / "recheck" / "files.json", manual_files_copy)
+    refused(recheck, plan_args(nameless), "a manual row naming no section", "names no section")
+    short = recheck_folder("manual-short", [{**manual_page, "manualRows": {"total": 4, "offset": 0, "limit": 200, "rows": manual_rows}}])
+    write(short / "recheck" / "files.json", manual_files_copy)
+    refused(recheck, plan_args(short), "manual rows short of their total", "fetch the rest")
+
+    spec_reports = {
+        "i2-RSPEC-1": ['row: i2-RSPEC-1.1 | not found | none | "Invented concrete item" | searched the new manual and the current sheets'],
+        "i2-RSPEC-2": [
+            'row: i2-RSPEC-2.1 | recited | section 230000 file-man2 p800 | "Invented piping item" | section: piping insulation',
+            'row: i2-RSPEC-2.2 | removed | section 230000 file-man2 p801 | "Invented duct item" | section: the paragraph no longer lists duct wrap',
+        ],
+    }
+    for unit, lines in spec_reports.items():
+        report_file(spec, unit, lines)
+    code, out, err = run(recheck, ["check", "--report", str(spec / "reports" / "i2-RSPEC-2.md")])
+    want_claim = ('verify manual (1): [{"subject": "scopeItem:i1-A1-1-2", "specSection": "230000", "pageInPdf": 800, '
+                  '"fileId": "file-man2"}]')
+    if code != 0 or want_claim not in out.splitlines() or not any(l.startswith("verify sheets (0): none; the manual claims") for l in out.splitlines()):
+        errors.append(f"the check of a section unit reads {out!r} {err!r}, not one manualUpdates claim and no sheet")
+    for case, line, needle in (
+        ("a section cited on an earlier manual", 'row: i2-RSPEC-2.1 | recited | section 230000 file-man1 p856 | "x" | section: piping', "no file of the manual"),
+        ("a section cited with a whole sheet", 'row: i2-RSPEC-2.1 | recited | section 230000 file-man2 p800 | "x" | whole sheet: piping', "`section: <what it says>`"),
+    ):
+        path = report_file(spec, "i2-RSPEC-2", [line, spec_reports["i2-RSPEC-2"][1]])
+        refused(recheck, ["check", "--report", str(path)], f"the check of {case}", needle)
+    report_file(spec, "i2-RSPEC-2", spec_reports["i2-RSPEC-2"])
+    write(spec / "ledger.md", "phase: plan approved\nphase: packages folded\n" + "".join(
+        f"dispatch r i2-RSPEC {unit} sheets x purpose recheck\nverified r i2-RSPEC {unit} created 0 items 0 updated "
+        f"{sum(1 for l in lines if '| recited |' in l)} questions 0 replied 0 sent 0 landed 0 conflicts 0 result ok\n"
+        for unit, lines in spec_reports.items()))
+    after_rows = [dict(manual_rows[0]), {**manual_rows[1], "open": False, "itemOnCurrentPage": True}, dict(manual_rows[2])]
+    write(spec / "recheck" / "rows-after" / "page-000.json", {**manual_page, "manualRows": {"total": 3, "offset": 0, "limit": 200, "rows": after_rows}})
+    code, out, err = run(recheck, ["retire", "--run", str(spec), "--delivery-plan", str(spec / "plan.md")])
+    retired_items = [] if code != 0 else json.loads((spec / "recheck" / "retire" / "i2-rt-1.json").read_text(encoding="utf-8"))["items"]
+    want_source = [{"kind": "spec-section", "specSection": "230000", "fileId": "file-man2", "pageInPdf": 801}]
+    if (code != 0 or [i["subject"] for i in retired_items] != ["scopeItem:i1-S1-1-1"] or retired_items[0]["sources"] != want_source
+            or "on section 230000 in invented-manual-one.pdf" not in retired_items[0]["reason"] or "items his to settle 1" not in out):
+        errors.append(f"the retire over the manual rows reads {out!r} {err!r} {retired_items}, not the removed row retired on its manual page")
+    else:
+        report_file(spec, "i2-rt-1", ["item: scopeItem:i1-S1-1-1 | retired | clm-0003"])
+        code, out, err = run(recheck, ["report", "--run", str(spec), "--delivery-plan", str(spec / "plan.md")])
+        lines = out.splitlines()
+        left = [l for l in lines if l.startswith("left for you: ")]
+        if (code != 0 or not out.startswith("phase: recheck complete carried 0 pass 0 recited 1 updated 0 removed 1 left 1 ")
+                or len(left) != 1 or "the new manual lists the section in its contents and prints no page of it" not in left[0]):
+            errors.append(f"the report over the manual rows reads {lines[:3]} {left} {err!r}, not the row left for him with how the new manual carries it")
+
+    # ------------------------------------------------------------------ #
     # The text
     # ------------------------------------------------------------------ #
     texts: dict[str, str] = {}
@@ -15666,6 +15758,10 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
         f"retired with a reason under 2,000 characters; the report by package with an item on two "
         f"packages counted in each, a carried total differing from the plan named, a carried line "
         f"with no split by kind read both ways, and the carry left out counting nothing carried; "
+        f"the manual rows planned one unit per section with the old manual named by its file, over "
+        f"one page and two, a section cited on the new manual checked as a manualUpdates claim, the "
+        f"removed row retired with its manual page as the source, and the row not found listed with "
+        f"how the new manual carries its section; "
         f"{len(_RECHECK_PINS)} phrases, "
         f"the rechecker's {len(RECHECKER_TOOLS)} tools and {len(RECHECKER_MODES)} headings and the "
         f"dispatch shape held; {refusals} refusals and {text_mutations} text mutations refused; "

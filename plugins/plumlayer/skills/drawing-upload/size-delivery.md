@@ -112,6 +112,11 @@ Tell him, in a few plain sentences, never a table:
   to read him the full list. The path and its ids never appear in the text he reads.
 - On either, never add two packages' counts together: a Question filed under several trades
   counts in each of their packages.
+- Where the plan's `manual:` line counts rows, the scope items that cite the earlier project
+  manual: how many items, on how many sections, then of their citations, one per item and section,
+  how many sit on sections the new manual prints again and how many on sections it lists with no
+  page printed or does not carry. Say the recheck reads each against the new manual. Never add
+  these to the references.
 - The plan: carry those references forward first, then the pass, a re-read of the sheets named
   or a full scope pass, then the recheck. Say what the recheck does: each row is cited again on
   the new page, updated, or retired as removed by this delivery where its sheets show the work gone,
@@ -130,9 +135,12 @@ they replace; it no longer prints 12 sheets of the Conceptual set. The project h
 references: 96 read the same and carry forward, and 2,314 go to the recheck. The most to recheck
 are Electrical, 402 references and 21 open Questions; HVAC, 355 and 14; Plumbing, 230 and 9;
 Drywall, 198 and 7; and Doors, 120 and 5. The full list by package is in
-[the plan](<the plan file's full path>), and I can read it to you. Plan: carry the 96 forward,
-run a full scope pass over all 290 sheets, then recheck every scope item, retiring the rows the
-new set shows removed. Approve it, change it, or stop it."
+[the plan](<the plan file's full path>), and I can read it to you. 38 scope items cite 12 sections
+of the earlier manual in 41 places: 35 on sections the new manual prints again and 6 on sections
+it lists with no page printed.
+Plan: carry the 96 forward,
+run a full scope pass over all 290 sheets, then recheck every scope item, those 38 against the new
+manual among them, retiring the rows the new set shows removed. Approve it, change it, or stop it."
 <!-- /user-facing -->
 
 ## 5. His answer

@@ -10,6 +10,12 @@ new page, updates the row, reads it as removed, or names it as not found. An ite
 row reads removed, and that holds no source on a current page, is retired as removed by the
 delivery, on the estimator's approval of the plan; an item with a row not found is his to settle.
 
+A delivery that came with its project manual also lists, in `manualRows`, each scope item citing a
+section of an earlier manual, with the section and how the new manual carries it. Each such row is
+read the same way, one unit per section, keyed `section <packed number>`: cited again on the new
+manual or on a current sheet, updated, read as removed, or not found. Its old file is named by its
+delivery's label where it has one and by its filename otherwise.
+
 This script copies field values, counts them and refuses. It reads no record and opens no page:
 the rows come off copies of `compare_delivery_status` a fresh agent put on disk byte for byte, and
 what a unit found comes off its own report. It never sums a figure the lead says out loud by hand.
@@ -37,7 +43,8 @@ Four modes:
         not complete, pages that leave a row out or carry one twice, and a row that is not a scope
         item's. A row is one reference, known by its own identity as the comparison names it: its
         subject, its entry ids, its sheet, its old page and its box; pages carrying one identity
-        twice, or fewer identities than their total, are refused. Takes the rows reading `open:
+        twice, or fewer identities than their total, are refused; `referenceRows` and `manualRows`
+        are held to their own totals, and a manual row's identity adds its section. Takes the rows reading `open:
         true`, one unit per sheet number, a row of a sheet the delivery no longer prints under its
         old number and a row naming no sheet under its old page, each row keyed `<unit id>.<n>`,
         its `n` bound to its identity in plan.json so rows fetched in another order keep their
@@ -75,8 +82,11 @@ Four modes:
         one outcome line, none carries two, none names a row or an item the unit does not carry,
         a row cited again or changed names the page it was cited on and the box or the whole
         sheet, a row read as removed names the sheet that shows it the same way, and a row not
-        found names no page. Prints the counts and what the runner finds back on the record: each
-        subject on the page it was cited on, and each item retired. A sheet unit that cited and
+        found names no page. A page on the manual reads `section <packed> <fileId> p<page>` with a
+        box or `section: <what it says>`, and its file must be one the delivery's manual names.
+        Prints the counts and what the runner finds back on the record: each subject on the sheet
+        page it was cited on, each subject cited on the manual as one `manualUpdates` claim for
+        verify_unit, and each item retired. A sheet unit that cited and
         changed nothing prints `verify sheets (0): none`, and its report must read 0 created, 0
         updated, 0 Questions raised and replied, 0 sent and 0 landed, since the runner then makes
         no verify_unit call.
@@ -138,11 +148,23 @@ REASON_MAX = 2000
 RETIRE_PASS = "rt"
 PRINT_CAP = 25_000
 NO_LETTERS = "NONE"
+# The letters a section unit groups under, and its key, so a section never shares a sheet's unit.
+SECTION_LETTERS = "SPEC"
+SECTION_KEY = "section "
+# How the new manual carries a section, in the words the report gives a row left for him.
+MANUAL_ANSWER_WORDS = {
+    "sectionReprinted": "the new manual prints the section again",
+    "manualNotReadYet": "a file of the new manual is not read yet",
+    "sectionNotPrinted": "the new manual lists the section in its contents and prints no page of it",
+    "sectionNotInManual": "the new manual does not carry the section",
+}
 
 _LETTERS_RE = re.compile(r"[A-Za-z]+")
 _PAGE_FIELD_RE = re.compile(r"^(.+) (\S+) p([1-9][0-9]*)$")
 _BOX_RE = re.compile(r"^box \[(-?[0-9.]+), (-?[0-9.]+), (-?[0-9.]+), (-?[0-9.]+)\] (.+)$")
 _WHOLE_SHEET_RE = re.compile(r"^whole sheet: (.+)$")
+_SECTION_PLACE_RE = re.compile(r"^section ([0-9]{6}(?:\.[0-9]+)?) (\S+) p([1-9][0-9]*)$")
+_SECTION_SHOWN_RE = re.compile(r"^section: (.+)$")
 _HEADER_RE = re.compile(r"^unit: (\S+)\s+pass: (\S+)\s+window: r$")
 _LAST_CALL_RE = re.compile(
     r"last call: carried ([0-9]+) on scope items and [0-9]+ on Questions, already there ([0-9]+) "
@@ -179,11 +201,12 @@ def _length(text: str) -> int:
 
 
 def row_identity(row: dict) -> str:
-    """One reference as the comparison names it: its subject, entry ids, sheet, old page and box."""
-    return json.dumps(
-        [row.get("subject"), sorted(row.get("entryIds") or []), row.get("sheetNumber"), row.get("old"), row.get("box")],
-        sort_keys=True,
-    )
+    """One reference as the comparison names it: its subject, entry ids, sheet, old page and box,
+    and on a manual row its section, added only there so a sheet row's identity reads as before."""
+    held = [row.get("subject"), sorted(row.get("entryIds") or []), row.get("sheetNumber"), row.get("old"), row.get("box")]
+    if row.get("section"):
+        held.append(row["section"])
+    return json.dumps(held, sort_keys=True)
 
 
 def _contents(row: dict) -> str:
@@ -202,7 +225,8 @@ def _run(folder: Path) -> dict:
 
 
 def read_rows(folder: Path, run: dict, plan_doc: dict) -> list[dict]:
-    """Every row of the pages a fetch put in `folder`, held to the delivery and the rule version."""
+    """Every row of the pages a fetch put in `folder`, held to the delivery and the rule version:
+    the reference rows, then the manual rows, each list held to its own total."""
     if plan_doc["ruleVersion"] is None:
         raise PlanError(f"{plan_doc['path']}: its `measured:` line names no rule version to hold the rows to")
     pages = sorted(folder.glob("page-*.json")) if folder.is_dir() else []
@@ -210,7 +234,10 @@ def read_rows(folder: Path, run: dict, plan_doc: dict) -> list[dict]:
         raise PlanError(f"no page of compare_delivery_status under {folder}; the fetch puts them there")
     rows: list[dict] = []
     seen: set[str] = set()
-    total = None
+    # The pages page both lists with one offset, so a page past one list's end carries none of its
+    # rows. A page written before the comparison listed the manual carries no `manualRows`.
+    held: dict[str, int] = {"referenceRows": 0, "manualRows": 0}
+    totals: dict[str, int | None] = {"referenceRows": None, "manualRows": None}
     for path in pages:
         data = plan_inventory._read_json(path, "a page of the comparison")
         delivery = data.get("delivery") if isinstance(data, dict) else None
@@ -226,40 +253,68 @@ def read_rows(folder: Path, run: dict, plan_doc: dict) -> list[dict]:
             )
         if data.get("complete") is not True:
             raise PlanError(f"{path}: the comparison reads not complete, so its answers can still change")
-        listed = data.get("referenceRows")
-        if not isinstance(listed, dict) or not isinstance(listed.get("rows"), list):
+        if not isinstance(data.get("referenceRows"), dict):
             raise PlanError(f"{path} carries no `referenceRows` list")
-        if total is None:
-            total = listed.get("total")
-        if listed.get("total") != total or listed.get("offset") != len(rows):
-            raise PlanError(
-                f"{path} starts at row {listed.get('offset')} of {listed.get('total')}, and the pages "
-                f"before it hold {len(rows)} of {total}; fetch the pages again in order"
-            )
-        for row in listed["rows"]:
-            if not isinstance(row, dict) or row.get("kind") != "scopeItem":
-                raise PlanError(f"{path} carries a row that is no scope item's; fetch with kind scopeItem")
-            if not isinstance(row.get("open"), bool) or not isinstance(row.get("subject"), str):
-                raise PlanError(f"{path} carries a scope item's row with no `open` answer or no subject")
-            if "itemOnCurrentPage" in row and not isinstance(row["itemOnCurrentPage"], bool):
-                raise PlanError(f"{path} carries a scope item's row whose `itemOnCurrentPage` is no true or false")
-            identity = row_identity(row)
-            if identity in seen:
+        for field in held:
+            listed = data.get(field)
+            if listed is None and field == "manualRows":
+                listed = {"total": 0, "offset": data["referenceRows"].get("offset"), "rows": []}
+            if not isinstance(listed, dict) or not isinstance(listed.get("rows"), list):
+                raise PlanError(f"{path} carries no `{field}` list")
+            if totals[field] is None:
+                totals[field] = listed.get("total")
+            total = totals[field]
+            past = isinstance(total, int) and isinstance(listed.get("offset"), int) and listed["offset"] >= total and not listed["rows"]
+            if listed.get("total") != total or (not past and listed.get("offset") != held[field]):
                 raise PlanError(
-                    f"{path} carries the row of {row['subject']} on {row.get('sheetNumber') or _page(row.get('old'))} "
-                    f"box {row.get('box')} twice; the comparison lists each reference once, so fetch the pages again in order"
+                    f"{path} starts its `{field}` at row {listed.get('offset')} of {listed.get('total')}, and "
+                    f"the pages before it hold {held[field]} of {total}; fetch the pages again in order"
                 )
-            seen.add(identity)
-            rows.append(row)
-    if len(rows) != total:
+            for row in listed["rows"]:
+                if not isinstance(row, dict) or row.get("kind") != "scopeItem":
+                    raise PlanError(f"{path} carries a row that is no scope item's; fetch with kind scopeItem")
+                if not isinstance(row.get("open"), bool) or not isinstance(row.get("subject"), str):
+                    raise PlanError(f"{path} carries a scope item's row with no `open` answer or no subject")
+                if "itemOnCurrentPage" in row and not isinstance(row["itemOnCurrentPage"], bool):
+                    raise PlanError(f"{path} carries a scope item's row whose `itemOnCurrentPage` is no true or false")
+                if field == "manualRows" and not isinstance(row.get("section"), str):
+                    raise PlanError(f"{path} carries a manual row of {row['subject']} that names no section")
+                identity = row_identity(row)
+                if identity in seen:
+                    raise PlanError(
+                        f"{path} carries the row of {row['subject']} on {_where(row)} "
+                        f"box {row.get('box')} twice; the comparison lists each reference once, so fetch the pages again in order"
+                    )
+                seen.add(identity)
+                rows.append(row)
+                held[field] += 1
+    total = sum(t or 0 for t in totals.values())
+    if any(held[field] != (totals[field] or 0) for field in held):
         raise PlanError(f"the pages under {folder} hold {len(rows)} rows of {total}; fetch the rest")
     if len(seen) != total:
         raise PlanError(f"the pages under {folder} hold {len(seen)} distinct rows of {total}; fetch the pages again in order")
     return rows
 
 
-def _labels(folder: Path, deliveries_path: Path) -> dict[str, str]:
-    """Each file's delivery label, off list_files and the delivery list."""
+def _where(row: dict) -> str:
+    """Where a row stands, as a line names it: its section, its sheet, or its old page."""
+    if row.get("section"):
+        return f"{SECTION_KEY}{row['section']}"
+    return row.get("sheetNumber") or _page(row.get("old"))
+
+
+def manual_files(folder: Path) -> list[str]:
+    """The files of the manual the delivery came with, off the first page of a fetch; none where the
+    comparison names no manual."""
+    pages = sorted(folder.glob("page-*.json")) if folder.is_dir() else []
+    data = plan_inventory._read_json(pages[0], "a page of the comparison") if pages else {}
+    manual = data.get("manual") if isinstance(data, dict) else None
+    files = manual.get("files") if isinstance(manual, dict) else None
+    return [f["fileId"] for f in files if isinstance(f, dict) and isinstance(f.get("fileId"), str)] if isinstance(files, list) else []
+
+
+def _labels(folder: Path, deliveries_path: Path) -> tuple[dict[str, str], dict[str, str]]:
+    """Each file's delivery label, off list_files and the delivery list, and each file's filename."""
     files = plan_inventory._read_json(folder / FOLDER / "files.json", "the list_files copy")
     deliveries = plan_inventory._read_json(deliveries_path, "the delivery list")
     rows = deliveries.get("deliveries") if isinstance(deliveries, dict) else None
@@ -267,14 +322,18 @@ def _labels(folder: Path, deliveries_path: Path) -> dict[str, str]:
     if not isinstance(rows, list) or not isinstance(files_rows, list):
         raise PlanError("the list_files copy or the delivery list carries no array of rows")
     label_of = {d.get("id"): d.get("label") for d in rows if isinstance(d, dict)}
-    return {
+    labels = {
         f.get("id"): label_of[f.get("deliveryId")]
         for f in files_rows
         if isinstance(f, dict) and f.get("deliveryId") in label_of
     }
+    names = {f.get("id"): f.get("filename") for f in files_rows if isinstance(f, dict) and isinstance(f.get("filename"), str)}
+    return labels, names
 
 
 def _unit_key(row: dict) -> str:
+    if row.get("section"):
+        return f"{SECTION_KEY}{row['section']}"
     if row.get("sheetNumber"):
         return row["sheetNumber"]
     old = row.get("old") or {}
@@ -282,6 +341,8 @@ def _unit_key(row: dict) -> str:
 
 
 def _letters(key: str) -> str:
+    if key.startswith(SECTION_KEY):
+        return SECTION_LETTERS
     if key.startswith("page "):
         return NO_LETTERS
     found = _LETTERS_RE.match(key)
@@ -306,10 +367,22 @@ def _verified(folder: Path) -> set[str]:
 # The read plan
 # --------------------------------------------------------------------------- #
 
+def _new_page(page: dict) -> str:
+    """A new page as a unit line names it; a section's new pages are the range its file prints."""
+    if "pageEnd" not in page:
+        return f"file {page['fileId']} page {page['page']}"
+    if page["pageEnd"] is None:
+        return f"file {page['fileId']} from page {page['page']}"
+    return f"file {page['fileId']} pages {page['page']}-{page['pageEnd']}"
+
+
 def _sheet_line(unit: dict) -> str:
     news = unit["new"] or []
-    new = " and ".join(f"file {p['fileId']} page {p['page']}" for p in news) if news else "file none"
-    old = " and ".join(f"file {p['fileId']} page {p['page']} in {p['label']}" for p in unit["old"])
+    new = " and ".join(_new_page(p) for p in news) if news else "file none"
+    old = " and ".join(
+        f"file {p['fileId']} page {'none' if p.get('page') is None else p['page']}" + (f" in {p['label']}" if p["label"] else "")
+        for p in unit["old"]
+    )
     return (
         f"{unit['id']}. {unit['sheet']}, {new}, old {old}, rows {len(unit['rows'])}"
         + (", no new page" if not news else "")
@@ -383,9 +456,11 @@ def _render(folder: Path, sheet_units: list[dict], retire_units: list[dict], tag
     return "\n".join(lines) + "\n", len(runner_passes), plan_inventory._folds(runner_passes)
 
 
-def _sheet_units(folder: Path, run: dict, plan_doc: dict, labels: dict[str, str], state: dict) -> tuple[list[dict], dict]:
+def _sheet_units(folder: Path, run: dict, plan_doc: dict, labels: tuple[dict[str, str], dict[str, str]], state: dict) -> tuple[list[dict], dict]:
     """The sheet units off rows-before, with each id plan.json already binds kept."""
     rows = read_rows(folder / FOLDER / ROWS_BEFORE, run, plan_doc)
+    labels, filenames = labels
+    manual = manual_files(folder / FOLDER / ROWS_BEFORE)
     by_key: dict[str, list[dict]] = {}
     for row in rows:
         if row["open"]:
@@ -427,19 +502,26 @@ def _sheet_units(folder: Path, run: dict, plan_doc: dict, labels: dict[str, str]
             # A row naming no single page has no old page, and so no delivery to name.
             if old:
                 label = labels.get(old.get("fileId"))
-                if label is None:
+                if label is None and row.get("section"):
+                    # A manual filed with no delivery is named by its file, and a deleted one by nothing.
+                    label = filenames.get(old.get("fileId"))
+                elif label is None:
                     raise PlanError(
                         f"the row of {row['subject']} on {key} cites file {(old or {}).get('fileId')}, which "
                         f"no delivery on the list holds, so its retire reason could name no label"
                     )
             if old and {**old, "label": label} not in olds:
                 olds.append({**old, "label": label})
-            if row.get("new") and row["new"] not in news:
-                news.append(row["new"])
+            fresh = ([{"fileId": n["fileId"], "page": n["pageStart"], "pageEnd": n.get("pageEnd")} for n in row.get("newPages") or []]
+                     if row.get("section") else [row["new"]] if row.get("new") else [])
+            for page in fresh:
+                if page not in news:
+                    news.append(page)
             identity = row_identity(row)
             keyed.append({"key": f"{unit_id}.{number_of[identity]}", "oldLabel": label, "row": row,
                           "identity": identity, "contents": contents[identity]})
-        units.append({"id": unit_id, "sheet": key, "letters": letters, "old": olds, "new": news, "rows": keyed})
+        units.append({"id": unit_id, "sheet": key, "letters": letters, "old": olds, "new": news, "rows": keyed,
+                      "manualFiles": manual})
     # Each group's units by number, the ones already bound first, so the order holds on a run again.
     order = {letters: i for i, letters in enumerate(dict.fromkeys(u["letters"] for u in units))}
     units.sort(key=lambda u: (order[u["letters"]], int(u["id"].rpartition("-")[2])))
@@ -457,7 +539,7 @@ def plan(folder: Path, plan_path: Path, deliveries: Path) -> str:
         written += _write(folder / FOLDER / UNITS_FOLDER / f"{unit['id']}.json", {
             "unit": unit["id"], "sheet": unit["sheet"],
             "delivery": {"id": run["deliveryId"], "label": plan_doc["label"]},
-            "old": unit["old"], "new": unit["new"], "rows": unit["rows"],
+            "old": unit["old"], "new": unit["new"], "rows": unit["rows"], "manualFiles": unit["manualFiles"],
         })
     retire_units = state.get("retire", [])
     state = {"window": WINDOW, "deliveryId": run["deliveryId"], "deliveryPlan": str(plan_path),
@@ -503,14 +585,15 @@ def _place(text: str, where: str) -> dict:
     return {"sheet": page.group(1), "fileId": page.group(2), "pageInPdf": int(page.group(3))}
 
 
-def _shown(what: str, where: str) -> dict:
+def _shown(what: str, where: str, manual: bool = False) -> dict:
     box = _BOX_RE.match(what)
     if box:
         return {"bboxPts": [float(n) for n in box.groups()[:4]], "words": box.group(5)}
-    whole = _WHOLE_SHEET_RE.match(what)
+    whole = (_SECTION_SHOWN_RE if manual else _WHOLE_SHEET_RE).match(what)
     if whole:
         return {"bboxPts": None, "words": whole.group(1)}
-    raise PlanError(f"{where}: `{what[:80]}` is neither `box [x0, y0, x1, y1] <words read>` nor `whole sheet: <what it shows>`")
+    other = "`section: <what it says>`" if manual else "`whole sheet: <what it shows>`"
+    raise PlanError(f"{where}: `{what[:80]}` is neither `box [x0, y0, x1, y1] <words read>` nor {other}")
 
 
 def unit_outcomes(report: Path) -> dict:
@@ -543,8 +626,17 @@ def unit_outcomes(report: Path) -> dict:
                 if outcome["page"] != "none":
                     raise PlanError(f"{where}: a row not found names no page, and this one names {outcome['page']}")
             else:
-                outcome["place"] = _place(outcome["page"], where)
-                outcome["shown"] = _shown(outcome["what"], where)
+                section = _SECTION_PLACE_RE.match(outcome["page"])
+                if section is None:
+                    outcome["place"] = _place(outcome["page"], where)
+                elif section.group(2) not in unit.get("manualFiles", []):
+                    raise PlanError(
+                        f"{where}: section {section.group(1)} is named on file {section.group(2)}, which is no "
+                        f"file of the manual that came with this delivery"
+                    )
+                else:
+                    outcome["place"] = {"section": section.group(1), "fileId": section.group(2), "pageInPdf": int(section.group(3))}
+                outcome["shown"] = _shown(outcome["what"], where, manual=section is not None)
         seen[outcome[field]] = outcome
     missing = [key for key in wanted if key not in seen]
     if missing:
@@ -585,8 +677,16 @@ def check(report: Path) -> list[str]:
         subject_of = {row["key"]: row["row"]["subject"] for row in found["file"]["rows"]}
         sheets: list[dict] = []
         pairs: list[str] = []
+        manual: list[dict] = []
         for outcome in found["outcomes"]:
             if outcome["outcome"] not in ("recited", "updated"):
+                continue
+            place = outcome["place"]
+            if "section" in place:
+                claim = {"subject": subject_of[outcome["key"]], "specSection": place["section"],
+                         "pageInPdf": place["pageInPdf"], "fileId": place["fileId"]}
+                if claim not in manual:
+                    manual.append(claim)
                 continue
             if outcome["place"] not in sheets:
                 sheets.append(outcome["place"])
@@ -595,6 +695,8 @@ def check(report: Path) -> list[str]:
                 pairs.append(pair)
         if sheets:
             lines.append(f"verify sheets ({len(sheets)}): {json.dumps(sheets)}")
+        elif manual:
+            lines.append("verify sheets (0): none; the manual claims below go in a verify_unit call of their own")
         else:
             claimed = _claimed_writes(report)
             if claimed:
@@ -603,6 +705,8 @@ def check(report: Path) -> list[str]:
                     f"reads {', '.join(claimed)}; no verify_unit call could find those writes back"
                 )
             lines.append("verify sheets (0): none; the unit wrote nothing, so no verify_unit call")
+        if manual:
+            lines.append(f"verify manual ({len(manual)}): {json.dumps(manual)}")
         lines.extend(pairs)
     else:
         label = found["file"]["delivery"]["label"]
@@ -692,7 +796,11 @@ def _selection(folder: Path, run: dict, plan_doc: dict, sheet_units: list[dict])
         olds: list[tuple[str, str | None, bool]] = []
         for unit, row, outcome in rows:
             place, shown = outcome["place"], outcome["shown"]
-            source = {"kind": "sheet-region" if shown["bboxPts"] else "sheet", **place}
+            if "section" in place:
+                source = {"kind": "spec-section", "specSection": place["section"], "fileId": place["fileId"],
+                          "pageInPdf": place["pageInPdf"]}
+            else:
+                source = {"kind": "sheet-region" if shown["bboxPts"] else "sheet", **place}
             if shown["bboxPts"]:
                 source.update({"bboxPts": shown["bboxPts"], "frame": "page-points"})
             if source not in sources:
@@ -726,7 +834,8 @@ def _sheet_units_from_disk(folder: Path, state: dict) -> list[dict]:
     for entry in state.get("units", []):
         unit = plan_inventory._read_json(folder / FOLDER / UNITS_FOLDER / f"{entry['id']}.json", "a unit's rows file")
         units.append({"id": entry["id"], "sheet": unit["sheet"], "letters": _letters(unit["sheet"]),
-                      "old": unit["old"], "new": unit["new"], "rows": unit["rows"]})
+                      "old": unit["old"], "new": unit["new"], "rows": unit["rows"],
+                      "manualFiles": unit.get("manualFiles", [])})
     return units
 
 
@@ -883,7 +992,11 @@ def report_lines(folder: Path, plan_path: Path) -> list[str]:
     over: dict[str, int] = {key: 0 for key, _ in CATEGORIES}
     named: list[str] = []
     still_open: list[str] = []
-    after_open = {(r["subject"], json.dumps(r.get("new")), json.dumps(r.get("box"))) for r in chosen["after"] if r["open"]}
+    # A manual row's key adds its section; a sheet row's reads as it did before the manual rows.
+    def open_key(r: dict) -> tuple:
+        return (r["subject"], json.dumps(r.get("new")), json.dumps(r.get("box"))) + ((r["section"],) if r.get("section") else ())
+
+    after_open = {open_key(r) for r in chosen["after"] if r["open"]}
     packages_of: dict[str, set] = {}
     for row in before:
         outcome = None
@@ -908,11 +1021,13 @@ def report_lines(folder: Path, plan_path: Path) -> list[str]:
         where = f"on {row.get('sheetNumber') or unit['sheet']}" + (f" in {keyed['oldLabel']}" if keyed["oldLabel"] else "")
         name = json.dumps(outcome["name"])
         in_packages = ", ".join(names.get(p, p) for p in packages)
+        on = row.get("sheetNumber") or unit["sheet"]
         if cat == "removed":
-            gone = f"no longer on {row['sheetNumber']}" if row.get("new") else f"which {plan_doc['label']} no longer prints"
+            gone = f"no longer on {on}" if row.get("new") else f"which {plan_doc['label']} no longer prints"
             named.append(f"removed: {name} {where}, {gone}, shown on {outcome['page']}; {in_packages}")
         elif cat == "left":
-            named.append(f"left for you: {name} {where}: {outcome['what']}; {in_packages}")
+            carried_as = MANUAL_ANSWER_WORDS.get(row.get("answer"), "") if row.get("section") else ""
+            named.append(f"left for you: {name} {where}: {outcome['what']}; " + (f"{carried_as}; " if carried_as else "") + in_packages)
         elif cat == "kept":
             named.append(f"read removed, kept on a current page: {name} {where}; {in_packages}")
         elif cat == "held":
@@ -921,7 +1036,7 @@ def report_lines(folder: Path, plan_path: Path) -> list[str]:
             named.append(f"read removed, not retired: {name} {where}: {refused[row['subject']]}; {in_packages}")
         elif (cat in ("recited", "updated") and row.get("new") and outcome["place"]["fileId"] == row["new"]["fileId"]
               and outcome["place"]["pageInPdf"] == row["new"]["page"]
-              and (row["subject"], json.dumps(row.get("new")), json.dumps(row.get("box"))) in after_open):
+              and open_key(row) in after_open):
             still_open.append(f"re-cited on its new page and still open: {name} {where}")
     open_count = sum(1 for r in before if r["open"])
     answered = sum(over[key] for key, _ in CATEGORIES if key not in ("carried", "pass"))

@@ -652,12 +652,15 @@ disk the whole time.
 
 1. **File it as a document.** Run the same upload mechanics as step 4 for the manual PDF(s) step 2
    identified: a single manual PDF uses `request_file_upload`, PUT the bytes to `signedUrl`, then
-   `register_file(projectId, fileId, filename, contentType, kind: "document")`; two or more (a
-   folder-of-divisions manual) uses `request_file_uploads`, the same PUT loop, then
-   `register_files(projectId, files, kind: "document")`, with the same `counts.registered` check and
-   the same per-`fileId` retry on anything in `failed`. A project manual is a project record, not a
-   drawing sheet, so it needs no `deliveryId`; a manual step 4 sorted as a document keeps the one
-   it was registered with, and that is fine. Misfiled earlier as a drawing? Fix it in
+   `register_file(projectId, fileId, filename, contentType, kind: "document", deliveryId)`; two or
+   more (a folder-of-divisions manual) uses `request_file_uploads`, the same PUT loop, then
+   `register_files(projectId, files, kind: "document", deliveryId)`, with the same
+   `counts.registered` check and the same per-`fileId` retry on anything in `failed`. Pass the
+   `deliveryId` of step 3 where the manual came with this delivery's drawings: the comparison of the
+   delivery reads those files as its manual and holds each scope item citing an earlier manual
+   against them, and a document filed under a delivery starts no sheet read. A manual uploaded on
+   its own, with no drawings, is filed with no `deliveryId`. A manual step 4 sorted as a document
+   keeps the one it was registered with, and that is fine. Misfiled earlier as a drawing? Fix it in
    place with `update_file(projectId, fileId, kind: "document")` rather than re-uploading:
    reclassifying away from `drawing` sweeps its stray page rows in the same call.
 2. **Filing starts the read; ask for its job one file at a time.** `register_file`, `register_files`,

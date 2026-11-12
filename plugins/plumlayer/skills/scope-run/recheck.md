@@ -11,7 +11,10 @@ nothing cited again on the new page, which the comparison names open. The rechec
 sheet at a time, and for each row cites the item on the new page, updates the row naming what it
 replaces, reads it as removed with the sheet that shows it, or names it as not found. Then it
 retires the items each of whose open rows reads removed, and lists for the estimator every row it
-could not find. After it, no scope item rests only on a replaced page unless it is listed for the user.
+could not find. Where the delivery came with its project manual, the comparison also lists each
+scope item citing a section of an earlier manual, and the recheck reads those one section at a time
+against the new manual the same way. After it, no scope item rests only on a replaced page or an
+earlier manual unless it is listed for the user.
 
 The plan the user approved said the recheck does this, so their approval is its go-ahead and the
 ask the retires rest on: no further question is put to them before it starts. It runs on a new set and on
@@ -43,8 +46,8 @@ and end when it is done.
 Rows to: <rows-before or rows-after>.
 
 1. Call compare_delivery_status(projectId: "<projectId>", deliveryId: "<deliveryId>", kind: "scopeItem", limit: 200, offset: 0),
-   then again at offset 200, 400, and so on, until the rows you have seen cover the response's own
-   `referenceRows.total`. Put each response in `<run folder>/recheck/<the folder Rows to: names>/`,
+   then again at offset 200, 400, and so on, until the rows you have seen cover both the response's
+   own `referenceRows.total` and its `manualRows.total`. Put each response in `<run folder>/recheck/<the folder Rows to: names>/`,
    named `page-000.json`, `page-001.json`, and so on in call order.
 2. Only where Rows to: reads rows-before: call list_files(projectId: "<projectId>") and put the
    response at `<run folder>/recheck/files.json`, then solicitation_list_packages(projectId:
@@ -67,7 +70,7 @@ python3 '<plugin root>/scripts/recheck.py' plan --run '<run folder>' \
 `<plan file>` is the delivery's plan file precondition 7 read. Read back only its bounds line: the
 rows read and open, the units, one per sheet, the passes, and the ids kept. A refusal names one
 thing wrong: a page of another delivery or rule version, a comparison not complete, a page missing,
-or a file of no delivery on the list. Copy the rows again, as step 2 says, or take the delivery
+a manual row naming no section, or a drawing file of no delivery on the list. Copy the rows again, as step 2 says, or take the delivery
 list again as precondition 3 does, and plan again; never plan by hand. Where it reads `units 0`, no
 row is open: go straight to step 6.
 
@@ -160,7 +163,9 @@ each package on its own, in a few plain sentences and never a table: the referen
 forward, the ones this pass cited again on the new sheets, the ones the recheck cited again, the
 rows it changed, the rows it removed, and the rows left for them. Name each row removed by its item
 and its sheet, and say they can have any of them put back. Name each row left for them with what you
-searched, and say it is theirs to settle: keep it, move it, or have it removed. Say an item on two
+searched, and say it is theirs to settle: keep it, move it, or have it removed. For a row on a
+section of the manual, say how the new manual carries that section, such as listed in its contents
+with no page printed. Say an item on two
 packages counts in each. Where the carry's own count and the references carried forward differ,
 say both. Then name the Questions the recheck put on the record by the trades they name, and what
 comes next in one sentence: each package

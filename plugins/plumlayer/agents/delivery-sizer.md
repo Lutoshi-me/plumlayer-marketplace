@@ -83,7 +83,7 @@ If the upload folder in your dispatch does not exist, say so on your `stopped:` 
    `complete` is false, stop with `stopped: the comparison is not complete:` and the counts that
    read `notComparedYet`.
 4. Read the counts off that status read: `sheets`, `references`, `byPackage`, `referencesShort`,
-   `ruleVersion`, and the `job` it names. Then:
+   `ruleVersion`, `manual`, and the `job` it names. Then:
    - `solicitation_list_packages(projectId)`, for each package's name by its trade code. A
      `byPackage` row whose `package` is null is No Package.
    - The open Questions on the project, off `Open Questions:` in your dispatch. The session
@@ -171,6 +171,7 @@ not compared: <each sheet number + why, or "none">
 references: in all <n>   boxes <n>   same <n>   moved <n>   found at several places <n>   gone <n>   not comparable <n>   no longer printed <n>   names no single page <n>   on a whole sheet with no box <n>   to recheck <n>   open Questions before this delivery's index check <n, or "not given">
 package | <name, or "No Package"> | <trade code, or "none"> | same <n> | moved <n> | gone <n> | other <n> | items <n> | open Questions <n>
 most to recheck | <name, or "No Package"> | <trade code, or "none"> | references <n> | open Questions <n>
+manual: <"none", where no manual came with this delivery; or> files <n>   rows <n>   scope items <n>   sections <n>   printed again <n>   listed with no page <n>   not carried <n>   not read yet <n>   open <n>
 pass: <full or partial>
 read: <every sheet the set prints, <n>; or each sheet number, comma separated, or "none">
 carry: <n> references that read the same, onto the new pages; or "left out"
@@ -197,6 +198,15 @@ yet, no longer printed, names no single page and on a whole sheet with no box, s
 `moved`, `gone` and `other` added together, and `open Questions` is copied from its `package |`
 line. The index check's own Questions box only this delivery's index page, never a page it replaces,
 so no `package |` line counts them.
+
+The `manual:` line copies the status read's `manual` block: `files` counts `manual.files`, the
+files of the project manual that came with this delivery; `rows` is `manual.rows`, one per scope
+item and section of an earlier manual it cites; `scope items` and `sections` are
+`manual.scopeItems` and `manual.sections`; `printed again` is `manual.sectionReprinted`, `listed
+with no page` is `manual.sectionNotPrinted`, `not carried` is `manual.sectionNotInManual`, `not
+read yet` is `manual.manualNotReadYet`, and `open` is `manual.open`, the rows the recheck reads.
+Where `manual` is null, the line reads `manual: none`. These rows are never on the `references:`
+line or a `package |` line, and never in `in all` or `to recheck`.
 
 The session appends one `status:` line each time it puts the plan to the estimator and each time
 he answers, in these shapes, and carry mode reads the last one:
