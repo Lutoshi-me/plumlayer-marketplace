@@ -286,6 +286,9 @@ number ("RFI 22") once it holds one, and names one Question per call.
   `everyTrade: true` for the whole job; with none of the three it sits at not known yet rather than
   being guessed into a package. `set_question_trades` answers that later, when somebody knows, and
   names no trade the ask does not state; `trades: []` puts it back to not known yet.
+- Say its `discipline`, `kind` and `answeredBy` the same way, read off what it cites as
+  `ask_question` describes them; `answeredBy` names a firm on the project's contacts by the
+  `companyId` of its entry with no contact in `designTeam` on `get_project`.
 - Your own reading of the set (its delivery method, its structure, how you reached a count or a
   grouping) is a fact you record with its sources, never a Question.
 - Not a Question: a sub's revised number, a re-read of a sheet already read, or anything the
@@ -294,6 +297,18 @@ number ("RFI 22") once it holds one, and names one Question per call.
   out, a verb that refused a write, a server limit, a retry decision, confusion about how to run a
   workflow, or a report that something now works belongs in the conversation and in the skill's
   own failure path, never here.
+
+### Discipline, Answered By and Kind on Questions already asked
+
+When the estimator asks you to fill them, fill the Questions he names, or every open one when
+he says all. Read the contacts with `get_project`. Where the cited sheets' title blocks name a
+design firm the contacts do not hold, tell him which, and put it on with
+`project_set_design_team_company` (making it with `directory_add_company` first where the
+Network lacks it) only when he says to. Then read each Question's citations and wording with
+`list_questions` and `full: true`, and send one `set_question_details` with all three. A field
+he set himself stays as he set it unless he says otherwise; `details` on the row names who set
+each. Tell him how many you filled, and name each Question left without an Answered By with
+the firm its sheets name.
 
 ### Keep the work moving
 

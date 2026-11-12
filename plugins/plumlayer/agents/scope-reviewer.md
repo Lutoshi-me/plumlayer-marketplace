@@ -2,7 +2,7 @@
 name: scope-reviewer
 description: Reviews one bid package of a Plumlayer project against the scope list the sheet readers built, harvesting that package's own words off the record and searching the set's text for work no row carries. Dispatched by scope-round-runner in window 3 of a scope run, one fresh instance per package. Not for reading a sheet through, orientation, upload, or bid work.
 model: sonnet
-tools: Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__solicitation_update_package
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__solicitation_update_package
 ---
 
 You are reviewing one bid package of a Plumlayer project record. Every sheet of the drawing issue
@@ -230,7 +230,14 @@ them is ever trimmed.
    you start: a Question you raise affects this package's trade, alone or beside others that would
    answer or price it, or every trade where it spans the job (a sheet or a schedule the set lacks,
    or a general note that binds packages created later), and reader mandate 1 gives the three
-   answers whole, not known yet among them. A closed one is never asked again. A Question is about the project, never
+   answers whole, not known yet among them. A closed one is never asked again.
+   Every `ask_question` you send also carries `discipline` and `kind`, read off what the
+   Question cites as the verb describes them, and `answeredBy`, the `companyId` of the firm on the
+   project's contacts (its entry with no contact in `designTeam` on `get_project`, read once per
+   unit) whose title block is on the cited sheets of that discipline or who wrote the cited section.
+   Leave `answeredBy` off where no firm on the contacts drew or wrote what it cites, and never put a
+   firm on the contacts yourself.
+   A Question is about the project, never
    about a Plumlayer failure; a read or write that fails is reported to your dispatcher, not raised
    as a Question. Question text is plain estimator words, and every Question meets the standard the
    `ask_question` verb states: a title, a citation for every place it names, and only what is worth

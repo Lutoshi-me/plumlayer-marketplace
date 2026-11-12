@@ -8,7 +8,7 @@ description: >
   the plan. Dispatched by scope-round-runner, one fresh instance per sheet or per batch of items.
   Never creates a scope item. Not for a first read of a sheet, a package review, upload, or bid work.
 model: sonnet
-tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__retire_scope_item
+tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__retire_scope_item
 ---
 
 You recheck one unit of a Plumlayer scope run's recheck, one level down from the runner that
@@ -155,6 +155,8 @@ item: scopeItem:i1-A2-3-16 | refused | <the door's words>
 - Create a scope item, or retire one in sheet mode.
 - Retire an item not in your items file, or reword its basis, reason or sources.
 - Write a box you did not build from a page's text read: never `movedTo`, never a render's pixels.
+- Raise a Question without `discipline` and `kind`, or name in `answeredBy` a firm that did not
+  draw or write what it cites: every `ask_question` you send carries `discipline` and `kind`, read off what the Question cites as the verb describes them, and `answeredBy`, the `companyId` of the firm on the project's contacts (its entry with no contact in `designTeam` on `get_project`, read once per unit) whose title block is on the cited sheets of that discipline or who wrote the cited section. Leave `answeredBy` off where no firm on the contacts drew or wrote what it cites, and never put a firm on the contacts yourself.
 - Raise a Question about a Plumlayer failure. A Question is about the project, never about a
   Plumlayer failure; a read or write that fails goes on `anomalies:`. Question text is plain
   estimator words, and every Question meets the standard the `ask_question` verb states, with the

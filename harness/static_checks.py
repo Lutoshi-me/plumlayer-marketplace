@@ -145,7 +145,7 @@ Checks:
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
   20. Agent tool surface: no agents/*.md tools line takes the whole connector as a wildcard;
       every connector verb an agent's body names is on its tools line; every declared connector
-      verb is one of the 123 the connector registers; and the prohibition-only exception table
+      verb is one of the 124 the connector registers; and the prohibition-only exception table
       stays honest, each entry still named in that agent's text and still off its tools line.
   21. Agent model pinned: every agents/*.md frontmatter carries a non-empty `model`, so a
       dispatched agent does not run on whatever model the session happens to be on. Checks 20 and
@@ -6503,7 +6503,8 @@ CONNECTOR_VERBS = {
     "search_set_text", "set_grid", "set_invitation_include_missing", "set_invitation_labor",
     "set_invitation_places",
     "set_invitation_trades", "set_project_date", "set_question_reminder",
-    "set_question_rfi_number", "set_question_trades", "set_text_status",
+    "set_question_details", "set_question_rfi_number", "set_question_trades",
+    "set_text_status",
     "solicitation_coverage", "solicitation_create_package", "solicitation_delete_package",
     "solicitation_get_package", "solicitation_invite", "solicitation_list_invitations",
     "solicitation_list_packages", "solicitation_log_touchpoint",
@@ -15002,7 +15003,7 @@ RECHECKER_TOOLS = (
     *(f"{CONNECTOR_TOOL_PREFIX}{verb}" for verb in (
         "get_page_text", "render_page", "read_sheet_context", "search_set_text", "search",
         "list_scope_items", "cite_source", "record_batch", "list_questions", "ask_question",
-        "reply_question", "retire_scope_item",
+        "get_project", "reply_question", "retire_scope_item",
     )),
 )
 RECHECKER_MODES = {"What your dispatch gives you", "What you never do", "Sheet mode", "Retire mode", "Your report"}
