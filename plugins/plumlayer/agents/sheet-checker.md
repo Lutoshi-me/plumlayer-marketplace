@@ -304,7 +304,7 @@ reasons, writing each entry under the delivery its line names:
   the sheet on your report's `no letters left:` line with what you read.
 - `two numbers`: take a number off the page as "Two numbers on one page" says.
 - `file`: a page of an uploaded file. Say what the page is, drawing sheets with a title block or
-  document prose. Where the page is a cover sheet, a revision table or a bulletin header, also give
+  document prose. Where the page is a cover sheet, a transmittal, a revision table or a bulletin header, also give
   what it prints for the issue: its label, its date and its sequence, each with the page and the
   words exactly as printed, or `not printed`. The session registers a delivery from these, so a
   value you only infer is never given. Write nothing.

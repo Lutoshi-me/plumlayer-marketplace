@@ -21,7 +21,15 @@ Emit the same packaging
 - **Delivery attribution instead of registration (replaces steps 3–4).** Read each drawing file's
   `deliveryId` from `list_files`, cross-referenced against `list_drawing_deliveries(projectId)`:
   - **Attributed**: the file already carries its delivery. Reuse it; never register a duplicate
-    delivery for the same issue.
+    delivery for the same issue. A set the estimator uploaded on Documents lands with no
+    `issuedOn` until someone dates it, and the dates decide which pages govern: a page a later set
+    replaces leaves the sheet list only once both deliveries carry one. Where
+    `list_drawing_deliveries` gives the delivery `issuedOn: null`, have a pages unit read its cover
+    sheet or transmittal with the reason `file`, and once its `files:` line gives the issue date
+    printed there, with its page and words, call `update_drawing_delivery(projectId, deliveryId,
+    issuedOn)` with that day. Step 3's rule on disagreeing dates applies: the set's own revision
+    table governs. Where neither the cover nor a transmittal prints a date, ask the estimator. Never date it from its upload
+    day, and never write over an `issuedOn` the delivery already carries.
   - **Unattributed** (`deliveryId: null`): surface the gap to the user; never invent attribution.
     Establish which issue the files belong to (ask, or have a pages unit read the cover sheet with
     the reason `file`: its `files:` line gives the issue label, date and sequence the cover prints,

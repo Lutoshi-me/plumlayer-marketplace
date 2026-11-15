@@ -527,7 +527,8 @@ run, not left for later.
    recognition pass recorded, not the ones an agent authored, and an earlier run may have been on
    another machine, so the upload folder alone never answers it. Before this run dispatches any
    unit for this delivery, look in the upload folder's `reports/` with a local command (`ls`):
-   any report already there is an earlier run's, since this run has written none yet. Then
+   any report already there that this run did not dispatch is an earlier run's (a cover read the
+   cloud-resident entry sent for a delivery's label or date is this run's own). Then
    dispatch one earlier unit. Confirm with the user before checking the pages again where that
    look found a report, where the earlier unit found any `sheetType` or `partOfIssue` entry an
    agent wrote on this delivery, or where its read says `finished: no`: a read that did not finish
