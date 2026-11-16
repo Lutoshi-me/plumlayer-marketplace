@@ -938,9 +938,10 @@ through this skill. Points 1, 2 and 4 run only where this delivery is stated as 
   are named, not guessed.
 - `sheetType` typing splits across two authors: the server's deterministic rule pass types with a
   citation at recognition, and the sheet checker types the sheets it left untyped. Never a value
-  outside the 13-value vocabulary; never assigned to a sheet the checker is not confident about;
-  never a bare re-record over a rule-typed sheet (it is corrected by a supersession edge, as the
-  checker's definition says); unsure stays untyped.
+  outside the checker's 19 sheet types, and never a sheet type that holds drawing types (a plan
+  or elevation whose drawing type is unknown stays untyped); never assigned to a sheet the checker
+  is not confident about; never a bare re-record over a rule-typed sheet (it is corrected by a
+  supersession edge, as the checker's definition says); unsure stays untyped.
 - A confident correction of a machine misread (a mis-grabbed title or discipline, in that tail or on an
   already-recognized sheet) is a supersession edge onto the stored entry (`supersedesId` from
   `search`), never an entry that names nothing and never a question raised with `ask_question`. A

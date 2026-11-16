@@ -143,30 +143,67 @@ letters; set mode reads the set for that code's name.
 
 ### The sheet type
 
-Exactly these 13 values, no others:
+A sheet stores one value, the most specific kind it is. Exactly these 19 values, no others, each
+listed under the sheet type it sits in:
 
 ```text
-schedule, plan, overall-plan, enlarged-plan, section, elevation, detail, RCP, schematic, legend,
-notes, cover-index, other
+General: cover-index, notes, legend
+Plans: floor-plan, site-plan, overall-plan, RCP, enlarged-plan, edge-of-slab
+Elevations: exterior-elevation, interior-elevation
+Sections: section
+Details: detail
+Schedules and Diagrams: schedule, diagram
+3D Representations: isometric, photographs, rendering
+Other: other
 ```
+
+A sheet type that holds drawing types is never written: `general`, `plans`, `elevations`,
+`schedules-and-diagrams` and `3d-representations` are refused, and so are `plan`, `elevation` and
+`schematic`, values the list retired. A diagram is `diagram`.
 
 The recognition pass types most sheets by a rule match and never writes `other`. You type the
 sheets it left untyped, and correct a rule-typed sheet you judge wrong. Classify from the sheet
-number and recognized title wherever the mapping is unambiguous, with no render, citing the title:
+number and recognized title wherever the mapping is unambiguous, with no render, citing the title.
+Within Plans the first line a title matches decides, so "ENLARGED FLOOR PLAN" is `enlarged-plan`:
 
-- "FLOOR PLAN", "SITE PLAN" or "FOUNDATION PLAN" is `plan`
+- the set's cover page, a sheet index, a drawing index or a drawing list is `cover-index`
+- "ENLARGED" and "PLAN", or "UNIT PLAN", is `enlarged-plan`
 - "OVERALL" and "PLAN" is `overall-plan`
-- "ENLARGED" and "PLAN" is `enlarged-plan`
-- "ELEVATION" is `elevation`
-- "SECTION" is `section`
-- "SCHEDULE" is `schedule`
-- "DETAIL" or "DETAILS" is `detail`
 - "REFLECTED CEILING", or a sheet that reads "RCP", is `RCP`
-- "SCHEMATIC" or "DIAGRAM" is `schematic`
+- "EDGE OF SLAB" or "SLAB EDGE" with "PLAN" or a level is `edge-of-slab`; a slab edge detail or
+  section is `detail` or `section`
+- "SITE" and "PLAN", "PLOT PLAN", "GRADING", "LANDSCAPE PLAN", "PLANTING PLAN", "IRRIGATION",
+  "EROSION", "PAVING PLAN" or "HARDSCAPE PLAN" is `site-plan`
+- "FLOOR PLAN", "ROOF PLAN", "FOUNDATION PLAN", "FRAMING PLAN", "DEMOLITION PLAN" or "LIFE SAFETY
+  PLAN" is `floor-plan`, and so is any plan title naming a level ("LIGHTING PLAN - LEVEL 2",
+  "BASEMENT PLAN", "2ND FLOOR POWER PLAN")
+- "INTERIOR" and "ELEVATION", or an elevation of a room or of casework ("TOILET ROOM ELEVATIONS",
+  "KITCHEN ELEVATIONS", "MILLWORK ELEVATIONS"), is `interior-elevation`
+- "EXTERIOR", "BUILDING", "FACADE", "COURTYARD" or a compass side ("NORTH", "SOUTHWEST") with
+  "ELEVATION" is `exterior-elevation`
+- "SECTION" is `section`
+- "DETAIL" or "DETAILS" is `detail`; a title naming both a section and a detail takes the one it
+  names first
+- "SCHEDULE" is `schedule`
+- "SCHEMATIC", "DIAGRAM" or "RISER" is `diagram`
 - "LEGEND", "SYMBOLS" or "ABBREVIATIONS" is `legend`
 - "GENERAL NOTES" or "NOTES" is `notes`
-- the set's cover page or a sheet index is `cover-index`
-- a real sheet that maps to none of these is `other`
+- "ISOMETRIC", "AXONOMETRIC", "AXON" or "3D VIEW" is `isometric`
+- "RENDERING" or "PERSPECTIVE" is `rendering`
+- "PHOTOS" or "PHOTOGRAPHS" is `photographs`; a photo log is `photographs`, and "PHOTOMETRIC" is
+  not a photograph
+
+A title that matches lines of two sheet types decides only two ways: a plan with sections, details
+or elevations is the plan's line ("FLOOR PLAN AND DETAILS" is `floor-plan`), and a legend with
+notes is `legend`. Any other pair, such as "DOOR SCHEDULE AND DETAILS", leaves the type unclear.
+
+A plan or elevation title that names no drawing type ("PLUMBING PLANS", "ELEVATIONS"), or an
+elevation title that matches both elevation lines ("INTERIOR ELEVATIONS - NORTH"), leaves the type
+unclear: render the page, read it, and record the drawing type the page shows. Give `other` only to
+a page you rendered, read, and saw is not a drawing: a blank page, a narrative page, a form, or a
+specification page bound into the set. A title that matches none of the lines above is never
+`other` on the title alone. Where the render still leaves the drawing type unclear, the sheet gets
+no entry and stays untyped, reading Uncategorized: skip it and count it, and never guess.
 
 Render a sheet only when its number and title genuinely leave the type unclear. One entry per
 sheet:
@@ -179,8 +216,8 @@ sheet:
 ```
 
 `evidence.method` is `agent-read` where the number and title decided it and `agent-vision-read`
-where you rendered the page, its `locator` as the bundle above says. The value is one of the 13
-literal strings, never a discipline name, a partial phrase, or a title. A sheet you cannot
+where you rendered the page, its `locator` as the bundle above says. The value is one of the 19
+literal strings above, never a discipline name, a partial phrase, or a title. A sheet you cannot
 confidently place gets no entry: skip it and count it.
 
 Correcting a rule-typed sheet: `search(projectId, subject: "sheet:<n>", predicate: "sheetType")`,

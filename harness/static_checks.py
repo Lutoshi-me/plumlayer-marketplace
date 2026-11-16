@@ -2023,27 +2023,41 @@ _LEFT_OUT_HEADING = "## Deliberately left out"
 # heading, after the left-out section, so no unit line in it is ever read as a planned unit.
 _SLICE_HEADING = "## Read now, the rest deferred"
 
-# The recognizer's deterministic sheet types: SHEET_TYPES in the api's sheet-type-classifier.ts,
-# less `other`, which that classifier never returns (an unplaceable sheet types null instead).
-# Copied here by hand because the api is a different repo; a constant naming anything else would
-# select nothing on a real set instead of failing here.
+# The recognizer's deterministic sheet types: DeterministicSheetType in the api's
+# sheet-type-classifier.ts, every stored type on the two-level list less `other`, which that
+# classifier never returns (an unplaceable sheet types null instead). Copied here by hand because
+# the api is a different repo; a constant naming anything else would select nothing on a real set
+# instead of failing here.
 RECOGNIZER_SHEET_TYPES = {
-    "schedule", "plan", "overall-plan", "enlarged-plan", "section", "elevation",
-    "detail", "RCP", "schematic", "legend", "notes", "cover-index",
+    "cover-index", "notes", "legend",
+    "floor-plan", "site-plan", "overall-plan", "RCP", "enlarged-plan", "edge-of-slab",
+    "exterior-elevation", "interior-elevation",
+    "section", "detail",
+    "schedule", "diagram",
+    "isometric", "photographs", "rendering",
 }
 
-# The two names the plan script declares for its own placement of a row the recognizer did not
-# type. They are the script's own vocabulary rather than a claim about what the recognizer returns,
-# so the assertion below allows them beside the recognizer's list rather than against it.
+# The values the sheet type list retired. The record refuses them as a new write, but a sheet typed
+# before the list had two levels can still carry one until it is typed again, so the window 2 order
+# places them and the assertion below allows them beside the recognizer's list.
+_RETIRED_SHEET_TYPES = {"plan", "elevation", "schematic"}
+
+# The two names the plan script places that the recognizer never returns: `other`, which only a
+# reader gives a page that is not a drawing, and `untyped`, the script's own name for a row nobody
+# typed. The assertion below allows them beside the recognizer's list rather than against it.
 _PLACEMENT_SHEET_TYPES = {"other", "untyped"}
 
 # The script's two sheet type constants, pinned here so a change to either fails the release. The
-# window 1 four are a set. The window 2 ten are an order, and that order decides which sheet gets
-# to create a row and which gets to update it, so it is pinned in full and in sequence.
+# window 1 four are a set. The window 2 nineteen are an order, and that order decides which sheet
+# gets to create a row and which gets to update it, so it is pinned in full and in sequence.
 _VOCABULARY_SHEET_TYPES = ["schedule", "legend", "notes", "cover-index"]
 _WINDOW_2_SHEET_TYPE_ORDER = [
-    "section", "detail", "elevation", "RCP", "enlarged-plan",
-    "plan", "overall-plan", "schematic", "other", "untyped",
+    "section", "detail",
+    "interior-elevation", "exterior-elevation", "elevation",
+    "RCP", "enlarged-plan", "edge-of-slab", "floor-plan", "site-plan", "plan", "overall-plan",
+    "diagram", "schematic",
+    "isometric", "rendering", "photographs",
+    "other", "untyped",
 ]
 
 # A window 3 unit id becomes a `verify_unit` subject prefix with `scopeItem:` in front and `-`
@@ -2397,12 +2411,23 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             f"{_WINDOW_2_SHEET_TYPE_ORDER}"
         )
     strangers = sorted(
-        {t for t in shipped_types if t not in RECOGNIZER_SHEET_TYPES and t not in _PLACEMENT_SHEET_TYPES}
+        {
+            t for t in shipped_types
+            if t not in RECOGNIZER_SHEET_TYPES and t not in _RETIRED_SHEET_TYPES
+            and t not in _PLACEMENT_SHEET_TYPES
+        }
     )
     if strangers:
         errors.append(
             f"the script's sheet type constants name {strangers}, which is neither a type the "
-            f"recognizer produces nor one of the script's own placement names"
+            f"recognizer produces, a retired type an older sheet can still carry, nor one of the "
+            f"script's own placement names"
+        )
+    unplaced = sorted(RECOGNIZER_SHEET_TYPES - set(shipped_types))
+    if unplaced:
+        errors.append(
+            f"the recognizer produces {unplaced}, which neither of the script's sheet type "
+            f"constants places, so window 2 would read it after every type it ranks"
         )
     if len(set(shipped_types)) != len(shipped_types):
         errors.append("a sheet type is named in both of the script's two type constants")
@@ -12392,8 +12417,10 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
 
 _PASSES_AT_ONCE = 6
 _WINDOW_2_CLASS_OF = {
-    "section": 0, "detail": 0, "elevation": 1, "RCP": 1, "enlarged-plan": 1, "plan": 2,
-    "overall-plan": 2, "schematic": 2, "other": 2, "untyped": 2, "a type nobody ranked": 2,
+    "section": 0, "detail": 0, "interior-elevation": 1, "exterior-elevation": 1, "elevation": 1,
+    "RCP": 1, "enlarged-plan": 1, "edge-of-slab": 2, "floor-plan": 2, "site-plan": 2, "plan": 2,
+    "overall-plan": 2, "diagram": 2, "schematic": 2, "isometric": 2, "rendering": 2,
+    "photographs": 2, "other": 2, "untyped": 2, "a type nobody ranked": 2,
 }
 _WINDOW_1_CLASS_OF = {
     "schedule": 0, "legend": 0, "notes": 0, "cover-index": 0, "detail": 1, "plan": 1, "untyped": 1,

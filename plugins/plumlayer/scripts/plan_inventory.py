@@ -532,26 +532,38 @@ UNTYPED_SHEET_TYPE = "untyped"
 # composition before extent. A section or a detail shows what an assembly is made of, which is the
 # row a subcontractor prices; a plan shows where it occurs. The first reader to see a piece of work
 # creates its row and every later reader updates it, so the sheet that should create is the one
-# that writes the better row. `other` and untyped go last: neither says what it holds, so neither
-# is a sheet to create the vocabulary of the set from.
+# that writes the better row. `other` and untyped go last: an `other` page is not a drawing and an
+# untyped one has not said what it holds, so neither is a sheet to create the vocabulary of the set
+# from.
+#
+# `elevation`, `plan` and `schematic` are values the sheet type list retired. A sheet typed before
+# the list had two levels can still carry one, so each sits beside the types that replaced it.
 #
 # This is a constant, never a setting a user picks and never a model's judgment.
 WINDOW_2_SHEET_TYPE_ORDER = (
-    "section", "detail", "elevation", "RCP", "enlarged-plan",
-    "plan", "overall-plan", "schematic", "other", UNTYPED_SHEET_TYPE,
+    "section", "detail",
+    "interior-elevation", "exterior-elevation", "elevation",
+    "RCP", "enlarged-plan", "edge-of-slab", "floor-plan", "site-plan", "plan", "overall-plan",
+    "diagram", "schematic",
+    "isometric", "rendering", "photographs",
+    "other", UNTYPED_SHEET_TYPE,
 )
 _WINDOW_2_TYPE_RANK = {name: index for index, name in enumerate(WINDOW_2_SHEET_TYPE_ORDER)}
 
 # The classes that hold each window's order once one discipline's passes run alongside each other:
 # a pass waits for an earlier pass holding a lower class than its own highest. A type no list here
-# names sits in the class after the lists, as `other`, `plan` and an unknown type do in window 2.
+# names sits in the class after the lists, as `other`, `floor-plan` and an unknown type do in
+# window 2.
 #
 # Window 1 reads what the marks mean before anything `--include` added that uses them. Window 2 keeps
 # the order above, in the three steps that matter: reading plans at the same moment as details would
 # create coarser rows under different names, which the record's name refusal cannot catch, while two
 # sheets of one step see the same work at about the same grain.
 WINDOW_1_SHEET_CLASSES = (VOCABULARY_SHEET_TYPES,)
-WINDOW_2_SHEET_CLASSES = (("section", "detail"), ("elevation", "RCP", "enlarged-plan"))
+WINDOW_2_SHEET_CLASSES = (
+    ("section", "detail"),
+    ("interior-elevation", "exterior-elevation", "elevation", "RCP", "enlarged-plan"),
+)
 
 SELECT_KEYS = {"discipline", "sheetTypes", "patterns"}
 
