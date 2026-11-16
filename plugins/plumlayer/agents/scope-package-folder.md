@@ -157,7 +157,7 @@ Question that needs that sentence to be worth sending is not raised.
    `manualSections` of every package whose work passes through it, and the waterproofing package's
    `notes` say each trade carries the firestopping at its own penetrations and name those
    packages. A firestopping package stays a package of its own only where the manual asks for a
-   single firestopping source, or the estimator asks for one; its `notes` then say so. Where the
+   single firestopping installer, or the estimator asks for one; its `notes` then say so. Where the
    project has no waterproofing package, a sealant or firestopping package stays as it is, and its
    `notes` say which firm carries it. Either way, for
    each firestopping row whose name, description or citation says whose work it passes through,

@@ -10,7 +10,7 @@ Checks:
      skill set matches EXPECTED_SKILLS exactly, in both directions.
   4. Agents: every agents/*.md has frontmatter that actually parses as YAML
      and a non-empty `name` and `description`; the shipped agent set matches
-     EXPECTED_AGENTS exactly, in both directions (`orientation`, `question-checker`,
+     EXPECTED_AGENTS exactly, in both directions (`manual-reader`, `orientation`, `question-checker`,
      `scope-package-folder`, `scope-reader`, `scope-reviewer`, `scope-round-runner`,
      `scope-vocabulary-reader`, `sheet-checker`); and no agent declares a
      frontmatter field the runtime ignores for plugin-shipped agents
@@ -317,9 +317,11 @@ EXPECTED_SKILLS = {
 # for every page read an upload makes, the question checker by drawing-upload's
 # step 9b for the re-read of the open Questions after a later delivery, the delivery
 # sizer by drawing-upload's step 9a for the plan and the carry of a new delivery on a project
-# that already holds scope, and the orientation agent by learn-project for the orientation pass.
+# that already holds scope, the orientation agent by learn-project for the orientation pass, and
+# the manual reader by orientation for each group of the manual's sections it places.
 EXPECTED_AGENTS = {
     "delivery-sizer",
+    "manual-reader",
     "orientation",
     "question-checker",
     "scope-package-folder",
