@@ -62,15 +62,17 @@ say to the user (no em dashes, no bolded emphasis words). Say:
 - "N proposals waiting to be leveled" (after `list_proposals`, naming each file, the company that
   sent it, when it arrived, and its packages)
 - "reading <bidder>'s proposal" (per-proposal read)
-- "N rows answered, M not addressed, Q with a quantity" (after a proposal read; never imply a row
-  not addressed is a zero)
+- "N rows answered, M the proposal does not mention, left blank, Q with a quantity" (after a
+  proposal read; never imply a blank row is a zero, and never call it Not Addressed, which is the
+  estimator's answer; offer to mark the blank rows Not Addressed if he wants)
 - "N unlisted scope items, things they priced that aren't on the checklist" (after a proposal read,
   when the proposal carries unlisted content: plain words for what stage 7b records)
 - "K proposals read, J bid lines to record" (before recording)
 - "declared this a revised proposal, which replaces their prior bid" or "declared a clarification"
   (before recording, when a repeat proposal applies, see stage 6)
-- "N rows they answered before and no longer address go back to Not Addressed", then each row by
-  name with the answer it holds now (before recording a revised proposal, see stage 6)
+- "N rows they answered before and no longer address go back to blank", then each row by name with
+  the answer it holds now, a row you marked Not Addressed against their earlier proposal among them
+  (before recording a revised proposal, see stage 6)
 - "M unlisted items from their earlier proposal that the revised proposal drops or now answers on a
   scope row. Tell me which to dismiss.", then each item by name with what it says now: its price,
   or that it is excluded or by others (before recording a revised proposal, when there are any)
@@ -390,14 +392,19 @@ never onto an answer. In the report, state which pass produced which flag.
 
 These are gates. Write them into every read:
 
-- **Not addressed is not a response.** A scope row the proposal does not address gets no response
-  entry at all. Count it as not addressed for that bidder in the report. Never record a
-  `base`/`excluded`/zero to represent it: a row not addressed is unknown, and a bare grid that treats
-  it as answered is the exact conflation coverage exists to prevent. The one entry such a row can
-  take is the cleared value on a wholesale revision (stage 6), and only where this bidder answered
-  it before: that entry is no answer, and it puts the row back to not addressed.
+- **A row the proposal does not mention stays blank.** A scope row the proposal does not address
+  gets no response entry at all. Count it as left blank for that bidder in the report. Never record
+  a `base`/`excluded`/zero to represent it: a blank row is unknown, and a bare grid that treats it as
+  answered is the exact conflation coverage exists to prevent. The one entry such a row can take on
+  your own reading is the cleared value on a wholesale revision (stage 6), and only where this
+  bidder answered it before: that entry is no answer, and it puts the row back to blank.
 
-  A row left with no response is a finding: the estimator reads it as not addressed, an open item
+  Not Addressed is the estimator's answer, given after he reviews the proposal: the value
+  `{ "notAddressed": true }`, with an optional `note` in his words. Record it only on rows the user
+  tells you to mark Not Addressed, never on your own reading, cited to the proposal he reviewed.
+  It carries no price, and the estimate treats the row as an open item, the same as a blank one.
+
+  A row left with no response is a finding: the estimator reads it as blank, an open item
   he has to answer, or cover with his number or another bidder's price, before the bidder's number
   covers it. So leave a row silent only when the
   proposal says nothing about it. Before you do, check the proposal's whole text for the row, a
@@ -501,7 +508,7 @@ row, and the additional items this proposal earned under the stage-4 gate). Befo
 **confidence audit**: collect every read whose `evidence.confidence` is below 0.7 and list it in
 the report for human attention. A low-confidence read is still recorded, carrying its confidence and its
 receipt, but it is called out, not buried in a count. State the per-bidder counts by predicate, the
-not-addressed count per bidder, the count of answers carrying a quantity per bidder, the
+count of rows left blank per bidder, the count of answers carrying a quantity per bidder, the
 additional-item count per bidder, and on a wholesale revision the count of rows it clears per
 bidder (stage 6), so the write manifest is honest.
 
@@ -528,18 +535,25 @@ not from a guess:
   response subject, and name it in `supersedesId`. A row with neither has no head, so its entry
   names none.
 
-  A row the bidder answered before and the revised proposal does not address goes back to not
-  addressed. A prior answer stays on the row until an entry replaces it, so it never lapses on its
-  own. For each such row, record the cleared value `{ "cleared": true }` with `supersedesId` set
-  to that row's current head response entry id. The row then reads Not Addressed for this bidder,
-  and its history keeps the earlier answer. Build that list after the read, not before: take every
-  row whose cell for this `partySubject` in `lines[].responses[]` carries a `receipt` (an answer
-  he holds there now), and remove each row the
+  A row the bidder answered before and the revised proposal does not address goes back to blank. A
+  prior answer stays on the row until an entry replaces it, so it never lapses on its own. For each
+  such row, record the cleared value `{ "cleared": true }` with `supersedesId` set to that row's
+  current head response entry id. The row then reads blank for this bidder, and its history keeps
+  the earlier answer. Build that list after the read, not before: take every row whose cell for
+  this `partySubject` in `lines[].responses[]` carries a `receipt` (an answer he holds there now,
+  the estimator's Not Addressed included: a cell with `notAddressed: true` is his finding on the
+  earlier proposal, which the revision replaces), and remove each row the
   revised proposal answers, a blanket statement included, under the same read rules as any other
   proposal. A row the revision excludes takes `excluded`, never the cleared value. A row already in
   `clearedResponseEntryIds` needs nothing. Cite the cleared entry to the revised proposal's
   `fileId` and the page that lists its scope or prices, with a rationale saying the revised
   proposal does not address the row; the cleared value carries no other field.
+
+  The estimator's Not Addressed on a row that has since left the package's scope list is on no
+  cell: `get_bid_package` lists it in `departedNotAddressedEntryIds`, keyed by response subject.
+  For each key that starts with `bidResponse:<partySubject>:`, record the cleared value on that
+  subject with `supersedesId` set to its id, cited the same way, so it cannot come back against the
+  revision if the row returns. Name these in the same confirmation.
 
   An answer the bidder gave on a row that has since left the package's scope list still stands:
   `get_bid_package` shows it in `additionalItems[]` with a non-null `migratedFrom` and counts it in
@@ -575,8 +589,8 @@ not from a guess:
   stale prior position.
 
 State the declared mode in the report and confirm it with the user before you record. On a
-wholesale revision, name each row you will put back to not addressed, with the answer it holds
-now, in the same confirmation, so the user sees every row the revision clears before it lands.
+wholesale revision, name each row you will put back to blank, with the answer it holds now, in the
+same confirmation, so the user sees every row the revision clears before it lands.
 
 > **Head-id note.** `get_bid_package` exposes the head entry id of each response cell
 > (`lines[].responses[].receipt.id`), of each cleared row (`clearedResponseEntryIds`), and of each
@@ -698,6 +712,8 @@ Value rules that the schema enforces, honor them at authoring time:
   one reading.
 - The cleared value is `{ "cleared": true }` alone, with no `inclusion` or any other answer field,
   and always names the answer it replaces in `supersedesId`.
+- Not Addressed is `{ "notAddressed": true }`, with an optional `note` and no other field, recorded
+  only on the user's word. The GC's own column never takes it.
 - `sourceInstrument` equals `evidence.instrument` (the builder sets it from there).
 - `evidence.page` requires `evidence.fileId`: a page pointer with no file is rejected.
 - For a surgical or wholesale supersession, add `"supersedesId": "<current head entry id>"` to the
@@ -712,7 +728,7 @@ of entries you sent in that batch. If it does not, stop and report the discrepan
 with a reconstructed or guessed correction.
 
 **Recount before you confirm.** Any count you are about to restate as checked (rows answered, rows
-not addressed, entries per predicate, entries in a batch, additional items recorded) gets an explicit fresh
+left blank, entries per predicate, entries in a batch, additional items recorded) gets an explicit fresh
 recount against its source at the moment you restate it. Echoing a number you computed earlier (or
 that the user read back to you) and calling it "confirmed" is not verification; the word "confirmed"
 is earned by the recount that precedes it, every time.
@@ -819,8 +835,10 @@ Check, for each bidder you recorded for:
 
 - **`responseCount`** equals that bidder's stage-3 baseline (their `lines[].responses[]` cells with a
   non-null `receipt` in the read you kept), plus the rows you answered whose cell held no answer
-  before, minus the rows you cleared whose cell is in that baseline. A clear behind a derived
-  additional item is not in it and changes only `additionalItemCount`. A new bidder's baseline is
+  before, minus the rows you cleared whose cell is in that baseline (a Not Addressed cell carries a
+  receipt, so it is in the baseline). A clear behind a derived additional item is not in it and
+  changes only `additionalItemCount`, and a clear from `departedNotAddressedEntryIds` changes
+  neither count. A new bidder's baseline is
   zero. An answer that replaces an
   answer supersedes in place and raises no count.
 - **`additionalItemCount`** equals that bidder's stage-3 `additionalItems[]` count plus the fresh
@@ -899,10 +917,11 @@ readable there now, each with the proposal page behind it; the bid itself is the
 
 - Every entry's evidence cites a `fileId` and page of a proposal you actually read; no receipt → no
   write.
-- A row not addressed is never an answer; it is counted as not addressed, never recorded as a value.
-  Its only entry is the cleared value, on a wholesale revision, where the bidder answered it before
-  (stage 6). A row not addressed produces no Additional item either: the empty cell already says it,
-  and an item nobody asserted would be a record of nothing.
+- A row the proposal does not mention stays blank; it is counted as left blank, never recorded as a
+  value on your own reading. Its only entry is the cleared value, on a wholesale revision, where the
+  bidder answered it before (stage 6), or Not Addressed where the user tells you to mark it. A blank
+  row produces no Additional item either: the empty cell already says it, and an item nobody
+  asserted would be a record of nothing.
 - Proposal content matching no scope row becomes an Additional item, never a created `scopeItem:`. It
   qualifies only if it passes BOTH tests: it states something about work (not a commercial term), and
   that work is anchored either in this project's documents or by another bidder on this package. An
@@ -944,8 +963,9 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - Supersession mode is read from the document's own framing; ambiguous framing stops and asks. The
   declared mode is confirmed with the user before recording.
 - A row the bidder answered before and a wholesale revision does not address takes the cleared
-  value `{ "cleared": true }`, superseding its current answer, so it reads Not Addressed and its
-  history keeps the earlier answer; a prior answer never lapses on its own. A surgical delta
+  value `{ "cleared": true }`, superseding its current answer, so it reads blank and its history
+  keeps the earlier answer; a prior answer never lapses on its own, and the estimator's Not
+  Addressed against the earlier proposal is cleared the same way. A surgical delta
   touches only named rows.
 - Entry JSON matches the `@plumlayer/contract` bid shapes exactly (recipes, predicates, enums,
   `.strict()` values).
