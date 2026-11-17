@@ -1746,6 +1746,7 @@ sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
+schedules under rows: <each kind the reader put under a row + that row's subject, one per line, or "none">
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
 grain questions: <one line each, with sheet and page, or "none">

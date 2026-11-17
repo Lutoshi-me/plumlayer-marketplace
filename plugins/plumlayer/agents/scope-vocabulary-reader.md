@@ -597,6 +597,27 @@ of them is ever trimmed.
    only by its `*Type` name does, declare it in the same batch as above, with its trade. That is
    how a package's review finds the codes its trade uses. A kind that spans trades, such as
    abbreviations or general symbols, or that belongs to none, gets no `belongsToTrade`.
+   Where the rows a schedule grounds come to one row that carries the whole schedule, as mandate
+   6's row for one assembly's types does with every code written out ("Wood shear walls SW1, SW2,
+   SW3 and SW4"), record `definitionKind:<kind>` with predicate `belongsToScopeItem` in the same
+   batch, its value that row's subject verbatim (`scopeItem:i2-A2-3-1`): that is how the checklist
+   shows the kind's marks under the row. It needs no citation. The link puts every code recorded
+   under the kind under that one row, so the row is one this batch creates or one the record
+   already carries, cited to the schedule, on the kind's own `belongsToTrade`, and writing out
+   every code the kind holds, codes another schedule recorded under it among them
+   (`list_definition_kinds` gives the count). Where the schedule's codes stand on a row each, as a
+   product schedule's or a door schedule's do, or on rows of more than one trade, or where the kind
+   also holds codes another schedule defines and the row does not write out, or where the kind has
+   no `belongsToTrade`, record no `belongsToScopeItem`: no one row carries that kind, and the link
+   is never a guess. Where you read the schedule of a kind `list_definition_kinds` lists with a
+   null `belongsToScopeItem` and the one row stands on the record, record it the same way, once.
+   Where the door refuses your new row because a live row carries its name and you cite that row
+   instead, as mandate 1 says, send the link with that row's subject in place of yours. A kind
+   already under a row stays there: where the door says that field already holds a value, send the
+   batch again without your `belongsToScopeItem`, and where you added codes to that kind that its
+   row does not write out, name the kind and the row on your `anomalies:` line, run only. A row's
+   name sent in place of its subject is refused. Name each kind you put under a row on your
+   `schedules under rows:` line.
    A definition is one entry per schedule column, whatever columns this schedule has. The
    predicate is the column's own header, lowercased with spaces removed: "Fire Rating" is
    `fireRating`, "Stud Size" is `studSize`, "Common Name" is `commonName`. The value is that cell's
@@ -891,6 +912,7 @@ sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade; candidates <n>>
 trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
+schedules under rows: <each kind you put under a row + that row's subject, one per line, or "none">
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
 grain questions: <one line each, with sheet and page, or "none">
