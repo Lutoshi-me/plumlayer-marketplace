@@ -416,7 +416,7 @@ read from there by the agent that needs it, when it needs it:
   `read_sheet_context(projectId, fileId, pageInPdf)`, which a sheet reader takes once per page. It
   is cut to fit rather than paged, and it names every list it did not carry whole, so the verb that
   owns that list reads it;
-- the orientation facts (identity, systems, scope areas, hazards): `get_project` and `search` on
+- the orientation facts (identity, structure, phasing, site conditions, scope areas): `get_project` and `search` on
   their predicates;
 - the packages and their catalog trades: `solicitation_list_packages`;
 - the definitions: `list_definition_kinds` for the kinds, `list_definitions(kind)` for the codes

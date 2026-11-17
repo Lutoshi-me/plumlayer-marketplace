@@ -76,7 +76,7 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
 - **What was read**, the project's identity, which of the facts project setup filled were present,
   the disciplines covered, whether the project manual's table of contents was read, and any render
   or page read that failed.
-- **What was learned**, by kind: systems, scope areas, set shape, hazards. Name any value already
+- **What was learned**, by kind: structure, phasing, site conditions, scope areas, set shape. Name any value already
   on the project that you left as it stands, and any you replaced, with who wrote it.
 - **What was filled on Overview** from the cover sheet and title blocks, with the sheet, each firm
   and person put on the contacts among it; each firm added to the Network, given a type or given a
@@ -84,7 +84,7 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
   off, and why.
 - **What the index check found**, or that it hasn't run yet for this set, never silent on which.
 - **What was recorded**, how many facts, and any Question raised for a disagreement between
-  documents. What was recorded is the project's working context now, carrying your name and its
+  documents or for a material or condition the set leaves open. What was recorded is the project's working context now, carrying your name and its
   citations; anyone who changes a value later replaces it.
 - **The package split**, in these words: "I split the job into N packages; here they are. Change
   any of them on the site or tell me and I will redo it." Then name each package created, off the
@@ -101,7 +101,8 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
 - **The description**, whether one was written or a person's was already in place and left alone.
 - **Where the packet landed**, the full path.
 - **What a person should look at**, the facts recorded, visible on plumlayer.com with the page each
-  one was read from, and any Question raised for a disagreement between documents.
+  one was read from, and any Question raised for a disagreement between documents or for a
+  material or condition the set leaves open.
 
 Close by saying orientation is done and everything it made is on the project record.
 <!-- /user-facing -->

@@ -105,7 +105,8 @@ Question that needs that sentence to be worth sending is not raised.
    kind of firm bids that work on a job this size, and with what else. Where a firm of another
    package carries it, fold it in: `solicitation_update_package` on the package that keeps it, with
    the folded package's `tradeCode` and its `codes` added to `codes`, its `manualSections` added to
-   `manualSections`, and `notes` rewritten to say what the package now carries, then
+   `manualSections`, and `notes` rewritten to say what the package now carries, keeping in them
+   each site condition that either package's `notes` named, then
    `solicitation_delete_package` on the folded one. A broad code, one ending in `00`, whether the
    folded package's `tradeCode` or one of its `codes`, goes onto the keeping package's `codes` only
    where no other package still standing holds a trade under it; otherwise add the finer trades of
@@ -142,8 +143,9 @@ Question that needs that sentence to be worth sending is not raised.
    orientation did not draw, a package the record made as a row landed included: that package
    goes where its line puts it, and its `notes` name that default. A default that depends on the
    job applies only where the set shows what its line names, read off the project's
-   `structuralSystem` entry and the rows. A default never moves work the estimator has placed, by
-   his own word, back to where the default puts it.
+   `structuralSystem` and `hazardFlag` entries and the rows. A site condition goes in a package's
+   `notes` only where no package's `notes` name it already. A default never moves work the
+   estimator has placed, by his own word, back to where the default puts it.
 
    Walk-off mats, an acoustic underlayment laid under the finish floor, and floor prep (leveling
    and patching under the finish) go with the flooring sub, whichever package they sit on; a poured
