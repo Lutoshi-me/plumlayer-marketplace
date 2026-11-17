@@ -69,6 +69,11 @@ say to the user (no em dashes, no bolded emphasis words). Say:
 - "K proposals read, J bid lines to record" (before recording)
 - "declared this a revised proposal, which replaces their prior bid" or "declared a clarification"
   (before recording, when a repeat proposal applies, see stage 6)
+- "N rows they answered before and no longer address go back to Not Addressed", then each row by
+  name with the answer it holds now (before recording a revised proposal, see stage 6)
+- "M unlisted items from their earlier proposal that the revised proposal drops or now answers on a
+  scope row. Tell me which to dismiss.", then each item by name with what it says now: its price,
+  or that it is excluded or by others (before recording a revised proposal, when there are any)
 
 What you record is the package's working data as soon as it lands, carrying your name and the
 page it came from.
@@ -388,7 +393,9 @@ These are gates. Write them into every read:
 - **Not addressed is not a response.** A scope row the proposal does not address gets no response
   entry at all. Count it as not addressed for that bidder in the report. Never record a
   `base`/`excluded`/zero to represent it: a row not addressed is unknown, and a bare grid that treats
-  it as answered is the exact conflation coverage exists to prevent.
+  it as answered is the exact conflation coverage exists to prevent. The one entry such a row can
+  take is the cleared value on a wholesale revision (stage 6), and only where this bidder answered
+  it before: that entry is no answer, and it puts the row back to not addressed.
 
   A row left with no response is a finding: the estimator reads it as not addressed, an open item
   he has to answer, or cover with his number or another bidder's price, before the bidder's number
@@ -494,8 +501,9 @@ row, and the additional items this proposal earned under the stage-4 gate). Befo
 **confidence audit**: collect every read whose `evidence.confidence` is below 0.7 and list it in
 the report for human attention. A low-confidence read is still recorded, carrying its confidence and its
 receipt, but it is called out, not buried in a count. State the per-bidder counts by predicate, the
-not-addressed count per bidder, the count of answers carrying a quantity per bidder, and the
-additional-item count per bidder, so the write manifest is honest.
+not-addressed count per bidder, the count of answers carrying a quantity per bidder, the
+additional-item count per bidder, and on a wholesale revision the count of rows it clears per
+bidder (stage 6), so the write manifest is honest.
 
 ## 6. Declare the supersession mode (before recording)
 
@@ -514,9 +522,46 @@ not from a guess:
   restates the bidder's whole position. Record a fresh response entry for every row you read from it,
   each with `supersedesId` set to that row's current head response entry id (from
   `get_bid_package`'s `lines[].responses[]`: the cell for this `partySubject` on that row, its
-  `receipt.id`). Rows the revised proposal now does not address get no re-assertion: their prior
-  entry simply lapses (silence lapses; you do not carry a stale prior forward). Also supersede the
-  bidder's profile, coverage, and summary entries (see the head-id note below).
+  `receipt.id`). Every bidder has a cell on every row, so a cell with `receipt: null` holds no
+  answer. A row whose cell for this bidder holds no answer because an earlier answer was cleared
+  still has a head: take it from `get_bid_package`'s `clearedResponseEntryIds`, keyed by the
+  response subject, and name it in `supersedesId`. A row with neither has no head, so its entry
+  names none.
+
+  A row the bidder answered before and the revised proposal does not address goes back to not
+  addressed. A prior answer stays on the row until an entry replaces it, so it never lapses on its
+  own. For each such row, record the cleared value `{ "cleared": true }` with `supersedesId` set
+  to that row's current head response entry id. The row then reads Not Addressed for this bidder,
+  and its history keeps the earlier answer. Build that list after the read, not before: take every
+  row whose cell for this `partySubject` in `lines[].responses[]` carries a `receipt` (an answer
+  he holds there now), and remove each row the
+  revised proposal answers, a blanket statement included, under the same read rules as any other
+  proposal. A row the revision excludes takes `excluded`, never the cleared value. A row already in
+  `clearedResponseEntryIds` needs nothing. Cite the cleared entry to the revised proposal's
+  `fileId` and the page that lists its scope or prices, with a rationale saying the revised
+  proposal does not address the row; the cleared value carries no other field.
+
+  An answer the bidder gave on a row that has since left the package's scope list still stands:
+  `get_bid_package` shows it in `additionalItems[]` with a non-null `migratedFrom` and counts it in
+  his total. A wholesale revision replaces it too. Such an item is derived from his answer only
+  when `migratedFrom` is non-null and both `resolution` and `routedFrom` are null; then its
+  `receipt.id` is that answer's entry. For each such item of this bidder, record the cleared value
+  on `bidResponse:<partySubject>:<bidPackageSubject>:<migratedFrom.scopeItemSubject>` with
+  `supersedesId` set to the item's `receipt.id`, cited the same way. Where the revised proposal
+  still prices that work, record what it says as a fresh additional item in stage 7b. Name each of
+  these in the same confirmation as the cleared rows. Any other item with a non-null
+  `migratedFrom` is a stored item a person reconciled or routed here: never clear or supersede it.
+
+  The bidder's other additional items do not lapse either, and the record has no cleared value for
+  them. For each item of this bidder with `resolution`, `routedFrom`, and `migratedFrom` all null
+  that the revised proposal no longer states as an unlisted item, because it drops that work or
+  now answers it on a scope row, name it in the same confirmation as an item the revision
+  replaces, with what it says now (its inclusion, routing, or price). Dismiss it only when the user says to, with `reconcile_additional_item`, move
+  `dismiss`, and a reason saying the revised proposal no longer states it. Never dismiss one on
+  your own reading. Name each item routed in from another package (`routedFrom` non-null) that the
+  revision no longer states, and leave it for the user.
+
+  Also supersede the bidder's profile, coverage, and summary entries (see the head-id note below).
 
   A superseding bidder profile replaces the whole profile, not just the fields that changed. Re-read
   the revision's own signature block and write every field you can still read from it. A field you
@@ -526,18 +571,21 @@ not from a guess:
   `supersedesId` set to that row's current head entry id; everything else the bidder previously said is
   left untouched.
 - **Ambiguous framing** (you cannot tell whether it restates or amends) → stop and ask the user.
-  Never guess the mode. Guessing wholesale drops rows that should stand; guessing surgical strands a
+  Never guess the mode. Guessing wholesale clears rows that should stand; guessing surgical strands a
   stale prior position.
 
-State the declared mode in the report and confirm it with the user before you record.
+State the declared mode in the report and confirm it with the user before you record. On a
+wholesale revision, name each row you will put back to not addressed, with the answer it holds
+now, in the same confirmation, so the user sees every row the revision clears before it lands.
 
-> **Head-id note (a real detail the proving run should confirm).** `get_bid_package` exposes the head
-> entry id only for response cells (`lines[].responses[].receipt.id`). It does not expose the
-> head ids for a bidder's `bidderProfile`, `bidSummary`, or `bidCoverage` entries. To supersede those
-> three on a wholesale revision, resolve each head with a targeted `search` on its deterministic subject
+> **Head-id note.** `get_bid_package` exposes the head entry id of each response cell
+> (`lines[].responses[].receipt.id`), of each cleared row (`clearedResponseEntryIds`), and of each
+> bidder's profile, summary, and coverage under `bidderHeads[<partySubject>]` (`profileEntryId`,
+> `summaryEntryId`, `coverageEntryId`). Supersede those three on a wholesale revision by those ids.
+> Only when one is missing there, resolve it with a targeted `search` on its deterministic subject
 > (e.g. `search(projectId, subject: "bidCoverage:<party>:<pkg>", predicate: "bidCoverage")`) and take
-> the current head (the entry no other supersedes). This is a targeted single-subject lookup, not the
-> rejected raw-`search` reconstruction of the package. The record door refuses a write onto an
+> the current head (the entry no other supersedes). That is a single-subject lookup, never a
+> raw-`search` reconstruction of the package. The record door refuses a write onto an
 > occupied slot that names no `supersedesId`, so a revision always names the head it replaces. For a
 > proposal a sub sent from his invitation link, `list_proposals` hands you the coverage head id on
 > each of his packages directly (`coverageEntryId`).
@@ -593,6 +641,16 @@ rejected by `.strict()`, enums are exact):
    "rationale": "line 3, partition type P1, 1,850 LF; the schedule lists 1,850 LF",
    "fileId": "<fileId>", "page": 2}}
 
+// a row a wholesale revision no longer addresses: the cleared value, superseding his earlier answer
+{"subject": "bidResponse:party:<companyId>:bidPackage:<projectId>:09 29 00:scopeItem:<id>",
+ "predicate": "bidResponse",
+ "value": {"cleared": true},
+ "supersedesId": "<his current answer's receipt.id on this row>",
+ "sourceInstrument": "bid-intake-skill",
+ "evidence": {"instrument": "bid-intake-skill", "method": "agent-read", "confidence": 0.9,
+   "rationale": "revised proposal R2 restates the whole bid and does not address this row",
+   "fileId": "<revised proposal fileId>", "page": 2}}
+
 // coverage  (predicate: "bidCoverage")  — proposalFileId is the registered file id, label is optional
 {"subject": "bidCoverage:party:<companyId>:bidPackage:<projectId>:09 29 00",
  "predicate": "bidCoverage",
@@ -638,6 +696,8 @@ Value rules that the schema enforces, honor them at authoring time:
   each part omitted when the document does not carry it. Its `name` is required, so a contact you
   cannot read a person's name from goes to the flat `contact` string instead. Never write both for
   one reading.
+- The cleared value is `{ "cleared": true }` alone, with no `inclusion` or any other answer field,
+  and always names the answer it replaces in `supersedesId`.
 - `sourceInstrument` equals `evidence.instrument` (the builder sets it from there).
 - `evidence.page` requires `evidence.fileId`: a page pointer with no file is rejected.
 - For a surgical or wholesale supersession, add `"supersedesId": "<current head entry id>"` to the
@@ -683,7 +743,9 @@ this bidder:
 - **The item has a non-null `migratedFrom`** → leave it alone entirely. That is not your record.
   It is a response of this bidder's whose scope row stopped projecting, presented here by the
   projection itself, and it recomputes on every read. Never supersede one, and never re-record its
-  content as a fresh item: that would double-count the bidder's money.
+  content as a fresh item: that would double-count the bidder's money. The one exception is a
+  wholesale revision, which clears the response behind it in stage 6; only after that clear has
+  landed does work the revision still prices there become a fresh item.
 - **The item has a non-null `resolution`** → a person already reconciled it. Leave it alone and say so
   in the report; re-recording it would reopen a decision someone already made.
 
@@ -756,11 +818,15 @@ characters on a real package.
 Check, for each bidder you recorded for:
 
 - **`responseCount`** equals that bidder's stage-3 baseline (their `lines[].responses[]` cells with a
-  non-null `receipt` in the read you kept) plus the fresh rows you answered. A new bidder's
-  baseline is zero. A correction supersedes in place and raises no count.
+  non-null `receipt` in the read you kept), plus the rows you answered whose cell held no answer
+  before, minus the rows you cleared whose cell is in that baseline. A clear behind a derived
+  additional item is not in it and changes only `additionalItemCount`. A new bidder's baseline is
+  zero. An answer that replaces an
+  answer supersedes in place and raises no count.
 - **`additionalItemCount`** equals that bidder's stage-3 `additionalItems[]` count plus the fresh
-  items you recorded (same in-place rule for corrections). Baseline and check come from the same
-  projection, so derived (`migratedFrom`) items appear in both and cancel out of the comparison.
+  items you recorded, minus the derived (`migratedFrom`) items whose response you cleared in
+  stage 6 (same in-place rule for corrections). Baseline and check come from the same projection,
+  so the derived items you left alone appear in both and cancel out of the comparison.
 
 Each `record_additional_item` call also returns the item's `subject`: keep them for the report. If
 any number disagrees, stop and report: do not record again to "fix" it, and do not reconcile the
@@ -833,9 +899,10 @@ readable there now, each with the proposal page behind it; the bid itself is the
 
 - Every entry's evidence cites a `fileId` and page of a proposal you actually read; no receipt → no
   write.
-- A row not addressed is never an entry; it is counted as not addressed, never recorded as a value. A
-  row not addressed produces no Additional item either: the empty cell already says it, and an item
-  nobody asserted would be a record of nothing.
+- A row not addressed is never an answer; it is counted as not addressed, never recorded as a value.
+  Its only entry is the cleared value, on a wholesale revision, where the bidder answered it before
+  (stage 6). A row not addressed produces no Additional item either: the empty cell already says it,
+  and an item nobody asserted would be a record of nothing.
 - Proposal content matching no scope row becomes an Additional item, never a created `scopeItem:`. It
   qualifies only if it passes BOTH tests: it states something about work (not a commercial term), and
   that work is anchored either in this project's documents or by another bidder on this package. An
@@ -850,7 +917,8 @@ readable there now, each with the proposal page behind it; the bid itself is the
   is not yet a bidder).
 - No item is recorded without first checking the package's existing `additionalItems[]` for it; an
   `idempotencyKey` covers only a resend of the same call, so an unchecked re-run duplicates silently. A derived item (non-null
-  `migratedFrom`) and a reconciled one (non-null `resolution`) are never touched.
+  `migratedFrom`) is never superseded or re-recorded, and its response is cleared only on a
+  wholesale revision (stage 6); a reconciled one (non-null `resolution`) is never touched.
 - Writes are verified by reading the package back in summary view (`get_bid_package` with
   `view: "summary"`) and matching the rise in per-bidder counts against the stage-3 baseline; a
   mismatch stops the run and is reported, never recorded over. The full read is never re-called for
@@ -875,8 +943,10 @@ readable there now, each with the proposal page behind it; the bid itself is the
 - Pass two never revises a pass-one amount or inclusion toward the peers; it only flags.
 - Supersession mode is read from the document's own framing; ambiguous framing stops and asks. The
   declared mode is confirmed with the user before recording.
-- Rows a wholesale revision does not address lapse (no re-assertion); a surgical delta touches only
-  named rows.
+- A row the bidder answered before and a wholesale revision does not address takes the cleared
+  value `{ "cleared": true }`, superseding its current answer, so it reads Not Addressed and its
+  history keeps the earlier answer; a prior answer never lapses on its own. A surgical delta
+  touches only named rows.
 - Entry JSON matches the `@plumlayer/contract` bid shapes exactly (recipes, predicates, enums,
   `.strict()` values).
 - Recording is verbatim, count-verified transport in ≤50-entry batches; a count mismatch stops the run.
@@ -908,10 +978,9 @@ edits `SKILL.md`; it runs the same pipeline against new paths.
   moves that company to Bid received on the coverage board. An uninvited bidder still creates
   `party:<slug>`. What remains for a proving run is only how often real proposals match cleanly by
   name against the invited list, and how the ambiguous cases actually read in practice.
-- **Head ids for profile / summary / coverage supersession.** `get_bid_package` exposes only response
-  head ids; profile and summary heads are resolved by targeted `search` on their deterministic
-  subjects (stage 6 note), and an uploaded proposal's coverage heads come from `list_proposals`.
-  Confirm the search path on a real revised proposal.
+- **Head ids for profile / summary / coverage supersession: settled, see the stage 6 note.**
+  `get_bid_package` gives them under `bidderHeads`, and an uploaded proposal's coverage heads also
+  come from `list_proposals`.
 - **Solicitation package vs. bid-package-definition entry.** `solicitation_list_packages` confirms the
   solicitation package; `get_bid_package` needs a `bidPackageDefinition` entry for the trade. If the
   former exists but the latter does not, this skill stops and reports rather than fabricating the
