@@ -366,12 +366,25 @@ of them is ever trimmed.
    `<sheet> p<page> no box: <the rows>, <why no line carries them>, run only`. The same holds for
    every box this file asks for, a Question's included.
    A manual-grounded record names its spec section the way a drawing-grounded one names its sheet,
-   with the file and the page you read it on. In a new row's evidence the section rides in
-   `source`, never in a field of its own, which the door refuses:
-   `{ source: "specSection:<packed number> — <the section's title>", fileId, locator: { pageInPdf } }`;
-   the citation, on a new row or one that already exists, is `{ subject, kind: "spec-section",
-   specSection, fileId, pageInPdf }`, the section number as the manual prints it. Never cite a manual page as a
-   bare document page when you know its section. Where the manual says the specifications are on
+   with the file and the page you read it on, and a box around the words you read it from. In a
+   new row's evidence the section rides in `source`, never in a field of its own, which the door
+   refuses:
+   `{ source: "specSection:<packed number> — <the section's title>", fileId, locator: { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }`;
+   the citation, on a new row or one that already exists, is `{ subject, kind: "spec-section", specSection, fileId, pageInPdf,
+   bboxPts, frame: "page-points" }`, the section number as the manual prints it. The box is built
+   as a schedule row's is, from the lowest `x0` and `y0` to the highest `x1` and `y1` of the
+   entries `get_page_text` gave you for the paragraph the row was read from, sent as they are and
+   never converted. A manual page most often comes back `lineGrouping: "none"`, one entry per
+   word, so the box runs over every word of that paragraph across all its lines, and takes in the
+   article heading or the page's running header only where the row was read from them. Where no
+   entry of the page's read carries the words (the read came back bounded or `workerCapped`, or
+   missed them), leave `bboxPts` and `frame` out of both shapes, cite the page alone, and name it
+   on your `anomalies:` line as `<section> p<page> no box: <the rows>, <why no line carries them>,
+   run only`. Never cite a manual page as a bare document page when you know its section; a
+   document page cited where no section is known carries its box the same way, `{ subject, kind:
+   "document-page", fileId, pageInPdf, bboxPts, frame: "page-points" }` as the citation and `{
+   fileId, locator: { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }` as a new
+   row's evidence. Where the manual says the specifications are on
    the drawings, a row whose product, method or extent rests on a specification sheet of the
    drawings cites that sheet and page as well.
 3. STORE-RESOLUTION IS MANDATORY: resolve a mark, tag, or code by querying the record, never from
@@ -903,10 +916,10 @@ that file leave these lines out of their sheets, so what you do not record from 
    - Where `printedOnMore` is present and no listed entry carries one, search the block's longest
      line as step 4 does for the pages left off the list, and cite the first hit whose sheet the
      run reads, with the box off its `spans`; where no hit carries one, the next case holds.
-   - Where no page of the block carries a sheet number, cite the `firstSheet` page itself with no
-     box. The citation is `{ subject, kind: "document-page", fileId, pageInPdf }`, and a new row
-     carries both it and evidence `{ fileId, pageInPdf }` on its entries. On `anomalies:`, name
-     the box you could not send, one line per block, with the file and page, ending `run only`. A
+   - Where no page of the block carries a sheet number, cite the `firstSheet` page itself, with
+     the box step 6 builds. The citation is `{ subject, kind: "document-page", fileId, pageInPdf,
+     bboxPts, frame: "page-points" }`, and a new row carries both it and evidence `{ fileId,
+     locator: { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }` on its entries. A
      page with no sheet number names no sheet your runner can verify by, so every row that
      existed before and that you cite this way also goes on your `page citations:` line, with its
      subject, the file and the page.

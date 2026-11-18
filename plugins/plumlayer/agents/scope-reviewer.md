@@ -102,7 +102,13 @@ them is ever trimmed.
    they name the same line. A box is never measured off a render: no pixel, tile, `clipPt` or
    `pxPerPt` is turned into points for a citation. Where no line of the page's read carries the row, cite the sheet with no
    box and name it on your `anomalies:` line as `<sheet> p<page> no box: <the rows>, <why no line
-   carries them>, run only`. The same holds for a Question's box.
+   carries them>, run only`. The same holds for a Question's box. A row you create or cite off a
+   page of the manual cites its spec section with a box around the paragraph you read it from,
+   built from that page's `get_page_text` entries and sent with `frame: "page-points"`, in the
+   two shapes reader mandate 2 gives for a spec section; a manual page most often comes back one
+   entry per word, so the box runs over every word of the paragraph. Where no entry of the page's
+   read carries the words, cite the section's page with no box and name it on `anomalies:` as
+   `<section> p<page> no box: <the rows>, <why no line carries them>, run only`.
 3. THE QUERY BUDGET AND THE CAPS. One query string per call, no boolean, no list. Rank your
    harvested words most distinguishing first: a mark or a code, then a product or assembly name of
    several words, then the distinguishing noun of a section title, then the catalog name and its

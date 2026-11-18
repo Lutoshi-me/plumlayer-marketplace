@@ -191,7 +191,8 @@ blind.
      state, one reply saying so. Name it on your `not found` line. The old box's
      page is the `pageInPdf` on the sheet's `locatedAt` entry whose value names that box's
      `fileId`, off `search(projectId, subject: "sheet:<n>", predicate: "locatedAt")`.
-   - On a section of the new manual: a spec citation has no box and no sheet. Read the section's
+   - On a section of the new manual: a spec citation names no sheet, and any box it carries sits
+     on the old manual's page. Read the section's
      pages off its `locatedAt` (`search(projectId, subject: "specSection:<packed code>",
      predicate: "locatedAt")`), with `get_page_text` on the part the ask is about, and search the
      ask's words with `search_set_text` and `kind: document`.

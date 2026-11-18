@@ -129,8 +129,10 @@ file of the new manual not read yet.
 2. Where the section is reprinted, read its pages in the new manual with `get_page_text` on each
    file and page range `newPages` names, walked on `nextOffset`, and give the row its outcome as
    step 4 says, on the new manual's page. Recited: `cite_source` with `kind: "spec-section"`, the
-   section's number as `specSection`, and the `fileId` and `pageInPdf` you read it on, with a box
-   from the lines that carry it where one does. Updated: the field written as step 4 says, cited
+   section's number as `specSection`, and the `fileId` and `pageInPdf` you read it on, with
+   `bboxPts` and `frame: "page-points"` around the paragraph that carries it, the lowest `x0` and
+   `y0` to the highest `x1` and `y1` of its entries (a manual page most often comes back one
+   entry per word), or with no box where no entry of the read carries it. Updated: the field written as step 4 says, cited
    the same way. Removed: the new manual's page that shows the work gone, such as the paragraph
    that no longer lists it.
 3. Where the section is not printed, not in the manual or not read yet, or the reprinted section
