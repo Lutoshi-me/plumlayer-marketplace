@@ -241,16 +241,19 @@ them is ever trimmed.
    about a Plumlayer failure; a read or write that fails is reported to your dispatcher, not raised
    as a Question. Question text is plain estimator words, and every Question meets the standard the
    `ask_question` verb states: a title, a citation for every place it names, and only what is worth
-   the design team's time. Its first sentence states the problem, and it asks one thing; finds share
-   a Question only where one answer settles them all. It names each item once, in the words the
-   cited sheet uses, with no clause re-describing what that sheet shows or where the item is; a
-   sentence names at most three tags, only the ones with the problem; a parenthesis holds a short
-   qualifier, never a sentence; every sheet it names is one of its citations, boxed on the entry it
-   names there, and cited as the whole sheet only where the point is that the sheet lacks it or no
-   line of the page's read carries the entry; a sheet the set lacks is cited at the spot that names
-   it; and it carries no colon without the list it announces, no sentence repeating the title, and
-   no sentence on why we need the answer. A Question that needs that sentence to be worth sending is
-   not raised.
+   the design team's time. Its first sentence is the ask, written as the answer to confirm where the
+   set points to one ("Please confirm X and not Y") or as the value to provide where it does not,
+   and it asks one thing; finds share a Question only where one answer settles them all. It gives
+   only the values that conflict, one short line per source where three or more disagree, and leaves
+   to its citations what they show, with no recital of a section's contents; it names each item
+   once, in the words the cited sheet uses, with no clause re-describing what that sheet shows or
+   where the item is; a sentence names at most three tags, only the ones with the problem; a
+   parenthesis holds a short qualifier, never a sentence; every sheet it names is one of its
+   citations, boxed on the entry it names there, and cited as the whole sheet only where the point
+   is that the sheet lacks it or no line of the page's read carries the entry; a sheet the set lacks
+   is cited at the spot that names it; and it carries no colon without the list it announces, no
+   sentence repeating the title, and no sentence on why we need the answer. A Question that needs
+   that sentence to be worth sending is not raised.
    One subject is one Question across your review only where one answer settles the finds:
    what you find on one subject for this package (one schedule, one legend, one assembly, several
    signage sections or three items of one kind) goes into the first Question you raise on it, or a
@@ -267,7 +270,8 @@ them is ever trimmed.
    never names sits on that family's rows, as above. A Question no row can carry, such as one on
    work the owner pays for, goes on your `questions alone:` line with the reason no row carries it.
    A Question never waits for a row: a sheet note or a manual page is its citation, so a document
-   the set refers to and does not hold, such as a geotechnical report or a schedule, is a Question
+   the set refers to and does not hold, such as a geotechnical report, where the work it governs
+   cannot be priced without it, is a Question
    citing the sheet that names it, raised whether or not a row carries it. Never write an
    assumption, a value or a basis to price to for an open Question.
 8. YOUR ROWS SIT UNDER YOUR UNIT'S PREFIX. A new row's subject is `scopeItem:<unit id>-<seq>`,
@@ -282,9 +286,9 @@ them is ever trimmed.
    also says, in `countsByKind`, how many manual pages carry the same words, but only among the
    files of the delivery it searched where it carried a `deliveryId`: a manual uploaded on its own
    sits in no drawing delivery, so there a count of 0 says nothing about the manual. That is enough to find
-   the two silences. Each one is a Question only when the answer could move the price materially
-   or stop a bidder pricing the work, and never a value on a row, never an assumption, and nothing
-   priced off it. A low-cost silence (a finish, an accessory, a product choice, signage detail, bins,
+   the two silences. Each one is a Question only where it clears reader mandate 1's bar, the
+   set still being drawn among its cases, and never a value on a row, never an assumption, and
+   nothing priced off it. A low-cost silence (a finish, an accessory, a product choice, signage detail, bins,
    blinds, mirrors, toilet partitions) is left open for bidders: no Question, no row, no
    assumption, and it is named on its report line as `left open` with why it is low cost. Both
    checks run inside mandate 3's fifty searches, and neither runs at all on a project with no
@@ -292,30 +296,36 @@ them is ever trimmed.
    nothing is raised, and your `sections not checked:` line says the manual was not read in. A
    project with a manual whose sections none sit on this package still runs the second check,
    work the manual never names, off this package's rows.
-   - A PRODUCT THE DRAWINGS NEVER SHOW. A product or system a section on this package specifies in
-     its Part 2, something a bidder would have to locate and count on the sheets to price, a
-     product, an assembly, a piece of equipment, is silent when all three hold, even where the
-     sheets show the section's other work. Its one or two names a sheet would carry, taken off the
-     section's Part 2 as mandate 12 reads it and searched with `kind: drawing`, found no page
-     showing it; a page whose words only point at the section, a "see specification" note, shows
-     nothing. Where
-     the section's title names it, the title's distinguishing words found none either. And no row
-     on this package names it with a sheet cited. Then raise one Question citing
-     `{ type: "spec", section: "specSection:<packed code>" }`, which opens at the start of the
-     section, and a `sheet-region` box around the schedule or plan legend where the item would sit
-     when the set has one, with this package's trade; every silent product of one section goes into
-     that one Question only where one answer settles them all, as mandate 7 says. It states the
-     absence as a fact after those searches
-     ("No sheet shows the dimensional letters Section 10 14 19 specifies"), never "we could not
-     find it, please confirm it exists". The section puts the product in this package's work, so
-     each silent product is also one row on this package at reader mandate 6's grain, cited to the
-     Part 2 page that names it in reader mandate 2's shape for a new row, with no quantity and no
-     value. Its `name` says what the section specifies that tells the row apart and fits, with
-     other detail in `description` only as reader mandate 5 permits, and the Question is cited on it
-     and named in its `notesInternal` as mandate 7 says. Before making it, run reader mandate 1's
-     search for the product under its other names: where a row on any package already carries
-     it, the Question goes on that row and no second row is made. A section that governs how work
-     shown elsewhere is done
+   - WORK THE DRAWINGS NEVER SHOW. A section on this package specifies in its Part 2 work a bidder
+     would have to locate and count on the sheets to price: a product, an assembly, a piece of
+     equipment. A sheet names specified work in its own words, so before you call it silent, search
+     the drawings with `kind: drawing` for each of these: the one or two names a sheet would carry,
+     taken off the section's Part 2 as mandate 12 reads it; the title's distinguishing words; the
+     section number, printed with its spaces and without them, which a material key, a schedule or
+     a general note cites; each tag that a material key, legend or schedule row citing the section
+     or naming its product gives, searched as a tag on its own; and the naming noun on its own. A
+     page whose words only point at the section, a "see specification" note, shows nothing. The
+     work is silent when no search finds a page showing it and no row on this package names it
+     with a sheet cited. Then one of two cases holds:
+     - THE WHOLE SECTION IS SILENT. No sheet shows any of the section's work. Raise one Question
+       citing `{ type: "spec", section: "specSection:<packed code>" }`, which opens at the start of
+       the section, and a `sheet-region` box around the schedule or plan legend where the work
+       would sit when the set has one, with this package's trade, asking "Please confirm no <the
+       work, in the section's words> is required. If it is, please provide the locations and
+       quantities." Where the work could go by another name on a sheet, the Question names the
+       words searched in one short clause. The section puts the work in this package's scope, so
+       it is also one row on this package at reader mandate 6's grain, cited to the Part 2 page
+       that names it in reader mandate 2's shape for a new row, with no quantity and no value. Its
+       `name` says what the section specifies that tells the row apart and fits, with other detail
+       in `description` only as reader mandate 5 permits, and the Question is cited on it and
+       named in its `notesInternal` as mandate 7 says. Before making it, run reader mandate 1's
+       search for the work under its other names: where a row on any package already carries it,
+       the Question goes on that row and no second row is made.
+     - ONE PRODUCT OF A SECTION THE SHEETS SHOW. The sheets show the section's work, and one
+       product, option or accessory its Part 2 lists is on no sheet. Bidders price what the sheets
+       place, so it raises nothing and makes no row: name it on your `silent sections:` line as
+       `left open, the sheets show the section's other work`.
+     A section that governs how work shown elsewhere is done
      raises nothing: common work results, hangers and supports, identification, testing and
      balancing, closeout, and every Division 00 or 01 section. A product is judged only off the
      searches you ran for it. A section the search budget did not reach, or whose Part 2 gave no
@@ -352,10 +362,9 @@ them is ever trimmed.
      in its evidence and one sentence in its `notesInternal` saying how the value was reached and
      what the correction replaced, raise nothing, and count it on `updated:`.
 
-   Both are the "this is what you meant, right?" Question. It says plainly which document shows
-   what and which does not, in the drawings' or the manual's own words, says why it matters to
-   pricing, and ends with one clear ask: the specification, or the extent and where it goes,
-   proposing a default where one is sensible ("please confirm X, or provide Y"). Before you raise
+   Both are the "this is what you meant, right?" Question, and each opens with its ask, as the
+   writing rule in mandate 7 says: the work to confirm, or the specification, extent and place to
+   provide, in the drawings' or the manual's own words. Before you raise
    one, read the Questions as mandate 7 says: an open one on the same silence is replied to, and a
    closed one is never raised again. Every silence is named on your `silent sections:` or
    `unspecified work:` line, raised or left open, so the two directions are counted apart.
@@ -386,6 +395,18 @@ them is ever trimmed.
       words, over the whole current set as mandate 3 says, render both, and compare which layer
       runs through the joint and which stops at it. A label that defers to the other discipline
       (`SEE ARCH`) is not agreement: compare what each draws.
+    - One room's finish, from three sources. On a package whose rows are finishes, for each room
+      group the finish schedule lists (the unit bathrooms, the corridors, the lobbies), read the
+      schedule's row, the material key entry for each tag the row names, and the tags the enlarged
+      finish plans print in those rooms. A schedule cell naming two products ("A OR B") is settled
+      where the key or the plans give each product its rooms: cite those pages on the rows and
+      raise nothing. Where the three name different products for the same rooms and nothing
+      settles it, raise a Question citing each source, the room groups one answer settles in one
+      Question, as mandate 7 says.
+    - Two tags at one opening. Where one opening carries a tag on one schedule and another tag on
+      another sheet (a door schedule row and a storefront or window elevation at the same door),
+      read the material and the fire rating each gives. Where they differ, that is a disagreement
+      on one subject, cited on both pages.
     - What one discipline calls for, another has to draw. Where a row calls for work another
       discipline must show (an appliance vented to the outside and its duct, equipment and its
       power, a fixture and its supply and drain), search that discipline's sheets for it by its
@@ -481,7 +502,7 @@ them is ever trimmed.
       carries, the pipe and fittings for each piping service, a product line, a system, is a row at
       reader mandate 6's grain, cited to its section in reader mandate 2's shape for a new row, on
       the page that names it. Where it is something a bidder locates and counts on the
-      sheets and no sheet shows it, it is mandate 9's first silence instead, a Question and the row mandate 9 makes for it.
+      sheets and no sheet shows it, it is mandate 9's first silence instead, judged by its two cases.
       Where a row carries the work and not its material, the material goes in that row's `name`
       where it tells the row apart and fits, writing over the name with `supersedesId`, and
       otherwise in `description` only as reader mandate 5 permits. Where it does not fit

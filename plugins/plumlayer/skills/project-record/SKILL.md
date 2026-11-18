@@ -268,8 +268,8 @@ number ("RFI 22") once it holds one, and names one Question per call.
 
 ### Raising a Question
 
-- When you find a disagreement between sources, or a gap that stops a bidder pricing the work,
-  while you read, write it as a Question with `ask_question`. Do not leave it as a remark in the
+- When you find a disagreement between sources, or a gap, whose answer moves a price materially
+  and that nothing in the set settles, while you read, write it as a Question with `ask_question`. Do not leave it as a remark in the
   conversation.
 - Check before asking: search the rest of the set and the manual with `search_set_text`, and read
   every Question with `list_questions(status: "all")`, closed ones included, with no trade filter
@@ -277,8 +277,8 @@ number ("RFI 22") once it holds one, and names one Question per call.
   `reply_question`, or `add_question_source` when all you have is another place it shows; a closed
   one is never asked again.
 - Give it a short title naming the ask. Write the text in the shape "this is what you meant,
-  right?": state the assumption you would price on and ask the design team to confirm it, or to
-  say what replaces it. Cite the exact spots: a box around the callout, schedule row or note, and
+  right?": where the documents point to an answer, open by asking the design team to confirm it,
+  or to say what replaces it; where they point to none, open by asking for the value. Cite the exact spots: a box around the callout, schedule row or note, and
   the spec section where one bears on it. Put a Question's citations in `sources`, shaped the way
   `ask_question` describes them; the `evidence` shape under "How to shape a citation" is for scope
   rows and facts only.
@@ -438,15 +438,19 @@ Drawn
 ## Discipline
 - Question text is plain estimator words, and every Question meets the standard the
   `ask_question` verb states: a title, a citation for every place it names, and only what is worth
-  the design team's time. Its first sentence states the problem, and it asks one thing; finds share
-  a Question only where one answer settles them all. It names each item once, in the words the cited
-  sheet uses, with no clause re-describing what that sheet shows or where the item is; a sentence
-  names at most three tags, only the ones with the problem; a parenthesis holds a short qualifier,
-  never a sentence; every sheet it names is one of its citations, boxed on the entry it names there,
-  and cited as the whole sheet only where the point is that the sheet lacks it or no line of the
-  page's read carries the entry; a sheet the set lacks is cited at the spot that names it; and it
-  carries no colon without the list it announces, no sentence repeating the title, and no sentence
-  on why we need the answer. A Question that needs that sentence to be worth sending is not raised.
+  the design team's time. Its first sentence is the ask, written as the answer to confirm where the
+  set points to one ("Please confirm X and not Y") or as the value to provide where it does not, and
+  it asks one thing; finds share a Question only where one answer settles them all. It gives only
+  the values that conflict, one short line per source where three or more disagree, and leaves to
+  its citations what they show, with no recital of a section's contents; it names each item once, in
+  the words the cited sheet uses, with no clause re-describing what that sheet shows or where the
+  item is; a sentence names at most three tags, only the ones with the problem; a parenthesis holds
+  a short qualifier, never a sentence; every sheet it names is one of its citations, boxed on the
+  entry it names there, and cited as the whole sheet only where the point is that the sheet lacks it
+  or no line of the page's read carries the entry; a sheet the set lacks is cited at the spot that
+  names it; and it carries no colon without the list it announces, no sentence repeating the title,
+  and no sentence on why we need the answer. A Question that needs that sentence to be worth sending
+  is not raised.
 - Be honest about your own entries: each is your reading of what you cited, and you say so when
   you tell the user about it. Anyone can replace it later the same way any write does, by naming
   it.

@@ -55,11 +55,13 @@ The three windows:
    set's text for, and a hit no row carries becomes a row, cited to a page the reviewer opened for
    it. The same review finds where the manual and the drawings are silent on each other: a
    section on the package whose work no sheet shows, and work on the package's rows that no page
-   of the manual names. Each that could move the price materially or stop a bidder pricing the
-   work is a Question, cited to the start of the section or a box around the callout, and cited
-   on the rows it affects; a product the manual specifies and no sheet shows also gets its own
-   row with no value, so the Question shows on the trade's page. A low-cost one is left open for
-   bidders. A package's page is finished when its review is.
+   of the manual names. A section none of whose work any sheet shows, after a search for its
+   number and the tags a material key, legend or schedule gives it, is a Question asking the design
+   team to confirm the work is not required, cited to the start of the section and on its own row
+   with no value, so the Question shows on the trade's page. One product of a section whose other
+   work the sheets show raises nothing, since bidders price what the sheets place. Work the manual
+   never names is a Question, cited to a box around the callout. Each clears the Question bar
+   below first, and a low-cost one is left open for bidders. A package's page is finished when its review is.
 
 A run can stop at the end of any window, inside window 2 at any pass boundary, and inside window 3
 at any pass boundary, and resume later with nothing lost.
@@ -129,16 +131,20 @@ that relaxes any one of them reproduces a measured, named failure.
    never about a Plumlayer failure; a read or write that fails is reported and handled in the run's
    own failure path, not raised as a Question. Question text is plain estimator words, and every
    Question meets the standard the `ask_question` verb states: a title, a citation for every place
-   it names, and only what is worth the design team's time. Its first sentence states the problem,
-   and it asks one thing; finds share a Question only where one answer settles them all. It names
-   each item once, in the words the cited sheet uses, with no clause re-describing what that sheet
-   shows or where the item is; a sentence names at most three tags, only the ones with the problem;
-   a parenthesis holds a short qualifier, never a sentence; every sheet it names is one of its
-   citations, boxed on the entry it names there, and cited as the whole sheet only where the point
-   is that the sheet lacks it or no line of the page's read carries the entry; a sheet the set lacks
-   is cited at the spot that names it; and it carries no colon without the list it announces, no
-   sentence repeating the title, and no sentence on why we need the answer. A Question that needs
-   that sentence to be worth sending is not raised. Every Question raised or replied to, by a
+   it names, and only what is worth the design team's time. Its first sentence is the ask, written
+   as the answer to confirm where the set points to one ("Please confirm X and not Y") or as the
+   value to provide where it does not, and it asks one thing; finds share a Question only where one
+   answer settles them all. It gives only the values that conflict, one short line per source where
+   three or more disagree, and leaves to its citations what they show, with no recital of a
+   section's contents; it names each item once, in the words the cited sheet uses, with no clause
+   re-describing what that sheet shows or where the item is; a sentence names at most three tags,
+   only the ones with the problem; a parenthesis holds a short qualifier, never a sentence; every
+   sheet it names is one of its citations, boxed on the entry it names there, and cited as the whole
+   sheet only where the point is that the sheet lacks it or no line of the page's read carries the
+   entry; a sheet the set lacks is cited at the spot that names it; and it carries no colon without
+   the list it announces, no sentence repeating the title, and no sentence on why we need the
+   answer. A Question that needs that sentence to be worth sending is not raised. Every Question
+   raised or replied to, by a
    reader, a reviewer or this run
    itself, is
    cited on each live row its answer would change, as the reader's mandate 1 decides those rows, so
@@ -323,7 +329,8 @@ A newly created scope item is a full row, not a name. Every new item writes:
   On a finish row the extent is the rooms or
   room types the room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2
   to 5"), read off the finish schedule and never off a material key or legend alone, which says
-  what a finish is and not where it goes. The extent ends the name where it fits ("Porcelain floor
+  what a finish is and not where it goes, except where the key's entry names the rooms it goes in
+  ("unit bathrooms, east building"). The extent ends the name where it fits ("Porcelain floor
   tile PT-1, unit kitchens and baths"); where the schedule lists more rooms than the name holds,
   the name names the finish alone and the description carries the whole extent, never cut short.
   The reader's mandate 1 names the two products of a disagreement in the description, and a
@@ -339,7 +346,8 @@ A newly created scope item is a full row, not a name. Every new item writes:
   Question on the row, or how the row's count or grouping was reached
   and what a correction replaced. Never a citation audit, never which trade carries the work, which
   is a row of its own as the reader's mandate 4 says, and never a conflict between two documents:
-  that is a Question. A correction of a value on the record is two things: the write
+  that is a Question where it clears the Question bar below, and a qualification where it does
+  not. A correction of a value on the record is two things: the write
   onto that field naming what it replaces (`supersedesId`), cited to a box around what shows the
   right value with the words read there as the evidence snippet; and this note, one plain sentence
   saying how the value was reached and what it replaced, never an id or a hand-written tag,
@@ -355,7 +363,7 @@ A newly created scope item is a full row, not a name. Every new item writes:
   mark, and a mark is never taken out of the row's name or made up. The tag stays in the name or
   description as the name rule above and non-negotiable 6 write it. A mark on the record that a
   sheet shows misread is corrected like any other value; two drawings tagging one item
-  differently is a Question.
+  differently is a Question only where the two tags define different work and clear the bar.
 
 A row's text never carries another item's subject id or a hand-written SUPERSEDED or date tag,
 per docs/plugin-text-style.md. Splitting one item into two is `retire_scope_item` naming why, plus
@@ -370,12 +378,17 @@ never comes near them. A verbose row is a defect, not diligence.
 
 A Question is a draft RFI, and it meets the standard the `ask_question` verb states. What this
 run adds to that standard is where it applies here. A Question clears the bar when the answer
-could move the price materially or stop a bidder pricing the work, or when two documents disagree
-about the work: a schedule row with no matching plan tag, a detail called where none is drawn, a
-spec section and a sheet naming different products for one assembly, a dimension the sheets
-contradict, a tag the set defines nowhere, a product a schedule leaves TBD, a rock elevation above
+changes what a bidder prices by a material amount, or leaves a bidder unable to price work of
+material value, and nothing in the set settles it: two documents naming different products,
+sizes or extents for one assembly with no third document settling them, two options the set
+defines and places neither, a dimension the sheets contradict, a tag the set defines nowhere or a
+product a schedule leaves TBD where the answer holds the price, a rock elevation above
 the excavation where neither the sheets nor the manual say how its removal is paid (unclassified
-excavation, a unit price, an allowance). Rock or water above an excavation is a row either way. A
+excavation, a unit price, an allowance). Rock or water above an excavation is a row either way.
+On a schematic or design development set, a tag missing from a schedule, a blank schedule cell, a
+keynote with no text, a detail titled and not drawn, or a sheet not yet issued is the set still
+being drawn and raises no Question, unless the item cannot be priced without the answer and the
+answer moves the price materially. A
 follow-up reply adds sources and never argues which document governs. It does
 not clear the bar:
 

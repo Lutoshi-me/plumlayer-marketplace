@@ -379,24 +379,25 @@ its answer settles the find too, and a closed one is not asked again. A Question
 project, never about a Plumlayer failure. Question text is
 plain estimator words, and every Question meets the standard the `ask_question` verb states: a
 title, a citation for every place it names, and only what is worth the design team's time. Its first
-sentence states the problem, and it asks one thing; finds share a Question only where one answer
-settles them all. It names each item once, in the words the cited sheet uses, with no clause
-re-describing what that sheet shows or where the item is; a sentence names at most three tags, only
-the ones with the problem; a parenthesis holds a short qualifier, never a sentence; every sheet it
-names is one of its citations, boxed on the entry it names there, and cited as the whole sheet only
-where the point is that the sheet lacks it or no line of the page's read carries the entry; a sheet
-the set lacks is cited at the spot that names it; and it carries no colon without the list it
-announces, no sentence repeating the title, and no sentence on why we need the answer. A Question
-that needs that sentence to be worth sending is not raised. It never names a predicate from the
-table above, an
-internal
-step, or a field, and it carries no em dash.
+sentence is the ask, written as the answer to confirm where the set points to one ("Please confirm X
+and not Y") or as the value to provide where it does not, and it asks one thing; finds share a
+Question only where one answer settles them all. It gives only the values that conflict, one short
+line per source where three or more disagree, and leaves to its citations what they show, with no
+recital of a section's contents; it names each item once, in the words the cited sheet uses, with no
+clause re-describing what that sheet shows or where the item is; a sentence names at most three
+tags, only the ones with the problem; a parenthesis holds a short qualifier, never a sentence; every
+sheet it names is one of its citations, boxed on the entry it names there, and cited as the whole
+sheet only where the point is that the sheet lacks it or no line of the page's read carries the
+entry; a sheet the set lacks is cited at the spot that names it; and it carries no colon without the
+list it announces, no sentence repeating the title, and no sentence on why we need the answer. A
+Question that needs that sentence to be worth sending is not raised. It never names a predicate from
+the table above, an internal step, or a field, and it carries no em dash.
 
-Good: title "Story count differs between cover and sections"; "The cover sheet lists four
-stories; building sections A-301 and A-302 show five. Please confirm five stories." Good: title
-"Floor framing at the wood floors not specified"; "The structural general notes on S-001 and
-section 06 10 00 do not state the floor framing at Levels 2 to 5. Please confirm I-joists or
-dimensional lumber." Bad: a Question asking the design team to confirm your own reading of the
+Good: title "Story count differs between cover and sections"; "Please confirm five stories and
+not four. Cover sheet: four stories. Building sections A-301 and A-302: five." Good: title "Floor
+framing at the wood floors not specified"; "Please provide the floor framing at Levels 2 to 5,
+I-joists or dimensional lumber. Neither the structural general notes on S-001 nor Section 06 10 00
+states it." Bad: a Question asking the design team to confirm your own reading of the
 structure, the phasing, the site, or what a trade's drawings look like.
 
 **`sourceInstrument` is per-entry, not one batch label.** For an entry grounded

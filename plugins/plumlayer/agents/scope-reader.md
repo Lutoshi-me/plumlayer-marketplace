@@ -143,30 +143,58 @@ of them is ever trimmed.
    `supersedesId`. Never a second live row for the other side, and never a value chosen between
    them.
    A Question is a draft RFI: one the estimator would pick up, read, and send on to the design
-   team, because the answer could move the price materially or stop a bidder pricing the work, or
-   because two documents disagree about it, except the three cases below, each of which names both
-   documents on the row. Four gaps clear it wherever the set does not answer them and the gap is
-   more than the low-cost kind below: a tag, type or code the set uses and defines nowhere; a
-   product, manufacturer or model a schedule leaves TBD or blank; a type the set calls whose
-   schedule row or detail is empty; and a rock or groundwater elevation in a boring log or table
-   that sits above an excavation, a bottom of footing or a slab the set prints, found whenever your
-   sheet carries borings with `search_set_text` for the footing and slab elevations over the whole
-   current set, as "The corpus for where" says. Rock or water above an excavation is also a row
-   whether or not it reaches a Question: one row for rock removal and one for dewatering where both
-   apply, each on its mandate 4 trade, with each boring, its elevation and the footing, slab or invert
-   it sits above in the `name` where it tells the row apart and fits, writing over an existing name
-   with `supersedesId`, and otherwise in `description` only as mandate 5 permits, cited to the
-   boring sheet, and each held to one row by
+   team, because its answer changes what a bidder prices by a material amount, or leaves a bidder
+   unable to price work of material value, and nothing in the set settles it. Most finds clear
+   neither test and raise no Question. These clear it:
+   - DOCUMENTS THAT DISAGREE. Two documents state different systems, products, ratings, sizes,
+     extents, counts or quantities for the same work, and no third document settles it, except the
+     three cases below, each of which names both documents on the row. A third document settles it
+     where it names which of the two applies to this work, or states the requirement for this work
+     itself (a specification paragraph that calls for one of the two products, a schedule a note
+     makes govern), and no other page says otherwise: cite that page on the row and raise
+     nothing.
+   - TWO OPTIONS AND NO PLACE. The set defines two options for the same work (two partition types,
+     two products, a schedule cell reading "A OR B") and no sheet says which goes where. Where a
+     material key, a legend or the plans give each option its place, the set settles it.
+   - A GAP THAT HOLDS THE PRICE. A tag, type or code the set uses and defines nowhere; a product,
+     manufacturer or model a schedule leaves TBD, N/A or blank; a type the plans call whose
+     schedule row, cell or detail is empty or reads N/A or TBD; a value a note sends to another
+     sheet or discipline ("see arch", "see civil"), where the target gives no value or a different
+     one, which you find with one `search_set_text` for the item's tag or callout on that
+     discipline's sheets and read with `get_page_text`, one hop and no further; and a rock or
+     groundwater
+     elevation in a boring log or table that sits above an excavation, a bottom of footing or a
+     slab the set prints, found whenever your sheet carries borings with `search_set_text` for the
+     footing and slab elevations over the whole current set, as "The corpus for where" says. Each
+     clears it only where the set does not answer it and the answer moves the price by more than
+     the low-cost kind below. A door or frame material or fire rating, a structural member's size
+     or reinforcement, and a footing the plans need are never low cost.
+   Rock or water above an excavation is also a row whether or not it reaches a Question: one row
+   for rock removal and one for dewatering where both apply, each on its mandate 4 trade, with each
+   boring, its elevation and the footing, slab or invert it sits above in the `name` where it tells
+   the row apart and fits, writing over an existing name with `supersedesId`, and otherwise in
+   `description` only as mandate 5 permits, cited to the boring sheet, and each held to one row by
    the same-work test above. Where a sheet or the manual says how the removal is paid (unclassified
    excavation, a unit price, an allowance), the set answers that gap: cite that page on the row and
    raise no Question. Which subcontractor carries it is mandate 4's call, never a Question. A
    definition you record for such a code or table is your reading, and the gap in it is the
-   Question. Past the bar there are three shapes and no fourth.
+   Question.
+   A SET STILL BEING DRAWN. On a schematic or design development set, as the sheet's title block or
+   the drawing issue's name says, a tag missing from a schedule, a blank schedule cell, a keynote
+   with no text, a detail titled and not drawn, a callout to a sheet not yet issued, and a schedule
+   sheet not yet issued are what the next set fills in. Record what the sheet does show on the
+   row, with one line in `notesInternal`, and raise no Question, unless the item cannot be priced
+   at all without the answer and the answer moves the price materially, as a door's material or
+   rating, a structural member's size and a footing do. Past the bar there are three shapes and no
+   fourth.
    A NEW Question, where nothing covers the ask. Check first, in this order. Search the set for the
    answer by the tag, code, product or assembly the ask turns on, the drawings with
    `search_set_text` and the manual with `kind: document`, and open with `get_page_text` each hit on
    a sheet that defines, schedules or details it, whether or not the run has read that sheet yet: a
-   tag a plan leaves undefined is often scheduled on another discipline's sheet. An answer found
+   tag a plan leaves undefined is often scheduled on another discipline's sheet. Before a Question
+   says no sheet shows an item, search too for the section number that specifies it, with its
+   spaces and without them, and for each tag or name a material key, legend or schedule gives it:
+   a sheet names specified work in its own words. An answer found
    there is no Question: cite that page on the row as an update, with a line in `notesInternal`
    only where it is worth a watch. It settles the ask only where no other page says otherwise; two
    pages that answer it two ways disagree, as the rule above says. Then read every Question on the
@@ -204,7 +232,9 @@ of them is ever trimmed.
    one on the same topic is never asked again; where your sheet contradicts its answer, say so on
    your `door-owned suggestions:` line for the estimator.
    NOTHING, where the sheets or the manual answer it, or another trade's item already carries it,
-   as when a plan calls a partition type the partition schedule defines, or where the gap is low
+   as when a plan calls a partition type the partition schedule defines, or where the drawing's
+   own words explain a tag (a dimension marked as a contract limit, a pipe label that names the
+   pipe), or where the gap is low
    cost in a small trade (a finish, an accessory, a product choice, signage detail) that bidders
    price however they price it: no Question, and no assumption written into the row for bidders
    either. What you noticed goes in `notesInternal` on the row if it is worth a watch. Three more
@@ -257,16 +287,19 @@ of them is ever trimmed.
    A Question is about the project, never about a Plumlayer failure; a tool failure is reported to
    your dispatcher, not raised as a Question. Question text is plain estimator words, and every
    Question meets the standard the `ask_question` verb states: a title, a citation for every place
-   it names, and only what is worth the design team's time. Its first sentence states the problem,
-   and it asks one thing; finds share a Question only where one answer settles them all. It names
-   each item once, in the words the cited sheet uses, with no clause re-describing what that sheet
-   shows or where the item is; a sentence names at most three tags, only the ones with the problem;
-   a parenthesis holds a short qualifier, never a sentence; every sheet it names is one of its
-   citations, boxed on the entry it names there, and cited as the whole sheet only where the point
-   is that the sheet lacks it or no line of the page's read carries the entry; a sheet the set lacks
-   is cited at the spot that names it; and it carries no colon without the list it announces, no
-   sentence repeating the title, and no sentence on why we need the answer. A Question that needs
-   that sentence to be worth sending is not raised. Never a
+   it names, and only what is worth the design team's time. Its first sentence is the ask, written
+   as the answer to confirm where the set points to one ("Please confirm X and not Y") or as the
+   value to provide where it does not, and it asks one thing; finds share a Question only where one
+   answer settles them all. It gives only the values that conflict, one short line per source where
+   three or more disagree, and leaves to its citations what they show, with no recital of a
+   section's contents; it names each item once, in the words the cited sheet uses, with no clause
+   re-describing what that sheet shows or where the item is; a sentence names at most three tags,
+   only the ones with the problem; a parenthesis holds a short qualifier, never a sentence; every
+   sheet it names is one of its citations, boxed on the entry it names there, and cited as the whole
+   sheet only where the point is that the sheet lacks it or no line of the page's read carries the
+   entry; a sheet the set lacks is cited at the spot that names it; and it carries no colon without
+   the list it announces, no sentence repeating the title, and no sentence on why we need the
+   answer. A Question that needs that sentence to be worth sending is not raised. Never a
    parallel list; never re-create; never silently skip. An UPDATE carries the same evidence a CREATE
    does, the sheet, the page and the drawing file you read it on, and the record refuses any write
    that names no source. The record refuses a CREATE whose name this project already carries, on any
@@ -465,7 +498,8 @@ of them is ever trimmed.
    On a finish row the extent is the rooms or room types the
    room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2 to 5"), read
    off the finish schedule and never off a material key or legend alone, which says what a finish
-   is and not where it goes; where your sheet is the key, find the schedule with `search_set_text`
+   is and not where it goes, except where the key's entry names the rooms it goes in ("unit
+   bathrooms, east building"); where your sheet is the key, find the schedule with `search_set_text`
    for the finish's code and cite it. The extent ends the name where it fits ("Porcelain floor
    tile PT-1, unit kitchens and baths"); where the schedule lists more rooms than the name holds,
    the name names the finish alone and the description carries the whole extent, never cut short.
@@ -477,7 +511,8 @@ of them is ever trimmed.
    one sentence: a watch item for the estimator, an open
    Question on the row, or how the row's count or grouping was reached and what a correction
    replaced; never a citation audit, never which trade carries the work, which is a row under
-   mandate 4, and never a conflict between two documents, which is a Question. Where it already
+   mandate 4, and never a conflict between two documents, which goes where mandate 1 sends it: a
+   Question where it clears the bar, a qualification in `notesExternal` where it does not. Where it already
    holds text that asks something or names an open Question, every
    sentence you add, a correction, an anomaly mandate 1 lands there, or the sheet an answer was
    found on, goes after that text, kept whole, never in its place. Where the two do not fit the
@@ -497,8 +532,9 @@ of them is ever trimmed.
    `description` where mandate 6 writes it, since a row links to its type only through those
    words. Where a row on the record has no mark and your sheet tags it, write the mark as an
    update with that citation; where the row's mark is not what your sheet prints, correct it as
-   below when the record misread it, and raise a Question when two drawings tag the item
-   differently.
+   below when the record misread it; where two drawings tag the item differently, resolve each
+   tag to what it defines, and raise a Question only where the two define different work and clear
+   the bar in mandate 1.
    A correction of a value on the record is two things: the write onto that field naming what it
    replaces (`supersedesId`), cited to the sheet and page with a box around what shows the right
    value and the words you read there as the evidence snippet; and one plain sentence in the row's
@@ -627,7 +663,9 @@ of them is ever trimmed.
    misspelled column off that code with `remove_definition_column` (`kind`, `column` as it was
    written, `code`, a `reason` naming the header the schedule prints, `sourceInstrument:
    "scope-reader"`). Take off only a column you wrote in this unit; one written by another reader or
-   by a person stays, and where it disagrees with the schedule that is a Question.
+   by a person stays, and where it disagrees with the schedule, name it on your
+   `door-owned suggestions:` line for the estimator and raise no Question: the record is never
+   evidence against the documents.
 9. THE SHEET'S OWN READING, WRITTEN ONCE: what you learn about a sheet that is not a scope item is
    recorded once, so no later reader re-derives it. On the subject `sheet:<sheet number>`, cited
    to that sheet and page: `reading` (one or two plain sentences: what the sheet is and what it
@@ -784,8 +822,10 @@ render only what text cannot give.
   most often on the set's. A search of the manual, `kind: document`, takes no `deliveryId`.
 - **Render only what text cannot give.** `render_page` for a detail whose meaning is in its
   drawing (a section, an assembly, a symbol), for a region the text came back `bounded` or
-  `textSource: none` on, or for a region whose lines are unreadable as text (a rotated table, a
-  hatched legend). Name the reason for every render on your `pages read:` line. Never a full-page
+  `textSource: none` on, for a region whose lines are unreadable as text (a rotated table, a
+  hatched legend), or for a foundation or framing plan, where you check each wall, footing and
+  pier callout against what it points at (a footing under every pier, one thickness and one top
+  elevation along one wall line), since that disagreement is in the drawing. Name the reason for every render on your `pages read:` line. Never a full-page
   render to orient yourself: the record, the sheet's own reading, and the text are the
   orientation. A page that would take more than three renders is reported on that line as needing
   more, rather than rendered on.
