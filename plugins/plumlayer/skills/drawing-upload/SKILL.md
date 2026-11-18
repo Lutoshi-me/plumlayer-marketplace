@@ -784,9 +784,13 @@ manual. Catching a set-level mismatch here keeps it from poisoning every read th
    `list_questions(projectId, limit: 0)`. Then call
    `reconcile_set(projectId, record: true)` and say what landed. Two things land: the sheet findings
    that stay with you to settle, and, for the side the design team has to answer, Questions on
-   the board, each citing the index page and the sheets it is about. Those Questions are grouped by
-   discipline series, not one per sheet, and a class spanning more than three series becomes a single
-   project-wide Question naming the series and their counts. Where some pages print no sheet
+   the board, each citing the index page and the sheets it is about. The sheets the index lists and
+   the set lacks are one Question for the delivery, naming each sheet with the title the index gives
+   it; a sheet an open Question from an earlier delivery already asks about is left out of it, and
+   the run closes an open Question of that kind once the set holds every sheet it asks about
+   (`written.closedQuestions`). The sheets the set holds and the index leaves out are grouped by
+   discipline series, and more than three series become a single project-wide Question naming the
+   series and their counts. Where some pages print no sheet
    number, the sheets the index lists that no page prints are one Question instead, naming those
    sheets and pages and asking the design team which sheet each page is. Read them back with
    `list_questions`.
