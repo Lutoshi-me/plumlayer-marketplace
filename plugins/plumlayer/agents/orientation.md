@@ -654,9 +654,14 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
      tank removal, the site water, sewer and storm utilities, asphalt paving, street curbs and
      pavement markings.
    - Landscaping, planting and irrigation are one exterior improvements package, and fencing and
-     gates go on it.
-   - Metal wall panels, fiber cement and the other cladding are one siding package.
-   - The roofer carries the sheet metal flashing, copings, gutters, downspouts and roof hatches.
+     gates go on it. A vegetated roof, its root barrier, drainage layers, growing media and
+     plantings included, goes on the package of the firm the manual names to build it, never split
+     between the roofer and the landscaper.
+   - Metal wall panels, fiber cement and the other cladding are one siding package, with the
+     continuous insulation, furring, flashings and trim at the cladding.
+   - The roofer carries the roof insulation and cover board under the membrane, the flashing that
+     ties into the roof, copings, gutters, downspouts and roof hatches. Flashing in a wall or at a
+     window goes with the wall or window trade.
    - The mason carries the architectural precast and the cast stone.
    - The waterproofer carries dampproofing, waterproofing and the joint sealants. Each trade carries
      the firestopping at its own penetrations, with the firestopping trade on the waterproofing

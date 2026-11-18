@@ -154,10 +154,12 @@ them is ever trimmed.
    work of a row that already exists. Three outcomes and no fourth.
    - The hit is the work of a row on this package that does not cite that page. It is a citation on
      that row, after you open the page. It is not a create.
-   - The hit is the work of a row on another package that this package could also bid, in your
-     judgment. It is a `packageRole:<this package's trade>` record on that existing row whose value
-     is the object `{ role: "candidate", note: "<why this package might price it>" }`, the
-     candidate rule reader mandate 4 gives. Never the bare word: the door refuses it, and
+   - The hit is the work of a row on another package that a sheet, a manual section, a package's
+     `notes` or the usual practice of this trade's bidders puts on this package too. It is a
+     `packageRole:<this package's trade>` record on that existing row whose value is the object
+     `{ role: "candidate", note: "<what puts this package on it>" }`, the candidate rule reader
+     mandate 4 gives. Where nothing but a guess puts this package on it, the hit is that row's
+     work and you write nothing. Never the bare word: the door refuses it, and
      `record_batch` is atomic, so it costs the whole batch. It is not a create.
    - The hit is work no row carries. Create it, at the grain of your own mandate 5, its `name` and
      `description` written as reader mandate 5 says, after reader mandate 1's search for the row
@@ -290,7 +292,9 @@ them is ever trimmed.
    set still being drawn among its cases, and never a value on a row, never an assumption, and
    nothing priced off it. A low-cost silence (a finish, an accessory, a product choice, signage detail, bins,
    blinds, mirrors, toilet partitions) is left open for bidders: no Question, no row, no
-   assumption, and it is named on its report line as `left open` with why it is low cost. Both
+   assumption, and it is named on its report line as `left open` with why it is low cost. That
+   covers only a choice the set leaves open; a requirement the section puts on drawn work is
+   scope, as the second case below says. Both
    checks run inside mandate 3's fifty searches, and neither runs at all on a project with no
    manual read in, where mandate 1's `specSection:` search returned no section at all: there,
    nothing is raised, and your `sections not checked:` line says the manual was not read in. A
@@ -322,9 +326,17 @@ them is ever trimmed.
        search for the work under its other names: where a row on any package already carries it,
        the Question goes on that row and no second row is made.
      - ONE PRODUCT OF A SECTION THE SHEETS SHOW. The sheets show the section's work, and one
-       product, option or accessory its Part 2 lists is on no sheet. Bidders price what the sheets
-       place, so it raises nothing and makes no row: name it on your `silent sections:` line as
-       `left open, the sheets show the section's other work`.
+       product, option or accessory its Part 2 lists is on no sheet. Where it is a choice the
+       drawings make, a type, option or variant used only where indicated, bidders price what the
+       sheets place, so it raises nothing and makes no row: name it on your `silent sections:` line
+       as `left open, the sheets show the section's other work`. Where the section requires it on
+       work the sheets show, it is scope however few sheets draw it: insulation on the piping
+       drawn, a finish level on the board drawn, fillers and scribes at the cabinets drawn, coring
+       for the trade's own openings. It is one row on this package at reader mandate 6's grain,
+       cited to the page that requires it, or added to the row that already carries that work,
+       and names the requirement as the section states it. It raises no Question for being on no
+       sheet. Where a sheet or schedule states a narrower extent, the row names both, each cited,
+       and mandate 10 judges the disagreement; the row picks neither as the basis to price.
      A section that governs how work shown elsewhere is done
      raises nothing: common work results, hangers and supports, identification, testing and
      balancing, closeout, and every Division 00 or 01 section. A product is judged only off the

@@ -403,7 +403,13 @@ of them is ever trimmed.
    where the catalog's only trade for the item names its supplier or rep, to the `tradeCode` of the
    package whose firm installs it, as `solicitation_list_packages` gives it, or, where no package
    holds that firm's work yet, to the catalog trade that names the installing firm's work: a row of downlights the electrician installs goes on the electrical package's trade,
-   never on a lighting rep trade. Never the trade a sheet's title names, never a trade because its
+   never on a lighting rep trade. A layer of an assembly one sub builds goes to that sub's trade,
+   even where the manual specifies the layer in a section of its own: the roof insulation, tapered
+   insulation and cover board under a roof membrane go with the roofing; the continuous insulation,
+   furring, girts, clips, flashings and trim at a cladding go with the cladding; the root barrier,
+   drainage layers, growing media and plantings of a vegetated roof go with the vegetated roof.
+   Flashing in a wall or at a window goes with the wall or window it sits in, and the roofing
+   carries the flashing that ties into the roof. Never the trade a sheet's title names, never a trade because its
    package happens to exist, never `01 11 13` because no package fits. The one exception is work a
    package's `notes` say that package installs or carries, an item another package's supplier
    furnishes, a share of a section placed on several packages, or a general cost the general
@@ -411,11 +417,17 @@ of them is ever trimmed.
    `01 11 13` on the general requirements package. Which sub bids the work is settled when the run
    folds packages before the reviews. A trade is the catalog id copied verbatim, spaces and all
    (`09 21 16`), never a word for the trade (`drywall`) and never a respelling (`09-21-16`,
-   `092116`). Where you cannot tell which of two or more trades owns it, write your best single
-   trade as the home and, in the same batch, one `packageRole:<trade>` record for each other
-   trade, the same catalog code in the predicate, its value an object and never the bare word:
-   `{"role": "candidate", "note": "confirm trade responsibility: could be 09 21 16 or 06 10 00"}`,
-   the note internal and never bidder-facing. Keep moving; never hold a row back for its trade and
+   `092116`). Where a sheet, a manual section, a package's `notes`, or the usual practice of a
+   second trade's bidders puts the work on two or more trades (a window install the framer or the
+   finish carpenter carries, a seal the window section gives the window installer), write your
+   best single trade as the home and, in the same batch, one `packageRole:<trade>` record for each
+   other trade one of those names, the same catalog code in the predicate, its value an object and
+   never the bare word:
+   `{"role": "candidate", "note": "confirm trade responsibility: Section 07 92 00 has the window installer seal the perimeter"}`,
+   the note internal, never bidder-facing, and naming what puts the second trade on it. A guess
+   with nothing behind it enrolls no second trade: that a trade's material is involved, that its
+   sheet shows the work, or that a note asks for a coating or finish on another trade's own
+   product. Write that doubt in the home row's `notesInternal` instead. Keep moving; never hold a row back for its trade and
    never raise a Question for it. The trade rides in the same `record_batch` as the name. Which
    trade carries a piece of work is a row, never a note. Where a sheet or the manual says work is by
    others, not in contract, by the owner or a tenant, under a separate contract, or furnished by one
