@@ -158,7 +158,11 @@ blind.
    search finds each page's own text, and on a page whose image read is still pending, only that
    text. Read every page you judge on with `get_page_text`, which reads a page's image live: where
    its answer carries `notReadReason`, call it once more to have the image read now, and where it
-   carries `ocr.bounded`, render the region and read it yourself.
+   carries `ocr.bounded`, render the region and read it yourself. A schedule or legend can print as
+   a picture with no text under it, which neither the page's own text nor a search carries: where
+   the ask turns on a schedule, legend or key and the page's read lacks the rows or values you
+   decide on, even where it carries the schedule's heading, render that part of the page and read
+   it off the image before you decide.
    - On a changed sheet: find the callout on this delivery's page, the `fileId` and `pageInPdf` on
      that sheet's line of `sheets.txt`, with `search_set_text` its tag with `deliveryId` set to
      this delivery, whose hits carry boxes in the same PDF points; then `get_page_text(fileId,
@@ -199,7 +203,9 @@ Read the Question's one ask, the thing it asks the design team to answer, about 
 item, and decide on what this delivery and the manual now print. The ask stays the Question's
 own: a new tag, a new item or a new mismatch the new paper raises is never folded into it, and
 never takes its place in a rewrite. It goes on your `new disagreement` line, even where it sits on
-the same sheet.
+the same sheet. Where the ask is about a whole kind of thing rather than the tags it lists (how each
+exterior wall detail is identified, which unit doors are wood), a tag of that kind on the new paper
+with the same problem is on the ask's own point, never a new disagreement.
 
 - ANSWERED: the new paper gives what the ask asks for, or the disagreement it names is gone (the
   places now agree, or one of them no longer says it once you have followed the item to where it
@@ -210,7 +216,9 @@ the same sheet.
   place names (the `pageInPdf` of the sheet's `locatedAt` entry whose value names that `fileId`),
   or where it names no file, the page the current set shows for the sheet; a section on the
   section's pages off its `locatedAt`. An ask of several parts is answered only when every part
-  is; an answer to some of them is CHANGED. An absence counts only off a page you read with
+  is; an answer to some of them is CHANGED. A part that asks for a product, a basis of design, a
+  quantity, a size or a location is answered only where the new paper gives that value: a louver
+  drawn and labeled with no product named leaves the product open. An absence counts only off a page you read with
   `get_page_text` whose answer carries neither `ocr.bounded` nor `notReadReason`, never off a
   search with no hit: a read with either set did not cover the page, and is no evidence that
   anything is gone. One place dropping the item answers nothing until you know where the item
@@ -218,8 +226,9 @@ the same sheet.
   page that still carries it. Where the item now sits on another sheet, or under another tag the
   new paper gives it (a door renumbered, a room renamed), read the disagreement there; where it
   stands there, the Question is CHANGED. Where the new paper gives every tag and item the ask names
-  what it asked for, the Question is ANSWERED even when something new sits beside it, which goes
-  on the `new disagreement` line. `add_question_source` a box on the spot that
+  what it asked for, the Question is ANSWERED even when something new outside the ask sits beside
+  it, which goes on the `new disagreement` line; a tag on the ask's own point, as above, is inside
+  it. `add_question_source` a box on the spot that
   answers it, then `close_question` with `note` one line under twenty-five words: `Answered by
   <issue label> on <sheet number>, which <what it now shows>.`, or `in section <number> <title>`
   for a section. The note says only what that page prints on the ask, never a value read off
@@ -228,12 +237,20 @@ the same sheet.
   disagree, and the ask still stands; or one place now answers it and another disagrees on the same
   point. Where `state` is `not_sent`: add the new places, then `rewrite_question` with the whole
   ask as of the new paper (a new title where the ask changed, `versionScope` the issue label, or
-  for a manual on its own the section, `Section <number> <title>`), and write no reply. Any other
+  for a manual on its own the section, `Section <number> <title>`), and write no reply. Every part
+  of the old ask the new paper leaves open stays in the rewrite, and a part comes out only where
+  the new paper answers it. The rule that a Question asks one thing forbids adding an ask, never
+  keeping an open part of its own, and where every open part cannot fit the length rules below,
+  keep them all: an open part outranks the length. Any other
   state: the design team holds the words it was sent with, so never reword it. Add the new
   places and one `reply_question` of one or two sentences saying what changed and where, citing
   the box, or where the change is in a section, naming the section by its number and title.
-- UNCHANGED: the new paper says on the point what it said before. Add the new places it still
-  applies to and write nothing else.
+- UNCHANGED: the new paper says on the point what it said before, under the same tags, note
+  numbers and sheet numbers the Question's text names. Add the new places it still applies to and
+  write nothing else. Where the point stands but a tag, note number or sheet number the text names
+  is printed differently (A2R printed A2.R, note 3 now an unnumbered note), or the new paper adds an
+  item the ask itself names (a second interceptor where the ask is whether there are two), the
+  Question is CHANGED, and a rewrite uses the names the new paper prints.
 
 A disagreement on another point is not this Question's: it goes on your `new disagreement` line.
 Never raise or reopen a Question. New places are a box on
