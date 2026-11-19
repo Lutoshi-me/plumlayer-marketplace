@@ -11842,7 +11842,7 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
     report_line = next((l for l in texts["skill"].splitlines() if l.startswith("sections not checked: <")), "")
     mutations = {
         "the twelve-page Part 2 read written back": dict(texts, reviewer=texts["reviewer"].replace(
-            "Read each section in lines", "Read Part 2 at most twelve pages, then each section in lines", 1)),
+            "Read each section with", "Read Part 2 at most twelve pages, then each section with", 1)),
         "the heading search written back": dict(texts, reviewer=texts["reviewer"] + '\nquery: "PART 2"\n'),
         "no continuation mode": dict(texts, reviewer=texts["reviewer"].replace("## Continuation mode", "## Second read")),
         "the skill's report line in another shape": dict(texts, skill=texts["skill"].replace(
@@ -14063,8 +14063,8 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "scripts/standard_lines.py' --package '<this package's tradeCode>' --all '<each "
                  "package on that list as its name as the list shows it, =, then its tradeCode and its "
                  "codes comma separated, the packages separated by ;>'"),
-    ("reviewer", "Before anything else this mandate does, take `solicitation_list_packages(projectId)` "
-                 "once"),
+    ("reviewer", "Before anything else this mandate does, take "
+                 "`solicitation_list_packages(projectId, brief: true)` once"),
     ("reviewer", "A row a line writes is named exactly as the script's `name:` prints it"),
     ("reviewer", "A role for a standard line is never written onto a row of another package's trade, "
                  "and a citation only onto the writer's row of a Which Trade half the paper gives to "
@@ -15937,7 +15937,8 @@ _READ_AGAIN_PINS: tuple[tuple[str, str], ...] = (
      "counts them, unless your dispatch's `Read again:` line names it with the read that comes "
      "next, and then once."),
     # A unit is checked against its own prefix alone.
-    (READ_AGAIN_RUNNER, "A unit's first dispatch holds 0, and so does a unit with no sheet to name."),
+    (READ_AGAIN_RUNNER, "A unit's first dispatch holds 0. A later read of a unit with no"),
+    (READ_AGAIN_RUNNER, "`verify_unit` call against its prefix with `sheets: []`, since an earlier read of it can have"),
     (READ_AGAIN_RUNNER, "A report with no `created subjects:` line, a line that names another number, "
      "and a line naming a subject outside the prefix are each a mismatch too, with one "
      "`created subjects` deviation note per subject outside the prefix, written at the check that "
@@ -15949,14 +15950,11 @@ _READ_AGAIN_PINS: tuple[tuple[str, str], ...] = (
      "outside it, whoever wrote it."),
     (READ_AGAIN_RUNNER, "`items`, the check's `subjectCount`, every subject under the prefix, since "
      "two reads' rows are never added up from two reports"),
-    # The branches with no subject count find their created rows back by name.
-    (READ_AGAIN_RUNNER, "so its created rows are found back by name: one "
-     "`search(subject: \"<subject>\", limit: 1)` per subject on its `created subjects:` line, whose "
-     "`count` must be above 0. A subject not found is a mismatch, and the unit verifies only once "
-     "every subject it names is found."),
-    (READ_AGAIN_RUNNER, "the subjects every report of the unit names on its `created subjects:` line "
-     "under the prefix, each once and each found back by one search of this check as the bullet "
-     "above finds them, never the reports' `created:` figures added up"),
+    # Every unit's created rows are found back by name in its family's subjects, and a unit with no
+    # sheet to name still gets a subject count, off a call naming no sheet.
+    (READ_AGAIN_RUNNER, "Every subject on the reader's `created subjects:` line is among the "
+     "answer's `subjects`. One that is not is a mismatch."),
+    (READ_AGAIN_RUNNER, "makes the same call with `sheets: []`, which answers the family alone"),
     # A failed claim comes off its own list alone.
     (READ_AGAIN_RUNNER, "each earlier report's lists, less only the claims its own read's checks failed"),
     (READ_AGAIN_RUNNER, "A note of another check takes nothing off these lists, so a heading that did "

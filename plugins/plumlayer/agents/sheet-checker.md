@@ -286,8 +286,11 @@ anywhere in the set.
    pages file, reason `unnamed` or `unread`, keyed by the `fileId` your dispatch pairs with that
    job: `page:<fileId>:<pageInPdf>` and that `fileId` on the line. Two files can each have a page 12.
 2. **The grid.** `set_grid(projectId, limit: 0)` for `count`, `disciplineCounts` and
-   `offListLetters`, then page every discipline with `discipline` + `limit`/`offset` until the rows
-   you hold cover `count`. Never a bare call: its default first page is not the set.
+   `offListLetters`, then page every discipline with `discipline` + `limit`/`offset` + `brief: true`
+   until the rows you hold cover `count`. Never a bare call: its default first page is not the set.
+   A brief row carries what the steps below read, the number, title, discipline, type, file, page
+   and delivery, and the notes and pages a number shares where it has any, at a fraction of a full
+   row's size, so the whole set fits in one read.
 3. **Each row.** For a row with no `sheetType`, write its type where the title decides it, under
    its own delivery's tags as "Earlier deliveries' sheets" says. Every other row that needs a look
    is a line for the pages file:
@@ -374,7 +377,7 @@ refuses before giving any count: say so in your report and stop, reading nothing
 
 Count off the rows themselves, never off the units' reports. For this delivery, page
 `set_grid(projectId, deliveryId: <this delivery's id>, limit: 0)` for `count`, then by
-`discipline` + `limit`/`offset` until the rows you hold cover it, and count how many rows carry a
+`discipline` + `limit`/`offset` + `brief: true` until the rows you hold cover it, and count how many rows carry a
 `sheetType` and which carry none: the session compares your typed plus untyped with that same
 grid's `count`, so read every row of it. For the rows an earlier delivery governs, page the
 current set as set mode step 2 does and do the same on an addendum; on a new set those are the

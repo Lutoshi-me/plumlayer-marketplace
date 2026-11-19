@@ -147,8 +147,10 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    last check where you made one in this run, and otherwise the `subjectCount` of one `verify_unit`
    call against its prefix over the sheets its unit line names, or on a repeated lines unit or a
    review over the sheets its earlier report cited or opened. The call answers the whole prefix
-   whatever sheets it is given. A unit's first dispatch holds 0, and so does a unit with no sheet
-   to name.
+   whatever sheets it is given. A unit's first dispatch holds 0. A later read of a unit with no
+   sheet to name, a review that opened no page among them, holds the `subjectCount` of one
+   `verify_unit` call against its prefix with `sheets: []`, since an earlier read of it can have
+   left rows all the same.
    It also says `Repeated lines: read in set <version>`, the version copied off the unit line,
    where the unit line ends with `, repeated lines read in set <version>`, and
    `Repeated lines: not read` on every other unit, so a reader leaves a file's repeated lines out
@@ -184,10 +186,13 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    prints more than once, is never found back as this unit's update. A further page goes as the
    number its unit line prints, with its own file and page, never as the key it opens as. A sheet
    whose unit line names no file goes as the sheet number alone, which counts every citation of
-   the sheet. It returns `entryCount` and
-   `subjectCount` under the prefix, `subjects`, every distinct subject under it with its
-   `belongsToTrade` and its `candidateTrades` (`subjectsTruncated` says when there are more than
-   the call carries), and `sheets`, one row per sheet you asked about carrying the `fileId` it was
+   the sheet. A unit with no sheet to name, a repeated lines unit that cited no sheet and a review
+   that opened no page, makes the same call with `sheets: []`, which answers the family alone. It
+   returns `entryCount` and
+   `subjectCount` under the prefix, `subjects`, every distinct subject under it with its `name`, its
+   `belongsToTrade` and its `candidateTrades` (where `subjectsTruncated` says there are more than
+   the call carries, call again with `subjectsOffset` set to its `nextSubjectsOffset` until it
+   reads false, the one call this step pages), and `sheets`, one row per sheet you asked about carrying the `fileId` it was
    checked against where you gave one, the `subjects` whose citations name it, its own
    `truncated`, and `droppedUnmatched`, the rows that named the sheet in passing and were left out
    rather than attributed to it.
@@ -207,14 +212,8 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
      nothing new, passes its check against the count step 2 held: the record is right, and those
      notes are what the estimator sees. A unit counts only the rows under its own prefix, and never
      claims a row outside it, whoever wrote it.
-   - **No subject count where the unit is verified by count.** A unit checked with one
-     `search(subjectPrefix: ..., limit: 1)` in place of `verify_unit`, as a repeated lines unit
-     that cited no sheet and a review that opened no page are below, has no `subjectCount`, so its
-     created rows are found back by name: one `search(subject: "<subject>", limit: 1)` per subject
-     on its `created subjects:` line, whose `count` must be above 0. A subject not found is a
-     mismatch, and the unit verifies only once every subject it names is found. The search's
-     `count` under the prefix is still `created`, the entry check, the line is held to the
-     reader's `created:` figure and to the prefix as above, and that figure goes on as `items`.
+   - **Created subjects, by name.** Every subject on the reader's `created subjects:` line is among
+     the answer's `subjects`. One that is not is a mismatch.
    - **Sent and landed, from the reader.** The reader's `sent:` and `landed:` figures cover every
      write call it made for the unit, its batch with the citations it carries, and any individual
      record call. Carry them onto the `verified` line as reported.
@@ -223,19 +222,27 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
      that the result does not carry is a mismatch. A new citation on a pre-existing item counts as
      an update and is found back the same way, except one a repeated lines reader names on its
      `page citations:` line, found back by subject as the bullet on that unit below says.
-   - **Questions, by id.** One `search(subject: "<question id>")` per id on the reader's
-     `questions raised ids:` line and one per id on its `questions replied ids:` line, and nothing
-     wider. An id you cannot find back is a mismatch. A replied id must also carry a
-     `questionReply` entry in that same result: a reply lands as an entry on the question's own
-     subject, so the one call proves both that the id is real and that a reply stands on it. The
-     reader's `questions raised:` and `questions replied:` counts go on the `verified` line as
-     `questions` and `replied`.
-   - **Questions linked, by the first row.** For each line on the reader's `questions linked:`
-     line, one `search(subject: "<the first row subject it names>", full: true)`, paged with
-     `offset` until it comes back whole, which must carry a `citedRegion` entry whose value names
-     that Question's id; one it does not carry is a mismatch. A raised or replied id with no
-     `questions linked:` line is no mismatch in pass mode: a reader's Question whose answer would
-     change no row stands alone.
+   - **Questions, by the record's own check.** Where the reader's `questions raised ids:`,
+     `questions replied ids:` or `questions linked:` line names any, make one more call,
+     `verify_unit(projectId, subjectPrefix: "scopeItem:<unit id>-", sheets: [], claims: {
+     questionsRaised: [<the raised ids>], questionsReplied: [<the replied ids>], questionsLinked:
+     [{ "question": "<id>", "subjects": [<the rows that line names>] }, ...] })`, leaving out a list
+     the report names none on. The record checks each raised id is a Question of this project,
+     each replied id a reply or a Question carrying one, and every row a linked line names holds a
+     current citation of that Question, and answers `result` and its `mismatches`. Each mismatch is
+     a mismatch of this unit, its check named off its `check`: `questions raised`,
+     `questions replied` or `questions linked`. Send the lists in parts: a list goes up to 100 Questions a call, and a linked line's rows up to 50; past that,
+     send the rest in further calls, each Question's raised, replied and alone entries in every
+     call that carries its linked rows, and a Question's rows past 50 in a further call with the
+     same entries. An answer reading `mismatchesTruncated: true` names only its first 20
+     mismatches, and the record lists every list's mismatches before any `createdNoTrade` one.
+     Where all 20 name a list you sent, more can be past them: send that call's lists again in
+     halves, and each half's again, until an answer is not truncated, one of its 20 is a
+     `createdNoTrade` mismatch, or a part holds one manual update or one Question with one linked row, a Question's linked rows split in halves like any list with its raised, replied and alone entries sent in each half, so every failed claim is named before
+     any of them is noted. A row with no trade is the sheet call's to note, never this call's. A raised or replied id with no `questions linked:` line is no mismatch in pass mode: a
+     reader's Question whose answer would change no row stands alone. The reader's
+     `questions raised:` and `questions replied:` counts go on the `verified` line as `questions`
+     and `replied`.
    - **Trades.** A created subject with no trade and no candidate in the `verify_unit` result is a
      mismatch: the door should have refused it, and a row without a trade never stays on the
      record unnamed.
@@ -250,10 +257,9 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
      never added across calls; each later call, against the same prefix with the next 20 sheets,
      adds only its `sheets` rows, which is where the updated subjects are found back. Append
      `note <window> <pass> <unit> deviation verify split over <n> calls` beside the `verified` line
-     where it took more than one. A reader that cited no sheet is verified with one
-     `search(subjectPrefix: "scopeItem:<unit id>-", limit: 1)`, reading `count`, and a
-     `note <window> <pass> <unit> deviation verified by count, no sheet cited` line beside its
-     `verified` line. An update its reader cited to a page with no sheet number cites no sheet any
+     where it took more than one. A reader that cited no sheet is verified with one call with
+     `sheets: []`, and a `note <window> <pass> <unit> deviation verified with no sheet, no sheet cited`
+     line beside its `verified` line. An update its reader cited to a page with no sheet number cites no sheet any
      call can name, so it is on the reader's `page citations:` line instead, with its subject, file
      and page, and is found back by subject: one `search(subject: "<subject>", full: true)` per
      line, paged with `offset` until it comes back whole, which must carry an entry whose evidence
@@ -292,15 +298,11 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
 
    The check of any read after a unit's first, whatever ended the reads before it, makes the same
    calls as a first read's and holds the new report to the same checks, its `created subjects:`
-   line among them. Where `verify_unit` checked the unit, the new report's `created:` figure still
-   has to equal the result's `subjectCount` less the count step 2 held. That read's `verified`
-   line carries:
+   line among them. The new report's `created:` figure still has to equal the result's
+   `subjectCount` less the count step 2 held. That read's `verified` line carries:
    - `created`, the check's `entryCount` off the record, the entry count under the prefix alone;
    - `items`, the check's `subjectCount`, every subject under the prefix, since two reads' rows
-     are never added up from two reports; on a unit verified by count, with no `subjectCount`, the
-     subjects every report of the unit names on its `created subjects:` line under the prefix,
-     each once and each found back by one search of this check as the bullet above finds them,
-     never the reports' `created:` figures added up;
+     are never added up from two reports;
    - `updated`, `questions` and `replied`, the merged lists: each earlier report's lists, less only
      the claims its own read's checks failed, plus the new report's lists, each subject or id once.
      A subject an earlier read's `updated`, `page citations`, `manual updates` or `field updates` note names comes
@@ -335,14 +337,30 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    Question's trades. Where the line reads "none", write nothing. Window 3 of a pass on an addendum
    reviews those packages too, so an addendum that only changed rows that already existed still has
    their packages reviewed.
-4. **Match overlaps in a file, not in your context.** As each unit verifies, write that unit's new
-   item names, one per line, to `<run folder>/names/<pass-id>.txt`, and find repeats by matching that
-   file against itself with a local command rather than by holding the names. Read back only the
-   lines that matched. This is the one place your context would otherwise grow with the size of the
-   pass: a twelve-unit pass at a hundred items a unit is twelve hundred names, and none of them
-   belongs in a model context. Every match travels up as an overlap note. Merging is a person's call
-   at the review surface, never yours.
-5. **Sum the pass with the script; add no number of your own.** Run
+4. **Write the unit's names off the record, then match them by script.** Right after a unit's
+   `verified` line reading `result ok`, append one line per subject in that unit's `verify_unit`
+   answer, every page of it, to `<run folder>/names/<pass-id>.txt`, creating the folder the first
+   time it is needed, in one append:
+   `<unit id>` a tab `<subject>` a tab `<name>`, the name exactly as the answer gives it (a null
+   name written as an empty field). Where the answer lists no subject, append one line
+   `<unit id>` a tab `none`. These names are the record's, never a reader's report's, and the
+   line count is checked against the `items` on the `verified` line, so a unit you skip here
+   holds up the whole window. Then run
+   `python3 '<scripts path>/names_scan.py' pass '<run folder>/ledger.md' <window> <pass id> --plan '<run folder>/read-plan.md' --names-dir '<run folder>/names'`
+   with the Bash tool, single quoted. Where it refuses, it names each unit whose lines do not
+   match its `items`: write that unit's lines again off one `verify_unit(projectId, subjectPrefix:
+   "scopeItem:<unit id>-", sheets: [])` call, paged as step 3 pages it, and run it again; a line
+   written twice counts once. Where it passes, it prints one `note` line per unit of your pass
+   holding a name alike with another that no overlap note on the ledger joins it to yet: append each line it prints to the
+   ledger as printed. You never read the names files and never match names in your context: a
+   twelve-unit pass at a hundred items a unit is twelve hundred names, and none of them belongs in
+   a model context. Merging is a person's call at the review surface, never yours.
+5. **Sum the pass with the script; add no number of your own.** In windows 1, 2 and 3, first
+   run step 4's `names_scan.py pass` command once more, whether or not this run verified a unit,
+   and handle a
+   refusal and its printed lines as step 4 does: a runner resumed after a unit's `verified` line
+   and before its names finds that unit's lines missing here, and writes them before the summary.
+   Then run
    `python3 '<scripts path>/pass_summary.py' '<run folder>/ledger.md' <window> <pass id>
    --plan '<run folder>/read-plan.md' --trades '<run folder>/trades/<pass-id>.txt' --out '<run folder>/reports/<pass-id>.md'`
    with the Bash tool, single quoted (`python` in place of `python3` on a seat that has only that
@@ -403,10 +421,26 @@ dispatch 3 W3-2 rev-075000-1c-1 sheets none purpose continue the roofing manual 
 When your dispatch names `boundary` instead of a pass, you close a window and you read no pages:
 
 1. Scan the window's new items for the same work captured by two passes that ran alongside each
-   other, matching the per-pass name files under `<run folder>/names/` against each other with a
-   local command, never by pulling rows into your context. A reader sees everything written before
-   its own read and nothing written after it, so two passes running together can each create the
-   same work, which is the whole reason this scan sits at the boundary and not inside a pass.
+   other. A reader sees everything written before its own read and nothing written after it, so
+   two passes running together can each create the same work, which is the whole reason this scan
+   sits at the boundary and not inside a pass. Run
+   `python3 '<scripts path>/names_scan.py' boundary '<run folder>/ledger.md' <window> --names-dir '<run folder>/names'`
+   with the Bash tool, single quoted. It reads the names every pass runner wrote off the record
+   and refuses while any unit of the window lacks them: a unit verified ok whose lines do not
+   match its `items`, and a unit dispatched whose latest read did not verify ok, whose rows stay
+   on the record all the same. Where it refuses, it names up to twenty such units with their
+   passes. For each, make one `verify_unit(projectId, subjectPrefix: "scopeItem:<unit id>-",
+   sheets: [])` call, paged with `subjectsOffset` while `subjectsTruncated` reads true, append its
+   lines to `<run folder>/names/boundary-<window>.txt` as pass mode's step 4 writes them, its
+   `none` line where the answer lists no subject, and one
+   `note <window> boundary - deviation names of <unit id> written from the record at the boundary`
+   to the ledger; then run the scan again. Stop after sixty units written this way: where it
+   still refuses, append one `note <window> boundary - deviation overlap scan not run, names missing for <n> units`,
+   and your summary's `cross-pass overlaps:` line reads `not checked, names missing for <n> units`,
+   naming the passes its last refusal named. Where it passes, append each line it prints to the
+   ledger as printed: one `overlap` note per unit holding a name alike with another unit of the
+   window that no overlap note joins it to yet, whichever passes they ran in, and last the line
+   naming how many names the scan read. You never read the names files yourself.
 2. **Declare any kind the record uses and has not declared.** Take the union of every
    `<run folder>/kinds/*.txt` file this window's passes wrote, found with a local command (sort,
    unique) rather than by holding them yourself: those files only ever hold definition kinds, so
@@ -419,15 +453,16 @@ When your dispatch names `boundary` instead of a pass, you close a window and yo
    or schedule sheet and page its first entry cites, and no `belongsToTrade`, since you read no
    page and cannot tell whose package prices it, so the kind stays unplaced. Append one
    `note <window> boundary - kinds declared <kind> <count>` line per kind declared this way.
-3. Append one `note` line per cross-pass overlap, write the boundary summary to
-   `<run folder>/reports/boundary-<window>.md`, return it, and end.
+3. Write the boundary summary to `<run folder>/reports/boundary-<window>.md`, return it, and end.
 
-You copy nothing to disk here. No window plans off the definitions any more, so a copy of them
-would be a file with no reader, and a reader asks the record.
+Beyond the names a unit lacked, you copy nothing to disk here. No window plans off the
+definitions any more, so a copy of them would be a file with no reader, and a reader asks the
+record.
 
 ```text
 window: <n>   pass: boundary
-cross-pass overlaps: <item name + the two units, one per line, or "none">
+cross-pass overlaps: <item name + the two units, one per line, or "none", or "not checked, names missing for <n> units" + the passes>
+names scanned: <the figures off the scan's last line: new item names read, units, passes>
 kinds declared: <n>
 ledger: <path>, appended through <last line written>
 ```
@@ -486,11 +521,32 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   the reviewer's own item count travels as `items`, and every subject on its `updated subjects:`
   line is found back where it is found among the subjects citing one of those sheets, on its
   `manual updates:` line, or on its `field updates:` line; one found in none of the three is a
-  mismatch. Each line of `manual updates:`, a new citation of a manual page, is found back by
-  subject as a page citation is in pass mode: one `search(subject: "<that subject>", full: true)`
-  per line, paged with `offset` until it comes back whole, which must carry an entry that no other
-  entry's `supersedesId` names and whose evidence names that section (`specSection:<packed code>`)
-  and that page; one it does not carry is a mismatch. Each line of `field updates:`, one write that
+  mismatch. The lines of `manual updates:`, each a new citation of a manual page, and the review's
+  Questions are checked by the record itself, in one call made after the sheet calls:
+
+  ```text
+  verify_unit(projectId,
+              subjectPrefix: "scopeItem:<unit id>-",
+              sheets: [],
+              claims: { manualUpdates: [{ "subject", "specSection", "pageInPdf", "fileId" }, ...],
+                        questionsRaised: [...], questionsReplied: [...],
+                        questionsLinked: [{ "question", "subjects": [...] }, ...],
+                        questionsAlone: [...] })
+  ```
+
+  `manualUpdates` takes one entry per `manual updates:` line, its subject, section, page, and file
+  where the line names one; the record holds each row to a current entry, one no later entry
+  replaces and no removal took, whose evidence names that section on that page. The Question
+  lists are the report's `questions raised ids:`, `questions replied ids:`, `questions linked:`
+  and `questions alone:` lines. Always send `questionsAlone`, as `[]` where the line reads none:
+  with it, the record also holds every raised and replied id to a `questions linked:` line or the
+  `questions alone:` line, which a review owes. Leave out any other list the report names none on,
+  and make no claims call where all of them are empty. `result` reads ok or mismatch, and each of
+  its `mismatches` is a mismatch of this unit, its check named off its `check` (`manual updates`,
+  `questions raised`, `questions replied`, `questions linked`, or `questions alone`). The claims
+  answer lists no subjects, so the names of step 4 come off the sheet call. Send the lists in
+  parts as pass mode's Questions check says, and manual updates up to 200 a call; a truncated
+  answer is sent again in halves the same way. Each line of `field updates:`, one write that
   carries no new citation, is found back as a write this review made: one
   `search(subject: "<that subject>", predicate: "<the predicate the line names>", full: true)` per
   line, paged with `offset` until it comes back whole, which must carry an entry that no other
@@ -508,22 +564,19 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   same way, in that order. A heading the review wrote that the list lacks or holds out of that
   order, or no list, is a mismatch; a listed heading the review did not write is not one, since
   the package keeps a listed heading no row carries.
-  Each Question id is found back with one
-  `search(subject: "<question id>")`, each `questions linked:` line by its first row as in pass
-  mode, and a created subject with no trade and no candidate is a mismatch. A Question the
-  reviewer raised or replied to that is on neither its `questions linked:` line nor its
-  `questions alone:` line is a mismatch too: a reviewer puts every Question it raises or replies
-  to on a row, or names why no row carries it. The call takes at most 20 sheets, so a review that
+  A created subject with no trade and no candidate is a mismatch. A reviewer puts every Question
+  it raises or replies to on a row, or names why no row carries it, which the claims call above
+  holds it to. The sheet call takes at most 20 sheets, so a review that
   opened more needs one call per 20 against the same prefix. Every call answers the whole
   prefix, so `created` and the trades come off the first call alone and are never added across
   calls; each later call, with the next 20 sheets, adds only its `sheets` rows. An updated subject
   is found back where the `sheets` rows of any of the calls carry it, so it does not matter which
-  call holds its sheet, and it is a mismatch only where none of them does. Write
+  call holds its sheet; one the review names on neither `manual updates:` nor `field updates:` is
+  a mismatch only where none of them does. Write
   one `verified` line and append one
-  `note <window> <pass> <unit> deviation verify split over <n> calls` line beside it. The call also
-  takes at least one sheet, so a review that opened no page is verified instead with one
-  `search(subjectPrefix: "scopeItem:<unit id>-", limit: 1)`, reading `count`, with one
-  `note <window> <pass> <unit> deviation verified by count, no page opened` line beside its
+  `note <window> <pass> <unit> deviation verify split over <n> calls` line beside it. A review that
+  opened no page makes the sheet call with `sheets: []`, with one
+  `note <window> <pass> <unit> deviation verified with no sheet, no page opened` line beside its
   `verified` line.
 - **Continue a review that left manual pages.** After a unit's `verified` line, where its report's
   `sections not checked:` line names a section as `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>`, run

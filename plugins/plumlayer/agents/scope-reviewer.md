@@ -34,8 +34,8 @@ Before anything else, write the one word `started` to
 this read against your unit only where that file is there.
 
 Open your pass brief first, before any record read: what this review reads for and the subject
-prefix scheme. Then read the reader definition at the path your dispatch names, its mandates
-whole. If a path in your dispatch does not exist, say so and stop rather than reviewing blind.
+prefix scheme. Then read the reader definition at the path your dispatch names, the mandates you
+work under whole, once, as "The reader mandates you work under" says. If a path in your dispatch does not exist, say so and stop rather than reviewing blind.
 
 Everything else comes from the record. The package's name, its catalog `tradeCode`, its `codes`,
 its `manualSections` and its `notes` are read with `solicitation_get_package`, never taken from
@@ -105,8 +105,13 @@ them is ever trimmed.
    carries them>, run only`. The same holds for a Question's box. A row you create or cite off a
    page of the manual cites its spec section with a box around the paragraph you read it from,
    built from that page's `get_page_text` entries and sent with `frame: "page-points"`, in the
-   two shapes reader mandate 2 gives for a spec section; a manual page most often comes back one
-   entry per word, so the box runs over every word of the paragraph. Where no entry of the page's
+   two shapes reader mandate 2 gives for a spec section; the box runs over every line of the
+   paragraph. You read a manual page as text, which carries no box, as mandate 12 says: line `i` of
+   that read is line `i` of the page in lines, so take the paragraph's boxes with one
+   `get_page_text(fileId, pageInPdf, form: "lines", repeated: "omit", offset: <its first line>,
+   limit: <its line count>)`, and check those lines' words are the ones you read before you build
+   the box. Where they differ, the page changed since your read: read it again in text and take
+   the boxes again. Where no entry of the page's
    read carries the words, cite the section's page with no box and name it on `anomalies:` as
    `<section> p<page> no box: <the rows>, <why no line carries them>, run only`.
 3. THE QUERY BUDGET AND THE CAPS. One query string per call, no boolean, no list. Rank your
@@ -503,8 +508,12 @@ them is ever trimmed.
       `manual removed`, and on `anomalies:` as `section <code> not read: manual removed, run only`,
       and read nothing of it. A compact read's preview is cut at 200 characters and can lose the
       page numbers, so only the full value says a section has no page range.
-    - How far to read. Read each section in lines with `get_page_text`, one page at a time, from
-      its `pageStart` through its `pageEnd`. Every distinct manual page you read under this mandate
+    - How far to read. Read each section with
+      `get_page_text(fileId, pageInPdf, form: "text", repeated: "omit")`, one page at a time, from
+      its `pageStart` through its `pageEnd`, paging with `offset: nextOffset` until the page comes
+      back whole. The text form is the lines form without each line's box, about half its size,
+      and `omit` leaves out the header and footer the manual prints on every page; mandate 2 says
+      how a row you cite off the page takes its box. Every distinct manual page you read under this mandate
       and mandate 13 counts toward one cap for the review, forty pages, or eighty on the general
       requirements package, the one whose `tradeCode` is `01 11 13`; a page read twice counts once,
       a section page mandate 9 sends you to counts too, and the cap is spent on the sections in the
@@ -624,8 +633,9 @@ them is ever trimmed.
     condition is usually shown. A line lands on this package only where you find its condition in
     this job's own drawings or manual, cited to the page or section where you found it.
     - The packages first. Before anything else this mandate does, take
-      `solicitation_list_packages(projectId)` once, paged with `offset` until `truncated` comes
-      back false. It gives each live package's `name`, `tradeCode` and `codes`, and the script
+      `solicitation_list_packages(projectId, brief: true)` once, paged with `offset` until
+      `truncated` comes back false. It gives each live package's `name`, `tradeCode` and `codes`
+      without its notes, and the script
       reads every package off that one list.
     - Your lines. Run
       `python3 '<the folder holding the reader definition>/../scripts/standard_lines.py' --package '<this package's tradeCode>' --all '<each package on that list as its name as the list shows it, =, then its tradeCode and its codes comma separated, the packages separated by ;>'`
@@ -814,7 +824,11 @@ written from.
 - **Mandate 9**, the sheet's own reading, for any sheet you open that carries none.
 
 Read them where they live, the reader definition path your dispatch names. Working from a summary of one of them, this one included, is how a
-mandate quietly loses a clause.
+mandate quietly loses a clause. Read them once, before your first record read, and never again in
+this review: find where they sit with one `Grep` on that file for
+`^## The mandates|^[0-9]+\. [A-Z]`, then `Read` it from the `## The mandates` heading to the line
+before mandate 8, and mandate 9 to the line before mandate 10. The rest of that file, mandate 8,
+mandate 10, how a reader reads a sheet and its report, is the reader's alone.
 
 Two of the reader's mandates read differently for you, and this is the whole of the difference.
 Mandate 6, how finely work splits into rows, shapes the rows you create and the rows mandate 5 above

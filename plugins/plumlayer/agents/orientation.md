@@ -503,9 +503,10 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
    in your context for the rest of the run, so manual readers read the sections and you draft from
    their lines.
    - Group the sections step 3 read outside Divisions 00 and 01, in number order. A group is one
-     division's sections. A division with more than 15 sections is split into consecutive groups
-     of at most 15, and consecutive divisions with fewer are put together into one group while it
-     stays at or under 15. Name the groups `M1`, `M2`, and so on.
+     division's sections. A division with more than 8 sections is split into consecutive groups
+     of at most 8, and consecutive divisions with fewer are put together into one group while it
+     stays at or under 8. Name the groups `M1`, `M2`, and so on. Eight sections at three pages
+     each fit one reader's page cap, so each reader stays small enough to finish.
    - This run's manual folder is `<project folder>/manual-read/<stamp>/`, `<stamp>` the time you
      make it, `YYYYMMDD-HHMMSS` as `date +%Y%m%d-%H%M%S` prints it, so no file an earlier run left
      is ever read as this run's. Write the groups to `groups.md` in it, `Audience: agent`, one
@@ -773,14 +774,15 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
    condition goes on one package only: where any package's `notes` already name it, whoever wrote
    them, leave every package's `notes` as they stand for that condition. Never take words off a
    package's `notes`.
-6. **Place every section, then count.** Re-list packages with `solicitation_list_packages` and
-   confirm every created one landed. The same answer carries `manualSectionPlacement`:
+6. **Place every section, then count.** Re-list packages with
+   `solicitation_list_packages(projectId, brief: true)`, each package's id, name, trade, codes and
+   sections without its notes, and confirm every created one landed. The same answer carries `manualSectionPlacement`:
    `sectionsOutsideFrontEnd`, how many sections outside Divisions 00 and 01 are on the record,
    and `onNoPackage`, each one no package lists. For each section on `onNoPackage`, find the
    package whose bidder buys it the way sub-steps 3 to 5 do, creating that package when the
    project lacks it and the catalog has its trade. A section with a line in a result file in this
    run's manual folder is placed from that line. The others on `onNoPackage` are read first, the
-   way sub-step 2 reads the manual: grouped in number order, at most 15 to a group, named `P1`,
+   way sub-step 2 reads the manual: grouped in number order, at most 8 to a group, named `P1`,
    `P2`, and so on, numbered on after any `P` group the groups file already holds, their blocks
    added to the groups file after the blocks already there, each
    group read by one manual reader with sub-step 2's dispatch. Where this sub-step runs on its
@@ -790,7 +792,7 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
    package's current `manualSections`, then send `solicitation_update_package(packageId,
    manualSections)` with that list plus the new sections, each number once:
    `solicitation_update_package` replaces the whole list, and it refuses two spellings of one
-   section. Re-read the package before each later change to it. Re-list until `onNoPackage` is
+   section. Re-read the package before each later change to it. Re-list, with `brief: true` each time, until `onNoPackage` is
    empty: a section no subcontractor bids and a section whose item the catalog has no trade for
    each go on a package by sub-step 3's rules. A section still on it after that is placing this
    run did not finish: name it on your summary's `on no package:` line with what stopped you.

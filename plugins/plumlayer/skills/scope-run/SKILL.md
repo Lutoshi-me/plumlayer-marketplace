@@ -568,8 +568,10 @@ record files, never recorded as project entries:
   of the fold per line, which you read only through `fold_report.py print`. Audience: agent, and
   `fold.md` feeds the check-in that ends window 2 and the close-out, so whatever crosses from it
   into those becomes user-facing at the crossing and is translated there.
-- `names/`: one file per pass, the new item names each unit created, one per line, matched
-  against themselves and each other with a local command for overlaps. Audience: machine.
+- `names/`: one file per pass, each unit's new items as its runner's check read them off the
+  record, one line per item (`<unit id>`, its subject and its name, tab separated), checked whole
+  against each unit's verified item count and matched for overlaps by `names_scan.py`, in the pass
+  and across passes at the window boundary. Audience: machine.
 - `kinds/`: one file per pass, the definition kinds each unit's reader named, one per line,
   appended a unit at a time, and the window boundary takes their union with a local command to
   find every kind a reader named without holding any of them itself. Audience: machine.
@@ -1187,9 +1189,10 @@ nothing else:
 4. **Close the window at its boundary.** When every pass of the window has reported and carries
    its `pass:` line, dispatch one more runner with `boundary` in place of the pass id. It scans the
    window's new items for the same work captured by two passes that ran alongside each other,
-   declares any kind a reader named and did not declare, and ends. It copies nothing to disk: no
-   window plans off the definitions, so a copy of them would be a file with no reader, and a reader
-   asks the record. Then append
+   declares any kind a reader named and did not declare, and ends. It copies no definition to disk:
+   no window plans off the definitions, so a copy of them would be a file with no reader, and a
+   reader asks the record. The only file it writes beside its summary is the names of any unit whose
+   names its pass left unwritten, off the record. Then append
    `phase: window 1 complete` to the ledger with the window's verified totals,
    and go straight to stage 5: the index runs before the check-in, so the trade pages the user
    opens at the check-in already carry every sheet.
@@ -1778,8 +1781,9 @@ The `updated subjects:`, `questions raised ids:` and `questions replied ids:` li
 the runner find those writes back: a create is findable by its `scopeItem:<unit-id>-` prefix, an
 update lands on a subject that already existed, a raise on a fresh Question id and a reply on the
 id of a Question somebody else raised, and nothing else in the report names them. The
-`created subjects:` line names each create, which the runner holds to the unit's prefix and, on a
-unit it checks by count, finds back by name; a report without it reads as a mismatch.
+`created subjects:` line names each create, which the runner holds to the unit's prefix and finds
+back by name among the subjects the record lists under it; a report without it reads as a
+mismatch.
 
 **The runner's summary** is written in this shape by the summary script the runner runs, to
 `<run folder>/reports/<pass id>.md`, where `lead_pass.py` reads it when you record the pass and
@@ -1858,7 +1862,8 @@ A boundary runner returns this shape instead:
 
 ```text
 window: <n>   pass: boundary
-cross-pass overlaps: <item name + the two units, one per line, or "none">
+cross-pass overlaps: <item name + the two units, one per line, or "none", or "not checked, names missing for <n> units" + the passes>
+names scanned: <the figures off the scan's last line: new item names read, units, passes>
 kinds declared: <n>
 ledger: <path>, appended through <last line written>
 ```

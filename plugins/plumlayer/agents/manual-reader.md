@@ -59,12 +59,14 @@ only the full value says a section has no page range.
 ## 2. Read each section's Part 1
 
 Read each located section's Part 1, its general articles, from its `pageStart`, with
-`get_page_text(projectId, fileId, pageNum: <page>, form: "lines")`, paging with
-`offset: nextOffset` until each page comes back whole. Stop at the page where Part 2 begins, at
+`get_page_text(projectId, fileId, pageNum: <page>, form: "text", repeated: "omit")`, paging with
+`offset: nextOffset` until each page comes back whole. The text form is each line's words with no
+box, since you cite nothing, and `omit` leaves out the header and footer the manual prints on
+every page. Stop at the page where Part 2 begins, at
 the section's `pageEnd`, or after three pages, whichever comes first. Part 1 is where the section
 says what it includes, what it furnishes for another section to install or installs for another,
 what the owner furnishes, who tests and inspects, and what single installer or single firm it
-asks for. At most forty-five pages for the group, a page read twice counted once. Where the cap runs
+asks for. At most twenty-four pages for the group, a page read twice counted once. Where the cap runs
 out, each section left is `title only` with the reason `page cap`. A read that fails is tried
 once more; a second failure makes the section `title only` with the reason
 `read failed: <the error>`.
@@ -101,7 +103,7 @@ Write your result to the path your dispatch names, `Audience: agent`, in this sh
 section of your group in the order the block lists them, every field present:
 
 ```text
-group <group id>   sections <n>   read <n>   title only <n>   pages read <n> of at most 45
+group <group id>   sections <n>   read <n>   title only <n>   pages read <n> of at most 24
 stopped: <why the group was not read, or "no">
 <six digits> | <title as printed on the section's first page, or as listed> | work: <what the section's work is, one short clause> | furnish: <who furnishes each item, as stated, or "not stated" or "not read"> | install: <who installs each item, as stated, or "not stated" or "not read"> | owner: <what the owner furnishes, installs or hires, or "not stated" or "not read"> | related: <six digits + the part each carries, or "none", or "not read"> | single installer: <the section's words, or "not stated" or "not read"> | read: <fileId p<a>, or p<a>-p<b>, to the end of Part 1 or "Part 1 continues"; or "title only, <reason>">
 ```
