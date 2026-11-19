@@ -177,6 +177,17 @@ writing it).
   shared number, and `formerNumbers` will not list the shared number for it, so keep it yourself
   for the undo. Call it only for a number the user asked changed; a number you merely suspect is
   misread is reported, not renumbered.
+- `set_package_estimator`: assign ONE bid package's estimator (`projectId`, `trade` as
+  `solicitation_list_packages` lists it, `memberId` as `list_project_team` lists it under
+  `members`, or `null` to remove the estimator), the same choice a person makes with Assign
+  Estimator on the Package page; the record credits it to the person you work for.
+  `solicitation_get_package` lists who the estimator is now. When the package already has one,
+  name them in `replaces` with the `memberId` that read lists, and leave `replaces` out when it
+  has none. A `replaces` that is no longer the package's estimator is refused with who it is now,
+  who set that and when: a colleague changed it after you read it, so tell the user what the
+  refusal says and send again only if they still want the change. Someone listed under
+  `notOnTeam` is refused until `project_add_team_member` puts them on the team. Call it only when
+  the user asked for a person to be put on a package or taken off it.
 
 Both write doors refuse the takeoff-domain predicates (`hasTakeoffCount`, `hasTakeoffRollup`,
 `hasScale`, `hasTakeoffLength`, `hasTakeoffArea`, `hasTakeoffCountMark`, `hasTakeoffCondition`,
