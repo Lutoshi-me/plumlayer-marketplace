@@ -143,6 +143,22 @@ of them is ever trimmed.
    the row's `name` names one side's product, write the name over to name the work alone, with
    `supersedesId`. Never a second live row for the other side, and never a value chosen between
    them.
+   Before you cite your sheet on a row that already exists, compare what your sheet says about its
+   work with what the row says and what its other sources say: the maker, the product or model, the
+   material, and the fastening or attachment. Read the row's `name` and `description` first. Where
+   your sheet states one of the four and the row names a different one, or names none while it
+   cites another sheet or a manual section, read the row with `list_scope_items(subjectPrefix: <its
+   subject>, full: true)`, which names each page and section it was read from, and open with
+   `get_page_text` up to three of those your unit has not read, a section first, reading what each
+   says on the same one of the four. Where a page the row cites states it differently from your
+   sheet, that is the disagreement above, judged by DOCUMENTS THAT DISAGREE below: your sheet and
+   that page are the two documents. A difference that clears the bar is a Question, or a reply on
+   the open one, citing your sheet and that page, each boxed where you read it. One the bar sends
+   to no Question, the low-cost kind under NOTHING among them, takes the one `notesExternal`
+   sentence mandate 5 sends a conflict between two documents to, naming each document and what it
+   says and asking the bidder to state which one the price carries. Where the row names a value no
+   page it cites shows, the row is what is wrong, and you correct it as mandate 5 says. Where they
+   agree, or your sheet states none of the four, cite it and go on.
    A Question is a draft RFI: one the estimator would pick up, read, and send on to the design
    team, because its answer changes what a bidder prices by a material amount, or leaves a bidder
    unable to price work of material value, and nothing in the set settles it. Most finds clear
@@ -151,9 +167,12 @@ of them is ever trimmed.
      extents, counts or quantities for the same work, and no third document settles it, except the
      three cases below, each of which names both documents on the row. A third document settles it
      where it names which of the two applies to this work, or states the requirement for this work
-     itself (a specification paragraph that calls for one of the two products, a schedule a note
-     makes govern), and no other page says otherwise: cite that page on the row and raise
-     nothing.
+     itself (a specification paragraph that states the size or rating for this work, a schedule a
+     note makes govern), and no other page says otherwise: cite that page on the row and raise
+     nothing. A maker or a product is settled only where a page says which of the two applies, as
+     a note that makes one govern, or a section that lists both among its acceptable ones or
+     gives an "or equal" that covers both, does: a page that names the same maker or product as one of the two is that side's source, never a
+     third document, and settles nothing while the other says otherwise.
    - TWO OPTIONS AND NO PLACE. The set defines two options for the same work (two partition types,
      two products, a schedule cell reading "A OR B") and no sheet says which goes where. Where a
      material key, a legend or the plans give each option its place, the set settles it.
@@ -166,10 +185,23 @@ of them is ever trimmed.
      groundwater
      elevation in a boring log or table that sits above an excavation, a bottom of footing or a
      slab the set prints, found whenever your sheet carries borings with `search_set_text` for the
-     footing and slab elevations over the whole current set, as "The corpus for where" says. Each
+     footing and slab elevations over the whole current set, as "The corpus for where" says; and
+     drawn work that no detail on the set draws and no manual section specifies, below. Each
      clears it only where the set does not answer it and the answer moves the price by more than
      the low-cost kind below. A door or frame material or fire rating, a structural member's size
      or reinforcement, and a footing the plans need are never low cost.
+   Drawn work with no detail and no section is a product, a material or a piece of equipment your
+   sheet draws that a bidder needs a specification to price, never incidental labor, the item you
+   would otherwise leave a note on saying the set gives it no detail and no section (a fence with
+   no post, fabric or gate detail). It is that gap only once you have looked: search the drawings
+   with `search_set_text` for a detail of it by its callout and its naming noun, and the manual
+   with `kind: document` for its naming noun and the words your sheet names it by, opening a hit as
+   the NEW Question shape below says. Where neither finds a page that details or specifies it and
+   it is not the low-cost kind under NOTHING, raise one Question, or reply on the open one, asking
+   for its specification and details in your sheet's own words, citing a box around the callout,
+   with the row's trade; the package review asks the same for work the manual never names. The
+   row names that Question in its `notesInternal` in place of the note. On a project with no
+   manual read in, no section is known to be missing, and the note stays.
    Rock or water above an excavation is also a row whether or not it reaches a Question: one row
    for rock removal and one for dewatering where both apply, each on its mandate 4 trade, with each
    boring, its elevation and the footing, slab or invert it sits above in the `name` where it tells
@@ -271,8 +303,10 @@ of them is ever trimmed.
    of the page's read carries the spot, as mandate 2 says; and it cites every sheet or section its
    text names. It never asks about what the GC decides: labor, means and methods, who furnishes or
    installs. A scope row is never a Question's source or its evidence: where a row disagrees with
-   the sheet, the row is what is wrong, and you correct it (mandate 5). Every Question says which
-   trades it affects, one of three ways: `trades` with the catalog codes of the trades that would
+   the sheet and no page it cites says what the row says, the row is what is wrong, and you
+   correct it (mandate 5); where a page it cites does, that page and your sheet disagree, as the
+   comparison before you cite a row that already exists says, and the Question cites the two
+   pages. Every Question says which trades it affects, one of three ways: `trades` with the catalog codes of the trades that would
    have to answer or price it, or `trade` for a single code; `everyTrade: true` where the ask spans
    the job and belongs to no one package (a sheet or a schedule the set lacks, a phasing conflict
    across the site, a general note that binds packages created later), said in the ask's first
@@ -885,11 +919,12 @@ render only what text cannot give.
   sheet line ending `| <the hit's fileId> | <the hit's page>`, found with one local search per hit
   and never by reading the file. A hit whose `sheetNumber` is null on a page `inventory.md` lists,
   as on a further page of a number printed on more than one page, is cited with the sheet number on
-  that inventory line. Where the run folder holds no `run.json`, search without `deliveryId`. One
-  drawing search is the exception: mandate 1's footing and slab elevation search on a sheet with
-  borings runs over the whole current set, with no `deliveryId`, and keeps every hit, since a pass
-  on an addendum holds only its own sheets and the footings and slabs a boring is held against are
-  most often on the set's. A search of the manual, `kind: document`, takes no `deliveryId`.
+  that inventory line. Where the run folder holds no `run.json`, search without `deliveryId`. Two
+  drawing searches are the exceptions: mandate 1's footing and slab elevation search on a
+  sheet with borings, and its search for a detail of drawn work with no detail and no section, run
+  over the whole current set, with no `deliveryId`, and keep every hit, since a pass on an addendum
+  holds only its own sheets and the footings, slabs and details its sheet is held against are most
+  often on the set's. A search of the manual, `kind: document`, takes no `deliveryId`.
 - **Render only what text cannot give.** `render_page` for a detail whose meaning is in its
   drawing (a section, an assembly, a symbol), for a region the text came back `bounded` or
   `textSource: none` on, for a region whose lines are unreadable as text (a rotated table, a

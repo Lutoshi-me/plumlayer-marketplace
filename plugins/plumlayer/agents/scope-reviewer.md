@@ -379,6 +379,14 @@ them is ever trimmed.
      in all, affecting this package's trade. A family the budget did not reach is named on your
      `families not checked:` line and raises nothing. A row whose trade is another package's,
      on this package by a role, is judged by its home package's review, never by yours.
+     A qualification never stands in this rule's place. Where you would write one in a row's
+     `notesExternal` asking the bidder to state the maker, model, gauge or material its price
+     carries because no sheet gives it, judge that row's work by this rule first, with its
+     searches. Where a manual page specifies the work, cite that page on the row, and the
+     qualification may stand. Where the work is silent, raise this rule's Question, or reply on
+     the open one, cite it on the row in the qualification's place, and name it on your
+     `unspecified work:` line. Where it is the low-cost kind above, name it there as `left open`
+     with why it is low cost, and the qualification may stand.
    - NEVER A GC MATTER, NEVER OUR OWN ROW. A silence about labor, means and methods, or who
      furnishes or installs is not the design team's to answer, and raises nothing. Our own row is
      never the evidence against the documents: where the silence exists only because one of our
@@ -403,7 +411,9 @@ them is ever trimmed.
       a door type and its frame), take the rows on the other side with reader mandate 1's search
       by tag or noun. Where the rows on one subject cite different sheets, disciplines or the
       manual, open the cited pages as mandate 2 says and read what each says about the subject's
-      material, product, rating, size, extent, and how it meets the work beside it. Where they
+      material, product, rating, size, extent, and how it meets the work beside it. One row whose
+      sources are sheets and the manual is such a subject on its own, read as mandate 12's read
+      before a manual citation says. Where they
       differ in a way that moves the price, raise one Question per set of finds one answer settles,
       citing each source, or reply on the open one only where its answer settles the find too; where
       reader mandate 1 names the difference as no Question, the row carries the
@@ -618,6 +628,19 @@ them is ever trimmed.
       `section <code> not read: no page range, run only`. A `not read:` note is for a section with
       no page range, one whose manual was removed, and in continuation mode one no longer on the
       package, and for nothing else; your runner copies it to the ledger for the close-out.
+    - Before you cite a manual page on a row that cites a sheet, or write a field onto that row
+      off the page, open every sheet page the row cites, each one its
+      `drawingRefs` lists (`list_scope_items(subjectPrefix: <its subject>, full: true)`), its type,
+      legend and schedule sheets as well as its details, and read what each says about the maker,
+      the product or model, the material, and the fastening or attachment against what the section
+      states. Name each page on your `pages opened:` line; a page you already read in this review
+      for those four is not opened again. Where a sheet states one of the four differently from the
+      section, the two disagree, and reader mandate 1 judges it as its comparison before a citation
+      does: a Question, or a reply on the open one, citing the sheet and the section, each boxed
+      where you read it, or, where its bar names no Question, the one `notesExternal` sentence
+      naming each document and what it says. Cite the section page on the row either way, and name
+      the row on your `compared:` line. A row of this package that already cites both sheets and
+      the manual is read the same way, as mandate 10 says.
     A row this mandate or mandate 13 creates is created as mandate 4 says, after reader mandate 1's
     search and with your batch's own rows held against each other by its test. A Question either
     one raises clears reader mandate 1's bar, as mandate 7 says.
@@ -951,7 +974,8 @@ where a step below says otherwise.
    dispatch or a report before you names. A section a removal took is `manual removed`, as
    mandate 12 says.
 5. **Record** what mandates 12 and 13 make a row, a qualification, a material or a Question off
-   those pages, under mandates 2, 4, 5, 7 and 8, with reader mandate 1's search before every create.
+   those pages, under mandates 2, 4, 5, 7 and 8, with reader mandate 1's search before every create,
+   and with mandate 12's read of a row's sheets before every manual page you cite on a row.
    A section several packages share still limits you to this package's share.
 6. **Search the drawings only where a page sends you**: a product a Part 2 page names that a bidder
    locates and counts on the sheets, which mandate 9's first silence judges, or a sheet a page
@@ -971,8 +995,9 @@ where a step below says otherwise.
 9. **Write your report to `<run folder>/reports/<unit id>.md`**, under your own unit id, before
    you return it, as Report back says: your runner verifies you and binds the next continuation
    off that file, and a report returned without it is read second-hand. It is the shape below:
-   `harvested:` counts the rows alone, and `notes read:`, `compared:`, `unspecified work:`,
-   `families not checked:` and `standard lines:` read "none", and `headings written:` reads
+   `harvested:` counts the rows alone, `notes read:`, `unspecified work:`,
+   `families not checked:` and `standard lines:` read "none", `compared:` names only the rows
+   mandate 12's read before a manual citation compared, or "none", and `headings written:` reads
    "none" where you created no row.
 
 ## Report back
