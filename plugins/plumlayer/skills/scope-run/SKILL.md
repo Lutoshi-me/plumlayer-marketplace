@@ -46,7 +46,7 @@ The three windows:
    then updates that row rather than creating a coarser duplicate beside it. A reader reads its
    sheet whole, for everything on it, whatever trade the work belongs to. This is where the scope
    is, and it is
-   the bulk of the run: quantities where the sheets carry them, the splits the vocabulary read was
+   the bulk of the run: quantities where the set states them, the splits the vocabulary read was
    too coarse for, the Questions that clear the bar for an RFI. When the window closes the index
    runs again, so every row cites every page it appears on before a review reads it.
 3. **The reviews.** One review per bid package, read off the record rather than off the set: the
@@ -193,7 +193,8 @@ that relaxes any one of them reproduces a measured, named failure.
    MC-2, 16 by 22 inch"), with the model on the schedule row or section the row cites, and in the
    description only where no page the row cites shows it. Instances are never rows: one towel bar
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
-   where the set counts them the count is its quantity. One product is two rows only where the
+   where the set states how many there are, that figure is its quantity, and a count the run
+   makes of them never is. One product is two rows only where the
    drawings or the manual separate its supply from its install, or on a finish trade by area, as the
    reader's mandate 1 says. A schedule of places, such as a room finish schedule or a door schedule,
    is read for the products and types it calls for ("Luxury vinyl tile flooring, LVT"), never
@@ -347,7 +348,7 @@ A newly created scope item is a full row, not a name. Every new item writes:
   break out, what to confirm, what is an alternate. Work by others is a row of its own, as the
   reader's mandate 4 says.
 - **notesInternal** (optional, one sentence): a watch item for the estimator, an open
-  Question on the row, how the row's count or grouping was reached
+  Question on the row, how the row's grouping was reached
   and what a correction replaced, or the other trade that could carry the row, as the reader's
   mandate 4 says. Never a citation audit, never work the paper gives to another party, which
   is a row of its own as the reader's mandate 4 says, and never a conflict between two documents:
@@ -360,7 +361,13 @@ A newly created scope item is a full row, not a name. Every new item writes:
   definition says for every sentence added to `notesInternal`. That
   note is what lets a later reader correct the row rather than doubt the drawings. A correction is
   never a Question.
-- **quantity**: only where the sheet itself carries one, as `{value, unit}`.
+- **quantity**: only where a schedule, a table, a note or the manual states the count, area or
+  length of exactly the row's work, as `{value, unit}`, its evidence boxing the words that print
+  the figure, as the reader's mandate 5 says. Never a count or measurement the run makes off a
+  plan, which is takeoff. Where two pages state different figures, it is a Question, and no figure
+  is chosen between them until the answer comes, except where a sheet kept from an earlier delivery
+  and a newer sheet state them: there the newer sheet's figure goes on the row, as the reader's
+  mandate 5 says.
 - **mark** (optional): the tag a drawing prints for this one item's product or type (`A1`,
   `IW.A`, `TA-07`), copied as printed with no word such as Type or Mark in front, at most 24
   characters, and cited with a box around the schedule row, legend line or plan tag it was read

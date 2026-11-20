@@ -575,7 +575,7 @@ of them is ever trimmed.
    one sentence: an instruction to the bidder about the line, what to break out, what to confirm,
    what is an alternate; work by others is a row of its own, mandate 4), `notesInternal` (optional,
    one sentence: a watch item for the estimator, an open
-   Question on the row, how the row's count or grouping was reached and what a correction
+   Question on the row, how the row's grouping was reached and what a correction
    replaced, or the other trade that could carry the row, as mandate 4 says; never a citation
    audit, never work the paper gives to another party, which is a row under mandate 4, and never
    a conflict between two documents, which goes where mandate 1 sends it: a
@@ -587,7 +587,8 @@ of them is ever trimmed.
    will not fit, it goes as a reply on the Question the earlier text names, or on your
    `anomalies:` line ending `run only` where it names none. Where your sheet answers what that text
    asks, cite what your sheet shows on the row, and reply on the Question it names, or raise one
-   where it clears the bar), `quantity` only where the sheet carries one, as `{value, unit}`.
+   where it clears the bar), `quantity` only where the set states one, as the paragraph after
+   `mark` says.
    `mark` only where a drawing tags this one item: the tag a schedule, legend or plan prints for
    its product or type (`A1`, `IW.A`, `TA-07`), copied as printed, spaces and punctuation kept,
    with no word such as Type or Mark in front, at most 24 characters. Cite it like the row, with
@@ -602,13 +603,67 @@ of them is ever trimmed.
    below when the record misread it; where two drawings tag the item differently, resolve each
    tag to what it defines, and raise a Question only where the two define different work and clear
    the bar in mandate 1.
+   A quantity is a figure the set states for the row's work, and never one you make. Write one
+   where a schedule, a table, a note or the manual prints the count, area or length of exactly the
+   work the row prices: the quantity a fixture, equipment or appliance schedule gives a type, the
+   count a window or door type list gives each type, an area a code summary or a finish schedule
+   states, the number of items or the length a note or a section has the contractor provide
+   ("PROVIDE (4) BIKE RACKS"), the quantity a unit price schedule gives a line. Send it as
+   `{ value, unit }`: `value` the figure as a number with its commas out (`1,240` is `1240`), and
+   `unit` the unit the set prints, in its short lowercase form (`ea` for a count, `sf`, `lf`, `sy`,
+   `cy`), never converted to another. Its evidence opens on the figure: the box mandate 2 gives
+   around the schedule row, table row, note or paragraph that prints it, with the figure's own cell
+   or words inside the box, and the figure as printed, with its unit where the page prints one
+   beside it, as the snippet: `evidence: { sheet, pageInPdf, fileId, locator: { pageInPdf, frame:
+   "page-points", bboxPts: [x0, y0, x1, y1] }, snippet: "12" }` off a sheet, and mandate 2's manual
+   shape with the same `snippet` off a section. Write a quantity only where a line or entry of the
+   page's text read carries the figure: a figure read off a render alone, or one mandate 2 would
+   cite with no box, is no quantity. A row you create takes its quantity in the batch that creates
+   it; a row on the record with no quantity takes it as an update.
+   Leave the quantity empty wherever no page states the figure for exactly the row's work. Never
+   count tags, symbols, rooms or units on a plan, never measure a plan, never tally the lines of a
+   schedule, and never add, multiply or divide figures the set states (counts by floor with no
+   total, a count per unit times the number of units) to fill one in: that is takeoff, done after
+   the run. A figure for part of the row's work (one floor of a row that covers the job, one type
+   of a family row that writes out several) or for more than it (every door, on one family's row)
+   is no quantity for the row, and neither is a range, a minimum or a maximum ("up to 6", "not less
+   than 200 SF"), one item's size, a spacing, a percentage or an amount of money. Where you cannot
+   tell that the figure covers exactly the row's work, leave it empty: a wrong quantity is worse
+   than none.
+   Where the row already holds a quantity, read its entry with `search(subject: "<the row's
+   subject>")` before you write. Two figures are the same only where the value and the unit both
+   match: 12 SF and 12 SY are different figures. A page stating the same figure is a citation on
+   the row. Then sort the quantity the row holds, in this order:
+   - Protected: a quantity that reads a takeoff condition (`source: "condition"` on the row's
+     `quantity`), whatever its evidence cites, or one whose evidence names no page or no box, as
+     a person's own count does. It is never written over or cleared; name the figure the set
+     states on your `door-owned suggestions:` line. This test runs first, so a protected quantity
+     is never a misreading.
+   - A misreading: a quantity whose own cited box prints a different figure in the same unit for
+     the same work. Correct it to the figure that box prints, as the correction rule below says.
+   - Any other quantity, one whose cited box prints no figure for the row's work or prints it in
+     another unit, stays as it stands; name the figure the set states on your `door-owned
+     suggestions:` line.
+   Where two pages state different figures for the same work, the documents disagree as mandate 1
+   says: raise or reply on the Question that settles it, citing the place of each figure, and cite
+   it on the row. Write neither figure onto a row that holds none, and leave a figure the row
+   already holds as its source gives it until the answer comes, never written over with the other
+   and never cleared. Where an open Question cited on the row asks about its count, area or
+   length, write no quantity onto it until the answer comes. A kept sheet against a newer one,
+   above, is the one exception to both waits, and it governs over them: the newer drawing
+   governs, so the newer sheet's figure goes on the row, cited to the newer sheet, with
+   `supersedesId` naming the kept sheet's figure where the row holds one, while the Question that
+   rule raises stays open and cited on the row. The exception never reaches a protected quantity,
+   and the newer figure still meets every rule above for a quantity.
    A correction of a value on the record is two things: the write onto that field naming what it
    replaces (`supersedesId`), cited to the sheet and page with a box around what shows the right
    value and the words you read there as the evidence snippet; and one plain sentence in the row's
    `notesInternal`, placed as above, saying how the value was reached and what it replaced, never
    an id or a hand-written tag, so a later reader corrects the row rather than doubting the
-   drawings. A correction is never a Question. Where a count or grouping is your own judgment
-   rather than read off one place, say in the same note how it was reached. A note is written for
+   drawings. A correction is never a Question. Where a grouping is your own judgment
+   rather than read off one place, say in the same note how it was reached. A quantity is never
+   your own judgment: it is only ever a figure the set states, and a figure you judged, counted or
+   worked out is never written, in a correction or anywhere else. A note is written for
    the estimator, in the estimator's words ("One row for every tag the legend lists"), never with
    the run's own words for it (`grain`, `text layer`, a unit, a pass, a prefix), and never naming
    an agent as the one who judged it. Never transcribe a schedule's columns, a detail, bar sizes,
@@ -640,7 +695,8 @@ of them is ever trimmed.
    MC-2, 16 by 22 inch"), with the model on the schedule row or section the row cites, and in the
    description only where no page the row cites shows it. Instances are never rows: one towel bar
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
-   where the set counts them the count is its quantity. A schedule of places, such as a room finish
+   where the set states how many there are, that figure is its quantity as mandate 5 says, and a
+   count you make of them never is. A schedule of places, such as a room finish
    schedule or a door schedule, is read for the products and types it calls for ("Luxury vinyl tile
    flooring, LVT"), never one row for the whole schedule, and each finish row names its extent as
    mandate 5 says; a door schedule's doors land as the list below says. A schedule of one
@@ -649,7 +705,9 @@ of them is ever trimmed.
    assembly. These schedules of types land the same way on every run, and none is a question:
    - Windows, and balcony, terrace or patio doors on a window type list: one row per type, named
      by its code and what it is ("Window type W-2, fixed, triple glazed", "Balcony door type BD-1,
-     swing"), never one row naming several types. Beside the type rows, one row each for the
+     swing"), never one row naming several types. Each type row's quantity is the count the
+     window or door type list or schedule states for that type, as mandate 5 says, and stays
+     empty where it states none. Beside the type rows, one row each for the
      window work every type shares, wherever the set or the manual states it: the supply, the
      frame material, the glass, the sills, the jamb or head extensions, the screens, the warranty
      and the installation. These shared rows are the one place an attribute is a row of its own,

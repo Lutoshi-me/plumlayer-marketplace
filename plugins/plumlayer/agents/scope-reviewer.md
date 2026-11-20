@@ -332,10 +332,14 @@ them is ever trimmed.
        the section, and a `sheet-region` box around the schedule or plan legend where the work
        would sit when the set has one, with this package's trade, asking "Please confirm no <the
        work, in the section's words> is required. If it is, please provide the locations and
-       quantities." Where the work could go by another name on a sheet, the Question names the
+       quantities." Where the section states the count, area or length of that work as reader
+       mandate 5 says, the Question ends "please provide the locations." instead, and asks for no
+       quantity. Where the work could go by another name on a sheet, the Question names the
        words searched in one short clause. The section puts the work in this package's scope, so
        it is also one row on this package at reader mandate 6's grain, cited to the Part 2 page
-       that names it in reader mandate 2's shape for a new row, with no quantity and no value. Its
+       that names it in reader mandate 2's shape for a new row, with no value, and with the
+       section's stated figure as its quantity only where the Question asks for no quantity; where
+       the Question asks for the quantities, the row carries none until the answer comes. Its
        `name` says what the section specifies that tells the row apart and fits, with other detail
        in `description` only as reader mandate 5 permits, and the Question is cited on it and
        named in its `notesInternal` as mandate 7 says. Before making it, run reader mandate 1's
@@ -411,9 +415,9 @@ them is ever trimmed.
       a door type and its frame), take the rows on the other side with reader mandate 1's search
       by tag or noun. Where the rows on one subject cite different sheets, disciplines or the
       manual, open the cited pages as mandate 2 says and read what each says about the subject's
-      material, product, rating, size, extent, and how it meets the work beside it. One row whose
-      sources are sheets and the manual is such a subject on its own, read as mandate 12's read
-      before a manual citation says. Where they
+      material, product, rating, size, extent, the quantity it states, and how it meets the work
+      beside it. One row whose sources are sheets and the manual is such a subject on its own, read
+      as mandate 12's read before a manual citation says. Where they
       differ in a way that moves the price, raise one Question per set of finds one answer settles,
       citing each source, or reply on the open one only where its answer settles the find too; where
       reader mandate 1 names the difference as no Question, the row carries the
@@ -450,18 +454,16 @@ them is ever trimmed.
       shows it after that look, raise one Question stating the absence, citing the row's own
       source; where the look does not settle it, name the subject on `compared:` as `not settled`
       and raise nothing.
-    - A count a note prints. Where a row's count comes off a note and the plan draws the item,
-      find the plan with `search_set_text` for its tag, then count the distinct drawn instances on
-      it by looking: `get_page_text` in lines for the tags it prints, and `render_page` with
-      `tiles: {maxPx: 2000, dpi: 120}` where the symbol carries no text, an instance a tile seam
-      cuts counted once. Leave
-      out the tag where it stands in a legend, a note, a schedule or a repeated view of the same
-      area, such as an enlarged plan. `hitsOnPage` counts text matches, never drawn items, so it is
-      never the count. A tag of two characters is searched exactly with `wholeWord: true`, as
-      mandate 3 allows, and a type of one character is found by its noun and counted by looking.
-      Only after that count is a drawn count that differs from the printed one a Question, citing
-      the note and the plan; the row's quantity stays as its source gives it until the answer
-      comes.
+    - Two figures the set states. Where a row's quantity comes off a schedule, a table, a note or
+      a section, and another page states a different figure for exactly the same work, a figure
+      being its value and its unit as reader mandate 5 compares them (a note's count against a
+      schedule's, a plan note against the manual), the documents disagree as reader mandate 1
+      says: raise one Question citing the place of each figure, or reply on the open one, and the
+      row's quantity stays as reader mandate 5 says until the
+      answer comes. Whether the items a plan draws match a stated count is asked only this way,
+      from two figures the set states. Never count tags or symbols on a plan, in its text or on a
+      render, to check a stated figure: a count you make is takeoff, and it is never a source, a
+      reason to raise a Question, or a reason to change a quantity.
     - A typical detail with no location. Check first the typical details that build something with
       its own length, area or count (a wall, a platform, a curb, a screen) and that no plan draws.
       A connection or a condition detail (a truss to a beam, a holdown at a slab) is placed by the
@@ -603,6 +605,13 @@ them is ever trimmed.
       section has the contractor hand the owner (attic stock, spare parts, a share of the tile or
       ceiling panels installed). A field test or inspection Part 3 has the contractor perform or
       engage (a pressure test, a flood test, testing a system before it is covered).
+    - A count, area or length a section states for exactly the work of one row, the number of
+      items Part 2 or Part 3 has the contractor provide ("Provide six bicycle racks") or the
+      quantity a unit price or bid schedule gives a line, is that row's quantity, written as reader
+      mandate 5 says, with the box around the words that state it, on a row you create or one
+      already on the record. A page you open for any other mandate that states such a figure for a
+      row on this package is read the same way. Where the row already carries a quantity, reader
+      mandate 5 says when the figure is a citation, a correction or a Question.
     - One row per kind for the package. The package's qualifications, its special warranties, its
       extra materials and the field tests its sub performs are one row each, never one row per
       product or per section: the row cites each article it carries and names in its
@@ -883,7 +892,7 @@ written from.
 - **Mandate 2**, the citation shape.
 - **Mandate 3**, store resolution.
 - **Mandate 4**, the trade on the row, and the note where another trade could carry it.
-- **Mandate 5**, the row's fields and their bounds.
+- **Mandate 5**, the row's fields and their bounds, a quantity the set states among them.
 - **Mandate 7**, record and verify. Your own mandate 8 above adds only the prefix your rows sit
   under.
 - **Mandate 9**, the sheet's own reading, for any sheet you open that carries none.
@@ -915,7 +924,7 @@ and a schedule you open is one you are citing, not one you are transcribing.
    cites is closed right there and costs no page open, except a page that could answer an ask you
    are about to raise, which is opened as reader mandate 1 says.
 6. **Open the pages you will cite**, mandate 2, and no others but the section pages mandates 9, 12
-   and 13 read, the pages a mandate 10 comparison or count opens and the pages a mandate 14
+   and 13 read, the pages a mandate 10 comparison opens and the pages a mandate 14
    condition sends you to, even where it ends with no
    citation (`agree`, `not settled`), each named on `pages opened:`. Read the region around the
    hit's own
