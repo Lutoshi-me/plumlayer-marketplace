@@ -254,13 +254,38 @@ the next target.
    rendered in its place in the entry's evidence.
 
    From the cover sheet and the title blocks of the sheets you render, fill what Overview still
-   has empty and a sheet plainly states. Never write over what step 2 found, whoever wrote it:
+   has empty and a sheet plainly states. Never write over what step 2 found, whoever wrote it,
+   and read `get_project` once more right before this step's `update_project` calls, leaving out
+   any field a person filled while you read the drawings:
    - The address, when `location` is empty: `update_project(projectId, location: "<the address
      as the sheet gives it>")`.
-   - The project type, when `projectType` is empty: call `list_project_options` once and take the
-     option on its `project_type` list whose label plainly names what the sheet says,
-     `update_project(projectId, projectTypeId)`. No label plainly names it: leave it empty. Never
-     create an option or take a near match.
+   - Project Type, when `projectType` is empty: call `list_project_options` once, for this and
+     Phase, and take the option on its `project_type` list only when exactly one entry of the
+     company's list fits the set's description of the building, `update_project(projectId,
+     projectTypeId)`. No entry fits, or more than one does: leave it empty. Never create an option
+     or take a near match.
+   - Phase, when `get_project`'s `stage` is null: only where the cover sheet or a title block you
+     read names the issue of the set, such as a permit set or construction documents, and exactly
+     one entry on the `stage` list of `list_project_options` fits that issue,
+     `update_project(projectId, stage: { optionId: "<that entry's id>", source: { read: { sheet:
+     "<the sheet number>", page: <its pageInPdf> } } })`, with `replaces` left out. Never read the
+     phase from the name of a drawing set or a file. The sheet names no issue, no entry fits, or
+     more than one does: leave it empty. A project that holds a phase keeps it, whoever set it.
+   - Total Area, when `get_project`'s `sizeSf` is null and step 2's `grossArea` search found no
+     row on subject `project`: only where a cover sheet, a code summary or an area table states
+     the building's gross area as one printed figure. Where the cover does not state it, read the
+     one sheet whose title names a code summary, code analysis or area table, found with
+     `search(projectId, predicate: "hasTitle", text: "<words>")`, with `get_page_text` alone; it
+     takes no render. Record it in its own `record_batch(projectId, entries)` call of one entry,
+     apart from step 6's batch: subject `project`, predicate `grossArea`, value the figure and its
+     unit as printed (e.g. `"42,500 GSF"`), `sourceInstrument` the file's name, and `evidence` one
+     sheet citation in step 6's shape, its `snippet` the words as printed. The returned `count`
+     must be 1; any other count stops the run, as a mismatch in step 6 does. Never add figures
+     up, never take a floor's, the site's or a net area, and never write `sizeSf`. The set states
+     no gross area, or two pages state different figures: leave it empty.
+   - Units and Market are never filled. Units takes no citation on the record, and the company
+     keeps no list of markets to pick from.
+   - Status is never filled.
    - The owner, the owner's representative, the architect and each engineer the sheet names, the
      owner first. A second owner or a second architect, beside a different firm of that role
      already on the contacts (`owners`, `architects`), stays off. The owner's representative is
@@ -317,9 +342,13 @@ the next target.
    happened to the one before: a refused address write leaves every firm and person still to
    try, and a refused add of one firm leaves only that firm's own people untried.
 
-   Name each field filled and each firm and person put on, with the sheet, on the summary's
-   `fields filled` line; each firm added to the Network, given a type or given a detail, and each
-   person added or given a detail, on `Network changed`; and on `not filled`, each thing a sheet
+   Name each of Phase, Project Type, Total Area, Units and Market on the summary's `Overview
+   fields` line: filled, with the sheet; already set, left as it stands; left blank, with why (the
+   set does not state it, no entry of the company's list fits or more than one does, two pages
+   state different figures, the record cannot yet cite a unit count, the company has no market
+   list); not read, a call it depends on refused; or not written, its call refused. Name the address and each firm and person put on,
+   with the sheet, on the summary's `fields filled` line; each firm added to the Network, given a
+   type or given a detail, and each person added or given a detail, on `Network changed`; and on `not filled`, each thing a sheet
    states that you left off and why: the field already held something different, a firm or person
    holds a different detail, no list option or type names it, the Network holds more than one firm
    by that name, the one firm by that name is in another state, the name is only a near match of
@@ -1072,7 +1101,8 @@ disciplines: <each discipline code the sheet inventory covered + its sheet count
 learned: <each fact recorded in step 6, its predicate and its value as recorded, cut at 200 characters, one per line>
 left in place: <each step 6 predicate that already held a value on the project and was not written, or "none">
 replaced: <each step 6 predicate whose value this run replaced + who wrote the value it replaced, or "none">
-fields filled: <each empty Overview field, firm or person on the contacts step 5 filled + the sheet it was read from, or "none">; not filled: <each thing a sheet states that step 5 left off + why, or "none">
+Overview fields: <each of Phase, Project Type, Total Area, Units and Market, one per line, as filled + the sheet it was read from, already set + left as it stands, left blank + why, or not written + its refused call>
+fields filled: <the address, if step 5 filled it, and each firm or person on the contacts step 5 put on + the sheet it was read from, or "none">; not filled: <each other thing a sheet states that step 5 left off + why, or "none">
 Network changed: <each firm step 5 added to the Network, each it gave a type + the type, each it gave a detail + the detail, and each person it added or gave a detail + the firm, or "none">
 reconciliation: <the gate's counts, or "not run for this set">
 spec reading: <sections confirmed + listed in the table of contents only, or "not run for this project">
@@ -1132,7 +1162,8 @@ created this run.
 - **Packages are match-or-create; a re-run never duplicates one.** Read `solicitation_list_packages`
   first and skip any catalog trade id already represented on the project.
 - **Status is a person's categorization; no skill sets it.** Orientation writes to the project
-  only what steps 5, 7 and 9 name: an empty address or project type, a firm or person on the contacts (step 5),
+  only what steps 5, 7 and 9 name: an empty address, Project Type or Phase, an empty Total Area
+  as a cited `grossArea` entry, a firm or person on the contacts (step 5),
   the structure value (step 7), and `description` when a person hadn't already written one.
 
 ## Deferred (named, not skipped silently)

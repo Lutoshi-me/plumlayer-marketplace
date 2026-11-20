@@ -81,8 +81,9 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
   step not tried, the refused call it needed or what stopped the run before it. A refused call is
   one the app running Plumlayer turned down, through its permission settings or the user's
   answer, and every other step still ran. Say that running /learn-project again once that call is
-  allowed fills the address, the project type, the contacts, the description and the Structure,
-  Phasing and Site Conditions rows only where they are still empty, and adds only the packages,
+  allowed fills the address, the Phase, the Project Type, the Total Area, the contacts, the
+  description and the Structure, Phasing and Site Conditions rows only where they are still
+  empty, and adds only the packages,
   and the sections, trades and site conditions on a package, that are missing; that it can add
   what it newly reads to the scope areas, the set shape and the work the manual leaves out,
   keeping what they already say; and that where the drawings state both the structural system
@@ -97,6 +98,14 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
   and person put on the contacts among it; each firm added to the Network, given a type or given a
   detail; each person added to a firm or given a detail; and anything a sheet states that you left
   off, and why.
+- **Phase, Project Type, Total Area, Units and Market**, each by name: filled, with the sheet it
+  was read from; already set, and left as it stands; left blank, with why (the set does not state
+  it, no choice on the company's list fits it or more than one does, two pages give different
+  figures); not read, because a call it depends on was refused; or not written, because its call
+  was refused. Orientation never fills Units for now, because the project record has no place yet
+  for the sheet a unit count was read from, and never fills Market, because the company has no list
+  of markets to pick from; either one a person already entered is named as already set. Status is
+  the user's own to set.
 - **What the index check found**, or that it hasn't run yet for this set, never silent on which.
 - **What was recorded**, how many facts, and any Question raised for a disagreement between
   documents or for a material or condition the set leaves open. What was recorded is the project's working context now, carrying your name and its

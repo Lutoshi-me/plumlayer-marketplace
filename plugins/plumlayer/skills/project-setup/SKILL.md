@@ -516,6 +516,13 @@ rather than restating it from what an earlier step said:
   to a firm or gave a detail, anything a
   sheet states that it left off and why (a sheet that names
   something different from what the user gave is said here plainly), and where the packet landed.
+  Name each of Phase, Project Type, Total Area, Units and Market in the words the
+  `learn-project` skill's closing report gives: filled with its sheet, already set and left as it
+  stands, left blank with why, not read because a call it depends on was refused, or not written
+  because its call was refused. Orientation never fills Units or Market for now, Units because the
+  project record has no place yet for the sheet a unit count was read from and Market because the
+  company has no list of markets to pick from; either one a person already entered is named as
+  already set.
 - **What a person should look at on plumlayer.com:** any Question raised for two documents that
   disagree, among the project's Questions; the fields filled on Overview, each carrying your
   name and the time; and the facts recorded, each carrying your name, the time, and what you read
