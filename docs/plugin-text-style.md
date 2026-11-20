@@ -572,7 +572,7 @@ Each of these is a harness check.
     that has gone out. This cannot judge whether a running checker decides rightly; that is the
     measured re-read's.
 35. The standard lines go to one package each. The 46 trade files under
-    `skills/scope-run/standard-lines/` carry 287 lines, each row five cells, one of the four kinds,
+    `skills/scope-run/standard-lines/` carry 326 lines, each row five cells, one of the four kinds,
     a line, a place to look wherever there is a condition, and a row name, and each file one or more
     Home numbers, each one its numbers start, and at most one `Else:` line naming another file's
     title. A row name is at most 36 characters with no comma, one per half of a Which Trade line and

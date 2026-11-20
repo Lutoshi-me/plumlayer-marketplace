@@ -119,6 +119,7 @@ TRADE_WORDS: dict[str, tuple[str, ...]] = {
     "Sitework": ("earthwork-and-sitework",),
     "Earthwork": ("earthwork-and-sitework",),
     "Paving": ("paving",),
+    "Painting": ("painting",),
     "Site Utilities": ("site-utilities",),
     "Doors": ("doors-frames-and-hardware",),
     "Electrical": ("electrical",),

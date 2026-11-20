@@ -14468,7 +14468,7 @@ def check_delivery_sizing(plugin_path: Path, marketplace_root: Path) -> Result:
 # that hold a line to its condition, to that writer and to no Question stay in the text.
 
 STANDARD_LINES_FILES = 46
-STANDARD_LINES_ROWS = 287
+STANDARD_LINES_ROWS = 326
 STANDARD_LINES_ROW_NAME_MAX = 36
 STANDARD_LINES_NAME_MAX = 80
 
@@ -14519,7 +14519,7 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "it is the company's standard line for this trade, and no drawing or specification "
                  "calls for it"),
     ("reviewer", "Each is named for its kind, `Qualifications`, `Special warranties`, `Extra "
-                 "materials` or `Field tests`, then a comma and this package's `name`"),
+                 "materials`, `Mockups` or `Field tests`, then a comma and this package's `name`"),
     ("reviewer", "The furnishing row that covers both stays so both bidders price the install, and "
                  "the estimator awards it to one."),
     ("reviewer", "The order: the way the work is built, never alphabetical."),
@@ -14747,6 +14747,7 @@ _WHICH_TRADE_NAMES: dict[str, tuple[str, ...]] = {
     "Sitework": ("earthwork-and-sitework",),
     "Earthwork": ("earthwork-and-sitework",),
     "Paving": ("paving",),
+    "Painting": ("painting",),
     "Site Utilities": ("site-utilities",),
     "Doors": ("doors-frames-and-hardware",),
     "Electrical": ("electrical",),
@@ -14978,13 +14979,44 @@ _STANDARD_LINES_WRITERS: tuple[tuple[str, str, dict[str, list[tuple[str, list[st
         "09 21 16": [("no, carried by 22 00 00, 23 00 00", []),
                      ("yes", ["exclusion on: 22 00 00, counterparty: 09 21 16", "exclusion on: 23 00 00, counterparty: 09 21 16"])],
     }),
-    ("07 84 00; 22 00 00", "Firestopping at All Penetrations by Firestopping, Not Drywall, Plumbing, HVAC, Electrical and Fire Protection", {
-        "07 84 00": [("yes", ["exclusion on: 22 00 00, counterparty: 07 84 00"])],
+    ("07 84 00; 22 00 00; 09 21 16", "Firestopping at Plumbing Penetrations by Firestopping, Not Plumbing or Drywall", {
+        "07 84 00": [("yes", ["exclusion on: 09 21 16, counterparty: 07 84 00", "exclusion on: 22 00 00, counterparty: 07 84 00"])],
         "22 00 00": [("no, carried by 07 84 00", [])],
+        "09 21 16": [("no, carried by 07 84 00", [])],
     }),
-    ("07 84 00; 22 00 00", "Firestopping at Own Penetrations by Drywall, Plumbing, HVAC, Electrical and Fire Protection", {
-        "22 00 00": [("yes", ["exclusion on: 07 84 00, counterparty: 22 00 00"])],
+    ("22 00 00; 09 21 16", "Firestopping at Plumbing Penetrations by Firestopping, Not Plumbing or Drywall", {
+        "09 21 16": [("yes", ["exclusion on: 09 21 16, counterparty: 07 84 00", "exclusion on: 22 00 00, counterparty: 07 84 00"])],
+        "22 00 00": [("no, left to 09 21 16", [])],
+    }),
+    ("07 84 00; 22 00 00; 09 21 16", "Firestopping at Own Penetrations by Plumbing, HVAC, Electrical and Fire Protection, Not Firestopping or Drywall", {
+        "22 00 00": [("yes", ["exclusion on: 07 84 00, counterparty: 22 00 00", "exclusion on: 09 21 16, counterparty: 22 00 00"])],
         "07 84 00": [("no, carried by 22 00 00", [])],
+        "09 21 16": [("no, carried by 22 00 00", [])],
+    }),
+    ("07 84 00; 22 00 00; 09 21 16", "Firestopping at Plumbing Penetrations Through Rated Walls by Drywall, Not Firestopping or Plumbing", {
+        "09 21 16": [("yes", ["exclusion on: 07 84 00, counterparty: 09 21 16", "exclusion on: 22 00 00, counterparty: 09 21 16"])],
+        "07 84 00": [("no, carried by 09 21 16", [])],
+        "22 00 00": [("no, carried by 09 21 16", [])],
+    }),
+    ("07 84 00; 09 21 16", "Head of Wall Joint Firestopping at Rated Walls by Drywall, Not Firestopping", {
+        "09 21 16": [("yes", ["exclusion on: 07 84 00, counterparty: 09 21 16"])],
+        "07 84 00": [("no, carried by 09 21 16", [])],
+    }),
+    ("07 84 00; 09 21 16", "Head of Wall Joint Firestopping at Rated Walls by Firestopping, Not Drywall", {
+        "07 84 00": [("yes", ["exclusion on: 09 21 16, counterparty: 07 84 00"])],
+        "09 21 16": [("no, carried by 07 84 00", [])],
+    }),
+    ("07 84 00; 09 21 16", "Slab Edge Joint Firestopping by Drywall, Not Firestopping", {
+        "09 21 16": [("yes", ["exclusion on: 07 84 00, counterparty: 09 21 16"])],
+        "07 84 00": [("no, carried by 09 21 16", [])],
+    }),
+    ("07 84 00; 09 21 16", "Slab Edge Joint Firestopping by Firestopping, Not Drywall", {
+        "07 84 00": [("yes", ["exclusion on: 09 21 16, counterparty: 07 84 00"])],
+        "09 21 16": [("no, carried by 07 84 00", [])],
+    }),
+    ("07 46 00; 09 91 00", "Stain or Paint on Wood Siding and Trim by Siding or Painting", {
+        "07 46 00": [("yes", ["internal note: Could be by Siding and Cladding or Painting"])],
+        "09 91 00": [("no, left to 07 46 00", [])],
     }),
     ("03 30 00; 04 20 00", "Dowels from Concrete into Masonry by Concrete", {
         "03 30 00": [("yes", ["exclusion on: 04 20 00, counterparty: 03 30 00"])],
@@ -15391,10 +15423,13 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"it keeps the work off, two halves each excluding the other, an owner half on the trade "
         f"beside it, a carrier with no package written by the trade it keeps the work off with the "
         f"carrier's catalog id, furnish halves for each MEP trade and an install half by drywall, the "
-        f"single-installer firestopping line, the own-penetrations line with an exclusion on the "
-        f"firestopping package its condition names, the dowels line with an exclusion on the "
-        f"masonry package its condition names, the water and sewer halves on plumbing and site "
-        f"utilities); every file on its own package with short and 61-character names, "
+        f"single-installer firestopping line for plumbing penetrations with exclusions on plumbing "
+        f"and drywall, and written by drywall with the firestopping catalog id where firestopping "
+        f"has no package, the own-penetrations line with exclusions on the firestopping and drywall "
+        f"packages, the drywall line for plumbing penetrations through rated walls, the head of wall "
+        f"and slab edge joint lines by drywall and by firestopping, each excluding the other, the siding stain or paint line left to the siding package, the dowels "
+        f"line with an exclusion on the masonry package its condition names, the water and sewer "
+        f"halves on plumbing and site utilities); every file on its own package with short and 61-character names, "
         f"{names_checked} names printed for every half, written or not, each `<row name>, <package name>` within "
         f"{STANDARD_LINES_NAME_MAX} characters or `<row name>, <tradeCode>` by the package that writes it, "
         f"and every half of every Which Trade line named for the same writers, and by the same row "

@@ -137,7 +137,9 @@ of them is ever trimmed.
    schedule row and a plan row for one item are one row. Two rows each claiming the whole of one
    surface or one fixture in one place are one piece of work even under different codes, the
    disagreement below, while the layers or parts of one assembly under their own codes stay separate
-   rows. Two schedules that
+   rows. The parts of a system one vendor supplies as a package are the one exception: they are
+   one row for the system, with each part named in its `description`, even where a legend or
+   schedule tags each part, as mandate 6's list says. Two schedules that
    number their tags apart (a fixture list on an architectural sheet and the plumbing schedule) are
    two tag systems: a tag both print is not by itself the same work, and one fixture under two tags
    is found by what it is and where it goes.
@@ -480,7 +482,14 @@ of them is ever trimmed.
    furring, girts, clips, flashings and trim at a cladding go with the cladding; the root barrier,
    drainage layers, growing media and plantings of a vegetated roof go with the vegetated roof.
    Flashing in a wall or at a window goes with the wall or window it sits in, and the roofing
-   carries the flashing that ties into the roof. Never the trade a sheet's title names, never a trade because its
+   carries the flashing that ties into the roof. Firestopping at a trade's own penetrations goes
+   to that trade where that trade's own drawing notes have it firestop them, whatever single
+   installer the firestopping section asks for and whatever the wall types say. Where that
+   trade's notes do not, its penetrations through rated walls go to the drywall trade where the
+   wall types, partition details or architectural general notes give the penetrations through
+   rated walls to the drywall or partition contractor. The head of wall joint and the slab edge
+   joint each go to the drywall trade only where those notes give that joint to the drywall or
+   partition contractor. Any other firestopping goes by the rules above. Never the trade a sheet's title names, never a trade because its
    package happens to exist, never `01 11 13` because no package fits. The one exception is work a
    package's `notes` say that package installs or carries, an item another package's supplier
    furnishes, a share of a section placed on several packages, or a general cost the general
@@ -573,7 +582,7 @@ of them is ever trimmed.
    short sentences and about thirty words the most, not counting the codes the row names; never a
    detail already shown by the name or a page the row cites, except for a finish's whole extent
    that the name cannot hold, mandate 1's two products in a disagreement, an allowance's amount
-   and what it covers, an assembly's full code list, or a row whose name is fixed by its kind
+   and what it covers, an assembly's full code list, a packaged system's parts, or a row whose name is fixed by its kind
    (a grouped requirement row or a standard line), which carries in its description the products,
    sections, amounts and the job's own words its mandate lists, whole; never a spec article number,
    a schedule's values or a tag the row is not for, since the citation carries them.
@@ -742,6 +751,15 @@ of them is ever trimmed.
      it covers.
    - Panelboards on a panelboard schedule: one row for the panelboards, or one per voltage where
      the schedule separates them, never one row per panel, writing out every panel it covers.
+   - A system one vendor supplies as a package, such as an area of refuge call system, a door
+     entry intercom or an outdoor gas shutoff panel: one row for the system, named for it
+     ("Area of refuge two-way communication system"), with its parts, the stations, relays,
+     power supplies, switches, timers and valves, named in its `description` with their tags
+     or models, never a row per part, even where a legend or schedule tags or models each part.
+     Where the parts with their tags or models do not fit the description's 400 characters,
+     name the parts by kind instead ("Call stations, relays and power supplies, as the device
+     legend lists them") and cite the legend or schedule that lists them on the row, so the
+     citation carries each tag.
    Where this list and the product rule above differ, this list governs. A family row writes its
    codes out in full as mandate 5 says ("P1, P2, P3 and P4"), never as a
    range ("P1-P4"), which the citation index cannot link. A schedule of types this list does not

@@ -191,7 +191,18 @@ them is ever trimmed.
    this package. Two or more live rows that carry one product, the subfloor written once per floor
    plan, one holdown family written once per level, one panelboard type written once per room, are
    one piece of work, found among this package's rows or between one of them and another package's
-   row by reader mandate 1's search. A similar name alone is never a pair, and rows that split one
+   row by reader mandate 1's search. So are rows that each carry a part of one system a vendor
+   supplies as a package, the stations, relays and power supplies of an area of refuge call system
+   written one row each, as reader mandate 6's list says. The system's one row carries no part's
+   quantity and no part's mark, and none of your tools clears either, so it carries a quantity only
+   where the set prints a figure for the system itself, written by reader mandate 5's quantity
+   rules. For a system, the kept row is the part row created first among those that carry no
+   quantity and no mark: where its `name` names only its own part, write its `name` over with `supersedesId` so it
+   names the system, and put each part the other rows carry, with its tag or model, in its
+   `description`, or the parts by kind where they do not fit, as reader mandate 6's list says.
+   Where every part row carries a quantity or a mark, create the system's one row as mandate 4
+   creates work no row carries, named for the system with the parts in its `description`; it is
+   the kept row, and each part row is one of the other rows below. A similar name alone is never a pair, and rows that split one
    product's supply from its install, or a finish across the areas mandate 15 heads by, where reader
    mandate 1 lets them split, are not a pair. The row created first, by the earliest `assertedAt`
    among its entries, keeps the work; a row whose
@@ -224,7 +235,7 @@ them is ever trimmed.
    a row, a quantity or a size the sheet you opened shows otherwise, is a different act and is
    required: it goes onto that field as reader mandate 5 says, as when a silence in mandate 9 exists
    only because a row is wrong. You never retire, split or re-home a row, and never rewrite one to
-   change what it covers beyond naming its places as above; its heading is mandate 15's. Where you
+   change what it covers beyond naming its places or its system as above; its heading is mandate 15's. Where you
    cannot tell how finely a piece of work splits, create at best judgment and name it on your
    `grain questions:` line. How finely our own scope sheet splits is ours to settle, and nobody on
    the design team answers it. Recall never drops to an unanswered question about how finely to
@@ -600,11 +611,13 @@ them is ever trimmed.
       inspection the section
       says the owner pays for, shop testing in its Part 2 among it, is no row, as mandate 13 says,
       and what the section has the contractor do for that test is still a row.
-    - Part 1 and Part 3 add three more a bidder prices. A special warranty, one the section
+    - Part 1 and Part 3 add four more a bidder prices. A special warranty, one the section
       requires beyond the contractor's standard warranty (a manufacturer's warranty for a stated
       number of years, a warranty on the installer's work). Extra materials, the spare stock the
       section has the contractor hand the owner (attic stock, spare parts, a share of the tile or
-      ceiling panels installed). A field test or inspection Part 3 has the contractor perform or
+      ceiling panels installed). A mockup the section has its installer build (a sample wall of
+      the finish, a finished unit bath, a length of roof edge), never a scope row among the work
+      it samples. A field test or inspection Part 3 has the contractor perform or
       engage (a pressure test, a flood test, testing a system before it is covered).
     - A count, area or length a section states for exactly the work of one row, the number of
       items Part 2 or Part 3 has the contractor provide ("Provide six bicycle racks") or the
@@ -614,23 +627,27 @@ them is ever trimmed.
       row on this package is read the same way. Where the row already carries a quantity, reader
       mandate 5 says when the figure is a citation, a correction or a Question.
     - One row per kind for the package. The package's qualifications, its special warranties, its
-      extra materials and the field tests its sub performs are one row each, never one row per
-      product or per section: the row cites each article it carries and names in its
-      `description` each product or section it covers ("Manufacturer warranties, windows 10 years
-      and glazing 5 years"), and for extra materials what and how much of each. Each is named for
-      its kind, `Qualifications`, `Special warranties`, `Extra materials` or `Field tests`, then a
+      extra materials, the mockups its sections have its installer build and the field tests its
+      sub performs are one row each, never one row per product, per section or per mockup: the
+      row cites each article it carries and names in its `description` each product or section it
+      covers ("Manufacturer warranties, windows 10 years and glazing 5 years"), for extra materials
+      what and how much of each, and for mockups each mockup with its section ("Fiber cement
+      siding mockup, 07 46 46; metal wall panel mockup, 07 42 13"). Each is named for
+      its kind, `Qualifications`, `Special warranties`, `Extra materials`, `Mockups` or `Field tests`, then a
       comma and this package's `name` as the package list shows it, or its `tradeCode` where the
       two together run past 80 characters ("Special warranties, Windows"), since no two rows on the
       project may share a name. Each has
       `category` `General Items` and, in the same batch, one `packageRole:<that row's trade>`
       record valued `{ "role": "general-requirement" }`, so it sits in that package's General
-      Requirements section. A qualification, a warranty or extra materials sits on this package's
+      Requirements section, the mockups row beside the package's qualifications and warranties.
+      A qualification, a warranty, extra materials or a mockup sits on this package's
       `tradeCode`, and a field test on the trade mandate 13 places it on. A row whose trade is
       `01 11 13` takes no `General Items` category and no role record: it is a home row under one of
       the seven headings reader mandate 5 names for that package. Where a later section
       adds to a kind whose row already exists, cite the new article on that row and add its product
       to the `description`, as reader mandate 5 says for a field already written. A special
-      warranty and extra materials always join their kind's row, naming the products they cover;
+      warranty, extra materials and a mockup always join their kind's row, naming the products
+      they cover;
       the one `notesExternal` sentence that stays is a qualification that governs only some rows
       of a section, written on those rows, as the bullet on qualifications says.
     - A section whose `locatedAt` names no page range was listed in the table of contents only:
@@ -718,10 +735,21 @@ them is ever trimmed.
       ("Plumbing and electrical are separate packages on this job"). Check that part against the
       `places:` line: it holds where each trade it names is on that line, on a different package
       from each other trade it names, and a trade not on the line has no package on this job.
-      Where it does not hold, the line ends `packages not separate` and writes nothing. Check the
+      Where it does not hold, the line ends `packages not separate` and writes nothing. A
+      condition that says `the trade` means a trade of this package that the half names: where a
+      half goes to several trades, each writer's review checks the condition for its own trades
+      alone, reading each one's own drawing notes. Where this package holds more than one of
+      those trades (one package for plumbing and HVAC), check the condition for each of them
+      apart, against that trade's own notes. The half's one row is written where the condition
+      holds for any of them, and its `description` names each trade whose work it covers; a trade
+      it does not hold for is left out of that row, since another line names that trade alone and
+      carries its work in a row of its own (the firestopping at that trade's penetrations by the
+      firestopping or the drywall trade). Where a condition holds for only part of the work its line names, the
+      row's `description` names the part it covers ("Plumbing and HVAC penetrations through rated
+      floors; plumbing penetrations through rated walls"). Check the
       paper part against what you already hold first, this package's rows, their citations and the
       sections you read whole, and where that does not settle it, with at most two searches for the
-      line, `search_set_text` over the drawings or with `kind: document` over the manual, in the
+      line, two for each trade where a condition is checked for each trade apart, `search_set_text` over the drawings or with `kind: document` over the manual, in the
       places its where-to-look names. Those searches count apart from mandate 3's fifty, and your
       `searches:` line names them as `standard line` after its other counts. Open the page as
       mandate 2 says before you rely on it. A condition holds only where every part of it holds on
@@ -760,7 +788,12 @@ them is ever trimmed.
       - Convention, work the drawings imply and a sub prices with the work it goes with (blocking
         for wall-hung items, painting doors and frames all 6 sides, dunnage under rooftop
         equipment): a scope row on this package's `tradeCode`, under the heading of the work it
-        goes with.
+        goes with. A Convention line ending `Not in Contract` names work the paper leaves to the
+        owner or a tenant: write its row as reader mandate 4 writes such work, on this package's
+        `tradeCode` with one `packageRole:<tradeCode>` record valued
+        `{ "role": "exclusion", "counterparty": "owner" }` in the same batch, so it sits in this
+        package's Exclusions section, its `description` naming the spaces as the paper names them
+        ("Commercial tenant spaces, level 1").
       - Which Trade, a line that says which trade carries a piece of work. It is printed for each
         package that took a file carrying it, and their reviews can run at once, so the script
         settles who writes it, the same way for each: its `trades:` line names the trades the line
