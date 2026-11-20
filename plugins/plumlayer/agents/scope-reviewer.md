@@ -527,7 +527,11 @@ them is ever trimmed.
       before a section's first page, stop reading there and name each section with pages left on
       `sections not checked:` as `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>`, exactly
       that shape, `a` being its first page you did not read, `b` its `pageEnd`, and `fileId` and
-      `start` the `fileId` and `pageStart` you found it at, and on `anomalies:` as
+      `start` the `fileId` and `pageStart` you found it at. Each section after it that the cap
+      reached none of is named the same way, `a` being its `pageStart`, its place found as the
+      first bullet says. Write one line per section, never a range of codes and never a list of
+      pages with gaps in it; a page past `a` that you read for another mandate is read again by
+      the continuation. Name each of those sections on `anomalies:` as
       `section <code> p<a> continued: pages left p<a>-p<b>, run only`. Your runner sends a
       continuation that reads on from page `a`, so pages left are never a reason to stop short of
       the cap, and never a Question.
@@ -907,7 +911,9 @@ where a step below says otherwise.
    the rows the review before you created under its own prefix, so a product it already made a row
    for is matched there and never made twice. You harvest no definition code, section title or
    catalog name, and search for no word of your own choosing.
-3. **Read the Questions** as mandate 7 says, every Question on the project, before your first write.
+3. **Read the Questions** as mandate 7 says, every Question on the project, before your first write,
+   and read `get_project` once, as mandate 7 says, so every Question you raise carries its
+   `answeredBy` beside its `discipline` and `kind`.
 4. **Read on in each section** the dispatch names, in its order: find where it sits as mandate 12
    says, off the record now, and compare its `fileId`, `pageStart` and `pageEnd` with the file and
    pages the dispatch names for it. Where all three match, read from the first page left the
@@ -929,7 +935,9 @@ where a step below says otherwise.
 7. **Stop at forty pages**, counted as mandate 12 counts them, on the general requirements
    package too. Pages still left are named as mandate 12 names them,
    `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` with the file and pages you read the
-   section at, and the `continued:` anomaly, and your runner sends the next continuation.
+   section at, and the `continued:` anomaly, and your runner sends the next continuation. That
+   is every section the dispatch names that you did not read to its `pageEnd`, the ones you never
+   opened among them, each from the page the dispatch names for it, one line each.
 8. **Settle the headings again where you created rows**, mandate 15 whole, last, over the
    package's rows paged to their end, so the rows you made sit under the package's headings and
    the saved order names every heading. A continuation that created no row runs none of it.

@@ -140,13 +140,15 @@ Three modes:
 
         In window 3 a review that left pages of a manual section names them in an anomaly
         `section <code> p<first page left> continued: ...`, and the runner binds a continuation
-        unit that reads on from there. Where the read plan carries that continuation, for that
-        unit, section and page, the ledger carries its `verified` line reading ok, and its report
-        names the section on no `sections not checked:` line, or names pages left that the next
+        unit that reads on from there, in its pass or in a pass of continuations after it. Where
+        the read plan carries that continuation, for that unit, section and page, the ledger
+        carries its `verified` line reading ok, and its report names the section on no `sections
+        not checked:` line and the continuation reached it, or names pages left that the next
         continuation read to the end the same way, the note prints under `read to its end in a
         further review` rather than as one to look at. Any other note on that section, one whose
-        continuation is not verified, left pages again or found the section gone from its package
-        or its manual, prints to look at. The pass is named by the sections its continuations read
+        continuation is not verified, left pages again, never reached it with no continuation
+        bound after it, or found the section gone from its package or its manual, prints to look
+        at. The pass is named by the sections its continuations read
         to their end the same way (`the rest of 1 manual section read (230000 from page 901 for
         HVAC)`), each once from the page its first continuation read on from, beside the packages
         it reviewed; a section still open is not named there. A continuation's counts fall under
@@ -781,7 +783,10 @@ def _sections_read_to_end(plan_path: Path, ledger: Path) -> set[tuple[str, str, 
     Each (unit, section, first page left) whose pages left were read to the section's end: the
     continuation the read plan binds for that unit, section and page verified ok on the ledger, and
     its report, in the reports folder beside the ledger, names the section on no `sections not
-    checked:` line, or names pages left that the next continuation in turn read to the end. A
+    checked:` line and the continuation reached it, or names pages left that the next continuation
+    in turn read to the end. A continuation whose report names pages left in a section its dispatch
+    names first reached none named after it, and one of those reads to its end only where the next
+    continuation the plan binds for it does; with none bound it stays open. A
     continuation not verified, one whose report is not there or does not read, and one that names
     the section for any other reason, its manual removed or the section no longer on its package,
     leave the section open. Empty where the read plan is not window 3's or is not there.
@@ -793,6 +798,8 @@ def _sections_read_to_end(plan_path: Path, ledger: Path) -> set[tuple[str, str, 
     if next((line.strip() for line in lines if line.strip()), "") != "# Read plan: window 3":
         return set()
     continued_by: dict[tuple[str, str, int], str] = {}
+    # Each continuation's sections, in the order its dispatch names them.
+    dispatched: dict[str, list[str]] = {}
     for line in lines:
         unit = _CONTINUATION_LINE_RE.match(line.strip())
         if unit is None:
@@ -801,6 +808,7 @@ def _sections_read_to_end(plan_path: Path, ledger: Path) -> set[tuple[str, str, 
             start = _SECTION_FROM_RE.match(section)
             if start:
                 continued_by[(unit.group(4), start.group(1), int(start.group(2)))] = unit.group(1)
+                dispatched.setdefault(unit.group(1), []).append(start.group(1))
     verified = _verified_ok(ledger, 3)
 
     def to_end(key: tuple[str, str, int], seen: set[str]) -> bool:
@@ -813,6 +821,15 @@ def _sections_read_to_end(plan_path: Path, ledger: Path) -> set[tuple[str, str, 
             return False
         code = key[1]
         if code not in left:
+            # A report naming the section on no line read it to its end, unless the cap ran out
+            # in a section its dispatch names before it, which reached none after. Such a section
+            # is read to its end only where the next continuation the plan binds for it, from
+            # where this one was to start, read it to its end; with none bound it is unread.
+            order = dispatched.get(continuation, [])
+            stops = [order.index(other) for other, page in left.items() if page is not None and other in order]
+            if code in order and stops and order.index(code) > min(stops):
+                onward = next((later for later in continued_by if later[:2] == (continuation, code)), None)
+                return onward is not None and to_end(onward, seen | {continuation})
             return True
         return left[code] is not None and to_end((continuation, code, left[code]), seen | {continuation})
 

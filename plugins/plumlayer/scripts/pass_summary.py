@@ -104,8 +104,9 @@ Window 3:
   and the report of any other read, are never read, in this window and in window r.
 
   A continuation, the unit that reads on in a review's manual sections where the review's page cap
-  left pages, is a unit of its review's pass like any review: it is counted in `units:`, its
-  `verified` line is summed, and its pages opened and searches are read off its own report.
+  left pages, is a unit of the pass its block sits in like any review, its review's pass or, where
+  that pass was full, a pass of continuations after it: it is counted in `units:`, its `verified`
+  line is summed, and its pages opened and searches are read off its own report.
 
 The recheck, window r:
 

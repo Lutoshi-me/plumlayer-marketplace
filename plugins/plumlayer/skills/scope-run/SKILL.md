@@ -555,7 +555,7 @@ record files, never recorded as project entries:
 - `read-plan.md`: the read plan, one per window, written by the plan script, never by hand: the
   passes, the units within each with their sheets, files and pages in windows 1 and 2 and the
   package each review reads for in window 3, with each continuation the runner bound after its
-  review, and what is deliberately excluded. Audience: agent; a
+  review or in a pass of continuations after its pass, and what is deliberately excluded. Audience: agent; a
   runner opens its own pass only.
 - `briefs/`: one small file per pass, written by that pass's runner, carrying the pass's filled
   slot values (what the pass reads for, its content families, the subject prefix scheme). It is the
@@ -900,7 +900,8 @@ Run these in order; each is read-or-run, never re-created (net-new facts only, e
    `manualSections`, so a section on no package is a section no review checks. Where
    `onNoPackage` is not empty, the packages were drafted before every section was placed: run
    `agents/orientation.md` step 8 sub-step 6 yourself now, placing each listed section on the package that
-   buys it, before window 1 starts. Read `manualSectionPlacement.truncated` whatever
+   buys it, before window 1 starts. Each manual reader that step sends carries a `Refused so far:`
+   line: put on it each call the user refused in this session, or `none`. Read `manualSectionPlacement.truncated` whatever
    `onNoPackage` holds: when it is true the placement count is incomplete, and close-out says so.
    A section still on `onNoPackage` after that is placing this run did not finish: close-out
    names it with what stopped its placing. Then send one fresh agent to copy the final `solicitation_list_packages` response
@@ -1410,7 +1411,9 @@ On the go-ahead:
    reviews, passes, reviews per pass, trades, and the packages sharing a trade. Where it refuses
    because the list no longer carries a package with manual section pages no review has read to
    their end, append each `note 3` line the refusal gives to the ledger as written and run it
-   again; the close-out names each section so recorded.
+   again; the close-out names each section so recorded. Where it refuses because no letter is
+   left to name a pass of continuations, append its `note 3` lines the same way and check in
+   naming those sections, since that trade's packages need folding into fewer before it plans.
 
    In a pass on an addendum, the script reads the pass's own `trades/` files beside the plan and
    plans a review only for a package covering a trade this pass wrote on (its `tradeCode`, a
@@ -1433,29 +1436,51 @@ On the go-ahead:
 2. **Run the reviews** as stage 4 runs its passes, with `review-<pass id>` in place of the pass id,
    so the runner dispatches one `plumlayer:scope-reviewer` per unit in turn rather than a reader.
    The runner's `verify_unit` against the pages each review opened, your one count call over the
-   pass's prefixes, one `pass:` line each. No two passes share a trade, so none waits on another, and
+   pass's prefixes, one `pass:` line each. No two passes of reviews share a trade, so none waits on another, and
    you start what `start now:` names, up to six at once, as stage 4 step 1 says. A review reads every manual section on its package whole, up to its page cap, and
    names the pages the cap left as `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` on its
-   `sections not checked:` line. Its runner then binds a continuation unit into the same pass with the plan script's
-   `continue` mode and runs it there, so every page of a section is read inside the window without
-   your asking; you start nothing for it. A continuation joins its pass while the pass runs, and the
+   `sections not checked:` line. Its runner then binds a continuation unit with the plan script's
+   `continue` mode, into the same pass where it holds fewer than twelve units, and runs it there,
+   so every page of a section is read inside the window without your asking; you start nothing for
+   it. A continuation joins its pass while the pass runs, and the
    `--reported` call reads the plan when you make it, so the prefixes it prints for the pass carry them:
    its continuations are units of the pass like any review, and the record script refuses a count
-   that leaves one out. Each review also writes the standard lines whose condition it finds on this
+   that leaves one out. Where the pass already holds twelve units, a long manual's continuation
+   goes into a pass of continuations of its own, the pass's id with a letter after it
+   (`i1-W3-3b`), whose `starts after:` line names the pass it came out of and every earlier pass
+   of a trade it holds, so no two reviews of one trade run at once; the listing offers it
+   once that pass is recorded, and you start it as any pass, so a manual of any length is read to
+   its end in the plan. You never read a manual section yourself, and never send an agent to read
+   one outside the plan. Where a hand-back's `unread:` line carries an `unread section` or an
+   `unread sections not placed:` note, the plan could not place the review that reads those pages
+   and the runner stopped the pass there: start no further pass, and check in at once naming the
+   package and the sections the note names. On the estimator's go, dispatch that pass again; its
+   runner skips the units already verified and passes over the one so noted while its report
+   reads the same, and the close-out
+   names those sections as not read. Each review also writes the standard lines whose condition it finds on this
    job's own drawings or manual, each cited to where it found it, and settles its package's headings
    in the order the work is built, or on the general requirements package in the order of its
    seven headings.
 3. **Check in every few packages.** Where the listing reads `check-in due: yes`,
    four `pass:` lines have landed since the last `checkin:` line: check in (format below) on the
    passes `since the last check-in:` names: the packages finished, their pages ready, what was raised. A
-   pause here is at a pass boundary and loses nothing.
+   pause here is at a pass boundary and loses nothing. A `continued:` note the check-in prints
+   under `read to its end in a further review` names a section a later review read to its end.
+   One it prints under `to look at` names a section with pages still to read: the read plan's
+   pass of continuations whose unit line carries `<code> from page` for it reads them, its
+   heading naming the package, and the listing shows that pass under `waiting:` or `start now:`.
+   One an `unread section` note names has no pass to read it.
 
 <!-- user-facing -->
 At each of these check-ins, name the packages you finished, say their pages are ready to look at,
 and name what you raised on them and what you would like them to look at. Name each pair of rows
 the reviews found carrying the same work, the row that now carries every sheet and the one left
 to retire, and say they retire it on the site or tell you to. Where a manual section ran past one
-review's pages, say you read the rest of it in a second review.
+review's pages, say you read the rest of it in a further review only where the check-in lists
+that section as read to its end in a further review. Where it lists the section to look at, name
+the section, the pages still to read and the package whose next review reads them once the
+reviews before it are finished, and where an unread note names it, say no review could be
+planned for those pages.
 Then say which packages come next, in one sentence, or where none is left, that you have reviewed
 every package and go on to the package split and the close-out. A pause here loses nothing.
 <!-- /user-facing -->

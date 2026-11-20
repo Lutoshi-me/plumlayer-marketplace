@@ -585,18 +585,36 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   ```
 
   with the Bash tool, single quoted, right after that `verified` line and before the next unit's
-  `dispatch` line. It binds a continuation unit into your pass
-  block right after that unit and prints one line naming it; run again, it binds nothing new. Read
-  your pass block again: the continuation is your next unit, and you run it as any unit, its
-  `dispatch` line first (`purpose continue the <package name> manual sections`), then the
-  dispatch, then its verification exactly as a review's. Its dispatch carries a review's lines
-  and two more copied off its unit line, `Continues: <the unit id after continues>` and
+  `dispatch` line. It binds a continuation unit and prints one line naming it and the pass that
+  holds it; run again, it binds nothing new. Where your pass holds fewer than twelve units it
+  binds it into your pass block right after that unit (`bound <id> in pass <your pass id> after
+  <unit id>`): read your pass block again, and the continuation is your next unit, and you run it
+  as any unit, its `dispatch` line first (`purpose continue the <package name> manual sections`),
+  then the dispatch, then its verification exactly as a review's. Its dispatch carries a review's
+  lines and two more copied off its unit line, `Continues: <the unit id after continues>` and
   `Sections: <the sections after sections>`. A continuation whose report names pages left is
-  continued the same way, so every page of a section is read in the pass. The review's
-  `continued:` anomaly goes on the ledger as every anomaly does, and the continuation's own lines
-  are what show those pages read. Where the script refuses because your pass already holds twelve
-  units, append one `note <window> <pass> <unit> unread section <code> pages <a> to <b> left, the pass holds twelve units`
-  per section the refusal names and go on to your next unit. Any other refusal is a mismatch.
+  continued the same way. Where your pass already holds twelve units it binds it into a pass of
+  continuations after yours (`bound <id> in pass <another pass id>, continuing <unit id>`), which
+  waits for yours and which the lead starts with a runner of its own once yours is recorded:
+  that unit is not yours to run, so go on to your next unit. So every page of a section is read
+  in the plan, in your pass or a later one. The review's `continued:` anomaly goes on the ledger
+  as every anomaly does, and the continuation's own lines are what show those pages read.
+
+  Where the script refuses, no continuation is placed for the sections the refusal names, and you
+  never read those pages yourself or send any agent to read them outside the plan. A refusal
+  saying another run of the script holds the lock is not about the report: run the same command
+  again, up to three times in all, and where it still refuses, stop the pass on a mismatch naming
+  the lock, with no note, so the next dispatch of your pass binds it. A refusal that ends with
+  `note 3` lines in backticks names each section it leaves unread: append each of those lines to
+  the ledger as written. It gives
+  `note <window> <pass> <unit> unread section <code> pages <a> to <b> left, no pass can take its continuation`
+  for each section no pass can take, and one
+  `note <window> <pass> <unit> unread sections not placed: report <digest>, <each section the script cannot read>`
+  where the `sections not checked:` line names a section in a way the script cannot read. It
+  still binds a continuation for every section it can read, and then opens with the `bound`
+  line, and that continuation is placed as above. Then stop the pass there and go straight to
+  your summary, whose `unread:` line carries the notes, so the lead names those sections to the
+  estimator. Any other refusal is a mismatch.
 
   Before your first unit, on every dispatch, run
 
@@ -606,11 +624,15 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
 
   with the Bash tool. A runner that stopped between a unit's `verified` line and its `continue` run
   left that unit finished, which the look before each unit skips, with its pages left bound to no
-  continuation. This run binds into your pass block the continuation each such unit of your pass
-  is owed, and where your pass has no room for one it prints that unit's `unread` note, the shape
-  above filled in, for each section left that the ledger does not carry yet. Append each line it
-  prints that opens with `note ` to the ledger as printed, then read your pass block again: a
-  continuation it bound carries no `verified` line and runs as any unit. Any refusal is a mismatch.
+  continuation. This run binds the continuation each such unit of your pass is owed, into your
+  pass block or a pass of continuations after it as above. It passes over a unit whose report
+  reads as it did when its `unread sections not placed:` note was written, the note's digest
+  naming that report, so a report someone corrected since is continued. For each section it
+  leaves unread that the ledger does not carry yet it prints the note, the shapes above filled
+  in: append each line it prints that opens with `note ` to the ledger as printed, and stop the
+  pass there as above. Otherwise read your pass block again: a continuation it bound into your
+  pass carries no `verified` line and runs as any unit. A refusal saying another run holds the
+  lock you run again as above; any other refusal is a mismatch.
 
 ## Recheck mode
 
