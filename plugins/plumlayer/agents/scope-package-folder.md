@@ -154,7 +154,17 @@ why we need the answer. A Question that needs that sentence to be worth sending 
    and patching under the finish) go with the flooring sub, whichever package they sit on; a poured
    gypsum topping and the sound mat laid under it go with the sub who pours it; finish hardware and
    door operators with doors, frames and hardware; reinforcing and post-tensioning with
-   cast-in-place concrete; wood trusses with the framer; steel deck with structural steel. Joint
+   cast-in-place concrete; wood trusses with the framer; steel deck with structural steel. The
+   layers of an assembly go with the sub who builds the assembly, even where the manual gives a
+   layer a section of its own: the roof insulation, tapered insulation and cover board under a
+   roof membrane with the roofer; the continuous insulation, furring, flashings and trim at a
+   cladding with the siding sub; a vegetated roof's root barrier, drainage layers, growing media
+   and plantings with the package that carries the vegetated roof. Flashing in a wall or at a
+   window goes with the wall or window trade, and the roofer carries the flashing that ties into
+   the roof. A package that carries only such layers folds into the package of the sub who builds
+   the assembly, and a layer's trade on another sub's `codes` moves there. A layer's row on a
+   trade of another sub, cover board on the thermal insulation trade, is a row whose trade is
+   wrong, re-homed to the trade of the sub who builds the assembly as the re-home above says. Joint
    sealants go with the waterproofer: a sealant package folds into the waterproofing package, its
    trade and its sections added there. Penetration firestopping is often carried by each trade at
    its own penetrations, and its rows still sit on one package each: a firestopping package folds

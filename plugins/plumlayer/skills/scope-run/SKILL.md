@@ -59,7 +59,9 @@ The three windows:
    number and the tags a material key, legend or schedule gives it, is a Question asking the design
    team to confirm the work is not required, cited to the start of the section and on its own row
    with no value, so the Question shows on the trade's page. One product of a section whose other
-   work the sheets show raises nothing, since bidders price what the sheets place. Work the manual
+   work the sheets show raises nothing, since bidders price what the sheets place, while a
+   requirement a section puts on the work the sheets show, each piping system it insulates or the
+   finish level of the board drawn, is a row however few sheets draw it. Work the manual
    never names is a Question, cited to a box around the callout. Each clears the Question bar
    below first, and a low-cost one is left open for bidders. A package's page is finished when its review is.
 

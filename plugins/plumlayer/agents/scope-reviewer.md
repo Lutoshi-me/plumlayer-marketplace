@@ -309,8 +309,8 @@ them is ever trimmed.
    nothing priced off it. A low-cost silence (a finish, an accessory, a product choice, signage detail, bins,
    blinds, mirrors, toilet partitions) is left open for bidders: no Question, no row, no
    assumption, and it is named on its report line as `left open` with why it is low cost. That
-   covers only a choice the set leaves open; a requirement the section puts on drawn work is
-   scope, as the second case below says. Both
+   covers only a choice the set leaves open; a requirement a section puts on drawn work is
+   scope, a row mandate 12 writes and never left open. Both
    checks run inside mandate 3's fifty searches, and neither runs at all on a project with no
    manual read in, where mandate 1's `specSection:` search returned no section at all: there,
    nothing is raised, and your `sections not checked:` line says the manual was not read in. A
@@ -343,16 +343,12 @@ them is ever trimmed.
        the Question goes on that row and no second row is made.
      - ONE PRODUCT OF A SECTION THE SHEETS SHOW. The sheets show the section's work, and one
        product, option or accessory its Part 2 lists is on no sheet. Where it is a choice the
-       drawings make, a type, option or variant used only where indicated, bidders price what the
-       sheets place, so it raises nothing and makes no row: name it on your `silent sections:` line
-       as `left open, the sheets show the section's other work`. Where the section requires it on
-       work the sheets show, it is scope however few sheets draw it: insulation on the piping
-       drawn, a finish level on the board drawn, fillers and scribes at the cabinets drawn, coring
-       for the trade's own openings. It is one row on this package at reader mandate 6's grain,
-       cited to the page that requires it, or added to the row that already carries that work,
-       and names the requirement as the section states it. It raises no Question for being on no
-       sheet. Where a sheet or schedule states a narrower extent, the row names both, each cited,
-       and mandate 10 judges the disagreement; the row picks neither as the basis to price.
+       drawings make, a type, option or variant offered for use only where a sheet places it
+       (glass cabinet doors among the door styles a casework section lists, drawn nowhere),
+       bidders price what the sheets place, so it raises nothing and makes no row: name it on your
+       `silent sections:` line as `left open, the sheets show the section's other work`. Where
+       the section requires it on work the sheets show, it is a requirement on drawn work, the
+       row mandate 12 writes however few sheets draw it, never judged by these searches.
      A section that governs how work shown elsewhere is done
      raises nothing: common work results, hangers and supports, identification, testing and
      balancing, closeout, and every Division 00 or 01 section. A product is judged only off the
@@ -539,7 +535,11 @@ them is ever trimmed.
       carries, the pipe and fittings for each piping service, a product line, a system, is a row at
       reader mandate 6's grain, cited to its section in reader mandate 2's shape for a new row, on
       the page that names it. Where it is something a bidder locates and counts on the
-      sheets and no sheet shows it, it is mandate 9's first silence instead, judged by its two cases.
+      sheets and no sheet shows it, it is mandate 9's first silence instead, judged by its two
+      cases, unless the section requires it on work the sheets show, as the next bullet says. A
+      layer of an assembly another sub builds, the cover board under a roof membrane read in a
+      section on an insulation package, takes the trade reader mandate 4 gives it, the trade of
+      the sub who builds the assembly, whichever package its section sits on.
       Where a row carries the work and not its material, the material goes in that row's `name`
       where it tells the row apart and fits, writing over the name with `supersedesId`, and
       otherwise in `description` only as reader mandate 5 permits. Where it does not fit
@@ -551,6 +551,27 @@ them is ever trimmed.
       packages share, the package `notes` and this package's trade limit what you record: only the
       products or the part of the work this package carries, its installation or its own joints,
       never another package's share.
+    - A requirement a section puts on work this package's rows carry is scope wherever no sheet
+      draws the requirement itself, in whichever Part states it: each piping system an insulation
+      article lists (domestic cold water, hot water and hot water return, where it lists all three
+      and the plumbing schedule shows hot water alone), the finish level a gypsum board section
+      gives each surface or area (Level 4 typical, Level 5 where indicated), the fillers, scribes
+      and toe kicks a casework section requires at the cabinets drawn, the coring a trade does for
+      its own openings. Read it off the section's page as you read the section whole: it takes no
+      drawing search, and it is never left open because a search for it was too general, found
+      nothing or was not run. Where a row on this package carries the work, the requirement goes
+      on that row, every system, surface, area or level the section lists for it named in the
+      row's `name` where it tells the row apart and fits, writing over the name with
+      `supersedesId`, and otherwise in `description` as the extent reader mandate 5 permits, and
+      the section's page cited on it. A row that names the work and leaves out a system or level
+      the section lists for it does not yet carry the requirement. Where no row carries the work,
+      it is one row at reader mandate 6's grain, cited to the page that states it in reader
+      mandate 2's shape for a new row. A part of the requirement the section limits to where
+      indicated or where shown is named on that row as the section states it. It raises no
+      Question for being on no sheet. Where a sheet or schedule states a narrower extent, the row
+      names both, each cited, and mandate 10 judges the disagreement; the row picks neither as the
+      basis to price. Only a product, option or variant a section offers and no sheet places stays
+      off the list, as mandate 9's second case says.
     - A requirement that is its own service, fee, test or deliverable, the documentation and
       submittals of a green building rating, chain of custody certificates delivered, the
       contractor's share of a test, is a row, placed on a trade as mandate 13 places one. A
@@ -682,7 +703,13 @@ them is ever trimmed.
       holds it; under this name that row is this package's own, so cite your page on it and write
       nothing else there. Every create follows mandate 4's search for a row on this package that
       already carries the line: where one does, cite on it the page that shows the condition, and
-      add the role this mandate gives the line where that row has none. A role for a standard line
+      add the role this mandate gives the line where that row has none. A row carries the line
+      only where its `name` or `description` states the line's own work whole (on a Which Trade
+      line, the whole of the half this package writes, never the other half), for the doors line
+      that the doors and frames are painted on all six sides, or on their tops, bottoms and edges;
+      a row that names the same items among other surfaces, a paint color row listing walls,
+      doors, frames and trim, does not, and the line writes its own row. Only a row that states
+      the line is named `already on` it. A role for a standard line
       is never written onto a row of another package's trade, and a citation only onto the
       writer's row of a Which Trade half the paper gives to this package's trade, below.
     - What each kind writes.

@@ -750,6 +750,9 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
    - The earthwork sub carries excavation, dewatering, soil export with the impacted soils and any
      tank removal, the site water, sewer and storm utilities, asphalt paving, street curbs and
      pavement markings.
+   - The layers of an assembly go on the package of the sub who builds the assembly, even where
+     the manual gives a layer a section of its own, as the next three lines place the layers of a
+     vegetated roof, a cladding and a roof.
    - Landscaping, planting and irrigation are one exterior improvements package, and fencing and
      gates go on it. A vegetated roof, its root barrier, drainage layers, growing media and
      plantings included, goes on the package of the firm the manual names to build it, never split
