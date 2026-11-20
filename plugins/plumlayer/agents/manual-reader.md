@@ -1,6 +1,6 @@
 ---
 name: manual-reader
-description: Reads one group of a Plumlayer project manual's sections for the package split, one level down from orientation, so no manual page stays in the agent that drafts the packages. Reads each section's Part 1 and writes one line per section, its title, its work, who furnishes and who installs, what the owner furnishes or hires, the related sections, and any single installer asked for, or copies the company's trade list to a file. Dispatched by orientation, one fresh instance per group. Writes nothing to the record. Not for scope reading, package review, or bid work.
+description: Reads one group of a Plumlayer project manual's sections for the package split, one level down from orientation, so no manual page stays in the agent that drafts the packages. Reads each section's Part 1 and writes one line per section, its title, its work, who furnishes and who installs, what the owner furnishes or hires, the related sections, and any single installer or delegated design asked for, or copies the company's trade list to a file. Dispatched by orientation, one fresh instance per group. Writes nothing to the record. Not for scope reading, package review, or bid work.
 model: sonnet
 tools: Read, Write, Grep, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__search
 ---
@@ -88,8 +88,8 @@ box, since you cite nothing, and `omit` leaves out the header and footer the man
 every page. Stop at the page where Part 2 begins, at
 the section's `pageEnd`, or after three pages, whichever comes first. Part 1 is where the section
 says what it includes, what it furnishes for another section to install or installs for another,
-what the owner furnishes, who tests and inspects, and what single installer or single firm it
-asks for. At most twenty-four pages for the group, a page read twice counted once. Where the cap runs
+what the owner furnishes, who tests and inspects, what single installer or single firm it
+asks for, and whether the firm that provides the system designs it. At most twenty-four pages for the group, a page read twice counted once. Where the cap runs
 out, each section left is `title only` with the reason `page cap`. A read Plumlayer answers with
 an error is tried once more; a second failure makes the section `title only` with the reason
 `read failed: <the error>`. A read the client refuses is not tried again, as "A refused call"
@@ -115,8 +115,14 @@ Take from those pages only what Part 1 states:
    by its six digits. Leave out a related section named for the substrate, the blocking, a
    coordination point or work next to this one.
 5. A single installer or a single firm the section asks for across this section and another, or
-   for all of its own work, in a few of the section's words. Products from one manufacturer or
-   one source say nothing of who bids the work and stay off the line.
+   for all of its own work, in a few of the section's words: one source for the system's design,
+   supply and installation, or an installer the manufacturer approves or employs for all of the
+   section's work, counts. Products from one manufacturer or one source, with nothing said of who
+   installs them, say nothing of who bids the work and stay off the line.
+6. Whether the section has the system designed by the firm that provides it, a delegated design
+   (the contractor's engineer, the installer's engineer or the manufacturer's engineer designs it
+   to the performance the section sets), in a few of the section's words. Submittals of the
+   manufacturer's standard calculations alone are no delegated design and stay off the line.
 
 Write what the pages state. Where you read Part 1 to its end and it is silent on a field, the
 field says `not stated`. Where Part 1 ran past the pages you read, a field the pages read are
@@ -132,7 +138,7 @@ section of your group in the order the block lists them, every field present:
 group <group id>   sections <n>   read <n>   title only <n>   pages read <n> of at most 24
 stopped: <why the group was not read, or "no">
 refused: <each call the client refused + the section it was for, or "none">
-<six digits> | <title as printed on the section's first page, or as listed> | work: <what the section's work is, one short clause> | furnish: <who furnishes each item, as stated, or "not stated" or "not read"> | install: <who installs each item, as stated, or "not stated" or "not read"> | owner: <what the owner furnishes, installs or hires, or "not stated" or "not read"> | related: <six digits + the part each carries, or "none", or "not read"> | single installer: <the section's words, or "not stated" or "not read"> | read: <fileId p<a>, or p<a>-p<b>, to the end of Part 1 or "Part 1 continues"; or "title only, <reason>">
+<six digits> | <title as printed on the section's first page, or as listed> | work: <what the section's work is, one short clause> | furnish: <who furnishes each item, as stated, or "not stated" or "not read"> | install: <who installs each item, as stated, or "not stated" or "not read"> | owner: <what the owner furnishes, installs or hires, or "not stated" or "not read"> | related: <six digits + the part each carries, or "none", or "not read"> | single installer: <the section's words, or "not stated" or "not read"> | design: <who designs the system where the section delegates it, in the section's words, or "not stated" or "not read"> | read: <fileId p<a>, or p<a>-p<b>, to the end of Part 1 or "Part 1 continues"; or "title only, <reason>">
 ```
 
 Keep each line short, about 60 words at most: plain words only, no quoted paragraph, no article
@@ -144,7 +150,7 @@ one.
 A generic line, for the shape only:
 
 ```text
-102800 | Toilet, Bath and Laundry Accessories | work: grab bars, mirrors and toilet accessories | furnish: this section | install: installed under 064020 | owner: not stated | related: 088000 the frameless mirrors | single installer: not stated | read: file-0a1b p412-p413, to the end of Part 1
+102800 | Toilet, Bath and Laundry Accessories | work: grab bars, mirrors and toilet accessories | furnish: this section | install: installed under 064020 | owner: not stated | related: 088000 the frameless mirrors | single installer: not stated | design: not stated | read: file-0a1b p412-p413, to the end of Part 1
 ```
 
 Then return the first three lines of your result and its path, and end.

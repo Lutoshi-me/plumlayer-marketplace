@@ -141,6 +141,22 @@ why we need the answer. A Question that needs that sentence to be worth sending 
    orientation reads it. A section with none, read from the table of contents alone, moves by its
    title, and its package's `notes` say the manual's text for it was not read in.
 
+   A package for a system one specialty firm furnishes and installs, such as prefabricated
+   balconies or ground improvement, stays a package of its own. Orientation's step 8 gives the
+   test and its signs: one firm furnishes and installs the whole system, and the general trades on
+   the job do not bid it. Ask it of a package orientation did not draw too, a package the record
+   made as a row landed included, from its sections' Part 1 and its rows. Never fold such a
+   package into a general trade's package, never move its trade or a section of its system off it
+   to one, and write no re-home that takes its rows to a general trade's trade, the system's own
+   parts and layers included, even where the system touches another assembly: the assembly rule
+   below places the layers of an assembly another sub builds, and a specialty system's package is
+   never a package that carries only another sub's layers. The steel default never takes a
+   prefabricated steel balcony to the metal fabrications package. What another sub provides at
+   the system, the blocking or embeds the framer or the concrete sub sets for the balconies, or
+   the working pad and spoils the earthwork sub handles for ground improvement, stays with that
+   sub. A default in orientation's step 8 that puts the work with a firm, such as the framer's
+   wood trusses or the excavation support default, still stands over the test, as there.
+
    On every job, read the default carries in orientation's step 8,
    `<plugin root>/agents/orientation.md`. Each default applies to every package
    orientation did not draw, a package the record made as a row landed included: that package

@@ -674,8 +674,8 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
    title would not. What the line states below, a furnish and install split, an owner's part, a
    related section's part, or a single installer, changes the placement under the rules of this
    sub-step, and can make the package those rules call for: the installer's package of a
-   documented furnish and install pair, or a firestopping package where the manual asks for a
-   single firestopping installer.
+   documented furnish and install pair, a firestopping package where the manual asks for a
+   single firestopping installer, or the package of a specialty system, as below.
    A section whose work a firm of another package carries goes on that package, as below. Its
    `furnish:` and `install:`
    say who furnishes and who installs: where they name another section, that is a documented
@@ -684,7 +684,9 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
    them. Its `owner:` says what the owner furnishes or hires, which the owner rule below applies
    to: an item the owner furnishes for the contractor to install goes on the installing firm's
    package, and its `notes` say the owner furnishes it. Its `single installer:` is where the
-   manual asks for one firestopping installer. A field that reads `not stated`, or `not read` where Part 1
+   manual asks for one firestopping installer, or for one firm across a whole system, and its
+   `design:` is where the section has the system designed by the firm that provides it; either
+   can mark a specialty system, as below. A field that reads `not stated`, or `not read` where Part 1
    ran past the pages read, leaves the default below in place, so a section whose line states no
    furnish or install split is placed as the defaults and its title place it. A section whose line reads `title only` is placed by its title; where
    its reason is `no section text in the manual`, its package's `notes` say the manual's text for
@@ -695,6 +697,56 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
    improvements), the same probe that already produces `missingScopeFamily` entries (step 6): a
    silent family becomes a `missingScopeFamily` entry AND, where a job of this kind would normally
    carry the trade, a package. It raises no Question.
+
+   A system one specialty firm furnishes and installs is a package of its own, named for the
+   system, such as prefabricated balconies or ground improvement. The test is
+   who bids it: one firm furnishes and installs the whole system, and the general trades on the
+   job, the firms that bid most of its work such as the earthwork and concrete subs, the framer,
+   the metal fabricator and the roofer, do not bid it. Ask it of every section no default below
+   places. Where a default puts the work with a firm, the framer's wood trusses, the drywaller's
+   metal studs, the storefront package, the mason's precast, the steel default and the excavation
+   support default among them, the test is no reason to move the work, though the manual can
+   still override the default as the defaults below say, and a system a default already makes
+   its own package, such as elevators or spray fireproofing, needs no test. Find its trade in
+   `trades.md` by the system's name and the trade's aliases first, as sub-step 4 finds a trade:
+   prefabricated balconies, for example, sit under a metal fabrications trade that lists them as
+   an alias. Where no trade names the system, take the trade that names the work or method its
+   section specifies, such as rammed aggregate piles, soil stabilization or pressure grouting for
+   ground improvement, and keep the package's name the system's. Check the code the list returns,
+   and never take a neighboring trade for its division alone.
+   Tell a specialty system from an ordinary section by these signs:
+
+   - Its line's `design:` says the firm that provides the system designs it, a delegated design,
+     such as ground improvement the installer's engineer designs to the geotechnical report, or
+     balconies the manufacturer engineers.
+   - Its line has one firm furnish and install the whole system: `furnish:` and `install:` name
+     the manufacturer or its installer for all of it, or `single installer:` asks for one firm, a
+     single source for the system's design, supply and installation, or an installer the
+     manufacturer approves for all of its work.
+   - The trade list carries a trade named for the system itself, by its name or an alias, found
+     in `trades.md` as sub-step 4 finds a trade.
+
+   The test decides, and a sign is how a section shows it: one sign is enough where the section's
+   work is the whole system and no general trade's firm on the job bids it. A section placed by its title
+   alone is a specialty system only where its title names the whole system and the trade list
+   carries a trade named for it, by its name or an alias. None of these is a sign: products from one manufacturer, an
+   installer's experience or training, a section for one part or one layer of an assembly another
+   sub builds, and work a general trade's firm fabricates and installs, such as metal
+   fabrications, metal stairs or a steel frame. A delegated design alone is no sign either where
+   that firm is a general trade's, as for the metal fabricator's stairs.
+
+   A specialty system's package keeps the system whole, even where it touches another assembly:
+   its own parts and layers, the balcony's frame, decking, railings and waterproofing where its
+   section carries them, stay on it. The assembly line below places the layers of an assembly
+   another sub builds, so it never takes a part of a specialty system to that sub's package, and
+   the steel default never takes a prefabricated steel balcony to the metal fabrications package.
+   What another sub provides at the system stays with that sub: the blocking or embeds the framer
+   or the concrete sub sets for the balconies, and the working pad and spoils the earthwork sub
+   handles for ground improvement. The specialty package's `notes` say one firm furnishes and
+   installs the system, name the sign that showed it, and name what each other package provides
+   at it. Where the manual has a supplier furnish the system and another firm install it, the
+   system is a furnish and install pair as above, and its supplier's package is still a package
+   of its own.
 
    A section a firm of another package carries goes on that package's `manualSections`, and its
    trade on that package's `codes`, never a package of its own. Walk-off mats, an acoustic
@@ -752,7 +804,8 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
      pavement markings.
    - The layers of an assembly go on the package of the sub who builds the assembly, even where
      the manual gives a layer a section of its own, as the next three lines place the layers of a
-     vegetated roof, a cladding and a roof.
+     vegetated roof, a cladding and a roof. A specialty system's own parts stay on its package,
+     as above.
    - Landscaping, planting and irrigation are one exterior improvements package, and fencing and
      gates go on it. A vegetated roof, its root barrier, drainage layers, growing media and
      plantings included, goes on the package of the firm the manual names to build it, never split
@@ -795,7 +848,8 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
 
    - Structural steel is its own package where the structural sheets show a steel podium or a
      steel frame, or steel framing whole floors or roofs. On a wood job over a concrete podium, or
-     a renovation, the steel goes on the metal fabrications package.
+     a renovation, the steel goes on the metal fabrications package. A specialty system's steel,
+     such as a prefabricated steel balcony, stays on that system's package, as above.
    - Excavation support and underpinning are their own package where the drawings show a basement
      below the water table, a support of excavation system or adjacent buildings to underpin. A
      manual section alone does not make the package; otherwise they go with earthwork.
