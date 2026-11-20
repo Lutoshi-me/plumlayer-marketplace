@@ -77,8 +77,8 @@ Three modes:
         the summary no longer speaks for it.
         Where every count holds, it appends one `pass:` line to the ledger and prints it:
 
-            pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified yes
-            pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified yes
+            pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> lead-verified yes
+            pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> pages-opened <n> searches <n> lead-verified yes
 
         Under it, it prints the pass as the estimator hears it, the line the check-in prints for
         it below, with the new items off the summary's trades line, so the one line the lead says
@@ -86,8 +86,8 @@ Three modes:
         the entry count.
 
         `created` is the sum of the lead's own counts. `updated`, `questions` and `replied` come off
-        the summary's totals line, `candidates` off its trades line, and in window 3 `pages-opened`
-        and `searches` off its `review:` line. A unit whose count on the record is above the one its
+        the summary's totals line, and in window 3 `pages-opened` and `searches` off its `review:`
+        line. A unit whose count on the record is above the one its
         runner verified is named under the line with both counts: an entry count under a prefix only
         grows, so a later write onto that unit's rows raises it, and nothing removes one. A count
         below the runner's is the record holding less than the runner verified: the script writes
@@ -102,8 +102,8 @@ Three modes:
         its id only on the lead's own line:
 
             window <n>, <n> passes
-            <n> sheets read (<sheet numbers>): new items <n>, items updated <n>, Questions raised <n>, replies <n>, new items with a candidate trade <n>
-            over <n> passes: new items <n>, items updated <n>, Questions raised <n>, replies <n>, new items with a candidate trade <n>
+            <n> sheets read (<sheet numbers>): new items <n>, items updated <n>, Questions raised <n>, replies <n>
+            over <n> passes: new items <n>, items updated <n>, Questions raised <n>, replies <n>
             your own check over <n> pass lines (<pass ids>), never said to the estimator: units <n>, entries <n>
 
         The new items are the summaries' `trades:` lines summed, each a subject the pass's runner
@@ -168,7 +168,7 @@ The recheck, window r:
     found, copied off the summary's `recheck:` line, which the summary script counts off each
     unit's own report:
 
-        pass: r <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> recited <n> rows-changed <n> removed <n> not-found <n> retired <n> kept <n> refused <n> lead-verified yes
+        pass: r <pass id> units <n> created <n> updated <n> questions <n> replied <n> recited <n> rows-changed <n> removed <n> not-found <n> retired <n> kept <n> refused <n> lead-verified yes
 
     A pass names its sheets as `<n> sheets rechecked (<sheet numbers>)`, and a retire pass its units
     as `<n> items checked for retiring`; the line under a recorded pass, and each pass of a
@@ -185,7 +185,8 @@ Exit codes:
      summary of another window or pass, one with no `ledger lines:` line or whose line does not
      name this ledger's first lines, one naming other units than the plan block carries, one
      with a unit it reads `verified no`, one with a unit it reads verified whose latest
-     `verified` line past those lines reads mismatch, or one with no totals line, no candidates count, or in
+     `verified` line past those lines reads mismatch, or one with no totals line, no trades line in
+     its shape or one summed with no trades file, or in
      window 3 no `review:` line, or in window r no `recheck:` line; at the check-in, a `--start` that is not a count of lines and
      characters or names a character past its line, and pass lines and totals that alone leave no
      room under the cap.
@@ -281,13 +282,14 @@ READ_ON_LABEL = "read to its end in a further review"
 _PLAN_UNIT_RE = re.compile(r"^(\S+-[1-9][0-9]*)\. (.+?), (?:file |page |from page )")
 
 # The figures of a `pass:` line, in its order, the window 3 pair included.
-PASS_FIGURES = ("units", "created", "updated", "questions", "replied", "candidates")
+PASS_FIGURES = ("units", "created", "updated", "questions", "replied")
 REVIEW_FIGURES = ("pages-opened", "searches")
 
 _SUMMARY_HEADER_RE = re.compile(r"^window: ([1-9][0-9]*|r)\s+pass: (\S+)$")
 _PER_UNIT_RE = re.compile(r"^per unit: (\S+) created (\d+|-) .* verified (yes|no)$")
 _TOTALS_RE = re.compile(r"updated (\d+), questions (\d+) replied (\d+)")
-_CANDIDATES_RE = re.compile(r"; candidates (\d+)$")
+# One trade on a summary's trades line: a catalog id, which carries spaces, then ` x` and its count.
+_TRADE_ENTRY_RE = re.compile(r"^(.+) x(\d+)$")
 _REVIEW_RE = re.compile(r"^review: pages opened (\d+), searches (\d+)$")
 _LEDGER_LINES_RE = re.compile(r"^ledger lines: (\d+) sha256 ([0-9a-f]{64})$")
 _RECHECK_RE = re.compile(
@@ -512,7 +514,7 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         )
 
     per_unit: dict[str, tuple[str, str]] = {}
-    totals = candidates = review = trades = recheck = ledger_lines = None
+    totals = review = trades = recheck = ledger_lines = trades_text = None
     for raw in lines:
         line = raw.strip()
         unit = _PER_UNIT_RE.match(line)
@@ -521,7 +523,7 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         elif line.startswith("totals verified:"):
             totals = _TOTALS_RE.search(line)
         elif line.startswith("trades:"):
-            candidates = _CANDIDATES_RE.search(line)
+            trades_text = line
             trades = _trades_of(line)
         elif line.startswith("review:"):
             review = _REVIEW_RE.match(line)
@@ -536,10 +538,17 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         )
     if totals is None:
         raise LeadPassError(f"{path} carries no totals line")
-    if candidates is None:
+    if trades_text is None:
+        raise LeadPassError(f"{path} carries no trades line")
+    if trades_text == pass_summary.TRADES_NO_FILE_LINE:
         raise LeadPassError(
-            f"{path}: its trades line carries no candidates count, so the runner summed the pass "
-            f"with no trades file"
+            f"{path}: its trades line reads `{trades_text}`, so the runner summed the pass with no "
+            f"trades file and the pass has no item count"
+        )
+    if trades is None:
+        raise LeadPassError(
+            f"{path}: its trades line reads {trades_text[:80]!r}, and the summary script writes "
+            f"`trades: <catalog id> x<n>, ...` or `{pass_summary.TRADES_NONE_LINE}`"
         )
     if window == 3 and review is None:
         raise LeadPassError(f"{path} carries no `review: pages opened <n>, searches <n>` line")
@@ -550,8 +559,7 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         "updated": totals.group(1),
         "questions": totals.group(2),
         "replied": totals.group(3),
-        "candidates": candidates.group(1),
-        "items": sum(trades[0].values()) if trades else None,
+        "items": sum(trades.values()),
         "pagesOpened": review.group(1) if review else None,
         "searches": review.group(2) if review else None,
         "recheck": dict(zip(RECHECK_FIGURES, recheck.groups())) if recheck else None,
@@ -655,7 +663,6 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
         ("updated", summary["updated"]),
         ("questions", summary["questions"]),
         ("replied", summary["replied"]),
-        ("candidates", summary["candidates"]),
     ]
     if window == 3:
         figures += [("pages-opened", summary["pagesOpened"]), ("searches", summary["searches"])]
@@ -712,19 +719,20 @@ def _figure(line: str, field: str) -> int | None:
     return int(parts[at + 1])
 
 
-def _trades_of(line: str) -> tuple[dict[str, int], int] | None:
-    """A summary's trades line as item counts by catalog id and its candidates, or None without one."""
-    candidates = _CANDIDATES_RE.search(line)
-    if candidates is None:
-        return None
-    body = line[len("trades: "):candidates.start()]
+def _trades_of(line: str) -> dict[str, int] | None:
+    """
+    A summary's trades line as item counts by catalog id, empty where its units created no item on
+    any trade, or None where it was summed with no trades file or is in no shape the summary writes.
+    """
+    if line == pass_summary.TRADES_NONE_LINE:
+        return {}
     by_trade: dict[str, int] = {}
-    if not body.startswith("no trade on any unit"):
-        for entry in body.split(", "):
-            code, _x, count = entry.rpartition(" x")
-            if code and count.isdigit():
-                by_trade[code] = by_trade.get(code, 0) + int(count)
-    return by_trade, int(candidates.group(1))
+    for entry in line[len("trades: "):].split(", "):
+        match = _TRADE_ENTRY_RE.match(entry)
+        if match is None:
+            return None
+        by_trade[match.group(1)] = by_trade.get(match.group(1), 0) + int(match.group(2))
+    return by_trade
 
 
 def _reviews_of(plan_path: Path) -> dict[str, str]:
@@ -932,7 +940,7 @@ def _said_figures(items: int | None, figures: dict[str, int]) -> str:
     return (
         (f"new items {items}" if items is not None else "new items not counted, a summary or its trades count missing")
         + f", items updated {figures['updated']}, Questions raised {figures['questions']}, "
-        f"replies {figures['replied']}, new items with a candidate trade {figures['candidates']}"
+        f"replies {figures['replied']}"
     )
 
 
@@ -973,7 +981,6 @@ def checkin_lines(
 
     by_trade: dict[str, int] = {}
     items_of: dict[str, int] = {}
-    candidates = 0
     notes: list[tuple[str, str]] = []
     no_trades: list[str] = []
     no_summary: list[str] = []
@@ -1032,10 +1039,9 @@ def checkin_lines(
         if trades is None:
             no_trades.append(pass_id)
             continue
-        for code, count in trades[0].items():
+        for code, count in trades.items():
             by_trade[code] = by_trade.get(code, 0) + count
-        items_of[pass_id] = sum(trades[0].values())
-        candidates += trades[1]
+        items_of[pass_id] = sum(trades.values())
 
     # Each pass by what it read, with its figures in the estimator's words. The new items are the
     # pass's trades summed, every one a subject its runner found on the record; `created` on a pass
@@ -1073,7 +1079,6 @@ def checkin_lines(
     head.append(
         "items by trade: "
         + (", ".join(f"{code} x{count}" for code, count in ordered) if ordered else "none")
-        + f"; candidates {candidates}"
     )
     totals_on_record = {key: 0 for key in LANDED_COUNTED}
     for where, counts in on_record.items():

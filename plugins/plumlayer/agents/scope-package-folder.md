@@ -156,24 +156,26 @@ why we need the answer. A Question that needs that sentence to be worth sending 
    door operators with doors, frames and hardware; reinforcing and post-tensioning with
    cast-in-place concrete; wood trusses with the framer; steel deck with structural steel. Joint
    sealants go with the waterproofer: a sealant package folds into the waterproofing package, its
-   trade and its sections added there. Penetration firestopping goes with each trade at its own
-   penetrations: a firestopping package folds into the waterproofing package, its trade added to
-   that package's `codes` so its rows land on a package, and its section added to the
-   `manualSections` of every package whose work passes through it, and the waterproofing package's
-   `notes` say each trade carries the firestopping at its own penetrations and name those
-   packages. A firestopping package stays a package of its own only where the manual asks for a
-   single firestopping installer, or the estimator asks for one; its `notes` then say so. Where the
-   project has no waterproofing package, a sealant or firestopping package stays as it is, and its
-   `notes` say which firm carries it. Either way, for
-   each firestopping row whose name, description or citation says whose work it passes through,
-   write one `packageRole:<that trade>` record,
-   `{ role: "candidate", note: "confirm trade responsibility: could be <home> or <this trade>" }`,
-   for each such trade, since a row can name several, all in one `record_batch` whose returned
-   `count` must equal the entries sent, so that package's review reads the row. On a pass over an
-   addendum, each trade that gains a candidate here is added to the trades that pass reviews:
-   append one line `fold touched <catalog id>` for each such trade to
-   `<run folder>/trades/fold.txt`, which the window 3 plan reads with the passes' own trades files.
-   The estimator can have the firestopping rows moved to those trades, and that move is the
+   trade and its sections added there. Penetration firestopping is often carried by each trade at
+   its own penetrations, and its rows still sit on one package each: a firestopping package folds
+   into the waterproofing package, its trade added to that package's `codes` so its rows land on a
+   package, and its section added to the `manualSections` of every package whose work passes
+   through it, and the waterproofing package's `notes` say each trade may carry the firestopping
+   at its own penetrations and name those packages. A firestopping package stays a package of its
+   own only where the manual asks for a single firestopping installer, or the estimator asks for
+   one; its `notes` then say so. Where the project has no waterproofing package, a sealant or
+   firestopping package stays as it is, and its `notes` say which firm carries it. Either way,
+   each firestopping row keeps its trade and sits on the one package that covers that trade,
+   whatever trades' work it passes through, as any row the run is unsure of sits on the one trade
+   most likely to carry it: you write no record that puts it on another package. For each
+   firestopping row whose name, description or a page it cites names the trades whose work it
+   passes through, add one sentence to its `notesInternal` naming those trades as the ones that
+   could carry it at their own penetrations ("Could be by the plumber at its own pipe
+   penetrations"), after any text already there and cited to a page the row already cites, unless
+   its note already names them. Send every such sentence in one `record_batch`, whose returned
+   `count` must equal the entries sent. A row that names no such trade keeps its note as it is, and
+   the waterproofing package's `notes` are where the estimator reads who may carry it. The
+   estimator can have the firestopping rows moved to those trades, and that move is the
    estimator's own write, made on his word. A package whose
    trade is a heading no sub bids here, such as `09 00 00` Finishes, is split into the packages
    its subs bid, and each of its rows goes to the catalog trade that names its work, re-homed as
@@ -190,7 +192,9 @@ why we need the answer. A Question that needs that sentence to be worth sending 
    read its rows: one the contractor's own sub carries, such as mix testing the concrete sub
    engages, is re-homed to that sub's trade as the re-home above moves a row whose trade is wrong,
    and one several subs carry, such as a statement of responsibility each structural sub submits,
-   goes to the main one with a `candidate` role for each other. Where the manual and a sheet
+   goes to the main one's trade alone, re-homed as the re-home above, with one sentence added to
+   its `notesInternal` in the same batch naming the other subs that carry it too, after any text
+   already there and cited to a page the row already cites. Where the manual and a sheet
    disagree on who hires the agency for a row, that is a Question with both citations, cited on
    that row with `cite_source(kind: "question", questionId)`, and the row keeps its trade; the answer decides where it goes. The rest keep their trade. Where the delete is refused because bidders have bid that package, it
    stays. Where a package you keep lists that trade in its `codes`, take it off the
@@ -222,8 +226,8 @@ The lead dispatches this mode before each later check-in and at the scope run's 
 where your report carries a `deleted:` line. Read `solicitation_list_packages` again before each
 later check-in and at stage 8, and delete such a package again the same way. Such a package is
 one on the trade a `deleted:` line names after `trade` that a later write made again, as fold
-mode says, and the same way is fold mode's: its rows read first, each re-homed or given its
-candidate role there, then `solicitation_delete_package`. Append each act to your report as fold
+mode says, and the same way is fold mode's: its rows read first, each re-homed there, then
+`solicitation_delete_package`. Append each act to your report as fold
 mode's step 3 says, each delete as a `deleted:` line whose reason says a later write made the
 package again. Append nothing to the ledger. Then run the hand-back command with the package
 counts of your first and last package list reads, and return what it prints.
@@ -250,12 +254,10 @@ kept: <the package>, <why a fold or delete you would have made did not stand, as
 changed: <the package>, <the trades or sections its lists gained or lost>, <the reason>
 re-homed: <the row> from <the trade it left> to <the trade that names its work>, <the reason>
 question: <the Question's title>, <the row it is cited on>
-candidates: sent <n> landed <n>
 fold touched: <the catalog id>
 ```
 
-Write `candidates:` once per `record_batch` of candidate roles, with that batch's sent count and
-its returned `count`. Write `fold touched:` once for each line you append to `trades/fold.txt`.
+Write `fold touched:` once for each line you append to `trades/fold.txt`.
 Write `changed:` only for a package fold mode's step 1 finds on the live list with its lists
 changed and no act its change matches. Write `deleted:` only for a package the live list no
 longer carries. Write a `deleted:` line's `trade` and `package` as the package list you read
@@ -276,8 +278,8 @@ python3 '<plugin root>/scripts/fold_report.py' hand-back '<run folder>' --before
 
 Run it with the Bash tool, single quoted, `python` in place of `python3` on a seat that has only
 that name. `--before` and `--after` are the package counts of your first and last package list
-reads. It prints five lines: the packages before and after, the acts by kind, the candidates sent
-and landed with the rows re-homed and the Questions, that `phase: packages folded` is on the
+reads. It prints five lines: the packages before and after, the acts by kind, the rows re-homed
+and the Questions, that `phase: packages folded` is on the
 ledger, and the report's path. A refusal names one thing wrong with a line you wrote: fix that
 line and run it again, never hand-assemble the hand-back instead.
 

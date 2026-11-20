@@ -12,6 +12,4 @@ kept: Invented testing, its delete was refused because bidders have bid it
 re-homed: Invented concrete mix testing from 01 45 00 to 03 30 00, the concrete sub engages its own mix testing
 re-homed: Invented sealant at the storefront from 07 92 00 to 08 41 13, the storefront sub seals its own frames
 question: Invented question on who hires the special inspector, cited on the invented inspection row
-candidates: sent 3 landed 3
-candidates: sent 2 landed 2
 fold touched: 08 41 13

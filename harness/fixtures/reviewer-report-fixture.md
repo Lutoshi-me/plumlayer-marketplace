@@ -21,7 +21,7 @@ questions replied ids: none
 questions linked: none
 questions alone: none
 sent: 2   landed: 2   conflicts: none
-trades: 09 99 99 x1; candidates 0
+trades: 09 99 99 x1
 sheet readings written: none
 anomalies: none
 grain questions: none

@@ -27,22 +27,21 @@ Two modes:
 
             fold: packages <n> before, <n> after
             acts: folded <n>, split <n>, moved <n>, deleted <n>, kept <n>
-            records: candidates sent <n> landed <n>, rows re-homed <n>, questions <n>
+            records: rows re-homed <n>, questions <n>
             phase: packages folded appended
             report: <run folder>/reports/fold.md
 
         `--before` and `--after` are the package counts of the folder's own two package list reads,
         the first before its first act and the second after its last. The act counts are the lines
-        under each label, `candidates` the sums of the `candidates:` lines, `rows re-homed` the
-        `re-homed:` lines and `questions` the `question:` lines. The fourth line is printed only once
+        under each label, `rows re-homed` the `re-homed:` lines and `questions` the `question:` lines. The fourth line is printed only once
         the ledger beside the report carries a `phase: packages folded` line.
 
 The labels, the whole set (LABELS), each followed by a colon and a space:
 
     folded, split, moved, supplier, sealant kept, default, deleted, owner's work still covered,
-    kept, changed, re-homed, question, candidates, fold touched
+    kept, changed, re-homed, question, fold touched
 
-`candidates:` reads `candidates: sent <n> landed <n>`, one line per batch. `deleted:` reads
+`deleted:` reads
 `deleted: <the package>, trade <its trade code>, package <its id>, <the reason>`, the trade and the
 id as the package list the folder read gives them, since the lead leaves that trade off the general
 requirements package by reading it off this line. `changed:` names a package still on the record
@@ -52,7 +51,7 @@ Exit codes:
   0  printed.
   1  a named failure, one line on stderr: a run folder with no report, except in print mode one
      whose ledger carries a `phase: packages folded` line, a report line under no label
-     of the set, a `candidates:` or `deleted:` line in another shape, a `--start` that is not a
+     of the set, a `deleted:` line in another shape, a `--start` that is not a
      count of lines and characters or names a character past its line, and in hand-back mode a
      ledger with no `phase: packages folded` line or no ledger at all.
   2  argparse rejected the invocation.
@@ -80,15 +79,13 @@ NO_REPORT_LINE = (
 # The acts the check-in that ends window 2 names, one label each, in the order it names them.
 LABELS = (
     "folded", "split", "moved", "supplier", "sealant kept", "default", "deleted",
-    "owner's work still covered", "kept", "changed", "re-homed", "question", "candidates",
-    "fold touched",
+    "owner's work still covered", "kept", "changed", "re-homed", "question", "fold touched",
 )
 
 # Under the 30,000 characters a Bash call returns. Every line a call prints counts against it, the
 # closing line included.
 PRINT_CAP = 25_000
 
-_CANDIDATES_RE = re.compile(r"^candidates: sent (\d+) landed (\d+)$")
 # A trade code carries spaces and no comma, and a package id is `pkg-` and its own characters, so a
 # placeholder left in either field is no match.
 _DELETED_RE = re.compile(r"^deleted: (.+?), trade ([^,<>]+), package (pkg-[^\s,<>]+), (.+)$")
@@ -126,11 +123,6 @@ def read_report(run_folder: Path) -> tuple[Path, list[tuple[str, str]]]:
             raise FoldReportError(
                 f"{path} line {number} opens with none of the fold report's labels "
                 f"({', '.join(LABELS)}): {line[:80]!r}"
-            )
-        if label == "candidates" and _CANDIDATES_RE.match(line) is None:
-            raise FoldReportError(
-                f"{path} line {number} reads {line[:80]!r}, and a candidates line reads "
-                f"`candidates: sent <n> landed <n>`"
             )
         if label == "deleted" and _DELETED_RE.match(line) is None:
             raise FoldReportError(
@@ -234,19 +226,13 @@ def hand_back_lines(run_folder: Path, before: int, after: int) -> list[str]:
             f"run this again"
         )
     count = {label: 0 for label in LABELS}
-    sent = landed = 0
-    for label, line in report:
+    for label, _line in report:
         count[label] += 1
-        if label == "candidates":
-            match = _CANDIDATES_RE.match(line)
-            sent += int(match.group(1))
-            landed += int(match.group(2))
     return [
         f"fold: packages {before} before, {after} after",
         f"acts: folded {count['folded']}, split {count['split']}, moved {count['moved']}, "
         f"deleted {count['deleted']}, kept {count['kept']}",
-        f"records: candidates sent {sent} landed {landed}, rows re-homed {count['re-homed']}, "
-        f"questions {count['question']}",
+        f"records: rows re-homed {count['re-homed']}, questions {count['question']}",
         f"{PHASE_LINE} appended",
         f"report: {path}",
     ]

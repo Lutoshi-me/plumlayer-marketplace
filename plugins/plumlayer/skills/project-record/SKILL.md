@@ -139,9 +139,10 @@ writing it).
   tag.
 
   A new scope item also needs its trade, and the door refuses one without it: give it
-  `belongsToTrade`, or a `packageRole:<trade>` entry for every trade that might own the work, in
-  the same `record_batch` as the `name`, or before the `name` at this door, which carries one
-  entry per call. The trade is the package's catalog id copied verbatim, exactly as
+  `belongsToTrade`, the one trade most likely to carry the work, in the same `record_batch` as
+  the `name`, or before the `name` at this door, which carries one entry per call. Where you
+  cannot tell which of two trades carries it, write the more likely one and name the other in
+  the item's `notesInternal`, so the item sits on one package. The trade is the package's catalog id copied verbatim, exactly as
   `solicitation_list_packages` or `directory_list_trades` prints it, spaces and all (`09 21 16`),
   on `belongsToTrade` and inside `packageRole:<trade>` alike: a code the catalog does not carry is
   refused too, so `drywall` does not land, and neither does a respelling of a real code, so

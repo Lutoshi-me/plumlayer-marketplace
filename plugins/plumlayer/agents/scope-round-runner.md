@@ -189,8 +189,8 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    the sheet. A unit with no sheet to name, a repeated lines unit that cited no sheet and a review
    that opened no page, makes the same call with `sheets: []`, which answers the family alone. It
    returns `entryCount` and
-   `subjectCount` under the prefix, `subjects`, every distinct subject under it with its `name`, its
-   `belongsToTrade` and its `candidateTrades` (where `subjectsTruncated` says there are more than
+   `subjectCount` under the prefix, `subjects`, every distinct subject under it with its `name` and
+   its `belongsToTrade` (where `subjectsTruncated` says there are more than
    the call carries, call again with `subjectsOffset` set to its `nextSubjectsOffset` until it
    reads false, the one call this step pages), and `sheets`, one row per sheet you asked about carrying the `fileId` it was
    checked against where you gave one, the `subjects` whose citations name it, its own
@@ -243,7 +243,7 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
      reader's Question whose answer would change no row stands alone. The reader's
      `questions raised:` and `questions replied:` counts go on the `verified` line as `questions`
      and `replied`.
-   - **Trades.** A created subject with no trade and no candidate in the `verify_unit` result is a
+   - **Trades.** A created subject with no `belongsToTrade` in the `verify_unit` result is a
      mismatch: the door should have refused it, and a row without a trade never stays on the
      record unnamed.
    - Never a row list of the whole project, never `list_scope_items`, and never a walk of `search`
@@ -327,10 +327,9 @@ and the plan is wrong. Nothing is lost by stopping there, because nothing has ru
    named without holding any of them itself.
 
    Also append this unit's trades to `<run folder>/trades/<pass-id>.txt`, one line per trade as
-   `<unit id> trade <catalog id> <count>` and one line as `<unit id> candidates <count>`, the
-   candidates count being the created subjects carrying at least one candidate trade, each subject
-   counted once however many candidate trades it carries. Read those counts off the `verify_unit`
-   result you already have. This is what lets the pass summary script sum the trades without you
+   `<unit id> trade <catalog id> <count>`, the count being the created subjects whose
+   `belongsToTrade` is that trade. Read those counts off the `verify_unit` result you already
+   have. This is what lets the pass summary script sum the trades without you
    adding them. Then append one line `<unit id> touched <catalog id>` to the same file for each
    catalog id on the reader's `trades touched:` line, carried as the reader reported it, as its
    `sent:` and `landed:` figures are, since no call you make reads a pre-existing row's trade or a
@@ -564,7 +563,7 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   same way, in that order. A heading the review wrote that the list lacks or holds out of that
   order, or no list, is a mismatch; a listed heading the review did not write is not one, since
   the package keeps a listed heading no row carries.
-  A created subject with no trade and no candidate is a mismatch. A reviewer puts every Question
+  A created subject with no `belongsToTrade` is a mismatch. A reviewer puts every Question
   it raises or replies to on a row, or names why no row carries it, which the claims call above
   holds it to. The sheet call takes at most 20 sheets, so a review that
   opened more needs one call per 20 against the same prefix. Every call answers the whole
@@ -674,8 +673,8 @@ delivery, `Delivery: <deliveryId>, label <label>.`, and `Plan file: <path>.`, th
   `verify manual`, and both where it prints both. Where it prints `verify sheets (0): none; the
   manual claims below go in a verify_unit call of their own`, the manual calls are the only ones,
   and the `verified` line carries the report's figures as a unit that cited on a sheet does.
-- **The trades file** takes one `<unit id> candidates 0` line, and one `<unit id> touched <catalog
-  id>` line per catalog id on the report's `trades touched:` line, so window 3 of a pass on an
+- **The trades file** takes one `<unit id> touched <catalog id>` line per catalog id on the
+  report's `trades touched:` line, and no trade line, so window 3 of a pass on an
   addendum reviews the packages the recheck wrote on. No names file: the unit created nothing.
 - Its anomaly, grain and door notes go on the ledger as pass mode's step 3 says, and the pass is
   summed with pass mode's step 5 call, its window `r`. The summary script reads each verified
@@ -743,7 +742,7 @@ window: <n>   pass: <pass id>
 units read: <unit ids, in reading order>
 per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> <"read twice" where its runner read it again> verified <yes/no>
 totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n> replied <n>
-trades: <trade id + item count, one per trade; candidates <n>>
+trades: <trade id + item count, one per trade>
 conflicting rows: <n>, on units <unit ids>, or "none"
 overlap notes: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">

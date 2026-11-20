@@ -3085,7 +3085,7 @@ def _read_pass_trades(folder: Path) -> tuple[set[str], set[str]]:
     trades files, which the runners append off each unit's own verification, and on a `<unit id>
     touched <catalog id>` line, the home trade of a row the unit updated or cited and a trade a
     Question it raised names, which the runners carry off the reader's report. An addendum that
-    only changes existing scope still has its packages reviewed. A candidates line names no trade.
+    only changes existing scope still has its packages reviewed.
 
     The grammar is the one `pass_summary.py` reads the same files by, held as strictly: a count
     that is not a whole number is refused, as it is there. The folder is found beside the plan, so
@@ -3109,10 +3109,6 @@ def _read_pass_trades(folder: Path) -> tuple[set[str], set[str]]:
             parts = raw.split()
             if not parts:
                 continue
-            if len(parts) >= 3 and parts[1] == "candidates":
-                if not _WHOLE_NUMBER_RE.match(parts[2]):
-                    raise PlanError(f"{path} line {number}: the candidates count {parts[2]!r} is not a whole number")
-                continue
             # A catalog id carries spaces, so the count is the last word and the id sits before it.
             if len(parts) >= 4 and parts[1] == "trade":
                 if not _WHOLE_NUMBER_RE.match(parts[-1]):
@@ -3124,8 +3120,8 @@ def _read_pass_trades(folder: Path) -> tuple[set[str], set[str]]:
                 touched_units.add(parts[0])
                 continue
             raise PlanError(
-                f"{path} line {number} is neither `<unit id> trade <catalog id> <count>`, "
-                f"`<unit id> candidates <count>` nor `<unit id> touched <catalog id>`"
+                f"{path} line {number} is neither `<unit id> trade <catalog id> <count>` nor "
+                f"`<unit id> touched <catalog id>`"
             )
     return written_on, touched_units
 

@@ -58,8 +58,9 @@ them is ever trimmed.
      `truncated` is always there and always a boolean, so its value is what says you are done,
      never its absence; `nextOffset` is the field that goes away. That filter keeps every row
      whose `belongsToTrade` is a trade the package covers (its own trade and every trade folded
-     into it) and every row carrying an enrollment naming one of them, so home rows and
-     candidates arrive together and the `role` on each enrollment says which. The answer's
+     into it) and every row carrying an enrollment naming one of them, so home rows and the rows
+     a role puts on the package, such as an exclusion, arrive together and the `role` on each
+     enrollment says which. The answer's
      `packageTradeCodes` lists the trades the package covers; "this trade" below means each of
      them. Their `name` and `category` strings are this project's own words for this work.
    - *The codes of the definition kinds that resolve to this package.* `list_definition_kinds`,
@@ -166,12 +167,16 @@ them is ever trimmed.
    - The hit is the work of a row on this package that does not cite that page. It is a citation on
      that row, after you open the page. It is not a create.
    - The hit is the work of a row on another package that a sheet, a manual section, a package's
-     `notes` or the usual practice of this trade's bidders puts on this package too. It is a
-     `packageRole:<this package's trade>` record on that existing row whose value is the object
-     `{ role: "candidate", note: "<what puts this package on it>" }`, the candidate rule reader
-     mandate 4 gives. Where nothing but a guess puts this package on it, the hit is that row's
-     work and you write nothing. Never the bare word: the door refuses it, and
-     `record_batch` is atomic, so it costs the whole batch. It is not a create.
+     `notes` or the usual practice of this trade's bidders could put on this package too. The row
+     stays on its own trade and on that package alone, and you write no record and no note on it
+     for this doubt, since that package's own review can write the same row's fields while yours
+     runs. A citation the Which Trade rule of mandate 14 asks for on another package's row still
+     goes, because each citation is a write of its own that no other write replaces. Where its `notesInternal` does not already name this package's trade, name the row on
+     your `door-owned suggestions:` line as `<the row's full subject>, could be by <this package's
+     tradeCode>: <what puts the work here>, <the page's sheet number, or section <code> on a manual
+     page> p<page> of <fileId>`, one line per row, so the check-in puts it to the estimator. Where
+     nothing but a guess puts this package on it, the hit is that row's work and you name nothing.
+     It is not a create.
    - The hit is work no row carries. Create it, at the grain of your own mandate 5, its `name` and
      `description` written as reader mandate 5 says, after reader mandate 1's search for the row
      that may already carry it under another name, and with your
@@ -376,8 +381,8 @@ them is ever trimmed.
      cite, read on the page as mandate 2 says and sent with `frame: "page-points"` since the box
      comes from `get_page_text`'s line boxes, plus every sheet its text names, ten sources at most
      in all, affecting this package's trade. A family the budget did not reach is named on your
-     `families not checked:` line and raises nothing. A candidate row is judged by its home
-     package's review, never by yours.
+     `families not checked:` line and raises nothing. A row whose trade is another package's,
+     on this package by a role, is judged by its home package's review, never by yours.
    - NEVER A GC MATTER, NEVER OUR OWN ROW. A silence about labor, means and methods, or who
      furnishes or installs is not the design team's to answer, and raises nothing. Our own row is
      never the evidence against the documents: where the silence exists only because one of our
@@ -703,11 +708,12 @@ them is ever trimmed.
           `tradeCode`, under the heading of the work it goes with, and in the same batch one
           `packageRole:<tradeCode>` record for each record line under it, its `<tradeCode>` the one
           that line names: `exclusion on: <tradeCode>, counterparty: <counterparty>` is
-          valued `{ "role": "exclusion", "counterparty": "<counterparty>" }`, `exclusion on:
-          <tradeCode>, no counterparty` is valued `{ "role": "exclusion" }`, and `candidate on:
-          <tradeCode>, note: <note>` is valued `{ "role": "candidate", "note": "<note>" }`, so the
-          row sits on every package that could carry it and each bidder prices it or excludes it.
-          An exclusion on this package's own `tradeCode` is the work of the owner, a utility or a
+          valued `{ "role": "exclusion", "counterparty": "<counterparty>" }` and `exclusion on:
+          <tradeCode>, no counterparty` is valued `{ "role": "exclusion" }`, so each bidder the
+          line keeps the work off excludes it. Where an `internal note:` line follows, the half
+          goes to either of two or more trades, this package being the one the script gives it to:
+          write that line's words as the row's `notesInternal` in the same batch, and the row sits
+          on this package alone. An exclusion on this package's own `tradeCode` is the work of the owner, a utility or a
           trade with no package on this job: the row sits in this package's Exclusions section.
           Where the half is the owner's or a utility's, the row's `description` names who carries
           it ("By the water utility"). You write this half, always, as printed, whatever this
@@ -719,7 +725,7 @@ them is ever trimmed.
         - `you write it: no, carried by <tradeCode>` or `you write it: no, left to <tradeCode>`:
           the review of that package writes this half, `left to` where the half is undecided or
           its carrier has no package. You never write this half, whatever this package's own paper
-          says: no row, no role and no candidate or exclusion record for it. Name it `carried by
+          says: no row, no role and no exclusion record for it. Name it `carried by
           <tradeCode>` or `left to <tradeCode>`. Its `name:` is the name of the row that package
           writes, several separated by `; ` where several packages write one each.
         - Where the drawings, the manual or the packages' `notes` give a half you do not write to
@@ -731,9 +737,9 @@ them is ever trimmed.
           review may run beside yours, cite nothing and name it `paper gives it to <this package's
           tradeCode>, <sheet and page or section>, row not yet written`; the runner carries that
           line to the check-in.
-        The estimator then finds the row on both packages, as scope on one and as Trade
-        Responsibility to Confirm or as an Exclusion on the other, with the paper's citation on
-        it, and moves it where the paper says. Every exclusion record you write for a half this
+        The estimator then finds the row as scope on the package that writes it and as an
+        Exclusion on each package an exclusion record names, with the paper's citation on it, and
+        moves it where the paper says. Every exclusion record you write for a half this
         package carries names this package's `tradeCode` as its counterparty; only an `or` half
         still undecided keeps `exclusion on: <tradeCode>, no counterparty` as printed.
     - The citation. A row a line writes cites the page or section that shows its condition, in
@@ -822,7 +828,7 @@ written from.
   create.
 - **Mandate 2**, the citation shape.
 - **Mandate 3**, store resolution.
-- **Mandate 4**, the trade on the row, and the candidates beside it.
+- **Mandate 4**, the trade on the row, and the note where another trade could carry it.
 - **Mandate 5**, the row's fields and their bounds.
 - **Mandate 7**, record and verify. Your own mandate 8 above adds only the prefix your rows sit
   under.
@@ -956,7 +962,7 @@ questions replied ids: <the id of every Question you replied to, or "none">
 questions linked: <the id of every Question raised or replied to + the subject of every row you cited it on, one Question per line, or "none">
 questions alone: <the id of every Question raised or replied to that no row carries + why, one per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
-trades: <trade id + item count, one per trade; candidates <n>>
+trades: <trade id + item count, one per trade>
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
@@ -985,7 +991,7 @@ every row on `updated subjects:` is found on a pages-opened sheet, on `manual up
 `field updates:`. Each new citation of a manual page you made is named on `manual updates:` with
 its subject, the section and the page, and found back there. Each other write you made onto a row
 on `updated subjects:` that carries no new citation, a note, a name, a description, a value, or a
-`packageRole:<trade>` record naming the row a candidate, is named on `field updates:` on a line of
+`packageRole:<trade>` record, is named on `field updates:` on a line of
 its own, with its subject, the predicate you wrote (`notesInternal`, `description`,
 `packageRole:26 00 00`), and the page its evidence names, whether or not you opened that page in
 this read, or `no page` where its evidence names none. A field you wrote more than once in this

@@ -50,7 +50,7 @@ The three windows:
    too coarse for, the Questions that clear the bar for an RFI. When the window closes the index
    runs again, so every row cites every page it appears on before a review reads it.
 3. **The reviews.** One review per bid package, read off the record rather than off the set: the
-   package's own rows and candidates, the definition codes that resolve to it, the manual sections
+   package's own rows and the rows a role puts on it, the definition codes that resolve to it, the manual sections
    it lists in `manualSections`, and its catalog name and aliases. Those are the words the review searches the
    set's text for, and a hit no row carries becomes a row, cited to a page the reviewer opened for
    it. The same review finds where the manual and the drawings are silent on each other: a
@@ -160,9 +160,9 @@ that relaxes any one of them reproduces a measured, named failure.
    into the one shared list, whatever trade it belongs to. The reader that writes the row sets its
    trade right then, the catalog trade that names the work (the row's trade, below), and moves on;
    a wrong trade is moved later by a person or a later read, never held
-   back. Where the reader cannot tell which of two or more trades owns the work, it names its best
-   single trade as the home and tags every other candidate, and keeps moving. The record door
-   refuses a new scope item with no trade and no candidate, and refuses a trade the catalog does
+   back. Where the reader cannot tell which of two or more trades owns the work, it puts the row on
+   the one trade most likely to carry it, names the other trade in the row's internal note, and
+   keeps moving. The record door refuses a new scope item with no trade, and refuses a trade the catalog does
    not carry, on `belongsToTrade` and inside `packageRole:<trade>` alike. `record_batch` is atomic
    and order free, so the trade rides in the same batch as the name; `record` carries one entry, so
    there the trade entry is written first. Work the paper says is by others is an exclusion row, and
@@ -307,13 +307,13 @@ A newly created scope item is a full row, not a name. Every new item writes:
   catalog id copied verbatim, exactly as the catalog prints it, spaces and all (`09 21 16`).
   Never a word for the trade, so `drywall` is refused, and never a
   respelling of the code either, so `09-21-16` and `092116` are refused too, with a hint naming the
-  exact id. Where the work straddles trades, the best single
-  home goes here and each other candidate gets a `packageRole:<trade>` record whose value is the
-  object `{ role: "candidate", note: "confirm trade responsibility: could be <home> or <this
-  trade>" }`, the note internal only and never bidder-facing, written in the same batch. The roles
-  the door takes are `exclusion`, `general-requirement`, `ve-alternate` and `candidate`, each with
-  an optional `counterparty` and `note`, and `{ retracted: true, reason? }` is the only other value
-  it takes. The run writes `exclusion` where the paper says work is by others and
+  exact id. Where the work straddles trades, the one trade most
+  likely to carry it goes here, the row under the heading it takes on that trade's package, and
+  the row's `notesInternal` names the other trade and what puts the work there, as the reader's
+  mandate 4 says; no record puts the row on a second package for that doubt. A
+  `packageRole:<trade>` record puts a row on a package beside its own: its value is an object
+  with a `role`, an optional `counterparty` and an optional `note`, and `{ retracted: true,
+  reason? }` is the only other value the door takes. The run writes `exclusion` where the paper says work is by others and
   `general-requirement` for a trade's own general costs, and the reviews write both for the standard
   lines; `ve-alternate` stays the user's to write. A bare word is refused and the batch is atomic,
   so it costs every entry in the batch.
@@ -344,9 +344,10 @@ A newly created scope item is a full row, not a name. Every new item writes:
 - **notesExternal** (optional, one sentence): an instruction to the bidder about the line: what to
   break out, what to confirm, what is an alternate. Work by others is a row of its own, as the
   reader's mandate 4 says.
-- **notesInternal** (optional, one sentence): either a watch item for the estimator, an open
-  Question on the row, or how the row's count or grouping was reached
-  and what a correction replaced. Never a citation audit, never which trade carries the work, which
+- **notesInternal** (optional, one sentence): a watch item for the estimator, an open
+  Question on the row, how the row's count or grouping was reached
+  and what a correction replaced, or the other trade that could carry the row, as the reader's
+  mandate 4 says. Never a citation audit, never work the paper gives to another party, which
   is a row of its own as the reader's mandate 4 says, and never a conflict between two documents:
   that is a Question where it clears the Question bar below, and a qualification where it does
   not. A correction of a value on the record is two things: the write
@@ -507,9 +508,9 @@ record files, never recorded as project entries:
   The lead's own three line shapes, which the runner never writes:
 
   ```text
-  pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> lead-verified <yes|no>
-  pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> pages-opened <n> searches <n> lead-verified <yes|no>
-  pass: r <pass id> units <n> created <n> updated <n> questions <n> replied <n> candidates <n> recited <n> rows-changed <n> removed <n> not-found <n> retired <n> kept <n> refused <n> lead-verified <yes|no>
+  pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> lead-verified <yes|no>
+  pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> pages-opened <n> searches <n> lead-verified <yes|no>
+  pass: r <pass id> units <n> created <n> updated <n> questions <n> replied <n> recited <n> rows-changed <n> removed <n> not-found <n> retired <n> kept <n> refused <n> lead-verified <yes|no>
   phase: <boundary name>
   checkin: <window> <window, the id of the last pass recorded when it was shown, or none> <go|pause>
   ```
@@ -527,8 +528,8 @@ record files, never recorded as project entries:
 
   Every figure on a `pass:` line is written by `lead_pass.py record` (stage 4 step 3) off the
   pass's summary file and your own count call, never typed by hand: `created` is the sum of your
-  counts, and `updated`, `questions`, `replied` and `candidates` come off the summary's totals and
-  trades lines, in every window. A window 3 line carries two fields more, `pages-opened` and
+  counts, and `updated`, `questions` and `replied` come off the summary's totals line, in every
+  window. A window 3 line carries two fields more, `pages-opened` and
   `searches`, off the summary's `review:` line, which the summary script reads off the reviewer's
   own `pages opened:` and `searches:` lines. Those fields are what make the run countable from the
   ledger afterwards.
@@ -578,10 +579,9 @@ record files, never recorded as project entries:
   appended a unit at a time, and the window boundary takes their union with a local command to
   find every kind a reader named without holding any of them itself. Audience: machine.
 - `trades/`: one file per pass, the trades each unit's own verification read, appended a unit at a
-  time: one line per trade as `<unit id> trade <catalog id> <count>`, and one line as
-  `<unit id> candidates <count>`, that count being the unit's created subjects carrying at least
-  one candidate trade, each subject counted once however many candidate trades it carries. The
-  pass summary script sums this file, so no runner adds the trades up itself. Audience: machine.
+  time: one line per trade as `<unit id> trade <catalog id> <count>`, that count being the unit's
+  created subjects on that trade, and one line per trade it touched as `<unit id> touched <catalog
+  id>`. The pass summary script sums this file, so no runner adds the trades up itself. Audience: machine.
 - `records/`: JSONL files for large batch writes (these do get uploaded, as the write
   mechanism). Audience: machine.
 
@@ -1166,8 +1166,8 @@ nothing else:
 
    It pairs each count with its unit by its `subjectPrefix`, never by its place in the array, and
    refuses an array whose prefixes are not exactly the pass's, each once, writing nothing. It
-   compares your counts unit by unit with the summary file, copies the updated, questions,
-   replied and candidates figures off that file, and in window 3 the pages opened and searches off
+   compares your counts unit by unit with the summary file, copies the updated, questions and
+   replied figures off that file, and in window 3 the pages opened and searches off
    its `review:` line, appends the pass's one `pass:` line to the ledger, and prints it, with a
    line under it naming the pass by the sheets it read, or in window 3 the packages it reviewed,
    and its new items, items updated and Questions as the user hears them. Work from those lines
@@ -1535,8 +1535,9 @@ Show what you did in plain words, mirroring orientation's wording: name the amen
    report: the split was derived here, from the scope list, because there was no spec book to
    anchor an earlier baseline.
 
-Trade responsibility is already on the record: every item carries its home trade and any
-candidates from the moment it was written. Sheet-to-package assignment (`assign_sheet_packages`)
+Trade responsibility is already on the record: every item carries its one trade from the moment
+it was written, and where the reader was unsure, its internal note names the other trade.
+Sheet-to-package assignment (`assign_sheet_packages`)
 is the user's call: offer it only when the user asks; the relevant-pages list already falls out of
 the citations.
 
@@ -1556,10 +1557,6 @@ Report to the user, in plain words:
   Document defects worth sending to the design team are the open Questions, by the trades they
   name, with the every-trade ones and the not-known-yet ones apart, among them the sections of the manual no sheet shows and the work on the sheets the manual never
   names, and the silences left open for bidders, by count.
-- **Trade responsibility to confirm**: how many items sit in more than one trade's package
-  (count each item once, however many packages it sits in), the leading trades named, and where
-  to review them (the "Trade responsibility to confirm" section in each affected trade's package
-  on plumlayer.com).
 - **What is still open**: the tags and codes the index could match to nothing, by count, with the
   codes found nowhere named, and said plainly as what it is: those are marks nobody placed on the
   sheet they sit on, and this run did not go back for them. Name apart the codes a later drawing
@@ -1591,9 +1588,8 @@ never off memory and never off the whole file. Everything the report needs is on
 wall-clock between the first and last of them, the counts, the deviations, and what is still open.
 Read them with one filter each and count them locally: the sheet reads are the `dispatch` lines,
 the distinct sheets are the sheet numbers on them, the rows created and the items are the `created`
-and `items` fields of the `verified` lines, and the candidates, the pages a review re-opened and
-the searches it ran are the `candidates`, `pages-opened` and `searches` fields of the `pass:`
-lines, the last one of a pass that carries two. The items you weren't sure how finely to split are
+and `items` fields of the `verified` lines, and the pages a review re-opened and the searches it
+ran are the `pages-opened` and `searches` fields of the `pass:` lines, the last one of a pass that carries two. The items you weren't sure how finely to split are
 the ledger's `note` lines of kind `grain`, in every window, the notes each check-in printed as how
 finely to split, each item named once, less the ones a check-in left out as settled. The pairs of rows carrying the same work are the
 window 3 `note` lines of kind `anomaly` that carry `same work:`, each pair named once, and the
@@ -1678,7 +1674,7 @@ fold puts in your context; the acts stay in `reports/fold.md`:
 ```text
 fold: packages <n> before, <n> after
 acts: folded <n>, split <n>, moved <n>, deleted <n>, kept <n>
-records: candidates sent <n> landed <n>, rows re-homed <n>, questions <n>
+records: rows re-homed <n>, questions <n>
 phase: packages folded appended
 report: <run folder>/reports/fold.md
 ```
@@ -1761,7 +1757,7 @@ questions raised ids: <the id of every Question raised, or "none">
 questions replied ids: <the id of every Question replied to, or "none">
 questions linked: <the id of every Question raised or replied to + the subject of every row it was cited on, one Question per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
-trades: <trade id + item count, one per trade; candidates <n>>
+trades: <trade id + item count, one per trade>
 trades touched: <the catalog id of every pre-existing row the reader updated or newly cited, and of every trade a Question it raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 schedules under rows: <each kind the reader put under a row + that row's subject, one per line, or "none">
@@ -1798,7 +1794,7 @@ window: <n>   pass: <pass id>
 units read: <unit ids, in reading order>
 per unit: <unit id> created <n> items <n> updated <n> questions <n> replied <n> <"read twice" where its runner read it again> verified <yes/no>
 totals verified: created <n> (entry count under the unit prefixes), items <n> (reader's own item count), updated <n>, questions <n> replied <n>
-trades: <trade id + item count, one per trade; candidates <n>>
+trades: <trade id + item count, one per trade>
 conflicting rows: <n>, on units <unit ids>, or "none"
 overlap notes: <item name + the two units, one per line, or "none">
 anomalies: <one line each, with sheet and page, or "none">
@@ -1846,7 +1842,7 @@ questions replied ids: <the id of every Question replied to, or "none">
 questions linked: <the id of every Question raised or replied to + the subject of every row it was cited on, one Question per line, or "none">
 questions alone: <the id of every Question raised or replied to that no row carries + why, one per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
-trades: <trade id + item count, one per trade; candidates <n>>
+trades: <trade id + item count, one per trade>
 sheet readings written: <sheet number, one per sheet whose reading was recorded, or "none">
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
@@ -1882,7 +1878,7 @@ python3 '<plugin root>/scripts/lead_pass.py' checkin '<run folder>' <window> --p
 ```
 
 It prints each pass by the sheets it read, or in window 3 the packages it reviewed, with its new
-items, items updated, Questions raised, replies and new items with a candidate trade, then those
+items, items updated, Questions raised and replies, then those
 figures over all the passes, then your own check apart, the units and the entry count off your
 `pass:` lines, which you never say. Then the items by trade summed off their
 summaries' `trades:` lines, and the anomalies already on the record as counts: each anomaly line
@@ -2002,8 +1998,7 @@ choice: "I put it on Plumbing; move it if it belongs elsewhere."
   invitations ready** (`prepare-invitations`, which does not wait for this run), **draft the
   baseline package split** (owned by `learn-project`).
 - **Author VE or alternate enrollments**: whether an item is an alternate stays the user's call at
-  the package surface. The run writes trade-responsibility candidates, exclusions where the paper
-  says work is by others, and every trade except `01 11 13` has its general items in its General
+  the package surface. The run writes exclusions where the paper says work is by others, and every trade except `01 11 13` has its general items in its General
   Requirements section. On `01 11 13`, there is no `General Items` row and no `general-requirement`
   role; a general cost the contractor carries there is a home row under one of the seven headings.
   Exclusion rows keep their Exclusions section on this package as on every package. A row shared

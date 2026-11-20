@@ -19,4 +19,4 @@ verified 1 A1 A1-2 created 15 items 3 updated 1 questions 0 replied 0 sent 33 la
 dispatch 1 A1 A1-3 sheets A-0.03 purpose finish legend
 verified 1 A1 A1-3 created 11 items 3 updated 0 questions 2 replied 1 sent 25 landed 25 conflicts 0 result ok
 note 1 A1 - kinds finishLegendCode hardwareSet
-pass: 1 A1 units 5 created 9999 updated 999 questions 99 replied 9 candidates 9 lead-verified yes
+pass: 1 A1 units 5 created 9999 updated 999 questions 99 replied 9 lead-verified yes

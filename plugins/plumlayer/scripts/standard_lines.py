@@ -48,7 +48,8 @@ the line's order, separated by `; `. This script reads those files and nothing e
         names and the trades its condition names, by the same words in any case), each with the
         package it goes to, and each half with whether this package writes it and the name of its
         row. Where this package writes it, that is this package's row, with the `packageRole`
-        records to write beside it. Where it does not, it prints `carried by` or `left to` the
+        records to write beside it, and, where the half goes to either of two or more trades, an
+        `internal note:` line naming them, the words its `notesInternal` takes. Where it does not, it prints `carried by` or `left to` the
         package that writes it and the row that package writes, named by that package's name,
         several separated by `; `, so a review the paper gives the half to cites onto that row.
         Where no file goes to the package it prints NONE_LINE alone. `--folder` reads the files from another folder.
@@ -57,8 +58,8 @@ the line's order, separated by `; `. This script reads those files and nothing e
         involved package, counterparty the carrier's package; where the carrier has no package, the
         lowest other involved package, with an exclusion on each involved package, its own among
         them, counterparty the carrier's catalog id. Trades joined by `or`: the lowest of their
-        packages, with a `candidate` record on each other one and an exclusion, no counterparty, on
-        each involved package outside them. Trades joined by `and`, or `Each MEP Trade`: each of
+        packages alone, with an internal note naming the trades the line joins and an exclusion, no
+        counterparty, on each involved package outside them. Trades joined by `and`, or `Each MEP Trade`: each of
         their packages writes its own row, with an exclusion on each involved package outside them,
         counterparty itself. Trades joined by `or` or `and` with no package among them: the lowest
         other involved package, with an exclusion on each involved package, no counterparty. The
@@ -470,7 +471,7 @@ def halves_for(entry: dict, involved: list[str], places: dict[str, str | None], 
             counterparty = _catalog_id(homes[own[0]])
             writers[others[0]] = [("exclusion", p, counterparty) for p in others]
         elif half["shape"] == "or" and live:
-            writers[live[0]] = [("candidate", p, "") for p in live[1:]] + [("exclusion", p, "none") for p in others]
+            writers[live[0]] = [("note", live[0], "")] + [("exclusion", p, "none") for p in others]
         elif half["shape"] == "each" and live:
             for writer in live:
                 writers[writer] = [("exclusion", p, writer) for p in others]
@@ -536,10 +537,10 @@ def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]
                 out.append("    you write it: yes")
                 out.append(f"    name: {row_name(half_name, name, package)}")
                 for role, target, counterparty in records:
-                    if role == "candidate":
+                    if role == "note":
                         could = " or ".join(titles[s] for s in plan["half"]["trades"])
                         could += " or the owner" if plan["half"]["owner"] else ""
-                        out.append(f"    candidate on: {target}, note: confirm trade responsibility: could be {could}")
+                        out.append(f"    internal note: Could be by {could}")
                     elif counterparty == "none":
                         out.append(f"    exclusion on: {target}, no counterparty")
                     else:

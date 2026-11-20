@@ -1082,6 +1082,31 @@ RETIRED_WHOLE_FILE_TERMS: list[tuple[str, re.Pattern, bool]] = [
         ),
         False,
     ),
+    # An item the scope run is unsure of goes on the one trade most likely to carry it, with the
+    # doubt in its internal note. The candidate package role that put it on every trade that could
+    # carry it, its note, its package heading and the counts of it on the run's lines are retired:
+    # an agent that reads one writes the item onto a second package. The door's list of refused
+    # headings names the bare word `candidate`, so the word alone is not matched. The count is
+    # matched only in the shapes it was written in, so `candidates` with a number in any other
+    # sense passes: after `replied <n>` on a `pass:` or `phase:` ledger line, after `; ` on a
+    # report's `trades:` line, after a unit id on a trades file line (`<unit id>` or a real id
+    # such as `A1-2` opening the line), and as the field named alone in a code span.
+    (
+        "the candidate package role, its note, heading or counts (an unsure item goes on one trade, "
+        "the doubt in its internal note)",
+        re.compile(
+            r"\brole\"?:\s*\"candidate\"|\bcandidate on:|\bcandidateTrades\b"
+            r"|\breplied (?:<n>|\d+) candidates (?:<n>|\d+)"
+            r"|\btrades:.*; candidates (?:<n>|\d+)"
+            r"|<unit id> candidates (?:<n>|<count>|\d+)"
+            r"|^\s*[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+ candidates \d+\s*$"
+            r"|`candidates (?:<n>|<count>)`"
+            r"|\bcandidates: sent\b|\bnew items with a candidate trade\b"
+            r"|\btrade responsibility to confirm\b|\bconfirm trade responsibility\b",
+            re.IGNORECASE,
+        ),
+        False,
+    ),
 ]
 
 RETIRED_SCOPED_TERMS: list[tuple[str, re.Pattern]] = [
@@ -3824,7 +3849,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             trades_dir.mkdir(parents=True, exist_ok=True)
             trade_lines: dict[str, list[str]] = {"G1": [], "A1": []}
             for unit_id, (pass_id, _sheet, _created) in early.items():
-                trade_lines[pass_id] += [f"{unit_id} trade 01 10 00 2", f"{unit_id} candidates 1"]
+                trade_lines[pass_id] += [f"{unit_id} trade 01 10 00 2"]
             for unit_id, sheet, _page in folded_pass["units"]:
                 if unit_id in early:
                     continue
@@ -3833,7 +3858,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     f"verified 1 A1 {unit_id} created 4 items 4 updated 0 questions 0 replied 0 "
                     f"sent 4 landed 4 conflicts 0 result ok",
                 ]
-                trade_lines["A1"] += [f"{unit_id} trade 09 21 16 1", f"{unit_id} candidates 0"]
+                trade_lines["A1"] += [f"{unit_id} trade 09 21 16 1"]
             write_ledger(refold_dir, refold_ledger)
             for pass_id, lines_for_pass in trade_lines.items():
                 (trades_dir / f"{pass_id}.txt").write_text(
@@ -3869,18 +3894,14 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     read_order.append(line.split()[3])
             created = sum(int(parts[parts.index("created") + 1]) for parts in verified_lines)
             by_trade: dict[str, int] = {}
-            candidates = 0
             for lines_for_pass in trade_lines.values():
                 for line in lines_for_pass:
                     fields = line.split()
-                    if fields[1] == "candidates":
-                        candidates += int(fields[2])
-                    else:
-                        trade = " ".join(fields[2:-1])
-                        by_trade[trade] = by_trade.get(trade, 0) + int(fields[-1])
+                    trade = " ".join(fields[2:-1])
+                    by_trade[trade] = by_trade.get(trade, 0) + int(fields[-1])
             wanted_trades = "trades: " + ", ".join(
                 f"{c} x{n}" for c, n in sorted(by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
-            ) + f"; candidates {candidates}"
+            )
             g_unit = next(u for u, (p, _s, _c) in early.items() if p == "G1")
             wanted_g = (
                 f"per unit: {g_unit} created 12 items 4 updated 1 questions 0 replied 0 verified yes"
@@ -3952,7 +3973,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             lead_lines.append(
                 f"pass: {window} {pass_id} units {units} created {totals.group(1)} updated "
                 f"{totals.group(2)} questions {totals.group(3)} replied {totals.group(4)} "
-                f"candidates 0 lead-verified yes"
+                f"lead-verified yes"
             )
         return lead_lines
 
@@ -4129,7 +4150,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     f"verified 3 {unit_id} {unit_id} created 4 items 4 updated 0 questions 0 "
                     f"replied 0 sent 4 landed 4 conflicts 0 result ok",
                     f"pass: 3 {unit_id} units 1 created 4 updated 0 questions 0 replied 0 "
-                    f"candidates 0 pages-opened 0 searches 2 lead-verified yes",
+                    f"pages-opened 0 searches 2 lead-verified yes",
                 ]
                 (old_dir / "reports" / f"{unit_id}-pass.md").write_text(
                     f"window: 3   pass: {unit_id}\nper unit: {unit_id} created 4 items 4 updated 0 "
@@ -4858,7 +4879,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     if code == 0:
         with (rs_summary / "ledger.md").open("a", encoding="utf-8") as ledger:
             ledger.write(
-                "pass: 1 RS1 units 2 created 49 updated 2 questions 1 replied 0 candidates 0 "
+                "pass: 1 RS1 units 2 created 49 updated 2 questions 1 replied 0 "
                 "lead-verified yes\n"
             )
         run_replan(rs_summary, 1, rs_summary_inventory, leave_out_two)
@@ -5668,20 +5689,14 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         errors.append("the trades fixture refused")
     else:
         by_trade: dict[str, int] = {}
-        candidates = 0
         for raw in trades_fixture.read_text(encoding="utf-8").splitlines():
             parts = raw.split()
             if not parts:
                 continue
-            if parts[1] == "candidates":
-                candidates += int(parts[2])
-            else:
-                code_text = " ".join(parts[2:-1])
-                by_trade[code_text] = by_trade.get(code_text, 0) + int(parts[-1])
+            code_text = " ".join(parts[2:-1])
+            by_trade[code_text] = by_trade.get(code_text, 0) + int(parts[-1])
         ordered = sorted(by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
-        wanted = (
-            "trades: " + ", ".join(f"{c} x{n}" for c, n in ordered) + f"; candidates {candidates}"
-        )
+        wanted = "trades: " + ", ".join(f"{c} x{n}" for c, n in ordered)
         if wanted not in trades_out.splitlines():
             errors.append(f"the trades line is not the sum of the trades file: expected {wanted!r}")
         if len({n for _c, n in ordered}) == len(ordered):
@@ -5805,7 +5820,6 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
 
         # Each unit's trades sit in the file of the pass whose runner verified it.
         folded_by_trade: dict[str, int] = {}
-        folded_candidates = 0
         files_of: dict[str, set[str]] = {}
         for trades_file in sorted(folded_trades.glob("*.txt")):
             for raw in trades_file.read_text(encoding="utf-8").splitlines():
@@ -5816,11 +5830,8 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
                 fields = raw.split()
                 if not fields or fields[0] != parts[3]:
                     continue
-                if fields[1] == "candidates":
-                    folded_candidates += int(fields[2])
-                else:
-                    trade = " ".join(fields[2:-1])
-                    folded_by_trade[trade] = folded_by_trade.get(trade, 0) + int(fields[-1])
+                trade = " ".join(fields[2:-1])
+                folded_by_trade[trade] = folded_by_trade.get(trade, 0) + int(fields[-1])
         for unit, verifying_pass in moved:
             if files_of.get(unit) != {verifying_pass}:
                 errors.append(
@@ -5830,10 +5841,7 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         if not any(unit in files_of for unit in left_behind):
             errors.append("the folded trades files carry no line for the unit the plan left out")
         ordered = sorted(folded_by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
-        wanted_trades = (
-            "trades: " + ", ".join(f"{c} x{n}" for c, n in ordered)
-            + f"; candidates {folded_candidates}"
-        )
+        wanted_trades = "trades: " + ", ".join(f"{c} x{n}" for c, n in ordered)
         if wanted_trades not in folded_lines:
             errors.append(
                 f"the folded pass's trades line is not its units' trades, each off the file of "
@@ -8217,8 +8225,8 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         code, bounds, err = run(["plan", "--window", "3", "--packages", str(packages), "--out", str(out)])
         return code, bounds, err, out.read_text(encoding="utf-8") if code == 0 else ""
 
-    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 09 21 16 4\ni3-A1-1 candidates 1\n")
-    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 trade 22 11 16 2\ni3-A2-1 candidates 0\ni3-A2-2 trade 09 21 16 1\n")
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 09 21 16 4\n")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 trade 22 11 16 2\ni3-A2-2 trade 09 21 16 1\n")
     code, bounds, err, text = review_plan(addendum)
     reviewed = sorted(_issue_ids(text)[1])
     if code != 0:
@@ -8234,7 +8242,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     if code == 0 and _issue_ids(text)[0] != ["i3-W3-1"]:
         errors.append(f"window 3 of an addendum's pass groups its two kept reviews as passes {_issue_ids(text)[0]}, not one pass i3-W3-1")
     for trades_file in (addendum / "trades").glob("*.txt"):
-        write(trades_file, "i3-A1-1 candidates 0\n")
+        write(trades_file, "")
     code, bounds, err, text = review_plan(addendum)
     if code != 0 or _issue_ids(text)[1] or "packages left out 8" not in bounds:
         errors.append(f"window 3 of an addendum's pass that wrote no row does not plan no review: {err or bounds}")
@@ -8243,8 +8251,8 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     # runner carries the trades the reader touched as `touched` lines beside the created ones.
     # A trade folded into a package's `codes` is covered by that package: a pass that wrote only on
     # it still reviews the package that bids it.
-    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 09 22 16 2\ni3-A1-1 candidates 0\n")
-    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\n")
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 09 22 16 2\n")
+    write(addendum / "trades" / "i3-A2.txt", "")
     code, bounds, err, text = review_plan(addendum)
     if code != 0 or sorted(_issue_ids(text)[1]) != ["i3-rev-092116-1"]:
         errors.append(
@@ -8253,15 +8261,15 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         )
     # A broad package code covers the trades under it, as the server reads coverage: 32 90 00
     # covers 32 93 00, and the section 09 91 00 covers 09 91 23.
-    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 32 93 00 1\ni3-A1-1 trade 09 91 23 1\ni3-A1-1 candidates 0\n")
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 32 93 00 1\ni3-A1-1 trade 09 91 23 1\n")
     code, bounds, err, text = review_plan(addendum)
     if code != 0 or sorted(_issue_ids(text)[1]) != ["i3-rev-099100-1", "i3-rev-329000-1"]:
         errors.append(
             f"window 3 of an addendum's pass that wrote only on trades under a package's broad code "
             f"does not review those packages: {err or sorted(_issue_ids(text)[1])}"
         )
-    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 candidates 0\ni3-A1-1 touched 08 50 00\n")
-    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\ni3-A2-2 candidates 0\ni3-A2-2 touched 32 90 00\n")
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 touched 08 50 00\n")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-2 touched 32 90 00\n")
     code, bounds, err, text = review_plan(addendum)
     if code != 0 or sorted(_issue_ids(text)[1]) != ["i3-rev-085000-1", "i3-rev-329000-1"]:
         errors.append(
@@ -8269,8 +8277,8 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             f"those two packages: {err or sorted(_issue_ids(text)[1])}"
         )
     # A catalog id the reader spaced otherwise than the package folds to the same trade.
-    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 candidates 0\ni3-A1-1 touched 085000\n")
-    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\n")
+    write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 touched 085000\n")
+    write(addendum / "trades" / "i3-A2.txt", "")
     code, bounds, err, text = review_plan(addendum)
     if code != 0 or _issue_ids(text)[1] != ["i3-rev-085000-1"]:
         errors.append(f"a touched id spaced `085000` does not review the `08 50 00` package: {err or _issue_ids(text)[1]}")
@@ -8292,13 +8300,13 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             "so on an addendum the trade a row moved to can go unreviewed"
         )
     # Both scripts read one grammar, equally strict: a count that is not a whole number is refused.
-    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates many\n")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\n")
     refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(addendum / "read-plan-w3.md")],
-            "a trades line whose candidates count is not a number", "i3-A2.txt line 1")
+            "a trades line in the candidates shape no runner writes", "i3-A2.txt line 1")
     write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 trade 09 21 16 four\n")
     refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(addendum / "read-plan-w3.md")],
             "a trades line whose trade count is not a number", "i3-A2.txt line 1")
-    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\n")
+    write(addendum / "trades" / "i3-A2.txt", "")
     # The union rests on the reader's own `trades touched:` line, so a unit whose verified line shows
     # an update or a Question raised and that carries no touched line leaves the union unknown: every
     # package is reviewed and the plan says why, rather than naming packages left out as untouched.
@@ -8313,7 +8321,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
             f"window 3 of an addendum's pass whose unit raised a Question and named no trade does not review "
             f"every package and say which unit: {err or bounds}"
         )
-    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\ni3-A2-1 touched 32 90 00\n")
+    write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 touched 32 90 00\n")
     code, bounds, err, text = review_plan(addendum)
     if code != 0 or sorted(_issue_ids(text)[1]) != ["i3-rev-085000-1", "i3-rev-329000-1"]:
         errors.append(
@@ -8534,7 +8542,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         (reviewer_flat, "the reviewer", opened_shape),
         (runner_flat, "the runner", "with the `fileId` and the page the reviewer's line names for it"),
         # A review rewords rows it does not cite again, on pages it did not open in that read, and
-        # records a candidate trade with no page at all. The reviewer names each such write on its
+        # records a role with no page at all. The reviewer names each such write on its
         # own line with its predicate, and the runner finds each one back as written by this review:
         # the current entry of that predicate, written at or after the dispatch, on the page named.
         (reviewer_flat, "the reviewer", "field updates: <each write you made in this review onto a row on `updated subjects:` that carries no new citation, a heading aside, one write per line: the subject + the predicate written + the page its evidence names"),
@@ -10050,10 +10058,10 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     trades = folder / "trades"
     trades.mkdir()
     (trades / "A1.txt").write_text(
-        "".join(f"{u} trade 09 21 16 2\n{u} candidates 1\n" for u in a1_units), encoding="utf-8"
+        "".join(f"{u} trade 09 21 16 2\n" for u in a1_units), encoding="utf-8"
     )
     (trades / "G1.txt").write_text(
-        "".join(f"{u} trade 03 30 00 1\n{u} candidates 0\n" for u in g1_units), encoding="utf-8"
+        "".join(f"{u} trade 03 30 00 1\n" for u in g1_units), encoding="utf-8"
     )
 
     def summarize(pass_id: str, window: int = 1, at: Path = folder, plan_path: Path = plan) -> None:
@@ -10079,7 +10087,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     wanted_line = (
         f"pass: 1 A1 units {len(a1_units)} created {sum(a1_counts)} updated "
         f"{sum(updated[u] for u in a1_units)} questions {sum(questions[u] for u in a1_units)} "
-        f"replied 0 candidates {len(a1_units)} lead-verified yes"
+        f"replied 0 lead-verified yes"
     )
     appended = ledger.read_bytes()[len(before):].decode("utf-8")
     if code != 0 or appended != wanted_line + "\n" or out.splitlines()[:1] != [wanted_line]:
@@ -10098,8 +10106,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         f"{len(a1_units)} sheets read ({', '.join(s for _u, s, _p in blocks['A1']['units'])}): "
         f"new items {2 * len(a1_units)}, items updated {line_fields[line_fields.index('updated') + 1]}, "
         f"Questions raised {line_fields[line_fields.index('questions') + 1]}, replies "
-        f"{line_fields[line_fields.index('replied') + 1]}, new items with a candidate trade "
-        f"{line_fields[line_fields.index('candidates') + 1]}"
+        f"{line_fields[line_fields.index('replied') + 1]}"
     )
     if out.splitlines()[1:2] != [said_record]:
         errors.append(f"the record does not say the pass in the estimator's words under its line: {out.splitlines()[1:2]}, expected {said_record!r}")
@@ -10239,6 +10246,23 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         [*a1_record, a1_answer],
         1, ["is the summary of window 1 pass G1"],
     )
+    # A summary summed with no trades file has no item count, and a trades line still carrying the
+    # retired candidates count is in no shape the summary script writes: each is refused.
+    summarize("A1")
+    a1_summary = (folder / "reports" / "A1.md").read_text(encoding="utf-8")
+    for case, trades_line, must_name in (
+        ("a summary summed with no trades file", "trades: no trades file for this pass",
+         "summed the pass with no trades file"),
+        ("a summary whose trades line carries a candidates count", "trades: 09 21 16 x8; candidates 4",
+         "and the summary script writes"),
+        ("a summary with no trades line", None, "carries no trades line"),
+    ):
+        (folder / "reports" / "A1.md").write_text("".join(
+            f"{trades_line}\n" if line.startswith("trades:") else f"{line}\n"
+            for line in a1_summary.splitlines()
+            if trades_line is not None or not line.startswith("trades:")
+        ), encoding="utf-8")
+        refused(case, [*a1_record, a1_answer], 1, [must_name])
     summarize("A1")
     ledger_lines.append(
         f"verified 1 G1 {g1_units[2]} created {created[g1_units[2]]} items 2 updated "
@@ -10311,7 +10335,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         ), encoding="utf-8")
         (review_folder / "trades").mkdir()
         (review_folder / "trades" / f"{review}.txt").write_text(
-            "".join(f"{unit_id} candidates 1\n" for unit_id in review_units), encoding="utf-8"
+            "", encoding="utf-8"
         )
         (review_folder / "reports").mkdir()
         for unit_id in review_units:
@@ -10336,7 +10360,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             ])
             wanted_review = (
                 f"pass: 3 {review} units 2 created {sum(review_counts.values())} updated 4 "
-                f"questions 2 replied 2 candidates 2 pages-opened {figures.group(1)} searches "
+                f"questions 2 replied 2 pages-opened {figures.group(1)} searches "
                 f"{figures.group(2)} lead-verified yes"
             )
             if code != 0 or out.splitlines()[:1] != [wanted_review]:
@@ -10424,17 +10448,17 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         parts = line.split()
         return {
             field: int(parts[parts.index(field) + 1])
-            for field in ("units", "created", "updated", "questions", "replied", "candidates")
+            for field in ("units", "created", "updated", "questions", "replied")
         }
 
     def said(items: int, f: dict[str, int]) -> str:
         return (
             f"new items {items}, items updated {f['updated']}, Questions raised {f['questions']}, "
-            f"replies {f['replied']}, new items with a candidate trade {f['candidates']}"
+            f"replies {f['replied']}"
         )
 
     per_pass = {p: figures_of(last_lines[p]) for p in ("A1", "G1") if p in last_lines}
-    totals = {field: sum(f[field] for f in per_pass.values()) for field in ("units", "created", "updated", "questions", "replied", "candidates")}
+    totals = {field: sum(f[field] for f in per_pass.values()) for field in ("units", "created", "updated", "questions", "replied")}
     items = {"A1": 2 * len(a1_units), "G1": len(g1_units)}
     sheets_of = {p: [sheet for _u, sheet, _pg in blocks[p]["units"]] for p in ("A1", "G1")}
     if code != 0:
@@ -10452,8 +10476,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             "window 1, 2 passes",
             f"your own check over 2 pass lines (A1, G1), never said to the estimator: units {totals['units']}, "
             f"entries {totals['created']}",
-            f"items by trade: 09 21 16 x{2 * len(a1_units)}, 03 30 00 x{len(g1_units)}; "
-            f"candidates {len(a1_units)}",
+            f"items by trade: 09 21 16 x{2 * len(a1_units)}, 03 30 00 x{len(g1_units)}",
             *carried,
         ):
             if wanted not in lines:
@@ -10741,7 +10764,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         (at / "ledger.md").write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
         (at / "trades").mkdir()
         (at / "trades" / "A1.txt").write_text(
-            "".join(f"{u} trade 09 21 16 2\n{u} candidates 1\n" for u, _s in settle_units), encoding="utf-8"
+            "".join(f"{u} trade 09 21 16 2\n" for u, _s in settle_units), encoding="utf-8"
         )
         code, _bounds, err = run(plan_module, argv)
         if code != 0:
@@ -11230,8 +11253,6 @@ def check_fold_one_level_down(plugin_path: Path, marketplace_root: Path) -> Resu
     # The tally, computed here off the fixture's own lines.
     def tally(label: str) -> int:
         return sum(1 for line in fixture_lines if line.startswith(f"{label}: "))
-    sent = sum(int(m.group(1)) for m in (re.match(r"^candidates: sent (\d+) landed (\d+)$", l) for l in fixture_lines) if m)
-    landed = sum(int(m.group(2)) for m in (re.match(r"^candidates: sent (\d+) landed (\d+)$", l) for l in fixture_lines) if m)
     if not all(tally(label) for label in ("folded", "split", "moved", "deleted", "kept", "re-homed", "question")) or "\n\n" not in fixture_text:
         errors.append("the fold report fixture no longer carries every counted act and a blank line")
 
@@ -11245,8 +11266,7 @@ def check_fold_one_level_down(plugin_path: Path, marketplace_root: Path) -> Resu
         "fold: packages 14 before, 11 after",
         f"acts: folded {tally('folded')}, split {tally('split')}, moved {tally('moved')}, "
         f"deleted {tally('deleted')}, kept {tally('kept')}",
-        f"records: candidates sent {sent} landed {landed}, rows re-homed {tally('re-homed')}, "
-        f"questions {tally('question')}",
+        f"records: rows re-homed {tally('re-homed')}, questions {tally('question')}",
         "phase: packages folded appended",
         f"report: {folder / 'reports' / 'fold.md'}",
     ]
@@ -11272,8 +11292,8 @@ def check_fold_one_level_down(plugin_path: Path, marketplace_root: Path) -> Resu
     unknown = run_folder("unknown-label", fixture_text + "merged: two invented packages, a label outside the set\n")
     refuses("a label outside the set, printed", ["print", str(unknown)], "merged")
     refuses("a label outside the set, handed back", ["hand-back", str(unknown), "--before", "1", "--after", "1"], "merged")
-    bad_candidates = run_folder("bad-candidates", fixture_text + "candidates: three sent, all landed\n")
-    refuses("a candidates line in another shape", ["hand-back", str(bad_candidates), "--before", "1", "--after", "1"], "candidates: sent")
+    candidates_line = run_folder("candidates-line", fixture_text + "candidates: sent 3 landed 3\n")
+    refuses("a candidates line, which the fold no longer writes", ["hand-back", str(candidates_line), "--before", "1", "--after", "1"], "candidates: sent")
     # A delete the lead reads its trade off: one with no trade, or with the shape's placeholder for
     # the package id, is refused, so the general requirements step never meets a delete it cannot
     # read a trade off.
@@ -11303,7 +11323,7 @@ def check_fold_one_level_down(plugin_path: Path, marketplace_root: Path) -> Resu
     wanted_empty = [
         "fold: packages 9 before, 9 after",
         "acts: folded 0, split 0, moved 0, deleted 0, kept 0",
-        "records: candidates sent 0 landed 0, rows re-homed 0, questions 0",
+        "records: rows re-homed 0, questions 0",
         "phase: packages folded appended",
         f"report: {empty / 'reports' / 'fold.md'}",
     ]
@@ -12048,7 +12068,7 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         )
     (folder / "trades").mkdir()
     (folder / "trades" / f"{pass_id}.txt").write_text(
-        "".join(f"{unit} candidates 0\n" for unit in [review, first, second, *others]), encoding="utf-8"
+        "", encoding="utf-8"
     )
 
     def checkin(where: Path) -> list[str]:
@@ -12656,7 +12676,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
 
     def pass_line(window: int, pass_id: str) -> str:
         return (
-            f"pass: {window} {pass_id} units 1 created 1 updated 0 questions 0 replied 0 candidates 0 "
+            f"pass: {window} {pass_id} units 1 created 1 updated 0 questions 0 replied 0 "
             f"lead-verified yes"
         )
 
@@ -12693,7 +12713,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         (where / "reports").mkdir(exist_ok=True)
         (where / "trades").mkdir(exist_ok=True)
         (where / "trades" / f"{pass_id}.txt").write_text(
-            "".join(f"{unit} trade 09 00 00 1\n{unit} candidates 0\n" for unit, _sheet in units), encoding="utf-8"
+            "".join(f"{unit} trade 09 00 00 1\n" for unit, _sheet in units), encoding="utf-8"
         )
         done = (where / "ledger.md").read_text(encoding="utf-8") if (where / "ledger.md").is_file() else ""
         for unit, sheet in units:
@@ -14077,7 +14097,10 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "You write this half, always, as printed, whatever this package's own paper says."),
     ("reviewer", "write it all the same, cite that place on the row too"),
     ("reviewer", "You never write this half, whatever this package's own paper says: no row, no role "
-                 "and no candidate or exclusion record for it."),
+                 "and no exclusion record for it."),
+    ("reviewer", "Where an `internal note:` line follows, the half goes to either of two or more "
+                 "trades, this package being the one the script gives it to: write that line's words "
+                 "as the row's `notesInternal` in the same batch, and the row sits on this package alone."),
     ("reviewer", "Its `name:` is the name of the row that package writes"),
     ("reviewer", "cite the place on that row with `cite_source`, a citation and never a role"),
     ("reviewer", "Name the half `paper gives it to <this package's tradeCode>, <sheet and page or "
@@ -14126,9 +14149,8 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
         "A row shared with another package keeps its category there; the seven apply to rows "
         "whose home is `01 11 13`.",
     )),
-    ("skill", "The run writes trade-responsibility candidates, exclusions where the paper says "
-              "work is by others, and every trade except `01 11 13` has its general items in its "
-              "General Requirements section."),
+    ("skill", "The run writes exclusions where the paper says work is by others, and every trade "
+              "except `01 11 13` has its general items in its General Requirements section."),
     *((label, phrase) for label in (SHEET_READER, VOCABULARY_READER) for phrase in (
         "On every trade except `01 11 13`, a note that has a trade carry its own general costs "
         "(hoisting its own material, protecting its own work, tax on what it supplies, its own "
@@ -14486,7 +14508,7 @@ def _standard_lines_blocks(out: str) -> list[dict]:
         elif line.startswith("    ") and blocks and blocks[-1]["halves"]:
             key, _, value = line.strip().partition(": ")
             half = blocks[-1]["halves"][-1]
-            if key in ("exclusion on", "candidate on"):
+            if key in ("exclusion on", "internal note"):
                 half["records"].append(f"{key}: {value}")
             else:
                 half[key] = value
@@ -14533,7 +14555,7 @@ _STANDARD_LINES_CASES: tuple[tuple[str, dict[str, set[str]]], ...] = (
 # each half a `you write it:` value and, where it writes, its records in order.
 _STANDARD_LINES_WRITERS: tuple[tuple[str, str, dict[str, list[tuple[str, list[str]]]]], ...] = (
     ("06 20 00; 11 31 00", "Appliance Install by Appliances or Finish Carpentry", {
-        "06 20 00": [("yes", ["candidate on: 11 31 00, note: confirm trade responsibility: could be Appliances or Finish Carpentry"])],
+        "06 20 00": [("yes", ["internal note: Could be by Appliances or Finish Carpentry"])],
         "11 31 00": [("no, left to 06 20 00", [])],
     }),
     ("31 00 00; 02 41 00", "Utility Cut and Caps by Site Utilities, Not Demolition", {
@@ -14965,7 +14987,7 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"and to the earthwork package where they have none, electrical beside an EV charger "
         f"package, millwork beside finish carpentry, none for 08 33 23 and 01 11 13); {writer_halves} Which "
         f"Trade halves printing their writer and records as the cases want (an `or` line to the "
-        f"lowest package with a candidate on the other, one carrier with an exclusion on the trade "
+        f"lowest package alone with an internal note naming both trades, one carrier with an exclusion on the trade "
         f"it keeps the work off, two halves each excluding the other, an owner half on the trade "
         f"beside it, a carrier with no package written by the trade it keeps the work off with the "
         f"carrier's catalog id, furnish halves for each MEP trade and an install half by drywall, the "
@@ -15429,7 +15451,7 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
         ledger_lines += [f"dispatch r i2-RA {unit} sheets x purpose recheck",
                          f"verified r i2-RA {unit} created 0 items 0 updated {updated} questions 0 replied 0 sent {updated} landed {updated} conflicts 0 result ok"]
     write(ledger, "\n".join(ledger_lines) + "\n")
-    write(main / "trades" / "i2-RA.txt", "".join(f"{unit} candidates 0\n" for unit in reports))
+    write(main / "trades" / "i2-RA.txt", "")
     code, out, err = run(summary_module, [str(ledger), "r", "i2-RA", "--plan", str(main / "read-plan.md"),
                                           "--trades", str(main / "trades" / "i2-RA.txt"), "--out", str(main / "reports" / "i2-RA.md")])
     want_line = "recheck: rows recited 1, updated 1, removed 4, not found 2; items retired 0, kept 0, refused 0"

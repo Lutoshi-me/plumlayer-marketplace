@@ -464,8 +464,8 @@ Each of these is a harness check.
     its full subject, never shortened, since a short id prints the note whole; and the skill's
     own three command lines are fed to the script's arguments. The check-in and the record speak
     the estimator's words: a pass is named by the sheets it read, or in window 3 the packages it
-    reviewed, with its new items summed off its trades, items updated, Questions raised, replies
-    and new items with a candidate trade, the record printing that line under the `pass:` line it
+    reviewed, with its new items summed off its trades, items updated, Questions raised and
+    replies, the record printing that line under the `pass:` line it
     appends; the check-in prints no `pass:` line and no `created` figure there, keeping the units
     and the entry count, and in window 3 the pages opened and searches, on the lead's own line
     apart, and no line but that one names a pass by its id; and a note prints under its label less

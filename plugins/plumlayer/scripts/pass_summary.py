@@ -75,12 +75,12 @@ The `notes:` figures count the pass's notes of each kind, and the summary file c
             appends a unit at a time off its `verify_unit` results:
 
                 <unit id> trade <catalog id> <count>
-                <unit id> candidates <count>
+                <unit id> touched <catalog id>
 
             A catalog id carries spaces, so the count is read off the end of the line. Without this
             argument the `trades:` line says there is no trades file, which is a plain statement
-            rather than a guess. `candidates <n>` is the created subjects carrying at least one
-            candidate trade, each subject counted once however many candidate trades it carries.
+            rather than a guess. A `touched` line is the plan's, for an addendum's reviews, and the
+            summary counts no item off it.
             A unit's trades are read off the file of the pass its `verified` line names: this file
             for a unit verified under this pass, and `<pass id>.txt` beside it for a unit verified
             under another. A line here for a unit the summary does not count is named on the
@@ -592,11 +592,18 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
 # The trades file
 # --------------------------------------------------------------------------- #
 
-def read_trades(path: Path) -> dict[str, list[tuple[str | None, int]]]:
+# The trades line where the pass's units created nothing on any trade, and where it was summed with no
+# trades file. The lead's record script reads the first as a pass that wrote no item and refuses the
+# second, since a pass summed with no trades file has no item count to report.
+TRADES_NONE_LINE = "trades: no trade on any unit of this pass"
+TRADES_NO_FILE_LINE = "trades: no trades file for this pass"
+
+
+def read_trades(path: Path) -> dict[str, list[tuple[str, int]]]:
     """
-    One trades file, as each unit's lines: (catalog id, item count) for a trade line and (None,
-    count) for its candidates line. A catalog id carries spaces, so the count is the last word of
-    the line and the id is everything between the keyword and it.
+    One trades file, as each unit's trade lines: (catalog id, item count). A catalog id carries
+    spaces, so the count is the last word of the line and the id is everything between the keyword
+    and it.
     """
     if not path.is_file():
         raise SummaryError(f"no trades file at {path}")
@@ -605,18 +612,13 @@ def read_trades(path: Path) -> dict[str, list[tuple[str | None, int]]]:
     except Exception as e:
         raise SummaryError(f"cannot read the trades file at {path}: {e}") from e
 
-    by_unit: dict[str, list[tuple[str | None, int]]] = {}
+    by_unit: dict[str, list[tuple[str, int]]] = {}
     for number, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
         if not line:
             continue
         parts = line.split()
         where = f"{path} line {number}"
-        if len(parts) >= 3 and parts[1] == "candidates":
-            by_unit.setdefault(parts[0], []).append(
-                (None, _whole_number(parts[2], "candidates", where))
-            )
-            continue
         if len(parts) >= 4 and parts[1] == "trade":
             by_unit.setdefault(parts[0], []).append(
                 (" ".join(parts[2:-1]), _whole_number(parts[-1], "trade count", where))
@@ -627,13 +629,13 @@ def read_trades(path: Path) -> dict[str, list[tuple[str | None, int]]]:
         if len(parts) >= 3 and parts[1] == "touched":
             continue
         raise SummaryError(
-            f"{where}: the line is neither `<unit id> trade <catalog id> <count>`, "
-            f"`<unit id> candidates <count>` nor `<unit id> touched <catalog id>`"
+            f"{where}: the line is neither `<unit id> trade <catalog id> <count>` nor "
+            f"`<unit id> touched <catalog id>`"
         )
     return by_unit
 
 
-def sum_trades(pass_data: dict, pass_id: str, path: Path) -> tuple[dict[str, int], int, dict]:
+def sum_trades(pass_data: dict, pass_id: str, path: Path) -> tuple[dict[str, int], dict]:
     """
     The trades of every unit the summary counts, each read off the file of the pass its `verified`
     line names, plus what the bounds line says about the files: the other passes' files read and
@@ -641,7 +643,6 @@ def sum_trades(pass_data: dict, pass_id: str, path: Path) -> tuple[dict[str, int
     """
     files: dict[Path, dict] = {path: read_trades(path)}
     by_trade: dict[str, int] = {}
-    candidates = 0
     read_here: set[str] = set()
     for entry in pass_data["verified"]:
         source = path if entry["pass"] == pass_id else path.parent / f"{entry['pass']}.txt"
@@ -650,25 +651,22 @@ def sum_trades(pass_data: dict, pass_id: str, path: Path) -> tuple[dict[str, int
         if source == path:
             read_here.add(entry["unit"])
         for code, count in files[source].get(entry["unit"], []):
-            if code is None:
-                candidates += count
-            else:
-                by_trade[code] = by_trade.get(code, 0) + count
+            by_trade[code] = by_trade.get(code, 0) + count
     left_out = {
         unit: len(lines) for unit, lines in files[path].items() if unit not in read_here
     }
-    return by_trade, candidates, {
+    return by_trade, {
         "beside": [source for source in files if source != path],
         "leftOut": left_out,
     }
 
 
-def _trades_line(by_trade: dict[str, int], candidates: int) -> str:
+def _trades_line(by_trade: dict[str, int]) -> str:
     """Ordered by item count, highest first, then by catalog id, so the reading is stable."""
     if not by_trade:
-        return f"trades: no trade on any unit of this pass; candidates {candidates}"
+        return TRADES_NONE_LINE
     ordered = sorted(by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
-    return "trades: " + ", ".join(f"{code} x{count}" for code, count in ordered) + f"; candidates {candidates}"
+    return "trades: " + ", ".join(f"{code} x{count}" for code, count in ordered)
 
 
 # --------------------------------------------------------------------------- #
@@ -997,7 +995,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--trades", type=Path,
-        help="the pass's trades file, one line per trade per unit plus one candidates line per unit",
+        help="the pass's trades file, one line per trade per unit and one per trade a unit touched",
     )
 
     args = parser.parse_args(argv)
@@ -1008,10 +1006,10 @@ def main(argv: list[str] | None = None) -> int:
         pass_data = read_pass(args.ledger, args.window, args.pass_id, plan)
         trades_read = None
         if args.trades is None:
-            trades_line = "trades: no trades file for this pass"
+            trades_line = TRADES_NO_FILE_LINE
         else:
-            by_trade, candidates, trades_read = sum_trades(pass_data, args.pass_id, args.trades)
-            trades_line = _trades_line(by_trade, candidates)
+            by_trade, trades_read = sum_trades(pass_data, args.pass_id, args.trades)
+            trades_line = _trades_line(by_trade)
         review = None
         review_paths: list[Path] = []
         if args.window in (3, RECHECK_WINDOW):

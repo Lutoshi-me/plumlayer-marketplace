@@ -41,7 +41,7 @@ note 1 A1 A1-11 anomaly invented clause, sheet A-9.11 page 199, two rooms carry 
 note 1 A1 A1-11 deviation invented clause, two sends were refused for a null field and a value shape, resent whole
 note 1 A1 A1-6 overlap invented clause, a window row and a punch window row may be the same work across two units
 note 1 A1 - kinds doorPanelMaterial doorPanelStyle doorPanelCombination doorHardwareIndication doorGlazingType windowType horizontalAssemblyType unitEquipmentMark storefrontType louverType finishLegendCode
-pass: 1 A1 units 11 created 592 updated 9 questions 4 replied 0 candidates 40 lead-verified yes
+pass: 1 A1 units 11 created 592 updated 9 questions 4 replied 0 lead-verified yes
 dispatch: window 1 boundary
-phase: window 1 complete units 11 created 592 updated 9 questions 4 replied 0 candidates 40 kinds declared 0 cross-pass overlaps 0
+phase: window 1 complete units 11 created 592 updated 9 questions 4 replied 0 kinds declared 0 cross-pass overlaps 0
 phase: paused at window 1 check-in

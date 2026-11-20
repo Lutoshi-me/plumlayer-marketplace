@@ -432,19 +432,18 @@ of them is ever trimmed.
    `01 11 13` on the general requirements package. Which sub bids the work is settled when the run
    folds packages before the reviews. A trade is the catalog id copied verbatim, spaces and all
    (`09 21 16`), never a word for the trade (`drywall`) and never a respelling (`09-21-16`,
-   `092116`). Where a sheet, a manual section, a package's `notes`, or the usual practice of a
-   second trade's bidders puts the work on two or more trades (a window install the framer or the
-   finish carpenter carries, a seal the window section gives the window installer), write your
-   best single trade as the home and, in the same batch, one `packageRole:<trade>` record for each
-   other trade one of those names, the same catalog code in the predicate, its value an object and
-   never the bare word:
-   `{"role": "candidate", "note": "confirm trade responsibility: Section 07 92 00 has the window installer seal the perimeter"}`,
-   the note internal, never bidder-facing, and naming what puts the second trade on it. A guess
-   with nothing behind it enrolls no second trade: that a trade's material is involved, that its
-   sheet shows the work, or that a note asks for a coating or finish on another trade's own
-   product. Write that doubt in the home row's `notesInternal` instead. Keep moving; never hold a row back for its trade and
-   never raise a Question for it. The trade rides in the same `record_batch` as the name. Which
-   trade carries a piece of work is a row, never a note. Where a sheet or the manual says work is by
+   `092116`). Where you cannot tell which of two or more trades carries the work, because a
+   sheet, a manual section, a package's `notes` or the usual practice of a second trade's bidders
+   could put it on either (a window install the framer or the finish carpenter carries, a seal the
+   window section gives the window installer), write the one trade most likely to carry it as the
+   row's trade, the row under the heading it takes on that trade's package, and one sentence in
+   its `notesInternal` naming the other trade and what puts the work there ("Could be by the
+   window installer: Section 07 92 00 has the window installer seal the perimeter"). The row goes
+   on that one trade alone. That a trade's material is involved, that its sheet shows the work, or
+   that a note asks for a coating or finish on another trade's own product does not make it the
+   trade most likely to carry the work. Keep moving; never hold a row back for its trade and
+   never raise a Question for it. The trade rides in the same `record_batch` as the name. Work the
+   paper gives to another party is a row, never a note. Where a sheet or the manual says work is by
    others, not in contract, by the owner or a tenant, under a separate contract, or furnished by one
    party and installed by another, write that work as a row of its own on the catalog trade of the
    firm the paper names as carrying it, and in the same batch one `packageRole:<trade>` record for
@@ -536,9 +535,10 @@ of them is ever trimmed.
    one sentence: an instruction to the bidder about the line, what to break out, what to confirm,
    what is an alternate; work by others is a row of its own, mandate 4), `notesInternal` (optional,
    one sentence: a watch item for the estimator, an open
-   Question on the row, or how the row's count or grouping was reached and what a correction
-   replaced; never a citation audit, never which trade carries the work, which is a row under
-   mandate 4, and never a conflict between two documents, which goes where mandate 1 sends it: a
+   Question on the row, how the row's count or grouping was reached and what a correction
+   replaced, or the other trade that could carry the row, as mandate 4 says; never a citation
+   audit, never work the paper gives to another party, which is a row under mandate 4, and never
+   a conflict between two documents, which goes where mandate 1 sends it: a
    Question where it clears the bar, a qualification in `notesExternal` where it does not. Where it already
    holds text that asks something or names an open Question, every
    sentence you add, a correction, an anomaly mandate 1 lands there, or the sheet an answer was
@@ -932,7 +932,7 @@ questions raised ids: <the id of every Question you raised, or "none">
 questions replied ids: <the id of every Question you replied to, or "none">
 questions linked: <the id of every Question raised or replied to + the subject of every row you cited it on, one Question per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
-trades: <trade id + item count, one per trade; candidates <n>>
+trades: <trade id + item count, one per trade>
 trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
 schedules under rows: <each kind you put under a row + that row's subject, one per line, or "none">
