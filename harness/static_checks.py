@@ -16264,6 +16264,115 @@ def check_kept_sheet_conflict(plugin_path: Path, marketplace_root: Path) -> Resu
 
 
 # --------------------------------------------------------------------------- #
+# Check: scanned plans
+# --------------------------------------------------------------------------- #
+#
+# On a measured run every electrical drawing page of the set was a scan read by machine, and the
+# readers took no devices or counts from the plans: "plan linework is not in the OCR text". Three
+# of the estimators' RFIs (unit, load center and meter counts) sat on those sheets and the run
+# raised none. Both readers now read such a plan from its picture inside a cap of three renders,
+# cite only boxes the text read gives, write no quantity off a render alone, hold a count printed
+# on a riser or one-line diagram against the count another sheet states, never a count they make,
+# and name each page or part they could not read in one shape, on `pages unread:` and on the
+# anomaly line the check-in prints; the skill carries the report shape and has the lead name those
+# sheets at the check-in and the close out. Each phrase taken out, and the retired sentence that
+# stopped a reader at three renders with nothing read, put back, is refused. Honest bound: text
+# only; whether a running reader reads a scan well is the measured run's.
+
+_SCANNED_READERS = ("agents/scope-reader.md", "agents/scope-vocabulary-reader.md")
+_SCANNED_UNREAD_SHAPE = (
+    "pages unread: <sheet number + pageInPdf + reason, each page or part of one not read from the "
+    "picture as `<sheet> p<page> not read from the picture: <what is left>, <why>`, or \"none\">"
+)
+_SCANNED_READER_PHRASES = (
+    "A scanned plan is read from its picture.",
+    "Read the text first all the same, walked to its end: its boxes are the only boxes you cite.",
+    "within the cap of three renders a page",
+    "never a row per symbol drawn, and never a count you make of them",
+    "The rectangle you asked for is never the box.",
+    "a figure the machine read missed or misread is read off the render alone and is no quantity",
+    "`<sheet> p<page> not read from the picture: <the whole sheet, or each part left by where it "
+    "sits on the sheet>, <why>`, and the same words go on your `anomalies:` line ending `, run only`",
+    "Three renders is the cap for a page, a tiled call counted as one",
+    "A count printed on a riser or a one-line diagram is one side of a disagreement too.",
+    "a number you reach by counting the symbols, meters, panels or units a diagram or plan draws is "
+    "never stated, never one side of a Question and never a quantity",
+    _SCANNED_UNREAD_SHAPE,
+)
+_SCANNED_SKILL = "skills/scope-run/SKILL.md"
+_SCANNED_SKILL_PHRASES = (
+    _SCANNED_UNREAD_SHAPE,
+    "An anomaly carrying `not read from the picture:` names a scanned sheet, or a part of one, that "
+    "no reader could read: it is always carried, by its sheet and the part left, at the check-in "
+    "that prints it and at the close out.",
+    "Each sheet that could not be read from its picture, whole or in part, with the part left, and"
+    " that what is drawn there may be missing from the rows",
+    "The scanned sheets not read are the window 1 and 2 `anomaly` notes that carry "
+    "`not read from the picture:`",
+)
+_SCANNED_RETIRED = (
+    "A page that would take more than three renders is reported on that line as needing more, "
+    "rather than rendered on.",
+)
+_SCANNED_PINS: tuple[tuple[str, str], ...] = (
+    tuple((reader, phrase) for reader in _SCANNED_READERS for phrase in _SCANNED_READER_PHRASES)
+    + tuple((_SCANNED_SKILL, phrase) for phrase in _SCANNED_SKILL_PHRASES)
+)
+
+
+def _scanned_errors(texts: dict[str, str]) -> list[str]:
+    errors = [f"{label} does not read {phrase!r}" for label, phrase in _SCANNED_PINS
+              if phrase not in _collapsed(texts[label])]
+    errors += [f"{label} still reads the retired {phrase!r}" for label in _SCANNED_READERS
+               for phrase in _SCANNED_RETIRED if phrase in _collapsed(texts[label])]
+    return errors
+
+
+def check_scanned_plans(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "scanned-plans"
+    texts: dict[str, str] = {}
+    for label in (*_SCANNED_READERS, _SCANNED_SKILL):
+        path = plugin_path / label
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[label] = path.read_text(encoding="utf-8")
+    errors = _scanned_errors(texts)
+
+    # Each pin taken out, and each retired sentence put back, so every refusal is shown.
+    refused = 0
+    mutations = 0
+    if not errors:
+        for label, phrase in _SCANNED_PINS:
+            mutations += 1
+            broken = {**texts, label: _collapsed(texts[label]).replace(phrase, "")}
+            if _scanned_errors(broken):
+                refused += 1
+            else:
+                errors.append(f"the check passed {label} with {phrase!r} taken out")
+        for label in _SCANNED_READERS:
+            for phrase in _SCANNED_RETIRED:
+                mutations += 1
+                broken = {**texts, label: texts[label] + "\n" + phrase + "\n"}
+                if _scanned_errors(broken):
+                    refused += 1
+                else:
+                    errors.append(f"the check passed {label} with the retired {phrase!r} put back")
+
+    detail = (
+        f"{len(_SCANNED_PINS)} phrases held over {len(_SCANNED_READERS)} readers and the skill (a "
+        f"scanned plan read from its picture within three renders, boxes only off the text read, no "
+        f"quantity off a render alone, a printed riser count held against another sheet's and never "
+        f"a count the reader makes, each page or part left named in one shape on `pages unread:` "
+        f"and the anomaly line, and named at the check-in and the close out), the retired "
+        f"three-render stop absent, {refused} of {mutations} mutations refused; bound: text only, "
+        f"not how a running reader reads a scan"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
 # Check: read again
 # --------------------------------------------------------------------------- #
 #
@@ -16515,6 +16624,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_delivery_sizing(plugin_path, marketplace_root),
         check_recheck(plugin_path, marketplace_root),
         check_kept_sheet_conflict(plugin_path, marketplace_root),
+        check_scanned_plans(plugin_path, marketplace_root),
         check_read_again(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)

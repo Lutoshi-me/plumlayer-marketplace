@@ -623,6 +623,15 @@ Each of these is a harness check.
     the same way. Each phrase taken out, and each retired phrase of the old rules put back, is
     refused. This cannot judge whether a running runner counts and checks as written; that is the
     measured pass's.
+37. A scanned plan is read from its picture. Both readers read a plan, a riser or one-line
+    diagram, or a schedule or legend whose text came back machine read and thin from a render,
+    within three renders a page, citing only boxes the text read gives and writing no quantity off
+    a render alone; a count printed on a riser or one-line diagram is held against the count
+    another sheet states, and a count the reader makes never is one; each page or part left is
+    named in one shape on `pages unread:` and on the anomaly line the check-in prints, and the
+    skill has the lead name those sheets at the check-in and the close out. Each phrase taken out
+    is refused. This cannot judge whether a running reader reads a scan well; that is the measured
+    run's.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

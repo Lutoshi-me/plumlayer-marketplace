@@ -196,6 +196,22 @@ of them is ever trimmed.
      clears it only where the set does not answer it and the answer moves the price by more than
      the low-cost kind below. A door or frame material or fire rating, a structural member's size
      or reinforcement, and a footing the plans need are never low cost.
+   A count printed on a riser or a one-line diagram is one side of a disagreement too. Where your
+   sheet is or carries a riser or a one-line diagram and prints how many of something it shows (a
+   number beside a meter bank, a `(12)` label, "24 UNIT LOAD CENTERS"), find the count the set
+   states elsewhere for the same thing with one `search_set_text` for its name, and for a figure
+   that counts what serves each unit, one more for the count of units in the words the set uses
+   for it (`UNIT MATRIX`, `TOTAL UNITS`, `DWELLING UNITS`), keeping the hits on a unit matrix, a
+   unit schedule or a code summary, and read each hit with `get_page_text`. A figure whose label
+   or note ties it to the units ("(48) UNIT METERS", "36 UNIT LOAD CENTERS") counts the units it
+   serves and is held against the unit count; a figure nothing ties to the units counts something
+   else and is held against no unit count. Where the two figures differ, the documents disagree as
+   the rule above says: raise or reply on the Question, citing the place of each figure, boxed
+   where a line of the page's read carries it and the sheet alone where only a render shows it,
+   as mandate 2 says. A count is stated only where the figure is printed, as a number or a label,
+   whether you read it in the page's text or off a render; a number you reach by counting the
+   symbols, meters, panels or units a diagram or plan draws is never stated, never one side of a
+   Question and never a quantity. Which stated figures go on a row is mandate 5's rule.
    Drawn work with no detail and no section is a product, a material or a piece of equipment your
    sheet draws that a bidder needs a specification to price, never incidental labor, the item you
    would otherwise leave a note on saying the set gives it no detail and no section (a fence with
@@ -960,12 +976,12 @@ render only what text cannot give.
   sheet line ending `| <the hit's fileId> | <the hit's page>`, found with one local search per hit
   and never by reading the file. A hit whose `sheetNumber` is null on a page `inventory.md` lists,
   as on a further page of a number printed on more than one page, is cited with the sheet number on
-  that inventory line. Where the run folder holds no `run.json`, search without `deliveryId`. Two
+  that inventory line. Where the run folder holds no `run.json`, search without `deliveryId`. Three
   drawing searches are the exceptions: mandate 1's footing and slab elevation search on a
-  sheet with borings, and its search for a detail of drawn work with no detail and no section, run
-  over the whole current set, with no `deliveryId`, and keep every hit, since a pass on an addendum
-  holds only its own sheets and the footings, slabs and details its sheet is held against are most
-  often on the set's. A search of the manual, `kind: document`, takes no `deliveryId`.
+  sheet with borings, its search for a detail of drawn work with no detail and no section, and its
+  search for the same count a riser or one-line diagram prints, run over the whole current set, with no `deliveryId`, and keep every hit, since a pass on an addendum
+  holds only its own sheets and the footings, slabs, details and schedules its sheet is held
+  against are most often on the set's. A search of the manual, `kind: document`, takes no `deliveryId`.
 - **Render only what text cannot give.** `render_page` for a detail whose meaning is in its
   drawing (a section, an assembly, a symbol), for a region the text came back `bounded` or
   `textSource: none` on, for a region whose lines are unreadable as text (a rotated table, a
@@ -973,8 +989,10 @@ render only what text cannot give.
   pier callout against what it points at (a footing under every pier, one thickness and one top
   elevation along one wall line), since that disagreement is in the drawing. Name the reason for every render on your `pages read:` line. Never a full-page
   render to orient yourself: the record, the sheet's own reading, and the text are the
-  orientation. A page that would take more than three renders is reported on that line as needing
-  more, rather than rendered on.
+  orientation. Three renders is the cap for a page, a tiled call counted as one: a page that needs
+  more is read as far as three renders take you, and what they leave goes on `pages unread:` with
+  why and, in the same words, on your `anomalies:` line ending `, run only`, so it reaches the
+  check-in; never a fourth render.
 - **A whole sheet that must be read visually is one tiled call, not a crop walk.** When the text
   read came back bounded or `workerCapped`, or the work you are after is in the linework across the
   sheet, call `render_page` with `tiles: {maxPx: 2000, dpi: 120}`: one call returns a small
@@ -986,6 +1004,40 @@ render only what text cannot give.
   not at all. When a dense region resists reading at 120, take a region crop of it at `dpi: 200`
   rather than tiling the sheet again. A tiled call counts as one render on your `pages read:`
   line, named `tiled@` and its DPI, as `tiled@120`.
+- **A scanned plan is read from its picture.** Where a page's text came back with `textSource`
+  `ocr`, `textLayerAndOcr` or `none`, or with `ocr.bounded`, and the sheet is a plan, an enlarged
+  plan, a riser or one-line diagram, or a schedule or legend, read it from a render wherever that
+  text is thin for what the sheet draws: its lines come back as fragments, as doubled halves, as
+  schedule cells out of order or as tags no legend defines. A plan, riser or one-line diagram whose
+  text came back that way and reads clean all the same gets the one tiled call below to check, since
+  a scan's text can carry its notes and leave out every device the drawing holds: where the picture
+  shows devices, tags or notes the text does not carry, read it from the picture. A notes sheet whose lines read as whole sentences is
+  read from its text alone. Read the text first all the same, walked to its end: its boxes are the
+  only boxes you cite. Then take one tiled call as the bullet above says, and at most two region
+  crops at `dpi: 200` of the areas the tiles leave unreadable (a panel schedule, a riser's labels,
+  a keyed note list), within the cap of three renders a page. Read off the picture what the text
+  missed: the devices, fixtures and equipment by their symbol and tag, the tags and keyed notes
+  with the note each number points to, the schedule and legend entries, and the drawn work
+  (feeders, conduit and piping runs, a riser's levels). Write it as you would off a text read,
+  every mandate the same: one row per product or type the legend or schedule names, never a row
+  per symbol drawn, and never a count you make of them.
+  To cite what you read there, take the spot's rectangle in points off the tile it sits on (a
+  pixel at `px` across and `py` down is `clipPt[0] + px / pxPerPt` and `clipPt[1] + py / pxPerPt`)
+  and call `get_page_text` with `form: "lines"` and that `region`, one call for a cluster (a
+  legend, a schedule, a riser) rather than one per row. A line it returns at the spot
+  gives the box, built as mandate 2 says, even where the machine read spelled its words otherwise,
+  and the row's text takes the words the picture shows. The rectangle you asked for is never the
+  box. Where it returns no line at the spot, or the text came back `none`, the row cites the sheet
+  with no box, as mandate 2 says, every such row of the page on its one `no box` line. A figure
+  goes on a row as its quantity only where a line of the text read carries it as the picture
+  prints it (mandate 5); a figure the machine read missed or misread is read off the render alone
+  and is no quantity, though a printed count is still one side of mandate 1's riser count.
+  On your `pages read:` line, name the page `read from the picture`, why its text was thin, and
+  each render. A page, or a part of one, that the cap leaves or that no render shows clearly
+  enough to read (a faint scan, a render that came back blank) goes on `pages unread:` as
+  `<sheet> p<page> not read from the picture: <the whole sheet, or each part left by where it sits on the sheet>, <why>`,
+  and the same words go on your `anomalies:` line ending `, run only`, so the estimator hears at
+  the check-in that nothing drawn there is on a row.
 Then emit against the live list.
 
 ## Reading a file's repeated lines
@@ -1100,8 +1152,8 @@ else. No preamble, no prose paragraphs, no restatement of what you read.
 
 ```text
 unit: <unit id>   pass: <pass id>   window: <n>
-pages read: <sheet number + pageInPdf, renders taken and the reason for each, one per page>
-pages unread: <sheet number + pageInPdf + reason, or "none">
+pages read: <sheet number + pageInPdf, renders taken and the reason for each, and `read from the picture` with why the text was thin where you read it from a render, one per page>
+pages unread: <sheet number + pageInPdf + reason, each page or part of one not read from the picture as `<sheet> p<page> not read from the picture: <what is left>, <why>`, or "none">
 cited sheets: <for the repeated lines, every sheet your rows and citations name, comma separated; otherwise "none">
 page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
 set version: <for the repeated lines, the setVersion your walk ended on; otherwise "none">

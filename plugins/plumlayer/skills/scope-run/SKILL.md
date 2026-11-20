@@ -1354,8 +1354,8 @@ On the go-ahead:
 <!-- user-facing -->
 At this check-in, when nothing was deferred, say plainly that every sheet in the set has now been
 read, once each, and that nothing was left unread except what was deliberately left out at the
-start. Name what landed by trade, say each trade's page carries its items and shows every sheet
-each one appears on, and say what comes next in one sentence: each package reviewed on its own
+start and each scanned sheet, or part of one, named as not read from its picture. Name what
+landed by trade, say each trade's page carries its items and shows every sheet each one appears on, and say what comes next in one sentence: each package reviewed on its own
 against what landed, several at a time, or, where the delivery was sized, first the recheck of
 every scope item still on a replaced sheet, then the reviews. Name each package you folded into another, with the reason in one sentence, and each
 package you split into the ones its subs bid, each package a supplier furnishes with the package
@@ -1596,7 +1596,8 @@ Report to the user, in plain words:
   sheet they sit on, and this run did not go back for them. Name apart the codes a later drawing
   issue dropped, each with the earlier sheets that printed it, and say that any scope item still
   naming one is work the revision may have taken out, for you to check. Also the sheets left out of the read
-  plan at the start, and the manual sections on no package, each with what stopped its placing,
+  plan at the start, each scanned sheet or part of one that could not be read from its picture,
+  with the part left and that nothing drawn there is on a row, and the manual sections on no package, each with what stopped its placing,
   or that the count of them is incomplete when it was cut short. Name each manual section no
   review could read, with the reason: the manual lists it and holds none of its pages, its manual
   was removed, it left its package before the rest of it was read, or a pass had no room left to
@@ -1617,7 +1618,7 @@ Report to the user, in plain words:
 <!-- /user-facing -->
 
 The report is written off the ledger's `pass:` and `phase:` lines, and the `grain`, `same work:`,
-`not read:`, `unsearched` and window 3 `unread` notes named below, read with a local filter, and the one package read named below,
+`not read:`, `not read from the picture:`, `unsearched` and window 3 `unread` notes named below, read with a local filter, and the one package read named below,
 never off memory and never off the whole file. Everything the report needs is on those lines: the
 wall-clock between the first and last of them, the counts, the deviations, and what is still open.
 Read them with one filter each and count them locally: the sheet reads are the `dispatch` lines,
@@ -1632,7 +1633,8 @@ which a review writes only for a section with no page range or whose manual was 
 continuation for one no longer on its package, and the
 window 3 `unread` notes that name a section, each section named once. The words a review could not
 search are the window 3 `anomaly` notes that carry `unsearched`, named under the package of the
-review whose unit the note names, each word once. A `continued:` note names
+review whose unit the note names, each word once. The scanned sheets not read are the window 1
+and 2 `anomaly` notes that carry `not read from the picture:`, each sheet and part once. A `continued:` note names
 pages a continuation went on to read, and is named nowhere in the close-out. What the index left
 open comes off the
 `phase: index built` lines, which carry its counts, and the codes found nowhere and the codes a
@@ -1779,8 +1781,8 @@ the section whole from its first page now and says so on its `anomalies:` line.
 
 ```text
 unit: <unit id>   pass: <pass id>   window: <n>
-pages read: <sheet number + pageInPdf, renders taken and the reason for each, one per page>
-pages unread: <sheet number + pageInPdf + reason, or "none">
+pages read: <sheet number + pageInPdf, renders taken and the reason for each, and `read from the picture` with why the text was thin where you read it from a render, one per page>
+pages unread: <sheet number + pageInPdf + reason, each page or part of one not read from the picture as `<sheet> p<page> not read from the picture: <what is left>, <why>`, or "none">
 cited sheets: <for the repeated lines, every sheet the unit's rows and citations name, comma separated; otherwise "none">
 page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
 set version: <for the repeated lines, the setVersion the unit's walk ended on; otherwise "none">
@@ -1934,7 +1936,10 @@ test of one row per product settles is left out, at the check-in and at the clos
 a note that asks nothing, such as a statement that the owner furnishes an item a row already
 carries, and one saying that a reader or a reviewer took a citation of its own off the wrong row
 and cited the right row itself. A wrong citation that another reader or a person wrote, named as
-a door-owned suggestion, is the estimator's to settle and is carried. The second is `list_questions(projectId, limit: 0)`,
+a door-owned suggestion, is the estimator's to settle and is carried. An anomaly carrying
+`not read from the picture:` names a scanned sheet, or a part of one, that no reader could read:
+it is always carried, by its sheet and the part left, at the check-in that prints it and at the
+close out. The second is `list_questions(projectId, limit: 0)`,
 whose `tradeCounts`, `everyTradeCount` and `untradedCount` give the project's Questions by the
 trades they name, the every-trade ones and the not-known-yet ones, with no rows to page through.
 
@@ -1960,6 +1965,10 @@ in plain sentences:
   what happened to it: "Reading A-5.01 stopped partway, so I read it again from the start and it
   finished", or, where it stopped twice, "Reading A-5.01 stopped partway twice, so I stopped there.
   Everything before it is in. Go ahead and I'll try that sheet again."
+- Each sheet that could not be read from its picture, whole or in part, with the part left, and
+  that what is drawn there may be missing from the rows: "E-201 is a scan and I could not read its
+  east half from the picture, so some of what is drawn there may not be on a row. Check that part
+  of the sheet yourself."
 - What comes next in one sentence, what it will leave out, and the ask: proceed, adjust, or pause.
   A pause here loses nothing; the run picks up where it stopped.
 
