@@ -131,9 +131,10 @@ The three windows, and what each selects:
      and the deferred unit keys with their count.
   3  one review per package, in package order, with the packages of one trade kept together, and
      up to REVIEWS_PER_PASS reviews to a pass, or one trade's reviews together where that trade
-     has more (below). It reads no sheets, so it takes no inventory, and it writes
-     `plan/window-3.json`, each review's unit id with the package it is bound to. In a pass
-     on an addendum, whose `run.json` reads `issue: "addendum"`, it reads the pass's own
+     has more, and at most REVIEW_PASS_UNITS units to a pass, continuations included (below). It
+     reads no sheets, so it takes no inventory, and it writes `plan/window-3.json`, each review's
+     unit id with the package it is bound to. In a pass on an addendum, whose `run.json` reads
+     `issue: "addendum"`, it reads the pass's own
      `trades/` files beside the plan and plans only the packages covering a trade the pass wrote on, a
      row it created, updated or cited or a Question it raised, naming every other package as left
      out; a pass that wrote on no trade plans no review, and one with no `trades/` folder at all
@@ -319,7 +320,8 @@ Reviews to a pass, in window 3:
   into the pass being built where they fit beside what it holds, and start the next pass where
   they do not. A trade's reviews are never split, so no two passes of reviews share a trade and
   none waits on another; a trade with more reviews than REVIEWS_PER_PASS is a pass of its own, and
-  one with more packages than UNITS_PER_PASS is refused by name, since no runner supervises more.
+  one with more packages than REVIEW_PASS_UNITS is refused by name, since no runner supervises more
+  in window 3.
   The passes are numbered `W3-<n>` under the unit tag in plan order. Nothing about the grouping is
   stored but the pass each carried continuation went to (below), so a package added or deleted
   can move reviews between passes, and `summed:` reads no on each pass whose reviews changed.
@@ -345,8 +347,8 @@ Continuations, in window 3:
       2. rev-230000-1c-1: HVAC, trade 23 00 00, package pkg-4c1e, continues rev-230000-1, sections 230000 from page 901 of file-1a2b p880-p915
 
   Every later window 3 plan run keeps it there, after its review and the continuations before it,
-  and counts it against the twelve units a pass holds, so a pass carrying continuations takes in
-  another trade's reviews only while it stays at twelve.
+  and counts it against the REVIEW_PASS_UNITS units a pass holds, so a pass carrying continuations
+  takes in another trade's reviews only while it stays at REVIEW_PASS_UNITS.
 
   A continuation's own report names pages left of the sections its dispatch named as a review's
   does. It spends its cap on them in the order the dispatch names them, so a section the dispatch
@@ -354,9 +356,10 @@ Continuations, in window 3:
   at all, was never reached: `continue` carries it into the next continuation from the page the
   dispatch started it at, beside the sections the report names.
 
-  A pass of twelve units has no room for a continuation, and a long manual can need more reviews
-  than one pass holds, so the continuation is carried into a pass of continuations instead: the
-  pass's own id with a letter after it, `i1-W3-3b`, then `i1-W3-3c` once that one holds twelve,
+  A pass of REVIEW_PASS_UNITS units has no room for a continuation, and a long manual can need
+  more reviews than one pass holds, so the continuation is carried into a pass of continuations
+  instead: the pass's own id with a letter after it, `i1-W3-3b`, then `i1-W3-3c` once that one
+  holds REVIEW_PASS_UNITS,
   each the first that has room and already waits for the full pass, directly or through passes it
   waits for, or else the first letter no pass of continuations takes yet. A pass that waits for
   the full pass has not started while that pass runs, so its runner reads the unit added, and
@@ -368,10 +371,10 @@ Continuations, in window 3:
   runner reads it, every continuation there continued in turn the same way. `continue` says
   which pass took it. The plan file writes the pass as the entry's `pass`, and every later plan
   run puts the entry there, as `continue` placed it. A replan whose trade's reviews and the
-  continuations in their pass come to more than twelve, as a package added to the trade can make
-  them, carries that pass's continuations the same way, the one bound last first, until it holds
-  twelve, each into a new pass of continuations. Only where every letter is taken is the
-  continuation refused, `continue` and the replan giving the runner's note for each section
+  continuations in their pass come to more than REVIEW_PASS_UNITS, as a package added to the trade
+  can make them, carries that pass's continuations the same way, the one bound last first, until
+  it holds REVIEW_PASS_UNITS, each into a new pass of continuations. Only where every letter is
+  taken is the continuation refused, `continue` and the replan giving the runner's note for each section
   left, `note 3 <pass id> <unit id> unread section <code> pages <a> to <b> left, no pass can take
   its continuation`; the runner appends them and stops the pass. A report already continued
   binds nothing again and changes nothing; a report naming no pages left and a unit with no
@@ -511,8 +514,9 @@ Exit codes:
      `plan/window-3.json` does not carry, a unit with no `verified` line reading ok, a
      `continuations` entry that is malformed or binds one id or one section of one unit's report
      twice, a pass
-     holding twelve units with no letter left for a pass of continuations after it, entries
-     carried into a pass of reviews, into one pass past twelve units or into passes that wait on
+     holding REVIEW_PASS_UNITS units with no letter left for a pass of continuations after it,
+     entries carried into a pass of reviews, into one pass past REVIEW_PASS_UNITS units or into
+     passes that wait on
      each other, a pass the pending run names that the read plan does not carry
      or a unit of it verified ok with no report, a replan whose packages list dropped a package
      with pages of a section a continuation still owes a read and no `unread section` note for
@@ -663,8 +667,12 @@ PHASE_PREFIX = "phase:"
 REPORTS_FOLDER = "reports"
 
 # A window 3 runner reviews its packages one at a time and holds one review report at a time, so a
-# pass carries a few reviews to spread its fixed cost.
-REVIEWS_PER_PASS = 4
+# pass carries a few reviews to spread its fixed cost. Each review it verifies adds to its context,
+# so a window 3 pass is planned with at most REVIEWS_PER_PASS reviews, each one unit, and holds at
+# most REVIEW_PASS_UNITS units in all: a continuation `continue` binds joins its pass while the pass
+# holds fewer, and goes to a pass of continuations that waits for it otherwise.
+REVIEWS_PER_PASS = 8
+REVIEW_PASS_UNITS = 10
 
 # A continuation's unit line names the unit whose report sent it after this, then its sections.
 CONTINUES_MARK = ", continues "
@@ -3069,13 +3077,14 @@ def _window_3(
     whole list first, so a package's review id is the same whichever packages plan beside it.
 
     `continuations`, the units `continue` bound, each follow their own review in its pass, in the
-    order their numbers give, and count against the twelve units a pass holds. One that `continue`
-    carried into a pass of continuations, the entry's `pass`, plans in that pass instead (below,
-    `_carried_passes`). Where a trade's reviews and the continuations in their pass come to more
-    than twelve, as a package added to the trade can make them, its continuations go to a pass of
-    continuations of their own, the one bound last first, until the trade's pass holds twelve, and
-    each entry carried this way takes its `pass` here, so the plan file keeps it. A trade with
-    more than twelve packages is refused, since its reviews share one pass.
+    order their numbers give, and count against the REVIEW_PASS_UNITS units a pass holds. One that
+    `continue` carried into a pass of continuations, the entry's `pass`, plans in that pass instead
+    (below, `_carried_passes`). Where a trade's reviews and the continuations in their pass come to
+    more than REVIEW_PASS_UNITS, as a package added to the trade can make them, its continuations go
+    to a pass of continuations of their own, the one bound last first, until the trade's pass holds
+    REVIEW_PASS_UNITS, and each entry carried this way takes its `pass` here, so the plan file keeps
+    it. A trade with more than REVIEW_PASS_UNITS packages is refused, since its reviews share one
+    pass.
     """
     order_of = {entry["id"]: index for index, entry in enumerate(continuations or [])}
     following: dict[str, list[dict]] = {}
@@ -3136,26 +3145,26 @@ def _window_3(
     # The continuations a full trade's pass gives up here, by the group they leave.
     carried_here: dict[int, list[dict]] = {}
     for key in order:
-        if len(members[key]) > UNITS_PER_PASS:
+        if len(members[key]) > REVIEW_PASS_UNITS:
             raise PlanError(
                 f"trade {members[key][0]['tradeCode']} carries {len(members[key])} packages, and its "
-                f"reviews share one pass, which holds at most {UNITS_PER_PASS} units; fold that "
+                f"reviews share one pass, which holds at most {REVIEW_PASS_UNITS} units; fold that "
                 f"trade's packages into fewer before its reviews are planned"
             )
         leaving: list[dict] = []
-        if units_of(members[key]) > UNITS_PER_PASS:
+        if units_of(members[key]) > REVIEW_PASS_UNITS:
             latest_first = sorted(
                 (unit for review in members[key] for unit in review["continuations"]),
                 key=lambda unit: order_of[unit["id"]], reverse=True,
             )
-            while units_of(members[key]) > UNITS_PER_PASS:
+            while units_of(members[key]) > REVIEW_PASS_UNITS:
                 unit = latest_first.pop(0)
                 owner = next(review for review in members[key] if unit in review["continuations"])
                 owner["continuations"].remove(unit)
                 leaving.append(unit)
         if (
             groups and len(groups[-1]) + len(members[key]) <= REVIEWS_PER_PASS
-            and units_of(groups[-1]) + units_of(members[key]) <= UNITS_PER_PASS
+            and units_of(groups[-1]) + units_of(members[key]) <= REVIEW_PASS_UNITS
         ):
             groups[-1].extend(members[key])
         else:
@@ -3174,7 +3183,8 @@ def _window_3(
             }
         )
     # Each continuation a full trade's pass gave up takes a pass of continuations after that pass,
-    # in the order they were bound, twelve to a pass, under a letter no pass of the plan file uses.
+    # in the order they were bound, REVIEW_PASS_UNITS to a pass, under a letter no pass of the plan
+    # file uses.
     # Each such pass is new, and its units continue units of the trade's pass or of the passes
     # opened before it here, so it waits only for passes before it and the waits stay without a
     # cycle; a pass of continuations already planned that continues one of them waits for it and
@@ -3183,7 +3193,7 @@ def _window_3(
     for index, leaving in carried_here.items():
         leaving.sort(key=lambda unit: order_of[unit["id"]])
         letters = iter(letter for letter in CARRY_LETTERS if passes[index]["id"] + letter not in taken)
-        for start in range(0, len(leaving), UNITS_PER_PASS):
+        for start in range(0, len(leaving), REVIEW_PASS_UNITS):
             letter = next(letters, None)
             if letter is None:
                 unplaced = leaving[start:]
@@ -3199,7 +3209,7 @@ def _window_3(
                     f"before you plan again: "
                     + ", ".join(f"`{note}`" for note in notes)
                 )
-            for unit in leaving[start:start + UNITS_PER_PASS]:
+            for unit in leaving[start:start + REVIEW_PASS_UNITS]:
                 unit["entry"]["pass"] = passes[index]["id"] + letter
             taken.add(passes[index]["id"] + letter)
     passes = _carried_passes(passes, reviews, continuations or [])
@@ -3238,7 +3248,8 @@ def _carried_passes(passes: list[dict], reviews: list[dict], continuations: list
     same pass and last otherwise, as `continue` wrote them. It takes its name off its units'
     packages, and it sits after the last pass holding a unit one of its units continues, past any
     pass of continuations already sitting there, so it never waits on a pass after it. One named
-    for a pass of reviews, one over twelve units, and passes waiting on each other are refused.
+    for a pass of reviews, one over REVIEW_PASS_UNITS units, and passes waiting on each other are
+    refused.
     """
     by_id = {review["id"]: review for review in reviews}
     carried: dict[str, list[dict]] = {}
@@ -3261,6 +3272,8 @@ def _carried_passes(passes: list[dict], reviews: list[dict], continuations: list
             }
             at = next((index for index, other in enumerate(units) if other["id"] == entry["continues"]), None)
             units.insert(len(units) if at is None else at + 1, unit)
+        # A plan file written before window 3 passes held ten units may carry up to the old
+        # twelve; it resumes as written, and only passes carried from now on are held to ten.
         if len(units) > UNITS_PER_PASS:
             raise PlanError(
                 f"the window 3 plan file carries {len(units)} continuations into pass {pass_id}, which "
@@ -4079,7 +4092,8 @@ def plan(args) -> str:
     return (
         f"wrote {args.out} and {window_3_path}: window 3{tag_clause}, packages {result['packages']}, "
         f"reviews {result['reviews']}{_continuations_clause(result)}, passes {total_passes}, reviews per pass at most "
-        f"{REVIEWS_PER_PASS} or one trade's packages together where that trade has more, "
+        f"{REVIEWS_PER_PASS} or one trade's packages together where that trade has more, units per pass "
+        f"at most {REVIEW_PASS_UNITS}, "
         f"trades {result['trades']}, "
         f"packages sharing a trade: {result['sharedCount']} "
         f"({_named(result['sharedCodes']) if result['sharedCodes'] else 'none'})"
@@ -4340,7 +4354,7 @@ def _unread_notes(pass_id: str, unit_id: str, sections: list[dict]) -> list[str]
 
 class _PassFull(PlanError):
     """
-    A pass at twelve units with no pass of continuations after it that can take one more, so a
+    A pass at REVIEW_PASS_UNITS units with no pass of continuations after it that can take one more, so a
     unit's pages left stay unread. It names the note the runner appends for each section.
     """
 
@@ -4349,7 +4363,7 @@ class _PassFull(PlanError):
         self.notes = _unread_notes(pass_id, unit_id, sections)
         super().__init__(
             f"pass {pass_id} and every pass of continuations its letters can name that may take one "
-            f"hold {UNITS_PER_PASS} units, the most one runner supervises, so no continuation of "
+            f"hold {REVIEW_PASS_UNITS} units, the most one runner supervises in window 3, so no continuation of "
             f"{unit_id} is bound"
         )
 
@@ -4549,8 +4563,9 @@ def _waits_on(waits: dict[str, list[str]], later: str, earlier: str) -> bool:
 def _carry_target(lines: list[str], pass_id: str, carried_ids: set[str], unit_id: str, sections: list[dict]) -> str:
     """
     The pass of continuations that takes a continuation of `unit_id`, whose pass `pass_id` holds
-    twelve units: the first pass after it, by letter, of `pass_id` itself or of the pass of reviews
-    it was carried out of, that holds fewer than twelve and already waits for `pass_id`, directly
+    REVIEW_PASS_UNITS units: the first pass after it, by letter, of `pass_id` itself or of the pass of
+    reviews it was carried out of, that holds fewer than REVIEW_PASS_UNITS and already waits for
+    `pass_id`, directly
     or through passes it waits for, or else the first letter no pass carries yet. A pass that
     waits for `pass_id` has not started while `pass_id` runs, so its runner reads the unit added,
     and it sits after `pass_id`, so the wait added points back at no pass after it and the waits
@@ -4567,7 +4582,7 @@ def _carry_target(lines: list[str], pass_id: str, carried_ids: set[str], unit_id
         found = _pass_block(lines, pass_id=candidate)
         if found is not None:
             if (
-                candidate in carried_ids and len(_block_units(lines, found[1], found[2])) < UNITS_PER_PASS
+                candidate in carried_ids and len(_block_units(lines, found[1], found[2])) < REVIEW_PASS_UNITS
                 and _waits_on(waits, candidate, pass_id)
             ):
                 return candidate
@@ -4582,7 +4597,7 @@ def _carry_target(lines: list[str], pass_id: str, carried_ids: set[str], unit_id
 def _bind_continuation(state: dict, unit_id: str, sections: list[dict]) -> str:
     """
     Bind the continuation of `unit_id` in the state `continue` read, writing nothing yet: right
-    after that unit in its pass's block where the pass holds fewer than twelve units, and otherwise
+    after that unit in its pass's block where the pass holds fewer than REVIEW_PASS_UNITS units, and otherwise
     in a pass of continuations after it (`_carry_target`), which waits for that pass and which the
     lead starts once it is finished. A unit already continued binds nothing again. Where no pass
     can take it, `_PassFull`, so the runner names the pages left unread and stops.
@@ -4641,7 +4656,7 @@ def _bind_continuation(state: dict, unit_id: str, sections: list[dict]) -> str:
     target = existing.get("pass")
     if target is None:
         target = pass_id
-        if len(_block_units(lines, heading, end)) >= UNITS_PER_PASS:
+        if len(_block_units(lines, heading, end)) >= REVIEW_PASS_UNITS:
             # Every check comes before the first change, so a refusal here has changed nothing.
             target = _carry_target(lines, pass_id, carried_ids, unit_id, existing["sections"])
 
@@ -4709,7 +4724,7 @@ def _bind_continuation(state: dict, unit_id: str, sections: list[dict]) -> str:
         return f"bound {existing['id']} in pass {pass_id} after {unit_id}: sections {where}; wrote {read_plan} and {plan_file}"
     return (
         f"bound {existing['id']} in pass {target}, continuing {unit_id}, since pass {pass_id} holds "
-        f"{UNITS_PER_PASS} units: pass {target} starts once pass {pass_id} is finished, with a runner "
+        f"{REVIEW_PASS_UNITS} units: pass {target} starts once pass {pass_id} is finished, with a runner "
         f"of its own: sections {where}; wrote {read_plan} and {plan_file}"
     )
 

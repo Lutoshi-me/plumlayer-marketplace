@@ -256,9 +256,9 @@ Each of these is a harness check.
     three windows' unit lines and page references, its pinned reading order, its balanced pass
     split and its window 3 unit ids and passes are compared against a tally the check computes
     itself off the same fixtures. Window 3 plans every package's review exactly once across its
-    passes, at most four to a pass, the number pinned, in package order with every package of one
-    trade kept whole in one pass, so no trade sits on two passes; a trade over four is kept whole,
-    one over twelve is refused by name, the pass ids read `W3-<n>` and are never a unit id, and a
+    passes, at most eight to a pass and ten units to a pass with its continuations, both numbers
+    pinned, in package order with every package of one trade kept whole in one pass, so no trade
+    sits on two passes; a trade over eight is kept whole, one over ten is refused by name, the pass ids read `W3-<n>` and are never a unit id, and a
     second run writes the same plan. Window 2 has to come out an exact partition of the inventory minus the window 1
     file the script itself wrote, and every window 3 unit id has to be a legal `verify_unit`
     subject prefix stem with none a prefix of another, which is the join the plan and the reviewer
@@ -532,7 +532,7 @@ Each of these is a harness check.
     when it refuses after its reads, and refuses a report with nothing left among fourteen
     refusals; the pending run binds what a stop between a `verified` line and `continue` left out
     and names the unread pages of a full pass once; a replan counts continuations against a
-    trade's twelve units; two runs at once both land under the run folder's lock; the pass summary
+    trade's ten units; two runs at once both land under the run folder's lock; the pass summary
     counts the continuations; and the lead's check-in, off the ledger with no replan, shows a
     section as read only once no report later in its chain names it. This cannot judge how a
     reviewer spends its page cap on a real manual; that is the measured re-run's.

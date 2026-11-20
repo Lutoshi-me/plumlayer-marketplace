@@ -76,8 +76,9 @@ Checks:
       type order and with the balanced split of a pass over twelve units, both shipped sheet type
       constants pinned here and neither naming a type the recognizer does not produce, window 3
       planning every package's review exactly once across passes of at most REVIEWS_PER_PASS,
-      pinned at four, in package order with every package of one trade kept whole in one pass and
-      no trade on two passes, a trade over four kept whole and one over twelve refused, pass ids
+      pinned at eight, with REVIEW_PASS_UNITS pinned at ten, in package order with every package of
+      one trade kept whole in one pass and no trade on two passes, a trade over eight kept whole and
+      one over ten refused, pass ids
       `W3-<n>` that are never a unit id, the same plan on a second run, and a replan after a
       package is added keeping every unit id and reading `summed: no` only on the passes whose
       reviews changed, every window 3 unit id a legal
@@ -231,7 +232,7 @@ Checks:
       broken.
   31. Whole manual sections: the reviewer, the runner and the scope-run skill carry no Part 2
       twelve-page read and no heading search; the reviewer reads every section whole inside its
-      40/80 page cap, names the pages the cap left as `<code> pages left p<a>-p<b>` beside a
+      20 page cap, the general requirements package's too, names the pages the cap left as `<code> pages left p<a>-p<b>` beside a
       `continued:` anomaly, and carries a continuation mode; the `sections not checked:` line is one
       shape in the reviewer and the skill; the runner carries the plan script's `continue` command
       and the skill the continuation dispatch and the close-out's two `not read:` cases. The
@@ -2036,9 +2037,11 @@ _PLAN_UNIT_RE = re.compile(r"^(\S+)\. (\S+), (?:file \S+, )?page (\d+): (.*)$")
 _PLAN_REVIEW_RE = re.compile(
     r"^(\d+)\. ((?:i[1-9][0-9]*-)?rev-\S+): (.*), trade (.+), package (\S+?)( verified)?$"
 )
-# A window 3 pass carries up to this many reviews, pinned here so a change to the script's constant
-# fails the release.
-_REVIEWS_PER_PASS = 4
+# A window 3 pass is planned with up to this many reviews, and holds up to this many units with the
+# continuations bound into it, pinned here so a change to either of the script's constants fails
+# the release.
+_REVIEWS_PER_PASS = 8
+_REVIEW_PASS_UNITS = 10
 _W3_PASS_RE = re.compile(r"^W3-[1-9][0-9]*$")
 _PLAN_FIELD_RE = re.compile(r"^([a-z][a-z ]*): (.*)$")
 # A repeated lines unit reads a file from one of its pages, in its own pass, `RS1` or a part of it.
@@ -2845,16 +2848,21 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                 )
 
     # ------------------------------------------------------------------ #
-    # Window 3: one review per package, up to four to a pass
+    # Window 3: one review per package, up to eight to a pass
     # ------------------------------------------------------------------ #
     #
     # Every package plans exactly one review, the reviews of one folded trade sit together in one
-    # pass in package order, a pass fills to the pinned four and a trade that does not fit starts
+    # pass in package order, a pass fills to the pinned eight and a trade that does not fit starts
     # the next one, so no two passes share a trade. The grouping is computed here off the fixture.
     if getattr(module, "REVIEWS_PER_PASS", None) != _REVIEWS_PER_PASS:
         errors.append(
             f"the script puts {getattr(module, 'REVIEWS_PER_PASS', None)} reviews in a window 3 "
             f"pass, pinned here at {_REVIEWS_PER_PASS}"
+        )
+    if getattr(module, "REVIEW_PASS_UNITS", None) != _REVIEW_PASS_UNITS:
+        errors.append(
+            f"the script lets a window 3 pass hold {getattr(module, 'REVIEW_PASS_UNITS', None)} "
+            f"units, pinned here at {_REVIEW_PASS_UNITS}"
         )
 
     def expected_reviews(rows: list[dict]) -> list[dict]:
@@ -2877,7 +2885,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         return expected
 
     def expected_grouping(expected: list[dict]) -> list[list[str]]:
-        """The passes as this check groups them: trades in first-seen order, four to a pass."""
+        """The passes as this check groups them: trades in first-seen order, eight to a pass."""
         first_seen: list[str] = []
         for review in expected:
             if review["key"] not in first_seen:
@@ -2941,7 +2949,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             keys = {by_id[r[0]]["key"] for r in plan_pass["reviews"] if r[0] in by_id}
             for key in keys:
                 passes_of_trade.setdefault(key, set()).add(plan_pass["id"])
-            # Over four only where the pass is one trade's reviews kept whole.
+            # Over eight only where the pass is one trade's reviews kept whole.
             if len(plan_pass["reviews"]) > _REVIEWS_PER_PASS and len(keys) != 1:
                 errors.append(
                     f"{label}: pass {plan_pass['id']} carries {len(plan_pass['reviews'])} reviews "
@@ -2975,7 +2983,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             f"reviews {len(expected)}",
             f"passes {len(wanted_grouping)}",
             f"reviews per pass at most {_REVIEWS_PER_PASS} or one trade's packages together where "
-            f"that trade has more,",
+            f"that trade has more, units per pass at most {_REVIEW_PASS_UNITS},",
             f"trades {len(per_trade)}",
             f"packages sharing a trade: {len(shared)}",
         ):
@@ -3020,8 +3028,8 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             "which is the case where it starts the next one"
         )
 
-    # A trade of five packages stays whole in a pass of its own, and one of thirteen is refused by
-    # name, since no runner supervises more than twelve units.
+    # A trade of nine packages stays whole in a pass of its own, and one of eleven is refused by
+    # name, since no runner supervises more than ten units in window 3.
     def packages_file(name: str, codes: list[str]) -> Path:
         path = out_dir / name
         path.write_text(json.dumps({"packages": [
@@ -3030,24 +3038,24 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         ]}), encoding="utf-8")
         return path
 
-    five = packages_file(
-        "packages-w3-five.json", ["09 21 16", "22 11 16"] + ["13 34 19"] * 5 + ["32 90 00"]
+    nine = packages_file(
+        "packages-w3-nine.json", ["09 21 16", "22 11 16"] + ["13 34 19"] * 9 + ["32 90 00"]
     )
-    five_passes, _five_bounds = window_3_over("window 3 with five packages on one trade", five, "read-plan-w3-five.md")
-    if five_passes and [len(p["reviews"]) for p in five_passes] != [2, 5, 1]:
+    nine_passes, _nine_bounds = window_3_over("window 3 with nine packages on one trade", nine, "read-plan-w3-nine.md")
+    if nine_passes and [len(p["reviews"]) for p in nine_passes] != [2, 9, 1]:
         errors.append(
-            f"window 3 with five packages on one trade plans passes of "
-            f"{[len(p['reviews']) for p in five_passes]} reviews, expected 2, then the five kept "
+            f"window 3 with nine packages on one trade plans passes of "
+            f"{[len(p['reviews']) for p in nine_passes]} reviews, expected 2, then the nine kept "
             f"whole, then 1"
         )
-    thirteen = packages_file("packages-w3-thirteen.json", ["09 21 16"] + ["13 34 19"] * 13)
+    eleven = packages_file("packages-w3-eleven.json", ["09 21 16"] + ["13 34 19"] * 11)
     code, out, err = _run_script_main(
         module,
-        ["plan", "--window", "3", "--packages", str(thirteen), "--out", str(out_dir / "window-3" / "read-plan-w3-thirteen.md")],
+        ["plan", "--window", "3", "--packages", str(eleven), "--out", str(out_dir / "window-3" / "read-plan-w3-eleven.md")],
     )
     if code != 1 or len(err.splitlines()) != 1 or "13 34 19" not in err or out:
         errors.append(
-            f"window 3 with thirteen packages on one trade is not refused in one line naming the "
+            f"window 3 with eleven packages on one trade is not refused in one line naming the "
             f"trade: exit {code}, {err!r}"
         )
 
@@ -4065,7 +4073,16 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     review_dir = replan_root / "summed-window-3"
     shutil.rmtree(review_dir, ignore_errors=True)
     review_dir.mkdir(parents=True, exist_ok=True)
-    ordinary_rows = json.loads(ordinary_packages.read_text(encoding="utf-8"))["packages"]
+    # Eight packages on trades of their own fill the first pass, so the ordinary fixture's eight
+    # plan as a second pass and its last trade sits in the last pass.
+    ordinary_rows = [
+        {"id": f"pkg-w3-fill-{n}", "tradeCode": code, "name": f"Invented filler {n}"}
+        for n, code in enumerate(
+            ("03 30 00", "04 20 00", "05 12 00", "06 10 00", "07 21 00", "10 14 00", "11 40 00", "14 21 00"), 1
+        )
+    ] + json.loads(ordinary_packages.read_text(encoding="utf-8"))["packages"]
+    summed_packages = review_dir / "packages-summed.json"
+    summed_packages.write_text(json.dumps({"packages": ordinary_rows}), encoding="utf-8")
 
     def plan_reviews(rows: list[dict]) -> tuple[int, str, dict[str, list[str]], dict[str, str]]:
         """Window 3 over these packages in the review folder: each pass's reviews and its summed value."""
@@ -4163,7 +4180,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                 )
         write_ledger(old_dir, old_ledger)
         code, _bounds, err = _run_script_main(module, [
-            "plan", "--window", "3", "--packages", str(ordinary_packages),
+            "plan", "--window", "3", "--packages", str(summed_packages),
             "--out", str(old_dir / "read-plan.md"),
         ])
         old_passes = _plan_passes((old_dir / "read-plan.md").read_text(encoding="utf-8")) if code == 0 else []
@@ -5133,8 +5150,8 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         f"naming a type the recognizer does not produce, window 3 over four packages fixtures "
         f"planning every package's review exactly once across passes of at most "
         f"{_REVIEWS_PER_PASS}, pinned here, in package order with a trade's packages kept whole in "
-        f"one pass and no trade on two, a trade that does not fit starting the next pass, five on "
-        f"one trade kept whole and thirteen refused by name, pass ids W3-1 on and never a unit id, "
+        f"one pass and no trade on two, a trade that does not fit starting the next pass, nine on "
+        f"one trade kept whole and eleven refused by name, pass ids W3-1 on and never a unit id, "
         f"and the same plan written on a second run, {len(unit_ids)} unit ids checked "
         f"to be legal verify_unit prefix stems with none a prefix of another, "
         f"a first plan of each window numbering its units from 1, a replan keeping the ids the "
@@ -8361,8 +8378,8 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     code, bounds, err, text = review_plan(first)
     if code != 0 or len(_issue_ids(text)[1]) != 8:
         errors.append(f"window 3 of a set's pass does not review all eight packages: {err or bounds}")
-    elif _issue_ids(text)[0] != ["i1-W3-1", "i1-W3-2"]:
-        errors.append(f"window 3 of a set's pass names its passes {_issue_ids(text)[0]}, not i1-W3-1 and i1-W3-2")
+    elif _issue_ids(text)[0] != ["i1-W3-1"]:
+        errors.append(f"window 3 of a set's pass names its passes {_issue_ids(text)[0]}, not the one pass i1-W3-1 of eight reviews")
     shutil.rmtree(first / "trades", ignore_errors=True)
 
     # ------------------------------------------------------------------ #
@@ -8521,6 +8538,14 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         errors.append("the runner still verifies a unit by its sheet numbers alone")
     if "`pages opened:` and `field updates:` lines" in runner_flat:
         errors.append("the runner still sends verify_unit the sheets a review's field updates name")
+    # A search per `field updates:` or `headings written:` line was most of a large runner's
+    # context; the claims call checks both lists in one call.
+    for retired in (
+        'search(subject: "<that subject>", predicate: "<the predicate the line names>"',
+        'search(subject: "<subject>", predicate: "category")',
+    ):
+        if retired in runner_flat:
+            errors.append(f"the runner still checks a review line by line with `{retired}`")
 
     # An addendum's pass, in the text that drives it: the lead's partial pass, the reviewer searching
     # the pass's own deliveries and naming the file it opened, the runner checking a review on that
@@ -8559,10 +8584,13 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         (runner_flat, "the runner", "The sheets its `field updates:` line names never go into the call"),
         (runner_flat, "the runner", "is found back where it is found among the subjects citing one of those sheets, on its `manual updates:` line, or on its `field updates:` line"),
         (runner_flat, "the runner", "`date -u +%Y-%m-%dT%H:%M:%SZ > '<run folder>/reports/<unit id>.read-<k>.dispatched'`"),
-        (runner_flat, "the runner", "`search(subject: \"<that subject>\", predicate: \"<the predicate the line names>\", full: true)`"),
-        (runner_flat, "the runner", "written at or after the time this read's `.dispatched` file holds, its `assertedAt` that time or later"),
-        (runner_flat, "the runner", "where the line names a page, whose evidence names that `fileId` and that page"),
-        (runner_flat, "the runner", "and so is every line of a read with no `.dispatched` file"),
+        (runner_flat, "the runner", 'fieldUpdates: [{ "subject", "predicate", "since", "fileId", "pageInPdf" }, ...]'),
+        (runner_flat, "the runner", 'headings: [{ "subject", "category" }, ...]'),
+        (runner_flat, "the runner", "`since` the time this read's `.dispatched` file holds, as written there"),
+        (runner_flat, "the runner", "to being written at or after `since`, its `assertedAt` that time or later, and, where the line names a page, to evidence naming that `fileId` and that page"),
+        (runner_flat, "the runner", "A read with no `.dispatched` file sends no `fieldUpdates`, and every line of its `field updates:` is a mismatch"),
+        (runner_flat, "the runner", "`headings` takes one entry per row on the review's `headings written:` line after its first"),
+        (runner_flat, "the runner", "You run no `search` for a `field updates:` or `headings written:` line"),
         (runner_flat, "the runner", "An updated subject is found back where the `sheets` rows of any of the calls carry it"),
         (runner_flat, "the runner", "`<unit id> touched <catalog id>`"),
         *(
@@ -11776,7 +11804,8 @@ _WHOLE_SECTION_PHRASES = (
     "package's `manualSections` lists them",
     "A section several packages share is read whole by each of their reviews, and each records only "
     "its own package's share",
-    "forty pages, or eighty on the general requirements package",
+    "twenty pages on every package, the general requirements package, the one whose `tradeCode` is "
+    "`01 11 13`, among them",
     "Where the cap runs out inside a section, or before a section's first page, stop reading there",
     "A special warranty", "Extra materials",
     "A field test or inspection Part 3 has the contractor perform or engage",
@@ -11789,7 +11818,7 @@ _WHOLE_SECTION_PHRASES = (
     "The last page you read to is the record's today, never one the dispatch or a report before you names",
     "`section <code> not read: no longer on the package, run only`",
     "Run at most ten `search_set_text` calls in all",
-    "**Stop at forty pages**",
+    "**Stop at twenty pages**",
     "`Continues:`",
     "`Sections: 230000 from page 901 of file-1a2b p880-p915, 233113 from page 950 of file-1a2b p940-p960`",
 )
@@ -11923,6 +11952,11 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         lead = _load_script_module(plugin_path.joinpath(*LEAD_PASS_SCRIPT), "lead_pass")
     except Exception as e:
         return Result(name, False, detail=f"cannot import the scripts: {e}")
+    # The five-package folders below need their roofing review in a second pass, beside the first,
+    # so this check plans them four reviews to a pass, in this loaded copy alone. The pass sizes the
+    # script ships are pinned and run by the plan inventory check; the ten units a pass holds, which
+    # decide where a continuation goes, stay as shipped here.
+    plan_module.REVIEWS_PER_PASS = 4
 
     def run(module, argv: list[str]) -> tuple[int, str, str]:
         try:
@@ -12239,13 +12273,13 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
     else:
         errors.append(f"plan/window-3.json carries {len(data.get('continuations') or [])} continuations, not 2")
 
-    # A pass at twelve units carries a review's continuation into a pass of continuations after it,
+    # A pass at ten units carries a review's continuation into a pass of continuations after it,
     # `i1-W3-1b`, which waits for that pass and which the lead's listing holds back until it is
     # finished; a replan writes the same files; a continuation there that leaves pages is continued
     # in that pass in turn. Only where no letter is left is it refused, and then the refusal and
     # the pending run give the runner's own `unread` note for each section left, once.
     full, full_args = run_folder(root / "full" / "run", [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 13)
+        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 11)
     ])
     full_unit, carried_pass = "i1-rev-092116-1", "i1-W3-1b"
     verified(full, "i1-W3-1", full_unit)
@@ -12265,11 +12299,11 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         code != 0 or not out.startswith(f"bound {full_unit}c-1 in pass {carried_pass}, continuing {full_unit}")
         or carried_block.get("units") != [f"{full_unit}c-1"]
         or (carried_block.get("fields") or {}).get("starts after") != "i1-W3-1"
-        or block_units(full, "i1-W3-1") != [f"i1-rev-092116-{n}" for n in range(1, 13)]
+        or block_units(full, "i1-W3-1") != [f"i1-rev-092116-{n}" for n in range(1, 11)]
         or [entry.get("pass") for entry in carried_entries] != [carried_pass]
     ):
         errors.append(
-            f"a pass at twelve units does not carry the continuation into {carried_pass}, waiting for "
+            f"a pass at ten units does not carry the continuation into {carried_pass}, waiting for "
             f"i1-W3-1, with the plan file naming that pass: exit {code}, {out!r}, {err!r}, block {carried_block}"
         )
     code, out, err = run(lead, ["passes", "--plan", str(full / "read-plan.md")])
@@ -12295,7 +12329,7 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
     plan_module.CARRY_LETTERS = ""
     try:
         before = files_of(full)
-        if refused("a pass at twelve units with no letter left", ["continue", "--window", "3", "--report", str(second_report)]):
+        if refused("a pass at ten units with no letter left", ["continue", "--window", "3", "--report", str(second_report)]):
             script_refusals += 1
             if "no pass can take its continuation" not in run(plan_module, [
                 "continue", "--window", "3", "--report", str(second_report)])[2]:
@@ -12323,26 +12357,26 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
     finally:
         plan_module.CARRY_LETTERS = letters
 
-    # A replan whose trade's reviews and continuations come to more than twelve, eleven reviews and
-    # a continuation and then a twelfth package on that trade, carries the continuation into a
+    # A replan whose trade's reviews and continuations come to more than ten, nine reviews and
+    # a continuation and then a tenth package on that trade, carries the continuation into a
     # pass of continuations after the trade's pass, and the plan file names that pass.
-    eleven, eleven_args = run_folder(root / "eleven" / "run", [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 12)
+    nine, nine_args = run_folder(root / "nine" / "run", [
+        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 10)
     ])
-    verified(eleven, "i1-W3-1", full_unit)
+    verified(nine, "i1-W3-1", full_unit)
     code, out, err = run(plan_module, ["continue", "--window", "3", "--report", str(
-        report(eleven, full_unit, [left("092116", 30, 44, 20)], package="Invented drywall 1"))])
+        report(nine, full_unit, [left("092116", 30, 44, 20)], package="Invented drywall 1"))])
     if code != 0:
-        errors.append(f"continue does not bind the twelfth unit of a pass of eleven reviews: exit {code}, {err!r}")
-    packages_path = eleven / "plan" / "packages.json"
+        errors.append(f"continue does not bind the tenth unit of a pass of nine reviews: exit {code}, {err!r}")
+    packages_path = nine / "plan" / "packages.json"
     grown = json.loads(packages_path.read_text(encoding="utf-8"))["packages"] + [
-        {"id": "pkg-dry-12", "tradeCode": "09 21 16", "name": "Invented drywall 12"}
+        {"id": "pkg-dry-10", "tradeCode": "09 21 16", "name": "Invented drywall 10"}
     ]
     packages_path.write_text(json.dumps({"packages": grown}), encoding="utf-8")
     # The same replan with no letter left refuses in one line giving the runner's unread note for
     # each section the continuation it cannot place carries, and writes nothing.
-    no_letter = root / "eleven-no-letter" / "run"
-    shutil.copytree(eleven, no_letter)
+    no_letter = root / "nine-no-letter" / "run"
+    shutil.copytree(nine, no_letter)
     letters = plan_module.CARRY_LETTERS
     plan_module.CARRY_LETTERS = ""
     try:
@@ -12358,15 +12392,15 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
             errors.append("the replan with no letter left still wrote")
     finally:
         plan_module.CARRY_LETTERS = letters
-    code, out, err = run(plan_module, eleven_args)
-    eleven_entries = json.loads((eleven / "plan" / "window-3.json").read_text(encoding="utf-8")).get("continuations") or []
+    code, out, err = run(plan_module, nine_args)
+    nine_entries = json.loads((nine / "plan" / "window-3.json").read_text(encoding="utf-8")).get("continuations") or []
     if (
-        code != 0 or block_units(eleven, "i1-W3-1") != [f"i1-rev-092116-{n}" for n in range(1, 13)]
-        or block_units(eleven, carried_pass) != [f"{full_unit}c-1"]
-        or [entry.get("pass") for entry in eleven_entries] != [carried_pass]
+        code != 0 or block_units(nine, "i1-W3-1") != [f"i1-rev-092116-{n}" for n in range(1, 11)]
+        or block_units(nine, carried_pass) != [f"{full_unit}c-1"]
+        or [entry.get("pass") for entry in nine_entries] != [carried_pass]
     ):
         errors.append(
-            f"a replan of eleven reviews of one trade, a continuation and a twelfth package does not "
+            f"a replan of nine reviews of one trade, a continuation and a tenth package does not "
             f"carry the continuation into {carried_pass}: exit {code}, {out!r}, {err!r}"
         )
 
@@ -12685,26 +12719,26 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
 
     drywall = "Invented drywall 1"
 
-    # Eleven reviews of one trade and a continuation fill the trade's pass, so the continuation's
-    # own continuation goes to `b`; a twelfth package moves the first continuation to `c`, which
-    # `b` then waits for. Once `b` holds twelve, a continuation out of it is placed in a new `d`,
+    # Nine reviews of one trade and a continuation fill the trade's pass, so the continuation's
+    # own continuation goes to `b`; a tenth package moves the first continuation to `c`, which
+    # `b` then waits for. Once `b` holds ten, a continuation out of it is placed in a new `d`,
     # never in `c`, which does not wait for `b`, so the waits never cycle and the next replan plans.
     cycle, cycle_args = run_folder(root / "cycle" / "run", [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 12)
+        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 10)
     ])
     chain = [full_unit] + [f"{full_unit}c-{n}" for n in range(1, 15)]
     continue_unit(cycle, "i1-W3-1", chain[0], drywall)
     continue_unit(cycle, "i1-W3-1", chain[1], drywall)
     (cycle / "plan" / "packages.json").write_text(json.dumps({"packages": [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 13)
+        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 11)
     ]}), encoding="utf-8")
     code, out, err = run(plan_module, cycle_args)
     if code != 0 or block_units(cycle, "i1-W3-1c") != [chain[1]] or list(waits_of(cycle))[:3] != ["i1-W3-1", "i1-W3-1c", "i1-W3-1b"]:
-        errors.append(f"the twelfth package does not move the first continuation to i1-W3-1c before i1-W3-1b: exit {code}, {err!r}, {waits_of(cycle)}")
-    for at in range(2, 13):
+        errors.append(f"the tenth package does not move the first continuation to i1-W3-1c before i1-W3-1b: exit {code}, {err!r}, {waits_of(cycle)}")
+    for at in range(2, 11):
         continue_unit(cycle, "i1-W3-1b", chain[at], drywall)
-    code, out, err = continue_unit(cycle, "i1-W3-1b", chain[13], drywall)
-    if code != 0 or not out.startswith(f"bound {chain[14]} in pass i1-W3-1d, continuing {chain[13]}") or backward_waits(cycle):
+    code, out, err = continue_unit(cycle, "i1-W3-1b", chain[11], drywall)
+    if code != 0 or not out.startswith(f"bound {chain[12]} in pass i1-W3-1d, continuing {chain[11]}") or backward_waits(cycle):
         errors.append(
             f"a continuation out of a full i1-W3-1b is not placed in a new i1-W3-1d, or a pass waits on one "
             f"after it: exit {code}, {out!r}, {err!r}, {backward_waits(cycle)}"
@@ -12714,19 +12748,19 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
     if code != 0 or planned(cycle) != before:
         errors.append(f"the replan after i1-W3-1b filled does not plan the files continue wrote: exit {code}, {err!r}")
 
-    # Twelve reviews fill the trade's pass and a chain of continuations fills `b`; the next review's
+    # Ten reviews fill the trade's pass and a chain of continuations fills `b`; the next review's
     # continuation opens `c`, which holds the same trade as `b`, so it waits for `b` as well as for
     # the trade's pass, and the replan writes the same wait.
     trade, trade_args = run_folder(root / "trade" / "run", [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 13)
+        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 11)
     ])
     continue_unit(trade, "i1-W3-1", chain[0], drywall)
-    for at in range(1, 12):
+    for at in range(1, 10):
         continue_unit(trade, "i1-W3-1b", chain[at], drywall)
     code, out, err = continue_unit(trade, "i1-W3-1", "i1-rev-092116-2", "Invented drywall 2")
     if (
         code != 0 or not out.startswith("bound i1-rev-092116-2c-1 in pass i1-W3-1c")
-        or len(block_units(trade, "i1-W3-1b")) != 12 or waits_of(trade).get("i1-W3-1c") != ["i1-W3-1", "i1-W3-1b"]
+        or len(block_units(trade, "i1-W3-1b")) != 10 or waits_of(trade).get("i1-W3-1c") != ["i1-W3-1", "i1-W3-1b"]
     ):
         errors.append(
             f"a pass of continuations of a trade another pass of continuations holds does not wait for "
@@ -12754,10 +12788,10 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         f"the one section its chain read to its end and never by one still open, the pass summary "
         f"counting 6 units with both "
         f"continuations, the lead's record taking their prefixes in, the runner's two commands run "
-        f"as written, a pass at twelve units carrying its review's continuation into a pass of "
+        f"as written, a pass at ten units carrying its review's continuation into a pass of "
         f"continuations that waits for it and that the lead's listing holds back, a replan writing "
         f"the same files, a continuation there continued in that pass, a pass with no letter left "
-        f"printing each section's unread note once, a replan of a trade past twelve units carrying "
+        f"printing each section's unread note once, a replan of a trade past ten units carrying "
         f"its continuation into a pass of continuations, a continuation's sections it never reached "
         f"carried on and not read to their end until that continuation verifies, and not at all "
         f"with no continuation bound after it, two sections on "
@@ -13333,7 +13367,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
 
     packages = {"packages": [
         {"id": f"pkg-{trade}-{n}", "name": f"Package {trade} {n}", "tradeCode": f"0{trade} 10 00"}
-        for trade in range(1, 8) for n in range(1, 5)
+        for trade in range(1, 8) for n in range(1, 9)
     ]}
 
     def window_3_folder(case: str) -> Path:
@@ -13355,7 +13389,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         where = window_3_folder("w3")
         expect("window 3's waits", set(starts_of(where).values()), {"none"})
         expect("window 3's passes", len(starts_of(where)), 7)
-        expect("the summary script's window 3 read", len(summary.read_plan(where / "read-plan.md", 3, "W3-1")["units"]), 4)
+        expect("the summary script's window 3 read", len(summary.read_plan(where / "read-plan.md", 3, "W3-1")["units"]), 8)
         everything = [f"W3-{n}" for n in range(1, 8)]
         expect("window 3 is cut at the limit", names(listed(where)["start now"]), everything[:_PASSES_AT_ONCE])
         expect("window 3 past the limit waits", names(listed(where)["waiting"]), everything[_PASSES_AT_ONCE:])
@@ -14567,7 +14601,7 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
                    'paper names no one>"}`'),
     (SHEET_READER, '`category` `General Items`, with one `packageRole:<that trade>` record valued '
                    '`{"role": "general-requirement"}` in the same batch'),
-    ("runner", "Each row on the review's `headings written:` line after its first is found back"),
+    ("runner", "`headings` takes one entry per row on the review's `headings written:` line after its first"),
     ("skill", "Each review also writes the standard lines whose condition it finds on this job's own "
               "drawings or manual"),
 )

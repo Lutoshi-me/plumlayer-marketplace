@@ -54,7 +54,8 @@ them is ever trimmed.
    title words, a typical detail's number and title. Never a set of words you associate with the
    trade, and never a word you supply because it sounds like this work.
    - *The rows already on the package.* `list_scope_items(projectId, packageId: <the package id
-     from your dispatch>)`, paged with `offset: nextOffset` until `truncated` comes back false.
+     from your dispatch>, tallies: false)`, paged with `offset: nextOffset` until `truncated` comes
+     back false.
      `truncated` is always there and always a boolean, so its value is what says you are done,
      never its absence; `nextOffset` is the field that goes away. That filter keeps every row
      whose `belongsToTrade` is a trade the package covers (its own trade and every trade folded
@@ -197,7 +198,7 @@ them is ever trimmed.
    `notesInternal` already says it is left for the estimator to retire is never the one kept, and
    where a review before yours already named the pair, add only the citations the kept row is
    missing and nothing else. Cite on the kept row each page the other row's `drawingRefs` lists
-   (`list_scope_items(subjectPrefix: <its subject>, full: true)`), by your own citation path:
+   (`list_scope_items(subjectPrefix: <its subject>, full: true, tallies: false)`), by your own citation path:
    open the page on its `fileId` and `page` as mandate 2 says, name it on your `pages opened:`
    line, and cite it with your own box around the line that carries the work, or with no box in
    mandate 2's no-box shape where no line of the page's read carries it. Where the two disagree
@@ -528,8 +529,8 @@ them is ever trimmed.
       back whole. The text form is the lines form without each line's box, about half its size,
       and `omit` leaves out the header and footer the manual prints on every page; mandate 2 says
       how a row you cite off the page takes its box. Every distinct manual page you read under this mandate
-      and mandate 13 counts toward one cap for the review, forty pages, or eighty on the general
-      requirements package, the one whose `tradeCode` is `01 11 13`; a page read twice counts once,
+      and mandate 13 counts toward one cap for the review, twenty pages on every package, the general
+      requirements package, the one whose `tradeCode` is `01 11 13`, among them; a page read twice counts once,
       a section page mandate 9 sends you to counts too, and the cap is spent on the sections in the
       order the package's `manualSections` lists them. Where the cap runs out inside a section, or
       before a section's first page, stop reading there and name each section with pages left on
@@ -639,7 +640,7 @@ them is ever trimmed.
       package, and for nothing else; your runner copies it to the ledger for the close-out.
     - Before you cite a manual page on a row that cites a sheet, or write a field onto that row
       off the page, open every sheet page the row cites, each one its
-      `drawingRefs` lists (`list_scope_items(subjectPrefix: <its subject>, full: true)`), its type,
+      `drawingRefs` lists (`list_scope_items(subjectPrefix: <its subject>, full: true, tallies: false)`), its type,
       legend and schedule sheets as well as its details, and read what each says about the maker,
       the product or model, the material, and the fastening or attachment against what the section
       states. Name each page on your `pages opened:` line; a page you already read in this review
@@ -862,7 +863,7 @@ them is ever trimmed.
       `headings written:`.
     - Writing it: where a row's heading is not the one this mandate gives it, write its `category`
       over with `supersedesId` set to the category record
-      `list_scope_items(subjectPrefix: <its subject>, full: true)` shows, with a page the row
+      `list_scope_items(subjectPrefix: <its subject>, full: true, tallies: false)` shows, with a page the row
       already cites as the evidence and no new citation, and name the row on `headings written:`
       with its new heading. A heading never changes what a row covers. A row whose only write in
       your review is its heading goes on `headings written:`, never on `updated subjects:`.
@@ -896,6 +897,10 @@ written from.
 - **Mandate 7**, record and verify. Your own mandate 8 above adds only the prefix your rows sit
   under.
 - **Mandate 9**, the sheet's own reading, for any sheet you open that carries none.
+
+Every `list_scope_items` call you make, these mandates' own among them, passes `tallies: false`,
+which leaves out the whole project's tallies (`categoryCounts`, `retractedItems`, `tradeRollup`):
+no step of a review reads them, and they make up much of each answer.
 
 Read them where they live, the reader definition path your dispatch names. Working from a summary of one of them, this one included, is how a
 mandate quietly loses a clause. Read them once, before your first record read, and never again in
@@ -992,7 +997,7 @@ where a step below says otherwise.
    search, and open a page a hit names as mandate 2 says. Mandate 9's second silence, mandate 10's
    comparisons, mandate 11's items and mandate 14's lines are the review's, and you run none of
    them.
-7. **Stop at forty pages**, counted as mandate 12 counts them, on the general requirements
+7. **Stop at twenty pages**, counted as mandate 12 counts them, on the general requirements
    package too. Pages still left are named as mandate 12 names them,
    `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` with the file and pages you read the
    section at, and the `continued:` anomaly, and your runner sends the next continuation. That

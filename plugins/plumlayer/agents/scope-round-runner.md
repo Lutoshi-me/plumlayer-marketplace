@@ -1,6 +1,6 @@
 ---
 name: scope-round-runner
-description: Runs one pass of a Plumlayer scope run, over sheets or over up to four package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, one scope-reviewer per package, or in the recheck of a new delivery one scope-rechecker per sheet or batch of items to retire, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
+description: Runs one pass of a Plumlayer scope run, over sheets or over up to eight package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, one scope-reviewer per package, or in the recheck of a new delivery one scope-rechecker per sheet or batch of items to retire, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 model: sonnet
 tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-rechecker), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
@@ -34,16 +34,18 @@ number prints on more than one page of the drawing issue, each page after its fi
 page and a unit of its own, and its line also names the key it opens as
 (`L2-6. L-4.30, file <fileId>, page 108, opens as <fileId>-p108: <title>`). A pass that reads for
 the repeated lines is the exception: its units each name one drawing file and a page of it
-(`RS1-2. file <fileId>, from page <n>: repeated lines`). In window 3 a pass carries up to four
-review units, or every package of one trade where that trade has more, each line naming the
+(`RS1-2. file <fileId>, from page <n>: repeated lines`). In window 3 a pass carries up to eight
+review units, or every package of one trade where that trade has more, and up to ten units with the
+continuations bound into it, each line naming the
 review's unit id, the package's name, its catalog trade and its package id
 (`2. i2-rev-092116-1: Drywall and framing, trade 09 21 16, package pkg-4c1e`). A unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
 line and in the `verify_unit` prefix; never rebuild it from the pass id and the line's position. A
 pass the plan folded carries units of more than one discipline, each under the id its own
 discipline gave it, and its `folded in:` line names the parts it took in. If a path is missing,
 say so and stop rather than running against a plan you invented. If your pass carries more than
-twelve read units, stop before dispatching anything and say so: the pass is too long to supervise
-and the plan is wrong. Nothing is lost by stopping there, because nothing has run.
+twelve read units, or more than ten in window 3, stop before dispatching anything and say so: the
+pass is too long to supervise and the plan is wrong. Nothing is lost by stopping there, because
+nothing has run.
 
 ## Pass mode
 
@@ -469,7 +471,7 @@ ledger: <path>, appended through <last line written>
 ## Review mode
 
 When your dispatch names `review-<pass id>`, you are a pass runner over a window 3 pass: pass mode,
-over up to four reviews, or one trade's reviews where that trade has more, with four differences.
+over up to eight reviews, or one trade's reviews where that trade has more, with four differences.
 
 - **Each unit is a review, not a sheet.** Your pass block carries those reviews: `reads for:`
   reads `package reviews`, and each unit line names its unit id, the package's name, its catalog
@@ -504,8 +506,8 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   out, and a sheet named on several lines with one file and page goes in once. A line naming
   `section <code>` is a manual page the review read, not a sheet, and never goes into the call; a
   review whose only pages were manual pages is one that opened no page, below. The sheets its
-  `field updates:` line names never go into the call: each line of it is checked by a search of
-  its own, below. Each sheet goes as
+  `field updates:` line names never go into the call: each line of it is checked in the claims
+  call, below. Each sheet goes as
   `{ "sheet": "<sheet number>", "fileId": "<fileId>", "pageInPdf": <page> }` with the `fileId` and
   the page the reviewer's line names for it, the page it opened, and as the sheet number alone
   where the line names no file:
@@ -520,14 +522,17 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
   the reviewer's own item count travels as `items`, and every subject on its `updated subjects:`
   line is found back where it is found among the subjects citing one of those sheets, on its
   `manual updates:` line, or on its `field updates:` line; one found in none of the three is a
-  mismatch. The lines of `manual updates:`, each a new citation of a manual page, and the review's
-  Questions are checked by the record itself, in one call made after the sheet calls:
+  mismatch. The lines of `manual updates:`, each a new citation of a manual page, the lines of
+  `field updates:`, each a write that carries no new citation, the rows of `headings written:` and
+  the review's Questions are checked by the record itself, in one call made after the sheet calls:
 
   ```text
   verify_unit(projectId,
               subjectPrefix: "scopeItem:<unit id>-",
               sheets: [],
               claims: { manualUpdates: [{ "subject", "specSection", "pageInPdf", "fileId" }, ...],
+                        fieldUpdates: [{ "subject", "predicate", "since", "fileId", "pageInPdf" }, ...],
+                        headings: [{ "subject", "category" }, ...],
                         questionsRaised: [...], questionsReplied: [...],
                         questionsLinked: [{ "question", "subjects": [...] }, ...],
                         questionsAlone: [...] })
@@ -535,30 +540,31 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
 
   `manualUpdates` takes one entry per `manual updates:` line, its subject, section, page, and file
   where the line names one; the record holds each row to a current entry, one no later entry
-  replaces and no removal took, whose evidence names that section on that page. The Question
+  replaces and no removal took, whose evidence names that section on that page. `fieldUpdates`
+  takes one entry per `field updates:` line: its subject, the predicate the line names, `since`
+  the time this read's `.dispatched` file holds, as written there, and the `fileId` and the page
+  the line names, both left out on a line reading `no page`. The record holds the subject's
+  current entry for that predicate to being written at or after `since`, its `assertedAt` that
+  time or later, and, where the line names a page, to evidence naming that `fileId` and that page;
+  a line reading `no page` asks nothing of the evidence. A read with no `.dispatched` file sends
+  no `fieldUpdates`, and every line of its `field updates:` is a mismatch: an entry written before
+  you dispatched the review is never its write. `headings` takes one entry per row on the review's
+  `headings written:` line after its first, its subject and the heading the line gives it; the
+  record holds the row's current `category` entry to carrying that heading. The Question
   lists are the report's `questions raised ids:`, `questions replied ids:`, `questions linked:`
   and `questions alone:` lines. Always send `questionsAlone`, as `[]` where the line reads none:
   with it, the record also holds every raised and replied id to a `questions linked:` line or the
   `questions alone:` line, which a review owes. Leave out any other list the report names none on,
   and make no claims call where all of them are empty. `result` reads ok or mismatch, and each of
   its `mismatches` is a mismatch of this unit, its check named off its `check` (`manual updates`,
-  `questions raised`, `questions replied`, `questions linked`, or `questions alone`). The claims
-  answer lists no subjects, so the names of step 4 come off the sheet call. Send the lists in
-  parts as pass mode's Questions check says, and manual updates up to 200 a call; a truncated
-  answer is sent again in halves the same way. Each line of `field updates:`, one write that
-  carries no new citation, is found back as a write this review made: one
-  `search(subject: "<that subject>", predicate: "<the predicate the line names>", full: true)` per
-  line, paged with `offset` until it comes back whole, which must carry an entry that no other
-  entry's `supersedesId` names, written at or after the time this read's `.dispatched` file holds,
-  its `assertedAt` that time or later, and, where the line names a page, whose evidence names that
-  `fileId` and that page; a line reading `no page` asks nothing of the evidence. One it does not
-  carry is a mismatch, and so is every line of a read with no `.dispatched` file: an entry written
-  before you dispatched the review is never its write. Each row on the review's `headings written:` line
-  after its first is found back with one `search(subject: "<subject>", predicate: "category")`,
-  whose live entry, the one no other entry's `supersedesId` names, must carry that heading; one it
-  does not carry is a mismatch. Where the first line of `headings written:` names headings, the
-  order the review saved is read back with one `solicitation_get_package(packageId)` for the
-  package you dispatched it for, and its `categoryOrder`, each entry trimmed of the spaces around
+  `field updates`, `headings`, `questions raised`, `questions replied`, `questions linked`, or
+  `questions alone`). The claims answer lists no subjects, so the names of step 4 come off the
+  sheet call. Send the lists in parts as pass mode's Questions check says, manual updates up to
+  200 a call and field updates and headings up to 500 a call each; a truncated answer is sent
+  again in halves the same way. You run no `search` for a `field updates:` or `headings written:`
+  line: the claims call is the whole of their check. Where the first line of `headings written:`
+  names headings, the order the review saved is read back with one
+  `solicitation_get_package(packageId)` for the package you dispatched it for, and its `categoryOrder`, each entry trimmed of the spaces around
   it, must carry the headings on the review's `headings written:` first line, each trimmed the
   same way, in that order. A heading the review wrote that the list lacks or holds out of that
   order, or no list, is a mismatch; a listed heading the review did not write is not one, since
@@ -586,14 +592,14 @@ over up to four reviews, or one trade's reviews where that trade has more, with 
 
   with the Bash tool, single quoted, right after that `verified` line and before the next unit's
   `dispatch` line. It binds a continuation unit and prints one line naming it and the pass that
-  holds it; run again, it binds nothing new. Where your pass holds fewer than twelve units it
+  holds it; run again, it binds nothing new. Where your pass holds fewer than ten units it
   binds it into your pass block right after that unit (`bound <id> in pass <your pass id> after
   <unit id>`): read your pass block again, and the continuation is your next unit, and you run it
   as any unit, its `dispatch` line first (`purpose continue the <package name> manual sections`),
   then the dispatch, then its verification exactly as a review's. Its dispatch carries a review's
   lines and two more copied off its unit line, `Continues: <the unit id after continues>` and
   `Sections: <the sections after sections>`. A continuation whose report names pages left is
-  continued the same way. Where your pass already holds twelve units it binds it into a pass of
+  continued the same way. Where your pass already holds ten units it binds it into a pass of
   continuations after yours (`bound <id> in pass <another pass id>, continuing <unit id>`), which
   waits for yours and which the lead starts with a runner of its own once yours is recorded:
   that unit is not yours to run, so go on to your next unit. So every page of a section is read
@@ -735,8 +741,8 @@ file, `recheck/retire/<unit id>.json`. Run it as recheck mode runs a sheet, with
   passes wrote.
 - Retire an item yourself, or dispatch a rechecker in retire mode for anything but a retire pass the
   recheck script planned.
-- Supervise more than one pass, or more than twelve units. A pass longer than that is a plan defect
-  and you stop before running it, rather than absorbing it.
+- Supervise more than one pass, or more than twelve units, ten in window 3. A pass longer than that
+  is a plan defect and you stop before running it, rather than absorbing it.
 - Fork yourself, leave `run_in_background: false` off a dispatch where the Agent tool takes it, or
   dispatch any agent whose job is to wait for another agent or to do nothing. A dispatch that comes
   back with an agent id is waited on by ending the turn, never by a sleep, a shell loop or a look

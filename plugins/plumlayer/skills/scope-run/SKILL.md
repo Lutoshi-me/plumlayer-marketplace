@@ -613,12 +613,13 @@ The run executes at three levels. Each level is a separate agent context, bounde
   one pass: it writes the pass brief, runs the pass's units exactly as the window's stage defines
   them, verifies every unit with one `verify_unit` call, notes overlaps inside the pass, appends
   the ledger in its fixed line shapes, writes its summary to disk, returns its hand-back, and
-  ends. Its context is bounded to one pass of at most twelve units, and it never grows with the
-  size of the window. Two further
+  ends. Its context is bounded to one pass of at most twelve units, ten in window 3, and it never
+  grows with the size of the window. Two further
   instances run in their own modes: one closes each window at its boundary (the cross-pass overlap
   scan and the declaration of any kind a reader named and did not declare), and in window 3 each
-  pass runner runs up to four review units, or every package of one trade where that trade has
-  more, one at a time.
+  pass runner runs up to eight review units, or every package of one trade where that trade has
+  more, one at a time, and the continuations its reviews leave while the pass holds fewer than ten
+  units.
 - **The readers**, one fresh instance per read unit, each read over the corpus and record, as the
   window's stage and the pass brief define: in window 1 the plugin's `scope-vocabulary-reader`
   agent reads one sheet for the vocabulary, or one drawing file's repeated lines, and in window 2
@@ -1413,11 +1414,12 @@ On the go-ahead:
    Then send one fresh agent to copy a fresh
    `solicitation_list_packages` response over `<run folder>/plan/packages.json`, byte for byte,
    returning one line. Then run the plan script for window 3. It plans one review unit per package
-   in `plan/packages.json`, in package order, and puts up to four reviews in each pass, every
+   in `plan/packages.json`, in package order, and puts up to eight reviews in each pass, every
    package of one catalog trade in the same pass, one after the other, so no two passes share a
-   trade; a trade of more than four packages is a pass of its own. It reads no sheets and takes
+   trade; a trade of more than eight packages is a pass of its own, and one of more than ten is
+   refused, since a window 3 pass holds at most ten units. It reads no sheets and takes
    no inventory. Read back only its bounds line: packages,
-   reviews, passes, reviews per pass, trades, and the packages sharing a trade. Where it refuses
+   reviews, passes, reviews per pass, units per pass, trades, and the packages sharing a trade. Where it refuses
    because the list no longer carries a package with manual section pages no review has read to
    their end, append each `note 3` line the refusal gives to the ledger as written and run it
    again; the close-out names each section so recorded. Where it refuses because no letter is
@@ -1449,12 +1451,12 @@ On the go-ahead:
    you start what `start now:` names, up to six at once, as stage 4 step 1 says. A review reads every manual section on its package whole, up to its page cap, and
    names the pages the cap left as `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` on its
    `sections not checked:` line. Its runner then binds a continuation unit with the plan script's
-   `continue` mode, into the same pass where it holds fewer than twelve units, and runs it there,
+   `continue` mode, into the same pass where it holds fewer than ten units, and runs it there,
    so every page of a section is read inside the window without your asking; you start nothing for
    it. A continuation joins its pass while the pass runs, and the
    `--reported` call reads the plan when you make it, so the prefixes it prints for the pass carry them:
    its continuations are units of the pass like any review, and the record script refuses a count
-   that leaves one out. Where the pass already holds twelve units, a long manual's continuation
+   that leaves one out. Where the pass already holds ten units, a long manual's continuation
    goes into a pass of continuations of its own, the pass's id with a letter after it
    (`i1-W3-3b`), whose `starts after:` line names the pass it came out of and every earlier pass
    of a trade it holds, so no two reviews of one trade run at once; the listing offers it
