@@ -882,10 +882,20 @@ them is ever trimmed.
       heading only where a home row goes under it, and `Miscellaneous` only for a row
       that fits none of the other six. No heading, package name or row says General Conditions.
     - How many: a package of ten home rows or fewer takes one heading, its work in a few words
-      ("Signage"). Otherwise every heading holds at least two rows, except work that is a system of
-      its own (a generator, a fire pump), and two headings that name one kind of work are one,
-      under the plainer name. None of this applies to the general requirements package: each of
-      its seven headings holds whatever rows go under it, one row included.
+      ("Signage"). Otherwise, once every row has its heading, read the headings alone, top to
+      bottom, as the estimator reads down the checklist, and look for a heading far narrower
+      than the ones beside it ("Slab Edge Embeds" beside "Structural Steel"). Such a heading
+      joins the heading that names its kind of work ("Embeds"), or joins a heading as narrow as
+      itself under one name that covers both ("Brick Support" and "Lintels" as "Masonry
+      Supports"), and two headings that name one kind of work are one, under the plainer name.
+      A heading that holds one or two rows is the sign to check: on a finished checklist a
+      heading with one row is rare, and it usually means the heading is too narrow. Fold it only
+      where a broader heading names the combined work truly under the category rules above, and
+      otherwise keep it, as with a system of its own (a generator, a fire pump), an area off
+      the finish schedule, or a phase or building the paper separates. Read the list again
+      after each fold, and stop when no further fold fits those rules. None of this applies
+      to the general requirements package: each of its seven headings holds whatever rows go
+      under it, one row included.
     - The order: the way the work is built, never alphabetical. On the general requirements
       package, the order is the seven's own, as reader mandate 5 lists them, and the build order
       below does not apply. On a structure, envelope, site or
