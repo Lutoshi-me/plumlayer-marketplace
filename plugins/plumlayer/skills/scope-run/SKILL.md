@@ -194,16 +194,18 @@ that relaxes any one of them reproduces a measured, named failure.
    where the set counts them the count is its quantity. One product is two rows only where the
    drawings or the manual separate its supply from its install, or on a finish trade by area, as the
    reader's mandate 1 says. A schedule of places, such as a room finish schedule or a door schedule,
-   is read for
-   the products and types it calls for, one row each ("Luxury vinyl tile flooring, LVT"), never
+   is read for the products and types it calls for ("Luxury vinyl tile flooring, LVT"), never
    one row for the whole schedule. A schedule of one assembly's types that differ only in size or
    spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
-   written out. Never copy a schedule's columns into a row: the row names its product and cites
+   written out. Windows and doors are never such an assembly: the reader's mandate 6 lists how
+   each common schedule of types lands on every run, a row per window type and per balcony door
+   type beside the rows for the window work every type shares, and one row per family, every code
+   written out, for interior doors, partitions and panelboards. Never copy a schedule's columns into a row: the row names its product and cites
    the schedule row that defines it, with a box on that schedule row built from the page's text
    read, never from a render, or the sheet with no box where no line of the read carries that
    row, named on the reader's `anomalies:` line. A row is never a whole sheet
    and never a package header. Where the reader or the reviewer cannot tell how finely the work in
-   front of it splits, it creates at best
+   front of it splits, and neither the set nor a rule of its mandates settles it, it creates at best
    judgment and names it on its `grain questions:` report line, which the check-in and the close
    out carry to the user; how finely our own scope sheet splits is ours to settle, and nobody on
    the design team answers it. Recall never drops to grain uncertainty.
@@ -1593,7 +1595,7 @@ and `items` fields of the `verified` lines, and the candidates, the pages a revi
 the searches it ran are the `candidates`, `pages-opened` and `searches` fields of the `pass:`
 lines, the last one of a pass that carries two. The items you weren't sure how finely to split are
 the ledger's `note` lines of kind `grain`, in every window, the notes each check-in printed as how
-finely to split, each item named once. The pairs of rows carrying the same work are the
+finely to split, each item named once, less the ones a check-in left out as settled. The pairs of rows carrying the same work are the
 window 3 `note` lines of kind `anomaly` that carry `same work:`, each pair named once, and the
 manual sections no review could read are the window 3 `anomaly` notes that carry `not read:`,
 which a review writes only for a section with no page range or whose manual was removed, and a
@@ -1896,7 +1898,13 @@ trade's page, so it is named in full. It stops before Bash's output limit, cutti
 long for one call where the call's room ends and naming where, and where its last line names what
 it did not print, run the command that line gives for the rest. What it prints is for you to read:
 say what it names in the estimator's words, as the next section names them, and never paste a
-note or a label as it printed. The second is `list_questions(projectId, limit: 0)`,
+note or a label as it printed. Carry only what gives the estimator something to settle. A
+`how finely to split` note that the reader's mandate 6 list of schedules of types or its mandate 1
+test of one row per product settles is left out, at the check-in and at the close out, and so is
+a note that asks nothing, such as a statement that the owner furnishes an item a row already
+carries, and one saying that a reader or a reviewer took a citation of its own off the wrong row
+and cited the right row itself. A wrong citation that another reader or a person wrote, named as
+a door-owned suggestion, is the estimator's to settle and is carried. The second is `list_questions(projectId, limit: 0)`,
 whose `tradeCounts`, `everyTradeCount` and `untradedCount` give the project's Questions by the
 trades they name, the every-trade ones and the not-known-yet ones, with no rows to page through.
 
@@ -1908,9 +1916,14 @@ in plain sentences:
   raised as Questions, by the trades they name, with the every-trade ones and the not-known-yet
   ones counted apart. The counts the check-in prints, never the ones reported up to you.
 - What you would like them to look at now: each document defect and anomaly that is not on a
-  Question or a row yet, with its sheet reference, the items you weren't sure how finely to split,
-  and what is theirs to decide. Give the ones already on a Question or a row as a count, and say
-  where to see them: each trade's page on plumlayer.com.
+  Question or a row yet, with its sheet reference; the items you weren't sure how finely to split,
+  only where the drawings give no way to tell and no rule of the run settles it; and each call only
+  they can make, put as the question it asks. Leave out every line that asks them nothing, and
+  every call the run's rules already make: how a window, door, partition or panelboard list
+  splits, whether notes naming one product are one row, and a citation that a reader or a reviewer
+  wrote on the wrong row and has already moved to the right one. A wrong citation that another
+  reader or a person wrote is still theirs to look at. Give the ones already on a Question or a row as a count, and say where to see
+  them: each trade's page on plumlayer.com.
 - What is defined now that wasn't before, and anything the next window depends on.
 - Anything that went sideways: a count that didn't match and how you fixed it, a page you couldn't
   read, a pass that stopped. Say it plainly. A sheet whose reading stopped partway is named with

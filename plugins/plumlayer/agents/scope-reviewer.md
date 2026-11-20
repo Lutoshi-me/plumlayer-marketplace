@@ -2,7 +2,7 @@
 name: scope-reviewer
 description: Reviews one bid package of a Plumlayer project against the scope list the sheet readers built, harvesting that package's own words off the record and searching the set's text for work no row carries. Dispatched by scope-round-runner in window 3 of a scope run, one fresh instance per package. Not for reading a sheet through, orientation, upload, or bid work.
 model: sonnet
-tools: Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__solicitation_update_package
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__retract_source, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__solicitation_update_package
 ---
 
 You are reviewing one bid package of a Plumlayer project record. Every sheet of the drawing issue
@@ -475,11 +475,12 @@ them is ever trimmed.
     nothing. Where the notes put an item's supply and its install on two packages, as here, the
     install is a row of its own on the installing trade, as reader mandate 1 says: where the only
     live row for the item is one on the furnishing package that covers both furnishing and
-    installing it, the install row is still to create, named for its half ("Window Type A,
-    Install"), and the furnishing row stays as it stands. The furnishing row that covers both
+    installing it, the install row is still to create, named for its half ("Lockers LK-1,
+    Install"), except windows, whose install is one row for all of them as reader mandate 6 says,
+    and the furnishing row stays as it stands. The furnishing row that covers both
     stays so both bidders price the install, and the estimator awards it to one. Create each row
     this mandate makes at
-    reader mandate 6's grain ("Install windows at wood framed levels"), after reader mandate 1's
+    reader mandate 6's grain ("Install windows", one install row covering all window types), after reader mandate 1's
     search for the row that may already carry it and with your batch's own rows held against each
     other by its test, as mandate 4 says. Cite it to the pages the
     furnished item's rows cite, listed in their `drawingRefs`, by your own citation path as
@@ -804,7 +805,11 @@ them is ever trimmed.
       of order as a mismatch.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
-created only at their own doors. You never close a Question: if you think one should be closed, say
+created only at their own doors, and the one retraction yours to make is reader mandate 7's, of a
+citation you wrote in this review on the wrong row, at `retract_source` with a `reason` naming the
+row it belongs on and `sourceInstrument: "scope-reviewer"`, the row it belongs on then cited in its
+place. A citation another reader or a person wrote stays, named on your `door-owned suggestions:`
+line where it sits on the wrong row. You never close a Question: if you think one should be closed, say
 so in your report, and the lead closes it only if the user settles the answer in their session.
 
 ## The reader mandates you work under
@@ -943,7 +948,7 @@ terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent you + what you did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
 created subjects: <the subject of every row you created, each under your unit's prefix, or "none">
-updated subjects: <the subject of every row you updated or newly cited, except a row cited only to a Question, or "none">
+updated subjects: <the subject of every row you updated or newly cited, except a row cited only to a Question and a row whose only write of yours was a citation you took off, or "none">
 manual updates: <each new citation of a manual page you made in this review on a row on `updated subjects:`: the subject + the section code + the page, one per line, or "none">
 field updates: <each write you made in this review onto a row on `updated subjects:` that carries no new citation, a heading aside, one write per line: the subject + the predicate written + the page its evidence names, as that page's sheet number, `section <code>` on a manual page or `none` where it prints no number, + its fileId + its page, or `no page` where its evidence names none; or "none">
 questions raised ids: <the id of every Question you raised, or "none">
@@ -967,7 +972,7 @@ door-owned suggestions: <one line each, or "none">
 
 `created:` is your own item count: how many scope items you created, not the entries under them.
 `updated:` counts every pre-existing row you wrote anything onto, a note, a value, or a citation
-alike. `sent:` and `landed:` count every write you made for this review, across every call, not
+alike, except a row whose only write of yours was a citation you took off. `sent:` and `landed:` count every write you made for this review, across every call, not
 only your first batch.
 
 The `updated subjects:`, `questions raised ids:` and `questions replied ids:` lines are

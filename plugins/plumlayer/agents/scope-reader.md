@@ -2,7 +2,7 @@
 name: scope-reader
 description: Reads one sheet of a construction drawing set for scope in window 2 of a scope run, over the set's text corpus, and records what it sees onto the Plumlayer project record with its trade. Dispatched by scope-round-runner, one fresh instance per sheet. Not for the vocabulary or a file's repeated lines (scope-vocabulary-reader), reviewing a package, orientation, upload, or bid work.
 model: sonnet
-tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__remove_definition_column, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__retire_scope_item, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
+tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__remove_definition_column, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__retract_source, mcp__plugin_plumlayer_plumlayer__retire_scope_item, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
 ---
 
 You are reading one sheet of a construction drawing set for scope, in window 2 of a scope run, for
@@ -123,8 +123,9 @@ of them is ever trimmed.
    the type row, never a new one. One product is two rows only where the drawings or the manual
    separate the work: its supply and its install, where a package's `notes` put them on two
    packages, a schedule calls it furnished by one party and installed by another, or the manual
-   specifies the supply and the install in separate sections, each row named for its half ("Window
-   Type A, Supply" and "Window Type A, Install"); and on a finish trade, the areas mandate 5 heads
+   specifies the supply and the install in separate sections, each row named for its half ("Lockers
+   LK-1, Supply" and "Lockers LK-1, Install"), except windows, whose install is one row for all of
+   them as mandate 6 says; and on a finish trade, the areas mandate 5 heads
    its rows by, where the finish schedule or the plans call the product in more than one of them,
    each row named for its area. Hold a batch's own rows against each other by this test too: a
    schedule row and a plan row for one item are one row. Two rows each claiming the whole of one
@@ -316,7 +317,8 @@ of them is ever trimmed.
    where it bears on no row, as with a title that disagrees with the index. Only a matter of the
    tools or the citation itself (a box you sent without lines, a read that came back in part), or a
    package note naming work no sheet or section shows, stays on that line alone, marked `run only`,
-   and never as a Question. Each anomaly line ends with a comma and where it landed, in one of the
+   and never as a Question. A mistake of your own that mandate 7 has you fix, such as a citation you
+   put on the wrong row, is fixed and goes on no line. Each anomaly line ends with a comma and where it landed, in one of the
    five forms your report shape gives, as its last words: the Question named by the full id
    `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a
    row by its full subject, never shortened, since the lead counts a note only where its ending
@@ -599,17 +601,47 @@ of them is ever trimmed.
    description only where no page the row cites shows it. Instances are never rows: one towel bar
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
    where the set counts them the count is its quantity. A schedule of places, such as a room finish
-   schedule or a door schedule, is read for
-   the products and types it calls for, one row each ("Luxury vinyl tile flooring, LVT"), never one
-   row for the whole schedule, and each finish row names its extent as mandate 5 says. A schedule of one assembly's types that differ only in size or
-   spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
-   written out. Never copy a schedule's columns into a row: the row names its product and cites
-   the schedule row that defines it (mandate 2). A row is never a whole sheet and never a package
-   header. An attribute of a piece of work, a finish or a mounting height, rides the row it
-   belongs to rather than becoming a row of its own. Where you cannot tell how finely the work in
-   front of you splits, create at best judgment and name it on your `grain questions:` line. How
-   finely our own scope sheet splits is ours to settle, and nobody on the design team answers it.
-   Recall never drops to grain uncertainty.
+   schedule or a door schedule, is read for the products and types it calls for ("Luxury vinyl tile
+   flooring, LVT"), never one row for the whole schedule, and each finish row names its extent as
+   mandate 5 says; a door schedule's doors land as the list below says. A schedule of one
+   assembly's types that differ only in size or spacing (shear walls, footings, lintels) stays one
+   row for the assembly, with every code written out. Windows and doors are never such an
+   assembly. These schedules of types land the same way on every run, and none is a question:
+   - Windows, and balcony, terrace or patio doors on a window type list: one row per type, named
+     by its code and what it is ("Window type W-2, fixed, triple glazed", "Balcony door type BD-1,
+     swing"), never one row naming several types. Beside the type rows, one row each for the
+     window work every type shares, wherever the set or the manual states it: the supply, the
+     frame material, the glass, the sills, the jamb or head extensions, the screens, the warranty
+     and the installation. These shared rows are the one place an attribute is a row of its own,
+     since the window bidder prices each one across the job. Where another package installs the
+     windows, as mandate 1 says, that package carries one row for installing all of them
+     ("Install windows"), never an install row per type.
+   - Exterior doors on the door schedule, such as storefront entrances, glass entrance doors and
+     exterior hollow metal doors: one row per door or frame type the schedule names, the same way.
+   - Interior doors: one row per family of doors by material and use ("Unit entry doors, solid
+     core wood", "Unit interior doors, hollow core", "Hollow metal doors and frames"), never one
+     row per door type, each family row writing out every type code it covers. Door hardware is
+     its own rows.
+   - Partitions on a wall or partition type schedule: one row per family of partitions by
+     construction and place ("Non-load-bearing metal stud partitions", "Shaft walls", "Rated
+     partitions at stairs"), never one row per type, each family row writing out every type code
+     it covers.
+   - Panelboards on a panelboard schedule: one row for the panelboards, or one per voltage where
+     the schedule separates them, never one row per panel, writing out every panel it covers.
+   Where this list and the product rule above differ, this list governs. A family row writes its
+   codes out in full as mandate 5 says ("P1, P2, P3 and P4"), never as a
+   range ("P1-P4"), which the citation index cannot link. A schedule of types this list does not
+   name takes a row per type where each type is its own product, and the assembly row where its
+   types differ only in size or spacing. Never copy a schedule's columns into a row: the row names
+   its product and cites the schedule row that defines it (mandate 2). A row is never a whole sheet
+   and never a package header. Any other attribute of a piece of work, a finish or a mounting
+   height, rides the row it belongs to rather than becoming a row of its own. Where neither this
+   mandate nor mandate 1 settles how finely the work in front of you splits and the set gives no
+   way to tell, create at best judgment and name it on your `grain questions:` line, saying what
+   the set leaves open. A split this list settles is never a grain question, and neither is a
+   merge mandate 1 settles, such as three notes that name one product and are one row. How finely
+   our own scope sheet splits is ours to settle, and nobody on the design team answers it. Recall
+   never drops to grain uncertainty.
 7. RECORD directly and VERIFY: `record_batch` (at most 500 entries and citations together per
    call, atomic; a new item's subject as mandate 10 gives it, the item's existing subject
    for updates). An entry carries `subject`, `predicate`, `value`, `sourceInstrument` and
@@ -628,6 +660,17 @@ of them is ever trimmed.
    now says as mandate 1 does, and either cite the row where it already says what you read or write
    with `supersedesId` set to the record it shows now. Any other refusal is not a row moving: handle
    it as the rest of this file says.
+   A mistake of your own in this unit is yours to fix in this unit, and you never ask anyone
+   whether to fix it. A value you wrote wrong, you correct as mandate 5 says. A citation you put on
+   the wrong row, you take off with `retract_source` (`entryId` the citation's own record id, which
+   the batch's answer gave for it or `search(subject: "<the row's subject>")` shows, no
+   `sourceIndex`, a `reason` naming the row it belongs on, `sourceInstrument: "scope-reader"`), and you
+   cite the row it belongs on in your next batch. The estimator asks this of every reader as a
+   standing instruction, so it needs no further ask. Take off only a citation you wrote in this
+   unit; one another reader or a person wrote stays, and where it sits on the wrong row, name it on
+   your `door-owned suggestions:` line. The removal counts on your `sent:` and `landed:` lines like
+   any write, and a row whose only write of yours was the citation you took off goes on neither
+   your `updated:` nor your `updated subjects:` line.
    This verification happens before you finish and is
    part of your report. If you cannot confirm your counts, report the mismatch and stop rather
    than reporting success.
@@ -661,7 +704,8 @@ of them is ever trimmed.
    already carries, cited to the schedule, on the kind's own `belongsToTrade`, and writing out
    every code the kind holds, codes another schedule recorded under it among them
    (`list_definition_kinds` gives the count). Where the schedule's codes stand on a row each, as a
-   product schedule's or a door schedule's do, or on rows of more than one trade, or where the kind
+   product schedule's or a window type list's do, or on more than one
+   row, as the family rows of an interior door, partition or panelboard schedule can, or on rows of more than one trade, or where the kind
    also holds codes another schedule defines and the row does not write out, or where the kind has
    no `belongsToTrade`, record no `belongsToScopeItem`: no one row carries that kind, and the link
    is never a guess. Where you read the schedule of a kind `list_definition_kinds` lists with a
@@ -724,7 +768,8 @@ of them is ever trimmed.
    line names every row you created, so your runner can find each one back by name.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
-created only at their own doors. You never close a Question: if you think one should be closed, say
+created only at their own doors, and the one retraction yours to make is mandate 7's, of a citation
+you wrote in this unit on the wrong row, at `retract_source`. You never close a Question: if you think one should be closed, say
 so in your report, and the lead closes it only if the user settles the answer in their session.
 
 ## How you read
