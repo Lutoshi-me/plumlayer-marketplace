@@ -18,16 +18,37 @@ extracted value in it.
 
 ## What your dispatch gives you
 
-Pointers only: the project id, your group id, the groups file, and the path your result goes to.
+Pointers only: the project id, your group id, the groups file, the path your result goes to, and
+a `Refused so far:` list, each call the client refused earlier in this run with what it was for,
+or `none`. Each call on that list is refused for you too, as "A refused call" below says.
 The groups file, `Audience: agent`, holds one block per group, opened by a line
 `<group id>. <what the group covers>`, and under it one line per section,
 `<six digits> <the section's title as the table of contents lists it>`. Read your own group's
 block and nothing else from it. If the file or your group is missing, write your result with
-`stopped:` naming why, and end.
+`stopped:` naming why, and end. Where the client refuses the read of the groups file, write your
+result with `stopped: the groups file's read refused` and that read on its `refused:` line, and
+end.
 
 Where your group id is `trades`, you copy the company's trade list instead, so the drafting agent
 searches a file for each trade it resolves and never holds the whole list: skip steps 1 to 3 and
 follow "The trade list" below.
+
+## A refused call
+
+The client running you can refuse a call before it reaches Plumlayer: its permission check turns
+it down, or the user declines it. That is a refusal, and it is not a failed read: a call
+Plumlayer answers with an error is a failure, and only a failure is tried again. A refused call
+is never sent again, in any shape, and what it would have read is never reached another way,
+through another verb, a page next to it, a shell or a file. A refusal stops that one call: every
+other section of your group is still read. Name each refused call on your result's `refused:`
+line. A call your dispatch's `Refused so far:` list names is refused for you as well: never send
+it, in any shape or with any page or limit, and never reach what it would have read another way.
+What needed it is not tried, marked as for a call the client refused you: a section whose
+search or page read is on the list is `title only` with the reason `search refused` or
+`read refused`, no other page of it is read, and your `refused:` line names the call. Where the
+client refuses the write of your result, write it nowhere else: return the lines this file has
+you return, with the `refused:` line naming the write of your result (for
+the trade list, the first line as `trades <n>   refused: the write of <path>`), and end.
 
 ## The trade list
 
@@ -36,8 +57,10 @@ comes back with `truncated` false. Write every row to your result path, `Audienc
 first line `trades <n>   truncated no`, `<n>` the rows written, then one line per row in the order
 the answers give them, `<id> | <name> | <each alias, joined by ", ", or "none">`, the id and name
 exactly as the answer gives them. Where a page fails twice, write the first line as
-`trades <n>   stopped: <the error>` with the rows you have. Return the first line and the path,
-and end.
+`trades <n>   stopped: <the error>` with the rows you have. Where the client refuses a page, or
+your `Refused so far:` list names it, as "A refused call" above says, send it no more and write
+the first line as `trades <n>   refused: directory_list_trades at offset <n>` with the rows you
+have. Return the first line and the path, and end.
 
 ## 1. Find where each section sits
 
@@ -67,9 +90,12 @@ the section's `pageEnd`, or after three pages, whichever comes first. Part 1 is 
 says what it includes, what it furnishes for another section to install or installs for another,
 what the owner furnishes, who tests and inspects, and what single installer or single firm it
 asks for. At most twenty-four pages for the group, a page read twice counted once. Where the cap runs
-out, each section left is `title only` with the reason `page cap`. A read that fails is tried
-once more; a second failure makes the section `title only` with the reason
-`read failed: <the error>`.
+out, each section left is `title only` with the reason `page cap`. A read Plumlayer answers with
+an error is tried once more; a second failure makes the section `title only` with the reason
+`read failed: <the error>`. A read the client refuses is not tried again, as "A refused call"
+says, and no other page of that section is read: the section is `title only` with the reason
+`read refused`, and your `refused:` line names the call. The same holds for a section whose
+search in step 1 the client refuses, with the reason `search refused`.
 
 Take from those pages only what Part 1 states:
 
@@ -105,6 +131,7 @@ section of your group in the order the block lists them, every field present:
 ```text
 group <group id>   sections <n>   read <n>   title only <n>   pages read <n> of at most 24
 stopped: <why the group was not read, or "no">
+refused: <each call the client refused + the section it was for, or "none">
 <six digits> | <title as printed on the section's first page, or as listed> | work: <what the section's work is, one short clause> | furnish: <who furnishes each item, as stated, or "not stated" or "not read"> | install: <who installs each item, as stated, or "not stated" or "not read"> | owner: <what the owner furnishes, installs or hires, or "not stated" or "not read"> | related: <six digits + the part each carries, or "none", or "not read"> | single installer: <the section's words, or "not stated" or "not read"> | read: <fileId p<a>, or p<a>-p<b>, to the end of Part 1 or "Part 1 continues"; or "title only, <reason>">
 ```
 
@@ -120,4 +147,4 @@ A generic line, for the shape only:
 102800 | Toilet, Bath and Laundry Accessories | work: grab bars, mirrors and toilet accessories | furnish: this section | install: installed under 064020 | owner: not stated | related: 088000 the frameless mirrors | single installer: not stated | read: file-0a1b p412-p413, to the end of Part 1
 ```
 
-Then return the first two lines of your result and its path, and end.
+Then return the first three lines of your result and its path, and end.

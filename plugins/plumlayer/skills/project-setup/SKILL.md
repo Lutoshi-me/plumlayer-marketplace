@@ -499,8 +499,12 @@ rather than restating it from what an earlier step said:
   read for a closer look, how many sheets carry a type and how many were left for a closer look, how
   many spec sections were found (or that no project manual came with it), and what the index check
   found.
-- **Orientation:** off its summary, in your own words: what it learned, any Question it raised,
-  the baseline packages that now exist by name, the ones it created and the ones already on the
+- **Orientation:** off its summary, in your own words: each of its steps as done, refused or not
+  tried, so the user can tell a refusal from a step left out, with each refused call and what it
+  would have read or written, each step not tried with the refused call it needed or what
+  stopped the run before it, and what running /learn-project once that call is allowed does, in
+  the words the `learn-project` skill's closing report gives; what it learned,
+  any Question it raised, the baseline packages that now exist by name, the ones it created and the ones already on the
   project (their count is `solicitation_list_packages(projectId, limit: 1)`'s `total`, which the
   two lists of names add up to), each package a supplier furnishes with the package that installs its
   items, each default used, how many of the manual's sections are placed on a package, each

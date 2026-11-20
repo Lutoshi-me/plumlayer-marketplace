@@ -51,8 +51,8 @@ and the path your summary goes to. If the project folder does not exist, make it
 An orientation pass hands step 8, the package split, to a fresh orientation agent, so the
 manual readers' lines, the trade searches and the package writes never share one context with
 the renders and the facts of the other steps. That dispatch carries the line `Steps: 3 and 8.`
-Where yours does, you are that agent: confirm the project with `get_project` as step 1 does, run
-step 3 and step 8 as written, and run no other step. You render nothing, record no fact, write
+and the calls refused so far. Where yours does, you are that agent: confirm the project with
+`get_project` as step 1 does, run step 3 and step 8 as written, and run no other step. You render nothing, record no fact, write
 no description and no packet.
 
 - Before step 8, read the facts the pass that dispatched you recorded in step 6: the current
@@ -79,6 +79,57 @@ no description and no packet.
   `on no package:` line, and a `failed reads:` line for step 8's reads. Write the packet's
   packages section, step 10's section 6, to `packages-section.md` in the same folder,
   `Audience: agent`. Then return the summary lines and end.
+- A call refused in step 3 or step 8 stops that call alone, as "When a call is refused" says.
+  Your `summary.md` also carries a `steps:` line naming the package split alone, in the shape
+  "Your summary" gives, with each refused call named.
+- Your dispatch carries a `Refused so far:` list, as "When a call is refused" defines it: each
+  call on it is refused for you too, and what needed it is not tried, with that call named on
+  your `steps:` entry. A refused `inDivision` search leaves step 3 and the whole split not tried: no package is created or changed, and `spec reading:`
+  and every split line read `not tried, the inDivision search refused`. A refused search for
+  one of the facts above leaves that value unread: the rules that turn on it decide from sheet
+  titles alone, and where it is the `hazardFlag` search, putting each site condition on a
+  package is not tried.
+- Where the client refuses the write of `summary.md` or `packages-section.md`, write that file
+  nowhere else and through no other tool, finish the rest, and return the summary lines with
+  your `steps:` entry naming the refused write. The pass that dispatched you reads that entry
+  and does not dispatch you again.
+
+## When a call is refused
+
+The client running you can refuse a call before it reaches Plumlayer: its permission check turns
+it down, or the user declines it. That is a refusal. A call Plumlayer answers with an error is a
+failed read or write, and goes on `failed reads:`.
+
+- A refusal stops that one call. Carry on with every step that does not need what the refused
+  call would have read or written: the renders, the facts, the structure value, the description,
+  each firm and person on the contacts, the package split and the packet. Only a refused read
+  of step 1 stops the run, since without it you cannot confirm the project or its set, and your
+  summary's `stopped:` line names that call.
+- Try each write once, at the step that makes it, before you report it as not done. A refusal of
+  one call says nothing about the next, the same verb included: an `update_project` refused for
+  the address leaves the project type, the structure value and the description to their own
+  `update_project` calls, and a `directory_add_company` refused for one firm leaves every other
+  firm and person to be tried.
+- A refused call stays refused for this run. Never send it again in another shape, and never
+  reach what it would have read or written through another verb, a shell or a file. Step 2's
+  sheet counts by discipline are the one value this file gives two sources for: where the sheet
+  list is refused, take them from the discipline search step 2 item 3 names for a sheet list too
+  large to come back inline, and find each render target by its sheet number as step 2 item 3
+  says, never the whole sheet list another way.
+- A refused call never reaches an agent you dispatch either. Every dispatch you send, the
+  package split's agent, its second dispatch, each manual reader of an `M` or `P` group and the
+  trade list's reader, carries a `Refused so far:` line: each call refused in this run as the
+  list stands when you send that dispatch, its verb and what it was for, one per line, or
+  `none`. The list holds each call the client refused you, each call your own dispatch's
+  `Refused so far:` line named, and each call an agent you dispatched earlier named as refused
+  on its returned lines, its `refused:` line or its `steps:` entry. An agent that receives the
+  list never sends a call on it, in any shape or with any page or limit, never reaches what it
+  would have read another way, and marks what needed it not tried.
+- A call that needs what a refused call would have given is not tried: a firm's people when the
+  firm's own add was refused, a predicate in step 6 whose current-value search was refused.
+  Every other call is tried.
+- Name every refused call on the summary's `steps:` line, under the step it belongs to, with what
+  it would have read or written. A refused call is never a Question and never a guessed value.
 
 ## 1. Preconditions
 
@@ -113,6 +164,16 @@ no description and no packet.
    rather than pulling the full grid. Either path gives you discipline, sheet number, and governing
    issue per sheet, plus the file/page reference each row carries, the render targets for step 5 come
    from here, not from a separate `list_files` call.
+
+   Where the client refuses the `set_grid` call, page `search(projectId, predicate: "discipline")`
+   through to its end, keep each `sheet:` subject's newest row, and count the sheets under each
+   discipline code its value gives: the summary's `disciplines:` line carries those counts with
+   `inventory read by the discipline search, the sheet list refused`. A render target is then
+   found by its sheet number: `search(projectId, subject: "sheet:<number>", predicate:
+   "locatedAt")` for its file and `predicate: "appearsOnPage"` for its page. Where that search is
+   refused too, the `disciplines:` line reads `not read, the sheet list and the discipline search
+   refused`, step 5 renders only the sheets it finds by title with `search(projectId, predicate:
+   "hasTitle", text: "<words>")`, and the run goes on.
 
 ## 3. Read the spec-section index, if present
 
@@ -181,6 +242,9 @@ comparison ran. The bare call answers counts, warnings and one line per open ite
 Use the file/page references already surfaced by step 2's sheet inventory to pick `fileId` /
 `pageInPdf` targets, don't call `list_files` separately for this. For every render, pair `render_page`
 with `get_page_text` on the same page (render for layout and meaning, text for exact tokens).
+Where the client refuses either call of the pair, that page is not read: send no other call for
+it, use nothing the other call of the pair returned for it, leave its slot empty, and go on to
+the next target.
 
 1. **Cover sheet (1 render).** Find it via `search(projectId, predicate: "hasTitle", text: "cover")` or
    `text: "title sheet"`. If neither turns up a match, fall back to the lowest G-series sheet number in
@@ -248,6 +312,10 @@ with `get_page_text` on the same page (render for layout and meaning, text for e
      there gets only a blank `title`, `email` or `phone` filled with
      `directory_update_contact(contactId, ...)`; a value he holds that the sheet prints differently
      stays. Then `project_set_design_team_company(projectId, companyId, add: [contactId])`.
+
+   Each field, each firm and each person above is its own set of calls, tried in turn whatever
+   happened to the one before: a refused address write leaves every firm and person still to
+   try, and a refused add of one firm leaves only that firm's own people untried.
 
    Name each field filled and each firm and person put on, with the sheet, on the summary's
    `fields filled` line; each firm added to the Network, given a type or given a detail, and each
@@ -422,7 +490,11 @@ from what they show) goes in a `"basis"` field on that citation, never in the sn
 in a field beside the list.
 
 Call `record_batch` once with the full array. **Verify:** the returned `count` must equal the number of
-entries sent; a mismatch stops the run and gets reported, never a guessed correction.
+entries sent; a mismatch stops the run and gets reported, never a guessed correction. Where a
+predicate's current-value search is refused, leave that predicate out of the batch and send the
+rest. Where the client refuses the batch itself, nothing of it is recorded: the `learned:` line
+reads `none recorded, the batch refused`, steps 7 to 11 still run, step 8 decides from sheet
+titles, and the packet's sections name what this run read with `not recorded` beside each.
 
 ## 7. Fill the structure value, only when the drawings state it
 
@@ -455,22 +527,37 @@ In an orientation pass whose dispatch names no steps, you run none of this step'
 yourself: once step 7 is done, since the agent reads the facts step 6 recorded, dispatch one
 fresh orientation agent for it with the dispatch below and wait for it, the way sub-step 2 waits
 for a manual reader. Make its split folder first, `<project folder>/split/<stamp>/`, `<stamp>`
-as sub-step 2 makes one, so no file an earlier run left is read as this run's. Where the Agent
+as sub-step 2 makes one, so no file an earlier run left is read as this run's. Its
+`Refused so far:` line is the list "When a call is refused" defines, such as step 3's
+`inDivision` search or a step 6 current-value search, so the agent never sends one of them
+again. Where the Agent
 tool takes `run_in_background`, as in a headless session, send it `false`, as the dispatch
 does. Where the call comes back with an agent id instead, the agent's report arrives later as
 its own message: end the turn with one line naming what is running, and take the report when it
 arrives. Wait by ending the turn and nothing else. Its returned lines are your summary's split
-lines, copied as they come; where they did not arrive in the message, read `summary.md` in the
-split folder. Where it ended without both `summary.md` and `packages-section.md` in the split
-folder, dispatch it once more with the same split folder; after a second miss, name it on your
-summary's `failed reads:` line and read neither file. Take one `solicitation_list_packages` read:
+lines, copied as they come, its `steps:` entry for the package split among them; where they did
+not arrive in the message, read `summary.md` in the split folder. Where it ended without both
+`summary.md` and `packages-section.md` in the split folder, read its `steps:` entry for the
+package split, from its returned lines or from `summary.md`. Where that entry names the write of
+either file as refused, the missing file came from a refused write: dispatch it no more, put the
+refused write on your `steps:` line under the package split, take its returned lines as your
+split lines, and for what they do not carry, read the packages as below. Where no entry came
+back, or the entry names no refused write, the split ended without writing for another reason:
+dispatch it once more with the same split folder and the `Refused so far:` list as it stands
+then: the first dispatch's list with each call the first agent named as refused, on its
+returned lines or in `summary.md`, added; after a
+second miss, name it on your summary's `failed reads:` line and read neither file. Take one
+`solicitation_list_packages` read:
 `sections placed:` and `on no package:` come from its `manualSectionPlacement`, and step 10's
 packages section is written from it. Where `before.txt` is in the split folder, the packages
 whose id it does not hold are on your `packages created:` line as added since the run started,
 and the rest are already on the project. Where it is not, list every package as on the project,
 and the `packages:` line says the run's creates were not reported. Every other split line reads
 `not reported`. Where the Agent tool cannot dispatch it, run the sub-steps
-below yourself.
+below yourself. Where the client refuses the dispatch, that is a refusal, not a missing tool: run
+none of the sub-steps yourself, put the package split on your `steps:` line as refused, write
+`not tried, the package split's dispatch refused` on every split line and as step 10's packages
+section, and go on to step 9.
 
 The sub-steps also run on their own: sub-step 6, which the scope run runs itself, is run by
 whoever runs it, as sub-step 6 says, with no orientation agent dispatched for it.
@@ -481,6 +568,7 @@ run_in_background: false
 Project: <projectId>. Project folder: <project folder>.
 Steps: 3 and 8.
 Split folder: <project folder>/split/<stamp>/.
+Refused so far: <each call on the list "When a call is refused" defines, as it stands now, its verb and what it was for, one per line, or "none">.
 Run steps 3 and 8 as your definition says for a dispatch that names them, write the split's summary lines to summary.md in the split folder, then return them.
 ```
 
@@ -529,15 +617,23 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
      Project: <projectId>. Group: <group id>.
      Groups file: <this run's manual folder>/groups.md.
      Result: <this run's manual folder>/<group id>.md.
-     Read your group as your definition says, write your result to that path, then return its first two lines.
+     Refused so far: <each call on the list "When a call is refused" defines, as it stands now, its verb and what it was for, one per line, or "none">.
+     Read your group as your definition says, write your result to that path, then return its first three lines, or for the trade list its one-line header.
      ```
 
    - Once a section group's reader has returned, read its result file. Never read `trades.md`
      whole: the trade list reader's returned first line says whether it finished, and sub-step 4
-     takes single rows out of it with `Grep`. A reader that ended with no result
+     takes single rows out of it with `Grep`. Each call a reader's returned lines or its
+     `refused:` line name as refused goes on your `steps:` line under the package split, and a
+     section it could not read for that reason reads `title only` and is placed by its title. A
+     reader whose returned lines name a refused call, such as the write of its result or for the
+     trade list a page of the list, is not sent again. Any other reader that ended with no result
      file, or with `stopped:` other than `no`, is dispatched once more; after a second miss each
      section of its group is placed by its title, and your summary names the group on its
-     `failed reads:` line.
+     `failed reads:` line. A reader whose dispatch the client refused is not sent again and its
+     pages are never read in your own context: each section of its group is placed by its title,
+     and your `steps:` line names the group's dispatch as refused. A section group whose result
+     was never written is placed by its title the same way.
    - Where the Agent tool cannot dispatch the manual reader, as in a client that ships the skills
      without the agents, every manual page you read stays in your own context, so read at most 15
      in all, sub-step 6 included. Read `manual-reader.md`, in the same `agents/` folder as this
@@ -742,7 +838,15 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
    first field is the catalog trade id. Never page the whole list with `directory_list_trades`
    yourself; where `trades.md` is missing or its first line says `stopped:`, look each trade up
    with `directory_list_trades`, exact `code` first, then a `query` by trade name or alias, one
-   trade per call. Record the catalog trade id verbatim; never guess
+   trade per call. A refused call is not a missing file: where the client refused the `trades`
+   dispatch, or the trade list reader's returned lines name a page of the list or the write of
+   `trades.md` as refused, the trade list is not tried. Put it on your `steps:` line under the
+   package split as `not tried` with that call, and look no trade up another way: no
+   `directory_list_trades` call of your own, and no division code taken without a lookup. Every
+   package your draft would create is named on the `packages:` line as not created, the trade
+   list not tried; no package gets a new `codes` entry; the sections your draft puts on a
+   package already on the project are still added as sub-step 6 adds a section, and sub-step 6
+   still runs and counts, creating no package. Record the catalog trade id verbatim; never guess
    an id from memory (store-resolution). The one code you take without a lookup is a division code
    for a firm that bids its whole division on this job, `22 00 00` Plumbing, `23 00 00` HVAC,
    `26 00 00` Electrical or `31 00 00` Earthwork: the trade list leaves division codes out, and
@@ -785,8 +889,13 @@ Run steps 3 and 8 as your definition says for a dispatch that names them, write 
    way sub-step 2 reads the manual: grouped in number order, at most 8 to a group, named `P1`,
    `P2`, and so on, numbered on after any `P` group the groups file already holds, their blocks
    added to the groups file after the blocks already there, each
-   group read by one manual reader with sub-step 2's dispatch. Where this sub-step runs on its
-   own, as the scope run runs it, there is no folder from sub-step 2: make this run's manual
+   group read by one manual reader with sub-step 2's dispatch. A section a refusal kept from
+   being read never goes into a new `P` group: one in a group, `M` or `P`, whose reader's
+   dispatch the client refused, or whose reader named as refused a call for that section, the
+   read of the groups file or the write of its result. Place it by its title as sub-steps 3 to
+   5 do, named on your `placed by title alone:` line; where that placing does not finish, it
+   stays on `onNoPackage` and your `on no package:` line names it with the refused call. Where
+   this sub-step runs on its own, as the scope run runs it, there is no folder from sub-step 2: make this run's manual
    folder as sub-step 2 does, and its groups file holds only the `P` groups. No manual page is
    read with `get_page_text` here, outside sub-step 2's fallback. To add a section to a package, read the
    package's current `manualSections`, then send `solicitation_update_package(packageId,
@@ -827,8 +936,9 @@ once, after the entries above are recorded and before the summary.
    restating them here duplicates the record instead of orienting a reader. Leave out narration of
    how the set was read too, this is what the job is, not how it was learned.
 4. **No length target.** As long as the job needs and no longer.
-5. Call `update_project(projectId, description: "<text>")`. The description, the structure value
-   from step 7, and the empty fields step 5 fills from the cover sheet are the only fields on the
+5. Call `update_project(projectId, description: "<text>")`, even where an earlier
+   `update_project` or the step 6 batch was refused: this write is tried on its own. The
+   description, the structure value from step 7, and the empty fields step 5 fills from the cover sheet are the only fields on the
    project this pass ever writes.
 
 ## 10. Compile the run-context packet
@@ -848,9 +958,15 @@ recorded as an entry, never stored as truth. Sections, in order:
 6. **Packages**, the packages on the project after step 8: name, catalog trade id, the other
    catalog trades it buys, and the manual sections it buys, per package; then the manual sections
    on no package with each one's reason, or the "spec reading hasn't run for this project" note
-   when step 8 created none. Where step 8 ran in its own agent, this section is the
-   `packages-section.md` that agent wrote in its split folder: append it to the packet with Bash
-   (`cat`), never read it into your context.
+   when step 8 created none. Where step 8 ran in its own agent and `packages-section.md` is in
+   its split folder, this section is that file: append it to the packet with Bash (`cat`), never
+   read it into your context, and open the section with the line
+   `from the package split's packages-section.md`. Where that file is not there, as after its
+   write was refused or a second miss, write this section from the split lines that came back
+   and the `solicitation_list_packages` read step 8 took, and open it with the line
+   `rebuilt from the split's lines and the packages read, packages-section.md not written`.
+   Where the package split's dispatch was refused, the section is the `not tried` line step 8
+   gives it.
 7. `[PLACEHOLDER, definitions-as-context envelope]`, a clearly marked final section; this
    pass does not design that envelope, it only reserves the slot.
 
@@ -872,6 +988,19 @@ no spec sections exist, `spec reading:` says spec reading hasn't run for this pr
 `packages:` says none were created. The packet's definitions-as-context section is a stub, not yet
 designed, and the summary does not name it.
 
+The `steps:` line names every step on it, each as one of three:
+
+- `done`: the step ran to its end with no call refused, whatever it found. A structure value left
+  blank because the set does not state it is done.
+- `refused`: the client refused one or more of the step's calls. Name each refused call and what
+  it would have read or written ("`update_project` for the address"). What the step's other calls
+  did stays on its own lines.
+- `not tried`: the step needed what a refused call would have given, or the run stopped before it.
+  Name that call, or `stopped` with what stopped the run: the precondition step 1 names, or a
+  `record_batch` count that did not match.
+
+A step is never left off the line and never `not tried` for any other reason.
+
 ## Your summary
 
 Written to the path your dispatch names and returned in this shape, counts and named items only
@@ -880,8 +1009,9 @@ Written to the path your dispatch names and returned in this shape, counts and n
 ```text
 sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n>   questions <n>
 stopped: <the precondition that failed and why, or "no">
+steps: <each of these, one per line, as done, refused + each refused call and what it would have done, or not tried + the refused call it needed or "stopped" + what stopped the run: project and set check, project fields, sheet list, spec sections, index check, renders, Overview fields, firms and people on the contacts, facts, structure, package split, description, packet>
 seeds present: <each field or predicate step 2 found filled, or "none">; seeds absent: <each one it did not, or "none">
-disciplines: <each discipline code the sheet inventory covered + its sheet count>; inventory read <whole, or by sampled searches per discipline>
+disciplines: <each discipline code the sheet inventory covered + its sheet count>; inventory read <whole, by sampled searches per discipline, or by the discipline search, the sheet list refused>; or "not read, the sheet list and the discipline search refused"
 learned: <each fact recorded in step 6, its predicate and its value as recorded, cut at 200 characters, one per line>
 left in place: <each step 6 predicate that already held a value on the project and was not written, or "none">
 replaced: <each step 6 predicate whose value this run replaced + who wrote the value it replaced, or "none">
@@ -889,8 +1019,8 @@ fields filled: <each empty Overview field, firm or person on the contacts step 5
 Network changed: <each firm step 5 added to the Network, each it gave a type + the type, each it gave a detail + the detail, and each person it added or gave a detail + the firm, or "none">
 reconciliation: <the gate's counts, or "not run for this set">
 spec reading: <sections confirmed + listed in the table of contents only, or "not run for this project">
-structure: <filled, the sheet that grounded the system + the sheet that grounded the floor counts; or blank, the half the set does not state>
-description: <written, or a person's left in place>
+structure: <filled, the sheet that grounded the system + the sheet that grounded the floor counts; or blank, the half the set does not state; or not written, its update_project refused>
+description: <written, or a person's left in place, or not written, its update_project refused>
 packages: created <n>, already on the project <n>, no catalog trade <names, or "none">
 packages created: <name + catalog trade id, one per line, or "none">
 packages already on the project: <name + catalog trade id, one per line, or "none">
@@ -901,7 +1031,7 @@ pages read for placement: <n> pages by <n> manual readers, <n> of <n> sections r
 placed by title alone: <each section code placed with none of its pages read, or "none">
 sections with no catalog trade: <section code + the package it went on, one per line, or "none">
 on no package: <section code + what stopped this run placing it, one per line, or "none">
-failed reads: <each render or page read that failed + its error, or "none">
+failed reads: <each read or write Plumlayer answered with an error + its error, or "none">
 questions raised: <the id of each Question raised, or "none">
 renders: <n> of 6, <"covered" or "the set is too large for six">
 packet: <path>
@@ -913,6 +1043,9 @@ created this run.
 ## Gates (non-negotiable)
 
 - **Cite everything.** No citation → don't emit the entry.
+- **A refused call stops that call alone.** Every other step is tried, each write once, and the
+  refused call is never sent again or reached through another verb, as "When a call is refused"
+  says. The `steps:` line names each step as done, refused or not tried.
 - **Net-new facts only.** Never re-create a field `project-setup` filled or an entry it seeded, or a
   sheet / spec-section entry `drawing-upload` already recorded.
 - **Judgment entries are cited and raise no Question to confirm them.** The raises are a

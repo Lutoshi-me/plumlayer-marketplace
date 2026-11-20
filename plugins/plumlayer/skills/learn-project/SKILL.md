@@ -42,6 +42,9 @@ manual they once filled most of that session. A user typing /learn-project, `pro
    packet to retell it: what orientation learned is on the record, and the summary says where.
    Where the summary did not arrive in the message, its summary file is the summary: open that
    file rather than dispatching again.
+4. Where the summary names a step as refused or not tried, leave it so. Never make the refused
+   call yourself, in this session or through another verb, and never dispatch the agent again for
+   it: the user hears in the closing report which call was refused, and decides.
 
 The project folder is `<runs root>/<projectId>/`, where `<runs root>` is `~/.plumlayer/runs` with
 the home directory written out: the folder `scope-run` uses, named for the project id and never for
@@ -73,9 +76,21 @@ sheets seen <n>   index findings <n>   spec sections <n>   packages drafted <n> 
 
 <!-- user-facing -->
 Where a user typed /learn-project, tell them, in plain terms, off that summary:
+- **What was done**, each step of the pass as done, refused or not tried, so a refusal reads apart
+  from a step left out: for each refused call, what it would have read or written, and for each
+  step not tried, the refused call it needed or what stopped the run before it. A refused call is
+  one the app running Plumlayer turned down, through its permission settings or the user's
+  answer, and every other step still ran. Say that running /learn-project again once that call is
+  allowed fills the address, the project type, the contacts, the description and the Structure,
+  Phasing and Site Conditions rows only where they are still empty, and adds only the packages,
+  and the sections, trades and site conditions on a package, that are missing; that it can add
+  what it newly reads to the scope areas, the set shape and the work the manual leaves out,
+  keeping what they already say; and that where the drawings state both the structural system
+  and the floor counts, it writes the building's structure and floor counts again from them over
+  what is there.
 - **What was read**, the project's identity, which of the facts project setup filled were present,
-  the disciplines covered, whether the project manual's table of contents was read, and any render
-  or page read that failed.
+  the disciplines covered, whether the project manual's table of contents was read, and any read
+  or write that failed.
 - **What was learned**, by kind: structure, phasing, site conditions, scope areas, set shape. Name any value already
   on the project that you left as it stands, and any you replaced, with who wrote it.
 - **What was filled on Overview** from the cover sheet and title blocks, with the sheet, each firm
@@ -97,12 +112,15 @@ Where a user typed /learn-project, tell them, in plain terms, off that summary:
   no trade for with the package it went on, and each section left on no package with what stopped
   its placing. No approval is collected.
 - **The structure**, the sheet that grounded the system and the sheet that grounded the floor
-  counts when it was filled, or that it was left blank and which half the set does not state.
-- **The description**, whether one was written or a person's was already in place and left alone.
+  counts when it was filled, that it was left blank and which half the set does not state, or
+  that its write was refused.
+- **The description**, whether one was written, a person's was already in place and left alone,
+  or its write was refused.
 - **Where the packet landed**, the full path.
 - **What a person should look at**, the facts recorded, visible on plumlayer.com with the page each
   one was read from, and any Question raised for a disagreement between documents or for a
   material or condition the set leaves open.
 
-Close by saying orientation is done and everything it made is on the project record.
+Close by saying orientation is done and everything it made is on the project record. Where a call
+was refused, name in the same sentence each step still undone because of it.
 <!-- /user-facing -->
