@@ -6540,7 +6540,7 @@ CONNECTOR_VERBS = {
     "list_definitions", "list_drawing_deliveries", "list_email_templates", "list_files",
     "list_invitation_flow_companies", "list_project_dates", "list_project_options",
     "list_projects", "list_questions", "list_scope_items", "log_question_reply_received",
-    "mark_question_sent", "pin_question_reply", "project_set_design_team_company",
+    "mark_question_sent", "order_scope_items", "pin_question_reply", "project_set_design_team_company",
     "question_board", "read_deliverables", "read_invitation_flow", "read_question_list",
     "read_set_text", "read_sheet_context",
     "recognize_sheets", "recognize_sheets_status", "reconcile_index", "reconcile_set", "record",
@@ -6587,10 +6587,6 @@ TOOLS_PROHIBITION_ONLY = {
     "scope-round-runner": {
         # The runner dispatches readers; it reads no scope list itself.
         "list_scope_items",
-    },
-    "scope-reviewer": {
-        # The reviewer adds what no row carries; retiring a row is the estimator's call.
-        "retire_scope_item",
     },
     "question-checker": {
         # The re-read settles the Questions already open: a new disagreement goes to the estimator,

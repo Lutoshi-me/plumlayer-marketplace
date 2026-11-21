@@ -131,7 +131,7 @@ Three modes:
         A window 3 anomaly is counted under the review its unit id names on the read plan beside
         the ledger; any other anomaly, and one whose unit the plan does not name, under its pass.
         One that names a pair of rows carrying the same work prints whole wherever it landed,
-        since the estimator retires one of the two, and so does one ending `sheet reading` or
+        since the estimator reads which row a review kept, and so does one ending `sheet reading` or
         `run only`, or with an ending this does not read. A line under a note that opens with
         none of the summary's labels continues that note, so an anomaly carrying one prints
         whole, its continuation under it, since its last words are not where it landed. Every
@@ -258,8 +258,8 @@ SUMMARY_LABELS = tuple(CHECKIN_LABELS) + (
     "ledger", "ledger lines",
 )
 
-# A pair of rows carrying the same work, as the reviewer names it, asks the estimator to retire
-# one of the two, so it prints whole wherever its sentence landed.
+# A pair of rows carrying the same work, as the reviewer names it, tells the estimator which row
+# was kept and whether the other was retired, so it prints whole wherever its sentence landed.
 SAME_WORK = " same work: "
 
 # A window 3 unit line as the plan script writes it, ` verified` added once its review verified.

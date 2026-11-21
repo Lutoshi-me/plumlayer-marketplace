@@ -255,7 +255,12 @@ Removing a scope item is different: `retire_scope_item` is the one door for that
 and an agent alike. Use it only for a row the user asked removed, put the user's ask in `basis` in
 their words, one item per call; a row you merely suspect is wrong goes in the report. An approved
 recheck plan, which retires the rows the new delivery removed, is that ask: the recheck's retire
-step puts the words the user approved the plan with in `basis`, and nothing else it retires.
+step puts the words the user approved the plan with in `basis`, and nothing else it retires. The
+read plan the user approves before the reading starts is that ask for one more act: a package
+review retires the other row of two rows on its package that carry the same work, once the kept
+row cites every page the other did, with the plan's sentence in `basis`, and names the pair for
+the check-in. Where the user asks for a combined row back, `restore_scope_item` puts it back:
+name the row you restored.
 
 ## The scope item row
 
@@ -1062,6 +1067,9 @@ Before any reading runs, tell the user, in a few plain sentences, not a table:
 - What is deliberately left out, by sheet family or number. Say it plainly: anything here will not
   be scoped.
 - When the first check-in will be, roughly.
+- That each package review combines rows that carry the same work into one and puts each
+  heading's rows in order, and that the check-in names every row a review combined, so they can
+  have one put back.
 - On a pass on an addendum: you read only the sheets the addendum prints, naming how many, its
   schedules and legends first where it has any, and afterward you review only the packages this
   pass writes rows on.
@@ -1073,7 +1081,8 @@ Before any reading runs, tell the user, in a few plain sentences, not a table:
 
 For example: "Architectural schedules and legends first, then structural notes, then the
 mechanical, electrical and plumbing schedules. I'm leaving out the ADA mounting-height sheets and
-the landscape set. First check-in in about twenty minutes. Go, or change anything."
+the landscape set. Each package review combines rows that carry the same work and tells you
+which. First check-in in about twenty minutes. Go, or change anything."
 
 Never show passes as a table, counts of dispatches, bundle codes, lanes, model names, or anything
 about how the run is executed. Never offer a recommended option.
@@ -1497,7 +1506,9 @@ On the go-ahead:
 <!-- user-facing -->
 At each of these check-ins, name the packages you finished, say their pages are ready to look at,
 and name what you raised on them and what you would like them to look at. Name each pair of rows
-the reviews found carrying the same work, the row that now carries every sheet and the one left
+the reviews found carrying the same work. For a pair a review combined, name the row kept and
+the row it retired into it, and say they can tell you to put the retired row back. For a pair a
+review left standing, name the row that now carries every sheet and the one left
 to retire, and say they retire it on the site or tell you to. Where a manual section ran past one
 review's pages, say you read the rest of it in a further review only where the check-in lists
 that section as read to its end in a further review. Where it lists the section to look at, name
@@ -1594,13 +1605,20 @@ the citations.
 <!-- user-facing -->
 Report to the user, in plain words:
 
-- **The scope list**: how many items, by trade and by category family; where to review it (each
+- **The scope list**: how many items, by trade and by category family. The `verified` lines count
+  every row a unit created, so say beside the total, as a figure of its own, how many rows the
+  reviews combined into another row, one for each window 3 `same work:` note that reads
+  `combined`. Say it as what the reviews did: no line records a row they had put back since,
+  which is on the list again. Take nothing off the total or a trade's figure:
+  a combined row can be one an earlier pass or a person wrote. Then where to review it (each
   trade's page and the project's Scope view on plumlayer.com), and that every line shows every
   sheet it appears on, plans included.
 - **What you would like them to look at**: the items you weren't sure how finely to split, the
   document defects found (contradictions, missing schedule rows, duplicate sheets), and the
   assumed items that don't fit this job, each counted by kind and the leading ones named. Name
-  each pair of rows the reviews found carrying the same work, the row that now carries every sheet
+  each pair of rows the reviews found carrying the same work: for a pair a review combined, the
+  row kept and the row it retired into it, and say they can tell you to put the retired row
+  back; for a pair a review left standing, the row that now carries every sheet
   and the one left to retire, and say they retire it on the site or tell you to.
   Document defects worth sending to the design team are the open Questions, by the trades they
   name, with the every-trade ones and the not-known-yet ones apart, among them the sections of the manual no sheet shows and the work on the sheets the manual never
