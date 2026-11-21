@@ -155,8 +155,8 @@ then move on:
 - The **drawing-set inventory**, which issues exist and their dates (the drawing index *is* this;
   the registration and recognition in step 5 produce it).
 
-**Size** (gross area, floor and unit counts) is not read off the set by any step yet. Never ask for
-it; when the user volunteers it, step 4 records it.
+**Size** (gross area, floor and unit counts) is read off the set during orientation where a sheet
+states it. Never ask for it; when the user volunteers it, step 4 records it.
 
 ### How the ask-now questions are put
 
@@ -414,7 +414,7 @@ message).
 
 | Fact | subject | predicate | value |
 |---|---|---|---|
-| Size | `project` | `grossArea` / `floorCount` | e.g. `42,000 SF` / `6` |
+| Size | `project` | `grossArea` / `unitCount` / `floorCount` | e.g. `42,000 SF` / `84` / `6` |
 | Trade in scope | `project` | `tradeInScope` | one entry listing every trade |
 | Known set | `set:<id>` | `issueStatus` | `conformed` / `permit` / `bulletin-02` / … |
 | Set date | `set:<id>` | `issueDate` | ISO date |
@@ -519,10 +519,8 @@ rather than restating it from what an earlier step said:
   Name each of Phase, Project Type, Total Area, Units and Market in the words the
   `learn-project` skill's closing report gives: filled with its sheet, already set and left as it
   stands, left blank with why, not read because a call it depends on was refused, or not written
-  because its call was refused. Orientation never fills Units or Market for now, Units because the
-  project record has no place yet for the sheet a unit count was read from and Market because the
-  company has no list of markets to pick from; either one a person already entered is named as
-  already set.
+  because its call was refused. Orientation never fills Market, because the company has no list of
+  markets to pick from; a market a person already entered is named as already set.
 - **What a person should look at on plumlayer.com:** any Question raised for two documents that
   disagree, among the project's Questions; the fields filled on Overview, each carrying your
   name and the time; and the facts recorded, each carrying your name, the time, and what you read

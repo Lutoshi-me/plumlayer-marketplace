@@ -154,8 +154,8 @@ failed read or write, and goes on `failed reads:`.
    answer from item 1 carries the project's fields: `projectType`, `ownerProcess` (procurement),
    `contractType`, `location`, and the firms on its contacts (`owners`, `architects`,
    `designTeam`). `list_project_dates(projectId)` carries the owner's bid date (kind `owner_bid`)
-   and any other date on the project. For each of `grossArea`, `floorCount`, `tradeInScope`,
-   `knownExclusion`, call `search(projectId, predicate: "<predicate>")` and read what's there. These
+   and any other date on the project. For each of `grossArea`, `unitCount`, `floorCount`,
+   `tradeInScope`, `knownExclusion`, call `search(projectId, predicate: "<predicate>")` and read what's there. These
    feed the packet's Identity section directly.
 3. **Sheet inventory.** Call `list_drawing_deliveries(projectId)` for the registered deliveries, then
    attempt `set_grid(projectId)` once. A set_grid payload on a set of real size can be large enough to
@@ -283,8 +283,21 @@ the next target.
      must be 1; any other count stops the run, as a mismatch in step 6 does. Never add figures
      up, never take a floor's, the site's or a net area, and never write `sizeSf`. The set states
      no gross area, or two pages state different figures: leave it empty.
-   - Units and Market are never filled. Units takes no citation on the record, and the company
-     keeps no list of markets to pick from.
+   - Units, when `get_project`'s `units` is null and step 2's `unitCount` search found no row on
+     subject `project`: only where a cover sheet, a code summary or a unit matrix states the
+     building's count of dwelling units as one printed figure. Where the cover does not state it,
+     read the one sheet whose title names a unit matrix, a unit mix, a code summary or a code
+     analysis, found with `search(projectId, predicate: "hasTitle", text: "<words>")`, whether or
+     not Total Area read a sheet, with `get_page_text` alone; it takes no render. Record it in its own
+     `record_batch(projectId, entries)` call of one entry, apart from step 6's batch and from
+     Total Area's: subject `project`, predicate `unitCount`, value the count as a bare whole number
+     (e.g. `"84"`), `sourceInstrument` the file's name, and `evidence` one sheet citation in step
+     6's shape, its `snippet` the words as printed. The returned `count` must be 1; any other count
+     stops the run, as a mismatch in step 6 does. Never add up a schedule's rows or count units off
+     the plans, never take a count of keys, beds, rooms or parking spaces, and never write
+     `units`. The set states no count of units, or two pages state different counts: leave it
+     empty.
+   - Market is never filled. The company keeps no list of markets to pick from.
    - Status is never filled.
    - The owner, the owner's representative, the architect and each engineer the sheet names, the
      owner first. A second owner or a second architect, beside a different firm of that role
@@ -345,8 +358,7 @@ the next target.
    Name each of Phase, Project Type, Total Area, Units and Market on the summary's `Overview
    fields` line: filled, with the sheet; already set, left as it stands; left blank, with why (the
    set does not state it, no entry of the company's list fits or more than one does, two pages
-   state different figures, the record cannot yet cite a unit count, the company has no market
-   list); not read, a call it depends on refused; or not written, its call refused. Name the address and each firm and person put on,
+   state different figures, the company has no market list); not read, a call it depends on refused; or not written, its call refused. Name the address and each firm and person put on,
    with the sheet, on the summary's `fields filled` line; each firm added to the Network, given a
    type or given a detail, and each person added or given a detail, on `Network changed`; and on `not filled`, each thing a sheet
    states that you left off and why: the field already held something different, a firm or person
@@ -1101,7 +1113,7 @@ disciplines: <each discipline code the sheet inventory covered + its sheet count
 learned: <each fact recorded in step 6, its predicate and its value as recorded, cut at 200 characters, one per line>
 left in place: <each step 6 predicate that already held a value on the project and was not written, or "none">
 replaced: <each step 6 predicate whose value this run replaced + who wrote the value it replaced, or "none">
-Overview fields: <each of Phase, Project Type, Total Area, Units and Market, one per line, as filled + the sheet it was read from, already set + left as it stands, left blank + why, or not written + its refused call>
+Overview fields: <each of Phase, Project Type, Total Area, Units and Market, one per line, as filled + the sheet it was read from, already set + left as it stands, left blank + why, not read + the refused call it depends on, or not written + its refused call>
 fields filled: <the address, if step 5 filled it, and each firm or person on the contacts step 5 put on + the sheet it was read from, or "none">; not filled: <each other thing a sheet states that step 5 left off + why, or "none">
 Network changed: <each firm step 5 added to the Network, each it gave a type + the type, each it gave a detail + the detail, and each person it added or gave a detail + the firm, or "none">
 reconciliation: <the gate's counts, or "not run for this set">
@@ -1163,7 +1175,8 @@ created this run.
   first and skip any catalog trade id already represented on the project.
 - **Status is a person's categorization; no skill sets it.** Orientation writes to the project
   only what steps 5, 7 and 9 name: an empty address, Project Type or Phase, an empty Total Area
-  as a cited `grossArea` entry, a firm or person on the contacts (step 5),
+  as a cited `grossArea` entry, an empty Units as a cited `unitCount` entry, a firm or person on
+  the contacts (step 5),
   the structure value (step 7), and `description` when a person hadn't already written one.
 
 ## Deferred (named, not skipped silently)
