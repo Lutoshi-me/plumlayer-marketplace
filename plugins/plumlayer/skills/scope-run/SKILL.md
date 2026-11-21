@@ -124,7 +124,8 @@ that relaxes any one of them reproduces a measured, named failure.
    listed. The record refuses a create whose name the project already carries, on any trade and
    under any category, and names the row that holds it: work another trade's pass already captured
    is updated, never created again, and the reader turns that refusal into an update on the named
-   row and sends again. Before raising a Question, read every Question on the project, closed
+   row and sends again, except where the named row is different work on another trade, which
+   takes a name saying how it differs. Before raising a Question, read every Question on the project, closed
    ones included: `list_questions` with `status: "all"` and no trade filter, paged until it comes
    back whole. A trade filter drops the Questions that name other trades and the ones still at not
    known yet, and the reader's own page read carries only the open ones on its own trades. Where an
@@ -184,14 +185,20 @@ that relaxes any one of them reproduces a measured, named failure.
    lead reports as runner-verified rather than asserting a check it did not run. The lead never calls the unfiltered `list_scope_items` during
    the run: that verb walks the whole scope list, and pulling it is how the lead's context stops
    being cheap. Counts only, `limit: 0`, is the one call the lead makes on it.
-6. **Grain.** One row per product across the job, as the reader's mandate 1 says: one row per
-   product type, and one row per product where the set names the product. A
-   product type is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
-   medicine cabinet, a walk-off mat, an acoustic underlayment. Where the set names products by a
-   model number, or by a legend or schedule code that stands for one product, each product is its
-   own row, named with its code and what it is ("Towel bar TA-04, 24 inch", "Medicine cabinet
-   MC-2, 16 by 22 inch"), with the model on the schedule row or section the row cites, and in the
-   description only where no page the row cites shows it. Instances are never rows: one towel bar
+6. **Grain.** One row per product across the job, as the reader's mandate 1 says, and a product
+   here is a line an estimator writes on the trade's scope sheet: a system, an element or a kind
+   of product, never a tag, a size or a model. A
+   kind of product is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
+   medicine cabinet, a walk-off mat, an acoustic underlayment. Several of one kind that differ
+   only in size, capacity, model, mounting or place are one row for the kind ("Exhaust fans"),
+   with every code written out in its description. Equipment that works as one system and that
+   one sub buys together is one row for the system. The parts every bidder who prices a row
+   carries, a typical detail and a general note are never rows, the tests that follow aside. Work
+   under a broader row is a row
+   of its own only where another trade could carry it, bidders often leave it out or qualify it,
+   it is priced on its own and no broader row covers it, an unusual requirement moves the price,
+   or the set asks for a separate price; the reader's mandate 6 says each in full. Instances are
+   never rows: one towel bar
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
    where the set states how many there are, that figure is its quantity, and a count the run
    makes of them never is. One product is two rows only where the
@@ -200,10 +207,11 @@ that relaxes any one of them reproduces a measured, named failure.
    is read for the products and types it calls for ("Luxury vinyl tile flooring, LVT"), never
    one row for the whole schedule. A schedule of one assembly's types that differ only in size or
    spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
-   written out. Windows and doors are never such an assembly: the reader's mandate 6 lists how
+   written out in its description. Windows and doors are never such an assembly: the reader's
+   mandate 6 lists how
    each common schedule of types lands on every run, a row per window type and per balcony door
    type beside the rows for the window work every type shares, and one row per family, every code
-   written out, for interior doors, partitions and panelboards. Never copy a schedule's columns into a row: the row names its product and cites
+   written out in its description, for interior doors, partitions and panelboards. Never copy a schedule's columns into a row: the row names its product and cites
    the schedule row that defines it, with a box on that schedule row built from the page's text
    read, never from a render, or the sheet with no box where no line of the read carries that
    row, named on the reader's `anomalies:` line. A row is never a whole sheet
@@ -253,15 +261,16 @@ step puts the words the user approved the plan with in `basis`, and nothing else
 
 A newly created scope item is a full row, not a name. Every new item writes:
 
-- **name** (required): the line as it reads on a scope sheet, complete on its own, so the estimator
-  reads a package's names top to bottom and knows what each row prices without its description:
-  what is done, to what, where, the way a sub would say it, with the type, material, finish, size
-  or extent that tells it apart from the row beside it, read off a page the row cites ("Repoint
-  brick masonry at facade", "Install lintels above CMU openings", "Gypsum board ceilings, moisture
-  resistant, unit baths"; not a recitation of every type mark). About twelve words and never past
-  the door's 80 characters; where everything will not fit, the name keeps what tells the row apart
-  and the description carries the rest. A mark or tag belongs here when it is how the sub finds
-  the work.
+- **name** (required): the short line an estimator writes on a scope sheet, so one reading a
+  package's names top to bottom takes each in at a glance: the work, the way a sub would say it,
+  and at most one qualifier, the kind, the material or the place, only where it tells the row
+  apart from the row beside it or changes the price, read off a page the row cites ("Repoint
+  brick masonry at facade", "Install lintels above CMU openings", "Moisture resistant gypsum
+  board ceilings at unit baths"). About six words is usual and ten the most, never past
+  the door's 80 characters. Sizes, capacities, makers, model numbers and lists of
+  tags go in the description, and bar sizes are left to the citation; a size or a tag is in the
+  name only where it alone tells two rows
+  apart, and the title of the sheet the work was read on is never a place.
 - **category** (required): the heading the row sits under on its trade's scope sheet, in Title Case,
   with a, an, and, as, at, by, for, from, in, into, of, on, or, the, to and with lowercase after the
   first word. On a structure, envelope, site or MEP trade it names the kind of work or the system
@@ -321,16 +330,19 @@ A newly created scope item is a full row, not a name. Every new item writes:
   lines; `ve-alternate` stays the user's to write. A bare word is refused and the batch is atomic,
   so it costs every entry in the batch.
   The `<trade>` in that predicate is the same catalog code, and the door reads it there too.
-- **description** (optional, and most rows have none): written only where a bidder needs a detail
-  to price the line that the name cannot hold: the product or method, the extent or limits, a rated
-  or special condition, with a page the row cites showing where it comes from. One short sentence
-  is usual, and two short sentences and about thirty words the most, not counting the codes the row
-  names. Never a detail already shown by the name or a page the row cites, except for a finish's
+- **description**: the detail a bidder prices that the name leaves out, written wherever the row
+  has any: the tags or codes the row covers, the sizes, thicknesses or capacities that tell its
+  types apart, the maker and model where the set names one, the product or method, the extent or
+  limits, a rated or special condition, each with a page the row cites showing where it comes
+  from. Short phrases an estimator would write, sizes as the drawing prints them, about thirty
+  words the most, not counting the codes the row names. A row whose name says all a bidder prices
+  has none. Never a detail the name already shows, except for a finish's
   whole extent that the name cannot hold, the reader's mandate 1's two products in a disagreement,
   an allowance's amount and what it covers, an assembly's full code list, or a row whose name is
   fixed by its kind (a grouped requirement row or a standard line), which carries in its description
   the products, sections, amounts and the job's own words its mandate lists, whole; never a spec
-  article number, a schedule's values or a tag the row is not for, since the citation carries them.
+  article number, a schedule's columns copied out whole or a tag the row is not for, since the
+  citation carries them.
   On a finish row the extent is the rooms or
   room types the room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2
   to 5"), read off the finish schedule and never off a material key or legend alone, which says

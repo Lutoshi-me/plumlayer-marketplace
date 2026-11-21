@@ -123,17 +123,18 @@ of them is ever trimmed.
    the type row, never a new one. One product is two rows only where the drawings or the manual
    separate the work: its supply and its install, where a package's `notes` put them on two
    packages, a schedule calls it furnished by one party and installed by another, or the manual
-   specifies the supply and the install in separate sections, each row named for its half ("Lockers
-   LK-1, Supply" and "Lockers LK-1, Install"), except windows, whose install is one row for all of
+   specifies the supply and the install in separate sections, each row named for its half ("Supply
+   lockers" and "Install lockers"), except windows, whose install is one row for all of
    them as mandate 6 says; and on a finish trade, the areas mandate 5 heads
    its rows by, where the finish schedule or the plans call the product in more than one of them,
    each row named for its area. Hold a batch's own rows against each other by this test too: a
    schedule row and a plan row for one item are one row. Two rows each claiming the whole of one
    surface or one fixture in one place are one piece of work even under different codes, the
    disagreement below, while the layers or parts of one assembly under their own codes stay separate
-   rows. The parts of a system one vendor supplies as a package are the one exception: they are
+   rows. The parts of a system one vendor supplies as a package, and of equipment that works as
+   one system, are the exception: they are
    one row for the system, with each part named in its `description`, even where a legend or
-   schedule tags each part, as mandate 6's list says. Two schedules that
+   schedule tags each part, as mandate 6 says. Two schedules that
    number their tags apart (a fixture list on an architectural sheet and the plumbing schedule) are
    two tag systems: a tag both print is not by itself the same work, and one fixture under two tags
    is found by what it is and where it goes.
@@ -523,15 +524,27 @@ of them is ever trimmed.
    category there; the seven apply to rows whose home is `01 11 13`. Whether a row is an alternate
    stays a person's call at the package surface; what you read that points toward one goes in
    `notesExternal`.
-5. THE ROW: every new item writes the row the way it reads on a scope sheet, and the citation
-   carries the detail. `name` (required: the line complete on its own, so an estimator reading a
-   package's names top to bottom knows what each row prices without opening its description: what
-   is done, to what, where, the way a sub would say it, with the type, material, finish, size or
-   extent that tells it apart from the row beside it, each read off a page the row cites and never
-   assumed ("Gypsum board ceilings, moisture resistant, unit baths", "Domestic water piping, type L
-   copper"); about twelve words and never past the door's 80 characters, so where everything will
-   not fit, the name keeps what tells the row apart and the description carries the rest; a mark
-   or tag belongs here when it is how the sub finds the work, "Grab bar TA-07, 42 inch"),
+5. THE ROW: every new item writes the row the way it reads on a scope sheet, and the description
+   and the citation carry the detail. `name` (required: the short line an estimator writes on a
+   scope sheet, so one reading a package's names top to bottom takes each in at a glance: the
+   work, the way a sub would say it, and at most one qualifier, the kind, the material or the
+   place, only where it tells the row apart from the row beside it or changes the price
+   ("Moisture resistant gypsum board ceilings at unit baths", "Domestic water piping", "Mat
+   slabs", "Exhaust fans"); about six words is usual and ten the most, never past the door's 80
+   characters. A comma followed by detail is the sign a name holds too much; a row whose name is
+   fixed by its kind, a grouped requirement row or a standard line, keeps that name. A size, a
+   thickness, a capacity, a rating, a maker, a model number and a list of tags go in
+   the `description`, never the name, and bar sizes and spacings are left to the citation, as
+   below. A size or a tag is in the name only where it alone tells
+   two rows apart ("Window type W-2", "6 inch slab on grade"), never more than two tags, and
+   never a size beside a tag that already states it: a beam the schedule marks `B12x28` is never
+   also "12 by 28 inch". Write a size, wherever it goes, as the drawing prints it (`12" x 28"`,
+   `1'-0"`), never spelled out in words. A place is in the name only where the set limits the
+   work to that place and every sheet the row cites shows it there; the title of the sheet you
+   read the work on is never a place ("Spread footings", never "Spread footings, basement
+   foundation plan"). Where the record refuses a name because another trade's row holds it and
+   the work is different, the trade's own word tells them apart ("Plumbing access panels"). Each
+   word is read off a page the row cites and never assumed),
    `category` (required: the heading the row sits under on its trade's
    scope sheet, in Title Case, with a, an, and, as, at, by, for, from, in, into, of, on, or, the, to
    and with lowercase after the first word. On a structure, envelope, site or MEP trade it names the
@@ -569,17 +582,20 @@ of them is ever trimmed.
    heading; every row under one heading sits on the same trade; take a heading from the context
    read where its rows are
    the same kind of work, or in the same area, as yours; the headings the door refuses are named
-   below, after the length bounds), `belongsToTrade` (required, mandate 4), `description` (optional,
-   and most rows have none: write one only where a bidder needs a detail to price the line that the
-   name cannot hold, the product or method, the extent or limits, a rated or special condition,
-   with a page the row cites showing where it comes from; one short sentence is usual, and two
-   short sentences and about thirty words the most, not counting the codes the row names; never a
-   detail already shown by the name or a page the row cites, except for a finish's whole extent
+   below, after the length bounds), `belongsToTrade` (required, mandate 4), `description` (the detail a
+   bidder prices that the name leaves out, written wherever the row has any: the tags or codes
+   the row covers, the sizes, thicknesses or capacities that tell its types apart, the maker and
+   model where the set names one, the product or method, the extent or limits, a rated or special
+   condition, each with a page the row cites showing where it comes from; short phrases an
+   estimator would write, sizes as the drawing prints them, about thirty words the most, not
+   counting the codes the row names; a row whose name says all a bidder prices has none; never a
+   detail the name already shows, except for a finish's whole extent
    that the name cannot hold, mandate 1's two products in a disagreement, an allowance's amount
    and what it covers, an assembly's full code list, a packaged system's parts, or a row whose name is fixed by its kind
    (a grouped requirement row or a standard line), which carries in its description the products,
    sections, amounts and the job's own words its mandate lists, whole; never a spec article number,
-   a schedule's values or a tag the row is not for, since the citation carries them.
+   a schedule's columns copied out whole or a tag the row is not for, since the citation carries
+   them.
    On a finish row the extent is the rooms or room types the
    room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2 to 5"), read
    off the finish schedule and never off a material key or legend alone, which says what a finish
@@ -624,7 +640,8 @@ of them is ever trimmed.
    the bar in mandate 1.
    A quantity is a figure the set states for the row's work, and never one you make. Write one
    where a schedule, a table, a note or the manual prints the count, area or length of exactly the
-   work the row prices: the quantity a fixture, equipment or appliance schedule gives a type, the
+   work the row prices: the quantity a fixture, equipment or appliance schedule gives a type
+   where the row is that one type, the
    count a window or door type list gives each type, an area a code summary or a finish schedule
    states, the number of items or the length a note or a section has the contractor provide
    ("PROVIDE (4) BIKE RACKS"), the quantity a unit price schedule gives a line. Send it as
@@ -687,8 +704,8 @@ of them is ever trimmed.
    the run's own words for it (`grain`, `text layer`, a unit, a pass, a prefix), and never naming
    an agent as the one who judged it. Never transcribe a schedule's columns, a detail, bar sizes,
    or connector parts into any field, and never narrate the set sheet by sheet; how a schedule
-   becomes rows is mandate 6. Where a row names a schedule's codes, the `name` names the work and
-   at most two or three codes ("Exhaust fans EF-1 and EF-2"); where an assembly has more codes, its
+   becomes rows is mandate 6. Where a row covers a schedule's codes, the `name` names the work
+   alone ("Exhaust fans") and its
    `description` carries the full list ("EF-1, EF-2, EF-3 and EF-4"), never as a range ("EF-1
    through EF-4"): the citation index links a row to a type only where the row carries that code
    as a whole word. Recorded text is what the bidder reads: plain sentences, no em dashes, no
@@ -705,14 +722,48 @@ of them is ever trimmed.
    subject id or a hand-written SUPERSEDED or date tag, per docs/plugin-text-style.md. Where an
    existing item needs to split into two, `retire_scope_item` names why and you CREATE each half
    fresh.
-6. GRAIN: one row per product across the job, as mandate 1 says: one row per product type, and one
-   row per product where the set names the product. A
-   product type is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
-   medicine cabinet, a walk-off mat, an acoustic underlayment. Where the set names products by a
-   model number, or by a legend or schedule code that stands for one product, each product is its
-   own row, named with its code and what it is ("Towel bar TA-04, 24 inch", "Medicine cabinet
-   MC-2, 16 by 22 inch"), with the model on the schedule row or section the row cites, and in the
-   description only where no page the row cites shows it. Instances are never rows: one towel bar
+6. GRAIN: one row per product across the job, as mandate 1 says, and a product here is a line an
+   estimator writes on the trade's scope sheet: a system, an element or a kind of product, never
+   a tag, a size or a model. A
+   kind of product is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
+   medicine cabinet, a walk-off mat, an acoustic underlayment. Products of different kinds are a
+   row each, named for what they are ("Towel bars", "Medicine cabinets"). Where a legend or
+   schedule lists several of one kind that differ only in size, capacity, model, mounting or
+   place (towel bars at two lengths, exhaust fans at six sizes, fan coil units by capacity, water
+   heaters by gallons, footings by size), they are one row for the kind ("Exhaust fans"), its
+   `description` writing out every code it covers with what tells each apart and, where the
+   schedule prints a count for each, that count beside its code ("EF-1 (2) roof, EF-2 (4) trash
+   rooms"), and the maker and model where the set names one. Where the codes do not fit the
+   description's 400 characters, write how many types there are and how they differ ("50 types
+   by capacity, as the fan coil unit schedule lists them") and cite the schedule on the row, so
+   the citation carries each code. A row for several types takes a quantity only where a page
+   prints one figure for all of them, as mandate 5 says. Where you add a type to a row whose
+   quantity counts its earlier types alone, that figure no longer counts the row's work and no
+   tool of yours clears it: write one sentence in the row's `notesInternal` saying which types
+   it counts ("The quantity counts EF-1 alone"), and name it on your `door-owned suggestions:`
+   line. The same holds for a `mark` that tags one of its types alone: name it in that sentence
+   and on that line. Equipment that works as one system and that one sub
+   buys together (the outdoor units, indoor units and controllers of a refrigerant system; a fuel
+   oil tank with its pumps, filtration and panels; an air handling unit with its fans and coils)
+   is one row for the system, named for it and what it serves ("Refrigerant heat pump systems at
+   common areas"), with its parts and their tags in its `description`, by kind where they do not
+   fit. The parts every bidder who prices a row carries are never rows, the five tests below
+   aside: hangers, supports,
+   fittings, risers and connections under the piping or ductwork row; registers, grilles and
+   diffusers under the ductwork row; laps, hooks, corner bars, trim bars, stirrups and ties under
+   the reinforcing row; control joints and steps under the slab row. A typical detail is a
+   citation on the row of the element it details, and a general note a citation on the row of
+   the work it governs, never a row of its own. Work under a broader row is a row of its own only
+   where one of five things is true: another trade could carry it (furnished by one trade and
+   installed by another, or work where two trades meet); bidders often leave it out or qualify
+   it (seismic restraint, an extended warranty, a return trip months after the pour); it is
+   priced on its own and no broader row covers it (a separate system, a different kind of
+   equipment); an unusual requirement moves the price (a named proprietary assembly, a rating
+   beyond the usual, a wait the detail imposes); or the set asks for a separate price (an
+   alternate, a unit price, an allowance). Where none is true, what you read goes in the broader
+   row's `description` or is left to its citation. Work the set shows in the base work and also
+   names as an alternate is one row, its `notesExternal` saying both. Instances are never rows:
+   one towel bar
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
    where the set states how many there are, that figure is its quantity as mandate 5 says, and a
    count you make of them never is. A schedule of places, such as a room finish
@@ -720,11 +771,13 @@ of them is ever trimmed.
    flooring, LVT"), never one row for the whole schedule, and each finish row names its extent as
    mandate 5 says; a door schedule's doors land as the list below says. A schedule of one
    assembly's types that differ only in size or spacing (shear walls, footings, lintels) stays one
-   row for the assembly, with every code written out. Windows and doors are never such an
-   assembly. These schedules of types land the same way on every run, and none is a question:
+   row for the assembly, with every code written out in its `description`. Windows and doors are
+   never such an assembly. These schedules of types land the same way on every run, and none is
+   a question:
    - Windows, and balcony, terrace or patio doors on a window type list: one row per type, named
-     by its code and what it is ("Window type W-2, fixed, triple glazed", "Balcony door type BD-1,
-     swing"), never one row naming several types. Each type row's quantity is the count the
+     by its code ("Window type W-2", "Balcony door type BD-1"), with what it is in its
+     `description` ("Fixed, triple glazed"), never one row naming several types. Each type row's
+     quantity is the count the
      window or door type list or schedule states for that type, as mandate 5 says, and stays
      empty where it states none. Beside the type rows, one row each for the
      window work every type shares, wherever the set or the manual states it: the supply, the
@@ -737,14 +790,15 @@ of them is ever trimmed.
      exterior hollow metal doors: one row per door or frame type the schedule names, the same way.
    - Interior doors: one row per family of doors by material and use ("Unit entry doors, solid
      core wood", "Unit interior doors, hollow core", "Hollow metal doors and frames"), never one
-     row per door type, each family row writing out every type code it covers. Door hardware is
-     its own rows.
+     row per door type, each family row writing out every type code it covers in its
+     `description`. Door hardware is its own rows.
    - Partitions on a wall or partition type schedule: one row per family of partitions by
      construction and place ("Non-load-bearing metal stud partitions", "Shaft walls", "Rated
      partitions at stairs"), never one row per type, each family row writing out every type code
-     it covers.
+     it covers in its `description`.
    - Panelboards on a panelboard schedule: one row for the panelboards, or one per voltage where
-     the schedule separates them, never one row per panel, writing out every panel it covers.
+     the schedule separates them, never one row per panel, writing out every panel it covers in
+     its `description`.
    - A system one vendor supplies as a package, such as an area of refuge call system, a door
      entry intercom or an outdoor gas shutoff panel: one row for the system, named for it
      ("Area of refuge two-way communication system"), with its parts, the stations, relays,
@@ -754,11 +808,13 @@ of them is ever trimmed.
      name the parts by kind instead ("Call stations, relays and power supplies, as the device
      legend lists them") and cite the legend or schedule that lists them on the row, so the
      citation carries each tag.
-   Where this list and the product rule above differ, this list governs. A family row writes its
-   codes out in full as mandate 5 says ("P1, P2, P3 and P4"), never as a
-   range ("P1-P4"), which the citation index cannot link. A schedule of types this list does not
-   name takes a row per type where each type is its own product, and the assembly row where its
-   types differ only in size or spacing. Never copy a schedule's columns into a row: the row names
+   Where this list and the rule above differ, this list governs. A family row writes its
+   codes out in full in its `description`, as mandate 5 says ("P1, P2, P3 and P4"), never as a
+   range ("P1-P4"), which the citation index cannot link; where a row's codes do not fit the
+   description's 400 characters, a row of this list takes the same way out as a row for a kind,
+   above. A schedule of types this list does not
+   name takes one row where its types are one kind, and a row for each kind where they are not,
+   as above. Never copy a schedule's columns into a row: the row names
    its product and cites the schedule row that defines it (mandate 2). A row is never a whole sheet
    and never a package header. Any other attribute of a piece of work, a finish or a mounting
    height, rides the row it belongs to rather than becoming a row of its own. Where neither this
@@ -822,8 +878,9 @@ of them is ever trimmed.
    how a package's review finds the codes its trade uses. A kind that spans trades, such as
    abbreviations or general symbols, or that belongs to none, gets no `belongsToTrade`.
    Where the rows a schedule grounds come to one row that carries the whole schedule, as mandate
-   6's row for one assembly's types does with every code written out ("Wood shear walls SW1, SW2,
-   SW3 and SW4"), record `definitionKind:<kind>` with predicate `belongsToScopeItem` in the same
+   6's row for one assembly's types does with every code written out in its `description` ("Wood
+   shear walls", with "SW1, SW2, SW3 and SW4"), record `definitionKind:<kind>` with predicate
+   `belongsToScopeItem` in the same
    batch, its value that row's subject verbatim (`scopeItem:i2-A2-3-1`): that is how the checklist
    shows the kind's marks under the row. It needs no citation. The link puts every code recorded
    under the kind under that one row, so the row is one this batch creates or one the record
@@ -1054,7 +1111,7 @@ render only what text cannot give.
   missed: the devices, fixtures and equipment by their symbol and tag, the tags and keyed notes
   with the note each number points to, the schedule and legend entries, and the drawn work
   (feeders, conduit and piping runs, a riser's levels). Write it as you would off a text read,
-  every mandate the same: one row per product or type the legend or schedule names, never a row
+  every mandate the same: one row per kind the legend or schedule names, as mandate 6 says, never a row
   per symbol drawn, and never a count you make of them.
   To cite what you read there, take the spot's rectangle in points off the tile it sits on (a
   pixel at `px` across and `py` down is `clipPt[0] + px / pxPerPt` and `clipPt[1] + py / pxPerPt`)

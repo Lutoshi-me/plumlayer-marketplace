@@ -184,7 +184,9 @@ them is ever trimmed.
      batch's own rows held against each other by its test, as a reader's are. The record
      refuses a create whose name this project already carries, on any trade, and names the row that
      holds it; turn such a refusal into the citation and the note on that named row and send again,
-     the way reader mandate 1 does.
+     the way reader mandate 1 does, except where the named row is different work on another
+     trade, which leaves that row alone and takes a name saying how yours differs, as reader
+     mandate 5 says ("Plumbing access panels").
 5. ONE ROW PER PRODUCT ON THIS PACKAGE. You hold this package's whole row set, which is the only
    place in the run where it sits in one context. Use reader mandate 6's grain and reader mandate
    1's test, one row per product across the job, on the rows you create and on the rows already on
@@ -193,7 +195,11 @@ them is ever trimmed.
    one piece of work, found among this package's rows or between one of them and another package's
    row by reader mandate 1's search. So are rows that each carry a part of one system a vendor
    supplies as a package, the stations, relays and power supplies of an area of refuge call system
-   written one row each, as reader mandate 6's list says. The system's one row carries no part's
+   written one row each, as reader mandate 6's list says, and rows that each carry one tag, size
+   or model of one kind of product, or one part of equipment that works as one system, which
+   reader mandate 6 makes one row for the kind or the system and which take the system's
+   treatment here, the kept row named for the kind. A row reader mandate 6's five tests make a
+   row of its own is never one of these. The system's one row carries no part's
    quantity and no part's mark, and none of your tools clears either, so it carries a quantity only
    where the set prints a figure for the system itself, written by reader mandate 5's quantity
    rules. For a system, the kept row is the part row created first among those that carry no
@@ -585,8 +591,8 @@ them is ever trimmed.
       drawing search, and it is never left open because a search for it was too general, found
       nothing or was not run. Where a row on this package carries the work, the requirement goes
       on that row, every system, surface, area or level the section lists for it named in the
-      row's `name` where it tells the row apart and fits, writing over the name with
-      `supersedesId`, and otherwise in `description` as the extent reader mandate 5 permits, and
+      row's `description` as the extent reader mandate 5 permits, its `name` staying the short
+      line reader mandate 5 asks for, and
       the section's page cited on it. A row that names the work and leaves out a system or level
       the section lists for it does not yet carry the requirement. Where no row carries the work,
       it is one row at reader mandate 6's grain, cited to the page that states it in reader
@@ -596,6 +602,12 @@ them is ever trimmed.
       names both, each cited, and mandate 10 judges the disagreement; the row picks neither as the
       basis to price. Only a product, option or variant a section offers and no sheet places stays
       off the list, as mandate 9's second case says.
+    - A requirement a section states only above a size, a count or a rating (a spill plan for a
+      storage tank over a stated capacity, a test for piping over a stated pressure) is a row only
+      where this job meets that figure: read what the job has off a page this package's rows cite,
+      or with one `search_set_text` for the equipment, before you write. Where the job plainly
+      does not meet it, write no row for it. Where you cannot tell, as where the figure is a total
+      no page prints, write the row and say in its `notesInternal` what decides it.
     - A requirement that is its own service, fee, test or deliverable, the documentation and
       submittals of a green building rating, chain of custody certificates delivered, the
       contractor's share of a test, is a row, placed on a trade as mandate 13 places one. A
@@ -773,6 +785,14 @@ them is ever trimmed.
       the line is named `already on` it. A role for a standard line
       is never written onto a row of another package's trade, and a citation only onto the
       writer's row of a Which Trade half the paper gives to this package's trade, below.
+    - The row's note. A line's citation shows its condition, which is seldom a page that states
+      the row's own work, so an estimator who opens it has to be told why it is there. Each row a
+      line writes carries one sentence in `notesInternal`, in the estimator's words, saying it is
+      a line most bids for this trade carry and what the cited page shows ("A line most plumbing
+      bids carry. The cited sheet shows heat trace on the domestic water piping."), after the
+      `internal note:` words where the half has them and under reader mandate 5's rule for a note
+      already there. A line with no condition takes the one sentence the bullet on its evidence
+      gives it, below, and none from this one.
     - What each kind writes.
       - Pricing, a cost of the sub's own (tax, delivery, hoisting his own material, tariffs,
         pricing supply and install apart): one row on this package's `tradeCode`, `category`
