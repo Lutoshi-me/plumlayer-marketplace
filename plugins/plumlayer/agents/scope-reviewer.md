@@ -637,11 +637,10 @@ them is ever trimmed.
       contractor's share of a test, is a row, placed on a trade as mandate 13 places one. A
       requirement on who may supply or install the work, a certified steel fabricating plant and
       erector, a certified wood supplier, a manufacturer's approval of the installer, is a
-      qualification. Where it governs every row the section covers, it goes on the package's one
-      qualifications row, as the bullet after next writes it, cited to its article. Where it
-      governs only some rows of the section, it stays one sentence in `notesExternal` on those
-      rows, as reader mandate 5 says, the one case where a qualification stays a sentence on rows
-      and is not on the qualifications row. Where a row it governs
+      qualification. Where it governs every row the section covers, write no row and no sentence
+      for it: the section states it, and the bidder reads it there. Where it governs only some
+      rows of the section, it stays one sentence in `notesExternal` on those rows, as reader
+      mandate 5 says. Where a row it governs
       sits on another package, as when a section on this package governs work whose row is on
       another, write that sentence on that row, found by reader mandate 1's search. Testing or
       inspection the section
@@ -662,20 +661,21 @@ them is ever trimmed.
       already on the record. A page you open for any other mandate that states such a figure for a
       row on this package is read the same way. Where the row already carries a quantity, reader
       mandate 5 says when the figure is a citation, a correction or a Question.
-    - One row per kind for the package. The package's qualifications, its special warranties, its
-      extra materials, the mockups its sections have its installer build and the field tests its
+    - One row per kind for the package. The package's special warranties, its extra materials,
+      the mockups its sections have its installer build and the field tests its
       sub performs are one row each, never one row per product, per section or per mockup: the
       row cites each article it carries and names in its `description` each product or section it
       covers ("Manufacturer warranties, windows 10 years and glazing 5 years"), for extra materials
       what and how much of each, and for mockups each mockup with its section ("Fiber cement
       siding mockup, 07 46 46; metal wall panel mockup, 07 42 13"). Each is named for
-      its kind, `Qualifications`, `Special warranties`, `Extra materials`, `Mockups` or `Field tests`, and nothing more,
+      its kind, `Special warranties`, `Extra materials`, `Mockups` or `Field tests`, and nothing more,
       since the package's name heads its page; other packages carry rows of the same names, and
       mandate 14's bullet on the row's name says how a create repeats one. Each has
       `category` `General Items` and, in the same batch, one `packageRole:<that row's trade>`
       record valued `{ "role": "general-requirement" }`, so it sits in that package's General
-      Requirements section, the mockups row beside the package's qualifications and warranties.
-      A qualification, a warranty, extra materials or a mockup sits on this package's
+      Requirements section, the mockups row beside the package's warranties. The package has no
+      qualifications row, as the bullet on qualifications says.
+      A warranty, extra materials or a mockup sits on this package's
       `tradeCode`, and a field test on the trade mandate 13 places it on. A row whose trade is
       `01 11 13` takes no `General Items` category and no role record: it is a home row under one of
       the seven headings reader mandate 5 names for that package. Where a later section

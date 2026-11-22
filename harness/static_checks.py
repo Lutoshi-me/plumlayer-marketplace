@@ -14514,8 +14514,9 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
                 "099999 file-1111 p12"),
     ("reviewer", "it is the company's standard line for this trade, and no drawing or specification "
                  "calls for it"),
-    ("reviewer", "Each is named for its kind, `Qualifications`, `Special warranties`, `Extra "
+    ("reviewer", "Each is named for its kind, `Special warranties`, `Extra "
                  "materials`, `Mockups` or `Field tests`, and nothing more"),
+    ("reviewer", "Where it governs every row the section covers, write no row and no sentence"),
     ("reviewer", "add to the same batch one entry `{ \"subject\": <the new row's subject>, "
                  "\"predicate\": \"repeatsScopeItem\""),
     ("reviewer", "The furnishing row that covers both stays so both bidders price the install, and "
