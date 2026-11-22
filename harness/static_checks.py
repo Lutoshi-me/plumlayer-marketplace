@@ -14516,7 +14516,11 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
                  "calls for it"),
     ("reviewer", "Each is named for its kind, `Special warranties`, `Extra "
                  "materials`, `Mockups` or `Field tests`, and nothing more"),
-    ("reviewer", "Where it governs every row the section covers, write no row and no sentence"),
+    ("reviewer", "A qualification is never a row of its own."),
+    ("reviewer", "Where it governs every row the section covers, write it once, on the row that "
+                 "carries the section's main product."),
+    ("reviewer", "carries in its `description` each code with what tells it apart, and the maker "
+                 "and model where the set names one"),
     ("reviewer", "add to the same batch one entry `{ \"subject\": <the new row's subject>, "
                  "\"predicate\": \"repeatsScopeItem\""),
     ("reviewer", "The furnishing row that covers both stays so both bidders price the install, and "

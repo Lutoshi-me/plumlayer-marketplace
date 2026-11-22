@@ -636,16 +636,30 @@ them is ever trimmed.
       submittals of a green building rating, chain of custody certificates delivered, the
       contractor's share of a test, is a row, placed on a trade as mandate 13 places one. A
       requirement on who may supply or install the work, a certified steel fabricating plant and
-      erector, a certified wood supplier, a manufacturer's approval of the installer, is a
-      qualification. Where it governs every row the section covers, write no row and no sentence
-      for it: the section states it, and the bidder reads it there. Where it governs only some
-      rows of the section, it stays one sentence in `notesExternal` on those rows, as reader
-      mandate 5 says. Where a row it governs
+      erector, a certified wood supplier, a manufacturer's approval of the installer, years of
+      experience, one source for the whole system, a listing or approval the product must carry,
+      is a qualification, and so is the list of makers a section accepts for a product ("provide
+      products by one of the following"). Write each on the row that carries the work it governs,
+      in that row's `description` after what is already there, as short as the section allows
+      ("Makers: Maker A, Maker B or Maker C"; "Installer with five years on similar work";
+      "One source, FM 4991 approved"), cited to its article. Where it governs every row
+      the section covers, write it once, on the row that carries the section's main product.
+      Where it governs only some rows of the section, write it on those rows. Where the
+      `description` has no room, it goes as one sentence in that row's `notesExternal`, as reader
+      mandate 5 says. A qualification is never a row of its own. Where a row it governs
       sits on another package, as when a section on this package governs work whose row is on
-      another, write that sentence on that row, found by reader mandate 1's search. Testing or
+      another, write it on that row, found by reader mandate 1's search. Testing or
       inspection the section
       says the owner pays for, shop testing in its Part 2 among it, is no row, as mandate 13 says,
       and what the section has the contractor do for that test is still a row.
+    - A row on this package that covers several types or codes of one kind (shades by openness,
+      stone or quartz by type, fabrics, fixtures) carries in its `description` each code with what
+      tells it apart, and the maker and model where the set names one, as reader mandate 6 says.
+      Where it leaves any of that out and a schedule or section the row cites gives it (each
+      shade's openness, each fabric's color, each stone's maker and model), write it in from that
+      page, the page opened and named on your `pages opened:` line, under reader mandate 5's rule
+      for a field already written. Where it does not fit the 400 characters, take reader mandate
+      6's way out: how many types there are and how they differ, with the schedule cited.
     - Part 1 and Part 3 add four more a bidder prices. A special warranty, one the section
       requires beyond the contractor's standard warranty (a manufacturer's warranty for a stated
       number of years, a warranty on the installer's work). Extra materials, the spare stock the
@@ -674,7 +688,8 @@ them is ever trimmed.
       `category` `General Items` and, in the same batch, one `packageRole:<that row's trade>`
       record valued `{ "role": "general-requirement" }`, so it sits in that package's General
       Requirements section, the mockups row beside the package's warranties. The package has no
-      qualifications row, as the bullet on qualifications says.
+      qualifications row: a qualification goes on the row it governs, as the bullet on
+      qualifications says.
       A warranty, extra materials or a mockup sits on this package's
       `tradeCode`, and a field test on the trade mandate 13 places it on. A row whose trade is
       `01 11 13` takes no `General Items` category and no role record: it is a home row under one of
@@ -682,9 +697,8 @@ them is ever trimmed.
       adds to a kind whose row already exists, cite the new article on that row and add its product
       to the `description`, as reader mandate 5 says for a field already written. A special
       warranty, extra materials and a mockup always join their kind's row, naming the products
-      they cover;
-      the one `notesExternal` sentence that stays is a qualification that governs only some rows
-      of a section, written on those rows, as the bullet on qualifications says.
+      they cover; a qualification goes on the row it governs, as the bullet on qualifications
+      says.
     - A section whose `locatedAt` names no page range was listed in the table of contents only:
       name it on `sections not checked:` with that reason, and on `anomalies:` as
       `section <code> not read: no page range, run only`. A `not read:` note is for a section with
