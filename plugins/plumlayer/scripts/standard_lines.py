@@ -42,16 +42,16 @@ the line's order, separated by `; `. This script reads those files and nothing e
         package, then the lines of the files that go to `--package`, each line once under the first
         file carrying it, with its kind, the row's name, its condition and where to look; a line
         with no condition also prints the instrument its entries are written with,
-        `trade-convention:<file name>@<plugin version>`. The row's name is `<Row Name>, <package
-        name>` where that fits in 80 characters, otherwise `<Row Name>, <tradeCode>`. A Which Trade
+        `trade-convention:<file name>@<plugin version>`. The row's name is the line's row name and
+        nothing more: every package writes its row of a line under the same name. A Which Trade
         line also prints the trades it involves (the trades of the files carrying it, the trades it
         names and the trades its condition names, by the same words in any case), each with the
         package it goes to, and each half with whether this package writes it and the name of its
         row. Where this package writes it, that is this package's row, with the `packageRole`
         records to write beside it, and, where the half goes to either of two or more trades, an
         `internal note:` line naming them, the words its `notesInternal` takes. Where it does not, it prints `carried by` or `left to` the
-        package that writes it and the row that package writes, named by that package's name,
-        several separated by `; `, so a review the paper gives the half to cites onto that row.
+        package that writes it and the name of the row that package writes, so a review the paper
+        gives the half to finds that row by its name and the writer's trade and cites onto it.
         Where no file goes to the package it prints NONE_LINE alone. `--folder` reads the files from another folder.
 
         Who writes a half: one carrier, its package, with an `exclusion` record on each other
@@ -101,7 +101,7 @@ KINDS = ("Pricing", "Incidental", "Convention", "Which Trade")
 HEADER = "| Kind | Line | Condition | Where to Look | Row Name |"
 NONE_LINE = "no standard lines for this package"
 ROW_NAME_MAX = 36
-NAME_MAX = 80
+
 
 CODE_RE = re.compile(r"\d{2} \d{2} \d{2}(?:\.\d{2})?")
 NUMBER_RE = re.compile(r"\d{2}(?: \d{2}){0,2}")
@@ -486,9 +486,7 @@ def halves_for(entry: dict, involved: list[str], places: dict[str, str | None], 
     return plans
 
 
-def row_name(name: str, package_name: str, trade_code: str) -> str:
-    full = f"{name}, {package_name}"
-    return full if len(full) <= NAME_MAX else f"{name}, {trade_code}"
+
 
 
 def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]], files: list[dict], version: str) -> list[str]:
@@ -512,7 +510,7 @@ def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]
             out.append(f"line: {entry['line']}")
             out.append(f"  kind: {entry['kind']}")
             if entry["kind"] != "Which Trade":
-                out.append(f"  name: {row_name(entry['names'][0], name, package)}")
+                out.append(f"  name: {entry['names'][0]}")
             if entry["condition"]:
                 out.append(f"  condition: {entry['condition']}")
                 out.append(f"  where to look: {entry['look'] or 'not named'}")
@@ -532,11 +530,11 @@ def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]
                     writers = sorted(plan["writers"])
                     out.append(f"    you write it: no, {word} {', '.join(writers) or 'no package'}")
                     if writers:
-                        # The rows the writers write, which a review the paper gives the half to cites.
-                        out.append("    name: " + "; ".join(row_name(half_name, names[w], w) for w in writers))
+                        # The name of the row each writer writes, which a review the paper gives the half to cites.
+                        out.append(f"    name: {half_name}")
                     continue
                 out.append("    you write it: yes")
-                out.append(f"    name: {row_name(half_name, name, package)}")
+                out.append(f"    name: {half_name}")
                 for role, target, counterparty in records:
                     if role == "note":
                         could = " or ".join(titles[s] for s in plan["half"]["trades"])

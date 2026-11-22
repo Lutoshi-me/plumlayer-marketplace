@@ -669,10 +669,9 @@ them is ever trimmed.
       covers ("Manufacturer warranties, windows 10 years and glazing 5 years"), for extra materials
       what and how much of each, and for mockups each mockup with its section ("Fiber cement
       siding mockup, 07 46 46; metal wall panel mockup, 07 42 13"). Each is named for
-      its kind, `Qualifications`, `Special warranties`, `Extra materials`, `Mockups` or `Field tests`, then a
-      comma and this package's `name` as the package list shows it, or its `tradeCode` where the
-      two together run past 80 characters ("Special warranties, Windows"), since no two rows on the
-      project may share a name. Each has
+      its kind, `Qualifications`, `Special warranties`, `Extra materials`, `Mockups` or `Field tests`, and nothing more,
+      since the package's name heads its page; other packages carry rows of the same names, and
+      mandate 14's bullet on the row's name says how a create repeats one. Each has
       `category` `General Items` and, in the same batch, one `packageRole:<that row's trade>`
       record valued `{ "role": "general-requirement" }`, so it sits in that package's General
       Requirements section, the mockups row beside the package's qualifications and warranties.
@@ -792,12 +791,19 @@ them is ever trimmed.
       this job, and a part you cannot find writes nothing. A line whose condition reads `none` has
       none, and lands on this package.
     - The row's name. A row a line writes is named exactly as the script's `name:` prints it: the
-      line's short row name in sentence case, a comma, and this package's `name`, or its
-      `tradeCode` where the two together run past 80 characters ("Sales tax on materials,
-      Plumbing", "Floor prep under resilient flooring, Flooring"). This job's own words, where they
-      differ from the line's, go in the row's `description` ("Under LVT-1 and LVT-2"). The record
-      refuses a create whose name the project already carries, on any trade, and names the row that
-      holds it; under this name that row is this package's own, so cite your page on it and write
+      line's short row name in sentence case and nothing after it ("Sales tax on materials",
+      "Floor prep under resilient flooring"), since the package's name heads its page. This job's
+      own words, where they differ from the line's, go in the row's `description` ("Under LVT-1
+      and LVT-2"). Other packages write the same lines under the same names, and the record takes
+      one row of a name on each package where the create names the row it repeats. Send each
+      create as it stands. Where the record refuses the batch because the project already carries
+      a name, its refusal names each row that carries it with that row's package, every refused
+      create at once. For a refused create whose name stands only on other packages, add to the same batch one entry `{ "subject": <the new row's subject>, "predicate": "repeatsScopeItem", "value": <the subject of one row the refusal names> }`,
+      with `sourceInstrument` `"scope-reviewer"` and `evidence` `{}` whatever the create's own
+      instrument is, since a line's own instrument asks for a basis this entry does not carry,
+      and send the batch once more.
+      Where the refusal says this package already carries the name, the row it names here is this
+      package's own: take the create out of the batch, cite your page on that row and write
       nothing else there. Every create follows mandate 4's search for a row on this package that
       already carries the line: where one does, cite on it the page that shows the condition, and
       add the role this mandate gives the line where that row has none. A row carries the line
@@ -868,11 +874,13 @@ them is ever trimmed.
           its carrier has no package. You never write this half, whatever this package's own paper
           says: no row, no role and no exclusion record for it. Name it `carried by
           <tradeCode>` or `left to <tradeCode>`. Its `name:` is the name of the row that package
-          writes, several separated by `; ` where several packages write one each.
+          writes, the same name for each package it names.
         - Where the drawings, the manual or the packages' `notes` give a half you do not write to
           this package's trade, find the writer's row by the name its `name:` prints with one
-          `search(projectId, predicate: "name", text: "<that name>")`, keeping the entry whose
-          `valuePreview` is that name exactly, and cite the place on that row with `cite_source`,
+          `search(projectId, predicate: "name", text: "<that name>")`, keeping the entries whose
+          `valuePreview` is that name exactly; several packages carry rows of one name, so read each
+          one's trade with `list_scope_items(subjectPrefix: <its subject>, tallies: false)` and keep
+          the row on the `tradeCode` the `carried by` words name, and cite the place on that row with `cite_source`,
           a citation and never a role. Name the half `paper gives it to <this package's tradeCode>,
           <sheet and page or section>`. Where no entry carries that name yet, since the writer's
           review may run beside yours, cite nothing and name it `paper gives it to <this package's

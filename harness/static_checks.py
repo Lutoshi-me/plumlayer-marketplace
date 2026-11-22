@@ -14515,7 +14515,9 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "it is the company's standard line for this trade, and no drawing or specification "
                  "calls for it"),
     ("reviewer", "Each is named for its kind, `Qualifications`, `Special warranties`, `Extra "
-                 "materials`, `Mockups` or `Field tests`, then a comma and this package's `name`"),
+                 "materials`, `Mockups` or `Field tests`, and nothing more"),
+    ("reviewer", "add to the same batch one entry `{ \"subject\": <the new row's subject>, "
+                 "\"predicate\": \"repeatsScopeItem\""),
     ("reviewer", "The furnishing row that covers both stays so both bidders price the install, and "
                  "the estimator awards it to one."),
     ("reviewer", "The order: the way the work is built, never alphabetical."),
@@ -15251,7 +15253,7 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
                 slug = first_file[block["line"].lower()]
                 if block.get("kind") != row[0]:
                     errors.append(f"{block['line']!r} printed the kind {block.get('kind')!r}, and its file says {row[0]!r}")
-                if row[0] != "Which Trade" and block.get("name") != f"{row[4]}, Package {package}":
+                if row[0] != "Which Trade" and block.get("name") != row[4]:
                     errors.append(f"{block['line']!r} printed the name {block.get('name')!r} for {package}")
                 if row[2]:
                     if block.get("condition") != row[2] or block.get("where to look") != row[3] or "instrument" in block:
@@ -15283,8 +15285,8 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
 
     # Every file on its own package, short names and then 61-character ones: each half of each Which
     # Trade line has one set of writers that every other package printing it names, every name
-    # printed is `<row name>, <package name>` within 80 characters, or `<row name>, <tradeCode>`, and
-    # a package that does not write a half prints the very name each writer prints for its row.
+    # printed is the line's row name alone, whatever the package is called, and a package that does
+    # not write a half prints the very name its writers print for their rows.
     whole = {}
     for item in files:
         pairs = item["homes"][0].split(" ")
@@ -15293,9 +15295,7 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
     names_checked = 0
     disagreements: list[str] = []
 
-    def _wanted_name(row_name: str, package_name: str, trade_code: str) -> str:
-        full = f"{row_name}, {package_name}"
-        return full if len(full) <= STANDARD_LINES_NAME_MAX else f"{row_name}, {trade_code}"
+
 
     for long_names in (False, True):
         whole_names = {tc: (item["title"] + " " + "x" * 61)[:61] if long_names else item["title"]
@@ -15323,7 +15323,7 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
                         seen["cited"].add(half.get("name"))
                         names.append((half_names[at], half.get("name"), [] if writers == "no package" else writers.split(", ")))
                 for row_name, printed, by in names:
-                    want = "; ".join(_wanted_name(row_name, whole_names[tc], tc) for tc in by)
+                    want = row_name if by else ""
                     if (printed or "") != want or any(len(n) > STANDARD_LINES_NAME_MAX for n in (printed or "").split("; ")):
                         errors.append(f"{block['line']!r} printed the name {printed!r} for {package}, and wants {want!r}")
                     names_checked += 1
@@ -15331,7 +15331,7 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
             writers = ", ".join(sorted(seen["yes"])) or "no package"
             if any(named != writers for named in seen["named"]):
                 disagreements.append(f"{line!r} half {at + 1}: written by {writers}, named {sorted(seen['named'])}")
-            writer_rows = "; ".join(seen["rows"][tc] for tc in sorted(seen["rows"]))
+            writer_rows = "; ".join(sorted(set(seen["rows"].values())))
             if any(cited != writer_rows for cited in seen["cited"]):
                 disagreements.append(f"{line!r} half {at + 1}: its writers print {writer_rows!r}, and another package names {sorted(seen['cited'])}")
     errors.extend(disagreements[:5])
@@ -15426,8 +15426,8 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"and slab edge joint lines by drywall and by firestopping, each excluding the other, the siding stain or paint line left to the siding package, the dowels "
         f"line with an exclusion on the masonry package its condition names, the water and sewer "
         f"halves on plumbing and site utilities); every file on its own package with short and 61-character names, "
-        f"{names_checked} names printed for every half, written or not, each `<row name>, <package name>` within "
-        f"{STANDARD_LINES_NAME_MAX} characters or `<row name>, <tradeCode>` by the package that writes it, "
+        f"{names_checked} names printed for every half, written or not, each the line's row name alone "
+        f"within {STANDARD_LINES_NAME_MAX} characters, whatever the package is called, "
         f"and every half of every Which Trade line named for the same writers, and by the same row "
         f"names its writers print, by every package printing it; {refusals} "
         f"broken files and calls refused in one line; {len(_STANDARD_LINES_PINS)} phrases held over "
