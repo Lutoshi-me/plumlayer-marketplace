@@ -360,7 +360,7 @@ Question text is plain estimator words, and every Question meets the standard th
 verb states. Its first sentence is the ask, written as the answer to confirm where the set points to
 one ("Please confirm X and not Y") or as the value to provide where it does not, and it asks one
 thing; finds share a Question only where one answer settles them all. It gives only the values that
-conflict, one short line per source where three or more disagree, and leaves to its citations what
+conflict, each in plain words and never as the set's words copied out in quotation marks, one short line per source where three or more disagree, and leaves to its citations what
 they show, with no recital of a section's contents; it names each item once, in the words the cited
 sheet uses, with no clause re-describing what that sheet shows or where the item is; a sentence
 names at most three tags, only the ones with the problem; a parenthesis holds a short qualifier,

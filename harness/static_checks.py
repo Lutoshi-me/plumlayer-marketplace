@@ -13956,7 +13956,8 @@ QUESTION_WRITING_SENTENCE = (
     "Its first sentence is the ask, written as the answer to confirm where the set points to one "
     "(\"Please confirm X and not Y\") or as the value to provide where it does not, and it asks "
     "one thing; finds share a Question only where one answer settles them all. It gives only the "
-    "values that conflict, one short line per source where three or more disagree, and leaves to "
+    "values that conflict, each in plain words and never as the set's words copied out in quotation "
+    "marks, one short line per source where three or more disagree, and leaves to "
     "its citations what they show, with no recital of a section's contents; it names each item "
     "once, in the words the cited sheet uses, with no clause re-describing what that sheet shows "
     "or where the item is; a sentence names at most three tags, only the ones with the problem; a "
@@ -14464,9 +14465,10 @@ def check_delivery_sizing(plugin_path: Path, marketplace_root: Path) -> Result:
 # that hold a line to its condition, to that writer and to no Question stay in the text.
 
 STANDARD_LINES_FILES = 46
-STANDARD_LINES_ROWS = 326
+STANDARD_LINES_ROWS = 327
 STANDARD_LINES_ROW_NAME_MAX = 36
 STANDARD_LINES_NAME_MAX = 80
+STANDARD_LINES_SUPPLIED_MATERIAL = "The package includes material the sub supplies"
 
 _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "A line lands on this package only where you find its condition in this job's own "
@@ -14512,8 +14514,13 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("fixture", "paper gives it to 09 99 99, X-2.01 file-0000 p4, row not yet written"),
     ("fixture", "written scopeItem:A1-1-1, X-1.01 file-0000 p3, paper gives it to 26 00 00, section "
                 "099999 file-1111 p12"),
-    ("reviewer", "it is the company's standard line for this trade, and no drawing or specification "
-                 "calls for it"),
+    ("reviewer", "A row a line writes carries no sentence in `notesInternal` saying it is a standard "
+                 "line, that bids for the trade carry it, or what its citation shows."),
+    ("reviewer", "A line the script prints an `instrument:` for carries no page: a line with no "
+                 "condition, and a line whose condition says only that the sub supplies material"),
+    ("reviewer", "and no citation is written for it, on a new row or on a row that already carries "
+                 "the line"),
+    ("reviewer", "These are the only rows you write with no page, and they carry no note."),
     ("reviewer", "Each is named for its kind, `Special warranties`, `Extra "
                  "materials`, `Mockups` or `Field tests`, and nothing more"),
     ("reviewer", "A qualification is never a row of its own."),
@@ -14949,6 +14956,8 @@ _STANDARD_LINES_CASES: tuple[tuple[str, dict[str, set[str]]], ...] = (
     ("09 60 00 + 09 21 16 + 09 91 00", {"09 60 00": {"flooring"}, "09 21 16": {"drywall"}, "09 91 00": {"painting"}}),
     ("26 00 00 + 26 34 60", {"26 00 00": {"electrical"}, "26 34 60": set()}),
     ("06 20 00 + 06 22 00", {"06 20 00": {"finish-carpentry"}, "06 22 00": {"millwork-architectural-woodwork"}}),
+    ("06 20 00 + 06 40 00", {"06 20 00": {"finish-carpentry"}, "06 40 00": {"millwork-architectural-woodwork"}}),
+    ("06 20 00", {"06 20 00": {"finish-carpentry", "millwork-architectural-woodwork"}}),
     ("05 50 00 + 05 12 00", {"05 50 00": {"miscellaneous-metals", "metal-railings"}, "05 12 00": {"structural-steel"}}),
     ("22 00 00", {"22 00 00": {"plumbing"}}),
     ("08 33 23", {"08 33 23": set()}),
@@ -15028,6 +15037,10 @@ _STANDARD_LINES_WRITERS: tuple[tuple[str, str, dict[str, list[tuple[str, list[st
     ("31 00 00; 33 00 00; 22 00 00", "Water and Sewer Services from 10 Feet Outside the Building In by Plumbing, Beyond by Site Utilities", {
         "22 00 00": [("yes", ["exclusion on: 33 00 00, counterparty: 22 00 00"]), ("no, carried by 33 00 00", [])],
         "33 00 00": [("no, carried by 22 00 00", []), ("yes", ["exclusion on: 22 00 00, counterparty: 33 00 00"])],
+    }),
+    ("06 20 00; 06 40 00; 12 35 30", "Amenity and Common Area Casework by Millwork", {
+        "06 40 00": [("yes", ["exclusion on: 12 35 30, counterparty: 06 40 00"])],
+        "12 35 30": [("no, carried by 06 40 00", [])],
     }),
 )
 
@@ -15223,6 +15236,7 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
     # with its kind, name, condition and place to look as its file gives them.
     printed_total = 0
     instruments = 0
+    supplied = 0
     for label, wanted in _STANDARD_LINES_CASES:
         packages = {tc: [tc] for tc in wanted}
         assigned = _standard_lines_assigned(files, packages)
@@ -15261,16 +15275,25 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
                 if row[0] != "Which Trade" and block.get("name") != row[4]:
                     errors.append(f"{block['line']!r} printed the name {block.get('name')!r} for {package}")
                 if row[2]:
-                    if block.get("condition") != row[2] or block.get("where to look") != row[3] or "instrument" in block:
+                    if block.get("condition") != row[2] or block.get("where to look") != row[3]:
                         errors.append(f"{block['line']!r} printed {block!r} for its condition")
-                else:
+                elif block.get("condition") != "none":
+                    errors.append(f"{block['line']!r} printed {block!r}, and a line with no condition prints `condition: none`")
+                # A row is written with no page only where its line has no condition or its
+                # condition says only that the sub supplies material; every other line is cited.
+                if not row[2] or row[2].startswith(STANDARD_LINES_SUPPLIED_MATERIAL):
                     wanted_instrument = f"trade-convention:{slug}@{version}"
-                    if block.get("condition") != "none" or block.get("instrument") != wanted_instrument:
-                        errors.append(f"{block['line']!r} printed {block!r}, and a line with no condition prints {wanted_instrument}")
+                    if block.get("instrument") != wanted_instrument:
+                        errors.append(f"{block['line']!r} printed {block!r}, and a line whose row carries no page prints {wanted_instrument}")
                     else:
                         instruments += 1
+                        supplied += 1 if row[2] else 0
+                elif "instrument" in block:
+                    errors.append(f"{block['line']!r} printed an instrument, and its row cites the page that shows its condition")
     if not instruments:
         errors.append("no case printed an instrument for a line with no condition")
+    if not supplied:
+        errors.append("no case printed an instrument for a line whose condition says only that the sub supplies material")
 
     # The Which Trade writers: each case's halves print who writes them and the records beside.
     writer_halves = 0

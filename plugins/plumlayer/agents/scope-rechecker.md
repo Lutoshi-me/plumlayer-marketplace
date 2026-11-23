@@ -205,7 +205,7 @@ item: scopeItem:i1-A2-3-16 | refused | <the door's words>
   `list_questions` and `status: "all"`, and reply to an open one that asks the same. Its first
   sentence is the ask, written as the answer to confirm where the set points to one ("Please
   confirm X and not Y") or as the value to provide where it does not, and it asks one thing; finds
-  share a Question only where one answer settles them all. It gives only the values that conflict,
+  share a Question only where one answer settles them all. It gives only the values that conflict, each in plain words and never as the set's words copied out in quotation marks,
   one short line per source where three or more disagree, and leaves to its citations what they
   show, with no recital of a section's contents; it names each item once, in the words the cited
   sheet uses, with no clause re-describing what that sheet shows or where the item is; a sentence

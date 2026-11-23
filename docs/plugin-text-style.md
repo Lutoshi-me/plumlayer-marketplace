@@ -59,7 +59,7 @@ predicate, an internal step, a field, or another Question's own internal name), 
 emphasis, one vocabulary the same as section 3 requires. Its first sentence is the ask, written as
 the answer to confirm where the set points to one ("Please confirm X and not Y") or as the value to
 provide where it does not, and it asks one thing; finds share a Question only where one answer
-settles them all. It gives only the values that conflict, one short line per source where three or
+settles them all. It gives only the values that conflict, each in plain words and never as the set's words copied out in quotation marks, one short line per source where three or
 more disagree, and leaves to its citations what they show, with no recital of a section's contents;
 it names each item once, in the words the cited sheet uses, with no clause re-describing what that
 sheet shows or where the item is; a sentence names at most three tags, only the ones with the
@@ -572,7 +572,7 @@ Each of these is a harness check.
     that has gone out. This cannot judge whether a running checker decides rightly; that is the
     measured re-read's.
 35. The standard lines go to one package each. The 46 trade files under
-    `skills/scope-run/standard-lines/` carry 326 lines, each row five cells, one of the four kinds,
+    `skills/scope-run/standard-lines/` carry 327 lines, each row five cells, one of the four kinds,
     a line, a place to look wherever there is a condition, and a row name, and each file one or more
     Home numbers, each one its numbers start, and at most one `Else:` line naming another file's
     title. A row name is at most 36 characters with no comma, one per half of a Which Trade line and
@@ -583,7 +583,8 @@ Each of these is a harness check.
     package patterns whose files are assigned in the check apart from the script: each file goes to
     the one package the case names, and the script prints exactly the distinct lines of that
     package's files, each once with its kind, row name, condition and place to look, a line with no
-    condition with its instrument at the plugin version, and nothing where no file goes to it. Each
+    condition, and a line whose condition says only that the sub supplies material, with its
+    instrument at the plugin version, no other line with one, and nothing where no file goes to it. Each
     Which Trade case prints its halves' writers and records, and with every file on its own package
     every half of every Which Trade line has one set of writers every other package names, and
     every printed name is `<row name>, <package name>` within 80 characters, or `<row name>,

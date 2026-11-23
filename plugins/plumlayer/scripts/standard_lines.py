@@ -41,8 +41,9 @@ the line's order, separated by `; `. This script reads those files and nothing e
         It prints a `places:` line naming each trade file that goes to a live package and that
         package, then the lines of the files that go to `--package`, each line once under the first
         file carrying it, with its kind, the row's name, its condition and where to look; a line
-        with no condition also prints the instrument its entries are written with,
-        `trade-convention:<file name>@<plugin version>`. The row's name is the line's row name and
+        with no condition, and a line whose condition says only that the sub supplies material,
+        also prints the instrument its entries are written with,
+        `trade-convention:<file name>@<plugin version>`, and its row carries no page. The row's name is the line's row name and
         nothing more: every package writes its row of a line under the same name. A Which Trade
         line also prints the trades it involves (the trades of the files carrying it, the trades it
         names and the trades its condition names, by the same words in any case), each with the
@@ -101,6 +102,9 @@ KINDS = ("Pricing", "Incidental", "Convention", "Which Trade")
 HEADER = "| Kind | Line | Condition | Where to Look | Row Name |"
 NONE_LINE = "no standard lines for this package"
 ROW_NAME_MAX = 36
+# A condition that opens with these words says only that the sub supplies material. The page that
+# shows it shows nothing of the row's own cost, so the row is written with no page.
+SUPPLIED_MATERIAL = "The package includes material the sub supplies"
 
 
 CODE_RE = re.compile(r"\d{2} \d{2} \d{2}(?:\.\d{2})?")
@@ -516,6 +520,7 @@ def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]
                 out.append(f"  where to look: {entry['look'] or 'not named'}")
             else:
                 out.append("  condition: none")
+            if not entry["condition"] or entry["condition"].startswith(SUPPLIED_MATERIAL):
                 out.append(f"  instrument: trade-convention:{item['slug']}@{version}")
             if entry["kind"] != "Which Trade":
                 continue

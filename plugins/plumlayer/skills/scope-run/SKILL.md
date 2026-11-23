@@ -137,7 +137,7 @@ that relaxes any one of them reproduces a measured, named failure.
    it names, and only what is worth the design team's time. Its first sentence is the ask, written
    as the answer to confirm where the set points to one ("Please confirm X and not Y") or as the
    value to provide where it does not, and it asks one thing; finds share a Question only where one
-   answer settles them all. It gives only the values that conflict, one short line per source where
+   answer settles them all. It gives only the values that conflict, each in plain words and never as the set's words copied out in quotation marks, one short line per source where
    three or more disagree, and leaves to its citations what they show, with no recital of a
    section's contents; it names each item once, in the words the cited sheet uses, with no clause
    re-describing what that sheet shows or where the item is; a sentence names at most three tags,
@@ -169,8 +169,8 @@ that relaxes any one of them reproduces a measured, named failure.
    not carry, on `belongsToTrade` and inside `packageRole:<trade>` alike. `record_batch` is atomic
    and order free, so the trade rides in the same batch as the name; `record` carries one entry, so
    there the trade entry is written first. Work the paper says is by others is an exclusion row, and
-   a trade's own general costs are general requirement rows, as the reader's mandate 4 says; whether
-   an item is an alternate is still a person's call at the package surface.
+   a trade's own general costs are general requirement rows, and an alternate the set names is a
+   row of its own marked as an alternate, as the reader's mandate 4 says.
 5. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
    the record back and confirms the count that landed equals the count sent, and checks any
    conflicting rows individually, before it ends. The pass runner separately re-verifies the same
@@ -332,7 +332,8 @@ A newly created scope item is a full row, not a name. Every new item writes:
   with a `role`, an optional `counterparty` and an optional `note`, and `{ retracted: true,
   reason? }` is the only other value the door takes. The run writes `exclusion` where the paper says work is by others and
   `general-requirement` for a trade's own general costs, and the reviews write both for the standard
-  lines; `ve-alternate` stays the user's to write. A bare word is refused and the batch is atomic,
+  lines; and `ve-alternate` on the row of each alternate the set names, as the reader's mandate 4
+  says. A bare word is refused and the batch is atomic,
   so it costs every entry in the batch.
   The `<trade>` in that predicate is the same catalog code, and the door reads it there too.
 - **description**: the detail a bidder prices that the name leaves out, written wherever the row
@@ -347,7 +348,13 @@ A newly created scope item is a full row, not a name. Every new item writes:
   fixed by its kind (a grouped requirement row or a standard line), which carries in its description
   the products, sections, amounts and the job's own words its mandate lists, whole; never a spec
   article number, a schedule's columns copied out whole or a tag the row is not for, since the
-  citation carries them.
+  citation carries them. The description says the work in plain words of the reader's own: never
+  a note or a schedule line copied out or set in quotation marks, never the sheet, detail, note
+  or section the words are printed on, and never a pointer to another page, since the estimator
+  opens the citation and reads the place itself. Two rows still name a source: a row two places
+  disagree about names each product with the sheet or section that calls for it, and a row a
+  package review writes for several sections at once, such as its mockups, names each section
+  it covers.
   On a finish row the extent is the rooms or
   room types the room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2
   to 5"), read off the finish schedule and never off a material key or legend alone, which says
@@ -362,12 +369,13 @@ A newly created scope item is a full row, not a name. Every new item writes:
   columns, the detail, or the bar sizes into the row. How a schedule becomes rows is
   non-negotiable 6.
 - **notesExternal** (optional, one sentence): an instruction to the bidder about the line: what to
-  break out, what to confirm, what is an alternate. Work by others is a row of its own, as the
+  break out, what to confirm. Work by others and an alternate are each a row of its own, as the
   reader's mandate 4 says.
-- **notesInternal** (optional, one sentence): a watch item for the estimator, an open
-  Question on the row, how the row's grouping was reached
-  and what a correction replaced, or the other trade that could carry the row, as the reader's
-  mandate 4 says. Never a citation audit, never work the paper gives to another party, which
+- **notesInternal** (optional, one sentence, and only where the estimator has something to check
+  or decide on the row): a watch item, an open Question on the row, what a correction replaced,
+  or the other trade that could carry the row, as the reader's mandate 4 says. Never where the
+  row's words are printed, why the row sits on its package or how its rows were grouped. Never
+  a citation audit, never work the paper gives to another party, which
   is a row of its own as the reader's mandate 4 says, and never a conflict between two documents:
   that is a Question where it clears the Question bar below, and a qualification where it does
   not. A correction of a value on the record is two things: the write
@@ -1549,8 +1557,9 @@ the two. A pass that made none appends `phase: packages amended` with no amendme
 close out; the split the earlier passes settled stands.
 
 1. **Scope-driven amendments.** Where the scope list surfaces what the TOC cannot see (a
-   specialty assembly that wants its own bidder, an either-or item probed as an alternate, a
-   package that should collapse into another once scale is understood), apply the amendment live:
+   specialty assembly that wants its own bidder, an alternate the set names that needs its own
+   package, a package that should collapse into another once scale is understood), apply the
+   amendment live:
    `solicitation_create_package` for a genuinely new package, `solicitation_update_package` to
    fold, split, or rename an existing one. A fold here runs the same update-then-delete sequence as
    the package folder's fold mode, in `<plugin root>/agents/scope-package-folder.md`: the keeping
@@ -2072,8 +2081,9 @@ choice: "I put it on Plumbing; move it if it belongs elsewhere."
   **read sub proposals** (`bid-intake`), **place takeoff measurements** (`takeoff`), **get the
   invitations ready** (`prepare-invitations`, which does not wait for this run), **draft the
   baseline package split** (owned by `learn-project`).
-- **Author VE or alternate enrollments**: whether an item is an alternate stays the user's call at
-  the package surface. The run writes exclusions where the paper says work is by others, and every trade except `01 11 13` has its general items in its General
+- **Author value engineering enrollments**: whether an item is a value engineering option stays
+  the user's call at the package surface. The run marks each alternate the set names as an
+  alternate. The run writes exclusions where the paper says work is by others, and every trade except `01 11 13` has its general items in its General
   Requirements section. On `01 11 13`, there is no `General Items` row and no `general-requirement`
   role; a general cost the contractor carries there is a home row under one of the seven headings.
   Exclusion rows keep their Exclusions section on this package as on every package. A row shared

@@ -164,7 +164,9 @@ them is ever trimmed.
    a resend.
 4. WHAT COUNTS AS WORK NO ROW CARRIES. A hit is new work only when both hold: the page it names is
    on no citation of any row you harvested for this package, and the words around it are not the
-   work of a row that already exists. Three outcomes and no fourth.
+   work of a row that already exists. Three outcomes and no fourth. Work the set names as an
+   alternate is never the work of the base row it resembles: its row is the alternate's own,
+   found or created as reader mandate 4 says.
    - The hit is the work of a row on this package that does not cite that page. It is a citation on
      that row, after you open the page. It is not a create.
    - The hit is the work of a row on another package that a sheet, a manual section, a package's
@@ -304,7 +306,7 @@ them is ever trimmed.
    the design team's time. Its first sentence is the ask, written as the answer to confirm where the
    set points to one ("Please confirm X and not Y") or as the value to provide where it does not,
    and it asks one thing; finds share a Question only where one answer settles them all. It gives
-   only the values that conflict, one short line per source where three or more disagree, and leaves
+   only the values that conflict, each in plain words and never as the set's words copied out in quotation marks, one short line per source where three or more disagree, and leaves
    to its citations what they show, with no recital of a section's contents; it names each item
    once, in the words the cited sheet uses, with no clause re-describing what that sheet shows or
    where the item is; a sentence names at most three tags, only the ones with the problem; a
@@ -541,8 +543,7 @@ them is ever trimmed.
     furnished item's rows cite, listed in their `drawingRefs`, by your own citation path as
     mandate 5 cites a kept row's pages. Where it rests on the section the notes name, its creation
     evidence names that section in reader mandate 2's shape for a new row, on the page of the
-    section you read, found through its `locatedAt`. Add one sentence in `notesInternal` saying
-    the package notes put it here. Its `belongsToTrade` is this package's `tradeCode`: the notes are the record's statement of which firm does that labor, the exception
+    section you read, found through its `locatedAt`. Its `belongsToTrade` is this package's `tradeCode`: the notes are the record's statement of which firm does that labor, the exception
     reader mandate 4 names. Where the notes name an item no sheet and no section shows, it raises
     nothing: it is the estimator's own note, so name it on your `notes read:` line as
     `shown nowhere`, and copy it to your `anomalies:` line ending `run only`, so the check-in
@@ -745,8 +746,8 @@ them is ever trimmed.
     writing over an existing name with `supersedesId`, and otherwise in `description` only as reader
     mandate 5 permits, but keeps its amount and what it covers in `description`, since the name
     cannot hold them; a unit price names its unit;
-    an alternate names its number in `notesExternal`, and whether it is an alternate stays the
-    estimator's call at the package. A schedule, checklist, rating level or section that a section
+    an alternate is a row of its own marked as reader mandate 4 says, its number opening its
+    `description`. A schedule, checklist, rating level or section that a section
     says it carries or attaches and the manual does not (an allowance, unit price or alternate
     schedule left for the architect to define, a rating checklist, a section listed in the contents
     and not bound) is one Question across those sections, citing each, under reader mandate 1's
@@ -761,7 +762,9 @@ them is ever trimmed.
     six sides, which trade runs the heat trace cable and which trade wires power to it. The plugin
     carries them for each trade, each with the condition that calls for it on a job and where that
     condition is usually shown. A line lands on this package only where you find its condition in
-    this job's own drawings or manual, cited to the page or section where you found it.
+    this job's own drawings or manual, cited to the page or section where you found it. The one
+    line that lands with no page is a line the script prints an `instrument:` for, as the bullet
+    on the citation says.
     - The packages first. Before anything else this mandate does, take
       `solicitation_list_packages(projectId, brief: true)` once, paged with `offset` until
       `truncated` comes back false. It gives each live package's `name`, `tradeCode` and `codes`
@@ -817,9 +820,11 @@ them is ever trimmed.
       instrument is, since a line's own instrument asks for a basis this entry does not carry,
       and send the batch once more.
       Where the refusal says this package already carries the name, the row it names here is this
-      package's own: take the create out of the batch, cite your page on that row and write
+      package's own: take the create out of the batch, cite your page on that row, a line the
+      script prints an `instrument:` for aside, and write
       nothing else there. Every create follows mandate 4's search for a row on this package that
-      already carries the line: where one does, cite on it the page that shows the condition, and
+      already carries the line: where one does, cite on it the page that shows the condition, a
+      line the script prints an `instrument:` for aside, and
       add the role this mandate gives the line where that row has none. A row carries the line
       only where its `name` or `description` states the line's own work whole (on a Which Trade
       line, the whole of the half this package writes, never the other half), for the doors line
@@ -829,14 +834,10 @@ them is ever trimmed.
       the line is named `already on` it. A role for a standard line
       is never written onto a row of another package's trade, and a citation only onto the
       writer's row of a Which Trade half the paper gives to this package's trade, below.
-    - The row's note. A line's citation shows its condition, which is seldom a page that states
-      the row's own work, so an estimator who opens it has to be told why it is there. Each row a
-      line writes carries one sentence in `notesInternal`, in the estimator's words, saying it is
-      a line most bids for this trade carry and what the cited page shows ("A line most plumbing
-      bids carry. The cited sheet shows heat trace on the domestic water piping."), after the
-      `internal note:` words where the half has them and under reader mandate 5's rule for a note
-      already there. A line with no condition takes the one sentence the bullet on its evidence
-      gives it, below, and none from this one.
+    - No note for being a line. A row a line writes carries no sentence in `notesInternal` saying
+      it is a standard line, that bids for the trade carry it, or what its citation shows. The
+      one note a line writes is the `internal note:` words of an `or` half, below, under reader
+      mandate 5's rule for a note already there.
     - What each kind writes.
       - Pricing, a cost of the sub's own (tax, delivery, hoisting his own material, tariffs,
         pricing supply and install apart): one row on this package's `tradeCode`, `category`
@@ -876,8 +877,8 @@ them is ever trimmed.
           write that line's words as the row's `notesInternal` in the same batch, and the row sits
           on this package alone. An exclusion on this package's own `tradeCode` is the work of the owner, a utility or a
           trade with no package on this job: the row sits in this package's Exclusions section.
-          Where the half is the owner's or a utility's, the row's `description` names who carries
-          it ("By the water utility"). You write this half, always, as printed, whatever this
+          Where the half is the owner's or a utility's, the row's `description` says which of
+          them does the work ("The water utility furnishes the meter"). You write this half, always, as printed, whatever this
           package's own paper says. Where the drawings, the manual or the packages' `notes` give it
           to another trade, write it all the same, cite that place on the row too, and name it
           `written <subject>, <sheet and page or section, or no condition>, paper gives it to
@@ -908,14 +909,17 @@ them is ever trimmed.
     - The citation. A row a line writes cites the page or section that shows its condition, in
       reader mandate 2's shapes, a `sheet-region` box around the line on a sheet or the section on
       the page you read it, and that page is on your `pages opened:` line with `standard line` as
-      what sent you. A line with no condition carries no page: its entries, its trade and its
-      role among them, take the `instrument:` the script prints as their `sourceInstrument`, and
-      `evidence: { basis: "trade-convention", source: "<the line as printed>" }`. It is the only
-      row you write with no page, and its `notesInternal` says in one sentence of plain words why
-      it is there: it is the company's standard line for this trade, and no drawing or
-      specification calls for it ("Our standard line on every Plumbing package; no drawing or
-      specification calls for it"). A page you cite shows the condition or, for a Which Trade
-      half, the paper's word on who carries it.
+      what sent you. A line the script prints an `instrument:` for carries no page: a line with no
+      condition, and a line whose condition says only that the sub supplies material, since the
+      page that shows it shows nothing of the row's own cost. Its entries, its
+      trade and its role among them, take the `instrument:` the script prints as their
+      `sourceInstrument`, and `evidence: { basis: "trade-convention", source: "<the line as printed>" }`,
+      and no citation is written for it, on a new row or on a row that already carries the line.
+      Where it has a condition, that condition is still found before the row is written, and
+      the page that shows it goes on your `pages opened:` line and your `standard lines:` line
+      and nowhere on the record. These
+      are the only rows you write with no page, and they carry no note. A page you cite shows the
+      condition or, for a Which Trade half, the paper's word on who carries it.
     - Never a Question. A line is the estimator's own practice, never the design team's: a
       condition you cannot find writes nothing and raises nothing, and where the paper says
       otherwise than the line, the paper wins, except that a Which Trade half is written by the

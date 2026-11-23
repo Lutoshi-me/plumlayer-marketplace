@@ -133,7 +133,9 @@ of them is ever trimmed.
    lockers" and "Install lockers"), except windows, whose install is one row for all of
    them as mandate 6 says; and on a finish trade, the areas mandate 5 heads
    its rows by, where the finish schedule or the plans call the product in more than one of them,
-   each row named for its area. Hold a batch's own rows against each other by this test too: a
+   each row named for its area; and an alternate the set names, which is a row of its own beside
+   the base row of the same work, as mandate 4 says, and is never cited onto that base row.
+   Hold a batch's own rows against each other by this test too: a
    schedule row and a plan row for one item are one row. Two rows each claiming the whole of one
    surface or one fixture in one place are one piece of work even under different codes, the
    disagreement below, while the layers or parts of one assembly under their own codes stay separate
@@ -350,7 +352,7 @@ of them is ever trimmed.
    it names, and only what is worth the design team's time. Its first sentence is the ask, written
    as the answer to confirm where the set points to one ("Please confirm X and not Y") or as the
    value to provide where it does not, and it asks one thing; finds share a Question only where one
-   answer settles them all. It gives only the values that conflict, one short line per source where
+   answer settles them all. It gives only the values that conflict, each in plain words and never as the set's words copied out in quotation marks, one short line per source where
    three or more disagree, and leaves to its citations what they show, with no recital of a
    section's contents; it names each item once, in the words the cited sheet uses, with no clause
    re-describing what that sheet shows or where the item is; a sentence names at most three tags,
@@ -483,7 +485,10 @@ of them is ever trimmed.
    furring, girts, clips, flashings and trim at a cladding go with the cladding; the root barrier,
    drainage layers, growing media and plantings of a vegetated roof go with the vegetated roof.
    Flashing in a wall or at a window goes with the wall or window it sits in, and the roofing
-   carries the flashing that ties into the roof. Firestopping at a trade's own penetrations goes
+   carries the flashing that ties into the roof. Casework in an amenity or common room, a
+   clubroom, a lounge kitchen, a mail room or a leasing desk, goes with its pulls and hardware to
+   the millwork package's trade where the job has a millwork package apart from its casework
+   package, and the casework package's trade keeps the unit kitchens and baths. Firestopping at a trade's own penetrations goes
    to that trade where that trade's own drawing notes have it firestop them, whatever single
    installer the firestopping section asks for and whatever the wall types say. Where that
    trade's notes do not, its penetrations through rated walls go to the drywall trade where the
@@ -527,9 +532,17 @@ of them is ever trimmed.
    `General Items` row and no `general-requirement` role; a general cost the contractor carries
    there is a home row under one of the seven headings. Exclusion rows keep their Exclusions
    section on this package as on every package. A row shared with another package keeps its
-   category there; the seven apply to rows whose home is `01 11 13`. Whether a row is an alternate
-   stays a person's call at the package surface; what you read that points toward one goes in
-   `notesExternal`.
+   category there; the seven apply to rows whose home is `01 11 13`. Work the set names as an
+   alternate, by its number or by the word, on a sheet or in the manual, is a row of its own on
+   the trade that carries it, and the batch that creates it carries one `packageRole:<that
+   trade>` record valued `{"role": "ve-alternate"}`, so the row sits in that package's
+   alternates section and never among its base rows. Its `name` says what the alternate changes
+   ("Wood flooring in place of carpet at the lobby", "Delete the roof pavers"), so it never
+   repeats the name of the base row for the same work, and its `description` opens with the
+   alternate's number as the set prints it and whether it adds or deducts where the set says
+   ("Alternate 3, add"). Where a live row already carries the alternate and nothing of the
+   base work, cite your page there, and write the record onto it where it has none. A base row
+   never carries an alternate's work or a sentence about one.
 5. THE ROW: every new item writes the row the way it reads on a scope sheet, and the description
    and the citation carry the detail. `name` (required: the short line an estimator writes on a
    scope sheet, so one reading a package's names top to bottom takes each in at a glance: the
@@ -601,7 +614,13 @@ of them is ever trimmed.
    (a grouped requirement row or a standard line), which carries in its description the products,
    sections, amounts and the job's own words its mandate lists, whole; never a spec article number,
    a schedule's columns copied out whole or a tag the row is not for, since the citation carries
-   them.
+   them. Say the work in plain words of your own: never a note or a schedule line copied out or
+   set in quotation marks, never the sheet, detail, note or section the words are printed on,
+   and never a pointer to another page ("refer to the structural drawings", "per the door
+   schedule"), since the estimator opens the citation and reads the place itself. Two rows
+   still name a source: a row two places disagree about names each product with the sheet or
+   section that calls for it, as mandate 1 says, and a row a package review writes for several
+   sections at once, such as its mockups, names each section it covers.
    On a finish row the extent is the rooms or room types the
    room finish schedule lists it in ("Unit kitchens and baths", "Corridors, levels 2 to 5"), read
    off the finish schedule and never off a material key or legend alone, which says what a finish
@@ -613,11 +632,13 @@ of them is ever trimmed.
    Mandate 1's two products in a disagreement, and a fixed-name row's whole list, run past the
    sentence and word limits, within the field's 400 characters),
    `notesExternal` (optional,
-   one sentence: an instruction to the bidder about the line, what to break out, what to confirm,
-   what is an alternate; work by others is a row of its own, mandate 4), `notesInternal` (optional,
-   one sentence: a watch item for the estimator, an open
-   Question on the row, how the row's grouping was reached and what a correction
-   replaced, or the other trade that could carry the row, as mandate 4 says; never a citation
+   one sentence: an instruction to the bidder about the line, what to break out, what to confirm;
+   work by others and an alternate are each a row of its own, mandate 4), `notesInternal` (optional,
+   one sentence, and only where the estimator has something to check or decide on this row: a
+   watch item, an open Question on the row, what a correction replaced, or the other trade
+   that could carry the row, as mandate 4 says; never where the row's words are printed, why
+   the row sits on its package or how its rows were grouped, which the citation, the package
+   and the description already show; never a citation
    audit, never work the paper gives to another party, which is a row under mandate 4, and never
    a conflict between two documents, which goes where mandate 1 sends it: a
    Question where it clears the bar, a qualification in `notesExternal` where it does not. Where it already
@@ -702,11 +723,10 @@ of them is ever trimmed.
    value and the words you read there as the evidence snippet; and one plain sentence in the row's
    `notesInternal`, placed as above, saying how the value was reached and what it replaced, never
    an id or a hand-written tag, so a later reader corrects the row rather than doubting the
-   drawings. A correction is never a Question. Where a grouping is your own judgment
-   rather than read off one place, say in the same note how it was reached. A quantity is never
+   drawings. A correction is never a Question. A quantity is never
    your own judgment: it is only ever a figure the set states, and a figure you judged, counted or
    worked out is never written, in a correction or anywhere else. A note is written for
-   the estimator, in the estimator's words ("One row for every tag the legend lists"), never with
+   the estimator, in the estimator's words ("The schedule came from a scan, so check the unit sizes against the sheet"), never with
    the run's own words for it (`grain`, `text layer`, a unit, a pass, a prefix), and never naming
    an agent as the one who judged it. Never transcribe a schedule's columns, a detail, bar sizes,
    or connector parts into any field, and never narrate the set sheet by sheet; how a schedule
@@ -740,8 +760,8 @@ of them is ever trimmed.
    `description` writing out every code it covers with what tells each apart and, where the
    schedule prints a count for each, that count beside its code ("EF-1 (2) roof, EF-2 (4) trash
    rooms"), and the maker and model where the set names one. Where the codes do not fit the
-   description's 400 characters, write how many types there are and how they differ ("50 types
-   by capacity, as the fan coil unit schedule lists them") and cite the schedule on the row, so
+   description's 400 characters, write how many types there are and how they differ ("50 fan coil unit
+   types by capacity") and cite the schedule on the row, so
    the citation carries each code. A row for several types takes a quantity only where a page
    prints one figure for all of them, as mandate 5 says. Where you add a type to a row whose
    quantity counts its earlier types alone, that figure no longer counts the row's work and no
@@ -768,7 +788,8 @@ of them is ever trimmed.
    beyond the usual, a wait the detail imposes); or the set asks for a separate price (an
    alternate, a unit price, an allowance). Where none is true, what you read goes in the broader
    row's `description` or is left to its citation. Work the set shows in the base work and also
-   names as an alternate is one row, its `notesExternal` saying both. Instances are never rows:
+   names as an alternate is two rows: the base row carries the base work alone, and the
+   alternate is a row of its own, marked as mandate 4 says. Instances are never rows:
    one towel bar
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
    where the set states how many there are, that figure is its quantity as mandate 5 says, and a
