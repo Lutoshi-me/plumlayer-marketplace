@@ -541,8 +541,10 @@ of them is ever trimmed.
    repeats the name of the base row for the same work, and its `description` opens with the
    alternate's number as the set prints it and whether it adds or deducts where the set says
    ("Alternate 3, add"). Where a live row already carries the alternate and nothing of the
-   base work, cite your page there, and write the record onto it where it has none. A base row
-   never carries an alternate's work or a sentence about one.
+   base work, cite your page there, and write the record onto it only where
+   `search(subject: "<the row's subject>")` shows its `packageRole:<that trade>` has never held
+   an entry: a row a person marked as an alternate, or took the mark off, stays as that person
+   left it. A base row never carries an alternate's work or a sentence about one.
 5. THE ROW: every new item writes the row the way it reads on a scope sheet, and the description
    and the citation carry the detail. `name` (required: the short line an estimator writes on a
    scope sheet, so one reading a package's names top to bottom takes each in at a glance: the
