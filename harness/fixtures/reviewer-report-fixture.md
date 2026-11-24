@@ -28,6 +28,7 @@ grain questions: none
 silent sections: none
 unspecified work: none
 compared: none
+spans read: none
 sections not checked: none
 families not checked: none
 standard lines: Invented half, paper gives it to 09 99 99, X-1.01 file-0000 p3

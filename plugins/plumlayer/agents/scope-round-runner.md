@@ -1,8 +1,8 @@
 ---
 name: scope-round-runner
-description: Runs one pass of a Plumlayer scope run, over sheets or over up to eight package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, one scope-reviewer per package, or in the recheck of a new delivery one scope-rechecker per sheet or batch of items to retire, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
+description: Runs one pass of a Plumlayer scope run, over sheets or over up to eight package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, one scope-reviewer per package and one scope-manual-reader per manual part after it, or in the recheck of a new delivery one scope-rechecker per sheet or batch of items to retire, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 model: sonnet
-tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-rechecker), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
+tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-rechecker), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
 
 You own one pass of a scope run, from its first dispatch line to its last, and then you end. Your
@@ -36,9 +36,11 @@ page and a unit of its own, and its line also names the key it opens as
 the repeated lines is the exception: its units each name one drawing file and a page of it
 (`RS1-2. file <fileId>, from page <n>: repeated lines`). In window 3 a pass carries up to eight
 review units, or every package of one trade where that trade has more, and up to ten units with the
-continuations bound into it, each line naming the
-review's unit id, the package's name, its catalog trade and its package id
-(`2. i2-rev-092116-1: Drywall and framing, trade 09 21 16, package pkg-4c1e`). A unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
+manual parts the plan puts after them. A review's line names its unit id, the package's name, its
+catalog trade, the manual pages it reads after `reads` and its package id
+(`2. i2-rev-092116-1: Drywall and framing, trade 09 21 16, reads 092116 p402-p415 of file-1a2b, package pkg-4c1e`).
+A manual part's line names the same, then the unit it reads on after and its pages
+(`3. i2-rev-092116-1c-1: Drywall and framing, trade 09 21 16, package pkg-4c1e, manual part after i2-rev-092116-1, reads 092900 p416-p440 of file-1a2b`). A unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
 line and in the `verify_unit` prefix; never rebuild it from the pass id and the line's position. A
 pass the plan folded carries units of more than one discipline, each under the id its own
 discipline gave it, and its `folded in:` line names the parts it took in. If a path is missing,
@@ -414,7 +416,7 @@ dispatch 2 L2 L2-6 sheets file-1a2b3c-p108 purpose further page of a shared numb
 dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-1a2b3c
 note 1 RS1 RS1-1 set 9f2c41d07ab3e815 file file-1a2b3c
 dispatch 3 W3-2 rev-075000-1 sheets none purpose review the roofing package
-dispatch 3 W3-2 rev-075000-1c-1 sheets none purpose continue the roofing manual sections
+dispatch 3 W3-2 rev-075000-1c-1 sheets none purpose read the roofing manual pages
 ```
 
 ## Boundary mode
@@ -482,24 +484,37 @@ over up to eight reviews, or one trade's reviews where that trade has more, with
   reviews in the order the block lists them, one at a time, as pass mode runs its units: two
   packages on one trade sit in one pass, so they run one after the other. The summary script reads
   each verified review's own report for the pages it opened and the searches it ran.
-- **You dispatch exactly one agent type here, `plumlayer:scope-reviewer`**, one per unit in turn,
-  and never a reader. For each unit, look for its own `verified` line, then append its
+- **You dispatch two agent types here, `plumlayer:scope-reviewer` for a review's line and
+  `plumlayer:scope-manual-reader` for a manual part's line**, the one carrying
+  `, manual part after `, one per unit in turn, and never a reader. For each unit, look for its own `verified` line, then append its
   `dispatch` line first, in one append, then dispatch, exactly as pass mode's step 2 says. That
   line's `sheets` field reads `none`, because a review is planned off the record and opens a page
   only where a hit sends it, and its `purpose` names the package. The dispatch carries the project
   id, the window, the pass id, the unit id, `Read: <k>` as pass mode's step 2 gives it, the
-  catalog trade id and the package id its unit line names, the run folder path, the pass brief
+  catalog trade id and the package id its unit line names, `Reads:` with the spans after
+  `reads` on its unit line copied as written, the run folder path, the pass brief
   path, and the reader definition path,
   `<scripts path>/../agents/scope-reader.md` written out in full with the scripts path off your
   dispatch, since the reviewer works under the reader's mandates and has no other way to find
   them. Paste nothing from those files into it, and never the package's `codes` or `manualSections`: the reviewer reads
-  those off the record, so the sections it checks have one source.
+  those off the record, so the sections it checks have one source. A manual part's dispatch also
+  carries `After:` with the unit id after `manual part after` on its line, and the reviewer
+  definition path, `<scripts path>/../agents/scope-reviewer.md` written out in full, as the skill's
+  manual part dispatch shows; its `dispatch` line's `purpose` reads `read the <package name>
+  manual pages`.
   Right before each dispatch, after its `dispatch` line, note the time you dispatch it: run
   `date -u +%Y-%m-%dT%H:%M:%SZ > '<run folder>/reports/<unit id>.read-<k>.dispatched'` with the
   Bash tool, single quoted, `<k>` the dispatch's `Read:` number. It writes over any file already
   there, so a review dispatched again under the same `dispatch` line carries the time of its own
   dispatch. That file is where the check below reads the time this read was dispatched, a resume
   included.
+- **Hold its pages to the plan first.** A review's or a manual part's `spans read:` lines must be
+  exactly the spans its `Reads:` line named, in that order, one per line, or the one word `none`
+  where it named `no manual pages`. A span of a section its `sections not checked:` line names as
+  `manual removed` or `not on the package` is the one it leaves off, and its runner copies that
+  section's `not read:` note to the ledger. Any other span left out, one added or one changed is a mismatch,
+  named `spans`, and its pages are read again on that unit's next read. No unit's report decides
+  what is read next: the plan placed every page before the window started.
 - **Verify against the pages the review opened.** The reviewer names every page it opened on its
   `pages opened:` line, and those sheets are what you check: every line of `pages opened:`, under
   the label or on the label written again, whatever it says the review did there. None is left
@@ -583,63 +598,6 @@ over up to eight reviews, or one trade's reviews where that trade has more, with
   opened no page makes the sheet call with `sheets: []`, with one
   `note <window> <pass> <unit> deviation verified with no sheet, no page opened` line beside its
   `verified` line.
-- **Continue a review that left manual pages.** After a unit's `verified` line, where its report's
-  `sections not checked:` line names a section as `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>`, run
-
-  ```sh
-  python3 '<scripts path>/plan_inventory.py' continue --window 3 --report '<run folder>/reports/<unit id>.md'
-  ```
-
-  with the Bash tool, single quoted, right after that `verified` line and before the next unit's
-  `dispatch` line. It binds a continuation unit and prints one line naming it and the pass that
-  holds it; run again, it binds nothing new. Where your pass holds fewer than ten units it
-  binds it into your pass block right after that unit (`bound <id> in pass <your pass id> after
-  <unit id>`): read your pass block again, and the continuation is your next unit, and you run it
-  as any unit, its `dispatch` line first (`purpose continue the <package name> manual sections`),
-  then the dispatch, then its verification exactly as a review's. Its dispatch carries a review's
-  lines and two more copied off its unit line, `Continues: <the unit id after continues>` and
-  `Sections: <the sections after sections>`. A continuation whose report names pages left is
-  continued the same way. Where your pass already holds ten units it binds it into a pass of
-  continuations after yours (`bound <id> in pass <another pass id>, continuing <unit id>`), which
-  waits for yours and which the lead starts with a runner of its own once yours is recorded:
-  that unit is not yours to run, so go on to your next unit. So every page of a section is read
-  in the plan, in your pass or a later one. The review's `continued:` anomaly goes on the ledger
-  as every anomaly does, and the continuation's own lines are what show those pages read.
-
-  Where the script refuses, no continuation is placed for the sections the refusal names, and you
-  never read those pages yourself or send any agent to read them outside the plan. A refusal
-  saying another run of the script holds the lock is not about the report: run the same command
-  again, up to three times in all, and where it still refuses, stop the pass on a mismatch naming
-  the lock, with no note, so the next dispatch of your pass binds it. A refusal that ends with
-  `note 3` lines in backticks names each section it leaves unread: append each of those lines to
-  the ledger as written. It gives
-  `note <window> <pass> <unit> unread section <code> pages <a> to <b> left, no pass can take its continuation`
-  for each section no pass can take, and one
-  `note <window> <pass> <unit> unread sections not placed: report <digest>, <each section the script cannot read>`
-  where the `sections not checked:` line names a section in a way the script cannot read. It
-  still binds a continuation for every section it can read, and then opens with the `bound`
-  line, and that continuation is placed as above. Then stop the pass there and go straight to
-  your summary, whose `unread:` line carries the notes, so the lead names those sections to the
-  estimator. Any other refusal is a mismatch.
-
-  Before your first unit, on every dispatch, run
-
-  ```sh
-  python3 '<scripts path>/plan_inventory.py' continue --window 3 --pending '<run folder>' --pass <pass id>
-  ```
-
-  with the Bash tool. A runner that stopped between a unit's `verified` line and its `continue` run
-  left that unit finished, which the look before each unit skips, with its pages left bound to no
-  continuation. This run binds the continuation each such unit of your pass is owed, into your
-  pass block or a pass of continuations after it as above. It passes over a unit whose report
-  reads as it did when its `unread sections not placed:` note was written, the note's digest
-  naming that report, so a report someone corrected since is continued. For each section it
-  leaves unread that the ledger does not carry yet it prints the note, the shapes above filled
-  in: append each line it prints that opens with `note ` to the ledger as printed, and stop the
-  pass there as above. Otherwise read your pass block again: a continuation it bound into your
-  pass carries no `verified` line and runs as any unit. A refusal saying another run holds the
-  lock you run again as above; any other refusal is a mismatch.
-
 ## Recheck mode
 
 When your dispatch names window `r` and `recheck-<pass id>`, you run a pass of the recheck of a new

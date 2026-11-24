@@ -11,7 +11,7 @@ Checks:
   4. Agents: every agents/*.md has frontmatter that actually parses as YAML
      and a non-empty `name` and `description`; the shipped agent set matches
      EXPECTED_AGENTS exactly, in both directions (`manual-reader`, `orientation`, `question-checker`,
-     `scope-package-folder`, `scope-reader`, `scope-reviewer`, `scope-round-runner`,
+     `scope-manual-reader`, `scope-package-folder`, `scope-reader`, `scope-reviewer`, `scope-round-runner`,
      `scope-vocabulary-reader`, `sheet-checker`); and no agent declares a
      frontmatter field the runtime ignores for plugin-shipped agents
      (`hooks`, `mcpServers`, `permissionMode`). Checks 3 and 4 both validate
@@ -322,6 +322,20 @@ EXPECTED_SKILLS = {
 # sizer by drawing-upload's step 9a for the plan and the carry of a new delivery on a project
 # that already holds scope, the orientation agent by learn-project for the orientation pass, and
 # the manual reader by orientation for each group of the manual's sections it places.
+
+def _no_sections() -> list[str]:
+    """
+    `--sections` for a window 3 plan run in a check that is not about the manual: a
+    `list_spec_sections` answer holding no section, so each review reads no manual pages and every
+    section a package lists is named under the read plan's `Manual sections not read`.
+    """
+    path = Path(__file__).parent / ".test-results" / "no-sections" / "spec-sections.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "count": 0, "sections": [], "unparsedDivisions": 0, "residueSections": 0, "truncated": False,
+    }), encoding="utf-8")
+    return ["--sections", str(path)]
+
 EXPECTED_AGENTS = {
     "delivery-sizer",
     "manual-reader",
@@ -330,6 +344,7 @@ EXPECTED_AGENTS = {
     "scope-package-folder",
     "scope-reader",
     "scope-rechecker",
+    "scope-manual-reader",
     "scope-reviewer",
     "scope-round-runner",
     "scope-vocabulary-reader",
@@ -2035,7 +2050,7 @@ _PLAN_PASS_RE = re.compile(r"^### (\S+?)\.\s")
 _PLAN_UNIT_RE = re.compile(r"^(\S+)\. (\S+), (?:file \S+, )?page (\d+): (.*)$")
 # A review unit line names the package, its trade and its package id after the unit id.
 _PLAN_REVIEW_RE = re.compile(
-    r"^(\d+)\. ((?:i[1-9][0-9]*-)?rev-\S+): (.*), trade (.+), package (\S+?)( verified)?$"
+    r"^(\d+)\. ((?:i[1-9][0-9]*-)?rev-\S+): (.*), trade (.+?)(?:, reads .+)?, package (\S+?)( verified)?$"
 )
 # A window 3 pass is planned with up to this many reviews, and holds up to this many units with the
 # continuations bound into it, pinned here so a change to either of the script's constants fails
@@ -2907,7 +2922,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         shutil.rmtree(folder, ignore_errors=True)
         folder.mkdir(parents=True)
         path = folder / out_name
-        argv = ["plan", "--window", "3", "--packages", str(packages_path), "--out", str(path)]
+        argv = ["plan", "--window", "3", "--packages", str(packages_path), *_no_sections(), "--out", str(path)]
         run_code, run_bounds, run_err = _run_script_main(module, argv)
         if run_code != 0:
             errors.append(f"window 3 refused {label}: {run_err}")
@@ -3051,7 +3066,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     eleven = packages_file("packages-w3-eleven.json", ["09 21 16"] + ["13 34 19"] * 11)
     code, out, err = _run_script_main(
         module,
-        ["plan", "--window", "3", "--packages", str(eleven), "--out", str(out_dir / "window-3" / "read-plan-w3-eleven.md")],
+        ["plan", "--window", "3", "--packages", str(eleven), *_no_sections(), "--out", str(out_dir / "window-3" / "read-plan-w3-eleven.md")],
     )
     if code != 1 or len(err.splitlines()) != 1 or "13 34 19" not in err or out:
         errors.append(
@@ -4089,7 +4104,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         packages_path = review_dir / "packages.json"
         packages_path.write_text(json.dumps({"packages": rows}), encoding="utf-8")
         run_code, _run_bounds, run_err = _run_script_main(module, [
-            "plan", "--window", "3", "--packages", str(packages_path),
+            "plan", "--window", "3", "--packages", str(packages_path), *_no_sections(),
             "--out", str(review_dir / "read-plan.md"),
         ])
         if run_code != 0:
@@ -4180,7 +4195,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                 )
         write_ledger(old_dir, old_ledger)
         code, _bounds, err = _run_script_main(module, [
-            "plan", "--window", "3", "--packages", str(summed_packages),
+            "plan", "--window", "3", "--packages", str(summed_packages), *_no_sections(),
             "--out", str(old_dir / "read-plan.md"),
         ])
         old_passes = _plan_passes((old_dir / "read-plan.md").read_text(encoding="utf-8")) if code == 0 else []
@@ -4210,7 +4225,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         packages_path = folder / "packages.json"
         packages_path.write_text(json.dumps({"packages": rows}), encoding="utf-8")
         run_code, _run_bounds, run_err = _run_script_main(module, [
-            "plan", "--window", "3", "--packages", str(packages_path), "--out", str(folder / "read-plan.md"),
+            "plan", "--window", "3", "--packages", str(packages_path), *_no_sections(), "--out", str(folder / "read-plan.md"),
         ])
         if run_code != 0:
             errors.append(f"{bound_label}: a plan in {folder.name} refused: {run_err}")
@@ -5063,7 +5078,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     refusals: list[tuple[str, list[str], str]] = [
         (
             "a package row with no tradeCode",
-            ["plan", "--window", "3", "--packages", str(fixtures / "packages-fixture-no-trade-code.json"),
+            ["plan", "--window", "3", "--packages", str(fixtures / "packages-fixture-no-trade-code.json"), *_no_sections(),
              "--out", refused],
             "tradeCode",
         ),
@@ -5080,7 +5095,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         ),
         (
             "window 3 given --inventory",
-            ["plan", "--window", "3", "--inventory", inventory_json, "--packages", packages,
+            ["plan", "--window", "3", "--inventory", inventory_json, "--packages", packages, *_no_sections(),
              "--out", refused],
             "--inventory",
         ),
@@ -6539,7 +6554,7 @@ CONNECTOR_VERBS = {
     "index_citations_leftover", "index_citations_status", "list_definition_kinds",
     "list_definitions", "list_drawing_deliveries", "list_email_templates", "list_files",
     "list_invitation_flow_companies", "list_project_dates", "list_project_options",
-    "list_projects", "list_questions", "list_scope_items", "log_question_reply_received",
+    "list_projects", "list_questions", "list_scope_items", "list_spec_sections", "log_question_reply_received",
     "mark_question_sent", "order_scope_items", "pin_question_reply", "project_set_design_team_company",
     "question_board", "read_deliverables", "read_invitation_flow", "read_question_list",
     "read_set_text", "read_sheet_context",
@@ -7781,7 +7796,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         for window, extra in (
             (1, ["--inventory", str(folder / "inventory.json")]),
             (2, ["--inventory", str(folder / "inventory.json"), "--window-1", str(folder / "plan" / "window-1.json")]),
-            (3, ["--packages", str(packages)]),
+            (3, ["--packages", str(packages), *_no_sections()]),
         ):
             out = folder / f"read-plan-w{window}.md"
             code, bounds, err = run(["plan", "--window", str(window), *extra, "--out", str(out)])
@@ -8052,12 +8067,12 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     # holds: an inventory taken for one issue, or a ledger whose unit ids carry a tag.
     folder = root / "refusals" / "review-without-run"
     write(folder / "inventory.json", first_inventory.read_text(encoding="utf-8"))
-    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(folder / "read-plan.md")],
+    refused(["plan", "--window", "3", "--packages", str(packages), *_no_sections(), "--out", str(folder / "read-plan.md")],
             "window 3 in a pass folder whose inventory names an issue and which holds no run.json", "run.json")
     shutil.rmtree(folder, ignore_errors=True)
     folder = root / "refusals" / "review-tagged-ledger"
     write(folder / "ledger.md", "phase: plan approved\ndispatch 1 i1-A1 i1-A1-1 sheets A-0.01 purpose vocabulary\n")
-    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(folder / "read-plan.md")],
+    refused(["plan", "--window", "3", "--packages", str(packages), *_no_sections(), "--out", str(folder / "read-plan.md")],
             "window 3 in a pass folder whose ledger carries tagged ids and which holds no run.json", "run.json")
     shutil.rmtree(folder, ignore_errors=True)
     folder = tagged_folder("run-not-json", "{ not json")
@@ -8237,7 +8252,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     # Window 3 of an addendum's pass reviews the packages its trades files name and names the rest.
     def review_plan(folder: Path) -> tuple[int, str, str, str]:
         out = folder / "read-plan-w3.md"
-        code, bounds, err = run(["plan", "--window", "3", "--packages", str(packages), "--out", str(out)])
+        code, bounds, err = run(["plan", "--window", "3", "--packages", str(packages), *_no_sections(), "--out", str(out)])
         return code, bounds, err, out.read_text(encoding="utf-8") if code == 0 else ""
 
     write(addendum / "trades" / "i3-A1.txt", "i3-A1-1 trade 09 21 16 4\n")
@@ -8316,10 +8331,10 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         )
     # Both scripts read one grammar, equally strict: a count that is not a whole number is refused.
     write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 candidates 0\n")
-    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(addendum / "read-plan-w3.md")],
+    refused(["plan", "--window", "3", "--packages", str(packages), *_no_sections(), "--out", str(addendum / "read-plan-w3.md")],
             "a trades line in the candidates shape no runner writes", "i3-A2.txt line 1")
     write(addendum / "trades" / "i3-A2.txt", "i3-A2-1 trade 09 21 16 four\n")
-    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(addendum / "read-plan-w3.md")],
+    refused(["plan", "--window", "3", "--packages", str(packages), *_no_sections(), "--out", str(addendum / "read-plan-w3.md")],
             "a trades line whose trade count is not a number", "i3-A2.txt line 1")
     write(addendum / "trades" / "i3-A2.txt", "")
     # The union rests on the reader's own `trades touched:` line, so a unit whose verified line shows
@@ -8367,7 +8382,7 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     except Exception as e:
         errors.append(f"the summary script over a touched line: {e}")
     shutil.rmtree(addendum / "trades", ignore_errors=True)
-    refused(["plan", "--window", "3", "--packages", str(packages), "--out", str(addendum / "read-plan-w3.md")],
+    refused(["plan", "--window", "3", "--packages", str(packages), *_no_sections(), "--out", str(addendum / "read-plan-w3.md")],
             "window 3 of an addendum's pass with no trades files", "trades")
     # A set's pass reviews every package, whatever its trades files say.
     write(first / "trades" / "i1-A1.txt", "i1-A1-1 trade 09 21 16 4\n")
@@ -10329,7 +10344,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         {"id": "pkg-r2", "tradeCode": "22 11 16", "name": "Invented plumbing"},
     ]}), encoding="utf-8")
     review_plan = review_folder / "read-plan.md"
-    review_args = ["plan", "--window", "3", "--packages", str(review_packages), "--out", str(review_plan)]
+    review_args = ["plan", "--window", "3", "--packages", str(review_packages), *_no_sections(), "--out", str(review_plan)]
     code, _bounds, err = run(plan_module, review_args)
     review_blocks = {p["id"]: p for p in _plan_passes(review_plan.read_text(encoding="utf-8"))} if code == 0 else {}
     review = "i1-W3-1"
@@ -11779,180 +11794,207 @@ def check_project_folder_by_id(plugin_path: Path, marketplace_root: Path) -> Res
 
 
 # --------------------------------------------------------------------------- #
-# 31. Whole manual sections: a review reads each section whole, a continuation the rest
+# 31. Manual parts: every manual page is planned before window 3, and read exactly once
 # --------------------------------------------------------------------------- #
 
-# The reading rules that stopped a review partway through a long section: Part 2 alone, twelve
-# pages of it, and the heading searches that found where it started.
+# The reading rules that stopped a review partway through a long section, and the handoff that
+# had a review name the pages it left for a continuation the runner then bound off its report.
 _RETIRED_SECTION_READS = (
     "Part 2 read in part", "Part 2 not found", "at most twelve pages", "for its first twelve",
     "QUALITY ASSURANCE", 'query: "PART 2"', "at most eight calls", "Where its articles start",
+    "## Continuation mode", "pages left p<a>", "continued: pages left", "page cap", "Continues:",
+    "plan_inventory.py' continue", "--pending",
 )
 
-# The one shape a section's pages left take on `sections not checked:`, with the file and first
-# page the section had where the review read it, and the note beside it.
-_PAGES_LEFT_SHAPE = "`<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>`"
-_CONTINUED_SHAPE = "`section <code> p<a> continued: pages left p<a>-p<b>, run only`"
-
-# The whole-section reading and the continuation, in the reviewer's own words, whitespace collapsed.
-_WHOLE_SECTION_PHRASES = (
-    "Read every section on this package whole, from its first page to its last, in the order the "
-    "package's `manualSections` lists them",
-    "A section several packages share is read whole by each of their reviews, and each records only "
-    "its own package's share",
-    "twenty pages on every package, the general requirements package, the one whose `tradeCode` is "
-    "`01 11 13`, among them",
-    "Where the cap runs out inside a section, or before a section's first page, stop reading there",
+# The reviewer's share of the manual and the carry file, in its own words, whitespace collapsed.
+_REVIEWER_MANUAL_PHRASES = (
+    "Every page of every section on this package is read, from its first page to its last, in the "
+    "order the package's `manualSections` lists them, across your review and the manual parts the "
+    "read plan puts after it",
+    "A section several packages share is read whole for each of them, and each records only its "
+    "own package's share",
+    "Read no other page of a section through: the pages after your spans are a manual part's",
+    "Name each span you read on your `spans read:` line, exactly as the `Reads:` line names it",
+    "`<run folder>/carry/<unit id>.md`",
+    "Mandate 9's first case for a section runs in the unit that reads its last page, never before it.",
     "A special warranty", "Extra materials",
     "A field test or inspection Part 3 has the contractor perform or engage",
-    "## Continuation mode",
-    "**Harvest the package's rows alone**",
-    "**Read the Questions** as mandate 7 says",
-    "Where the file or either page differs, a manual replaced since then moved the section: read it "
-    "whole from its `pageStart` now",
-    "`section <code> moved: read whole from p<start>, its manual replaced since, run only`",
-    "The last page you read to is the record's today, never one the dispatch or a report before you names",
-    "`section <code> not read: no longer on the package, run only`",
+)
+_MANUAL_READER_PHRASES = (
+    "`Read` mandate 2 to the line before mandate 5, mandate 6 to the line before mandate 10, "
+    "mandate 12 to the line before mandate 14, and mandate 15 to the line before `## The reader "
+    "mandates you work under`",
+    "Read no page past your spans and no page of a section your line does not name",
+    "up to the page where its Part 2 begins, at most four pages",
+    "**Judge each section whose last page you read**",
     "Run at most ten `search_set_text` calls in all",
-    "**Stop at twenty pages**",
-    "`Continues:`",
-    "`Sections: 230000 from page 901 of file-1a2b p880-p915, 233113 from page 950 of file-1a2b p940-p960`",
+    "`<run folder>/carry/<the unit after After>.md`",
+    "A manual part that created no row runs none of it.",
 )
-
-# The runner's two `continue` commands and the note for pages no pass can take, which the pending
-# run prints, and what the runner does with a continuation another pass took and with a refusal.
-_RUNNER_PENDING_COMMAND = (
-    "python3 '<scripts path>/plan_inventory.py' continue --window 3 --pending '<run folder>' --pass <pass id>"
+_RUNNER_MANUAL_PHRASES = (
+    "`plumlayer:scope-manual-reader` for a manual part's line",
+    "**Hold its pages to the plan first.**",
+    "No unit's report decides what is read next: the plan placed every page before the window started.",
 )
-_RUNNER_UNREAD_NOTE = (
-    "note <window> <pass> <unit> unread section <code> pages <a> to <b> left, no pass can take its continuation"
+_SKILL_MANUAL_PHRASES = (
+    "--sections '<run folder>/plan/spec-sections.json'",
+    "`list_spec_sections(projectId)` response, with no `sections` filter",
+    "subagent_type: plumlayer:scope-manual-reader",
+    "Reviewer definition: <scripts path>/../agents/scope-reviewer.md, written out in full.",
+    "`## Manual sections not read`",
+    "no unit's report decides what is read next",
 )
-_RUNNER_CONTINUE_PHRASES = (
-    "python3 '<scripts path>/plan_inventory.py' continue --window 3 --report '<run folder>/reports/<unit id>.md'",
-    _RUNNER_PENDING_COMMAND,
-    "`Continues: <the unit id after continues>`",
-    "`Sections: <the sections after sections>`",
-    f"`{_RUNNER_UNREAD_NOTE}`",
-    "that unit is not yours to run, so go on to your next unit",
-    "you never read those pages yourself or send any agent to read them outside the plan",
-    "`note <window> <pass> <unit> unread sections not placed: report <digest>, <each section the script cannot read>`",
-    "It still binds a continuation for every section it can read",
-    "Then stop the pass there and go straight to your summary",
-    # A lock another run holds says nothing about the report, so it is run again and never noted.
-    "A refusal saying another run of the script holds the lock is not about the report: run the "
-    "same command again, up to three times in all",
-    "with no note, so the next dispatch of your pass binds it",
-    "so a report someone corrected since is continued",
-)
-# The runner's old note copied the refusal whole for every refusal, a lock kept past the wait among
-# them, and the pending run then passed over that unit for good.
-_RETIRED_RUNNER_CONTINUE = (
-    "unread sections not placed: <the refusal, less its opening plan_inventory:>",
-    "passes over a unit that already carries an `unread sections not placed:` note",
-)
-
-_SKILL_CONTINUE_PHRASES = (
-    "Continues: <the unit id after \"continues\" on the unit line>.",
-    "Sections: <the sections after \"sections\" on the unit line, as \"<code> from page <n> of "
-    "<fileId> p<start>-p<end>\", comma separated>.",
-    "`not read:`, which a review writes only for a section with no page range or whose manual was "
-    "removed, and a continuation for one no longer on its package",
-    "window 3 `unread` notes that name a section",
-    "append each `note 3` line the refusal gives to the ledger as written",
-    # The check-in says a section's rest was read only once a further review read it to its end.
-    "say you read the rest of it in a further review only where the check-in lists that section "
-    "as read to its end in a further review",
-    "name the section, the pages still to read and the package whose next review reads them",
-)
-_RETIRED_SKILL_CONTINUE = (
-    "Where a manual section ran past one review's pages, say you read the rest of it in a second review.",
-)
+# The review's mandates the manual reader reads off the reviewer definition, by number.
+_REVIEWER_MANDATES_READ = {
+    2: "A SEARCH HIT IS A POINTER", 5: "ONE ROW PER PRODUCT", 6: "EVERY PAGE YOU OPEN",
+    9: "THE MANUAL AND THE DRAWINGS", 10: "THE SAME THING, READ FROM TWO SOURCES",
+    12: "EACH SECTION READ WHOLE", 13: "THE GENERAL REQUIREMENTS", 14: "THE STANDARD LINES",
+    15: "THE PACKAGE'S HEADINGS",
+}
 
 
-def _whole_section_text_errors(texts: dict[str, str]) -> list[str]:
-    """What the reviewer, the runner and the skill are missing of the whole-section reading."""
+def _manual_part_text_errors(texts: dict[str, str]) -> list[str]:
+    """What the reviewer, the manual reader, the runner and the skill are missing of manual parts."""
     errors: list[str] = []
     flat = {label: _collapsed(text) for label, text in texts.items()}
-    for label, text in flat.items():
-        errors += [f"the {label} still carries `{phrase}`" for phrase in _RETIRED_SECTION_READS if phrase in text]
-    errors += [
-        f"the reviewer does not carry `{phrase}`" for phrase in
-        _WHOLE_SECTION_PHRASES + (_PAGES_LEFT_SHAPE, _CONTINUED_SHAPE) if phrase not in flat["reviewer"]
-    ]
-    errors += [f"the runner does not carry `{p}`" for p in _RUNNER_CONTINUE_PHRASES if p not in flat["runner"]]
-    errors += [f"the skill does not carry `{p}`" for p in _SKILL_CONTINUE_PHRASES if p not in flat["skill"]]
-    errors += [f"the runner still carries `{p}`" for p in _RETIRED_RUNNER_CONTINUE if p in flat["runner"]]
-    errors += [f"the skill still carries `{p}`" for p in _RETIRED_SKILL_CONTINUE if p in flat["skill"]]
-    # The report line the plan script reads pages left off, one in each shape, the same in both.
-    lines = {
-        label: [line for line in texts[label].splitlines() if line.startswith("sections not checked: <")]
-        for label in ("reviewer", "skill")
-    }
-    if len(lines["reviewer"]) != 1 or lines["reviewer"] != lines["skill"]:
-        errors.append(
-            f"the reviewer's and the skill's `sections not checked:` lines differ: {lines['reviewer']} "
-            f"against {lines['skill']}"
-        )
-    elif _PAGES_LEFT_SHAPE not in lines["reviewer"][0]:
-        errors.append(f"the `sections not checked:` line does not name {_PAGES_LEFT_SHAPE}")
+    for label in ("reviewer", "runner", "skill"):
+        errors += [f"the {label} still carries `{p}`" for p in _RETIRED_SECTION_READS if p in flat[label]]
+    for label, phrases in (
+        ("reviewer", _REVIEWER_MANUAL_PHRASES), ("manual reader", _MANUAL_READER_PHRASES),
+        ("runner", _RUNNER_MANUAL_PHRASES), ("skill", _SKILL_MANUAL_PHRASES),
+    ):
+        errors += [f"the {label} does not carry `{p}`" for p in phrases if p not in flat[label]]
+    for number, heading in _REVIEWER_MANDATES_READ.items():
+        if not re.search(rf"^{number}\. {re.escape(heading)}", texts["reviewer"], re.M):
+            errors.append(f"the reviewer's mandate {number} is not `{heading}`, which the manual reader reads it as")
+    # The report lines the runner holds a unit to, one in each shape, the same in both.
+    for prefix in ("sections not checked: <", "spans read: <"):
+        lines = {
+            label: [line for line in texts[label].splitlines() if line.startswith(prefix)]
+            for label in ("reviewer", "skill")
+        }
+        if len(lines["reviewer"]) != 1 or lines["reviewer"] != lines["skill"]:
+            errors.append(
+                f"the reviewer's and the skill's `{prefix.rstrip(' <')}` lines differ: {lines['reviewer']} "
+                f"against {lines['skill']}"
+            )
+    if not any(line.startswith("spans read: <") for line in texts["manual reader"].splitlines()):
+        errors.append("the manual reader's report names no `spans read:` line")
     return errors
 
 
-def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Result:
-    name = "whole-manual-sections"
+def _manual_spans_cover(sections: list[dict], units: list[list[dict]]) -> list[str]:
+    """Every page of each section in exactly one unit, and no page outside a section."""
+    errors: list[str] = []
+    read: dict[str, list[int]] = {}
+    for unit in units:
+        for span in unit:
+            read.setdefault(span["code"], []).extend(range(span["fromPage"], span["toPage"] + 1))
+    for section in sections:
+        pages = sorted(read.pop(section["code"], []))
+        if pages != list(range(section["pageStart"], section["pageEnd"] + 1)):
+            errors.append(f"section {section['code']} is not read once, page by page: {pages[:6]}...")
+    errors += [f"section {code} is read and is no section of the package" for code in read]
+    return errors
+
+
+def _chain_order_errors(plan_text: str, entries: list[dict]) -> list[str]:
+    """Each manual part in a pass at or after the pass of the unit it reads on after, and where
+    after, in a pass whose `starts after:` waits for that one."""
+    order: list[str] = []
+    holder: dict[str, str] = {}
+    waits: dict[str, str] = {}
+    current = None
+    for line in plan_text.splitlines():
+        heading = re.match(r"^### (\S+?)\.\s", line)
+        if heading:
+            current = heading.group(1)
+            order.append(current)
+        elif current and line.startswith("starts after: "):
+            waits[current] = line[len("starts after: "):]
+        elif current:
+            unit = re.match(r"^[1-9][0-9]*\. (\S+): ", line)
+            if unit:
+                holder[unit.group(1)] = current
+    errors = []
+    for entry in entries:
+        mine, before = holder.get(entry["id"]), holder.get(entry["continues"])
+        if mine is None or before is None:
+            continue
+        if order.index(mine) < order.index(before):
+            errors.append(f"{entry['id']} in {mine} runs before {entry['continues']} in {before}")
+        elif mine != before and before not in waits.get(mine, "").replace(",", " ").split():
+            errors.append(f"{mine} holds {entry['id']} and does not wait for {before}")
+    return errors
+
+
+def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "manual-parts"
     paths = {
         "reviewer": plugin_path / "agents" / "scope-reviewer.md",
+        "manual reader": plugin_path / "agents" / "scope-manual-reader.md",
         "runner": plugin_path / "agents" / "scope-round-runner.md",
         "skill": plugin_path / "skills" / "scope-run" / "SKILL.md",
     }
-    reviewer_fixture = marketplace_root / "harness" / "fixtures" / "reviewer-report-fixture.md"
-    for path in (*paths.values(), reviewer_fixture):
+    for path in paths.values():
         if not path.is_file():
             return Result(name, False, detail=f"not found: {path}")
     texts = {label: path.read_text(encoding="utf-8") for label, path in paths.items()}
-    errors = _whole_section_text_errors(texts)
+    errors = _manual_part_text_errors(texts)
 
-    report_line = next((l for l in texts["skill"].splitlines() if l.startswith("sections not checked: <")), "")
     mutations = {
-        "the twelve-page Part 2 read written back": dict(texts, reviewer=texts["reviewer"].replace(
-            "Read each section with", "Read Part 2 at most twelve pages, then each section with", 1)),
-        "the heading search written back": dict(texts, reviewer=texts["reviewer"] + '\nquery: "PART 2"\n'),
-        "no continuation mode": dict(texts, reviewer=texts["reviewer"].replace("## Continuation mode", "## Second read")),
-        "the skill's report line in another shape": dict(texts, skill=texts["skill"].replace(
-            report_line, report_line.replace("pages left p<a>-p<b>", "pages left <a> to <b>"))),
-        "the runner without the continue command": dict(texts, runner=texts["runner"].replace(
-            "plan_inventory.py' continue --window 3 --report", "plan_inventory.py' plan --window 3 --report")),
-        "the runner without the pending run": dict(texts, runner=texts["runner"].replace(
-            "continue --window 3 --pending", "continue --window 3 --report")),
-        "the continuation reading on in a section that moved": dict(texts, reviewer=texts["reviewer"].replace(
-            "Where the file or either page differs", "Whatever the file or pages")),
-        "the close-out naming every `continued:` note": dict(texts, skill=texts["skill"].replace(
-            "which a review writes only for a section with no page range or whose manual was removed",
-            "which a review writes for a section it did not finish")),
-        "the runner noting a lock kept past the wait as unread": dict(texts, runner=texts["runner"].replace(
-            "run the same command\n  again, up to three times in all", "append the note")),
-        "the check-in saying the rest was read whatever the check-in lists": dict(texts, skill=texts["skill"].replace(
-            "say you read the rest of it in a further review only where the check-in lists\nthat section as read "
-            "to its end in a further review.", "say you read the rest of it in a second review.")),
+        "the reviewer reading past its spans": dict(texts, reviewer=texts["reviewer"].replace(
+            "Read no other page of a section through", "Read on past your spans where you have room")),
+        "the reviewer's silence judged before the last page": dict(texts, reviewer=texts["reviewer"].replace(
+            "never before it.", "in any unit.")),
+        "a continuation mode written back": dict(texts, reviewer=texts["reviewer"] + "\n## Continuation mode\n"),
+        "the manual reader reading the whole reviewer definition": dict(texts, **{"manual reader": texts["manual reader"].replace(
+            "mandate 2 to the line before mandate 5", "the whole file")}),
+        "the runner not holding a unit to its spans": dict(texts, runner=texts["runner"].replace(
+            "**Hold its pages to the plan first.**", "**Read its report.**")),
+        "the runner binding continuations again": dict(texts, runner=texts["runner"] + "\nplan_inventory.py' continue --window 3\n"),
+        "the skill planning without the section list": dict(texts, skill=texts["skill"].replace(
+            "--sections '<run folder>/plan/spec-sections.json'", "")),
+        "the skill's spans line in another shape": dict(texts, skill=texts["skill"].replace(
+            "spans read: <each span the `Reads:` line names", "spans read: <the spans")),
     }
     text_refused = 0
     for label, mutated in mutations.items():
-        if mutated == texts or not _whole_section_text_errors(mutated):
+        if mutated == texts or not _manual_part_text_errors(mutated):
             errors.append(f"the text arm passes with {label}")
         else:
             text_refused += 1
 
     try:
         plan_module = _load_script_module(plugin_path.joinpath(*PLAN_INVENTORY_SCRIPT), "plan_inventory")
-        summary_module = _load_script_module(plugin_path.joinpath(*PASS_SUMMARY_SCRIPT), "pass_summary")
         lead = _load_script_module(plugin_path.joinpath(*LEAD_PASS_SCRIPT), "lead_pass")
+        parts = plan_module.manual_parts
     except Exception as e:
         return Result(name, False, detail=f"cannot import the scripts: {e}")
-    # The five-package folders below need their roofing review in a second pass, beside the first,
-    # so this check plans them four reviews to a pass, in this loaded copy alone. The pass sizes the
-    # script ships are pinned and run by the plan inventory check; the ten units a pass holds, which
-    # decide where a continuation goes, stay as shipped here.
-    plan_module.REVIEWS_PER_PASS = 4
+
+    # The division alone: every page once, each unit at most its pages, a section that fits a unit
+    # never split, and a unit starting partway into a section keeping room for its opening pages.
+    divided = 0
+    for sizes in ([12, 79], [5, 5, 5, 5, 5], [20], [21], [30], [41], [3, 400, 2], [40, 40, 1], [19, 2, 39]):
+        sections, start = [], 1
+        for index, size in enumerate(sizes):
+            sections.append({"code": f"9{index:05d}", "fileId": "file-m1", "pageStart": start, "pageEnd": start + size - 1})
+            start += size
+        review, extra = parts.divide(sections, None, [])
+        units = [review, *extra]
+        errors += [f"sizes {sizes}: {e}" for e in _manual_spans_cover(sections, units)]
+        for number, unit in enumerate(units):
+            room = parts.REVIEW_PAGES if number == 0 else parts.PART_PAGES
+            if unit and unit[0]["fromPage"] > unit[0]["pageStart"]:
+                room -= parts.CONTEXT_RESERVE
+            if parts.pages_of(unit) > room:
+                errors.append(f"sizes {sizes}: unit {number} reads {parts.pages_of(unit)} pages, past its {room}")
+        for section in sections:
+            size = section["pageEnd"] - section["pageStart"] + 1
+            holders = [n for n, unit in enumerate(units) if any(s["code"] == section["code"] for s in unit)]
+            if size <= parts.PART_PAGES and len(holders) > 1:
+                errors.append(f"sizes {sizes}: section {section['code']} of {size} pages is split over units {holders}")
+        divided += 1
 
     def run(module, argv: list[str]) -> tuple[int, str, str]:
         try:
@@ -11960,862 +12002,342 @@ def check_whole_manual_sections(plugin_path: Path, marketplace_root: Path) -> Re
         except SystemExit as e:
             return (e.code if isinstance(e.code, int) else 2), "", ""
 
-    root = Path(__file__).parent / ".test-results" / "whole-manual-sections"
+    root = Path(__file__).parent / ".test-results" / "manual-parts"
     shutil.rmtree(root, ignore_errors=True)
-
-    five_packages = [
-        {"id": "pkg-hvac", "tradeCode": "23 00 00", "name": "Invented HVAC"},
-        {"id": "pkg-plumb", "tradeCode": "22 00 00", "name": "Invented plumbing"},
-        {"id": "pkg-elec", "tradeCode": "26 00 00", "name": "Invented electrical"},
-        {"id": "pkg-carp", "tradeCode": "06 20 00", "name": "Invented finish carpentry"},
-        {"id": "pkg-roof", "tradeCode": "07 50 00", "name": "Invented roofing"},
+    packages = [
+        {"id": "pkg-hvac", "tradeCode": "23 00 00", "name": "Invented HVAC",
+         "manualSections": ["230000", "233113", "230999", "239999"]},
+        {"id": "pkg-roof", "tradeCode": "07 50 00", "name": "Invented roofing", "manualSections": ["075000"]},
+    ]
+    listed_sections = [
+        {"csi": "230000", "title": "Invented mechanical general", "division": "23", "fileId": "file-m1", "pageStart": 100, "pageEnd": 111},
+        {"csi": "233113", "title": "Invented ductwork", "division": "23", "fileId": "file-m1", "pageStart": 112, "pageEnd": 190},
+        {"csi": "230999", "title": "Invented controls", "division": "23", "fileId": None, "pageStart": None, "pageEnd": None},
+        {"csi": "075000", "title": "Invented membrane roofing", "division": "07", "fileId": "file-m1", "pageStart": 300, "pageEnd": 309},
     ]
 
-    def plan_argv(where: Path) -> list[str]:
-        return ["plan", "--window", "3", "--packages", str(where / "plan" / "packages.json"),
-                "--out", str(where / "read-plan.md")]
-
-    def run_folder(where: Path, packages: list[dict]) -> tuple[Path, list[str]]:
+    def folder_of(label: str, rows: list[dict], sections: list[dict], truncated: bool = False) -> Path:
+        where = root / label / "run"
         (where / "plan").mkdir(parents=True)
         (where / "reports").mkdir()
         (where / "run.json").write_text(json.dumps(_issue_run("deliv-w1", ["deliv-w1"], "i1")), encoding="utf-8")
-        (where / "plan" / "packages.json").write_text(json.dumps({"packages": packages}), encoding="utf-8")
-        code, _out, err = run(plan_module, plan_argv(where))
-        if code != 0:
-            errors.append(f"the window 3 plan refused the fixture at {where.name}: {err}")
-        return where, plan_argv(where)
+        write_inputs(where, rows, sections, truncated)
+        return where
 
-    fixture_text = reviewer_fixture.read_text(encoding="utf-8")
+    def write_inputs(where: Path, rows: list[dict], sections: list[dict], truncated: bool = False) -> None:
+        (where / "plan" / "packages.json").write_text(json.dumps({"packages": rows}), encoding="utf-8")
+        (where / "plan" / "spec-sections.json").write_text(json.dumps({
+            "count": len(sections), "sections": sections, "unparsedDivisions": 0, "residueSections": 0,
+            "truncated": truncated,
+        }), encoding="utf-8")
 
-    def report(where: Path, unit: str, left: list[str], package: str = "Invented HVAC") -> Path:
-        """The reviewer fixture as a report of this unit, its `sections not checked:` line given."""
-        lines = fixture_text.splitlines()
-        lines[0] = f"unit: {unit}   package: {package}   trade: 23 00 00   window: 3"
-        at = lines.index("sections not checked: none")
-        lines[at:at + 1] = [f"sections not checked: {left[0]}", *left[1:]] if left else [lines[at]]
-        path = where / "reports" / f"{unit}.md"
-        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        return path
-
-    def verified(where: Path, pass_id: str, unit: str) -> None:
-        with (where / "ledger.md").open("a", encoding="utf-8") as ledger:
-            ledger.write(
-                f"dispatch 3 {pass_id} {unit} sheets none purpose review the package\n"
-                f"verified 3 {pass_id} {unit} created 3 items 2 updated 0 questions 0 replied 0 sent 3 "
-                f"landed 3 conflicts 0 result ok\n"
-            )
-
-    def block_units(where: Path, pass_id: str) -> list[str]:
-        try:
-            return summary_module.read_plan(where / "read-plan.md", 3, pass_id)["units"]
-        except Exception as e:
-            errors.append(f"the read plan's {pass_id} block does not read: {e}")
-            return []
-
-    def refused(label: str, argv: list[str]) -> bool:
-        code, out, err = run(plan_module, argv)
-        if code == 1 and not out and len(err.splitlines()) == 1 and err.startswith("plan_inventory: "):
-            return True
-        errors.append(f"continue does not refuse {label} in one line: exit {code}, {out!r}, {err!r}")
-        return False
+    def plan_argv(where: Path) -> list[str]:
+        return ["plan", "--window", "3", "--packages", str(where / "plan" / "packages.json"),
+                "--sections", str(where / "plan" / "spec-sections.json"), "--out", str(where / "read-plan.md")]
 
     def files_of(where: Path) -> tuple[bytes, bytes]:
         return (where / "read-plan.md").read_bytes(), (where / "plan" / "window-3.json").read_bytes()
 
-    # The pinned shape, filled in, is what the plan script reads pages left off.
-    shape = _PAGES_LEFT_SHAPE.strip("`")
+    def plan_file(where: Path) -> dict:
+        return json.loads((where / "plan" / "window-3.json").read_text(encoding="utf-8"))
 
-    def left(code: str, start: int, end: int, first: int, file_id: str = "file-m1") -> str:
-        return (
-            shape.replace("<code>", code).replace("<a>", str(start)).replace("<b>", str(end))
-            .replace("<fileId>", file_id).replace("<start>", str(first))
-        )
-
-    def runner_argv(marker: str, where: Path, unit: str = "", pass_id: str = "") -> list[str]:
-        """A `continue` command of the runner's own, filled in, or its documented form where the
-        runner lost it, which the text arm names."""
-        command = next((line.strip() for line in texts["runner"].splitlines() if marker in line), "")
-        if not command:
-            command = _RUNNER_PENDING_COMMAND
-        return shlex.split(
-            command.replace("<scripts path>", str(plugin_path / "scripts"))
-            .replace("<run folder>", where.as_posix()).replace("<unit id>", unit).replace("<pass id>", pass_id)
-        )[2:]
-
-    folder, plan_args = run_folder(root / "run", five_packages)
-    pass_id, review = "i1-W3-1", "i1-rev-230000-1"
-    first, second = f"{review}c-1", f"{review}c-2"
-    others = ["i1-rev-220000-1", "i1-rev-260000-1", "i1-rev-062000-1"]
-    plan_path, window_3 = folder / "read-plan.md", folder / "plan" / "window-3.json"
-    review_report = report(folder, review, [left("230000", 901, 915, 880), left("233113", 950, 960, 940)])
-    continue_args = ["continue", "--window", "3", "--report", str(review_report)]
-    script_refusals = int(refused("a review with no verified line", continue_args))
-
-    verified(folder, pass_id, review)
-    run(plan_module, plan_args)
-
-    # Every check comes before any write: a pass summary on file that does not read as text stops
-    # continue only after it read everything else, and neither file has changed.
-    pass_summary_path = folder / "reports" / f"{pass_id}.md"
-    pass_summary_path.write_bytes(b"\xff\xfe not text\n")
-    before = files_of(folder)
-    script_refusals += refused("a pass summary on file that does not read", continue_args)
-    if files_of(folder) != before:
-        errors.append("continue refused and still wrote: plan/window-3.json or the read plan changed before its last check")
-    pass_summary_path.unlink()
-
-    # A session that stopped between the review's `verified` line and its `continue` run: the
-    # runner's pending run, as its definition writes it, binds the continuation the stop left out.
-    code, out, err = run(plan_module, runner_argv("continue --window 3 --pending", folder, pass_id=pass_id))
-    wanted_line = (
-        f"2. {first}: Invented HVAC, trade 23 00 00, package pkg-hvac, continues {review}, sections "
-        f"230000 from page 901 of file-m1 p880-p915, 233113 from page 950 of file-m1 p940-p960"
-    )
-    if code != 0 or not out.startswith(f"bound {first} in pass {pass_id} after {review}"):
-        errors.append(f"the runner's pending run does not bind {first} after {review} on a resume: exit {code}, {out!r}, {err!r}")
-    elif block_units(folder, pass_id) != [review, first, *others] or wanted_line not in plan_path.read_text(
-        encoding="utf-8"
-    ).splitlines():
-        errors.append(f"the continuation does not sit right after its review with each section's file and range: {block_units(folder, pass_id)}")
-    bound = json.loads(window_3.read_text(encoding="utf-8")).get("continuations") if window_3.is_file() else None
-    if bound != [{
-        "id": first, "packageId": "pkg-hvac", "review": review, "continues": review,
-        "sections": [
-            {"code": "230000", "fromPage": 901, "toPage": 915, "fileId": "file-m1", "pageStart": 880},
-            {"code": "233113", "fromPage": 950, "toPage": 960, "fileId": "file-m1", "pageStart": 940},
-        ],
-    }]:
-        errors.append(f"plan/window-3.json binds {bound}, not the continuation with each section's pages left, file and first page")
-
-    # The review's own continue run after it, the pending run again and a replan change no byte.
-    before = files_of(folder)
-    code, out, err = run(plan_module, continue_args)
-    if code != 0 or not out.startswith("already bound: ") or files_of(folder) != before:
-        errors.append(f"continue run after the pending run changed something or refused: exit {code}, {out!r}, {err!r}")
-    code, out, err = run(plan_module, runner_argv("continue --window 3 --pending", folder, pass_id=pass_id))
-    if code != 0 or out != f"nothing to continue in pass {pass_id}" or files_of(folder) != before:
-        errors.append(f"the pending run again changed something or printed more: exit {code}, {out!r}, {err!r}")
-    run(plan_module, plan_args)
-    if files_of(folder) != before:
-        errors.append("a window 3 replan does not write the plan continue wrote")
-
-    # A continuation that leaves pages is continued in turn, after it, under the next number; one
-    # that found a section gone from its package names it with no pages left.
-    verified(folder, pass_id, first)
-    code, out, err = run(plan_module, ["continue", "--window", "3", "--report", str(report(
-        folder, first, [left("230000", 911, 915, 880), "233113 not on the package"]))])
-    if code != 0 or block_units(folder, pass_id) != [review, first, second, *others]:
-        errors.append(f"a continuation's pages left are not continued by {second} after it: {out!r} {err!r}")
-    units = block_units(folder, pass_id) + block_units(folder, "i1-W3-2")
-    prefixes = [f"scopeItem:{unit}-" for unit in units]
-    if any(a != b and a.startswith(b) for a in prefixes for b in prefixes) or any(
-        plan_module._parse_unit_id(unit) is None for unit in units
-    ):
-        errors.append(f"a unit id is not a legal subject prefix stem, or is a prefix of another: {units}")
-
-    for unit in others:
-        verified(folder, pass_id, unit)
-        report(folder, unit, [], package="Invented other")
-    notes = {
-        "901": f"section 230000 p901 continued: pages left p901-p915, run only",
-        "950": f"section 233113 p950 continued: pages left p950-p960, run only",
-        "911": f"section 230000 p911 continued: pages left p911-p915, run only",
-        "gone": f"section 233113 not read: no longer on the package, run only",
-    }
-    with (folder / "ledger.md").open("a", encoding="utf-8") as ledger:
-        ledger.write(
-            f"note 3 {pass_id} {review} anomaly {notes['901']}\n"
-            f"note 3 {pass_id} {review} anomaly {notes['950']}\n"
-            f"note 3 {pass_id} {first} anomaly {notes['911']}\n"
-            f"note 3 {pass_id} {first} anomaly {notes['gone']}\n"
-        )
-    (folder / "trades").mkdir()
-    (folder / "trades" / f"{pass_id}.txt").write_text(
-        "", encoding="utf-8"
-    )
-
-    def checkin(where: Path) -> list[str]:
-        """The pass summed and the check-in printed, as the runner and the lead run them."""
-        code, hand_back, err = run(summary_module, [
-            str(where / "ledger.md"), "3", pass_id, "--plan", str(where / "read-plan.md"),
-            "--trades", str(where / "trades" / f"{pass_id}.txt"), "--out", str(where / "reports" / f"{pass_id}.md"),
-        ])
-        if code != 0:
-            errors.append(f"the pass summary refused the check-in fixture at {where.parent.name}: {err!r}")
-        code, out, err = run(lead, ["checkin", str(where), "3", "--passes", pass_id])
-        if code != 0:
-            errors.append(f"the check-in refused the fixture at {where.parent.name}: {err!r}")
-        return out.splitlines()
-
-    to_look, read_on = "to look at: Invented HVAC: ", "read to its end in a further review: Invented HVAC: "
-
-    # Before the last continuation verifies, the review's 230000 pages went to a continuation that
-    # left pages again, and its 233113 to one that found the section gone from its package, so
-    # neither section is read to its end: not where the lead lists the passes again, as the skill
-    # runs, and not where a resume planned the window again and marked the units verified.
-    replanned = root / "replanned" / "run"
-    shutil.copytree(folder, replanned)
-    run(plan_module, plan_argv(replanned))
-    # Nor does the pass's own description name a section as read on.
-    for how, where in (("listed again", folder), ("planned again", replanned)):
-        checked = checkin(where)
-        missing = [to_look + note for note in notes.values() if to_look + note not in checked]
-        if missing:
-            errors.append(f"with {second} not verified and the passes {how}, the check-in does not print {missing}")
-        if any("manual section" in line for line in checked):
-            errors.append(
-                f"with {second} not verified and the passes {how}, the check-in describes a section "
-                f"still open as read: {[line for line in checked if 'manual section' in line]}"
-            )
-
-    # Once the last continuation verifies on the ledger, with no replan, the 230000 notes print as
-    # read to its end and the section gone from its package stays to look at. The pass names 230000
-    # once, from the page its chain started on, and never 233113, which is still open.
-    verified(folder, pass_id, second)
-    report(folder, second, [])
-    checked = checkin(folder)
-    wanted = [read_on + notes["901"], read_on + notes["911"], to_look + notes["950"], to_look + notes["gone"]]
-    read_to_end = "the rest of 1 manual section read (230000 from page 901 for Invented HVAC)"
-    described = [line for line in checked if "manual section" in line]
-    if [line for line in wanted if line not in checked] or len(described) != 1 or f"{read_to_end}: " not in described[0]:
-        errors.append(
-            f"with every continuation verified on the ledger alone, the check-in does not print "
-            f"{[line for line in wanted if line not in checked]} or describes the sections read on "
-            f"other than `{read_to_end}`: {described}"
-        )
-
-    # The summary counts the continuations as units of their review's pass, and the lead's record
-    # takes their prefixes in.
-    code, hand_back, err = run(summary_module, [
-        str(folder / "ledger.md"), "3", pass_id, "--plan", str(plan_path),
-        "--trades", str(folder / "trades" / f"{pass_id}.txt"), "--out", str(pass_summary_path),
-    ])
-    per_review = summary_module.read_review(reviewer_fixture)
-    wanted_review = f"review: pages opened {6 * per_review['pagesOpened']}, searches {6 * per_review['searches']}"
-    if code != 0 or "units: 6, verified 6" not in hand_back.splitlines() or wanted_review not in hand_back.splitlines():
-        errors.append(f"the pass summary does not count the two continuations: {hand_back!r} {err!r}")
-    counts = json.dumps([{"subjectPrefix": f"scopeItem:{u}-", "entryCount": 3} for u in block_units(folder, pass_id)])
-    code, out, err = run(lead, ["record", str(folder / "ledger.md"), "3", pass_id, "--plan", str(plan_path),
-                                "--counts-json", counts])
-    if code != 0 or not out.startswith(f"pass: 3 {pass_id} units 6 created 18 "):
-        errors.append(f"the lead's record does not take the continuations in: exit {code}, {out!r}, {err!r}")
-    elif len(out.splitlines()) < 2 or f"{read_to_end}: " not in out.splitlines()[1]:
-        errors.append(f"the lead's record says the pass other than with `{read_to_end}`: {out.splitlines()[1:2]}")
-
-    # The runner's own commands, filled in, are ones the script runs.
-    code, out, err = run(plan_module, runner_argv("continue --window 3 --report", folder, unit=review))
-    if code != 0 or not out.startswith("already bound: "):
-        errors.append(f"the runner's continue command does not run as written: exit {code}, {err!r}")
-    code, out, err = run(plan_module, runner_argv("continue --window 3 --pending", folder, pass_id=pass_id))
-    if code != 0 or out != f"nothing to continue in pass {pass_id}":
-        errors.append(f"the runner's pending command does not run as written: exit {code}, {out!r}, {err!r}")
-
-    # Refusals, each exit 1 with one line and nothing written. Each section the report names in a
-    # way the script cannot read is named in the runner's note the refusal gives.
-    refusal_cases = {
-        "a report with nothing left": ([], None),
-        "a pages left line in another shape": (["230000 pages left p901-p915"], "pages left in a shape"),
-        "a section named twice": ([left("230000", 901, 915, 880), left("230000", 920, 930, 880)], "named twice"),
-        "a last page before the first": ([left("230000", 915, 901, 880)], "last page before its first"),
-        "a last page left that is not its section's last page": (
-            ["230000 pages left p901-p915 of file-m1 p880-p920"], "not its section's last page"),
-        "a first page left before its section's first page": (
-            [left("230000", 870, 915, 880)], "first page left before its section's first page"),
-    }
-    given_note = ""
-    for label, (lines, why) in refusal_cases.items():
-        argv = ["continue", "--window", "3", "--report", str(report(folder, others[0], lines, package="Invented plumbing"))]
-        before = files_of(folder)
-        if refused(label, argv):
-            script_refusals += 1
-            notes_given = re.findall(r"`(note 3 [^`]+)`", run(plan_module, argv)[2])
-            if why and (len(notes_given) != 1 or not notes_given[0].startswith(
-                f"note 3 {pass_id} {others[0]} unread sections not placed: report "
-            ) or "section 230000 with " not in notes_given[0] or why not in notes_given[0]):
-                errors.append(f"the refusal of {label} does not give the runner's note naming section 230000: {notes_given}")
-            given_note = notes_given[0] if notes_given else ""
-        if files_of(folder) != before:
-            errors.append(f"continue refused {label} and still wrote")
-    # The note the refusal gave for the report as it reads now is the one the pending run prints and
-    # then passes over, so the same report stops no later dispatch of the pass.
-    pending_args = runner_argv("continue --window 3 --pending", folder, pass_id=pass_id)
-    code, out, err = run(plan_module, pending_args)
-    if code != 0 or out != given_note:
-        errors.append(f"the pending run over a report it cannot read does not print the refusal's note {given_note!r}: exit {code}, {out!r}, {err!r}")
-    with (folder / "ledger.md").open("a", encoding="utf-8") as ledger:
-        ledger.write(given_note + "\n")
-    code, out, err = run(plan_module, pending_args)
-    if code != 0 or out != f"nothing to continue in pass {pass_id}":
-        errors.append(f"the pending run does not pass over a unit whose report the runner noted as refused: exit {code}, {out!r}, {err!r}")
-    elsewhere = root / "elsewhere"
-    elsewhere.mkdir()
-    shutil.copy(review_report, elsewhere / review_report.name)
-    script_refusals += refused("a report outside a run folder's reports", [
-        "continue", "--window", "3", "--report", str(elsewhere / review_report.name)])
-    stranger = "i1-rev-999999-1"
-    verified(folder, pass_id, stranger)
-    script_refusals += refused("a unit the plan does not carry", [
-        "continue", "--window", "3", "--report", str(report(folder, stranger, [left("999999", 1, 2, 1)]))])
-    # Each folder below is a project of its own, since run folders side by side are one project's
-    # passes and may not share a unit tag.
-    broken = root / "broken" / "run"
-    shutil.copytree(folder, broken)
-    data = json.loads((broken / "plan" / "window-3.json").read_text(encoding="utf-8"))
-    if len(data.get("continuations") or []) == 2:
-        data["continuations"][1]["continues"] = review
-        (broken / "plan" / "window-3.json").write_text(json.dumps(data), encoding="utf-8")
-        script_refusals += refused("one report continued twice in the plan file", [
-            "continue", "--window", "3", "--report", str(broken / "reports" / f"{review}.md")])
-    else:
-        errors.append(f"plan/window-3.json carries {len(data.get('continuations') or [])} continuations, not 2")
-
-    # A pass at ten units carries a review's continuation into a pass of continuations after it,
-    # `i1-W3-1b`, which waits for that pass and which the lead's listing holds back until it is
-    # finished; a replan writes the same files; a continuation there that leaves pages is continued
-    # in that pass in turn. Only where no letter is left is it refused, and then the refusal and
-    # the pending run give the runner's own `unread` note for each section left, once.
-    full, full_args = run_folder(root / "full" / "run", [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 11)
-    ])
-    full_unit, carried_pass = "i1-rev-092116-1", "i1-W3-1b"
-    verified(full, "i1-W3-1", full_unit)
-    run(plan_module, full_args)
-    full_report = report(full, full_unit, [left("092116", 30, 44, 20), left("092900", 50, 52, 46)], package="Invented drywall 1")
-    code, out, err = run(plan_module, ["continue", "--window", "3", "--report", str(full_report)])
-    carried_block = {}
-    try:
-        carried_block = summary_module.read_plan(full / "read-plan.md", 3, carried_pass)
-    except Exception as e:
-        errors.append(f"a full pass's continuation has no block of its own: {e}")
-    carried_entries = [
-        entry for entry in json.loads((full / "plan" / "window-3.json").read_text(encoding="utf-8")).get("continuations") or []
-        if entry.get("id") == f"{full_unit}c-1"
-    ]
-    if (
-        code != 0 or not out.startswith(f"bound {full_unit}c-1 in pass {carried_pass}, continuing {full_unit}")
-        or carried_block.get("units") != [f"{full_unit}c-1"]
-        or (carried_block.get("fields") or {}).get("starts after") != "i1-W3-1"
-        or block_units(full, "i1-W3-1") != [f"i1-rev-092116-{n}" for n in range(1, 11)]
-        or [entry.get("pass") for entry in carried_entries] != [carried_pass]
-    ):
-        errors.append(
-            f"a pass at ten units does not carry the continuation into {carried_pass}, waiting for "
-            f"i1-W3-1, with the plan file naming that pass: exit {code}, {out!r}, {err!r}, block {carried_block}"
-        )
-    code, out, err = run(lead, ["passes", "--plan", str(full / "read-plan.md")])
-    if code != 0 or "start now: i1-W3-1" not in out.splitlines() or f"waiting: {carried_pass}" not in out.splitlines():
-        errors.append(f"the lead's listing does not hold {carried_pass} back until i1-W3-1 is finished: {out!r} {err!r}")
-    before = files_of(full)
-    run(plan_module, full_args)
-    if files_of(full) != before:
-        errors.append(f"a window 3 replan does not write the {carried_pass} block and plan file continue wrote")
-    verified(full, carried_pass, f"{full_unit}c-1")
-    code, out, err = run(plan_module, ["continue", "--window", "3", "--report", str(
-        report(full, f"{full_unit}c-1", [left("092900", 51, 52, 46)], package="Invented drywall 1"))])
-    if code != 0 or block_units(full, carried_pass) != [f"{full_unit}c-1", f"{full_unit}c-2"]:
-        errors.append(
-            f"a continuation in {carried_pass} that leaves pages is not continued in that pass: "
-            f"{out!r} {err!r} {block_units(full, carried_pass)}"
-        )
-
-    second_unit = "i1-rev-092116-2"
-    verified(full, "i1-W3-1", second_unit)
-    second_report = report(full, second_unit, [left("092116", 30, 44, 20), left("092900", 50, 52, 46)], package="Invented drywall 2")
-    letters = plan_module.CARRY_LETTERS
-    plan_module.CARRY_LETTERS = ""
-    try:
-        before = files_of(full)
-        if refused("a pass at ten units with no letter left", ["continue", "--window", "3", "--report", str(second_report)]):
-            script_refusals += 1
-            if "no pass can take its continuation" not in run(plan_module, [
-                "continue", "--window", "3", "--report", str(second_report)])[2]:
-                errors.append("the refusal with no letter left does not give the runner's unread note")
-        if files_of(full) != before:
-            errors.append("continue refused with no letter left and still wrote")
-        unread = [
-            _RUNNER_UNREAD_NOTE.replace("<window>", "3").replace("<pass>", "i1-W3-1").replace("<unit>", second_unit)
-            .replace("<code>", code).replace("<a>", str(a)).replace("<b>", str(b))
-            for code, a, b in (("092116", 30, 44), ("092900", 50, 52))
-        ]
-        pending_full = runner_argv("continue --window 3 --pending", full, pass_id="i1-W3-1")
-        for appended in range(3):
-            code, out, err = run(plan_module, pending_full)
-            wanted_out = unread[appended:] or ["nothing to continue in pass i1-W3-1"]
-            if code != 0 or out.splitlines() != wanted_out:
-                errors.append(
-                    f"the pending run with no letter left and {appended} unread notes appended prints "
-                    f"{out!r} {err!r}, not {wanted_out}"
+    def dispatch(where: Path, pass_id: str, unit: str, ok: bool = False) -> None:
+        with (where / "ledger.md").open("a", encoding="utf-8") as ledger:
+            ledger.write(f"dispatch 3 {pass_id} {unit} sheets none purpose read the package\n")
+            if ok:
+                ledger.write(
+                    f"verified 3 {pass_id} {unit} created 1 items 1 updated 0 questions 0 replied 0 sent 1 "
+                    f"landed 1 conflicts 0 result ok\n"
                 )
-                break
-            if appended < 2:
-                with (full / "ledger.md").open("a", encoding="utf-8") as ledger:
-                    ledger.write(unread[appended] + "\n")
-    finally:
-        plan_module.CARRY_LETTERS = letters
 
-    # A replan whose trade's reviews and continuations come to more than ten, nine reviews and
-    # a continuation and then a tenth package on that trade, carries the continuation into a
-    # pass of continuations after the trade's pass, and the plan file names that pass.
-    nine, nine_args = run_folder(root / "nine" / "run", [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 10)
-    ])
-    verified(nine, "i1-W3-1", full_unit)
-    code, out, err = run(plan_module, ["continue", "--window", "3", "--report", str(
-        report(nine, full_unit, [left("092116", 30, 44, 20)], package="Invented drywall 1"))])
-    if code != 0:
-        errors.append(f"continue does not bind the tenth unit of a pass of nine reviews: exit {code}, {err!r}")
-    packages_path = nine / "plan" / "packages.json"
-    grown = json.loads(packages_path.read_text(encoding="utf-8"))["packages"] + [
-        {"id": "pkg-dry-10", "tradeCode": "09 21 16", "name": "Invented drywall 10"}
-    ]
-    packages_path.write_text(json.dumps({"packages": grown}), encoding="utf-8")
-    # The same replan with no letter left refuses in one line giving the runner's unread note for
-    # each section the continuation it cannot place carries, and writes nothing.
-    no_letter = root / "nine-no-letter" / "run"
-    shutil.copytree(nine, no_letter)
-    letters = plan_module.CARRY_LETTERS
-    plan_module.CARRY_LETTERS = ""
-    try:
-        before = files_of(no_letter)
-        no_letter_note = (
-            f"note 3 i1-W3-1 {full_unit} unread section 092116 pages 30 to 44 left, no pass can take its continuation"
-        )
-        if refused("a replan with no letter left for the continuation it carries out", plan_argv(no_letter)):
-            script_refusals += 1
-            if re.findall(r"`(note 3 [^`]+)`", run(plan_module, plan_argv(no_letter))[2]) != [no_letter_note]:
-                errors.append(f"the replan with no letter left does not give the note `{no_letter_note}`")
-        if files_of(no_letter) != before:
-            errors.append("the replan with no letter left still wrote")
-    finally:
-        plan_module.CARRY_LETTERS = letters
-    code, out, err = run(plan_module, nine_args)
-    nine_entries = json.loads((nine / "plan" / "window-3.json").read_text(encoding="utf-8")).get("continuations") or []
-    if (
-        code != 0 or block_units(nine, "i1-W3-1") != [f"i1-rev-092116-{n}" for n in range(1, 11)]
-        or block_units(nine, carried_pass) != [f"{full_unit}c-1"]
-        or [entry.get("pass") for entry in nine_entries] != [carried_pass]
-    ):
-        errors.append(
-            f"a replan of nine reviews of one trade, a continuation and a tenth package does not "
-            f"carry the continuation into {carried_pass}: exit {code}, {out!r}, {err!r}"
-        )
+    script_refused = 0
 
-    # A continuation whose cap ran out inside a section reached none its dispatch named after it,
-    # and its report names them on no line: continue carries them on from where the dispatch
-    # started each, and the check-in reads none of them as read to its end until the continuation
-    # that reads on in them verifies. A report line carrying two sections, `; ` between them, is
-    # read as two.
-    reach, _reach_args = run_folder(root / "reach" / "run", five_packages)
-    verified(reach, pass_id, review)
-    run(plan_module, ["continue", "--window", "3", "--report", str(report(reach, review, [
-        f"{left('230000', 901, 915, 880)}; {left('233113', 950, 960, 940)}", left("233400", 970, 980, 965),
-    ]))])
-    verified(reach, pass_id, first)
-    code, out, err = run(plan_module, ["continue", "--window", "3", "--report", str(
-        report(reach, first, [left("230000", 911, 915, 880)]))])
-    reach_line = next((line for line in (reach / "read-plan.md").read_text(encoding="utf-8").splitlines() if f"{second}:" in line), "")
-    wanted_sections = (
-        "sections 230000 from page 911 of file-m1 p880-p915, 233113 from page 950 of file-m1 p940-p960, "
-        "233400 from page 970 of file-m1 p965-p980"
-    )
-    if code != 0 or not reach_line.endswith(wanted_sections) or block_units(reach, pass_id)[:3] != [review, first, second]:
-        errors.append(
-            f"a continuation's report naming pages left in its first section and nothing of the two "
-            f"after it does not carry all three on: exit {code}, {out!r}, {err!r}, {reach_line!r}"
-        )
-    read_on_key = (first, "233113", 950)
-    if (review, "233113", 950) in lead._sections_read_to_end(reach / "read-plan.md", reach / "ledger.md"):
-        errors.append("the check-in reads a section the continuation never reached as read to its end")
-    verified(reach, pass_id, second)
-    report(reach, second, [])
-    if (review, "233113", 950) not in lead._sections_read_to_end(reach / "read-plan.md", reach / "ledger.md") or (
-        read_on_key not in lead._sections_read_to_end(reach / "read-plan.md", reach / "ledger.md")
-    ):
-        errors.append("once the continuation that reads on in it verifies, the check-in does not read the section as read to its end")
-
-    # Two runners continuing reviews of two passes at once: each read is slowed so the two overlap,
-    # and the run folder's lock still keeps both continuations, in the plan file and in each block.
-    race, race_args = run_folder(root / "race" / "run", five_packages)
-    roof = "i1-rev-075000-1"
-    verified(race, pass_id, review)
-    verified(race, "i1-W3-2", roof)
-    race_reports = [
-        report(race, review, [left("230000", 901, 915, 880)]),
-        report(race, roof, [left("075000", 12, 20, 10)], package="Invented roofing"),
-    ]
-    reading = plan_module._read_window_3_continuations
-    outcomes: dict[str, object] = {}
-
-    def slow_read(path: Path) -> list[dict]:
-        found = reading(path)
-        time.sleep(0.3)
-        return found
-
-    def continue_in_thread(path: Path) -> None:
-        try:
-            outcomes[path.stem] = plan_module.continue_review(path)
-        except Exception as e:
-            outcomes[path.stem] = e
-
-    plan_module._read_window_3_continuations = slow_read
-    try:
-        threads = [threading.Thread(target=continue_in_thread, args=(path,)) for path in race_reports]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join(30)
-    finally:
-        plan_module._read_window_3_continuations = reading
-    race_bound = sorted(
-        entry.get("id") for entry in json.loads((race / "plan" / "window-3.json").read_text(encoding="utf-8")).get("continuations") or []
-    )
-    if (
-        any(isinstance(outcome, Exception) for outcome in outcomes.values()) or len(outcomes) != 2
-        or race_bound != sorted([f"{review}c-1", f"{roof}c-1"])
-        or block_units(race, pass_id)[:2] != [review, f"{review}c-1"] or block_units(race, "i1-W3-2") != [roof, f"{roof}c-1"]
-    ):
-        errors.append(
-            f"two continue runs at once do not both land: {outcomes}, plan/window-3.json binds "
-            f"{race_bound}, blocks {block_units(race, pass_id)} and {block_units(race, 'i1-W3-2')}"
-        )
-
-    # A lock a running run holds past the wait is refused in one line naming it, by `continue` and
-    # by a window 3 replan, and nothing is written. One a run held when its process ended, as a
-    # session that hit its usage limit leaves it, is taken over at once, with one line saying so
-    # and naming that run's process. A temporary file another run left beside the read plan stops
-    # no write.
-    plumbing = "i1-rev-220000-1"
-    verified(race, pass_id, plumbing)
-    plumbing_args = ["continue", "--window", "3", "--report", str(
-        report(race, plumbing, [left("220000", 5, 9, 1)], package="Invented plumbing"))]
-    wait = getattr(plan_module, "LOCK_WAIT_SECONDS", None)
-    plan_module.LOCK_WAIT_SECONDS = 0.3
-    try:
-        with plan_module._window_3_lock(race):
-            before = files_of(race)
-            for label, argv in (("a lock another run holds", plumbing_args), ("a replan while another run holds the lock", race_args)):
-                if refused(label, argv):
-                    script_refusals += 1
-                    if "window-3.lock" not in run(plan_module, argv)[2]:
-                        errors.append(f"the refusal of {label} does not name the lock")
-            if files_of(race) != before:
-                errors.append("continue or a replan wrote while another run held the lock")
-        holder = subprocess.Popen([
-            sys.executable, "-c",
-            "import os, sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); import plan_inventory; "
-            # Held by a name, so the lock is still held, not released, when the process ends.
-            "held = plan_inventory._window_3_lock(Path(sys.argv[2])); held.__enter__(); os._exit(0)",
-            str(plugin_path / "scripts"), str(race),
-        ])
-        holder.wait(60)
-        plan_module.LOCK_WAIT_SECONDS = 5.0
-        code, out, err = run(plan_module, race_args)
-        if code != 0 or len(err.splitlines()) != 1 or "window-3.lock" not in err or str(holder.pid) not in err:
-            errors.append(
-                f"a replan after a run ended holding the lock does not take it over with one line naming "
-                f"the lock and that run's process {holder.pid}: exit {code}, {err!r}"
-            )
-    finally:
-        if wait is None:
-            del plan_module.LOCK_WAIT_SECONDS
+    def refused(label: str, where: Path, wanted: str, argv: list[str] | None = None) -> None:
+        nonlocal script_refused
+        before = files_of(where) if (where / "plan" / "window-3.json").is_file() else None
+        code, _out, err = run(plan_module, argv or plan_argv(where))
+        after = files_of(where) if (where / "plan" / "window-3.json").is_file() else None
+        if code != 1 or wanted not in err or len(err.strip().splitlines()) != 1:
+            errors.append(f"{label}: exit {code}, wanted one line naming {wanted!r}: {err.strip()[:300]}")
+        elif before != after:
+            errors.append(f"{label}: the refusal wrote a file")
         else:
-            plan_module.LOCK_WAIT_SECONDS = wait
-    (race / "read-plan.md.tmp").mkdir()
-    (race / "plan" / "window-3.json.tmp").mkdir()
-    code, out, err = run(plan_module, plumbing_args)
-    if code != 0 or not out.startswith(f"bound {plumbing}c-1 "):
-        errors.append(f"a temporary file another run left stops continue from writing: exit {code}, {err!r}")
+            script_refused += 1
 
-    # A replan that deletes a package whose section a continuation has not read to its end, one
-    # bound and not verified or one verified that left pages again, is refused in one line naming
-    # the section, its pages left and the package, writing nothing. It goes through once the lead
-    # appends the `unread` note the refusal gives, which is the shape the close-out reads, and the
-    # plan file keeps the continuation.
-    gone, gone_args = run_folder(root / "gone" / "run", five_packages)
-    gone_packages = gone / "plan" / "packages.json"
-    verified(gone, "i1-W3-2", roof)
-    run(plan_module, ["continue", "--window", "3", "--report", str(
-        report(gone, roof, [left("075000", 12, 20, 10)], package="Invented roofing"))])
-
-    def deleted_refusal(label: str, kept: list[str], wanted: list[str], note: str) -> str:
-        """The replan's refusal once only `kept` packages are listed, and the note it gives."""
-        gone_packages.write_text(
-            json.dumps({"packages": [p for p in five_packages if p["id"] in kept]}), encoding="utf-8"
-        )
-        before = files_of(gone)
-        code, out, err = run(plan_module, gone_args)
-        given = re.search(r"`(note 3 [^`]+)`", err)
-        if (
-            code != 1 or out or len(err.splitlines()) != 1 or files_of(gone) != before
-            or [word for word in wanted if word not in err] or given is None
-            or not given.group(1).startswith(note) or given.group(1).split()[4:6] != ["unread", "section"]
-        ):
-            errors.append(
-                f"a replan deleting {label} is not refused in one line naming {wanted} and giving the "
-                f"note `{note}...`, or wrote: exit {code}, {out!r}, {err!r}"
-            )
-            return ""
-        return given.group(1)
-
-    without_roof = [p["id"] for p in five_packages if p["id"] != "pkg-roof"]
-    script_refusals += bool(deleted_refusal(
-        "a package whose continuation is not verified", without_roof,
-        ["075000", "12 to 20", "pkg-roof", "Invented roofing"],
-        f"note 3 i1-W3-2 {roof} unread section 075000 pages 12 to 20 left, ",
-    ))
-    verified(gone, "i1-W3-2", f"{roof}c-1")
-    report(gone, f"{roof}c-1", [left("075000", 16, 20, 10)], package="Invented roofing")
-    roof_note = deleted_refusal(
-        "a package whose continuation left pages again", without_roof,
-        ["075000", "16 to 20", "pkg-roof", "Invented roofing"],
-        f"note 3 i1-W3-2 {roof}c-1 unread section 075000 pages 16 to 20 left, ",
+    review = "i1-rev-230000-1"
+    folder = folder_of("plain", packages, listed_sections)
+    code, bounds, err = run(plan_module, plan_argv(folder))
+    if code != 0:
+        return Result(name, False, detail=f"the window 3 plan refused the fixture: {err}")
+    data = plan_file(folder)
+    entries = data.get("continuations") or []
+    spans_of = data.get("reviewSpans") or {}
+    hvac = [s for s in (parts.package_sections(packages[0], plan_module.manual_parts.read_inventory(
+        json.loads((folder / "plan" / "spec-sections.json").read_text(encoding="utf-8")), "fixture"))[0])]
+    hvac_units = [spans_of.get(review) or [], *(e["sections"] for e in entries if e["review"] == review)]
+    errors += [f"the planned HVAC manual: {e}" for e in _manual_spans_cover(hvac, hvac_units)]
+    if [e["id"] for e in entries if e["review"] == review] != [f"{review}c-1", f"{review}c-2"]:
+        errors.append(f"the HVAC manual parts are not {review}c-1 and c-2: {[e['id'] for e in entries]}")
+    chain = [review, *(e["id"] for e in entries if e["review"] == review)]
+    if [e["continues"] for e in entries if e["review"] == review] != chain[:-1]:
+        errors.append("a manual part does not read on after the unit before it")
+    if not all(e.get("planned") is True for e in entries):
+        errors.append("a manual part the plan wrote carries no `planned: true`")
+    omitted = {(o["code"], o["reason"]) for o in data.get("omissions", [])}
+    if omitted != {("230999", "no page range"), ("239999", "not on the record")}:
+        errors.append(f"the plan file's omissions are {sorted(omitted)}")
+    plan_text = (folder / "read-plan.md").read_text(encoding="utf-8")
+    wanted_lines = (
+        f"1. {review}: Invented HVAC, trade 23 00 00, reads 230000 p100-p111 of file-m1; 233113 p112-p119 "
+        f"of file-m1 (section p112-p190), package pkg-hvac",
+        f"2. {review}c-1: Invented HVAC, trade 23 00 00, package pkg-hvac, manual part after {review}, reads "
+        f"233113 p120-p155 of file-m1 (section p112-p190)",
+        "## Manual sections not read",
+        f"1. 230999 on {review}, package pkg-hvac: no page range",
     )
-    with (gone / "ledger.md").open("a", encoding="utf-8") as ledger:
-        ledger.write(roof_note + "\n")
-    script_refusals += bool(roof_note)
-    code, out, err = run(plan_module, gone_args)
-    kept_continuations = [
-        entry.get("id") for entry in json.loads((gone / "plan" / "window-3.json").read_text(encoding="utf-8")).get("continuations") or []
-    ]
-    if code != 0 or kept_continuations != [f"{roof}c-1"]:
-        errors.append(
-            f"once the refusal's note is on the ledger, a replan deleting the package does not go through "
-            f"keeping its continuation: exit {code}, {err!r}, continuations {kept_continuations}"
-        )
+    errors += [f"the read plan does not carry `{line}`" for line in wanted_lines if line not in plan_text]
+    for figure in ("manual parts 2", "manual pages 101", "sections not read 2"):
+        if figure not in bounds:
+            errors.append(f"the bounds line does not name `{figure}`: {bounds.strip()[:300]}")
 
-    # The pending run passes over a noted report only while it reads the same: once someone
-    # corrects it, the next dispatch continues it.
-    corrected = root / "corrected" / "run"
-    shutil.copytree(folder, corrected)
-    report(corrected, others[0], [left("220000", 5, 9, 1)], package="Invented plumbing")
-    code, out, err = run(plan_module, runner_argv("continue --window 3 --pending", corrected, pass_id=pass_id))
-    if code != 0 or not out.startswith(f"bound {others[0]}c-1 in pass {pass_id} after {others[0]}: sections 220000 from page 5"):
-        errors.append(f"the pending run does not continue a noted report once it is corrected: exit {code}, {out!r}, {err!r}")
+    # A replan with nothing changed writes the same bytes.
+    before = files_of(folder)
+    run(plan_module, plan_argv(folder))
+    if files_of(folder) != before:
+        errors.append("a replan with nothing changed rewrote the plan")
 
-    # A report naming one section in a shape the script cannot read beside one it can: continue
-    # binds the one it can and refuses in one line naming the other in the runner's note, and the
-    # pending run prints that note until it is on the ledger. Corrected, the report's other section
-    # takes a continuation of its own, after the review's first, and a replan writes the same files.
-    partial, partial_args = run_folder(root / "partial" / "run", five_packages)
-    verified(partial, pass_id, review)
-    partial_report = report(partial, review, ["230000 pages left p901-p915", left("233113", 950, 960, 940)])
-    code, out, err = run(plan_module, ["continue", "--window", "3", "--report", str(partial_report)])
-    partial_notes = re.findall(r"`(note 3 [^`]+)`", err)
-    partial_bound = json.loads((partial / "plan" / "window-3.json").read_text(encoding="utf-8")).get("continuations") or []
-    if (
-        code != 1 or out or len(err.splitlines()) != 1
-        or not err.startswith(f"plan_inventory: bound {first} in pass {pass_id} after {review}: sections 233113 from page 950")
-        or len(partial_notes) != 1
-        or not partial_notes[0].startswith(f"note 3 {pass_id} {review} unread sections not placed: report ")
-        or not partial_notes[0].endswith("section 230000 with pages left in a shape the script does not read")
-        or [[s["code"] for s in entry["sections"]] for entry in partial_bound] != [["233113"]]
-    ):
-        errors.append(
-            f"a report with a section the script cannot read beside one it can does not bind the one and "
-            f"refuse naming the other: exit {code}, {out!r}, {err!r}, plan file {partial_bound}"
-        )
-    partial_pending = runner_argv("continue --window 3 --pending", partial, pass_id=pass_id)
-    code, out, err = run(plan_module, partial_pending)
-    if code != 0 or out.splitlines() != partial_notes:
-        errors.append(f"the pending run over that report does not print its note: exit {code}, {out!r}, {err!r}")
-    with (partial / "ledger.md").open("a", encoding="utf-8") as ledger:
-        ledger.write("".join(note + "\n" for note in partial_notes))
-    code, out, err = run(plan_module, partial_pending)
-    if code != 0 or out != f"nothing to continue in pass {pass_id}":
-        errors.append(f"the pending run does not pass over that report once its note is on the ledger: {out!r} {err!r}")
-    report(partial, review, [left("230000", 901, 915, 880), left("233113", 950, 960, 940)])
-    code, out, err = run(plan_module, partial_pending)
-    partial_bound = json.loads((partial / "plan" / "window-3.json").read_text(encoding="utf-8")).get("continuations") or []
-    if (
-        code != 0 or not out.startswith(f"bound {second} in pass {pass_id} after {review}: sections 230000 from page 901")
-        or [(entry["id"], entry["continues"], [s["code"] for s in entry["sections"]]) for entry in partial_bound]
-        != [(first, review, ["233113"]), (second, review, ["230000"])]
-        or block_units(partial, pass_id)[:3] != [review, first, second]
-    ):
-        errors.append(
-            f"the corrected report's other section does not take a continuation of its own after the "
-            f"first: exit {code}, {out!r}, {err!r}, plan file {partial_bound}, block {block_units(partial, pass_id)}"
-        )
-    def planned(where: Path) -> tuple[list[str], bytes]:
-        """The read plan and plan file, less what a replan reads off the ledger and continue does
-        not write: which units verified."""
-        plan_lines, plan_file = files_of(where)
-        return [
-            line.removesuffix(" verified") for line in plan_lines.decode("utf-8").splitlines()
-            if not line.startswith("units verified: ")
-        ], plan_file
+    # The lead names a manual part's pages once it verified, and not before.
+    reads, _named = lead._plan_reads(folder / "read-plan.md", 3, set())
+    if "manual pages read" in reads.get("i1-W3-1", ""):
+        errors.append(f"the pass names manual pages no part verified: {reads}")
+    reads, _named = lead._plan_reads(folder / "read-plan.md", 3, {f"{review}c-1"})
+    if "manual pages read (233113 pages 120 to 155 for Invented HVAC)" not in reads.get("i1-W3-1", ""):
+        errors.append(f"the pass does not name the pages its verified part read: {reads}")
 
-    before = planned(partial)
-    run(plan_module, partial_args)
-    if planned(partial) != before:
-        errors.append("a replan does not write the plan continue wrote for two continuations of one review")
-
-    # A continuation dispatched for two sections whose report names pages left in the first and
-    # nothing of the second never reached the second: with no continuation bound after it, the
-    # check-in reads neither section as read to its end.
-    stranded, _stranded_args = run_folder(root / "stranded" / "run", five_packages)
-    verified(stranded, pass_id, review)
-    run(plan_module, ["continue", "--window", "3", "--report", str(
-        report(stranded, review, [left("230000", 901, 915, 880), left("233113", 950, 960, 940)]))])
-    verified(stranded, pass_id, first)
-    report(stranded, first, [left("230000", 911, 915, 880)])
-    stranded_read = lead._sections_read_to_end(stranded / "read-plan.md", stranded / "ledger.md")
-    if (review, "233113", 950) in stranded_read or (review, "230000", 901) in stranded_read:
-        errors.append(
-            f"a section a continuation never reached, with no continuation bound after it, reads as "
-            f"read to its end: {sorted(stranded_read)}"
-        )
-
-    # A replan deleting a package whose continuation never reached its second section names that
-    # section too, from where the continuation was to start it.
-    gone_reach, gone_reach_args = run_folder(root / "gone-reach" / "run", five_packages)
-    verified(gone_reach, "i1-W3-2", roof)
-    run(plan_module, ["continue", "--window", "3", "--report", str(report(
-        gone_reach, roof, [left("075000", 12, 20, 10), left("076200", 30, 40, 25)], package="Invented roofing"))])
-    verified(gone_reach, "i1-W3-2", f"{roof}c-1")
-    report(gone_reach, f"{roof}c-1", [left("075000", 16, 20, 10)], package="Invented roofing")
-    (gone_reach / "plan" / "packages.json").write_text(
-        json.dumps({"packages": [p for p in five_packages if p["id"] != "pkg-roof"]}), encoding="utf-8"
-    )
-    code, out, err = run(plan_module, gone_reach_args)
-    if code != 1 or len(err.splitlines()) != 1 or [
-        word for word in ("075000 pages 16 to 20", "076200 pages 30 to 40",
-                          f"`note 3 i1-W3-2 {roof}c-1 unread section 076200 pages 30 to 40 left, its package was deleted`")
-        if word not in err
-    ]:
-        errors.append(
-            f"a replan deleting a package does not name the section its continuation never reached: "
-            f"exit {code}, {err!r}"
-        )
+    # A unit already dispatched keeps its pages; a dispatched part whose section moved is retired,
+    # and the pages are planned again under numbers no unit carried.
+    frozen = folder_of("frozen", packages, listed_sections)
+    run(plan_module, plan_argv(frozen))
+    dispatch(frozen, "i1-W3-1", review, ok=True)
+    dispatch(frozen, "i1-W3-1", f"{review}c-1")
+    first = plan_file(frozen)
+    moved = [dict(row, pageStart=130, pageEnd=208) if row["csi"] == "233113" else row for row in listed_sections]
+    write_inputs(frozen, packages, moved)
+    code, _out, err = run(plan_module, plan_argv(frozen))
+    if code != 0:
+        errors.append(f"a replan after a section moved refused: {err}")
     else:
-        script_refusals += 1
+        second = plan_file(frozen)
+        kept = second["reviewSpans"]
+        if kept.get(review) != first["reviewSpans"].get(review):
+            errors.append("a dispatched review's pages changed on a replan")
+        if [e["id"] for e in second.get("retiredParts", [])] != [f"{review}c-1"]:
+            errors.append(f"the moved section's dispatched part is not retired: {second.get('retiredParts')}")
+        new_ids = [e["id"] for e in second["continuations"] if e["review"] == review]
+        if {f"{review}c-1", f"{review}c-2"} & set(new_ids):
+            errors.append(f"a replan handed out a part id a part already carried: {new_ids}")
+        moved_section = [dict(s, pageStart=130, pageEnd=208) if s["code"] == "233113" else s for s in hvac]
+        review_cover = [s for s in kept[review] if parts.span_valid(s, plan_module.manual_parts.read_inventory(
+            json.loads((frozen / "plan" / "spec-sections.json").read_text(encoding="utf-8")), "fixture"))]
+        errors += [f"the replanned HVAC manual: {e}" for e in _manual_spans_cover(
+            moved_section, [review_cover, *(e["sections"] for e in second["continuations"] if e["review"] == review)])]
 
-    def continue_unit(where: Path, in_pass: str, unit: str, package: str) -> tuple[int, str, str]:
-        """The unit verified in its pass, its report naming pages left, and continue run on it."""
-        verified(where, in_pass, unit)
-        return run(plan_module, ["continue", "--window", "3", "--report", str(
-            report(where, unit, [left("092116", 30, 44, 20)], package=package))])
+    # A dispatched part whose section stays put keeps its id and pages while the rest replans.
+    steady = folder_of("steady", packages, listed_sections)
+    run(plan_module, plan_argv(steady))
+    dispatch(steady, "i1-W3-1", review, ok=True)
+    dispatch(steady, "i1-W3-1", f"{review}c-1", ok=True)
+    held = [e for e in plan_file(steady)["continuations"] if e["id"] == f"{review}c-1"]
+    write_inputs(steady, packages, [dict(r, pageEnd=320) if r["csi"] == "075000" else r for r in listed_sections])
+    run(plan_module, plan_argv(steady))
+    if [{k: e[k] for k in ("id", "sections")} for e in plan_file(steady)["continuations"] if e["id"] == f"{review}c-1"] != \
+            [{k: e[k] for k in ("id", "sections")} for e in held]:
+        errors.append("a dispatched part whose section did not move changed on a replan")
 
-    def waits_of(where: Path) -> dict[str, list[str]]:
-        """Each block's `starts after:` passes, in plan order, read back by the summary script."""
-        text = (where / "read-plan.md").read_text(encoding="utf-8")
-        ids = [match.group(1) for match in re.finditer(r"^### (\S+)\. ", text, re.MULTILINE)]
-        found = {}
-        for block in ids:
-            after = (summary_module.read_plan(where / "read-plan.md", 3, block).get("fields") or {}).get("starts after", "")
-            found[block] = [] if after == "none" else after.split(", ")
-        return found
+    # A section whose range is corrected at its end keeps the pages a dispatched review read, and
+    # no page goes to two units.
+    extended = folder_of("extended", packages, listed_sections)
+    run(plan_module, plan_argv(extended))
+    dispatch(extended, "i1-W3-1", review, ok=True)
+    longer = [dict(r, pageEnd=200) if r["csi"] == "233113" else r for r in listed_sections]
+    write_inputs(extended, packages, longer)
+    code, _out, err = run(plan_module, plan_argv(extended))
+    if code != 0:
+        errors.append(f"a replan after a section's end moved refused: {err}")
+    else:
+        grown = plan_file(extended)
+        longer_hvac = [dict(s, pageEnd=200) if s["code"] == "233113" else s for s in hvac]
+        errors += [f"the HVAC manual after its end moved: {e}" for e in _manual_spans_cover(longer_hvac, [
+            grown["reviewSpans"][review], *(e["sections"] for e in grown["continuations"] if e["review"] == review)])]
 
-    def backward_waits(where: Path) -> list[str]:
-        """Each wait on a block not before the one waiting, which a cycle needs."""
-        found = waits_of(where)
-        order = list(found)
-        return [f"{block} on {other}" for block, others in found.items() for other in others
-                if other not in order or order.index(other) >= order.index(block)]
+    # Two packages sharing a section each plan its pages, and a replan with nothing changed
+    # refuses neither.
+    shared_packages = [dict(packages[0]), dict(packages[1], manualSections=["075000", "233113"])]
+    shared = folder_of("shared", shared_packages, listed_sections)
+    run(plan_module, plan_argv(shared))
+    code, _out, err = run(plan_module, plan_argv(shared))
+    if code != 0:
+        errors.append(f"a replan of two packages sharing a section refused: {err}")
 
-    drywall = "Invented drywall 1"
+    # A package an addendum's pass leaves out, or one deleted and listed again, keeps the pages its
+    # dispatched review was sent with.
+    kept_spans = folder_of("kept-spans", packages, listed_sections)
+    run(plan_module, plan_argv(kept_spans))
+    roof_review = "i1-rev-075000-1"
+    dispatch(kept_spans, "i1-W3-1", roof_review, ok=True)
+    sent_with = plan_file(kept_spans)["reviewSpans"][roof_review]
+    write_inputs(kept_spans, packages[:1], listed_sections)
+    with (kept_spans / "ledger.md").open("a", encoding="utf-8") as ledger:
+        ledger.write("note 3 i1-W3-1 i1-rev-075000-1 unread section 075000 pages 300 to 309 left, its package was deleted\n")
+    run(plan_module, plan_argv(kept_spans))
+    write_inputs(kept_spans, packages, [dict(r, pageStart=290, pageEnd=320) if r["csi"] == "075000" else r for r in listed_sections])
+    code, _out, err = run(plan_module, plan_argv(kept_spans))
+    if code != 0:
+        errors.append(f"a package listed again refused: {err}")
+    elif plan_file(kept_spans)["reviewSpans"].get(roof_review) != sent_with:
+        errors.append("a package deleted and listed again lost the pages its review was sent with")
 
-    # Nine reviews of one trade and a continuation fill the trade's pass, so the continuation's
-    # own continuation goes to `b`; a tenth package moves the first continuation to `c`, which
-    # `b` then waits for. Once `b` holds ten, a continuation out of it is placed in a new `d`,
-    # never in `c`, which does not wait for `b`, so the waits never cycle and the next replan plans.
-    cycle, cycle_args = run_folder(root / "cycle" / "run", [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 10)
-    ])
-    chain = [full_unit] + [f"{full_unit}c-{n}" for n in range(1, 15)]
-    continue_unit(cycle, "i1-W3-1", chain[0], drywall)
-    continue_unit(cycle, "i1-W3-1", chain[1], drywall)
-    (cycle / "plan" / "packages.json").write_text(json.dumps({"packages": [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 11)
-    ]}), encoding="utf-8")
-    code, out, err = run(plan_module, cycle_args)
-    if code != 0 or block_units(cycle, "i1-W3-1c") != [chain[1]] or list(waits_of(cycle))[:3] != ["i1-W3-1", "i1-W3-1c", "i1-W3-1b"]:
-        errors.append(f"the tenth package does not move the first continuation to i1-W3-1c before i1-W3-1b: exit {code}, {err!r}, {waits_of(cycle)}")
-    for at in range(2, 11):
-        continue_unit(cycle, "i1-W3-1b", chain[at], drywall)
-    code, out, err = continue_unit(cycle, "i1-W3-1b", chain[11], drywall)
-    if code != 0 or not out.startswith(f"bound {chain[12]} in pass i1-W3-1d, continuing {chain[11]}") or backward_waits(cycle):
-        errors.append(
-            f"a continuation out of a full i1-W3-1b is not placed in a new i1-W3-1d, or a pass waits on one "
-            f"after it: exit {code}, {out!r}, {err!r}, {backward_waits(cycle)}"
-        )
-    before = planned(cycle)
-    code, out, err = run(plan_module, cycle_args)
-    if code != 0 or planned(cycle) != before:
-        errors.append(f"the replan after i1-W3-1b filled does not plan the files continue wrote: exit {code}, {err!r}")
+    # A part planned after one carried into a pass of manual parts is carried after it, never into
+    # the review's pass, which runs first.
+    chained = [
+        {"csi": "230000", "title": "A", "division": "23", "fileId": "file-m1", "pageStart": 1, "pageEnd": 20},
+        {"csi": "233000", "title": "D", "division": "23", "fileId": "file-m1", "pageStart": 21, "pageEnd": 60},
+        {"csi": "233113", "title": "B", "division": "23", "fileId": "file-m1", "pageStart": 61, "pageEnd": 440},
+        {"csi": "233400", "title": "C", "division": "23", "fileId": "file-m1", "pageStart": 441, "pageEnd": 450},
+    ]
+    chain_packages = [dict(packages[0], manualSections=["230000", "233000", "233113"])]
+    chain_folder = folder_of("chain", chain_packages, chained)
+    run(plan_module, plan_argv(chain_folder))
+    dispatch(chain_folder, "i1-W3-1", review)
+    write_inputs(chain_folder, [dict(packages[0], manualSections=["230000", "233113", "233400"])], chained)
+    code, _out, err = run(plan_module, plan_argv(chain_folder))
+    if code != 0:
+        errors.append(f"a replan after a section left the package refused: {err}")
+    else:
+        errors += _chain_order_errors((chain_folder / "read-plan.md").read_text(encoding="utf-8"),
+                                      plan_file(chain_folder)["continuations"])
 
-    # Ten reviews fill the trade's pass and a chain of continuations fills `b`; the next review's
-    # continuation opens `c`, which holds the same trade as `b`, so it waits for `b` as well as for
-    # the trade's pass, and the replan writes the same wait.
-    trade, trade_args = run_folder(root / "trade" / "run", [
-        {"id": f"pkg-dry-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}"} for n in range(1, 11)
-    ])
-    continue_unit(trade, "i1-W3-1", chain[0], drywall)
-    for at in range(1, 10):
-        continue_unit(trade, "i1-W3-1b", chain[at], drywall)
-    code, out, err = continue_unit(trade, "i1-W3-1", "i1-rev-092116-2", "Invented drywall 2")
-    if (
-        code != 0 or not out.startswith("bound i1-rev-092116-2c-1 in pass i1-W3-1c")
-        or len(block_units(trade, "i1-W3-1b")) != 10 or waits_of(trade).get("i1-W3-1c") != ["i1-W3-1", "i1-W3-1b"]
-    ):
-        errors.append(
-            f"a pass of continuations of a trade another pass of continuations holds does not wait for "
-            f"it: exit {code}, {out!r}, {err!r}, {waits_of(trade)}"
-        )
-    before = planned(trade)
-    run(plan_module, trade_args)
-    if planned(trade) != before:
-        errors.append("a replan does not write the waits continue wrote for two passes of continuations of one trade")
+    # A section listed between parts already carried out of the trade's pass: the parts not yet
+    # dispatched take their passes afresh, so no two passes wait on each other.
+    many = [{"csi": "230000", "title": "A", "division": "23", "fileId": "file-m1", "pageStart": 1, "pageEnd": 20}] + [
+        {"csi": f"2331{n:02d}", "title": f"S{n}", "division": "23", "fileId": "file-m1",
+         "pageStart": 21 + 40 * n, "pageEnd": 60 + 40 * n} for n in range(12)
+    ]
+    many_codes = [row["csi"] for row in many]
+    inserted = folder_of("inserted", [dict(packages[0], manualSections=many_codes)], many)
+    run(plan_module, plan_argv(inserted))
+    dispatch(inserted, "i1-W3-1", review)
+    extra = {"csi": "233199", "title": "New", "division": "23", "fileId": "file-m1", "pageStart": 900, "pageEnd": 939}
+    write_inputs(inserted, [dict(packages[0], manualSections=many_codes[:11] + ["233199"] + many_codes[11:])], many + [extra])
+    code, _out, err = run(plan_module, plan_argv(inserted))
+    if code != 0:
+        errors.append(f"a section listed between carried parts refused: {err}")
+    else:
+        errors += _chain_order_errors((inserted / "read-plan.md").read_text(encoding="utf-8"),
+                                      plan_file(inserted)["continuations"])
+        before = files_of(inserted)
+        run(plan_module, plan_argv(inserted))
+        if files_of(inserted) != before:
+            errors.append("a replan of carried parts with nothing changed rewrote the plan")
+
+    # A section a verified part could not read, as no longer on its package, is planned again once
+    # the package lists it again.
+    skipped = folder_of("skipped", packages, listed_sections)
+    run(plan_module, plan_argv(skipped))
+    dispatch(skipped, "i1-W3-1", f"{review}c-2", ok=True)
+    with (skipped / "ledger.md").open("a", encoding="utf-8") as ledger:
+        ledger.write(f"note 3 i1-W3-1 {review}c-2 anomaly section 233113 not read: no longer on the package, run only\n")
+    run(plan_module, plan_argv(skipped))
+    covered = plan_file(skipped)["continuations"]
+    readers = [e["id"] for e in covered if any(s["code"] == "233113" and s["fromPage"] <= 160 <= s["toPage"] for s in e["sections"])]
+    if readers == [f"{review}c-2"] or not readers:
+        errors.append(f"pages a verified part could not read are planned for no new unit: {readers}")
+    code, _out, err = run(plan_module, plan_argv(skipped))
+    if code != 0:
+        errors.append(f"a replan after pages were planned again for a part that could not read them refused: {err}")
+
+    # Parts not yet dispatched stay in a pass of manual parts a runner has started, where nothing
+    # before them changed.
+    started = folder_of("started", [dict(packages[0], manualSections=many_codes)], many)
+    run(plan_module, plan_argv(started))
+    in_b = [e["id"] for e in plan_file(started)["continuations"] if e.get("pass") == "i1-W3-1b"]
+    if in_b:
+        # The first pass runs to its end before the pass it carried parts into starts.
+        for unit in [review] + [e["id"] for e in plan_file(started)["continuations"] if not e.get("pass")]:
+            dispatch(started, "i1-W3-1", unit, ok=True)
+        dispatch(started, "i1-W3-1b", in_b[0])
+        run(plan_module, plan_argv(started))
+        still = [e["id"] for e in plan_file(started)["continuations"] if e.get("pass") == "i1-W3-1b"]
+        if still != in_b:
+            errors.append(f"a started pass of manual parts lost parts on an unchanged replan: {in_b} became {still}")
+    else:
+        errors.append("the started-pass fixture carried no part into i1-W3-1b")
+
+    # A part number once handed out is never handed out again, after its part was planned away.
+    numbered = folder_of("numbered", packages, listed_sections)
+    run(plan_module, plan_argv(numbered))
+    dispatch(numbered, "i1-W3-1", review)
+    handed = {e["id"] for e in plan_file(numbered)["continuations"]}
+    write_inputs(numbered, packages, [dict(r, pageEnd=119) if r["csi"] == "233113" else r for r in listed_sections])
+    run(plan_module, plan_argv(numbered))
+    write_inputs(numbered, packages, [dict(r, pageStart=500, pageEnd=530) if r["csi"] == "233113" else r for r in listed_sections])
+    run(plan_module, plan_argv(numbered))
+    again = {e["id"] for e in plan_file(numbered)["continuations"]} & handed
+    if again:
+        errors.append(f"a part number handed out before was handed out again: {sorted(again)}")
+
+    # Refusals, each one line, writing nothing.
+    refused("a section list read truncated", folder_of("truncated", packages, listed_sections, truncated=True),
+            "truncated")
+    no_list = folder_of("no-list", packages, listed_sections)
+    refused("a plan with no section list", no_list, "--sections",
+            ["plan", "--window", "3", "--packages", str(no_list / "plan" / "packages.json"), "--out",
+             str(no_list / "read-plan.md")])
+    legacy = folder_of("legacy", packages, listed_sections)
+    run(plan_module, plan_argv(legacy))
+    old = plan_file(legacy)
+    old["continuations"] = [{k: v for k, v in e.items() if k != "planned"} for e in old["continuations"]]
+    (legacy / "plan" / "window-3.json").write_text(json.dumps(old, indent=2) + "\n", encoding="utf-8")
+    refused("a plan file holding a continuation a report bound", legacy, "before manual parts")
+    overlap = folder_of("overlap", packages, listed_sections)
+    run(plan_module, plan_argv(overlap))
+    twice = plan_file(overlap)
+    twice["continuations"][1]["sections"] = list(twice["continuations"][0]["sections"])
+    (overlap / "plan" / "window-3.json").write_text(json.dumps(twice, indent=2) + "\n", encoding="utf-8")
+    refused("one page planned for two parts", overlap, "are planned for")
+    gone = folder_of("gone", packages, listed_sections)
+    run(plan_module, plan_argv(gone))
+    write_inputs(gone, packages[:1], listed_sections)
+    refused("a deleted package with pages owed", gone, "its package was deleted")
+    with (gone / "ledger.md").open("a", encoding="utf-8") as ledger:
+        ledger.write("note 3 i1-W3-1 i1-rev-075000-1 unread section 075000 pages 300 to 309 left, its package was deleted\n")
+    code, _out, err = run(plan_module, plan_argv(gone))
+    if code != 0:
+        errors.append(f"a deleted package's pages recorded unread still refuse: {err}")
+
+    # A trade whose manual runs past ten units carries its last parts into a pass of manual parts
+    # after the trade's pass, which waits for it.
+    long_manual = [dict(r, pageEnd=600) if r["csi"] == "233113" else r for r in listed_sections]
+    carried = folder_of("carried", packages, long_manual)
+    code, _out, err = run(plan_module, plan_argv(carried))
+    if code != 0:
+        errors.append(f"a long manual refused: {err}")
+    else:
+        carried_text = (carried / "read-plan.md").read_text(encoding="utf-8")
+        passes = {e.get("pass") for e in plan_file(carried)["continuations"] if e.get("pass")}
+        block = carried_text.split("### i1-W3-1b.", 1)[1].split("###", 1)[0] if "### i1-W3-1b." in carried_text else ""
+        if passes != {"i1-W3-1b"} or "starts after: i1-W3-1" not in block:
+            errors.append(f"a long manual's parts are not carried into i1-W3-1b after i1-W3-1: {sorted(passes)}")
+        totals = [len(_plan_passes(carried_text))]
+        if totals[0] < 2:
+            errors.append("a long manual planned into one pass")
 
     detail = (
-        f"the reviewer, the runner and the skill carry none of {len(_RETIRED_SECTION_READS)} retired "
-        f"Part 2 reading phrases, the reviewer {len(_WHOLE_SECTION_PHRASES)} whole-section and "
-        f"continuation phrases and both pinned shapes ({_PAGES_LEFT_SHAPE}, {_CONTINUED_SHAPE}), the "
-        f"runner {len(_RUNNER_CONTINUE_PHRASES)} and the skill {len(_SKILL_CONTINUE_PHRASES)}, and the "
-        f"`sections not checked:` line one shape in the reviewer and the skill; {text_refused} text "
-        f"mutations refused; the plan script's continue over invented run folders: a refusal after "
-        f"every read writing nothing, the runner's pending run binding {first} on a resume right "
-        f"after its review in {pass_id} and in plan/window-3.json with each section's pages left, "
-        f"file and first page, the review's own continue, the pending run again and a replan "
-        f"changing no byte, a continuation's own pages left continued by {second}, every unit id a "
-        f"subject prefix stem none of another, the check-in showing a section as read to its end "
-        f"only once no report later in its chain names it, off the ledger with no replan, and one "
-        f"gone from its package as to look at, the check-in and the lead's record naming the pass by "
-        f"the one section its chain read to its end and never by one still open, the pass summary "
-        f"counting 6 units with both "
-        f"continuations, the lead's record taking their prefixes in, the runner's two commands run "
-        f"as written, a pass at ten units carrying its review's continuation into a pass of "
-        f"continuations that waits for it and that the lead's listing holds back, a replan writing "
-        f"the same files, a continuation there continued in that pass, a pass with no letter left "
-        f"printing each section's unread note once, a replan of a trade past ten units carrying "
-        f"its continuation into a pass of continuations, a continuation's sections it never reached "
-        f"carried on and not read to their end until that continuation verifies, and not at all "
-        f"with no continuation bound after it, two sections on "
-        f"one report line read as two, the pending run printing the refusal's note for a report it "
-        f"cannot read, passing over it once that note is on the ledger and continuing it once "
-        f"corrected, a report with a section the script cannot read beside one it can binding the "
-        f"one, naming the other in the runner's note and, corrected, binding a second continuation "
-        f"of the review, a continuation out of a full pass of continuations placed in a new pass "
-        f"rather than one that does not wait for it, so no pass waits on one after it and the "
-        f"replan plans, a pass of continuations waiting for an earlier one of its trade, in "
-        f"continue and in the replan, a replan deleting a package naming the section its "
-        f"continuation never reached, two runs at once both landing "
-        f"under the run folder's lock, a lock a run held when its process ended taken over in one "
-        f"line naming that process, a temporary file another run left stopping no write, a replan "
-        f"deleting a package going through once the unread note its refusal gives is on the "
-        f"ledger, keeping the continuation, and {script_refusals} refusals each in one line (a "
-        f"review not verified, a pass summary that does not read, nothing left, a pages left line "
-        f"in another shape, a section twice, a last page before the first, a last page left off "
-        f"its section's, a first page left before its section's, each of the five giving the "
-        f"runner's note naming the section, a report outside reports, a unit "
-        f"the plan does not carry, one report continued twice, a full pass with no letter left, a "
-        f"replan with no letter left giving the runner's note for each section, a lock a "
-        f"live run holds, to continue and to a replan, and a replan deleting a package whose "
-        f"continuation is not verified, left pages again or never reached a section); "
-        f"bound: invented reports and folders, not a real review"
+        f"text arm: {text_refused}/{len(mutations)} mutations refused; division: {divided} shapes read "
+        f"once; refusals {script_refused}"
     )
     if errors:
-        detail += " | " + "; ".join(errors)
+        detail += " | " + "; ".join(errors[:12])
     return Result(name, passed=not errors, detail=detail)
 
 
@@ -13370,7 +12892,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         where = new_folder(case, [])
         (where / "plan" / "packages.json").write_text(json.dumps(packages), encoding="utf-8")
         code, _bounds, err = run(planner, [
-            "plan", "--window", "3", "--packages", str(where / "plan" / "packages.json"),
+            "plan", "--window", "3", "--packages", str(where / "plan" / "packages.json"), *_no_sections(),
             "--out", str(where / "read-plan.md"),
         ])
         if code != 0:
@@ -13603,40 +13125,29 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         (joined / "reports").mkdir()
         (joined / "run.json").write_text(json.dumps(_issue_run("deliv-w1", ["deliv-w1"], "i1")), encoding="utf-8")
         (joined / "plan" / "packages.json").write_text(json.dumps({"packages": [
-            {"id": "pkg-hvac", "tradeCode": "23 00 00", "name": "Invented HVAC"},
+            {"id": "pkg-hvac", "tradeCode": "23 00 00", "name": "Invented HVAC", "manualSections": ["230000"]},
             {"id": "pkg-roof", "tradeCode": "07 50 00", "name": "Invented roofing"},
         ]}), encoding="utf-8")
+        (joined / "plan" / "spec-sections.json").write_text(json.dumps({
+            "count": 1, "unparsedDivisions": 0, "residueSections": 0, "truncated": False,
+            "sections": [{"csi": "230000", "title": "Invented HVAC", "division": "23", "fileId": "file-m1",
+                          "pageStart": 880, "pageEnd": 915}],
+        }), encoding="utf-8")
         code, _out, err = run(planner, [
             "plan", "--window", "3", "--packages", str(joined / "plan" / "packages.json"),
+            "--sections", str(joined / "plan" / "spec-sections.json"),
             "--out", str(joined / "read-plan.md"),
         ])
         if code != 0:
             raise ValueError(f"the window 3 plan refused: {err}")
         pass_id = "i1-W3-1"
-        reviews = summary.read_plan(joined / "read-plan.md", 3, pass_id)["units"]
-        review = next(unit for unit in reviews if "230000" in unit)
-        wanted = [f"scopeItem:{unit}-" for unit in reviews]
-        expect("the prefixes before a continuation", listed(joined, reported=pass_id)["prefixes"], wanted)
-        lines = (Path(__file__).parent / "fixtures" / "reviewer-report-fixture.md").read_text(encoding="utf-8").splitlines()
-        lines[0] = f"unit: {review}   package: Invented HVAC   trade: 23 00 00   window: 3"
-        at = lines.index("sections not checked: none")
-        pages_left = _PAGES_LEFT_SHAPE.strip("`").replace("<code>", "230000").replace("<a>", "901").replace(
-            "<b>", "915").replace("<fileId>", "file-m1").replace("<start>", "880")
-        lines[at] = f"sections not checked: {pages_left}"
-        report = joined / "reports" / f"{review}.md"
-        report.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        append(
-            joined, f"dispatch 3 {pass_id} {review} sheets none purpose review the package",
-            verified_line(3, pass_id, review),
-        )
-        code, out, err = run(planner, ["continue", "--window", "3", "--report", str(report)])
-        if code != 0:
-            raise ValueError(f"continue refused: {err}")
-        grown = summary.read_plan(joined / "read-plan.md", 3, pass_id)["units"]
-        expect("a continuation bound", len(grown), len(reviews) + 1)
+        units = summary.read_plan(joined / "read-plan.md", 3, pass_id)["units"]
+        # The review reads twenty pages of the section and a planned manual part the sixteen after.
+        expect("a manual part planned after the review", [unit for unit in units if unit.endswith("c-1")] != [], True)
+        wanted = [f"scopeItem:{unit}-" for unit in units]
+        expect("the prefixes with a manual part", listed(joined, reported=pass_id)["prefixes"], wanted)
         runner_reports(joined, 3, pass_id)
         call = listed(joined, reported=pass_id)
-        expect("the prefixes after a continuation", call["prefixes"], [f"scopeItem:{unit}-" for unit in grown])
         record_pass(joined, 3, pass_id, call["prefixes"])
         expect("the pass past the record", listed(joined, reported=pass_id)["since the last check-in"], pass_id)
 
@@ -13973,6 +13484,7 @@ _QUESTION_WRITING_CARRIERS = (
     "docs/plugin-text-style.md",
     "plugins/plumlayer/agents/orientation.md",
     "plugins/plumlayer/agents/question-checker.md",
+    "plugins/plumlayer/agents/scope-manual-reader.md",
     "plugins/plumlayer/agents/scope-package-folder.md",
     "plugins/plumlayer/agents/scope-reader.md",
     "plugins/plumlayer/agents/scope-rechecker.md",
@@ -14594,7 +14106,7 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("runner", "must carry the headings on the review's `headings written:` first line, each trimmed "
                "the same way, in that order"),
     ("runner", "a listed heading the review did not write is not one"),
-    ("reviewer", "**Settle the headings again where you created rows**, mandate 15 whole, last"),
+    ("manual reader", "**Settle the headings again where you created rows**, the review's mandate 15 whole, last"),
     (SHEET_READER, "A phase or building heading only where the drawings or the manual separate the "
                    "work by phase or by building"),
     (VOCABULARY_READER, "A phase or building heading only where the drawings or the manual separate "
@@ -15049,6 +14561,7 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "standard-lines"
     paths = {
         "reviewer": plugin_path / "agents" / "scope-reviewer.md",
+        "manual reader": plugin_path / "agents" / "scope-manual-reader.md",
         "runner": plugin_path / "agents" / "scope-round-runner.md",
         "skill": plugin_path / "skills" / "scope-run" / "SKILL.md",
         VOCABULARY_READER: plugin_path / "agents" / VOCABULARY_READER,
@@ -15542,7 +15055,7 @@ _RECHECK_PINS: tuple[tuple[str, str], ...] = (
     (RECHECKER, "That is a current page whether or not the answer names a `sheetNumber`"),
     (RECHECKER, "A null `sheetNumber` never makes a page not current"),
     ("agents/scope-round-runner.md", "make no `verify_unit` call, which needs a sheet"),
-    ("agents/scope-round-runner.md", "Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-rechecker)"),
+    ("agents/scope-round-runner.md", "Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-rechecker)"),
     ("agents/scope-round-runner.md", "subagent_type: plumlayer:scope-rechecker"),
     ("agents/scope-round-runner.md", "recheck.py' check --report"),
     ("agents/scope-round-runner.md", 'search(projectId, subject: "<subject>", predicate: "scopeItemRetraction")'),
@@ -16710,7 +16223,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_passes_at_once(plugin_path, marketplace_root),
         check_fold_one_level_down(plugin_path, marketplace_root),
         check_project_folder_by_id(plugin_path, marketplace_root),
-        check_whole_manual_sections(plugin_path, marketplace_root),
+        check_manual_parts(plugin_path, marketplace_root),
         check_question_writing_sentence(plugin_path, marketplace_root),
         check_question_checker_outcomes(plugin_path, marketplace_root),
         check_standard_lines(plugin_path, marketplace_root),

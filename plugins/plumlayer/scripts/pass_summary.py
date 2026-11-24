@@ -68,8 +68,9 @@ The `notes:` figures count the pass's notes of each kind, and the summary file c
   --plan    the read plan the pass runs off, `<run folder>/read-plan.md`. The pass's block there
             lists the units it carries, under a heading `### <pass id>. <name>`, one unit line each:
             `<unit id>. <sheet number>, ...` in windows 1 and 2, `<n>. <unit id>: <name>, trade
-            <trade>, package <package id>` in window 3, one line per review, and one per
-            continuation, the same line with `, continues <unit id>, sections ...` after it.
+            <trade>, reads <spans>, package <package id>` in window 3, one line per review, and
+            one per manual part, `<n>. <unit id>: <name>, trade <trade>, package <package id>,
+            manual part after <unit id>, reads <spans>`.
 
   --trades  the pass's own trades file, `<run folder>/trades/<pass id>.txt`, which the runner
             appends a unit at a time off its `verify_unit` results:
@@ -103,10 +104,10 @@ Window 3:
   the runner renamed it and stopped before the next `dispatch` line. A newer report no check read,
   and the report of any other read, are never read, in this window and in window r.
 
-  A continuation, the unit that reads on in a review's manual sections where the review's page cap
-  left pages, is a unit of the pass its block sits in like any review, its review's pass or, where
-  that pass was full, a pass of continuations after it: it is counted in `units:`, its `verified`
-  line is summed, and its pages opened and searches are read off its own report.
+  A manual part, the unit that reads the pages of a package's manual sections after its review's
+  share, is a unit of the pass its block sits in like any review, its review's pass or, where that
+  pass was full, a pass of manual parts after it: it is counted in `units:`, its `verified` line is
+  summed, and its pages opened and searches are read off its own report.
 
 The recheck, window r:
 
@@ -296,7 +297,7 @@ REVIEWER_LABELS = (
     "unit", "harvested", "notes read", "searches", "terms too general", "pages opened", "created",
     "created subjects", "updated subjects", "manual updates", "field updates", "questions raised ids",
     "questions replied ids", "questions linked", "questions alone", "sent", "trades", "sheet readings written", "anomalies",
-    "grain questions", "silent sections", "unspecified work", "compared", "sections not checked",
+    "grain questions", "silent sections", "unspecified work", "compared", "spans read", "sections not checked",
     "families not checked", "standard lines", "headings written", "door-owned suggestions",
 )
 

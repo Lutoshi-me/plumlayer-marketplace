@@ -42,7 +42,7 @@ Three modes:
         every other pass not finished and not running.
 
         `--reported` is the pass that just handed back. It prints only that pass's prefixes line,
-        read off the plan at this call, so a window 3 continuation that joined the pass is in it,
+        read off the plan at this call, so a window 3 manual part a replan put in the pass is in it,
         then the five closing lines, `passes` through `check-in due:`. A pass the plan does not carry
         is refused. It counts as running until it is recorded, so it is never offered to start.
 
@@ -138,21 +138,10 @@ Three modes:
         overlap, unread page, grain question, door-owned suggestion, definitions kind and
         deviation line prints whole, with any continuation under it.
 
-        In window 3 a review that left pages of a manual section names them in an anomaly
-        `section <code> p<first page left> continued: ...`, and the runner binds a continuation
-        unit that reads on from there, in its pass or in a pass of continuations after it. Where
-        the read plan carries that continuation, for that unit, section and page, the ledger
-        carries its `verified` line reading ok, and its report names the section on no `sections
-        not checked:` line and the continuation reached it, or names pages left that the next
-        continuation read to the end the same way, the note prints under `read to its end in a
-        further review` rather than as one to look at. Any other note on that section, one whose
-        continuation is not verified, left pages again, never reached it with no continuation
-        bound after it, or found the section gone from its package or its manual, prints to look
-        at. The pass is named by the sections its continuations read
-        to their end the same way (`the rest of 1 manual section read (230000 from page 901 for
-        HVAC)`), each once from the page its first continuation read on from, beside the packages
-        it reviewed; a section still open is not named there. A continuation's counts fall under
-        its package's review.
+        In window 3 the pass is named by the manual pages its manual parts read, each part's spans
+        once its `verified` line reads ok (`manual pages read (230000 pages 900 to 915 for HVAC)`),
+        beside the packages it reviewed; a part not verified is not named there. A manual part's
+        counts fall under its package's review.
 
         Output stops before CHECKIN_CAP characters, below the 30,000 a Bash call returns, every
         printed line counted, the closing line included, and its last line names the passes it did
@@ -262,22 +251,20 @@ SUMMARY_LABELS = tuple(CHECKIN_LABELS) + (
 # was kept and whether the other was retired, so it prints whole wherever its sentence landed.
 SAME_WORK = " same work: "
 
-# A window 3 unit line as the plan script writes it, ` verified` added once its review verified.
-_REVIEW_LINE_RE = re.compile(r"^[1-9][0-9]*\. (\S+): (.+), trade (.+), package \S+( verified)?$")
-
-# A continuation's unit line: the review's package and trade, the unit whose report sent it, and
-# each section it reads on from, as `<code> from page <n> of <fileId> p<first>-p<last>`.
-_CONTINUATION_LINE_RE = re.compile(
-    r"^[1-9][0-9]*\. (\S+): (.+), trade (.+), package \S+, continues (\S+), sections (.+?)( verified)?$"
+# A window 3 review's unit line as the plan script writes it, its manual pages after `reads`, and
+# ` verified` added once its review verified.
+_REVIEW_LINE_RE = re.compile(
+    r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?)(?:, reads .+)?, package \S+( verified)?$"
 )
-_SECTION_FROM_RE = re.compile(r"^(\S+) from page ([1-9][0-9]*) of \S+ p[1-9][0-9]*-p[1-9][0-9]*$")
 
-# A review's or a continuation's note on a section whose pages its cap left for a continuation:
-# `section <code> p<first page left> continued: ...`, after the unit id.
-_CONTINUED_RE = re.compile(r"^section (\S+) p([1-9][0-9]*) continued: ")
-
-# The label a `continued:` note prints under once a verified continuation read those pages.
-READ_ON_LABEL = "read to its end in a further review"
+# A manual part's unit line: the review's package and trade, the unit it reads on after, and each
+# span it reads, `; ` between them.
+_PART_LINE_RE = re.compile(
+    r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?), package \S+, manual part after (\S+), reads (.+?)( verified)?$"
+)
+# One span as the plan script writes it: `<code> p<first>-p<last> of <fileId>`, and where it is not
+# the whole section, the section's own pages after it.
+_SPAN_RE = re.compile(r"^(\S+) p([1-9][0-9]*)-p([1-9][0-9]*) of \S+(?: \(section p[1-9][0-9]*-p[1-9][0-9]*\))?$")
 
 # A window 1 or 2 unit line as the plan script writes it: the unit id, then the sheet number, or
 # `file <fileId>` on a repeated lines unit, then where it opens.
@@ -683,8 +670,7 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
         raise LeadPassError(f"cannot append to the ledger at {ledger}: {e}") from e
 
     # The pass as the estimator hears it, for the one line the lead says as each pass is recorded.
-    read_on = _sections_read_to_end(plan_path, ledger) if window == 3 else set()
-    reads = _plan_reads(plan_path, window, read_on)[0]
+    reads = _plan_reads(plan_path, window, _verified_ok(ledger, window) if window == 3 else frozenset())[0]
     said = {field: int(value) for field, value in figures if field in PASS_FIGURES + RECHECK_FIGURES}
     words = _said_recheck(said) if window == RECHECK_WINDOW else _said_figures(summary["items"], said)
     out = [line, f"{reads.get(pass_id, 'nothing planned')}: {words}"]
@@ -752,8 +738,8 @@ def _reviews_of(plan_path: Path) -> dict[str, str]:
         return {}
     reviews: dict[str, str] = {}
     for line in lines:
-        # A continuation reads for its review's package, so its counts fall under that package.
-        unit = _REVIEW_LINE_RE.match(line.strip()) or _CONTINUATION_LINE_RE.match(line.strip())
+        # A manual part reads for its review's package, so its counts fall under that package.
+        unit = _PART_LINE_RE.match(line.strip()) or _REVIEW_LINE_RE.match(line.strip())
         if unit:
             reviews[unit.group(1)] = f"the review of {unit.group(2)}, trade {unit.group(3)}"
     return reviews
@@ -778,73 +764,15 @@ def _verified_ok(ledger: Path, window: int) -> set[str]:
     return {unit for unit, ok in last_ok.items() if ok}
 
 
-def _sections_read_to_end(plan_path: Path, ledger: Path) -> set[tuple[str, str, int]]:
-    """
-    Each (unit, section, first page left) whose pages left were read to the section's end: the
-    continuation the read plan binds for that unit, section and page verified ok on the ledger, and
-    its report, in the reports folder beside the ledger, names the section on no `sections not
-    checked:` line and the continuation reached it, or names pages left that the next continuation
-    in turn read to the end. A continuation whose report names pages left in a section its dispatch
-    names first reached none named after it, and one of those reads to its end only where the next
-    continuation the plan binds for it does; with none bound it stays open. A
-    continuation not verified, one whose report is not there or does not read, and one that names
-    the section for any other reason, its manual removed or the section no longer on its package,
-    leave the section open. Empty where the read plan is not window 3's or is not there.
-    """
-    try:
-        lines = plan_path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return set()
-    if next((line.strip() for line in lines if line.strip()), "") != "# Read plan: window 3":
-        return set()
-    continued_by: dict[tuple[str, str, int], str] = {}
-    # Each continuation's sections, in the order its dispatch names them.
-    dispatched: dict[str, list[str]] = {}
-    for line in lines:
-        unit = _CONTINUATION_LINE_RE.match(line.strip())
-        if unit is None:
-            continue
-        for section in unit.group(5).split(", "):
-            start = _SECTION_FROM_RE.match(section)
-            if start:
-                continued_by[(unit.group(4), start.group(1), int(start.group(2)))] = unit.group(1)
-                dispatched.setdefault(unit.group(1), []).append(start.group(1))
-    verified = _verified_ok(ledger, 3)
-
-    def to_end(key: tuple[str, str, int], seen: set[str]) -> bool:
-        continuation = continued_by.get(key)
-        if continuation is None or continuation not in verified or continuation in seen:
-            return False
-        try:
-            left = plan_inventory.sections_left(ledger.parent / REPORTS_FOLDER / f"{continuation}.md")
-        except plan_inventory.PlanError:
-            return False
-        code = key[1]
-        if code not in left:
-            # A report naming the section on no line read it to its end, unless the cap ran out
-            # in a section its dispatch names before it, which reached none after. Such a section
-            # is read to its end only where the next continuation the plan binds for it, from
-            # where this one was to start, read it to its end; with none bound it is unread.
-            order = dispatched.get(continuation, [])
-            stops = [order.index(other) for other, page in left.items() if page is not None and other in order]
-            if code in order and stops and order.index(code) > min(stops):
-                onward = next((later for later in continued_by if later[:2] == (continuation, code)), None)
-                return onward is not None and to_end(onward, seen | {continuation})
-            return True
-        return left[code] is not None and to_end((continuation, code, left[code]), seen | {continuation})
-
-    return {key for key in continued_by if to_end(key, set())}
-
-
 def _plan_reads(
-    plan_path: Path, window: int, read_to_end: set[tuple[str, str, int]],
+    plan_path: Path, window: int, verified: set[str] | frozenset[str] = frozenset(),
 ) -> tuple[dict[str, str], dict[str, str]]:
     """
     What each pass of the read plan beside the ledger read, in the words a check-in says it in, and
     what each unit id names: a sheet's number, the file a repeated lines unit reads, or a review's
     package. Both are empty where the plan is not this window's or is not there, and the check-in
-    then names passes by id alone. A window 3 pass names the manual sections its continuations
-    read to their end, `read_to_end` as `_sections_read_to_end` gives it, each once.
+    then names passes by id alone. A window 3 pass names the manual pages each of its manual
+    parts read, once the part is in `verified`, this window's units verified ok on the ledger.
     """
     try:
         lines = plan_path.read_text(encoding="utf-8").splitlines()
@@ -859,9 +787,6 @@ def _plan_reads(
     packages: dict[str, list[str]] = {}
     read_on: dict[str, list[str]] = {}
     named: dict[str, str] = {}
-    # The sections each continuation reads on in, so a later link of the same chain is not named
-    # a second time.
-    reads_on_in: dict[str, set[str]] = {}
     current = None
     for raw in lines:
         line = raw.strip()
@@ -875,27 +800,21 @@ def _plan_reads(
             continue
         if current is None:
             continue
+        # A manual part names the pages it read, for its package, once it verified ok; the
+        # file is the runner's, and the estimator hears the section and its pages.
+        part = _PART_LINE_RE.match(line) if window == 3 else None
+        if part:
+            if part.group(1) in verified:
+                read_on[current].extend(
+                    f"{span.group(1)} pages {span.group(2)} to {span.group(3)} for {part.group(2)}"
+                    for span in map(_SPAN_RE.match, part.group(5).split("; ")) if span
+                )
+            named[part.group(1)] = part.group(2)
+            continue
         review = _REVIEW_LINE_RE.match(line) if window == 3 else None
         if review:
             packages[current].append(f"{review.group(2)}, trade {review.group(3)}")
             named[review.group(1)] = review.group(2)
-            continue
-        # A continuation reads on in sections its package's review already opened, so it names
-        # those sections rather than the package a second time.
-        continuation = _CONTINUATION_LINE_RE.match(line) if window == 3 else None
-        if continuation:
-            # The file and range are the runner's; the estimator hears the section and its page.
-            # A section is named once, off the first continuation of its chain, and only where the
-            # chain read it to its end.
-            starts = [start for start in map(_SECTION_FROM_RE.match, continuation.group(5).split(", ")) if start]
-            read_on[current].extend(
-                f"{start.group(1)} from page {start.group(2)} for {continuation.group(2)}"
-                for start in starts
-                if start.group(1) not in reads_on_in.get(continuation.group(4), set())
-                and (continuation.group(4), start.group(1), int(start.group(2))) in read_to_end
-            )
-            reads_on_in[continuation.group(1)] = {start.group(1) for start in starts}
-            named[continuation.group(1)] = continuation.group(2)
             continue
         retire = _RETIRE_LINE_RE.match(line) if window == RECHECK_WINDOW else None
         if retire:
@@ -920,10 +839,7 @@ def _plan_reads(
                 f"({'; '.join(packages[pass_id])})"
             )
         if read_on[pass_id]:
-            parts.append(
-                f"the rest of {len(read_on[pass_id])} manual section{'' if len(read_on[pass_id]) == 1 else 's'} "
-                f"read ({'; '.join(read_on[pass_id])})"
-            )
+            parts.append(f"manual pages read ({'; '.join(read_on[pass_id])})")
         if sheets[pass_id]:
             parts.append(
                 f"{len(sheets[pass_id])} sheet{'' if len(sheets[pass_id]) == 1 else 's'} "
@@ -993,8 +909,9 @@ def checkin_lines(
 ) -> list[str]:
     ledger = run_folder / "ledger.md"
     last = _last_pass_lines(ledger, window)
-    read_on = _sections_read_to_end(run_folder / "read-plan.md", ledger) if window == 3 else set()
-    reads, named = _plan_reads(run_folder / "read-plan.md", window, read_on)
+    reads, named = _plan_reads(
+        run_folder / "read-plan.md", window, _verified_ok(ledger, window) if window == 3 else frozenset()
+    )
 
     by_trade: dict[str, int] = {}
     items_of: dict[str, int] = {}
@@ -1034,15 +951,6 @@ def checkin_lines(
         for label, line, continued in entries:
             if line == f"{label}: none" and not continued:
                 continue
-            if label == "anomalies":
-                # A section whose pages its continuations read to its end is read, not to look at.
-                unit, _space, rest = line[len("anomalies: "):].partition(" ")
-                left = _CONTINUED_RE.match(rest)
-                if left and (unit, left.group(1), int(left.group(2))) in read_on:
-                    body = _without_unit(line[len(label) + 2:], named, window)
-                    notes.append((pass_id, f"{READ_ON_LABEL}: {body}"))
-                    notes.extend((pass_id, more) for more in continued)
-                    continue
             landed = _landed(line) if label == "anomalies" and not continued else None
             if landed is None:
                 body = _without_unit(line[len(label) + 2:], named, window)

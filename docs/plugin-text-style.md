@@ -256,7 +256,7 @@ Each of these is a harness check.
     three windows' unit lines and page references, its pinned reading order, its balanced pass
     split and its window 3 unit ids and passes are compared against a tally the check computes
     itself off the same fixtures. Window 3 plans every package's review exactly once across its
-    passes, at most eight to a pass and ten units to a pass with its continuations, both numbers
+    passes, at most eight to a pass and ten units to a pass with its manual parts, both numbers
     pinned, in package order with every package of one trade kept whole in one pass, so no trade
     sits on two passes; a trade over eight is kept whole, one over ten is refused by name, the pass ids read `W3-<n>` and are never a unit id, and a
     second run writes the same plan. Window 2 has to come out an exact partition of the inventory minus the window 1
@@ -515,27 +515,28 @@ Each of these is a harness check.
     or split folder refusal the skill has the lead say what is wrong in plain words and never a
     folder path. `learn-project` and `drawing-upload` name their local folder for the project id
     too. This cannot judge a seat's real run history: the folders are invented.
-31. A package review reads each manual section whole. A review once read only Part 2 of a section,
-    at most twelve pages, and the pages after went unread unless the estimator asked for a second
-    review. `agents/scope-reviewer.md` reads every section whole inside its page cap and names the
-    pages the cap left in one shape, `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>`, on
-    `sections not checked:`, the same line in the skill's copy of its report; none of the reviewer,
-    the runner or the skill carries the retired Part 2 read or its heading searches; the reviewer
-    carries a continuation mode that compares each section's file and pages with the record and
-    reads one a replaced manual moved whole, and names a section no longer on its package; the
-    runner carries the plan script's `continue` command and its pending run before the first unit;
-    and the skill its dispatch and a close-out that names a section as not read only where it has
-    no page range, its manual was removed or it left its package. The shipped `plan_inventory.py`
-    `continue` mode is run over invented run folders: it binds a continuation right after its review
-    in the review's pass and in `plan/window-3.json`, with each section's file and first page,
-    changes nothing run again, matches a replan, continues a continuation in turn, writes nothing
-    when it refuses after its reads, and refuses a report with nothing left among fourteen
-    refusals; the pending run binds what a stop between a `verified` line and `continue` left out
-    and names the unread pages of a full pass once; a replan counts continuations against a
-    trade's ten units; two runs at once both land under the run folder's lock; the pass summary
-    counts the continuations; and the lead's check-in, off the ledger with no replan, shows a
-    section as read only once no report later in its chain names it. This cannot judge how a
-    reviewer spends its page cap on a real manual; that is the measured re-run's.
+31. Every page of a package's manual is planned before window 3 and read exactly once. A review
+    once named the pages its page cap left on a report line the plan script then parsed to bind a
+    follow-up review, and an abbreviated line stopped the run. The shipped `plan_inventory.py`
+    now reads the manual's sections with their pages (`list_spec_sections`, copied to
+    `plan/spec-sections.json`) and `manual_parts.py` divides each package's sections between its
+    review, whole sections up to twenty pages, and manual parts of up to forty pages each, a
+    section that fits a unit never split and a unit starting partway into a section keeping room
+    for its opening pages. Each unit line names its pages, `agents/scope-manual-reader.md` reads a
+    part's, the runner holds each report's `spans read:` lines to its dispatch, and no report
+    decides what is read next. The check divides eight invented shapes and holds every page to
+    exactly one unit and every unit to its pages; plans an invented project and reads back the
+    review's and parts' spans, the chain, the sections not read with their reasons and the bounds
+    figures; replans with nothing changed and with a section moved, a dispatched review keeping
+    its pages, a dispatched part on a moved section retired and its pages planned again under new
+    numbers, and a dispatched part on a section that stayed keeping its pages; carries a long
+    manual's last parts into `i1-W3-1b` after `i1-W3-1`; and refuses a truncated section list, a
+    plan with no section list, a plan file holding a continuation a report bound, one page planned
+    for two parts and a deleted package with pages owed, each in one line writing nothing. Text
+    arms pin the reviewer's share of the manual and its carry file, the manual reader's reads of
+    the reviewer's mandates by number, the runner's check of a unit's spans and the skill's
+    section list copy and dispatch, with eight mutations refused. This cannot judge how much a
+    manual part holds in context on a real manual; that is the measured re-run's.
 32. Passes of one discipline run alongside each other, and the script says which. A lead once
     guessed which passes could start together, off a mark the plan never wrote, and one set started
     ten at once and another four and stopped. The shipped `plan_inventory.py` pins six passes at
@@ -550,7 +551,7 @@ Each of these is a harness check.
     fourth `pass:` line, a pass recorded while one stood open reported at the next with the count
     restarted at the `checkin:` line. Each value a `checkin:` line's second field takes is read back
     through that listing. `passes --reported` prints the one pass's prefixes off the plan at call time,
-    a window 3 continuation among them and taken by the real record, and the five closing lines, keeps
+    a window 3 manual part among them and taken by the real record, and the five closing lines, keeps
     that pass out until it is recorded, and refuses a pass the plan does not carry. Windows 1, 2 and 3
     are driven to their end, never stuck, never past the limit, each hand-back taking its prefixes off
     that call, and a pass counts as reported only where a check-in the check-in script printed covers

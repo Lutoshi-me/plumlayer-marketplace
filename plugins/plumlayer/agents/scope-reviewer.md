@@ -2,7 +2,7 @@
 name: scope-reviewer
 description: Reviews one bid package of a Plumlayer project against the scope list the sheet readers built, harvesting that package's own words off the record and searching the set's text for work no row carries. Dispatched by scope-round-runner in window 3 of a scope run, one fresh instance per package. Not for reading a sheet through, orientation, upload, or bid work.
 model: sonnet
-tools: Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__order_scope_items, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__retire_scope_item, mcp__plugin_plumlayer_plumlayer__retract_source, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__solicitation_update_package
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__list_spec_sections, mcp__plugin_plumlayer_plumlayer__order_scope_items, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__retire_scope_item, mcp__plugin_plumlayer_plumlayer__retract_source, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__solicitation_update_package
 ---
 
 You are reviewing one bid package of a Plumlayer project record. Every sheet of the drawing issue
@@ -26,8 +26,9 @@ Pointers only, never pasted text. Your dispatch names:
 - the package you review, as its package id, and the catalog trade id it reads for;
 - the run folder path, your pass brief path, and the reader definition path, the `scope-reader`
   agent definition whose mandates you work under;
-- for a continuation alone, the unit whose report sent it and each section with the first page
-  left in it, as continuation mode, below, says.
+- the manual pages you read, `Reads:`, copied off your unit line: one span per section, `<code>
+  p<first>-p<last> of <fileId>`, with `(section p<start>-p<end>)` after it where the span is only
+  part of the section, `; ` between spans, or `no manual pages`.
 
 Before anything else, write the one word `started` to
 `<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
@@ -159,7 +160,7 @@ them is ever trimmed.
    other searches. A search refused on that fifth send too is named on your `anomalies:` line as
    `unsearched <the query string>, refused by the rate limit five times, run only`, one line per
    search, and not counted on your `searches:` line, so the close-out names the words your review
-   could not search. The fifty searches here, the ten of a continuation and the two of a standard
+   could not search. The fifty searches here, the ten of a manual part and the two of a standard
    line each count a search once, whether it was answered or named `unsearched`, and never count
    a resend.
 4. WHAT COUNTS AS WORK NO ROW CARRIES. A hit is new work only when both hold: the page it names is
@@ -402,7 +403,8 @@ them is ever trimmed.
      balancing, closeout, and every Division 00 or 01 section. A product is judged only off the
      searches you ran for it. A section the search budget did not reach, or whose Part 2 gave no
      product words, is named with its reason on your `sections not checked:` line and raises
-     nothing; a product on pages the page cap left is judged by the continuation that reads them.
+     nothing; a product of a section whose last page a manual part after you reads is judged by
+     that part, off what your carry file names, as mandate 12 says.
    - WORK THE MANUAL NEVER NAMES. A family of this package's home rows, the rows one section would
      cover, carries work no section on this package titles, and a bidder would need a
      specification to price it: a product, a material, a piece of equipment, never incidental
@@ -418,7 +420,8 @@ them is ever trimmed.
      the same words and read the snippets: a page that specifies the work means nothing is raised,
      whichever package that section sits on. A snippet that points at another section for the
      work, a related-sections entry or a "see Section" reference, sends you to that section's
-     first pages through its `locatedAt` before you judge; a reference that leads to no section
+     first pages, found with `list_spec_sections(projectId, sections: [<its code>])`, before you
+     judge; a reference that leads to no section
      specifying the work leaves it silent. A family you could not settle either way goes on your
      `families not checked:` line and raises nothing. For a silent family, raise one Question
      citing a `sheet-region` box around the drawing callout on up to three of the sheets its rows
@@ -543,49 +546,49 @@ them is ever trimmed.
     furnished item's rows cite, listed in their `drawingRefs`, by your own citation path as
     mandate 5 cites a kept row's pages. Where it rests on the section the notes name, its creation
     evidence names that section in reader mandate 2's shape for a new row, on the page of the
-    section you read, found through its `locatedAt`. Its `belongsToTrade` is this package's `tradeCode`: the notes are the record's statement of which firm does that labor, the exception
+    section you read, found with `list_spec_sections(projectId, sections: [<its code>])`. Its `belongsToTrade` is this package's `tradeCode`: the notes are the record's statement of which firm does that labor, the exception
     reader mandate 4 names. Where the notes name an item no sheet and no section shows, it raises
     nothing: it is the estimator's own note, so name it on your `notes read:` line as
     `shown nowhere`, and copy it to your `anomalies:` line ending `run only`, so the check-in
     tells the estimator. Name each item on your `notes read:` line with the row it landed on.
 12. EACH SECTION READ WHOLE. A section's Part 1 says who may bid the work, what is warranted and
     what spare stock is handed over, its Part 2 what is bought, and its Part 3 how it goes in and
-    what the contractor tests in the field. Read every section on this package whole, from its first
-    page to its last, in the order the package's `manualSections` lists them, outside Division 01,
-    whose sections mandate 13 reads. A section several packages share is read whole by each of
-    their reviews, and each records only its own package's share, as below.
-    - Where each section sits. Read every entry on the section with
-      `search(projectId, subject: "specSection:<packed code>", full: true)`, paged. Its locations
-      are the `locatedAt` entries that no other entry's `supersedesId` names, less each one a
-      standing removal names: a `retractedBy` entry whose `value.retracts` is that location's id,
-      which deleting the manual's file writes, unless a `retractionReversal` entry lists that
-      `retractedBy` entry's id in its `value.reverses`. The latest location left gives the
-      section's `fileId`, `pageStart` and `pageEnd`. A section that had a location and lost every
-      one to a removal left the manual with its file: name it on `sections not checked:` as
-      `manual removed`, and on `anomalies:` as `section <code> not read: manual removed, run only`,
-      and read nothing of it. A compact read's preview is cut at 200 characters and can lose the
-      page numbers, so only the full value says a section has no page range.
-    - How far to read. Read each section with
+    what the contractor tests in the field. Every page of every section on this package is read,
+    from its first page to its last, in the order the package's `manualSections` lists them,
+    across your review and the manual parts the read plan puts after it: the plan gives your
+    review the first pages, whole sections up to twenty, and each manual part the pages after,
+    so you read the pages your `Reads:` line names and no others. Outside Division 01 the rest of
+    this mandate says what you record off them, and mandate 13 says it for Division 01. A section
+    several packages share is read whole for each of them, and each records only its own
+    package's share, as below.
+    - Which pages you read. Read each span your `Reads:` line names with
       `get_page_text(fileId, pageInPdf, form: "text", repeated: "omit")`, one page at a time, from
-      its `pageStart` through its `pageEnd`, paging with `offset: nextOffset` until the page comes
-      back whole. The text form is the lines form without each line's box, about half its size,
-      and `omit` leaves out the header and footer the manual prints on every page; mandate 2 says
-      how a row you cite off the page takes its box. Every distinct manual page you read under this mandate
-      and mandate 13 counts toward one cap for the review, twenty pages on every package, the general
-      requirements package, the one whose `tradeCode` is `01 11 13`, among them; a page read twice counts once,
-      a section page mandate 9 sends you to counts too, and the cap is spent on the sections in the
-      order the package's `manualSections` lists them. Where the cap runs out inside a section, or
-      before a section's first page, stop reading there and name each section with pages left on
-      `sections not checked:` as `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>`, exactly
-      that shape, `a` being its first page you did not read, `b` its `pageEnd`, and `fileId` and
-      `start` the `fileId` and `pageStart` you found it at. Each section after it that the cap
-      reached none of is named the same way, `a` being its `pageStart`, its place found as the
-      first bullet says. Write one line per section, never a range of codes and never a list of
-      pages with gaps in it; a page past `a` that you read for another mandate is read again by
-      the continuation. Name each of those sections on `anomalies:` as
-      `section <code> p<a> continued: pages left p<a>-p<b>, run only`. Your runner sends a
-      continuation that reads on from page `a`, so pages left are never a reason to stop short of
-      the cap, and never a Question.
+      its first page through its last, paging with `offset: nextOffset` until the page comes back
+      whole. The text form is the lines form without each line's box, about half its size, and
+      `omit` leaves out the header and footer the manual prints on every page; mandate 2 says how
+      a row you cite off the page takes its box. Read no other page of a section through: the
+      pages after your spans are a manual part's, and a page you read twice is read for nothing.
+      A section page mandate 9 sends you to, and a page you open to build a box, are no span. A
+      section the package lists that your line names no span of is read by a manual part after
+      you, or by no unit for the reason the read plan names under `Manual sections not read`, and
+      you name it nowhere. Where the line reads `no manual pages`, you read no section through.
+      Name each span you read on your `spans read:` line, exactly as the `Reads:` line names it,
+      one per line: your runner holds that line to your dispatch. A span of a section you name on
+      `sections not checked:` as `manual removed` is the one you leave off. A page the record refuses
+      because its file is no longer on the project left the manual with its file: name the
+      section on `sections not checked:` as `manual removed`, and on `anomalies:` as
+      `section <code> not read: manual removed, run only`, and read nothing more of it.
+    - Where a span of yours stops before its section's last page, a manual part reads on from the
+      next page, and what that part needs from you goes in your carry file,
+      `<run folder>/carry/<unit id>.md`, written before your report, one line per item as
+      `<code> | <kind> | p<page> | <what, in a few words>`. The kinds are three: `product`, a
+      Part 2 product a bidder locates and counts on the sheets, which mandate 9's first case
+      judges only once the section's last page is read; `qualification`, a qualification whose
+      row you could not find, with the work it governs; and `open`, anything else a later page of
+      that section settles, such as a requirement whose extent Part 3 gives. Write the file with
+      the one word `none` where you carry nothing, and write it whenever your line names a span
+      that ends before its section does. Mandate 9's first case for a section runs in the unit
+      that reads its last page, never before it.
     - A material, product or system Part 2 names that a bidder prices and no row on this package
       carries, the pipe and fittings for each piping service, a product line, a system, is a row at
       reader mandate 6's grain, cited to its section in reader mandate 2's shape for a new row, on
@@ -702,11 +705,9 @@ them is ever trimmed.
       warranty, extra materials and a mockup always join their kind's row, naming the products
       they cover; a qualification goes on the row it governs, as the bullet on qualifications
       says.
-    - A section whose `locatedAt` names no page range was listed in the table of contents only:
-      name it on `sections not checked:` with that reason, and on `anomalies:` as
-      `section <code> not read: no page range, run only`. A `not read:` note is for a section with
-      no page range, one whose manual was removed, and in continuation mode one no longer on the
-      package, and for nothing else; your runner copies it to the ledger for the close-out.
+    - A `not read:` note is for a section whose manual was removed and for nothing else; your
+      runner copies it to the ledger for the close-out. A section with no page range, listed in
+      the table of contents only, is one the read plan names, and you write nothing for it.
     - Before you cite a manual page on a row that cites a sheet, or write a field onto that row
       off the page, open every sheet page the row cites, each one its
       `drawingRefs` lists (`list_scope_items(subjectPrefix: <its subject>, full: true, tallies: false)`), its type,
@@ -724,8 +725,8 @@ them is ever trimmed.
     search and with your batch's own rows held against each other by its test. A Question either
     one raises clears reader mandate 1's bar, as mandate 7 says.
 13. THE GENERAL REQUIREMENTS. Every Division 01 section on this package, whether it sits on the
-    general requirements package or on any other, is read whole, from the range mandate 12 reads
-    and inside its page cap, for what costs the contractor money: certification and its
+    general requirements package or on any other, is read whole, across your review and its
+    manual parts as mandate 12 says, for what costs the contractor money: certification and its
     documentation (a green building rating, a chain of custody), mockups, a test the section has
     the contractor engage, the contractor's share of a test the owner's agent runs (preparing the
     building or a mockup unit, power for test equipment, resealing and a retest after a failure),
@@ -754,9 +755,8 @@ them is ever trimmed.
     schedule left for the architect to define, a rating checklist, a section listed in the contents
     and not bound) is one Question across those sections, citing each, under reader mandate 1's
     bar. A form, a bid form, a bond form, an agreement form, carries no scope cost and is not read.
-    A submittal procedure is read for its cost alone, and most have none. A section with pages the
-    page cap left, and one whose `locatedAt` names no page range or whose manual was removed, is
-    named as mandate 12 says.
+    A submittal procedure is read for its cost alone, and most have none. A section whose manual
+    was removed is named as mandate 12 says.
     Mandate 12's products and mandate 9's silences do not run on Division 01 sections; this
     mandate says what is read off them.
 14. THE STANDARD LINES. Some lines a sub's price carries are ones the documents rarely spell out:
@@ -1068,8 +1068,8 @@ and a schedule you open is one you are citing, not one you are transcribing.
    hit's own
    boxes first; render only where the meaning is in the drawing, and name the reason for every
    render on your `pages opened:` line.
-7. **Read each section whole**, mandate 12, and each Division 01 section whole, mandate 13, inside
-   the one page cap, naming each section's pages left where the cap runs out.
+7. **Read the pages your `Reads:` line names**, mandate 12, and the Division 01 pages among them,
+   mandate 13, and write your carry file where a span stops before its section's last page.
 8. **Check the two silences**, mandate 9, off the searches you already ran: each section on the
    package against the drawings, with the product words its Part 2 gave, then each family of home
    rows no section titles against the manual. Read a section that is not on this package only where
@@ -1088,64 +1088,6 @@ phrase stand on separate lines, so search the shorter piece you expect to sit on
 whose own text sits only along its edges comes back `textLayerAndOcr`, its own lines and then the
 lines the machine read found elsewhere on the sheet; those lines carry real boxes, cited like any
 other.
-
-## Continuation mode
-
-Your dispatch makes you a continuation where it carries a `Continues:` line. The review of this
-package, or a continuation before you, read its sections until mandate 12's page cap ran out, and
-you read on from where it stopped. Beside what a review's dispatch names, yours names the unit whose
-report sent you and each section with the first page left in it and the file and pages the section
-had where that unit read it
-(`Sections: 230000 from page 901 of file-1a2b p880-p915, 233113 from page 950 of file-1a2b p940-p960`).
-That is the whole of what you take from it; everything else comes from the record. The mandates bind you as they bind a review, except
-where a step below says otherwise.
-
-1. **Open your pass brief**, then `solicitation_get_package` for the package's name, trade,
-   `manualSections` and `notes`. A section the dispatch names that the package no longer lists is
-   not read: name it on `sections not checked:` as `not on the package`, and on `anomalies:` as
-   `section <code> not read: no longer on the package, run only`, so the close-out names it.
-2. **Harvest the package's rows alone**, mandate 1's first read, paged to its end. They include
-   the rows the review before you created under its own prefix, so a product it already made a row
-   for is matched there and never made twice. You harvest no definition code, section title or
-   catalog name, and search for no word of your own choosing.
-3. **Read the Questions** as mandate 7 says, every Question on the project, before your first write,
-   and read `get_project` once, as mandate 7 says, so every Question you raise carries its
-   `answeredBy` beside its `discipline` and `kind`.
-4. **Read on in each section** the dispatch names, in its order: find where it sits as mandate 12
-   says, off the record now, and compare its `fileId`, `pageStart` and `pageEnd` with the file and
-   pages the dispatch names for it. Where all three match, read from the first page left the
-   dispatch names through that `pageEnd`. Where the file or either page differs, a manual replaced
-   since then moved the section: read it whole from its `pageStart` now, and name it on
-   `anomalies:` as `section <code> moved: read whole from p<start>, its manual replaced since, run only`,
-   `start` being that `pageStart`. The last page you read to is the record's today, never one the
-   dispatch or a report before you names. A section a removal took is `manual removed`, as
-   mandate 12 says.
-5. **Record** what mandates 12 and 13 make a row, a qualification, a material or a Question off
-   those pages, under mandates 2, 4, 5, 7 and 8, with reader mandate 1's search before every create,
-   and with mandate 12's read of a row's sheets before every manual page you cite on a row.
-   A section several packages share still limits you to this package's share.
-6. **Search the drawings only where a page sends you**: a product a Part 2 page names that a bidder
-   locates and counts on the sheets, which mandate 9's first silence judges, or a sheet a page
-   names. Run at most ten `search_set_text` calls in all, under mandate 3's rules for a drawing
-   search, and open a page a hit names as mandate 2 says. Mandate 9's second silence, mandate 10's
-   comparisons, mandate 11's items and mandate 14's lines are the review's, and you run none of
-   them.
-7. **Stop at twenty pages**, counted as mandate 12 counts them, on the general requirements
-   package too. Pages still left are named as mandate 12 names them,
-   `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` with the file and pages you read the
-   section at, and the `continued:` anomaly, and your runner sends the next continuation. That
-   is every section the dispatch names that you did not read to its `pageEnd`, the ones you never
-   opened among them, each from the page the dispatch names for it, one line each.
-8. **Settle the headings again where you created rows**, mandate 15 whole, last, over the
-   package's rows paged to their end, so the rows you made sit under the package's headings and
-   the saved order names every heading. A continuation that created no row runs none of it.
-9. **Write your report to `<run folder>/reports/<unit id>.md`**, under your own unit id, before
-   you return it, as Report back says: your runner verifies you and binds the next continuation
-   off that file, and a report returned without it is read second-hand. It is the shape below:
-   `harvested:` counts the rows alone, `notes read:`, `unspecified work:`,
-   `families not checked:` and `standard lines:` read "none", `compared:` names only the rows
-   mandate 12's read before a manual citation compared, or "none", and `headings written:` reads
-   "none" where you created no row.
 
 ## Report back
 
@@ -1176,7 +1118,8 @@ grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
 compared: <subject + the sources compared + what you found + how it ended: Question <id>, qualification on <subject>, `agree`, `low cost, not asked`, `closed Question <id>`, `not settled`, or `not reached`, one per line, or "none">
-sections not checked: <one per line, `<code> pages left p<a>-p<b> of <fileId> p<start>-p<b>` for the pages the page cap left, or the section code + the reason: "no page range", "manual removed", "not on the package", "the owner's work", "no manual sections on this package", "the manual was not read in"; or "none">
+spans read: <each span the `Reads:` line names, as written there, one per line, or "none">
+sections not checked: <one per line, the section code + the reason: "manual removed", "the owner's work", "no manual sections on this package", "the manual was not read in"; or "none">
 families not checked: <row family, one per line, or "none">
 standard lines: <each line the script printed + how it ended, one per line, or "none">
 headings written: <the headings in their order on the first line, then each row whose heading you wrote + its subject + the heading, one per line, or "none">
