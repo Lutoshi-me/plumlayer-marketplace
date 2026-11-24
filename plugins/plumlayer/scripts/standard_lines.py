@@ -1,5 +1,5 @@
 """
-standard_lines.py: print the standard lines one bid package's review writes, and the name and records of each.
+standard_lines.py: print the standard lines one bid package's review writes, and the name and exclusion rows of each.
 
 A standard line is one a sub's price carries that the documents rarely spell out, such as tax on
 what he supplies or floor prep under resilient flooring. The plugin carries them one file per trade
@@ -48,24 +48,36 @@ the line's order, separated by `; `. This script reads those files and nothing e
         line also prints the trades it involves (the trades of the files carrying it, the trades it
         names and the trades its condition names, by the same words in any case), each with the
         package it goes to, and each half with whether this package writes it and the name of its
-        row. Where this package writes it, that is this package's row, with the `packageRole`
-        records to write beside it, and, where the half goes to either of two or more trades, an
-        `internal note:` line naming them, the words its `notesInternal` takes. Where it does not, it prints `carried by` or `left to` the
-        package that writes it and the name of the row that package writes, so a review the paper
-        gives the half to finds that row by its name and the writer's trade and cites onto it.
+        row. Where this package writes the half's own row it prints `yes`, and, where the half goes
+        to either of two or more trades, an `internal note:` line naming them, the words its
+        `notesInternal` takes; where it writes only the half's exclusion rows it prints `yes,
+        exclusion rows only`. The one package that writes a half's exclusion rows prints one
+        `exclusion row on: <tradeCode>, description: <words>` line for each, naming the package the
+        row goes on and the words its description takes. Where this package writes nothing for the
+        half, it prints `carried by` or `left to` the package that writes it and the name of the row
+        that package writes, so a review the paper gives the half to finds that row by its name and
+        the writer's trade and cites onto it.
         Where no file goes to the package it prints NONE_LINE alone. `--folder` reads the files from another folder.
 
-        Who writes a half: one carrier, its package, with an `exclusion` record on each other
-        involved package, counterparty the carrier's package; where the carrier has no package, the
-        lowest other involved package, with an exclusion on each involved package, its own among
-        them, counterparty the carrier's catalog id. Trades joined by `or`: the lowest of their
-        packages alone, with an internal note naming the trades the line joins and an exclusion, no
-        counterparty, on each involved package outside them. Trades joined by `and`, or `Each MEP Trade`: each of
-        their packages writes its own row, with an exclusion on each involved package outside them,
-        counterparty itself. Trades joined by `or` or `and` with no package among them: the lowest
-        other involved package, with an exclusion on each involved package, no counterparty. The
-        owner or a utility alone: the package that writes the line's other half, with an exclusion
-        on its own trade, counterparty `owner`.
+        Who writes a half: one carrier, its package, writing the half's row and an exclusion row on
+        each other involved package, described `By` and the carrier's package name. Where the
+        carrier has no package, no row carries it, and the lowest involved package writes an
+        exclusion row on each involved package, its own among them, described by the carrier's
+        catalog id. Trades joined by `or`: the lowest of their packages alone writes the row, with
+        an internal note naming the trades the line joins, and an exclusion row on each involved
+        package outside them, described by the names of all their packages joined by `or`, with
+        `or Owner` where the half names the owner. Trades joined by `and`, or `Each MEP Trade`: each
+        of their packages writes its own row, and the lowest of them an exclusion row on each
+        involved package outside them, described by their package names joined by `and`. Trades
+        joined by `or` or `and` with no package among them: no row carries it, and the lowest
+        involved package writes an exclusion row on each involved package, described by their
+        catalog ids joined the same way. The owner or a utility alone: no row carries it, and an
+        exclusion row goes on every involved package, described `By` and the half's own words
+        (`By Owner`, `By Utility or Owner`), written by the lowest package that writes the line's
+        other half, else the lowest involved package. Every other package prints `left to` the
+        writer where the half is joined by `or` or no package writes its row, and `carried by` the
+        writers otherwise. A description's catalog id is replaced by that trade's name off the
+        trade list when the row is written.
 
 Exit codes:
   0  printed.
@@ -459,38 +471,55 @@ def involved_trades(entry: dict, carriers: list[str]) -> list[str]:
     return list(dict.fromkeys(carriers + named + entry["condition_trades"]))
 
 
-def halves_for(entry: dict, involved: list[str], places: dict[str, str | None], homes: dict[str, str]) -> list[dict]:
+def _join(words: list[str], joiner: str) -> str:
+    """Two words joined by `or` or `and`, and three or more as `a, b and c`."""
+    words = list(dict.fromkeys(words))
+    if len(words) <= 1:
+        return "".join(words)
+    return ", ".join(words[:-1]) + f" {joiner} " + words[-1]
+
+
+def halves_for(entry: dict, involved: list[str], places: dict[str, str | None], homes: dict[str, str],
+               names: dict[str, str]) -> list[dict]:
     """
-    Who writes each half of a Which Trade line and the records each writer puts beside its row,
-    as (role, the package the record is for, the counterparty), from each trade file's package.
+    Who writes each half of a Which Trade line, from each trade file's package: the packages that
+    write the half's own row, the one whose row takes the internal note, the packages that take an
+    exclusion row, the one package that writes all of those, and the words their description takes.
     """
     plans: list[dict] = []
     for half in entry["halves"]:
         own = half["trades"]
         live = sorted({places[s] for s in own if places.get(s)})
-        others = sorted({places[s] for s in involved if s not in own and places.get(s)} - set(live))
-        writers: dict[str, list[tuple[str, str, str]]] = {}
-        if half["shape"] == "one" and live:
-            writers[live[0]] = [("exclusion", p, live[0]) for p in others]
-        elif half["shape"] == "one" and others:
-            counterparty = _catalog_id(homes[own[0]])
-            writers[others[0]] = [("exclusion", p, counterparty) for p in others]
-        elif half["shape"] == "or" and live:
-            writers[live[0]] = [("note", live[0], "")] + [("exclusion", p, "none") for p in others]
-        elif half["shape"] == "each" and live:
-            for writer in live:
-                writers[writer] = [("exclusion", p, writer) for p in others]
-        elif half["shape"] in ("or", "each") and others:
-            writers[others[0]] = [("exclusion", p, "none") for p in others]
-        plans.append({"half": half, "writers": writers, "left": half["shape"] == "or" or not live})
+        packages = sorted({places[s] for s in involved if places.get(s)})
+        plan = {"half": half, "carriers": [], "note": None, "excluder": None, "describe": ""}
+        if half["shape"] == "owner":
+            plan["targets"] = packages
+            plan["describe"] = "By " + half["by"]
+        else:
+            plan["targets"] = [p for p in packages if p not in live]
+            owner = ["Owner"] if half["owner"] else []
+            if live:
+                plan["carriers"] = [live[0]] if half["shape"] in ("one", "or") else live
+                if half["shape"] == "or":
+                    plan["note"] = live[0]
+                    plan["describe"] = "By " + _join([names[p] for p in live] + owner, "or")
+                else:
+                    plan["describe"] = "By " + _join([names[p] for p in live], "and")
+            else:
+                ids = [_catalog_id(homes[s]) for s in own]
+                plan["describe"] = "By " + _join(ids + owner, "or" if half["shape"] == "or" else "and")
+        plans.append(plan)
     for at, plan in enumerate(plans):
-        if plan["half"]["shape"] == "owner":
-            plan["writers"] = {writer: [("exclusion", writer, "owner")] for writer in plans[1 - at]["writers"]}
-            plan["left"] = False
+        if not plan["targets"]:
+            continue
+        if plan["carriers"]:
+            plan["excluder"] = plan["carriers"][0]
+        elif plan["half"]["shape"] == "owner":
+            other = plans[1 - at]["carriers"]
+            plan["excluder"] = other[0] if other else plan["targets"][0]
+        else:
+            plan["excluder"] = plan["targets"][0]
     return plans
-
-
-
 
 
 def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]], files: list[dict], version: str) -> list[str]:
@@ -527,28 +556,28 @@ def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]
             involved = involved_trades(entry, carriers[entry["line"]])
             out.append("  trades: " + "; ".join(
                 f"{titles[s]} on {places[s]}" if places.get(s) else f"{titles[s]}, no package" for s in involved))
-            for half_name, plan in zip(entry["names"], halves_for(entry, involved, places, homes)):
+            for half_name, plan in zip(entry["names"], halves_for(entry, involved, places, homes, names)):
                 out.append(f"  half: {half_name}, by {plan['half']['by']}")
-                records = plan["writers"].get(package)
-                if records is None:
-                    word = "left to" if plan["left"] else "carried by"
-                    writers = sorted(plan["writers"])
+                writes_row = package in plan["carriers"]
+                excludes = package == plan["excluder"]
+                if not writes_row and not excludes:
+                    writers = plan["carriers"] or ([plan["excluder"]] if plan["excluder"] else [])
+                    left = plan["half"]["shape"] == "or" or not plan["carriers"]
+                    word = "left to" if left else "carried by"
                     out.append(f"    you write it: no, {word} {', '.join(writers) or 'no package'}")
                     if writers:
                         # The name of the row each writer writes, which a review the paper gives the half to cites.
                         out.append(f"    name: {half_name}")
                     continue
-                out.append("    you write it: yes")
+                out.append("    you write it: yes" if writes_row else "    you write it: yes, exclusion rows only")
                 out.append(f"    name: {half_name}")
-                for role, target, counterparty in records:
-                    if role == "note":
-                        could = " or ".join(titles[s] for s in plan["half"]["trades"])
-                        could += " or the owner" if plan["half"]["owner"] else ""
-                        out.append(f"    internal note: Could be by {could}")
-                    elif counterparty == "none":
-                        out.append(f"    exclusion on: {target}, no counterparty")
-                    else:
-                        out.append(f"    exclusion on: {target}, counterparty: {counterparty}")
+                if writes_row and plan["note"] == package:
+                    could = " or ".join(titles[s] for s in plan["half"]["trades"])
+                    could += " or the owner" if plan["half"]["owner"] else ""
+                    out.append(f"    internal note: Could be by {could}")
+                if excludes:
+                    for target in plan["targets"]:
+                        out.append(f"    exclusion row on: {target}, description: {plan['describe']}")
     if not out:
         return [NONE_LINE]
     placed = [f"{item['title']} on {places[item['slug']]}" for item in files if places[item["slug"]]]

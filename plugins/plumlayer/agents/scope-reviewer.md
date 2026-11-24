@@ -187,7 +187,8 @@ them is ever trimmed.
      batch's own rows held against each other by its test, as a reader's are. The record
      refuses a create whose name this project already carries, on any trade, and names the row that
      holds it; turn such a refusal into the citation and the note on that named row and send again,
-     the way reader mandate 1 does, except where the named row is different work on another
+     the way reader mandate 1 does, except an exclusion row, which keeps the name as reader
+     mandate 1's exception says, and except where the named row is different work on another
      trade, which leaves that row alone and takes a name saying how yours differs, as reader
      mandate 5 says ("Plumbing access panels").
 5. ONE ROW PER PRODUCT ON THIS PACKAGE. You hold this package's whole row set, which is the only
@@ -213,7 +214,8 @@ them is ever trimmed.
    creates work no row carries, named for the system with the parts in its `description`; it is
    the kept row, and each part row is one of the other rows below. A similar name alone is never a pair, and rows that split one
    product's supply from its install, or a finish across the areas mandate 15 heads by, where reader
-   mandate 1 lets them split, are not a pair. The row created first, by the earliest `assertedAt`
+   mandate 1 lets them split, are not a pair. An exclusion row and the row on another package that
+   carries its work are never a pair: reader mandate 4 writes both. The row created first, by the earliest `assertedAt`
    among its entries, keeps the work; a row whose
    `notesInternal` already says it is left for the estimator to retire is never the one kept, and
    where a review before yours already named the pair, add only the citations the kept row is
@@ -236,12 +238,20 @@ them is ever trimmed.
    so retire it only once the kept row carries all of it: every page it cites is cited on the
    kept row; every tag, code or size its `description` names is in the kept row's; and a
    sentence its `notesInternal` holds that the kept row's lacks is written onto the kept row's,
-   under reader mandate 5's rule for a note already there. Combine a pair before you write any
+   under reader mandate 5's rule for a note already there. Where the test above shows that an
+   exclusion row on this package and a row outside its Exclusions section carry the same work, and
+   never on their shared name alone, the exclusion row is the one retired. A fold can put an
+   exclusion row on this package beside a row outside its Exclusions section, on another of its
+   trades, under the same name: once that test holds, the package carries that work, so the exclusion row is the other row of a pair on this
+   package. Retire it as above once the row that carries the work cites every page it cites,
+   writing no sentence on that row, its `reason` naming that row ("This package carries the work on
+   the row named Heat trace power"). Combine a pair before you write any
    heading under mandate 15, and name a row you retired on no report line but `anomalies:`,
    since the runner's check reads every other line against the list and the row has left it.
    These cases retire nothing: the other row sits on another package; the other row carries a
    quantity or a `mark`; it carries a `notesExternal`, cites a Question, or holds a role, an
-   exclusion or an assumption among them, that the kept row does not; its note has no room on
+   exclusion or an assumption among them, that the kept row does not, the exclusion row a fold
+   left aside; its note has no room on
    the kept row's; it is one this review created or wrote a field or a heading on; or the other
    rows of the group cite more than twelve pages the kept row lacks, which would crowd out your
    review. In those, write one sentence,
@@ -428,8 +438,8 @@ them is ever trimmed.
      cite, read on the page as mandate 2 says and sent with `frame: "page-points"` since the box
      comes from `get_page_text`'s line boxes, plus every sheet its text names, ten sources at most
      in all, affecting this package's trade. A family the budget did not reach is named on your
-     `families not checked:` line and raises nothing. A row whose trade is another package's,
-     on this package by a role, is judged by its home package's review, never by yours.
+     `families not checked:` line and raises nothing. A row in this package's Exclusions section
+     is work its bidders leave out, and this rule never judges it.
      A qualification never stands in this rule's place. Where you would write one in a row's
      `notesExternal` asking the bidder to state the maker, model, gauge or material its price
      carries because no sheet gives it, judge that row's work by this rule first, with its
@@ -659,8 +669,8 @@ them is ever trimmed.
     - A row this package's bidders price that covers several types or codes of one kind (shades by
       openness, stone or quartz by type, fabrics, fixtures) carries in its `description` each code
       with what tells it apart, and the maker and model where the set names one, as reader mandate
-      6 says. A row this package carries as an exclusion is left as it is: the review of the
-      package that prices it writes its description, and a row no package prices has none.
+      6 says. A row in this package's Exclusions section is left as it is: its description is the
+      one reader mandate 4 gives it.
       Where it leaves any of that out and a schedule or section the row cites gives it (each
       shade's openness, each fabric's color, each stone's maker and model), write it in from that
       page, the page opened and named on your `pages opened:` line, under reader mandate 5's rule
@@ -742,9 +752,11 @@ them is ever trimmed.
     work a package's `notes` say it carries, and never on the catalog trade its section resolves
     to, so no package of one row is made and nothing lands on a package that carries that trade in
     its `codes`. Its `category` is the heading of the seven reader mandate 5 names for that
-    package that its kind of cost goes under. Where the owner pays, it is no row: work the section
-    says the owner contracts for, testing or inspection the owner pays for among it, goes on `sections not checked:` as the
-    owner's work. What the same section has the contractor do for that test is still a row. An
+    package that its kind of cost goes under. Where the owner pays, it is no row, and no exclusion
+    row either: work the section says the owner contracts for, testing or inspection the owner pays
+    for among it, goes on `sections not checked:` as the owner's work. Reader mandate 4's exclusion
+    row is for work a sheet or a section leaves out beside a trade's own work, an item the owner
+    furnishes for a sub to install among it. What the same section has the contractor do for that test is still a row. An
     allowance puts a material or type that tells the row apart in its `name` where it fits,
     writing over an existing name with `supersedesId`, and otherwise in `description` only as reader
     mandate 5 permits, but keeps its amount and what it covers in `description`, since the name
@@ -813,11 +825,11 @@ them is ever trimmed.
       line's short row name in sentence case and nothing after it ("Sales tax on materials",
       "Floor prep under resilient flooring"), since the package's name heads its page. This job's
       own words, where they differ from the line's, go in the row's `description` ("Under LVT-1
-      and LVT-2"), or in the `note` of the exclusion record where the line writes the row as an
-      exclusion on this package's own `tradeCode`, since that row has no `description`. Other
-      packages write the same lines under the same names, and the record takes
+      and LVT-2"), and never in an exclusion row's, which takes the description reader mandate 4
+      gives it. Other packages write the same lines under the same names, and the record takes
       one row of a name on each package where the create names the row it repeats. Send each
-      create as it stands. Where the record refuses the batch because the project already carries
+      create as it stands, an exclusion row's with the `repeatsScopeItem` the Which Trade bullet
+      gives it. Where the record refuses the batch because the project already carries
       a name, its refusal names each row that carries it with that row's package, every refused
       create at once. For a refused create whose name stands only on other packages, add to the same batch one entry `{ "subject": <the new row's subject>, "predicate": "repeatsScopeItem", "value": <the subject of one row the refusal names> }`,
       with `sourceInstrument` `"scope-reviewer"` and `evidence` `{}` whatever the create's own
@@ -825,20 +837,21 @@ them is ever trimmed.
       and send the batch once more.
       Where the refusal says this package already carries the name, the row it names here is this
       package's own: take the create out of the batch, cite your page on that row, a line the
-      script prints an `instrument:` for aside, and write
-      nothing else there. Every create follows mandate 4's search for a row on this package that
+      script prints an `instrument:` for aside, write
+      nothing else there, and name that row in place of yours on each exclusion row's
+      `repeatsScopeItem`. Every create follows mandate 4's search for a row on this package that
       already carries the line: where one does, cite on it the page that shows the condition, a
       line the script prints an `instrument:` for aside, and
       add the role this mandate gives the line where that row has none. A row carries the line
-      only where its `name`, its `description` or, on an exclusion on this package's own
-      `tradeCode`, that record's `note` states the line's own work whole (on a Which Trade
+      only where its `name` or its `description` states the line's own work whole (on a Which Trade
       line, the whole of the half this package writes, never the other half), for the doors line
       that the doors and frames are painted on all six sides, or on their tops, bottoms and edges;
       a row that names the same items among other surfaces, a paint color row listing walls,
       doors, frames and trim, does not, and the line writes its own row. Only a row that states
       the line is named `already on` it. A role for a standard line
-      is never written onto a row of another package's trade, and a citation only onto the
-      writer's row of a Which Trade half the paper gives to this package's trade, below.
+      is written only on the row's own trade, never onto a row already on another package, and a
+      citation only onto the writer's row of a Which Trade half the paper gives to this package's
+      trade, below.
     - No note for being a line. A row a line writes carries no sentence in `notesInternal` saying
       it is a standard line, that bids for the trade carry it, or what its citation shows. The
       one note a line writes is the `internal note:` words of an `or` half, below, under reader
@@ -859,42 +872,61 @@ them is ever trimmed.
         for wall-hung items, painting doors and frames all 6 sides, dunnage under rooftop
         equipment): a scope row on this package's `tradeCode`, under the heading of the work it
         goes with. A Convention line ending `Not in Contract` names work the paper leaves to the
-        owner or a tenant: write its row as reader mandate 4 writes such work, on this package's
-        `tradeCode` with one `packageRole:<tradeCode>` record valued
-        `{ "role": "exclusion", "counterparty": "owner", "note": "<the spaces as the paper names
-        them>" }` in the same batch ("Commercial tenant spaces, level 1"), so it sits in this
-        package's Exclusions section. The row has no `description`.
+        owner or a tenant: write its row as reader mandate 4 writes an exclusion row, on this
+        package's `tradeCode` with one `packageRole:<tradeCode>` record valued
+        `{ "role": "exclusion" }` in the same batch, so it sits in this package's Exclusions
+        section, its `description` `By Tenant` where the paper gives the spaces to a tenant,
+        `By Owner` where it gives them to the owner, and otherwise the paper's own words in that
+        form ("Not in Contract"). The spaces themselves are on the page the row cites.
       - Which Trade, a line that says which trade carries a piece of work. It is printed for each
         package that took a file carrying it, and their reviews can run at once, so the script
         settles who writes it, the same way for each: its `trades:` line names the trades the line
         involves, those whose files carry it and those its line or its condition names, and the
-        package each sits on, and each `half:` is one piece of the work, the trades
-        or the owner the line gives it to after `by`, with `you write it:`. A line that gives the
-        whole work to one trade is one half.
+        package each sits on, and each `half:` is one piece of the work, the trades or the owner the
+        line gives it to after `by`, with `you write it:`. A line that gives the whole work to one
+        trade is one half. Each other package the line involves leaves the half out and takes an
+        exclusion row for it, and one review writes all of a half's exclusion rows, in the batch
+        that writes the half's own row.
         - `you write it: yes`: write one row named as its `name:` prints, on this package's
-          `tradeCode`, under the heading of the work it goes with, and in the same batch one
-          `packageRole:<tradeCode>` record for each record line under it, its `<tradeCode>` the one
-          that line names: `exclusion on: <tradeCode>, counterparty: <counterparty>` is
-          valued `{ "role": "exclusion", "counterparty": "<counterparty>" }` and `exclusion on:
-          <tradeCode>, no counterparty` is valued `{ "role": "exclusion" }`, so each bidder the
-          line keeps the work off excludes it. Where an `internal note:` line follows, the half
-          goes to either of two or more trades, this package being the one the script gives it to:
-          write that line's words as the row's `notesInternal` in the same batch, and the row sits
-          on this package alone. An exclusion on this package's own `tradeCode` is the work of the owner, a utility or a
-          trade with no package on this job: the row sits in this package's Exclusions section and has
-          no `description`. Where the half is the owner's or a utility's, that record's `note` says
-          which of them does the work ("The water utility furnishes the meter"). You write this half, always, as printed, whatever this
-          package's own paper says. Where the drawings, the manual or the packages' `notes` give it
-          to another trade, write it all the same, cite that place on the row too, and name it
-          `written <subject>, <sheet and page or section, or no condition>, paper gives it to
-          <that trade's catalog id>, <sheet and page or section>`, so the estimator moves it where
-          the paper says.
-        - `you write it: no, carried by <tradeCode>` or `you write it: no, left to <tradeCode>`:
-          the review of that package writes this half, `left to` where the half is undecided or
-          its carrier has no package. You never write this half, whatever this package's own paper
-          says: no row, no role and no exclusion record for it. Name it `carried by
-          <tradeCode>` or `left to <tradeCode>`. Its `name:` is the name of the row that package
-          writes, the same name for each package it names.
+          `tradeCode`, under the heading of the work it goes with. Where an `internal note:` line
+          follows, the half goes to either of two or more trades, this package being the one the
+          script gives it to: write that line's words as the row's `notesInternal` in the same
+          batch, and the row sits on this package alone. You write this half, always, as printed,
+          whatever this package's own paper says. Where the drawings, the manual or the packages'
+          `notes` give it to another trade, write it all the same, cite that place on the row too,
+          and name it `written <subject>, <sheet and page or section, or no condition>, paper gives
+          it to <that trade's catalog id>, <sheet and page or section>`, so the estimator moves it
+          where the paper says.
+        - `you write it: yes, exclusion rows only`: the half is the owner's or a utility's, or no
+          trade it names has a package on this job, so no row carries it: write the exclusion rows
+          printed under it and no other row for it.
+        - Each `exclusion row on: <tradeCode>, description: <words>` line under either is one
+          exclusion row, written as reader mandate 4 writes one, in the same batch: named as the
+          half's `name:` prints, its `belongsToTrade` that `<tradeCode>`, under the heading the work
+          takes on that package, with one `packageRole:<that tradeCode>` record valued `{ "role":
+          "exclusion" }`, its `description` the words printed, each catalog id among them replaced
+          by that trade's `name` as `directory_list_trades(code: "<the id>")` gives it, and the
+          citation or the instrument the half's own row takes. Each exclusion row's create carries
+          `repeatsScopeItem` naming the half's own row in the same batch, that row created first,
+          where you create that row in this batch. Where the half is already on a live row of the
+          same name, the row the name bullet above names `already on`, each exclusion row's create
+          names that row. Otherwise, for a half printed `yes, exclusion rows only` or one already on
+          a row of another name, create the half's first exclusion row with no `repeatsScopeItem`,
+          and have each later one name that first row. Where the record refuses one because that
+          package already carries the name, that package has the row already: take that create out
+          and write nothing on its row. Before you send the batch again, point each
+          `repeatsScopeItem` that named the create you took out at the row the refusal names. Where
+          the half goes to several trades and the script gives you its exclusion rows, check the
+          condition for each of the half's trades as the condition bullet above says, write the
+          exclusion rows where it holds for any of them, and name in their description only the
+          packages for whose trades it holds.
+        - `you write it: no, carried by <tradeCode>` or `you write it: no, left to <tradeCode>`: the
+          review of that package writes this half, and the exclusion row for it on this package
+          where the line keeps the work off this package, `left to` where the half is undecided or
+          no row carries it. You never write this half, whatever this package's own paper says: no
+          row, no role and no exclusion row for it. Name it `carried by <tradeCode>` or `left to
+          <tradeCode>`. Its `name:` is the name of the row that package writes, the same name for
+          each package it names.
         - Where the drawings, the manual or the packages' `notes` give a half you do not write to
           this package's trade, find the writer's row by the name its `name:` prints with one
           `search(projectId, predicate: "name", text: "<that name>")`, keeping the entries whose
@@ -906,11 +938,9 @@ them is ever trimmed.
           review may run beside yours, cite nothing and name it `paper gives it to <this package's
           tradeCode>, <sheet and page or section>, row not yet written`; the runner carries that
           line to the check-in.
-        The estimator then finds the row as scope on the package that writes it and as an
-        Exclusion on each package an exclusion record names, with the paper's citation on it, and
-        moves it where the paper says. Every exclusion record you write for a half this
-        package carries names this package's `tradeCode` as its counterparty; only an `or` half
-        still undecided keeps `exclusion on: <tradeCode>, no counterparty` as printed.
+        The estimator then finds the half as scope on the package that writes it and as an exclusion
+        row on each package it keeps the work off, with the paper's citation on the writer's row,
+        and moves it where the paper says.
     - The citation. A row a line writes cites the page or section that shows its condition, in
       reader mandate 2's shapes, a `sheet-region` box around the line on a sheet or the section on
       the page you read it, and that page is on your `pages opened:` line with `standard line` as
@@ -930,14 +960,17 @@ them is ever trimmed.
       otherwise than the line, the paper wins, except that a Which Trade half is written by the
       review the script names and the paper's place is cited on its row, as above.
 
-    Name every line the script printed on your `standard lines:` line with how it ended, and a
-    Which Trade line once per half, its half's row name first: `written <subject>, <sheet and page
-    or section, or no condition>`, with `, paper gives it to <catalog id>, <sheet and page or
-    section>` after it where the paper gives a half you wrote to another trade, `already on
-    <subject>`, `condition not found, <the words searched>`, `packages not separate`, `carried by
+    Name every line the script printed on your `standard lines:` line with how it ended, and a Which
+    Trade line once per half, its half's row name first: `written <subject>, <sheet and page or
+    section, or no condition>`, `already on <subject>`, or, for a half printed `yes, exclusion rows
+    only`, `exclusion rows only, <sheet and page or section, or no condition>`, any of the three
+    followed by `, excluded on <tradeCode> as <subject>` for each exclusion row you wrote and `,
+    already on <tradeCode> as <subject>` for each one that package carried already, and by `, paper
+    gives it to <catalog id>, <sheet and page or section>` where the paper gives a half you wrote to
+    another trade; `condition not found, <the words searched>`, `packages not separate`, `carried by
     <tradeCode>`, `left to <tradeCode>`, `paper gives it to <this package's tradeCode>, <sheet and
-    page or section>`, with `, row not yet written` after it where no row carried the name yet,
-    or `not reached`.
+    page or section>`, with `, row not yet written` after it where no row carried the name yet, or
+    `not reached`.
 15. THE PACKAGE'S HEADINGS. You settle the headings this package's rows read under, last, after
     every create of your review. Read the package's rows whole as mandate 1 does, and leave the
     rows in a package role as they are: their section is their heading.
@@ -1143,7 +1176,7 @@ its subject, the section and the page, and found back there. Each other write yo
 on `updated subjects:` that carries no new citation, a note, a name, a description, a value, or a
 `packageRole:<trade>` record, is named on `field updates:` on a line of
 its own, with its subject, the predicate you wrote (`notesInternal`, `description`,
-`packageRole:26 00 00`), and the page its evidence names, whether or not you opened that page in
+`packageRole:<this package's tradeCode>`), and the page its evidence names, whether or not you opened that page in
 this read, or `no page` where its evidence names none. A field you wrote more than once in this
 review is named once, for its last write. The runner finds each of those lines back as a write
 this review made, the current entry on that subject with that predicate written at or after it

@@ -41,7 +41,9 @@ default carries named below, and `scripts/fold_report.py` prints your hand-back.
 A re-home, wherever this definition names one, is the one the scope-run skill's stage 8 makes: one
 `record_batch` of `belongsToTrade` records, each naming the trade record it replaces in
 `supersedesId` (the id `list_scope_items(full: true)` returns), whose returned `count` must equal
-the entries sent. A re-home changes the scope of the trade the row goes to, so on a pass over an
+the entries sent. An exclusion row, one whose `packageRole:<its own trade>` record is valued
+`{ "role": "exclusion" }`, stays on the trade that leaves the work out: never re-home it to the
+trade its description names, whatever rule below would place that work there. A re-home changes the scope of the trade the row goes to, so on a pass over an
 addendum, before you send the batch, append one line `fold touched <catalog id>` for each trade a
 row of it goes to, to `<run folder>/trades/fold.txt`, which the window 3 plan reads with the
 passes' own trades files, and its `fold touched:` line to your report. Written first, a stop

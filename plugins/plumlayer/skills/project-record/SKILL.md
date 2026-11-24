@@ -146,7 +146,12 @@ writing it).
   `solicitation_list_packages` or `directory_list_trades` prints it, spaces and all (`09 21 16`),
   on `belongsToTrade` and inside `packageRole:<trade>` alike: a code the catalog does not carry is
   refused too, so `drywall` does not land, and neither does a respelling of a real code, so
-  `09-21-16` and `092116` are refused with a hint naming the exact id.
+  `09-21-16` and `092116` are refused with a hint naming the exact id. An exclusion, work a
+  package's bidders leave out, is a row of its own on that package's trade: its `name` the work,
+  its `description` who carries it (`By Electrical`, `By Owner`), and in the same batch one
+  `packageRole:<that trade>` record valued `{ "role": "exclusion" }`. Where a row on another
+  package carries the same work under the same name, the new row names it with
+  `repeatsScopeItem` in the same batch.
 - The Question verbs, from `ask_question` to the ones that log a send, are under "Questions"
   below.
 - `record_batch`: append an array of entries in one atomic call (`projectId` + `entries`

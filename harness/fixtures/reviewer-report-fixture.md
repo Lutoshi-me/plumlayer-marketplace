@@ -15,7 +15,7 @@ manual updates: scopeItem:A1-1-1 specSection:099999 p12
 field updates:
 - scopeItem:A1-1-1 notesInternal X-4.01 file-0000 p11
 - scopeItem:A1-1-2 description X-4.01 file-0000 p11
-- scopeItem:A1-1-2 packageRole:26 00 00 no page
+- scopeItem:A1-1-2 packageRole:09 99 99 no page
 questions raised ids: none
 questions replied ids: none
 questions linked: none

@@ -1127,6 +1127,52 @@ RETIRED_WHOLE_FILE_TERMS: list[tuple[str, re.Pattern, bool]] = [
     ),
 ]
 
+# An exclusion is a row of its own on the trade that leaves the work out, its one role record
+# holding the role alone. The shape before it put the role, with the trade that carries the work as
+# its counterparty, onto the carrying row of another trade, and an agent that reads any of it writes
+# a role keyed to a trade the row is not on. These phrases wrap across lines, so each is matched
+# over the whole file with whitespace collapsed. A sentence telling the agent to write no
+# `counterparty` names the field in a code span with no value and passes. The third phrase names the
+# row the role lands on, the carrying row or another trade's, so a role written on the exclusion
+# row itself passes, and so does a sentence that forbids the old write (the scan below).
+RETIRED_COLLAPSED_TERMS: list[tuple[str, re.Pattern]] = [
+    (
+        "a `\"counterparty\"` key in a role's value (an exclusion row's role holds the role alone)",
+        re.compile(r"\"counterparty\"\s*:"),
+    ),
+    (
+        "the script's old `exclusion on:` line (it prints `exclusion row on:`)",
+        re.compile(r"\bexclusion on:"),
+    ),
+    (
+        "an exclusion record or role written onto a row that carries the work (an exclusion is a "
+        "row of its own)",
+        re.compile(
+            r"\b(?:write|put|add|enroll)s?\b[^.;]{0,20}\bexclusion (?:record|role)s?\b[^.;]{0,40}"
+            r"\b(?:onto it\b|(?:onto|on to|on) (?:the row that carries|the carrying row|that row"
+            r"|a row of another|a row another|another package's row|another trade's row))",
+            re.IGNORECASE,
+        ),
+    ),
+]
+
+# A sentence that forbids the old write names it, and is no instruction to make it.
+_RETIRED_FORBIDDEN = re.compile(r"\b(?:never|not|no)\b[^.;]*$", re.IGNORECASE)
+
+
+def _scan_file_for_retired_collapsed(path: Path) -> list[str]:
+    try:
+        flat = " ".join(path.read_text(encoding="utf-8").split())
+    except Exception as e:
+        return [f"{path}: read error: {e}"]
+    return [
+        f"{path.name}: retired term {label}: {m.group(0)!r}"
+        for at, (label, pattern) in enumerate(RETIRED_COLLAPSED_TERMS)
+        for m in pattern.finditer(flat)
+        if at != 2 or not _RETIRED_FORBIDDEN.search(flat[max(0, m.start() - 120):m.start()])
+    ]
+
+
 RETIRED_SCOPED_TERMS: list[tuple[str, re.Pattern]] = [
     ("'anti-join'", re.compile(r"\banti-join\b", re.IGNORECASE)),
     ("'context-packet'", re.compile(r"\bcontext-packet\b", re.IGNORECASE)),
@@ -1255,6 +1301,7 @@ def check_retired_vocabulary(plugin_path: Path, marketplace_root: Path) -> Resul
     hits: list[str] = []
     for f in full_scope_files:
         hits.extend(_scan_file_for_retired_whole_file(f))
+        hits.extend(_scan_file_for_retired_collapsed(f))
         hits.extend(_scan_file_for_retired_scoped(f))
 
     detail = f"{len(full_scope_files)} files scanned for retired vocabulary"
@@ -13996,9 +14043,9 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "Before anything else this mandate does, take "
                  "`solicitation_list_packages(projectId, brief: true)` once"),
     ("reviewer", "A row a line writes is named exactly as the script's `name:` prints it"),
-    ("reviewer", "A role for a standard line is never written onto a row of another package's trade, "
-                 "and a citation only onto the writer's row of a Which Trade half the paper gives to "
-                 "this package's trade"),
+    ("reviewer", "A role for a standard line is written only on the row's own trade, never onto a row "
+                 "already on another package, and a citation only onto the writer's row of a Which Trade "
+                 "half the paper gives to this package's trade"),
     ("reviewer", "You write what it prints and nothing else: never open the lines files, never read "
                  "another trade's lines, and never decide from a trade's or a package's name which "
                  "package a line or a half goes to."),
@@ -14007,7 +14054,22 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "You write this half, always, as printed, whatever this package's own paper says."),
     ("reviewer", "write it all the same, cite that place on the row too"),
     ("reviewer", "You never write this half, whatever this package's own paper says: no row, no role "
-                 "and no exclusion record for it."),
+                 "and no exclusion row for it."),
+    ("reviewer", "Each other package the line involves leaves the half out and takes an exclusion row "
+                 "for it, and one review writes all of a half's exclusion rows, in the batch that writes "
+                 "the half's own row."),
+    ("reviewer", "`you write it: yes, exclusion rows only`: the half is the owner's or a utility's, or "
+                 "no trade it names has a package on this job"),
+    ("reviewer", "each catalog id among them replaced by that trade's `name` as "
+                 "`directory_list_trades(code: \"<the id>\")` gives it"),
+    ("reviewer", "Each exclusion row's create carries `repeatsScopeItem` naming the half's own row in "
+                 "the same batch, that row created first"),
+    ("reviewer", "Where the record refuses one because that package already carries the name, that "
+                 "package has the row already: take that create out and write nothing on its row."),
+    ("reviewer", "with one `packageRole:<tradeCode>` record valued `{ \"role\": \"exclusion\" }` in "
+                 "the same batch, so it sits in this package's Exclusions section"),
+    ("reviewer", "A fold can put an exclusion row on this package beside a row outside its Exclusions "
+                 "section"),
     ("reviewer", "Where an `internal note:` line follows, the half goes to either of two or more "
                  "trades, this package being the one the script gives it to: write that line's words "
                  "as the row's `notesInternal` in the same batch, and the row sits on this package alone."),
@@ -14019,9 +14081,6 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
                  "page or section>, row not yet written`; the runner carries that line to the check-in."),
     ("runner", "that ends `row not yet written` goes on the ledger the same way, as `note <window> "
                "<pass> <unit> anomaly <the entry>`"),
-    ("reviewer", "Every exclusion record you write for a half this package carries names this "
-                 "package's `tradeCode` as its counterparty; only an `or` half still undecided keeps "
-                 "`exclusion on: <tradeCode>, no counterparty` as printed."),
     ("fixture", "paper gives it to 09 99 99, X-1.01 file-0000 p3"),
     ("fixture", "paper gives it to 09 99 99, X-2.01 file-0000 p4, row not yet written"),
     ("fixture", "written scopeItem:A1-1-1, X-1.01 file-0000 p3, paper gives it to 26 00 00, section "
@@ -14113,14 +14172,17 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
                         "the work by phase or by building"),
     ("reviewer", "A row whose only write in your review is its heading goes on `headings written:`, "
                  "never on `updated subjects:`."),
-    (VOCABULARY_READER, 'its value `{"role": "exclusion", "counterparty": "<the catalog id of the trade '
-                        'that carries it, owner where the owner or a tenant does, or left off where the '
-                        'paper names no one>"}`'),
     (VOCABULARY_READER, '`category` `General Items`, with one `packageRole:<that trade>` record valued '
                         '`{"role": "general-requirement"}` in the same batch'),
-    (SHEET_READER, 'its value `{"role": "exclusion", "counterparty": "<the catalog id of the trade '
-                   'that carries it, owner where the owner or a tenant does, or left off where the '
-                   'paper names no one>"}`'),
+    *((label, phrase) for label in (SHEET_READER, VOCABULARY_READER) for phrase in (
+        'one `packageRole:<that trade>` record valued `{"role": "exclusion"}` in the same batch and '
+        'nothing else in the value, no `counterparty` and no `note`',
+        "Its `description` says who carries the work and nothing more",
+        "A `packageRole` record is never written onto a row of another trade, and a live row of "
+        "another trade is never made an exclusion.",
+        "The one exception is an exclusion row, mandate 4, which takes the name of the row that "
+        "carries the work on another package",
+    )),
     (SHEET_READER, '`category` `General Items`, with one `packageRole:<that trade>` record valued '
                    '`{"role": "general-requirement"}` in the same batch'),
     ("runner", "`headings` takes one entry per row on the review's `headings written:` line after its first"),
@@ -14131,7 +14193,7 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
 
 # Text the reviewer must never carry, since two reviews run at once and each reads only its own
 # sections: a review the script did not name writing a half lands it twice, and the named writer
-# skipping a printed `yes` lands it nowhere. Each holds the patterns refused and the sentences shown
+# skipping a printed `yes` or a printed exclusion row lands it nowhere. Each holds the patterns refused and the sentences shown
 # refused, among them the ones that once let a review's own paper overrule the script.
 _STANDARD_LINES_REFUSED: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
     ("a review the script did not name writing a half", (
@@ -14152,6 +14214,11 @@ _STANDARD_LINES_REFUSED: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...
         "nothing for it, even where the script printed `yes`.",
         "Where this package's paper gives the half to another trade, write nothing for that half "
         "though the script printed `you write it: yes`.",
+    )),
+    ("the named writer skipping a printed exclusion row", (
+        r"(?i)(?:skip|leave out|write no)\b[^.]{0,30}exclusion rows?\b[^.]{0,80}\b(?:paper|notes)\b",
+    ), (
+        "Write no exclusion row where the paper gives the work to the package it is for.",
     )),
 )
 
@@ -14349,6 +14416,33 @@ def _which_trade_named(line: str) -> tuple[set[str], list[str]]:
     return named, unknown
 
 
+def _which_trade_halves(line: str) -> list[tuple[set[str], bool]]:
+    """
+    Each half of a Which Trade line, one per `by` or `with`, as the trade files it names and whether
+    it names the owner or a utility, read the way `_which_trade_named` reads the line.
+    """
+    halves: list[tuple[set[str], bool]] = []
+    parts = re.split(r"\b(by|with|Not)\b", line)
+    for word, tail in zip(parts[1::2], parts[2::2]):
+        if word == "Not":
+            continue
+        named: set[str] = set()
+        owner = False
+        for index, piece in enumerate(tail.split(",")):
+            names = [p.strip() for p in re.split(r"\b(?:or|and)\b", piece) if p.strip()]
+            names = [re.sub(r"^(?:the|a|an) ", "", p) for p in names]
+            known = [p for p in names if p in _WHICH_TRADE_NAMES or p in _WHICH_TRADE_NO_TRADE]
+            if index and (not names or names[0] not in known):
+                break
+            for name in names:
+                if name in _WHICH_TRADE_NAMES:
+                    named.update(_WHICH_TRADE_NAMES[name])
+                elif name in _WHICH_TRADE_NO_TRADE:
+                    owner = True
+        halves.append((named, owner))
+    return halves
+
+
 def _which_trade_errors(files: list[dict]) -> tuple[list[str], int]:
     """
     One piece of work, one line: every Which Trade line names only known trades, sits with the same
@@ -14431,7 +14525,7 @@ def _standard_lines_blocks(out: str) -> list[dict]:
         elif line.startswith("    ") and blocks and blocks[-1]["halves"]:
             key, _, value = line.strip().partition(": ")
             half = blocks[-1]["halves"][-1]
-            if key in ("exclusion on", "internal note"):
+            if key in ("exclusion row on", "internal note"):
                 half["records"].append(f"{key}: {value}")
             else:
                 half[key] = value
@@ -14484,58 +14578,67 @@ _STANDARD_LINES_WRITERS: tuple[tuple[str, str, dict[str, list[tuple[str, list[st
         "11 31 00": [("no, left to 06 20 00", [])],
     }),
     ("31 00 00; 02 41 00", "Utility Cut and Caps by Site Utilities, Not Demolition", {
-        "31 00 00": [("yes", ["exclusion on: 02 41 00, counterparty: 31 00 00"])],
+        "31 00 00": [("yes", ["exclusion row on: 02 41 00, description: By Package 31 00 00"])],
         "02 41 00": [("no, carried by 31 00 00", [])],
     }),
     ("22 00 00; 26 00 00", "Heat Trace Cable by Plumbing, Power by Electrical", {
-        "22 00 00": [("yes", ["exclusion on: 26 00 00, counterparty: 22 00 00"]), ("no, carried by 26 00 00", [])],
-        "26 00 00": [("no, carried by 22 00 00", []), ("yes", ["exclusion on: 22 00 00, counterparty: 26 00 00"])],
+        "22 00 00": [("yes", ["exclusion row on: 26 00 00, description: By Package 22 00 00"]),
+                     ("no, carried by 26 00 00", [])],
+        "26 00 00": [("no, carried by 22 00 00", []),
+                     ("yes", ["exclusion row on: 22 00 00, description: By Package 26 00 00"])],
     }),
     ("22 00 00", "Water Meters Furnished by Utility or Owner, Installed by Plumbing", {
-        "22 00 00": [("yes", ["exclusion on: 22 00 00, counterparty: owner"]), ("yes", [])],
+        "22 00 00": [("yes, exclusion rows only", ["exclusion row on: 22 00 00, description: By Utility or Owner"]),
+                     ("yes", [])],
     }),
     ("02 41 00", "Elevator Decommissioning by the Elevator Company, Not Demolition", {
-        "02 41 00": [("yes", ["exclusion on: 02 41 00, counterparty: 14 20 00"])],
+        "02 41 00": [("yes, exclusion rows only", ["exclusion row on: 02 41 00, description: By 14 20 00"])],
     }),
     ("22 00 00; 23 00 00; 09 21 16", "Access Panels Furnished by Plumbing, HVAC, Electrical and Fire Protection, Installed by Drywall", {
-        "22 00 00": [("yes", ["exclusion on: 09 21 16, counterparty: 22 00 00"]), ("no, carried by 09 21 16", [])],
-        "23 00 00": [("yes", ["exclusion on: 09 21 16, counterparty: 23 00 00"]), ("no, carried by 09 21 16", [])],
+        "22 00 00": [("yes", ["exclusion row on: 09 21 16, description: By Package 22 00 00 and Package 23 00 00"]),
+                     ("no, carried by 09 21 16", [])],
+        "23 00 00": [("yes", []), ("no, carried by 09 21 16", [])],
         "09 21 16": [("no, carried by 22 00 00, 23 00 00", []),
-                     ("yes", ["exclusion on: 22 00 00, counterparty: 09 21 16", "exclusion on: 23 00 00, counterparty: 09 21 16"])],
+                     ("yes", ["exclusion row on: 22 00 00, description: By Package 09 21 16",
+                              "exclusion row on: 23 00 00, description: By Package 09 21 16"])],
     }),
     ("07 84 00; 22 00 00; 09 21 16", "Firestopping at Plumbing Penetrations by Firestopping, Not Plumbing or Drywall", {
-        "07 84 00": [("yes", ["exclusion on: 09 21 16, counterparty: 07 84 00", "exclusion on: 22 00 00, counterparty: 07 84 00"])],
+        "07 84 00": [("yes", ["exclusion row on: 09 21 16, description: By Package 07 84 00",
+                              "exclusion row on: 22 00 00, description: By Package 07 84 00"])],
         "22 00 00": [("no, carried by 07 84 00", [])],
         "09 21 16": [("no, carried by 07 84 00", [])],
     }),
     ("22 00 00; 09 21 16", "Firestopping at Plumbing Penetrations by Firestopping, Not Plumbing or Drywall", {
-        "09 21 16": [("yes", ["exclusion on: 09 21 16, counterparty: 07 84 00", "exclusion on: 22 00 00, counterparty: 07 84 00"])],
+        "09 21 16": [("yes, exclusion rows only", ["exclusion row on: 09 21 16, description: By 07 84 00",
+                                                   "exclusion row on: 22 00 00, description: By 07 84 00"])],
         "22 00 00": [("no, left to 09 21 16", [])],
     }),
     ("07 84 00; 22 00 00; 09 21 16", "Firestopping at Own Penetrations by Plumbing, HVAC, Electrical and Fire Protection, Not Firestopping or Drywall", {
-        "22 00 00": [("yes", ["exclusion on: 07 84 00, counterparty: 22 00 00", "exclusion on: 09 21 16, counterparty: 22 00 00"])],
+        "22 00 00": [("yes", ["exclusion row on: 07 84 00, description: By Package 22 00 00",
+                              "exclusion row on: 09 21 16, description: By Package 22 00 00"])],
         "07 84 00": [("no, carried by 22 00 00", [])],
         "09 21 16": [("no, carried by 22 00 00", [])],
     }),
     ("07 84 00; 22 00 00; 09 21 16", "Firestopping at Plumbing Penetrations Through Rated Walls by Drywall, Not Firestopping or Plumbing", {
-        "09 21 16": [("yes", ["exclusion on: 07 84 00, counterparty: 09 21 16", "exclusion on: 22 00 00, counterparty: 09 21 16"])],
+        "09 21 16": [("yes", ["exclusion row on: 07 84 00, description: By Package 09 21 16",
+                              "exclusion row on: 22 00 00, description: By Package 09 21 16"])],
         "07 84 00": [("no, carried by 09 21 16", [])],
         "22 00 00": [("no, carried by 09 21 16", [])],
     }),
     ("07 84 00; 09 21 16", "Head of Wall Joint Firestopping at Rated Walls by Drywall, Not Firestopping", {
-        "09 21 16": [("yes", ["exclusion on: 07 84 00, counterparty: 09 21 16"])],
+        "09 21 16": [("yes", ["exclusion row on: 07 84 00, description: By Package 09 21 16"])],
         "07 84 00": [("no, carried by 09 21 16", [])],
     }),
     ("07 84 00; 09 21 16", "Head of Wall Joint Firestopping at Rated Walls by Firestopping, Not Drywall", {
-        "07 84 00": [("yes", ["exclusion on: 09 21 16, counterparty: 07 84 00"])],
+        "07 84 00": [("yes", ["exclusion row on: 09 21 16, description: By Package 07 84 00"])],
         "09 21 16": [("no, carried by 07 84 00", [])],
     }),
     ("07 84 00; 09 21 16", "Slab Edge Joint Firestopping by Drywall, Not Firestopping", {
-        "09 21 16": [("yes", ["exclusion on: 07 84 00, counterparty: 09 21 16"])],
+        "09 21 16": [("yes", ["exclusion row on: 07 84 00, description: By Package 09 21 16"])],
         "07 84 00": [("no, carried by 09 21 16", [])],
     }),
     ("07 84 00; 09 21 16", "Slab Edge Joint Firestopping by Firestopping, Not Drywall", {
-        "07 84 00": [("yes", ["exclusion on: 09 21 16, counterparty: 07 84 00"])],
+        "07 84 00": [("yes", ["exclusion row on: 09 21 16, description: By Package 07 84 00"])],
         "09 21 16": [("no, carried by 07 84 00", [])],
     }),
     ("07 46 00; 09 91 00", "Stain or Paint on Wood Siding and Trim by Siding or Painting", {
@@ -14543,16 +14646,38 @@ _STANDARD_LINES_WRITERS: tuple[tuple[str, str, dict[str, list[tuple[str, list[st
         "09 91 00": [("no, left to 07 46 00", [])],
     }),
     ("03 30 00; 04 20 00", "Dowels from Concrete into Masonry by Concrete", {
-        "03 30 00": [("yes", ["exclusion on: 04 20 00, counterparty: 03 30 00"])],
+        "03 30 00": [("yes", ["exclusion row on: 04 20 00, description: By Package 03 30 00"])],
         "04 20 00": [("no, carried by 03 30 00", [])],
     }),
     ("31 00 00; 33 00 00; 22 00 00", "Water and Sewer Services from 10 Feet Outside the Building In by Plumbing, Beyond by Site Utilities", {
-        "22 00 00": [("yes", ["exclusion on: 33 00 00, counterparty: 22 00 00"]), ("no, carried by 33 00 00", [])],
-        "33 00 00": [("no, carried by 22 00 00", []), ("yes", ["exclusion on: 22 00 00, counterparty: 33 00 00"])],
+        "22 00 00": [("yes", ["exclusion row on: 33 00 00, description: By Package 22 00 00"]),
+                     ("no, carried by 33 00 00", [])],
+        "33 00 00": [("no, carried by 22 00 00", []),
+                     ("yes", ["exclusion row on: 22 00 00, description: By Package 33 00 00"])],
     }),
     ("06 20 00; 06 40 00; 12 35 30", "Amenity and Common Area Casework by Millwork", {
-        "06 40 00": [("yes", ["exclusion on: 12 35 30, counterparty: 06 40 00"])],
+        "06 40 00": [("yes", ["exclusion row on: 12 35 30, description: By Package 06 40 00"])],
         "12 35 30": [("no, carried by 06 40 00", [])],
+    }),
+    ("03 30 00; 05 50 00; 31 00 00", "Bollard Excavation and Backfill by Sitework, Footing and Bollard by Concrete or Misc Metals", {
+        "03 30 00": [("no, carried by 31 00 00", []),
+                     ("yes", ["internal note: Could be by Cast-in-Place Concrete or Miscellaneous Metals",
+                              "exclusion row on: 31 00 00, description: By Package 03 30 00 or Package 05 50 00"])],
+        "05 50 00": [("no, carried by 31 00 00", []), ("no, left to 03 30 00", [])],
+        "31 00 00": [("yes", ["exclusion row on: 03 30 00, description: By Package 31 00 00",
+                              "exclusion row on: 05 50 00, description: By Package 31 00 00"]),
+                     ("no, left to 03 30 00", [])],
+    }),
+    ("02 41 00; 22 00 00; 23 00 00", "Cut, Cap and Make Safe Existing Systems Before Demolition by Each MEP Trade, Not Demolition", {
+        "22 00 00": [("yes", ["exclusion row on: 02 41 00, description: By Package 22 00 00 and Package 23 00 00"])],
+        "23 00 00": [("yes", [])],
+        "02 41 00": [("no, carried by 22 00 00, 23 00 00", [])],
+    }),
+    ("26 00 00; 33 00 00", "Utility Company Work and Back Charges by Owner, Duct Bank and Vault Prep by Electrical", {
+        "26 00 00": [("yes, exclusion rows only", ["exclusion row on: 26 00 00, description: By Owner",
+                                                   "exclusion row on: 33 00 00, description: By Owner"]),
+                     ("yes", ["exclusion row on: 33 00 00, description: By Package 26 00 00"])],
+        "33 00 00": [("no, left to 26 00 00", []), ("no, carried by 26 00 00", [])],
     }),
 )
 
@@ -14597,6 +14722,9 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
             ("trade code changed in one reader", SHEET_READER,
              "home is the general requirements package's trade, `01 11 13`",
              "home is the general requirements package's trade, `01 11 14`"),
+            ("a counterparty put back in one reader", SHEET_READER,
+             '`{"role": "exclusion"}` in the same batch',
+             '`{"role": "exclusion", "counterparty": "<the trade that carries it>"}` in the same batch'),
         ):
             original = " ".join(texts[label].split())
             broken = {**texts, label: original.replace(before, after, 1)}
@@ -14833,15 +14961,20 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         pairs = item["homes"][0].split(" ")
         whole[" ".join(pairs + ["00"] * (3 - len(pairs)))] = item
     whole_packages = {tc: [tc] for tc in whole}
+    package_of = {item["slug"]: tc for tc, item in whole.items()}
+    carriers_of: dict[str, set[str]] = {}
+    for item in files:
+        for row in item["rows"]:
+            if len(row) == 5 and row[0] == "Which Trade":
+                carriers_of.setdefault(row[1], set()).add(item["slug"])
     names_checked = 0
+    exclusion_rows = 0
     disagreements: list[str] = []
-
-
-
     for long_names in (False, True):
         whole_names = {tc: (item["title"] + " " + "x" * 61)[:61] if long_names else item["title"]
                        for tc, item in whole.items()}
         said: dict[tuple[str, int], dict] = {}
+        excluded: dict[tuple[str, int, str], list[str]] = {}
         for package, item in whole.items():
             code, out, err = _run(package, whole_names, whole_packages)
             if code != 0 or err:
@@ -14853,8 +14986,20 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
                 names = [(half_names[0], block.get("name"), [package])] if row[0] != "Which Trade" else []
                 for at, half in enumerate(block["halves"]):
                     verdict = half.get("you write it", "")
-                    seen = said.setdefault((block["line"], at), {"yes": set(), "named": set(), "rows": {}, "cited": set()})
-                    if verdict == "yes":
+                    seen = said.setdefault((block["line"], at), {"yes": set(), "named": set(), "rows": {}, "cited": set(),
+                                                                 "own": set(), "excluders": set()})
+                    for record in half["records"]:
+                        if not record.startswith("exclusion row on: "):
+                            continue
+                        target, _, description = record[len("exclusion row on: "):].partition(", description: ")
+                        excluded.setdefault((block["line"], at, target), []).append(package)
+                        seen["excluders"].add(package)
+                        if not description.startswith("By ") or len(description) > 400:
+                            disagreements.append(f"{block['line']!r} half {at + 1}: {package} describes its exclusion "
+                                                 f"row on {target} as {description!r}")
+                    if verdict.startswith("yes"):
+                        if verdict == "yes":
+                            seen["own"].add(package)
                         seen["yes"].add(package)
                         seen["rows"][package] = half.get("name")
                         names.append((half_names[at], half.get("name"), [package]))
@@ -14868,7 +15013,26 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
                     if (printed or "") != want or any(len(n) > STANDARD_LINES_NAME_MAX for n in (printed or "").split("; ")):
                         errors.append(f"{block['line']!r} printed the name {printed!r} for {package}, and wants {want!r}")
                     names_checked += 1
+        for (line, at, target), by in excluded.items():
+            if len(by) > 1:
+                disagreements.append(f"{line!r} half {at + 1}: the exclusion row on {target} is written by {sorted(by)}")
+            if target in said[(line, at)]["own"]:
+                disagreements.append(f"{line!r} half {at + 1}: an exclusion row lands on {target}, which writes the half's own row")
+        if not long_names:
+            exclusion_rows = len(excluded)
         for (line, at), seen in said.items():
+            # The packages each half keeps the work off, worked out here: the packages of the files
+            # carrying the line, less those of the trades the half names, or all of them for the owner.
+            halves = _which_trade_halves(line)
+            trades, owner_only = (halves[at][0], not halves[at][0]) if at < len(halves) else (set(), False)
+            involved = {package_of[s] for s in carriers_of.get(line, set()) if s in package_of}
+            wanted_targets = involved if owner_only else involved - {package_of[s] for s in trades if s in package_of}
+            got_targets = {target for (l, a, target) in excluded if (l, a) == (line, at)}
+            if got_targets != wanted_targets:
+                disagreements.append(f"{line!r} half {at + 1}: exclusion rows on {sorted(got_targets)}, and the half "
+                                     f"keeps the work off {sorted(wanted_targets)}")
+            if len(seen["excluders"]) > 1:
+                disagreements.append(f"{line!r} half {at + 1}: exclusion rows written by {sorted(seen['excluders'])}")
             writers = ", ".join(sorted(seen["yes"])) or "no package"
             if any(named != writers for named in seen["named"]):
                 disagreements.append(f"{line!r} half {at + 1}: written by {writers}, named {sorted(seen['named'])}")
@@ -14955,22 +15119,30 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"package by its second Home number, site utilities and paving each to their own package "
         f"and to the earthwork package where they have none, electrical beside an EV charger "
         f"package, millwork beside finish carpentry, none for 08 33 23 and 01 11 13); {writer_halves} Which "
-        f"Trade halves printing their writer and records as the cases want (an `or` line to the "
-        f"lowest package alone with an internal note naming both trades, one carrier with an exclusion on the trade "
-        f"it keeps the work off, two halves each excluding the other, an owner half on the trade "
-        f"beside it, a carrier with no package written by the trade it keeps the work off with the "
-        f"carrier's catalog id, furnish halves for each MEP trade and an install half by drywall, the "
-        f"single-installer firestopping line for plumbing penetrations with exclusions on plumbing "
-        f"and drywall, and written by drywall with the firestopping catalog id where firestopping "
-        f"has no package, the own-penetrations line with exclusions on the firestopping and drywall "
-        f"packages, the drywall line for plumbing penetrations through rated walls, the head of wall "
-        f"and slab edge joint lines by drywall and by firestopping, each excluding the other, the siding stain or paint line left to the siding package, the dowels "
-        f"line with an exclusion on the masonry package its condition names, the water and sewer "
-        f"halves on plumbing and site utilities); every file on its own package with short and 61-character names, "
-        f"{names_checked} names printed for every half, written or not, each the line's row name alone "
-        f"within {STANDARD_LINES_NAME_MAX} characters, whatever the package is called, "
+        f"Trade halves printing their writer, internal note and exclusion rows as the cases want (an "
+        f"`or` line to the lowest package alone with an internal note naming both trades, one carrier "
+        f"with an exclusion row on the trade it keeps the work off, two halves each excluding the "
+        f"other, an owner half written as exclusion rows alone, on each package it involves, a carrier "
+        f"with no package written as exclusion rows by the lowest package it involves, naming the "
+        f"carrier's catalog id, furnish halves for each MEP trade with the lowest MEP package writing "
+        f"drywall's one exclusion row for the furnish half, and an install half by drywall, the "
+        f"single-installer firestopping line for plumbing penetrations with exclusion rows on plumbing "
+        f"and drywall, and written as exclusion rows by drywall with the firestopping catalog id where "
+        f"firestopping has no package, the own-penetrations line with exclusion rows on the "
+        f"firestopping and drywall packages, the drywall line for plumbing penetrations through rated "
+        f"walls, the head of wall and slab edge joint lines by drywall and by firestopping, each "
+        f"excluding the other, the siding stain or paint line left to the siding package, the dowels "
+        f"line with an exclusion row on the masonry package its condition names, the water and sewer "
+        f"halves on plumbing and site utilities, the bollard line's `or` half described by both its "
+        f"packages, the cut and cap line by each MEP package, and the utility company line's owner "
+        f"half beside the electrical half); every file on its own package with short and 61-character "
+        f"names, {names_checked} names printed for every half, written or not, each the line's row "
+        f"name alone within {STANDARD_LINES_NAME_MAX} characters, whatever the package is called, "
         f"and every half of every Which Trade line named for the same writers, and by the same row "
-        f"names its writers print, by every package printing it; {refusals} "
+        f"names its writers print, by every package printing it, {exclusion_rows} exclusion rows, each "
+        f"written by the one package that writes its half's exclusion rows, on exactly the packages "
+        f"the half keeps the work off as worked out here, never on a package that writes the half's "
+        f"own row, each described `By` within 400 characters; {refusals} "
         f"broken files and calls refused in one line; {len(_STANDARD_LINES_PINS)} phrases held over "
         f"the reviewer, the runner, the skill, both readers and the reviewer report fixture (the "
         f"condition before a line, never a "
@@ -14984,12 +15156,12 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"unit prices and alternates, the tie-breaks, no empty headings, general costs as home rows "
         f"with no General Items or general-requirement role, Exclusions kept and shared categories "
         f"unchanged on other packages, and no General Conditions; mutations moving allowances to "
-        f"Miscellaneous in one reader, removing its examples, allowing empty headings and changing "
-        f"one reader's trade code refused, "
-        f"the exclusion and general requirement records), "
+        f"Miscellaneous in one reader, removing its examples, allowing empty headings, changing "
+        f"one reader's trade code and putting a counterparty back in one reader refused, "
+        f"the exclusion rows and the general requirement records), "
         f"{sum(len(patterns) for _, patterns, _ in _STANDARD_LINES_REFUSED)} patterns refused in the "
         f"reviewer (a review the script did not name writing a half, the named writer skipping a "
-        f"printed `yes`), {refused} mutations refused; bound: text "
+        f"printed `yes` or a printed exclusion row), {refused} mutations refused; bound: text "
         f"and invented calls, not how a running review judges a condition"
     )
     if errors:

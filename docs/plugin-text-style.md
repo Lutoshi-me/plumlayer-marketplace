@@ -179,13 +179,20 @@ Each of these is a harness check.
    `MOSOT`, em dash, middle dot.
 7. Retired vocabulary does not creep back in. This is a regression guard, not a live enforcement
    layer: it checks a fixed, curated list of names that a past sweep already retired (most recently
-   the D6 rewrite, commit `8096333`), not "is this word acceptable" in general. Two scopes:
+   the D6 rewrite, commit `8096333`), not "is this word acceptable" in general. Three scopes:
    - A **whole-file** list (e.g. `residue`, `roster`, `checkpoint`, `mint`, `enrich`, `operator` as
      the name for the person, `deposit`, `proposed`, `trade-packages`, the authorship stamps
      `agent-stated` and `machine-read`, `trust class`, `working truth`) must not appear anywhere in a
      shipped skill, an agent definition, the README, or a manifest. A literal, current identifier that happens to share
      the retired word — the `operator.json` filename, the JSON key
      `"operator"` — is exempt; it is a real name, not the retired concept.
+   - A list matched over each whole file with whitespace collapsed, since its phrases wrap across
+     lines: the shape an exclusion had before it was a row of its own, a `"counterparty"` key in a
+     role's value, the script's old `exclusion on:` line, and an instruction to write an exclusion
+     record or role onto the carrying row or a row of another trade. A sentence telling the agent
+     to write no `counterparty` passes, since it names the field in a code span and gives it no
+     value, and so does a sentence that forbids the old write or puts the role on the exclusion
+     row itself.
    - A **scoped** list (e.g. `supersede`/`supersession`, `fan-out`, `idempotency`, `census`,
      `grain`) is legitimate agent-facing machinery vocabulary everywhere else in a
      skill, and is banned only inside a `<!-- user-facing -->` span or an `Audience: user` artifact
@@ -586,10 +593,12 @@ Each of these is a harness check.
     package's files, each once with its kind, row name, condition and place to look, a line with no
     condition, and a line whose condition says only that the sub supplies material, with its
     instrument at the plugin version, no other line with one, and nothing where no file goes to it. Each
-    Which Trade case prints its halves' writers and records, and with every file on its own package
-    every half of every Which Trade line has one set of writers every other package names, and
-    every printed name is `<row name>, <package name>` within 80 characters, or `<row name>,
-    <tradeCode>` for a 61-character package name. A bad kind, an empty line, a short row, a number
+    Which Trade case prints its halves' writers, their internal notes and the exclusion rows the one
+    review the script names writes, each with its package and description, and with every file on its own
+    package every half of every Which Trade line has one set of writers every other package names,
+    each exclusion row is written by one package and never on the package that writes the half's
+    own row, its description opening `By` within 400 characters, and every printed name is the
+    line's row name alone within 80 characters, whatever the package is called. A bad kind, an empty line, a short row, a number
     two files claim, a number not written as pairs of digits, a table with no header, no Home line,
     a Home number outside the file's numbers, an `Else:` line naming no other file, a long row
     name, a row name with a comma, one row name for two halves, an unknown trade, a code spaced
@@ -599,14 +608,19 @@ Each of these is a harness check.
     the script, write what the script prints, let the paper give this package's own half to it or
     to another trade over what the script printed, name each row and each
     kind row of mandate 12 for its package, put the headings in build order and save that order,
-    and shape the exclusion and general requirement records. The full rule for home rows on
+    and shape the exclusion rows and the general requirement records: an exclusion row on the
+    trade that leaves the work out, its one role record holding the role alone, its description
+    saying who carries the work, its name shared with the carrying row through `repeatsScopeItem`,
+    no role on another trade's row, and an exclusion row a fold left beside the row of its work
+    retired. The full rule for home rows on
     `01 11 13` is pinned word for word after whitespace collapse in each carrier: the seven
     headings in order, the full mapping and Miscellaneous examples, allowances, unit prices and
     alternates, the tie-breaks, each heading only where a home row goes under it, general costs as
     home rows with no General Items or general-requirement role, Exclusions kept and shared
     categories unchanged on other packages, and no heading, package name or row saying General
     Conditions. Mutations moving allowances to Miscellaneous in one reader, removing its
-    examples, allowing empty headings and changing one reader's trade code are refused.
+    examples, allowing empty headings, changing one reader's trade code and putting a counterparty
+    back in one reader are refused.
     This cannot judge whether a running
     review finds a condition rightly; that is the measured run's.
 36. A runner counts every read of a unit one way. `agents/scope-round-runner.md` counts a unit's

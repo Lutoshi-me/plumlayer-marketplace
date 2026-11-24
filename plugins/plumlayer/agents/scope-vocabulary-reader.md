@@ -134,7 +134,9 @@ of them is ever trimmed.
    them as mandate 6 says; and on a finish trade, the areas mandate 5 heads
    its rows by, where the finish schedule or the plans call the product in more than one of them,
    each row named for its area; and an alternate the set names, which is a row of its own beside
-   the base row of the same work, as mandate 4 says, and is never cited onto that base row.
+   the base row of the same work, as mandate 4 says, and is never cited onto that base row; and an
+   exclusion row, mandate 4, on the trade that leaves the work out, beside the row of the trade that
+   carries it.
    Hold a batch's own rows against each other by this test too: a
    schedule row and a plan row for one item are one row. Two rows each claiming the whole of one
    surface or one fixture in one place are one piece of work even under different codes, the
@@ -368,7 +370,18 @@ of them is ever trimmed.
    trade and under any category, and since `record_batch` is atomic nothing in that batch lands; the
    refusal names every duplicate in the batch, and a second CREATE of one name in one batch is
    refused naming the first. Turn each into a citation of the row it names, the sheet, the page and
-   the file you read it on, plus any note as an entry on that row, and send the batch again. A name
+   the file you read it on, plus any note as an entry on that row, and send the batch again. The one
+   exception is an exclusion row, mandate 4, which takes the name of the row that carries the work
+   on another package: its create carries one entry `{ "subject": <its subject>, "predicate":
+   "repeatsScopeItem", "value": <the subject of the row that carries the work> }`, with the
+   `sourceInstrument` your other entries carry and `evidence` `{}`, and where you create both rows,
+   the row that carries the work comes first in the batch. Where the record still refuses an
+   exclusion row's create, read the refusal: where every row it names sits on another package, point
+   the create's `repeatsScopeItem` at one of them and send the batch again; where it says the
+   exclusion row's own package already carries the name, that package has the row already: take
+   your create out and cite your page on the row it names. Before you send a batch again, point each
+   `repeatsScopeItem` that named a create you took out at the row the refusal names in its place. A
+   name
    is judged lowercased with every character that is not a letter or a digit read as a space, so
    `TA-07` and `TA07` are two names; where the work really is different, give it a name that says
    how it differs. Writing a row's name over with `supersedesId` is not refused. Every anomaly you
@@ -516,18 +529,33 @@ of them is ever trimmed.
    never raise a Question for it. The trade rides in the same `record_batch` as the name. Work the
    paper gives to another party is a row, never a note. Where a sheet or the manual says work is by
    others, not in contract, by the owner or a tenant, under a separate contract, or furnished by one
-   party and installed by another, write that work as a row of its own on the catalog trade of the
-   firm the paper names as carrying it, and in the same batch one `packageRole:<trade>` record for
-   the trade whose work the note sits beside, its value `{"role": "exclusion", "counterparty": "<the
-   catalog id of the trade that carries it, owner where the owner or a tenant does, or left off
-   where the paper names no one>"}`. Where the paper names the owner, a tenant or no one, the row's
-   own trade is the trade it sits beside, and the exclusion is on that same trade. No bidder prices
-   that row, so it has no `description`: its name says the work and the record says who carries
-   it. Where the paper says more that a bidder needs, such as the spaces left out, write it as the
-   record's `note`. Name the row the
-   way the bidder reads it ("Power to heat trace by electrical", "Retail walls and ceilings not in
-   contract"). Where a live row already carries the work, write the exclusion record onto it and
-   cite your page there. On every trade except `01 11 13`, a note that has a trade carry its own
+   party and installed by another, the trade whose work the note sits beside leaves that work out,
+   and that trade takes an exclusion row for it: a row of its own whose `belongsToTrade` is that
+   trade, with one `packageRole:<that trade>` record valued `{"role": "exclusion"}` in the same
+   batch and nothing else in the value, no `counterparty` and no `note`, so it sits in the
+   Exclusions section of that trade's package. Its `name` is the work, in the words of the row that
+   carries it, and never who carries it ("Heat trace power", never "Power to heat trace by
+   electrical"); a place the paper leaves out is part of the work's name ("Walls and ceilings at
+   retail spaces"). Its `category` is the heading the work takes on that trade's package. Its
+   `description` says who carries the work and nothing more: `By` and the name of the package that
+   covers the trade carrying it, as the package list gives it, or that trade's `name` as
+   `directory_list_trades` gives it where no package covers it ("By Electrical"); `By Owner` or `By
+   Tenant` where the paper names the owner or a tenant; and where the paper names no one, the
+   paper's own words in that form ("By Others", "Not in Contract"). The sheet context lists each
+   package by its own trade alone, so before you choose the name of the package that carries the
+   work, or decide that two trades sit on one package, read the package list whole once with
+   `solicitation_list_packages(projectId, brief: true)`, paged with `offset` until `truncated`
+   comes back false: a package covers a trade where that trade is its `tradeCode` or one of its
+   `codes`. Work the paper gives to a trade
+   is also an ordinary row of that trade, on the catalog trade of the firm the paper names, under
+   the heading it takes there: where no live row carries it, create that row in the same batch,
+   before the exclusion row; where one does, cite your page on it and name the exclusion row exactly
+   as that row is named. The two rows share a name, as mandate 1 says. Work the paper gives to the
+   owner, a tenant or no one has no such row. Where the trade the note sits beside and the trade
+   that carries the work sit on one package, the work is that package's own: write its row alone,
+   and no exclusion row. A `packageRole` record is never written onto a row of another trade, and a
+   live row of another trade is never made an exclusion. On every trade except `01 11 13`, a
+   note that has a trade carry its own
    general costs (hoisting its own material, protecting its own work, tax on what it supplies,
    its own cleanup) is one row for each
    such cost on that trade, `category` `General Items`, with one `packageRole:<that trade>` record
@@ -612,14 +640,14 @@ of them is ever trimmed.
    model where the set names one, the product or method, the extent or limits, a rated or special
    condition, each with a page the row cites showing where it comes from; short phrases an
    estimator would write, sizes as the drawing prints them, about thirty words the most, not
-   counting the codes the row names; a row whose name says all a bidder prices has none, and neither has a row
-   mandate 4 writes as an exclusion on its own trade; never a
+   counting the codes the row names; a row whose name says all a bidder prices has none, and an
+   exclusion row's is the one mandate 4 gives it; never a
    detail the name already shows, except for a finish's whole extent
    that the name cannot hold, mandate 1's two products in a disagreement, an allowance's amount
    and what it covers, an assembly's full code list, a packaged system's parts, or a row whose name is fixed by its kind
    (a grouped requirement row or a standard line), which carries in its description the products,
-   sections, amounts and the job's own words its mandate lists, whole, an exclusion on its own trade aside, which
-   carries them in its record's `note`; never a spec article number,
+   sections, amounts and the job's own words its mandate lists, whole, an exclusion row aside;
+   never a spec article number,
    a schedule's columns copied out whole or a tag the row is not for, since the citation carries
    them. Say the work in plain words of your own: never a note or a schedule line copied out or
    set in quotation marks, never the sheet, detail, note or section the words are printed on,

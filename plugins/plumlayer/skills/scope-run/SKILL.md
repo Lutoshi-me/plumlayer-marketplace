@@ -125,7 +125,9 @@ that relaxes any one of them reproduces a measured, named failure.
    under any category, and names the row that holds it: work another trade's pass already captured
    is updated, never created again, and the reader turns that refusal into an update on the named
    row and sends again, except where the named row is different work on another trade, which
-   takes a name saying how it differs. Before raising a Question, read every Question on the project, closed
+   takes a name saying how it differs, and except an exclusion row, which shares its name with the
+   row that carries the work and names that row with `repeatsScopeItem`, as the reader's mandate 1
+   says. Before raising a Question, read every Question on the project, closed
    ones included: `list_questions` with `status: "all"` and no trade filter, paged until it comes
    back whole. A trade filter drops the Questions that name other trades and the ones still at not
    known yet, and the reader's own page read carries only the open ones on its own trades. Where an
@@ -202,8 +204,9 @@ that relaxes any one of them reproduces a measured, named failure.
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
    where the set states how many there are, that figure is its quantity, and a count the run
    makes of them never is. One product is two rows only where the
-   drawings or the manual separate its supply from its install, or on a finish trade by area, as the
-   reader's mandate 1 says. A schedule of places, such as a room finish schedule or a door schedule,
+   drawings or the manual separate its supply from its install, on a finish trade by area, or
+   where one trade leaves out work another trade carries, which takes an exclusion row beside the
+   carrying row, as the reader's mandate 1 says. A schedule of places, such as a room finish schedule or a door schedule,
    is read for the products and types it calls for ("Luxury vinyl tile flooring, LVT"), never
    one row for the whole schedule. A schedule of one assembly's types that differ only in size or
    spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
@@ -328,12 +331,13 @@ A newly created scope item is a full row, not a name. Every new item writes:
   likely to carry it goes here, the row under the heading it takes on that trade's package, and
   the row's `notesInternal` names the other trade and what puts the work there, as the reader's
   mandate 4 says; no record puts the row on a second package for that doubt. A
-  `packageRole:<trade>` record puts a row on a package beside its own: its value is an object
-  with a `role`, an optional `counterparty` and an optional `note`, and `{ retracted: true,
-  reason? }` is the only other value the door takes. The run writes `exclusion` where the paper says work is by others and
-  `general-requirement` for a trade's own general costs, and the reviews write both for the standard
-  lines; and `ve-alternate` on the row of each alternate the set names, as the reader's mandate 4
-  says. A bare word is refused and the batch is atomic,
+  `packageRole:<trade>` record puts a row in one section of its own trade's package, on that
+  row's own trade: the run writes its value as an object holding a `role` alone, and
+  `{ retracted: true, reason? }` is the only other value the door takes. The run writes
+  `exclusion` on the exclusion row of work the paper says is by others, and `general-requirement`
+  for a trade's own general costs, and the reviews write both for the standard lines; and
+  `ve-alternate` on the row of each alternate the set names, as the reader's mandate 4 says. A
+  bare word is refused and the batch is atomic,
   so it costs every entry in the batch.
   The `<trade>` in that predicate is the same catalog code, and the door reads it there too.
 - **description**: the detail a bidder prices that the name leaves out, written wherever the row
@@ -342,12 +346,13 @@ A newly created scope item is a full row, not a name. Every new item writes:
   limits, a rated or special condition, each with a page the row cites showing where it comes
   from. Short phrases an estimator would write, sizes as the drawing prints them, about thirty
   words the most, not counting the codes the row names. A row whose name says all a bidder prices
-  has none, and neither has a row written as an exclusion on its own trade. Never a detail the name already shows, except for a finish's
+  has none, and an exclusion row holds who carries the work and nothing more, as the reader's
+  mandate 4 says. Never a detail the name already shows, except for a finish's
   whole extent that the name cannot hold, the reader's mandate 1's two products in a disagreement,
   an allowance's amount and what it covers, an assembly's full code list, or a row whose name is
   fixed by its kind (a grouped requirement row or a standard line), which carries in its description
-  the products, sections, amounts and the job's own words its mandate lists, whole, an exclusion on its own trade aside, which
-  carries them in its record's `note`; never a spec
+  the products, sections, amounts and the job's own words its mandate lists, whole, an exclusion
+  row aside; never a spec
   article number, a schedule's columns copied out whole or a tag the row is not for, since the
   citation carries them. The description says the work in plain words of the reader's own: never
   a note or a schedule line copied out or set in quotation marks, never the sheet, detail, note
