@@ -41,9 +41,10 @@ default carries named below, and `scripts/fold_report.py` prints your hand-back.
 A re-home, wherever this definition names one, is the one the scope-run skill's stage 8 makes: one
 `record_batch` of `belongsToTrade` records, each naming the trade record it replaces in
 `supersedesId` (the id `list_scope_items(full: true)` returns), whose returned `count` must equal
-the entries sent. An exclusion row, one whose `packageRole:<its own trade>` record is valued
+the entries sent. A re-home writes `belongsToTrade` alone: you write no row's `name`, and no
+`notesInternal` or `notesExternal` on any row. An exclusion row, one whose `packageRole:<its own trade>` record is valued
 `{ "role": "exclusion" }`, stays on the trade that leaves the work out: never re-home it to the
-trade its description names, whatever rule below would place that work there. A re-home changes the scope of the trade the row goes to, so on a pass over an
+trade its name names, whatever rule below would place that work there. A re-home changes the scope of the trade the row goes to, so on a pass over an
 addendum, before you send the batch, append one line `fold touched <catalog id>` for each trade a
 row of it goes to, to `<run folder>/trades/fold.txt`, which the window 3 plan reads with the
 passes' own trades files, and its `fold touched:` line to your report. Written first, a stop
@@ -71,7 +72,7 @@ never a sentence; every sheet it names is one of its citations, boxed on the ent
 and cited as the whole sheet only where the point is that the sheet lacks it or no line of the
 page's read carries the entry; a sheet the set lacks is cited at the spot that names it; and it
 carries no colon without the list it announces, no sentence repeating the title, and no sentence on
-why we need the answer. A Question that needs that sentence to be worth sending is not raised.
+why we need the answer.
 
 ## Fold mode
 
@@ -195,14 +196,9 @@ why we need the answer. A Question that needs that sentence to be worth sending 
    firestopping package stays as it is, and its `notes` say which firm carries it. Either way,
    each firestopping row keeps its trade and sits on the one package that covers that trade,
    whatever trades' work it passes through, as any row the run is unsure of sits on the one trade
-   most likely to carry it: you write no record that puts it on another package. For each
-   firestopping row whose name, description or a page it cites names the trades whose work it
-   passes through, add one sentence to its `notesInternal` naming those trades as the ones that
-   could carry it at their own penetrations ("Could be by the plumber at its own pipe
-   penetrations"), after any text already there and cited to a page the row already cites, unless
-   its note already names them. Send every such sentence in one `record_batch`, whose returned
-   `count` must equal the entries sent. A row that names no such trade keeps its note as it is, and
-   the waterproofing package's `notes` are where the estimator reads who may carry it. The
+   most likely to carry it: you write no record that puts it on another package, and nothing
+   on the row about the trades that could carry it at their own penetrations: the waterproofing
+   package's `notes` are where the estimator reads who may carry it. The
    estimator can have the firestopping rows moved to those trades, and that move is the
    estimator's own write, made on his word. A package whose
    trade is a heading no sub bids here, such as `09 00 00` Finishes, is split into the packages
@@ -220,9 +216,8 @@ why we need the answer. A Question that needs that sentence to be worth sending 
    read its rows: one the contractor's own sub carries, such as mix testing the concrete sub
    engages, is re-homed to that sub's trade as the re-home above moves a row whose trade is wrong,
    and one several subs carry, such as a statement of responsibility each structural sub submits,
-   goes to the main one's trade alone, re-homed as the re-home above, with one sentence added to
-   its `notesInternal` in the same batch naming the other subs that carry it too, after any text
-   already there and cited to a page the row already cites. Where the manual and a sheet
+   goes to the main one's trade alone, re-homed as the re-home above, with nothing written on it
+   about the other subs that carry it too. Where the manual and a sheet
    disagree on who hires the agency for a row, that is a Question with both citations, cited on
    that row with `cite_source(kind: "question", questionId)`, and the row keeps its trade; the answer decides where it goes. The rest keep their trade. Where the delete is refused because bidders have bid that package, it
    stays. Where a package you keep lists that trade in its `codes`, take it off the

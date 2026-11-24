@@ -498,8 +498,7 @@ tags, only the ones with the problem; a parenthesis holds a short qualifier, nev
 sheet it names is one of its citations, boxed on the entry it names there, and cited as the whole
 sheet only where the point is that the sheet lacks it or no line of the page's read carries the
 entry; a sheet the set lacks is cited at the spot that names it; and it carries no colon without the
-list it announces, no sentence repeating the title, and no sentence on why we need the answer. A
-Question that needs that sentence to be worth sending is not raised. It never names a predicate from
+list it announces, no sentence repeating the title, and no sentence on why we need the answer. It never names a predicate from
 the table above, an internal step, or a field, and it carries no em dash.
 
 Good: title "Story count differs between cover and sections"; "Please confirm five stories and

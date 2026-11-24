@@ -55,7 +55,8 @@ once, before your first record read, and never again in this read:
   warranties` or `Mockups`, is created beside the rows of the same name other packages carry.
   Where they say "your review", read
   "your manual part"; where they name "mandate <n>", they mean the review's own mandate of that
-  number, and "reader mandate <n>" the reader's.
+  number, and "reader mandate <n>" the reader's. Under both, you write no `notesInternal` or
+  `notesExternal` on any row, as reader mandate 5 says.
 
 These are not guidance. Each one exists because its absence produced a named failure, and none of
 them is ever trimmed or softened here. Where the steps below differ from them, the steps below
@@ -92,8 +93,8 @@ are the whole of the difference:
 2. **Read what the unit before you carried over**, `<run folder>/carry/<the unit after After>.md`,
    one line per item, `<code> | <kind> | p<page> | <what>`. A file that reads `none`, or no file,
    carries nothing. Each item is yours to settle in the section it names: a `product` to judge
-   once you read that section's last page, a `qualification` to write on the row it governs once
-   you find it, and an `open` item a page of yours settles.
+   once you read that section's last page, a `qualification` to write in the `description` of the row it
+   governs once you find it, and an `open` item a page of yours settles.
 3. **Read the Questions** as the review's mandate 7 says, every Question on the project, before
    your first write, and read `get_project` once, as it says, so every Question you raise carries
    its `answeredBy` beside its `discipline` and `kind`. A Question is about the project, never
@@ -113,8 +114,7 @@ are the whole of the difference:
    of its citations, boxed on the entry it names there, and cited as the whole sheet only where
    the point is that the sheet lacks it or no line of the page's read carries the entry; a sheet
    the set lacks is cited at the spot that names it; and it carries no colon without the list it
-   announces, no sentence repeating the title, and no sentence on why we need the answer. A
-   Question that needs that sentence to be worth sending is not raised.
+   announces, no sentence repeating the title, and no sentence on why we need the answer.
 4. **Read your pages**, in the order your `Reads:` line names them, each page with
    `get_page_text(fileId, pageInPdf, form: "text", repeated: "omit")`, paging with
    `offset: nextOffset` until the page comes back whole. Where a span starts after its section's
@@ -178,9 +178,9 @@ questions alone: <the id of every Question raised or replied to that no row carr
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade>
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
-anomalies: <one line each, with section or sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, as the review's report says; or "none">
+anomalies: <one line each, with section or sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, sheet reading, or run only, as the review's report says; or "none">
 grain questions: <one line each, naming the grain and the rows, or "none">
-silent sections: <section code + the Question id, or `left open` + why it is low cost, + the words searched, one per line, or "none">
+silent sections: <section code + the Question id, or `left open` + its reason, `the sheets select none of it` or `closed Question <id>`, + the words searched, one per line, or "none">
 unspecified work: none
 compared: <subject + the sources compared + what you found + how it ended, one per line, or "none">
 spans read: <each span the `Reads:` line names, as written there, one per line, less a span of a section named below as "manual removed" or "not on the package">

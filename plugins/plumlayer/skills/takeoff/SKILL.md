@@ -337,8 +337,7 @@ marks summed, so the marks are the takeoff.
   citations, boxed on the entry it names there, and cited as the whole sheet only where the point is
   that the sheet lacks it or no line of the page's read carries the entry; a sheet the set lacks is
   cited at the spot that names it; and it carries no colon without the list it announces, no
-  sentence repeating the title, and no sentence on why we need the answer. A Question that needs
-  that sentence to be worth sending is not raised.)
+  sentence repeating the title, and no sentence on why we need the answer.)
 
 ## 8. Verify by reading back
 

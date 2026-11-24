@@ -208,12 +208,12 @@ Checks:
       unit past its lines reads mismatch; window 3's line for a tagged pass of two reviews carries both
       counts and the reviews' pages opened and searches, and its listing gives each review's
       prefix; the
-      check-in counts each anomaly on a Question, a reply or a row by pass, or by the review the
-      plan names in window 3, where its ending names an id or subject in the record's form and no
+      check-in counts each anomaly on a Question or a reply by pass, or by the review the
+      plan names in window 3, where its ending names an id in the record's form and no
       continuation line runs under it, and carries every other note line once across calls,
       under its printed label, each call under Bash's output limit and a note longer than one
       call cut under a line naming it; every reader and reviewer report shape and the reader's
-      mandate name a Question, a reply and a row by the full id, never shortened; and the
+      mandate name a Question and a reply by the full id, never shortened; and the
       skill's own three command lines are fed to the script's arguments.
   29. Fold one level down: stage 6 step 5 of the scope-run skill names no fold verb and carries
       the package folder dispatch, the `fold_report.py print` read and the recheck; the fold's
@@ -1154,10 +1154,169 @@ RETIRED_COLLAPSED_TERMS: list[tuple[str, re.Pattern]] = [
             re.IGNORECASE,
         ),
     ),
+    # A note on a scope row is the estimator's own, in his words, and no agent of the run writes
+    # one: the run once wrote the other trade that could carry a row, a Question's title, a
+    # correction and a qualification there, and an agent that reads any of it writes one again.
+    # A match passes only where a forbidding word governs the write itself ("You never write
+    # `notesExternal`"), never for a forbidding word elsewhere in its sentence; see
+    # `_retired_note_forbidden`. A directive is matched in any case ("Write the other trade in ...").
+    (
+        "a sentence that has an agent of the run write a row note (both notes are the estimator's "
+        "own, and no agent of the run writes either)",
+        re.compile(
+            r"\b(?:write|writes|add|adds|put|puts|name|names|say|says)\b[^.;]{0,60}`notes(?:Internal|External)`"
+            r"|\b(?:sentence|line|words|title)\b[^.;]{0,30}\b(?:in|on|onto|to|into|as)\b[^.;]{0,25}"
+            r"`notes(?:Internal|External)`"
+            r"|`notes(?:Internal|External)`\s+sentence",
+            re.IGNORECASE,
+        ),
+    ),
+    # An exclusion row's name ends with who carries the work, and it has no description: the shape
+    # before it said who carried the work in a `By` description beside a name the carrying row shared.
+    (
+        "an exclusion row's description saying who carries the work (its name ends with who carries "
+        "it, and it has no description)",
+        re.compile(
+            r"\bdescription:\s*By\b|`description`\s*`By\b|\bdescription`?\s+(?:says|names|holds|is)\s+who carries\b"
+            r"|\bdescribed\s+`By\b|\bholds who carries the work\b"
+        ),
+    ),
+    # An exclusion row's name is never the carrying row's, so a `repeatsScopeItem` at that row names
+    # a row of another name and the record refuses the batch.
+    (
+        "an exclusion row's `repeatsScopeItem` naming the row that carries the work (the record "
+        "refuses a pointer at a row of another name)",
+        re.compile(
+            r"<the subject of the row that carries the work>"
+            r"|`repeatsScopeItem`\s+naming\s+the\s+half's\s+own\s+row"
+            r"|in place of yours on each exclusion row's\s+`repeatsScopeItem`"
+            r"|\bnames that row with `repeatsScopeItem`"
+            r"|carries the same work under the same name, the new row names it with"
+        ),
+    ),
 ]
 
-# A sentence that forbids the old write names it, and is no instruction to make it.
-_RETIRED_FORBIDDEN = re.compile(r"\b(?:never|not|no)\b[^.;]*$", re.IGNORECASE)
+# A sentence that forbids the old write names it, and is no instruction to make it: the
+# carrying-row term passes only where a forbidding word governs the write verb nearest the
+# exclusion record its match names ("never write an exclusion record onto ...", "no review puts
+# ..."), never for a forbidding word elsewhere in the sentence ("where no row carries the work,
+# write an exclusion record onto the carrying row") or on an earlier verb ("do not write a note, add
+# an exclusion record onto the carrying row"). See `_retired_carrying_row_forbidden`.
+_RETIRED_CARRYING_ROW_TERM = 2
+_CARRYING_ROW_VERB = re.compile(r"\b(?:write|put|add|enroll)s?\b", re.IGNORECASE)
+_CARRYING_ROW_NOUN = re.compile(r"\bexclusion (?:record|role)", re.IGNORECASE)
+# The row note term passes only where a forbidding word governs the write: just before its verb
+# ("never write", "do not write"), or with an agent it denies before that verb ("no agent of the run
+# writes"); just after the verb ("writes no", "write nothing"); just before the note field ("and no
+# `notesInternal`"); or in a passive that denies the write ("is not written"). A forbidding word
+# elsewhere in the sentence forbids nothing ("as where the figure is a total no page prints, write
+# the row and say in its `notesInternal` what decides it").
+_RETIRED_NOTE_TERM = 3
+_NOTE_VERB = re.compile(r"\b(?:write|writes|add|adds|put|puts|name|names|say|says)\b", re.IGNORECASE)
+_NOTE_FIELD = re.compile(r"`notes(?:Internal|External)`", re.IGNORECASE)
+_NOTE_DENIED_BEFORE_VERB = re.compile(
+    r"(?:\b(?:never|not|nor)|n't)\s+(?:ever\s+|also\s+)?$"
+    r"|\bno\s+(?:agent|one|reader|review|step)(?:\s+of\s+(?:the\s+run|yours))?\s+(?:ever\s+|also\s+)?$",
+    re.IGNORECASE,
+)
+# "Write nothing but ..." and "write no more than ..." tell the agent to write, so they deny nothing.
+_NOTE_DENIED_AFTER_VERB = re.compile(
+    r"^\s+(?:no|nothing|neither|none)\b(?!\s+(?:but|except|other|more|fewer|less)\b)", re.IGNORECASE
+)
+_DENIED_AFTER_VERB_WINDOW = 24
+_NOTE_DENIED_BEFORE_FIELD = re.compile(r"\b(?:no|nor|neither)\s+$", re.IGNORECASE)
+_NOTE_DENIED_PASSIVE = re.compile(
+    r"\b(?:is|are|be|was|were)\s+(?:not|never)\s+(?:written|added|put|said|named)\b", re.IGNORECASE
+)
+
+
+def _retired_note_forbidden(flat: str, m: re.Match) -> bool:
+    """Whether a forbidding word governs the row note write the match names."""
+    sentence = max(flat.rfind(". ", 0, m.start()), flat.rfind(";", 0, m.start()), -1) + 1
+    field = _NOTE_FIELD.search(flat, m.start(), m.end())
+    at = field.start() if field else m.start()
+    if _NOTE_DENIED_BEFORE_FIELD.search(flat[max(sentence, at - 12):at]):
+        return True
+    if _NOTE_DENIED_PASSIVE.search(m.group(0)):
+        return True
+    verbs = list(_NOTE_VERB.finditer(flat, m.start(), at))
+    if not verbs:
+        return bool(_NOTE_DENIED_BEFORE_FIELD.search(flat[max(sentence, m.start() - 12):m.start()]))
+    verb = verbs[-1]
+    return bool(
+        _NOTE_DENIED_BEFORE_VERB.search(flat[sentence:verb.start()])
+        or _NOTE_DENIED_AFTER_VERB.search(flat[verb.end():verb.end() + _DENIED_AFTER_VERB_WINDOW])
+    )
+
+
+def _retired_carrying_row_forbidden(flat: str, m: re.Match) -> bool:
+    """Whether a forbidding word governs the write verb nearest the exclusion record the match names."""
+    sentence = max(flat.rfind(". ", 0, m.start()), flat.rfind(";", 0, m.start()), -1) + 1
+    noun = _CARRYING_ROW_NOUN.search(flat, m.start(), m.end())
+    verbs = list(_CARRYING_ROW_VERB.finditer(flat, m.start(), noun.start() if noun else m.end()))
+    if not verbs:
+        return False
+    verb = verbs[-1]
+    return bool(
+        _NOTE_DENIED_BEFORE_VERB.search(flat[sentence:verb.start()])
+        or _NOTE_DENIED_AFTER_VERB.search(flat[verb.end():verb.end() + _DENIED_AFTER_VERB_WINDOW])
+    )
+
+
+# Old sentences each retired term refuses, and sentences in the new words it passes, run through
+# the scan so its refusals are shown rather than assumed.
+_RETIRED_COLLAPSED_SAMPLES: tuple[tuple[str, bool], ...] = (
+    ("Raise or reply on the Question that settles it, name that Question in the row's "
+     "`notesInternal`, and name both products in its `description`.", True),
+    ("One the bar sends to no Question takes the one `notesExternal` sentence mandate 5 sends a "
+     "conflict between two documents to.", True),
+    ("For each firestopping row, add one sentence to its `notesInternal` naming those trades.", True),
+    ("Write that line's words as the row's `notesInternal` in the same batch.", True),
+    # A forbidding word in the sentence that does not govern the write forbids nothing, and a
+    # directive that opens a sentence is one all the same.
+    ("Where you cannot tell, as where the figure is a total no page prints, write the row and say "
+     "in its `notesInternal` what decides it.", True),
+    ("Write the other trade in `notesInternal`.", True),
+    ("Where no page prints the figure, write it in `notesExternal` for bidders.", True),
+    # A denied subject excuses the write only where it sits right before the verb.
+    ("Where no reader found a price, write the basis in `notesInternal`.", True),
+    # The carrying-row term: a forbidding word elsewhere in the sentence forbids nothing.
+    ("Where no row carries the work, write an exclusion record onto the carrying row.", True),
+    # "Nothing but" and "no more than" after the verb tell the agent to write.
+    ("Write nothing but the pricing basis in `notesInternal`.", True),
+    ("Write no more than one sentence in `notesInternal`.", True),
+    ("Write nothing but an exclusion record onto the carrying row.", True),
+    # A forbidding word on an earlier verb does not reach the verb that writes the record.
+    ("Do not write a note, add an exclusion record onto the carrying row.", True),
+    ("Its `description` says who carries the work and nothing more.", True),
+    ("exclusion row on: 26 00 00, description: By Package 22 00 00", True),
+    ("Its create carries one entry whose value is <the subject of the row that carries the work>.", True),
+    ("Each exclusion row's create carries `repeatsScopeItem` naming the half's own row in the same batch.", True),
+    ("You never write `notesExternal` or `notesInternal`, on any row, in any case.", False),
+    ("Under both, you write no `notesInternal` or `notesExternal` on any row.", False),
+    ("A re-home writes `belongsToTrade` alone: you write no row's `name`, and no `notesInternal` or "
+     "`notesExternal` on any row.", False),
+    ("Do not write the other trade in `notesInternal`.", False),
+    ("No agent of the run writes `notesInternal` or `notesExternal`.", False),
+    ("The other trade's name is never written in `notesInternal`.", False),
+    ("Never write an exclusion record onto the row that carries the work.", False),
+    ("No review puts an exclusion role on another trade's row.", False),
+    ("An exclusion row has no `description`.", False),
+    ("(a) The first exclusion row of a name goes with no `repeatsScopeItem`, and the row that "
+     "carries the work is never its pointer.", False),
+)
+
+
+def _retired_collapsed_hits(flat: str, name: str) -> list[str]:
+    hits = []
+    for at, (label, pattern) in enumerate(RETIRED_COLLAPSED_TERMS):
+        for m in pattern.finditer(flat):
+            if at == _RETIRED_CARRYING_ROW_TERM and _retired_carrying_row_forbidden(flat, m):
+                continue
+            if at == _RETIRED_NOTE_TERM and _retired_note_forbidden(flat, m):
+                continue
+            hits.append(f"{name}: retired term {label}: {m.group(0)!r}")
+    return hits
 
 
 def _scan_file_for_retired_collapsed(path: Path) -> list[str]:
@@ -1165,12 +1324,7 @@ def _scan_file_for_retired_collapsed(path: Path) -> list[str]:
         flat = " ".join(path.read_text(encoding="utf-8").split())
     except Exception as e:
         return [f"{path}: read error: {e}"]
-    return [
-        f"{path.name}: retired term {label}: {m.group(0)!r}"
-        for at, (label, pattern) in enumerate(RETIRED_COLLAPSED_TERMS)
-        for m in pattern.finditer(flat)
-        if at != 2 or not _RETIRED_FORBIDDEN.search(flat[max(0, m.start() - 120):m.start()])
-    ]
+    return _retired_collapsed_hits(flat, path.name)
 
 
 RETIRED_SCOPED_TERMS: list[tuple[str, re.Pattern]] = [
@@ -1304,7 +1458,18 @@ def check_retired_vocabulary(plugin_path: Path, marketplace_root: Path) -> Resul
         hits.extend(_scan_file_for_retired_collapsed(f))
         hits.extend(_scan_file_for_retired_scoped(f))
 
-    detail = f"{len(full_scope_files)} files scanned for retired vocabulary"
+    # Each retired term refuses its old sentences and passes the new ones that forbid it.
+    for sample, refused in _RETIRED_COLLAPSED_SAMPLES:
+        if bool(_retired_collapsed_hits(" ".join(sample.split()), "sample")) != refused:
+            hits.append(f"the retired scan {'passes' if refused else 'refuses'} {sample!r}")
+
+    detail = (
+        f"{len(full_scope_files)} files scanned for retired vocabulary; "
+        f"{sum(1 for _s, r in _RETIRED_COLLAPSED_SAMPLES if r)} old sentences refused and "
+        f"{sum(1 for _s, r in _RETIRED_COLLAPSED_SAMPLES if not r)} forbidding ones passed (a row "
+        f"note written by the run, an exclusion row's `By` description, its pointer at the row "
+        f"that carries the work)"
+    )
     if hits:
         detail += " | " + "; ".join(hits)
 
@@ -1717,6 +1882,101 @@ _QUESTION_RETIRED_RULE_RE = re.compile(
 
 _QUESTION_WORD_RE = re.compile(r"\bquestions?\b", re.IGNORECASE)
 
+# The bar was then set where the documents disagree about a work requirement or leave open a
+# requirement or a pricing basis a bidder needs, with no price test and no cap, each case that
+# raises nothing named, and the set still being drawn kept as a stated exception. Both readers carry
+# it whole, the reviewer and the skill their restatements, and a review, a manual part and the
+# skill's copy of the review's shape give a silence or a comparison that raises nothing one of the
+# values below, none of them for low cost.
+QUESTION_BAR_PHRASES: dict[str, tuple[str, ...]] = {
+    reader: (
+        "because the documents disagree about a work requirement, or leave open a requirement or a "
+        "pricing basis a bidder needs, and nothing in the set settles it.",
+        "Raise each one you find, however many",
+        "Unequal words alone are not a disagreement: the two places must ask for different work.",
+        "which settles who carries it and that it is not written twice, and never settles a "
+        "disagreement or a gap about that work",
+        "where the page's own context settles a misprint",
+        "an \"or equal\", a list of acceptable makers that holds both, or a basis of design with "
+        "equals allowed",
+        "where a section offers an option only where shown or selected and no sheet shows or selects "
+        "it, which makes no row either",
+        "A choice that leaves a bidder no basis to price, as a premium finish family the documents "
+        "never name, is a gap and a Question.",
+        "Documents that disagree about who is contractually responsible for work",
+        "This is a deliberate exception to the bar above",
+        "raise nothing for want of a section and write nothing on the row",
+        # The two cases write their fields and no note.
+        "Two more cases raise no Question and write no note:",
+    )
+    for reader in ("reader", "vocabulary reader")
+}
+QUESTION_BAR_PHRASES["reviewer"] = (
+    "how little the work costs never leaves one open",
+    "`silent sections:` line as `left open, the sheets select none of it`",
+    "name the silence `left open, closed Question <id>`",
+    "Documents that disagree about who is contractually responsible for work",
+    "silent sections: <section code + the Question id, or `left open` + its reason, `the sheets "
+    "select none of it` or `closed Question <id>`",
+    "unspecified work: <row family + the Question id, or `left open, closed Question <id>`",
+    "how it ended: Question <id>, `agree`, `closed Question <id>`, `not settled`, or `not reached`",
+    # A document the set lacks takes reader mandate 1's test, with no price test.
+    "is a Question where it leaves open a requirement or a pricing basis a bidder needs and nothing "
+    "in the set settles it, citing the sheet that names it",
+    # Work a section requires only where shown or selected, with none shown, asks nothing.
+    "Before you choose between the two cases below, ask whether the section requires its work only "
+    "where a sheet shows or selects it",
+    "so it raises no Question and makes no row: name it on your `silent sections:` line as `left "
+    "open, the sheets select none of it`",
+    "No sheet shows any of the section's work, and the section requires that work whether or not a "
+    "sheet places it.",
+    # A silence the set-still-being-drawn exception leaves unasked goes on `anomalies:` alone.
+    "it goes on neither `silent sections:` nor `unspecified work:`, and you name it on your "
+    "`anomalies:` line alone",
+    "set still being drawn: <the work, in the section's words>, run only",
+    "Every silence but one on a set still being drawn, which goes on `anomalies:` alone as above, is "
+    "named on your `silent sections:` or `unspecified work:` line",
+)
+QUESTION_BAR_PHRASES["manual reader"] = (
+    "silent sections: <section code + the Question id, or `left open` + its reason, `the sheets "
+    "select none of it` or `closed Question <id>`",
+)
+QUESTION_BAR_PHRASES["skill"] = (
+    "and the run raises each one it finds, however many",
+    "a deliberate exception to the bar above",
+    "documents that disagree about who is contractually responsible for work",
+    "silent sections: <section code + the Question id, or `left open` + its reason, `the sheets "
+    "select none of it` or `closed Question <id>`",
+    "unspecified work: <row family + the Question id, or `left open, closed Question <id>`",
+    "how it ended: Question <id>, `agree`, `closed Question <id>`, `not settled`, or `not reached`",
+)
+QUESTION_BAR_FILES = {
+    "reader": ("agents", "scope-reader.md"),
+    "vocabulary reader": ("agents", "scope-vocabulary-reader.md"),
+    "reviewer": ("agents", "scope-reviewer.md"),
+    "manual reader": ("agents", "scope-manual-reader.md"),
+    "skill": ("skills", "scope-run", "SKILL.md"),
+}
+# What the bar retired: a find left open, a Question skipped or a no-Question value given for low
+# cost, the disagreement that did not change the price, and the qualification written in place of
+# a Question.
+_QUESTION_BAR_RETIRED_RE = re.compile(
+    r"low[- ]cost|qualification on <subject>|A DISAGREEMENT THAT DOES NOT CHANGE THE PRICE"
+    r"|moves the price by more than|Most finds clear neither test|cannot be priced without it"
+    r"|raise no Question and write nothing on the row",
+    re.IGNORECASE,
+)
+
+
+def _question_bar_errors(texts: dict[str, str]) -> list[str]:
+    """Each carrier holds its bar phrases, whitespace collapsed, and none the retired wording."""
+    errors: list[str] = []
+    for label, phrases in QUESTION_BAR_PHRASES.items():
+        flat = " ".join(texts.get(label, "").split())
+        errors += [f"the {label} does not read {phrase!r}" for phrase in phrases if phrase not in flat]
+        errors += [f"the {label} reads the retired {m.group(0)!r}" for m in _QUESTION_BAR_RETIRED_RE.finditer(flat)]
+    return errors
+
 
 def check_question_rfi_bar(plugin_path: Path) -> Result:
     name = "question-rfi-bar"
@@ -1767,7 +2027,62 @@ def check_question_rfi_bar(plugin_path: Path) -> Result:
         for m in _QUESTION_RETIRED_RULE_RE.finditer(normalized):
             errors.append(f"{label}: retired Question rule wording '{m.group(0)}'")
 
-    detail = f"{len(files)} skill/agent files scanned, {len(QUESTION_RFI_BAR_PHRASES)} bar phrases required"
+    # The bar whole in each carrier, each break of it refused.
+    bar_texts = {
+        label: plugin_path.joinpath(*parts).read_text(encoding="utf-8")
+        for label, parts in QUESTION_BAR_FILES.items() if plugin_path.joinpath(*parts).is_file()
+    }
+    errors += _question_bar_errors(bar_texts)
+    bar_refused = 0
+    for what, label, before, after in (
+        ("the cap put back in a reader", "reader", "Raise each one you find, however many",
+         "Raise only the ones that move the price"),
+        ("the deliberate exception dropped from the vocabulary reader", "vocabulary reader",
+         "This is a deliberate exception to the bar above", "This is the bar above"),
+        ("the low-cost exemption put back in the skill", "skill", "and every one that clears it is raised",
+         "and a low-cost one is left open for bidders"),
+        ("a review's silence left open for low cost", "reviewer",
+         "`left open` + its reason, `the sheets select none of it` or `closed Question <id>`",
+         "`left open` + why it is low cost"),
+        ("a manual part's silence left open for low cost", "manual reader",
+         "`left open` + its reason, `the sheets select none of it` or `closed Question <id>`",
+         "`left open` + why it is low cost"),
+        ("a qualification on a row as a comparison's end", "skill",
+         "how it ended: Question <id>, `agree`,", "how it ended: Question <id>, qualification on <subject>, `agree`,"),
+        ("the who-is-responsible disagreement dropped from a reader", "reader",
+         "Documents that disagree about who is contractually responsible for work",
+         "Who is responsible for work"),
+        ("the price test put back on a document the set lacks", "reviewer",
+         "is a Question where it leaves open a requirement or a pricing basis a bidder needs and "
+         "nothing in the set settles it,",
+         "where the work it governs cannot be priced without it, is a Question,"),
+        ("the only-where-shown test dropped before the two cases", "reviewer",
+         "Before you choose between the two cases below, ask whether the section requires its work "
+         "only where a sheet shows or selects it", "Then one of two cases holds"),
+        ("a silence on a set still being drawn put on the silent sections line", "reviewer",
+         "it goes on neither `silent sections:` nor `unspecified work:`, and you name it on your "
+         "`anomalies:` line alone",
+         "it goes on your `silent sections:` line as `left open, set still being drawn`"),
+    ):
+        flat = " ".join(bar_texts.get(label, "").split())
+        if before in flat and _question_bar_errors({**bar_texts, label: flat.replace(before, after, 1)}):
+            bar_refused += 1
+        else:
+            errors.append(f"the Question bar arm passes with {what}")
+
+    detail = (
+        f"{len(files)} skill/agent files scanned, {len(QUESTION_RFI_BAR_PHRASES)} bar phrases required; "
+        f"{sum(len(p) for p in QUESTION_BAR_PHRASES.values())} phrases of the bar with no price test "
+        f"held over both readers, the reviewer, the manual reader and the skill (each one raised "
+        f"however many, unequal words no disagreement, each case that raises nothing, the "
+        f"responsibility disagreement a Question, the set still being drawn a stated exception, no "
+        f"Question for want of a section with no manual read in, and the no-Question report values "
+        f"`left open` with `the sheets select none of it` or `closed Question <id>` and `agree`; in "
+        f"the reviewer, a document the set lacks asked about by the reader's test, work required "
+        f"only where shown asked about by nothing, and a silence on a set still being drawn named "
+        f"on `anomalies:` alone), "
+        f"no low-cost wording, {bar_refused} breaks refused"
+    )
     if errors:
         detail += " | " + "; ".join(errors)
 
@@ -9916,10 +10231,10 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
 # nothing and exits 3 naming the unit and both counts; an answer whose prefixes are not the pass's,
 # each once, a summary naming other units, or a unit it reads verified no, is refused; window 3's
 # line carries the pages opened and searches; the check-in counts each anomaly that landed on a
-# Question, a reply or a row by pass, or in window 3 by the review the plan names, where its ending
-# names the id or subject in the record's form, and prints every other note line once across calls
-# under its printed label: an anomaly ending `run only` or `sheet reading` or with no ending, one
-# ending `note on hold` or the placeholder `Question <id>`, one with a continuation line under it,
+# Question or a reply by pass, or in window 3 by the review the plan names, where its ending names
+# the id in the record's form, and prints every other note line once across calls under its
+# printed label: an anomaly ending `run only` or `sheet reading` or with no ending, one ending a
+# row's subject, `note on hold` or the placeholder `Question <id>`, one with a continuation line under it,
 # printed with it, a pair of rows carrying the same work, and grain and door notes whose endings
 # read as counted ones; each call under Bash's limit, the last line naming the
 # rest, and a note longer than one call cut and finished in the next; and the skill's own three
@@ -9939,8 +10254,8 @@ BASH_OUTPUT_LIMIT = 30_000
 # counts, written whole. The skill carries a reader shape and a reviewer shape, each agent one.
 _ANOMALIES_SHAPE_OPENING = "anomalies: <one line each, with sheet and page, ending with a comma and where it landed"
 _FULL_ID_WORDING = (
-    "the Question named by the full id `ask_question` returned (its `question:` subject), a reply by "
-    "the id `reply_question` returned, a row by its full subject, never shortened"
+    "the Question named by the full id `ask_question` returned (its `question:` subject) and a reply "
+    "by the id `reply_question` returned, never shortened"
 )
 _FULL_ID_SHAPES = {"skill": 2, "reader": 1, "vocabulary reader": 1, "reviewer": 1}
 # The reader's mandate on the ending, its whitespace collapsed.
@@ -10109,17 +10424,18 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     # `pass:` line of the window, so its line names no pass, and every script reads past it.
     ledger_lines.insert(3, "checkin: 1 none go")
     # The check-in names in full each anomaly that landed nowhere on a trade's page and counts the
-    # ones on a Question, a reply or a row by pass. The fixture carries each ending the report
-    # shape gives, one with no ending, a pair of rows carrying the same work that landed as a note
-    # on a row, and a grain and a door note whose endings read as counted ones, since neither is
-    # an anomaly and both print whole. An ending is counted only where it names an id or a subject
-    # in the form the record writes, so words after `note on` and the shape's own placeholder print
-    # whole.
+    # ones on a Question or a reply by pass. The fixture carries each ending the report shape gives,
+    # one with no ending, a pair of rows carrying the same work, which ends `run only`, an ending
+    # naming a row, which no shape offers since no agent of the run writes a note on a row, and a
+    # grain and a door note whose endings read as counted ones, since neither is an anomaly and
+    # both print whole. An ending is counted only where it names an id in the form the record
+    # writes, so a row's subject, words after `note on` and the shape's own placeholder print whole.
     whole_anomalies = {
         "no ending": (a1_units[0], "one invented mark carries no schedule row"),
         "run only": (a1_units[2], "A-0.03 p3 one invented box went with no lines, run only"),
         "sheet reading": (a1_units[2], "A-0.03 p3 one invented title disagrees with the index, sheet reading"),
-        "same work": (a1_units[3], f"A-0.04 p4 same work: invented row one and invented row two, model X-1, note on scopeItem:{a1_units[3]}-2"),
+        "same work": (a1_units[3], "A-0.04 p4 same work: invented row one and invented row two, model X-1, combined, run only"),
+        "a row's subject": (a1_units[1], f"A-0.02 p2 one invented size the plan reads otherwise, note on scopeItem:{a1_units[1]}-3"),
         "note on hold": (a1_units[2], "A-0.03 p3 one invented schedule row reads short, transcription incomplete, note on hold"),
         "the placeholder": (a1_units[0], "A-0.01 p1 one invented door the hardware sets skip, Question <id>"),
     }
@@ -10132,7 +10448,6 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     # (pass, unit, clause, where it landed) for each anomaly the check-in counts.
     counted_anomalies = [
         ("A1", a1_units[0], f"A-0.01 p1 one invented tag the set defines nowhere, Question {question_id(1)}", "Question"),
-        ("A1", a1_units[1], f"A-0.02 p2 one invented size the plan reads otherwise, note on scopeItem:{a1_units[1]}-3", "note on"),
         ("A1", a1_units[3], f"A-0.04 p4 one invented finish an open ask covers, reply {question_id(2)}", "reply"),
         ("G1", g1_units[0], f"G-0.01 p11 one invented note two sheets read otherwise, Question {question_id(3)}", "Question"),
         ("G1", g1_units[1], "G-0.02 p12 one invented size an open ask names, reply clm-0a1b2c3d-0000-4000-8000-0000000000b1", "reply"),
@@ -10365,7 +10680,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
 
     def on_record_lines(tally: list[tuple[str, str]]) -> list[str]:
         """The check-in's counts lines for (where, landing) pairs, each place in the order it first comes."""
-        words = {"Question": "Questions", "reply": "replies", "note on": "notes on rows"}
+        words = {"Question": "Questions", "reply": "replies"}
         places: dict[str, dict[str, int]] = {}
         for where, landed in tally:
             places.setdefault(where, {k: 0 for k in words})[landed] += 1
@@ -10412,7 +10727,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         # read plan names for that review.
         review_landed = {
             review_units[0]: (f"section 092116 p40 one invented board the plans omit, Question {question_id(5)}", "Question"),
-            review_units[1]: (f"P-1.01 p7 one invented valve the manual names, note on scopeItem:{review_units[1]}-1", "note on"),
+            review_units[1]: ("P-1.01 p7 one invented valve the manual names, reply clm-0a1b2c3d-0000-4000-8000-0000000000c1", "reply"),
         }
         (review_folder / "ledger.md").write_text("".join(
             f"dispatch 3 {review} {unit_id} sheets none purpose review the package\n"
@@ -10765,7 +11080,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         if code != 0:
             errors.append(f"the skill's {mode} command, filled in, exits {code}: {argv}, {err}")
 
-    # The check-in counts a note only where its ending names a Question, a reply or a row whole, so
+    # The check-in counts a note only where its ending names a Question or a reply whole, so
     # a reader or reviewer writing a short id prints every note in full. Each report shape, and each
     # reader's mandate on the ending, says the ending names the full id.
     shape_texts = {
@@ -10778,16 +11093,14 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     errors += full_id_errors_now
     shortened = {
         "the full Question id dropped from the reader's shape": dict(shape_texts, reader=shape_texts["reader"].replace(
-            "the Question named by the full id `ask_question` returned (its `question:` subject), a reply by "
-            "the id `reply_question` returned, a row by its full subject, never shortened; or",
+            _FULL_ID_WORDING + "; or",
             "; or",
         )),
         "the reviewer's shape allowing a short id": dict(shape_texts, reviewer=shape_texts["reviewer"].replace(
             ", never shortened; or", ", shortened where long; or"
         )),
         "one of the skill's shapes without it": dict(shape_texts, skill=shape_texts["skill"].replace(
-            "the Question named by the full id `ask_question` returned (its `question:` subject), a reply by "
-            "the id `reply_question` returned, a row by its full subject, never shortened; or",
+            _FULL_ID_WORDING + "; or",
             "; or", 1,
         )),
         "the reader's mandate without it": dict(shape_texts, reader=re.sub(
@@ -11033,19 +11346,19 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         f"estimator-words label less its unit id, a `checkin:` line naming no pass, before the "
         f"window's first `pass:` line, read past by the summary, plan and lead scripts, and its "
         f"shape with `none` and the go, pause and unanswered resume rules read in the skill; the check-in "
-        f"carrying the totals, the items by trade, the {len(counted_anomalies)} anomalies on a Question, a reply or a row counted by "
-        f"pass and never printed, each ending on an id or subject in the record's form, two of "
+        f"carrying the totals, the items by trade, the {len(counted_anomalies)} anomalies on a Question or a reply counted by "
+        f"pass and never printed, each ending on an id in the record's form, two of "
         f"window 3 counted by the review the plan names, and every "
         f"other note line under its printed label, the anomalies ending run only or sheet reading "
-        f"or with no ending, `note on hold` and the placeholder `Question <id>`, a pair carrying "
+        f"or with no ending, a row's subject, `note on hold` and the placeholder `Question <id>`, a pair carrying "
         f"the same work, and grain and door notes with counted endings among them, a note with a "
         f"continuation line printed whole with it and not counted, a long one stopping under Bash's "
         f"limit with the rest printed once over {calls} calls, and one note over the limit cut "
         f"under a line naming it and joined whole over {huge_calls} calls; the skill's passes, "
         f"record and checkin commands fed to the script; the skill's reader and reviewer shapes, "
         f"both readers' and the reviewer's shapes and each reader's mandate on the ending naming a Question by the full "
-        f"id `ask_question` returned, a reply by the id `reply_question` returned and a row by its "
-        f"full subject, never shortened, with {full_id_refused} breaks refused; {settle_cases} "
+        f"id `ask_question` returned and a reply by the id `reply_question` returned, never "
+        f"shortened, with {full_id_refused} breaks refused; {settle_cases} "
         f"run folders of a unit read again after a mismatch, its second check ok read verified by "
         f"the plan script and recorded, its second check a mismatch read unverified and refused, "
         f"an ok line followed by a mismatch read unverified by the plan script, a summary summed off a copy of the ledger with a line taken out refused as summed "
@@ -13523,8 +13836,7 @@ QUESTION_WRITING_SENTENCE = (
     "citations, boxed on the entry it names there, and cited as the whole sheet only where the "
     "point is that the sheet lacks it or no line of the page's read carries the entry; a sheet the "
     "set lacks is cited at the spot that names it; and it carries no colon without the list it "
-    "announces, no sentence repeating the title, and no sentence on why we need the answer. A "
-    "Question that needs that sentence to be worth sending is not raised."
+    "announces, no sentence repeating the title, and no sentence on why we need the answer."
 )
 
 _QUESTION_WRITING_CARRIERS = (
@@ -14060,19 +14372,45 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
                  "the half's own row."),
     ("reviewer", "`you write it: yes, exclusion rows only`: the half is the owner's or a utility's, or "
                  "no trade it names has a package on this job"),
-    ("reviewer", "each catalog id among them replaced by that trade's `name` as "
-                 "`directory_list_trades(code: \"<the id>\")` gives it"),
-    ("reviewer", "Each exclusion row's create carries `repeatsScopeItem` naming the half's own row in "
-                 "the same batch, that row created first"),
-    ("reviewer", "Where the record refuses one because that package already carries the name, that "
-                 "package has the row already: take that create out and write nothing on its row."),
+    ("reviewer", "named exactly as that line prints it, the half's row name, ` - by ` and who carries "
+                 "the work"),
+    ("reviewer", "no `description`, and the citation or the instrument the half's own row takes"),
+    ("reviewer", "Where a printed name passes the door's 80 characters, shorten the work's words before "
+                 "` - by `, never the ending."),
+    ("reviewer", "the first exclusion row of its name goes with none, since the half's own row has "
+                 "another name and the record refuses that pointer"),
+    ("reviewer", "each later one of that name in the batch names the first, created before it"),
+    ("reviewer", "where the record refuses one because that package already carries the name, that "
+                 "package has the row already: take that create out, cite your page on the row it names, "
+                 "and point at that row only a `repeatsScopeItem` that named the create you took out."),
+    ("reviewer", "Before you create one, look for an exclusion row already on that package, under any "
+                 "heading, that leaves out the same work to the same party, judged by the work and "
+                 "never by the name: on this package, among the rows you harvested, with no search; on "
+                 "another package, by reader mandate 4's one `search` for the words that name the work"),
+    ("reviewer", "Before you create an exclusion row on this package, judge it against every exclusion "
+                 "row on this package, under any heading, among the rows you harvested, with no search"),
+    ("reviewer", "Reader mandate 4's search is for an exclusion row you write on another package."),
+    ("reviewer", "Two exclusion rows on this package that leave out the same work to the same party are "
+                 "a pair whatever their names, judged against every exclusion row on this package under "
+                 "any heading"),
+    ("reviewer", "the row created first is kept, each page the other cites is cited on it, and the other "
+                 "is retired, with the same cases that retire nothing as any pair below, so a row that "
+                 "holds a note is never retired."),
+    ("reviewer", "An exclusion row never carries the line, so it is never named `already on`"),
+    ("reviewer", "point at that row each `repeatsScopeItem` that named the create you took out, and no "
+                 "other pointer: an exclusion row's pointer only ever names another exclusion row of "
+                 "its own name."),
+    ("reviewer", "An exclusion row's ending can go stale when a fold moves or renames a package, and the "
+                 "folder writes no names"),
+    ("reviewer", "write the exclusion row's `name` over with `supersedesId`, the work's words and that new "
+                 "ending within 80 characters"),
+    ("reviewer", "so a name that matches before its ending is a hint and never a condition"),
     ("reviewer", "with one `packageRole:<tradeCode>` record valued `{ \"role\": \"exclusion\" }` in "
                  "the same batch, so it sits in this package's Exclusions section"),
     ("reviewer", "A fold can put an exclusion row on this package beside a row outside its Exclusions "
                  "section"),
-    ("reviewer", "Where an `internal note:` line follows, the half goes to either of two or more "
-                 "trades, this package being the one the script gives it to: write that line's words "
-                 "as the row's `notesInternal` in the same batch, and the row sits on this package alone."),
+    ("reviewer", "Where the half goes to either of two or more trades, the script gives it to this "
+                 "package alone: the row sits on this package and carries nothing about the others."),
     ("reviewer", "Its `name:` is the name of the row that package writes"),
     ("reviewer", "cite the place on that row with `cite_source`, a citation and never a role"),
     ("reviewer", "Name the half `paper gives it to <this package's tradeCode>, <sheet and page or "
@@ -14085,8 +14423,9 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("fixture", "paper gives it to 09 99 99, X-2.01 file-0000 p4, row not yet written"),
     ("fixture", "written scopeItem:A1-1-1, X-1.01 file-0000 p3, paper gives it to 26 00 00, section "
                 "099999 file-1111 p12"),
-    ("reviewer", "A row a line writes carries no sentence in `notesInternal` saying it is a standard "
-                 "line, that bids for the trade carry it, or what its citation shows."),
+    ("reviewer", "A row a line writes carries no note, in either field: never that it is a standard "
+                 "line, that bids for the trade carry it, what its citation shows, or which other trade "
+                 "could carry it."),
     ("reviewer", "A line the script prints an `instrument:` for carries no page: a line with no "
                  "condition, and a line whose condition says only that the sub supplies material"),
     ("reviewer", "and no citation is written for it, on a new row or on a row that already carries "
@@ -14177,17 +14516,68 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     *((label, phrase) for label in (SHEET_READER, VOCABULARY_READER) for phrase in (
         'one `packageRole:<that trade>` record valued `{"role": "exclusion"}` in the same batch and '
         'nothing else in the value, no `counterparty` and no `note`',
-        "Its `description` says who carries the work and nothing more",
+        "then ` - by ` and who carries it: the name of the package that covers the trade carrying it",
+        "The whole name stays within the door's 80 characters: shorten the work's words, never the "
+        "ending, and where several carriers do not fit, name the first and `and others`",
+        "An exclusion row has no `description`.",
         "A `packageRole` record is never written onto a row of another trade, and a live row of "
         "another trade is never made an exclusion.",
-        "The one exception is an exclusion row, mandate 4, which takes the name of the row that "
-        "carries the work on another package",
+        "The two rows never share a name: the row that carries the work keeps the work's name alone.",
+        "Before you create an exclusion row, look for an exclusion row already on that trade's "
+        "package, under any heading, that leaves out the same work to the same party.",
+        "Where mandate 1's own search for the work already returned its hits, use those and search "
+        "no more; otherwise make one `search(projectId, subjectPrefix: \"scopeItem:\", text: <the "
+        "words that name the work>)`, paged to its end.",
+        "Among the hits, a live row on that trade's package whose current `name` carries an "
+        "exclusion ending, ` - by ` and a party or ` - Not in Contract`, and that leaves out the "
+        "same work to the same party is that row: cite your page on it and create none.",
+        "Judge it by the work and never by the name's words",
+        "A hit that is a replaced entry or a retired row is not that row.",
+        "Where a hit does not show the row's trade or that it is live, read the row with "
+        "`list_scope_items(projectId, subjectPrefix: <its subject>)`.",
+        "An exclusion row never carries the work it leaves out, so it never answers a search for the "
+        "row that carries the work.",
+        "(a) The first exclusion row of a name goes with no `repeatsScopeItem`, and the row that "
+        "carries the work is never its pointer.",
+        "(b) A second package's exclusion row of the same name in the same batch names the first, "
+        "created before it in the batch",
+        "(c) Where the record refuses an exclusion row's create and every row its refusal names sits "
+        "on another package, point the create at one live exclusion row the refusal names",
+        "(d) Where it says the exclusion row's own package already carries the name, that package has "
+        "the row already: take your create out, cite your page on the row it names, and before you "
+        "send the batch again, point at that row each `repeatsScopeItem` that named the create you "
+        "took out, and no other.",
     )),
     (SHEET_READER, '`category` `General Items`, with one `packageRole:<that trade>` record valued '
                    '`{"role": "general-requirement"}` in the same batch'),
     ("runner", "`headings` takes one entry per row on the review's `headings written:` line after its first"),
     ("skill", "Each review also writes the standard lines whose condition it finds on this job's own "
               "drawings or manual"),
+    # A person's own agent writes an exclusion row by the same whole procedure.
+    *(("project-record", phrase) for phrase in (
+        "is a row of its own on the trade that leaves the work out, with one "
+        "`packageRole:<that trade>` record valued `{ \"role\": \"exclusion\" }` in the same batch "
+        "and nothing else in the value.",
+        "the name of the package that covers the carrying trade, as `solicitation_list_packages` "
+        "gives it; that trade's `name` off `directory_list_trades` where no package covers it",
+        "shorten the work's words, never the ending, and where several carriers do not fit, name "
+        "the first and `and others`.",
+        "An exclusion row has no `description`.",
+        "Before you create an exclusion row, look for one already on that trade's package, under "
+        "any heading, that leaves out the same work to the same party: one `search(projectId, "
+        "subjectPrefix: \"scopeItem:\", text: <the words that name the work>)`, paged to its end.",
+        "Judge it by the work and never by the name's words.",
+        "(a) The first exclusion row of a name goes with none, and never points at the row that "
+        "carries the work",
+        "(b) A second package's exclusion row of the same name in the same batch names the first, "
+        "created before it in the batch",
+        "(c) Where the record refuses the create and every row its refusal names sits on another "
+        "package, point the create at one live exclusion row the refusal names",
+        "(d) Where the refusal says the row's own package already carries the name, that package has "
+        "the row: take your create out, cite on the row it names, and before you send the batch "
+        "again, point at that row each `repeatsScopeItem` that named the create you took out, and "
+        "no other.",
+    )),
 )
 
 
@@ -14574,111 +14964,126 @@ _STANDARD_LINES_CASES: tuple[tuple[str, dict[str, set[str]]], ...] = (
 # each half a `you write it:` value and, where it writes, its records in order.
 _STANDARD_LINES_WRITERS: tuple[tuple[str, str, dict[str, list[tuple[str, list[str]]]]], ...] = (
     ("06 20 00; 11 31 00", "Appliance Install by Appliances or Finish Carpentry", {
-        "06 20 00": [("yes", ["internal note: Could be by Appliances or Finish Carpentry"])],
+        "06 20 00": [("yes", [])],
         "11 31 00": [("no, left to 06 20 00", [])],
     }),
     ("31 00 00; 02 41 00", "Utility Cut and Caps by Site Utilities, Not Demolition", {
-        "31 00 00": [("yes", ["exclusion row on: 02 41 00, description: By Package 31 00 00"])],
+        "31 00 00": [("yes", ["exclusion row on: 02 41 00, name: Utility cut and caps - by Package 31 00 00"])],
         "02 41 00": [("no, carried by 31 00 00", [])],
     }),
     ("22 00 00; 26 00 00", "Heat Trace Cable by Plumbing, Power by Electrical", {
-        "22 00 00": [("yes", ["exclusion row on: 26 00 00, description: By Package 22 00 00"]),
+        "22 00 00": [("yes", ["exclusion row on: 26 00 00, name: Heat trace cable - by Package 22 00 00"]),
                      ("no, carried by 26 00 00", [])],
         "26 00 00": [("no, carried by 22 00 00", []),
-                     ("yes", ["exclusion row on: 22 00 00, description: By Package 26 00 00"])],
+                     ("yes", ["exclusion row on: 22 00 00, name: Heat trace power - by Package 26 00 00"])],
     }),
     ("22 00 00", "Water Meters Furnished by Utility or Owner, Installed by Plumbing", {
-        "22 00 00": [("yes, exclusion rows only", ["exclusion row on: 22 00 00, description: By Utility or Owner"]),
+        "22 00 00": [("yes, exclusion rows only", ["exclusion row on: 22 00 00, name: Water meter supply - by Utility or Owner"]),
                      ("yes", [])],
     }),
     ("02 41 00", "Elevator Decommissioning by the Elevator Company, Not Demolition", {
-        "02 41 00": [("yes, exclusion rows only", ["exclusion row on: 02 41 00, description: By 14 20 00"])],
+        "02 41 00": [("yes, exclusion rows only", ["exclusion row on: 02 41 00, name: Elevator decommissioning - by Elevators"])],
     }),
     ("22 00 00; 23 00 00; 09 21 16", "Access Panels Furnished by Plumbing, HVAC, Electrical and Fire Protection, Installed by Drywall", {
-        "22 00 00": [("yes", ["exclusion row on: 09 21 16, description: By Package 22 00 00 and Package 23 00 00"]),
+        "22 00 00": [("yes", ["exclusion row on: 09 21 16, name: Access panel supply - by Package 22 00 00 and Package 23 00 00"]),
                      ("no, carried by 09 21 16", [])],
         "23 00 00": [("yes", []), ("no, carried by 09 21 16", [])],
         "09 21 16": [("no, carried by 22 00 00, 23 00 00", []),
-                     ("yes", ["exclusion row on: 22 00 00, description: By Package 09 21 16",
-                              "exclusion row on: 23 00 00, description: By Package 09 21 16"])],
+                     ("yes", ["exclusion row on: 22 00 00, name: Access panel install - by Package 09 21 16",
+                              "exclusion row on: 23 00 00, name: Access panel install - by Package 09 21 16"])],
     }),
     ("07 84 00; 22 00 00; 09 21 16", "Firestopping at Plumbing Penetrations by Firestopping, Not Plumbing or Drywall", {
-        "07 84 00": [("yes", ["exclusion row on: 09 21 16, description: By Package 07 84 00",
-                              "exclusion row on: 22 00 00, description: By Package 07 84 00"])],
+        "07 84 00": [("yes", ["exclusion row on: 09 21 16, name: Firestop plumbing penetrations - by Package 07 84 00",
+                              "exclusion row on: 22 00 00, name: Firestop plumbing penetrations - by Package 07 84 00"])],
         "22 00 00": [("no, carried by 07 84 00", [])],
         "09 21 16": [("no, carried by 07 84 00", [])],
     }),
     ("22 00 00; 09 21 16", "Firestopping at Plumbing Penetrations by Firestopping, Not Plumbing or Drywall", {
-        "09 21 16": [("yes, exclusion rows only", ["exclusion row on: 09 21 16, description: By 07 84 00",
-                                                   "exclusion row on: 22 00 00, description: By 07 84 00"])],
+        "09 21 16": [("yes, exclusion rows only", ["exclusion row on: 09 21 16, name: Firestop plumbing penetrations - by Firestopping",
+                                                   "exclusion row on: 22 00 00, name: Firestop plumbing penetrations - by Firestopping"])],
         "22 00 00": [("no, left to 09 21 16", [])],
     }),
     ("07 84 00; 22 00 00; 09 21 16", "Firestopping at Own Penetrations by Plumbing, HVAC, Electrical and Fire Protection, Not Firestopping or Drywall", {
-        "22 00 00": [("yes", ["exclusion row on: 07 84 00, description: By Package 22 00 00",
-                              "exclusion row on: 09 21 16, description: By Package 22 00 00"])],
+        "22 00 00": [("yes", ["exclusion row on: 07 84 00, name: Firestopping at own penetrations - by Package 22 00 00",
+                              "exclusion row on: 09 21 16, name: Firestopping at own penetrations - by Package 22 00 00"])],
         "07 84 00": [("no, carried by 22 00 00", [])],
         "09 21 16": [("no, carried by 22 00 00", [])],
     }),
     ("07 84 00; 22 00 00; 09 21 16", "Firestopping at Plumbing Penetrations Through Rated Walls by Drywall, Not Firestopping or Plumbing", {
-        "09 21 16": [("yes", ["exclusion row on: 07 84 00, description: By Package 09 21 16",
-                              "exclusion row on: 22 00 00, description: By Package 09 21 16"])],
+        "09 21 16": [("yes", ["exclusion row on: 07 84 00, name: Firestop plumbing at rated walls - by Package 09 21 16",
+                              "exclusion row on: 22 00 00, name: Firestop plumbing at rated walls - by Package 09 21 16"])],
         "07 84 00": [("no, carried by 09 21 16", [])],
         "22 00 00": [("no, carried by 09 21 16", [])],
     }),
     ("07 84 00; 09 21 16", "Head of Wall Joint Firestopping at Rated Walls by Drywall, Not Firestopping", {
-        "09 21 16": [("yes", ["exclusion row on: 07 84 00, description: By Package 09 21 16"])],
+        "09 21 16": [("yes", ["exclusion row on: 07 84 00, name: Firestop head of wall joints - by Package 09 21 16"])],
         "07 84 00": [("no, carried by 09 21 16", [])],
     }),
     ("07 84 00; 09 21 16", "Head of Wall Joint Firestopping at Rated Walls by Firestopping, Not Drywall", {
-        "07 84 00": [("yes", ["exclusion row on: 09 21 16, description: By Package 07 84 00"])],
+        "07 84 00": [("yes", ["exclusion row on: 09 21 16, name: Head of wall joint firestopping - by Package 07 84 00"])],
         "09 21 16": [("no, carried by 07 84 00", [])],
     }),
     ("07 84 00; 09 21 16", "Slab Edge Joint Firestopping by Drywall, Not Firestopping", {
-        "09 21 16": [("yes", ["exclusion row on: 07 84 00, description: By Package 09 21 16"])],
+        "09 21 16": [("yes", ["exclusion row on: 07 84 00, name: Firestop slab edge joints - by Package 09 21 16"])],
         "07 84 00": [("no, carried by 09 21 16", [])],
     }),
     ("07 84 00; 09 21 16", "Slab Edge Joint Firestopping by Firestopping, Not Drywall", {
-        "07 84 00": [("yes", ["exclusion row on: 09 21 16, description: By Package 07 84 00"])],
+        "07 84 00": [("yes", ["exclusion row on: 09 21 16, name: Slab edge joint firestopping - by Package 07 84 00"])],
         "09 21 16": [("no, carried by 07 84 00", [])],
     }),
     ("07 46 00; 09 91 00", "Stain or Paint on Wood Siding and Trim by Siding or Painting", {
-        "07 46 00": [("yes", ["internal note: Could be by Siding and Cladding or Painting"])],
+        "07 46 00": [("yes", [])],
         "09 91 00": [("no, left to 07 46 00", [])],
     }),
     ("03 30 00; 04 20 00", "Dowels from Concrete into Masonry by Concrete", {
-        "03 30 00": [("yes", ["exclusion row on: 04 20 00, description: By Package 03 30 00"])],
+        "03 30 00": [("yes", ["exclusion row on: 04 20 00, name: Dowels from concrete into masonry - by Package 03 30 00"])],
         "04 20 00": [("no, carried by 03 30 00", [])],
     }),
     ("31 00 00; 33 00 00; 22 00 00", "Water and Sewer Services from 10 Feet Outside the Building In by Plumbing, Beyond by Site Utilities", {
-        "22 00 00": [("yes", ["exclusion row on: 33 00 00, description: By Package 22 00 00"]),
+        "22 00 00": [("yes", ["exclusion row on: 33 00 00, name: Water and sewer to 10 feet out - by Package 22 00 00"]),
                      ("no, carried by 33 00 00", [])],
         "33 00 00": [("no, carried by 22 00 00", []),
-                     ("yes", ["exclusion row on: 22 00 00, description: By Package 33 00 00"])],
+                     ("yes", ["exclusion row on: 22 00 00, name: Water and sewer beyond 10 feet - by Package 33 00 00"])],
     }),
     ("06 20 00; 06 40 00; 12 35 30", "Amenity and Common Area Casework by Millwork", {
-        "06 40 00": [("yes", ["exclusion row on: 12 35 30, description: By Package 06 40 00"])],
+        "06 40 00": [("yes", ["exclusion row on: 12 35 30, name: Amenity casework - by Package 06 40 00"])],
         "12 35 30": [("no, carried by 06 40 00", [])],
     }),
     ("03 30 00; 05 50 00; 31 00 00", "Bollard Excavation and Backfill by Sitework, Footing and Bollard by Concrete or Misc Metals", {
         "03 30 00": [("no, carried by 31 00 00", []),
-                     ("yes", ["internal note: Could be by Cast-in-Place Concrete or Miscellaneous Metals",
-                              "exclusion row on: 31 00 00, description: By Package 03 30 00 or Package 05 50 00"])],
+                     ("yes", ["exclusion row on: 31 00 00, name: Bollard footing and bollard - by Package 03 30 00"])],
         "05 50 00": [("no, carried by 31 00 00", []), ("no, left to 03 30 00", [])],
-        "31 00 00": [("yes", ["exclusion row on: 03 30 00, description: By Package 31 00 00",
-                              "exclusion row on: 05 50 00, description: By Package 31 00 00"]),
+        "31 00 00": [("yes", ["exclusion row on: 03 30 00, name: Bollard excavation and backfill - by Package 31 00 00",
+                              "exclusion row on: 05 50 00, name: Bollard excavation and backfill - by Package 31 00 00"]),
                      ("no, left to 03 30 00", [])],
     }),
     ("02 41 00; 22 00 00; 23 00 00", "Cut, Cap and Make Safe Existing Systems Before Demolition by Each MEP Trade, Not Demolition", {
-        "22 00 00": [("yes", ["exclusion row on: 02 41 00, description: By Package 22 00 00 and Package 23 00 00"])],
+        "22 00 00": [("yes", ["exclusion row on: 02 41 00, name: Cut and cap existing systems - by Package 22 00 00 and Package 23 00 00"])],
         "23 00 00": [("yes", [])],
         "02 41 00": [("no, carried by 22 00 00, 23 00 00", [])],
     }),
     ("26 00 00; 33 00 00", "Utility Company Work and Back Charges by Owner, Duct Bank and Vault Prep by Electrical", {
-        "26 00 00": [("yes, exclusion rows only", ["exclusion row on: 26 00 00, description: By Owner",
-                                                   "exclusion row on: 33 00 00, description: By Owner"]),
-                     ("yes", ["exclusion row on: 33 00 00, description: By Package 26 00 00"])],
+        "26 00 00": [("yes, exclusion rows only", ["exclusion row on: 26 00 00, name: Utility company work - by Owner",
+                                                   "exclusion row on: 33 00 00, name: Utility company work - by Owner"]),
+                     ("yes", ["exclusion row on: 33 00 00, name: Utility duct bank and vault prep - by Package 26 00 00"])],
         "33 00 00": [("no, left to 26 00 00", []), ("no, carried by 26 00 00", [])],
     }),
+)
+
+# Long package names, each case (the packages by name, the package printing, the line, what each
+# half prints there): an ending of several carriers past 80 characters names the first and `and
+# others`, and an ending of one carrier is printed whole, for the review to shorten the work's
+# words before it, never the ending.
+_STANDARD_LINES_LONG_ENDINGS: tuple[tuple[dict[str, str], str, str, list[tuple[str, list[str]]]], ...] = (
+    ({"22 00 00": "Plumbing and Domestic Water Systems", "23 00 00": "Heating Ventilating and Air Conditioning",
+      "09 21 16": "Drywall"}, "22 00 00",
+     "Access Panels Furnished by Plumbing, HVAC, Electrical and Fire Protection, Installed by Drywall",
+     [("yes", ["exclusion row on: 09 21 16, name: Access panel supply - by Plumbing and Domestic Water Systems and others"]),
+      ("no, carried by 09 21 16", [])]),
+    ({"22 00 00": "Plumbing Domestic Water Sanitary Storm and Natural Gas Piping Systems", "26 00 00": "Electrical"},
+     "22 00 00", "Heat Trace Cable by Plumbing, Power by Electrical",
+     [("yes", ["exclusion row on: 26 00 00, name: Heat trace cable - by Plumbing Domestic Water Sanitary Storm and Natural Gas Piping Systems"]),
+      ("no, carried by 26 00 00", [])]),
 )
 
 
@@ -14689,6 +15094,7 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         "manual reader": plugin_path / "agents" / "scope-manual-reader.md",
         "runner": plugin_path / "agents" / "scope-round-runner.md",
         "skill": plugin_path / "skills" / "scope-run" / "SKILL.md",
+        "project-record": plugin_path / "skills" / "project-record" / "SKILL.md",
         VOCABULARY_READER: plugin_path / "agents" / VOCABULARY_READER,
         SHEET_READER: plugin_path / "agents" / SHEET_READER,
         "fixture": marketplace_root / "harness" / "fixtures" / "reviewer-report-fixture.md",
@@ -14725,6 +15131,11 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
             ("a counterparty put back in one reader", SHEET_READER,
              '`{"role": "exclusion"}` in the same batch',
              '`{"role": "exclusion", "counterparty": "<the trade that carries it>"}` in the same batch'),
+            ("the look for an exclusion row put back under one heading in one reader", VOCABULARY_READER,
+             "otherwise make one `search(projectId, subjectPrefix: \"scopeItem:\", text: <the words "
+             "that name the work>)`, paged to its end.",
+             "otherwise make one `list_scope_items(projectId, packageId: <its package id>, category: "
+             "<the heading the work takes there>)`, paged to its end."),
         ):
             original = " ".join(texts[label].split())
             broken = {**texts, label: original.replace(before, after, 1)}
@@ -14952,6 +15363,26 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
             else:
                 writer_halves += len(halves)
 
+    # Long package names: several carriers past 80 characters compacted, one carrier printed whole.
+    long_endings = 0
+    for long_names, package, line, halves in _STANDARD_LINES_LONG_ENDINGS:
+        packages = {tc: [tc] for tc in long_names}
+        code, out, err = _run(package, long_names, packages)
+        block = next((b for b in _standard_lines_blocks(out) if b["line"] == line), None)
+        got = [(h.get("you write it"), h["records"]) for h in block["halves"]] if block else None
+        if code != 0 or got != halves:
+            errors.append(f"{line!r} for {package} beside {sorted(long_names.values())} printed {got!r}, "
+                          f"exit {code}, {err!r}, and the case wants {halves!r}")
+            continue
+        named = [r.partition(", name: ")[2] for _v, records in halves for r in records]
+        compact = [n for n in named if n.endswith(" and others")]
+        if any(len(n) > STANDARD_LINES_NAME_MAX for n in compact) or (
+            not compact and not any(len(n) > STANDARD_LINES_NAME_MAX for n in named)
+        ):
+            errors.append(f"the long ending case for {line!r} proves nothing: {named!r}")
+            continue
+        long_endings += 1
+
     # Every file on its own package, short names and then 61-character ones: each half of each Which
     # Trade line has one set of writers that every other package printing it names, every name
     # printed is the line's row name alone, whatever the package is called, and a package that does
@@ -14969,8 +15400,12 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
                 carriers_of.setdefault(row[1], set()).add(item["slug"])
     names_checked = 0
     exclusion_rows = 0
+    exclusion_names_checked = 0
+    compacted = 0
+    titles_of = {item["slug"]: item["title"] for item in files}
     disagreements: list[str] = []
     for long_names in (False, True):
+        exclusion_names: list[tuple[str, int, str, str, str, str]] = []
         whole_names = {tc: (item["title"] + " " + "x" * 61)[:61] if long_names else item["title"]
                        for tc, item in whole.items()}
         said: dict[tuple[str, int], dict] = {}
@@ -14990,13 +15425,13 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
                                                                  "own": set(), "excluders": set()})
                     for record in half["records"]:
                         if not record.startswith("exclusion row on: "):
+                            disagreements.append(f"{block['line']!r} half {at + 1}: {package} prints {record!r}, "
+                                                 f"and a half prints exclusion rows alone, no note")
                             continue
-                        target, _, description = record[len("exclusion row on: "):].partition(", description: ")
+                        target, _, named = record[len("exclusion row on: "):].partition(", name: ")
                         excluded.setdefault((block["line"], at, target), []).append(package)
                         seen["excluders"].add(package)
-                        if not description.startswith("By ") or len(description) > 400:
-                            disagreements.append(f"{block['line']!r} half {at + 1}: {package} describes its exclusion "
-                                                 f"row on {target} as {description!r}")
+                        exclusion_names.append((block["line"], at, package, target, half_names[at], named))
                     if verdict.startswith("yes"):
                         if verdict == "yes":
                             seen["own"].add(package)
@@ -15020,6 +15455,34 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
                 disagreements.append(f"{line!r} half {at + 1}: an exclusion row lands on {target}, which writes the half's own row")
         if not long_names:
             exclusion_rows = len(excluded)
+        # Each exclusion row's name, worked out here: the half's row name, ` - by ` and the names
+        # of the packages that write the half's own row, the trade files' titles where none does,
+        # or the owner's words; past 80 characters, several carriers name the first and `and
+        # others`, and one carrier is printed whole for the review to shorten the work's words.
+        for line, at, package, target, row_name, named in exclusion_names:
+            trades, owner = _which_trade_halves(line)[at]
+            own = sorted(said[(line, at)]["own"])
+            if own:
+                carriers = [whole_names[tc] for tc in own]
+            elif trades:
+                carriers = sorted(titles_of[s] for s in trades)
+            else:
+                carriers = []
+            ending = named.partition(" - by ")[2]
+            if not carriers:
+                words = [w for w in re.split(r", | or | and ", ending) if w]
+                wanted = named if owner and words and all(w in _WHICH_TRADE_NO_TRADE for w in words) else None
+            else:
+                whole_name = f"{row_name} - by " + (
+                    carriers[0] if len(carriers) == 1 else ", ".join(carriers[:-1]) + " and " + carriers[-1])
+                wanted = whole_name
+                if len(whole_name) > STANDARD_LINES_NAME_MAX and len(carriers) > 1:
+                    wanted = f"{row_name} - by {carriers[0]} and others"
+                    compacted += 1
+            if named != wanted or (not long_names and len(named) > STANDARD_LINES_NAME_MAX):
+                disagreements.append(f"{line!r} half {at + 1}: {package} names its exclusion row on {target} "
+                                     f"{named!r}, and wants {wanted!r} within {STANDARD_LINES_NAME_MAX} characters")
+            exclusion_names_checked += 1
         for (line, at), seen in said.items():
             # The packages each half keeps the work off, worked out here: the packages of the files
             # carrying the line, less those of the trades the half names, or all of them for the owner.
@@ -15119,22 +15582,22 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"package by its second Home number, site utilities and paving each to their own package "
         f"and to the earthwork package where they have none, electrical beside an EV charger "
         f"package, millwork beside finish carpentry, none for 08 33 23 and 01 11 13); {writer_halves} Which "
-        f"Trade halves printing their writer, internal note and exclusion rows as the cases want (an "
-        f"`or` line to the lowest package alone with an internal note naming both trades, one carrier "
+        f"Trade halves printing their writer and exclusion rows by their whole names as the cases want (an "
+        f"`or` line to the lowest package alone with no note, one carrier "
         f"with an exclusion row on the trade it keeps the work off, two halves each excluding the "
         f"other, an owner half written as exclusion rows alone, on each package it involves, a carrier "
-        f"with no package written as exclusion rows by the lowest package it involves, naming the "
-        f"carrier's catalog id, furnish halves for each MEP trade with the lowest MEP package writing "
+        f"with no package written as exclusion rows by the lowest package it involves, ending with the "
+        f"carrier's trade title, furnish halves for each MEP trade with the lowest MEP package writing "
         f"drywall's one exclusion row for the furnish half, and an install half by drywall, the "
         f"single-installer firestopping line for plumbing penetrations with exclusion rows on plumbing "
-        f"and drywall, and written as exclusion rows by drywall with the firestopping catalog id where "
+        f"and drywall, and written as exclusion rows by drywall ending with the firestopping title where "
         f"firestopping has no package, the own-penetrations line with exclusion rows on the "
         f"firestopping and drywall packages, the drywall line for plumbing penetrations through rated "
         f"walls, the head of wall and slab edge joint lines by drywall and by firestopping, each "
         f"excluding the other, the siding stain or paint line left to the siding package, the dowels "
         f"line with an exclusion row on the masonry package its condition names, the water and sewer "
-        f"halves on plumbing and site utilities, the bollard line's `or` half described by both its "
-        f"packages, the cut and cap line by each MEP package, and the utility company line's owner "
+        f"halves on plumbing and site utilities, the bollard line's `or` half ending with the one "
+        f"package that writes it, the cut and cap line by each MEP package, and the utility company line's owner "
         f"half beside the electrical half); every file on its own package with short and 61-character "
         f"names, {names_checked} names printed for every half, written or not, each the line's row "
         f"name alone within {STANDARD_LINES_NAME_MAX} characters, whatever the package is called, "
@@ -15142,9 +15605,17 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"names its writers print, by every package printing it, {exclusion_rows} exclusion rows, each "
         f"written by the one package that writes its half's exclusion rows, on exactly the packages "
         f"the half keeps the work off as worked out here, never on a package that writes the half's "
-        f"own row, each described `By` within 400 characters; {refusals} "
+        f"own row, {exclusion_names_checked} exclusion row names worked out here, each the half's row "
+        f"name, ` - by ` and the writers' package names, the trade titles where none writes it, or "
+        f"the owner's words, within {STANDARD_LINES_NAME_MAX} characters with the files' titles as "
+        f"names, and with 61-character names {compacted} endings of several carriers past "
+        f"{STANDARD_LINES_NAME_MAX} naming the first and `and others` and one carrier printed whole, "
+        f"no half printing an `internal note:` line; {long_endings} long name cases, an ending of "
+        f"several carriers compacted within {STANDARD_LINES_NAME_MAX} and one long carrier printed "
+        f"whole; {refusals} "
         f"broken files and calls refused in one line; {len(_STANDARD_LINES_PINS)} phrases held over "
-        f"the reviewer, the runner, the skill, both readers and the reviewer report fixture (the "
+        f"the reviewer, the runner, the skill, the project-record skill, both readers and the "
+        f"reviewer report fixture (the "
         f"condition before a line, never a "
         f"Question, the evidence of a line with no condition, writing what the script prints, the "
         f"writer writing every printed half whatever its paper says, no other review writing it, "
@@ -15157,7 +15628,8 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"with no General Items or general-requirement role, Exclusions kept and shared categories "
         f"unchanged on other packages, and no General Conditions; mutations moving allowances to "
         f"Miscellaneous in one reader, removing its examples, allowing empty headings, changing "
-        f"one reader's trade code and putting a counterparty back in one reader refused, "
+        f"one reader's trade code, putting a counterparty back in one reader and looking for an "
+        f"exclusion row under one heading in one reader refused, "
         f"the exclusion rows and the general requirement records), "
         f"{sum(len(patterns) for _, patterns, _ in _STANDARD_LINES_REFUSED)} patterns refused in the "
         f"reviewer (a review the script did not name writing a half, the named writer skipping a "

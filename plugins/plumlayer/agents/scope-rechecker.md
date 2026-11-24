@@ -82,9 +82,8 @@ Each row gets exactly one outcome, and you write one outcome line for it.
      means the item already holds that place, and the row is still recited.
    - updated: the new page carries the work changed, a size, a product, a count or a note. Write
      the field onto the record naming what it replaces (`supersedesId`, the entry the full read
-     gives you), cited to the new box with the words you read there as the snippet, and the one
-     plain sentence in `notesInternal` the reader's mandate 5 asks for, in the same batch as the
-     citation. Where the new page and another document disagree, it is a Question as mandate 1
+     gives you), cited to the new box with the words you read there as the snippet, in the same batch as the
+     citation, and no note on the row, as the reader's mandate 5 says. Where the new page and another document disagree, it is a Question as mandate 1
      says, cited on the row, and the row is updated with what this sheet shows.
    - removed: the new page shows the work gone. Name the sheet that shows it and what you read
      there: a revision note or a deleted mark with the box of its lines, or, where the sheet shows
@@ -214,8 +213,7 @@ item: scopeItem:i1-A2-3-16 | refused | <the door's words>
   there, and cited as the whole sheet only where the point is that the sheet lacks it or no line of
   the page's read carries the entry; a sheet the set lacks is cited at the spot that names it; and
   it carries no colon without the list it announces, no sentence repeating the title, and no
-  sentence on why we need the answer. A Question that needs that sentence to be worth sending is
-  not raised.
+  sentence on why we need the answer.
 
 ## Your report
 
@@ -236,7 +234,7 @@ questions replied ids: <the id of every Question replied to, or "none">
 questions linked: <the id of every Question raised or replied to + the subject of every row it was cited on, one Question per line, or "none">
 sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades touched: <the catalog id of every item you cited, updated or retired, one per line, or "none">
-anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, or "none">
+anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, sheet reading, or run only, or "none">
 grain questions: none
 door-owned suggestions: <one line each, or "none">
 ```

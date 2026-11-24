@@ -48,36 +48,35 @@ the line's order, separated by `; `. This script reads those files and nothing e
         line also prints the trades it involves (the trades of the files carrying it, the trades it
         names and the trades its condition names, by the same words in any case), each with the
         package it goes to, and each half with whether this package writes it and the name of its
-        row. Where this package writes the half's own row it prints `yes`, and, where the half goes
-        to either of two or more trades, an `internal note:` line naming them, the words its
-        `notesInternal` takes; where it writes only the half's exclusion rows it prints `yes,
-        exclusion rows only`. The one package that writes a half's exclusion rows prints one
-        `exclusion row on: <tradeCode>, description: <words>` line for each, naming the package the
-        row goes on and the words its description takes. Where this package writes nothing for the
+        row. Where this package writes the half's own row it prints `yes`, and where it writes only the
+        half's exclusion rows it prints `yes, exclusion rows only`. The one package that writes a
+        half's exclusion rows prints one `exclusion row on: <tradeCode>, name: <name>` line for
+        each, naming the package the row goes on and the exclusion row's whole name: the half's row
+        name, ` - by ` and who carries the work. Where this package writes nothing for the
         half, it prints `carried by` or `left to` the package that writes it and the name of the row
         that package writes, so a review the paper gives the half to finds that row by its name and
         the writer's trade and cites onto it.
         Where no file goes to the package it prints NONE_LINE alone. `--folder` reads the files from another folder.
 
-        Who writes a half: one carrier, its package, writing the half's row and an exclusion row on
-        each other involved package, described `By` and the carrier's package name. Where the
-        carrier has no package, no row carries it, and the lowest involved package writes an
-        exclusion row on each involved package, its own among them, described by the carrier's
-        catalog id. Trades joined by `or`: the lowest of their packages alone writes the row, with
-        an internal note naming the trades the line joins, and an exclusion row on each involved
-        package outside them, described by the names of all their packages joined by `or`, with
-        `or Owner` where the half names the owner. Trades joined by `and`, or `Each MEP Trade`: each
-        of their packages writes its own row, and the lowest of them an exclusion row on each
-        involved package outside them, described by their package names joined by `and`. Trades
+        Who writes a half, and who an exclusion row's name ends with: one carrier, its package,
+        writing the half's row and an exclusion row on each other involved package, ending with
+        the carrier's package name. Where the carrier has no package, no row carries it, and the
+        lowest involved package writes an exclusion row on each involved package, its own among
+        them, ending with the carrier's trade file title. Trades joined by `or`: the lowest of
+        their packages alone writes the row, and an exclusion row on each involved package outside
+        them, ending with that one package's name. Trades joined by `and`, or `Each MEP Trade`:
+        each of their packages writes its own row, and the lowest of them an exclusion row on each
+        involved package outside them, ending with their package names joined by `and`. Trades
         joined by `or` or `and` with no package among them: no row carries it, and the lowest
-        involved package writes an exclusion row on each involved package, described by their
-        catalog ids joined the same way. The owner or a utility alone: no row carries it, and an
-        exclusion row goes on every involved package, described `By` and the half's own words
-        (`By Owner`, `By Utility or Owner`), written by the lowest package that writes the line's
-        other half, else the lowest involved package. Every other package prints `left to` the
-        writer where the half is joined by `or` or no package writes its row, and `carried by` the
-        writers otherwise. A description's catalog id is replaced by that trade's name off the
-        trade list when the row is written.
+        involved package writes an exclusion row on each involved package, ending with their trade
+        file titles joined the same way, with `or Owner` where an `or` half names the owner. The
+        owner or a utility alone: no row carries it, and an exclusion row goes on every involved
+        package, ending with the half's own words (`Owner`, `Utility or Owner`), written by the
+        lowest package that writes the line's other half, else the lowest involved package. Where
+        a name with several carriers passes NAME_MAX characters, its ending names the first and
+        `and others`; a name with one carrier is printed whole, and the review shortens the work's
+        words before ` - by `. Every other package prints `left to` the writer where the half is
+        joined by `or` or no package writes its row, and `carried by` the writers otherwise.
 
 Exit codes:
   0  printed.
@@ -114,6 +113,8 @@ KINDS = ("Pricing", "Incidental", "Convention", "Which Trade")
 HEADER = "| Kind | Line | Condition | Where to Look | Row Name |"
 NONE_LINE = "no standard lines for this package"
 ROW_NAME_MAX = 36
+# The door's bound on a row's name, which an exclusion row's whole name stays within where it can.
+NAME_MAX = 80
 # A condition that opens with these words says only that the sub supplies material. The page that
 # shows it shows nothing of the row's own cost, so the row is written with no page.
 SUPPLIED_MATERIAL = "The package includes material the sub supplies"
@@ -457,11 +458,6 @@ def assign(files: list[dict], packages: dict[str, list[str]]) -> dict[str, str |
     return out
 
 
-def _catalog_id(home: str) -> str:
-    pairs = home.split(" ")
-    return " ".join(pairs + ["00"] * (3 - len(pairs)))
-
-
 def involved_trades(entry: dict, carriers: list[str]) -> list[str]:
     """
     The trade files a Which Trade line involves: those carrying it, then those its line names, then
@@ -479,35 +475,42 @@ def _join(words: list[str], joiner: str) -> str:
     return ", ".join(words[:-1]) + f" {joiner} " + words[-1]
 
 
-def halves_for(entry: dict, involved: list[str], places: dict[str, str | None], homes: dict[str, str],
+def exclusion_name(row_name: str, carriers: list[str], joiner: str) -> str:
+    """
+    An exclusion row's whole name: the half's row name, ` - by ` and who carries the work. Where
+    several carriers pass NAME_MAX, the ending names the first and `and others`.
+    """
+    carriers = list(dict.fromkeys(carriers))
+    whole = f"{row_name} - by {_join(carriers, joiner)}"
+    if len(whole) > NAME_MAX and len(carriers) > 1:
+        return f"{row_name} - by {carriers[0]} and others"
+    return whole
+
+
+def halves_for(entry: dict, involved: list[str], places: dict[str, str | None], titles: dict[str, str],
                names: dict[str, str]) -> list[dict]:
     """
     Who writes each half of a Which Trade line, from each trade file's package: the packages that
-    write the half's own row, the one whose row takes the internal note, the packages that take an
-    exclusion row, the one package that writes all of those, and the words their description takes.
+    write the half's own row, the packages that take an exclusion row, the one package that writes
+    all of those, and who those rows' names end with, with the joiner between several.
     """
     plans: list[dict] = []
     for half in entry["halves"]:
         own = half["trades"]
         live = sorted({places[s] for s in own if places.get(s)})
         packages = sorted({places[s] for s in involved if places.get(s)})
-        plan = {"half": half, "carriers": [], "note": None, "excluder": None, "describe": ""}
+        plan = {"half": half, "carriers": [], "excluder": None, "ending": [], "joiner": "and"}
         if half["shape"] == "owner":
             plan["targets"] = packages
-            plan["describe"] = "By " + half["by"]
+            plan["ending"] = [half["by"]]
         else:
             plan["targets"] = [p for p in packages if p not in live]
-            owner = ["Owner"] if half["owner"] else []
             if live:
                 plan["carriers"] = [live[0]] if half["shape"] in ("one", "or") else live
-                if half["shape"] == "or":
-                    plan["note"] = live[0]
-                    plan["describe"] = "By " + _join([names[p] for p in live] + owner, "or")
-                else:
-                    plan["describe"] = "By " + _join([names[p] for p in live], "and")
+                plan["ending"] = [names[p] for p in plan["carriers"]]
             else:
-                ids = [_catalog_id(homes[s]) for s in own]
-                plan["describe"] = "By " + _join(ids + owner, "or" if half["shape"] == "or" else "and")
+                plan["ending"] = [titles[s] for s in own] + (["Owner"] if half["owner"] else [])
+                plan["joiner"] = "or" if half["shape"] == "or" else "and"
         plans.append(plan)
     for at, plan in enumerate(plans):
         if not plan["targets"]:
@@ -525,7 +528,6 @@ def halves_for(entry: dict, involved: list[str], places: dict[str, str | None], 
 def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]], files: list[dict], version: str) -> list[str]:
     name = names[package]
     places = assign(files, packages)
-    homes = {item["slug"]: item["homes"][0] for item in files}
     titles = {item["slug"]: item["title"] for item in files}
     carriers: dict[str, list[str]] = {}
     for item in files:
@@ -556,7 +558,7 @@ def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]
             involved = involved_trades(entry, carriers[entry["line"]])
             out.append("  trades: " + "; ".join(
                 f"{titles[s]} on {places[s]}" if places.get(s) else f"{titles[s]}, no package" for s in involved))
-            for half_name, plan in zip(entry["names"], halves_for(entry, involved, places, homes, names)):
+            for half_name, plan in zip(entry["names"], halves_for(entry, involved, places, titles, names)):
                 out.append(f"  half: {half_name}, by {plan['half']['by']}")
                 writes_row = package in plan["carriers"]
                 excludes = package == plan["excluder"]
@@ -571,13 +573,10 @@ def lines_for(package: str, names: dict[str, str], packages: dict[str, list[str]
                     continue
                 out.append("    you write it: yes" if writes_row else "    you write it: yes, exclusion rows only")
                 out.append(f"    name: {half_name}")
-                if writes_row and plan["note"] == package:
-                    could = " or ".join(titles[s] for s in plan["half"]["trades"])
-                    could += " or the owner" if plan["half"]["owner"] else ""
-                    out.append(f"    internal note: Could be by {could}")
                 if excludes:
+                    excluded = exclusion_name(half_name, plan["ending"], plan["joiner"])
                     for target in plan["targets"]:
-                        out.append(f"    exclusion row on: {target}, description: {plan['describe']}")
+                        out.append(f"    exclusion row on: {target}, name: {excluded}")
     if not out:
         return [NONE_LINE]
     placed = [f"{item['title']} on {places[item['slug']]}" for item in files if places[item["slug"]]]

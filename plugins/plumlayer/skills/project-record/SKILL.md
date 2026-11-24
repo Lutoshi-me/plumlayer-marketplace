@@ -136,22 +136,50 @@ writing it).
   `supersedesId` is the correction edge: see "Correcting a machine misread" below. Recorded text
   (name, description, note, value prose) is plain estimator words, per
   docs/plugin-text-style.md: never another entry's subject id or a hand-written supersede or date
-  tag.
+  tag. Write a note on a row only when the person asks for one, in his own words, and never to
+  name another trade or a Question's title.
 
   A new scope item also needs its trade, and the door refuses one without it: give it
   `belongsToTrade`, the one trade most likely to carry the work, in the same `record_batch` as
   the `name`, or before the `name` at this door, which carries one entry per call. Where you
-  cannot tell which of two trades carries it, write the more likely one and name the other in
-  the item's `notesInternal`, so the item sits on one package. The trade is the package's catalog id copied verbatim, exactly as
+  cannot tell which of two trades carries it, write the more likely one, so the item sits on one package, and
+  nothing on it about the other. The trade is the package's catalog id copied verbatim, exactly as
   `solicitation_list_packages` or `directory_list_trades` prints it, spaces and all (`09 21 16`),
   on `belongsToTrade` and inside `packageRole:<trade>` alike: a code the catalog does not carry is
   refused too, so `drywall` does not land, and neither does a respelling of a real code, so
-  `09-21-16` and `092116` are refused with a hint naming the exact id. An exclusion, work a
-  package's bidders leave out, is a row of its own on that package's trade: its `name` the work,
-  its `description` who carries it (`By Electrical`, `By Owner`), and in the same batch one
-  `packageRole:<that trade>` record valued `{ "role": "exclusion" }`. Where a row on another
-  package carries the same work under the same name, the new row names it with
-  `repeatsScopeItem` in the same batch.
+  `09-21-16` and `092116` are refused with a hint naming the exact id.
+
+  An exclusion, work a package's bidders leave out, is a row of its own on the trade that leaves
+  the work out, with one `packageRole:<that trade>` record valued `{ "role": "exclusion" }` in the
+  same batch and nothing else in the value. Its `name` is the work, then ` - by ` and who carries
+  it: the name of the package that covers the carrying trade, as `solicitation_list_packages`
+  gives it; that trade's `name` off `directory_list_trades` where no package covers it; `Owner` or
+  `Tenant` where the drawings or the manual name one; and where they name no one, their own words
+  (` - by Others`, ` - Not in Contract`). Two names in that shape:
+  `Heat trace power - by Electrical` and `Appliances - by Owner`. The whole name stays within 80 characters: shorten the work's words,
+  never the ending, and where several carriers do not fit, name the first and `and others`. An
+  exclusion row has no `description`. The row that carries the work keeps the work's name alone,
+  so the two never share a name.
+
+  Before you create an exclusion row, look for one already on that trade's package, under any
+  heading, that leaves out the same work to the same party: one `search(projectId,
+  subjectPrefix: "scopeItem:", text: <the words that name the work>)`, paged to its end. A live row
+  on that package whose current `name` ends with ` - by ` and a party or ` - Not in Contract`, and
+  that leaves out the same work to the same party, is that row: cite on it and create none. Judge
+  it by the work and never by the name's words. A hit that is a replaced entry or a retired row is
+  not one; where a hit does not show the row's trade or that it is live, read the row with
+  `list_scope_items(projectId, subjectPrefix: <its subject>)`.
+
+  An exclusion row's `repeatsScopeItem` is one of four cases. (a) The first exclusion row of a
+  name goes with none, and never points at the row that carries the work, which has another name
+  and is refused. (b) A second package's exclusion row of the same name in the same batch names
+  the first, created before it in the batch, with one entry `{ "subject": <its subject>,
+  "predicate": "repeatsScopeItem", "value": <the subject of the first one> }`. (c) Where the record
+  refuses the create and every row its refusal names sits on another package, point the create at
+  one live exclusion row the refusal names, in that shape, and send the batch again. (d) Where the
+  refusal says the row's own package already carries the name, that package has the row: take
+  your create out, cite on the row it names, and before you send the batch again, point at that
+  row each `repeatsScopeItem` that named the create you took out, and no other.
 - The Question verbs, from `ask_question` to the ones that log a send, are under "Questions"
   below.
 - `record_batch`: append an array of entries in one atomic call (`projectId` + `entries`
@@ -330,7 +358,7 @@ the firm its sheets name.
 ### Keep the work moving
 
 Cite the Question on every scope row it affects, so the estimator sees it on that row on the
-trade's scope page, and name it by its title in the row's `notesInternal`. Cite it with
+trade's scope page; the citation carries it, and its title goes in no note. Cite it with
 `cite_source(kind: "question", questionId)`, or in `record_batch`'s citations for several rows at
 once; the row keeps its sheet or section citation beside it. While nobody has answered a Question,
 never write an assumption, a value or a basis to price to for it unless the estimator gives you
@@ -466,8 +494,7 @@ Drawn
   entry it names there, and cited as the whole sheet only where the point is that the sheet lacks it
   or no line of the page's read carries the entry; a sheet the set lacks is cited at the spot that
   names it; and it carries no colon without the list it announces, no sentence repeating the title,
-  and no sentence on why we need the answer. A Question that needs that sentence to be worth sending
-  is not raised.
+  and no sentence on why we need the answer.
 - Be honest about your own entries: each is your reading of what you cited, and you say so when
   you tell the user about it. Anyone can replace it later the same way any write does, by naming
   it.

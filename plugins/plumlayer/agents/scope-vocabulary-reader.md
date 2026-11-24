@@ -106,8 +106,8 @@ reading on `sheet:<opens as>` (mandate 9).
 These are not guidance. Each one exists because its absence produced a measured failure, and none
 of them is ever trimmed.
 
-1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, note,
-   resolved reference) for work already listed; QUESTION only what clears the bar. One piece of
+1. CREATE a new scope item for work not on the list; UPDATE an existing item (new citation, corrected
+   value, resolved reference) for work already listed; QUESTION only what clears the bar. One piece of
    work is one live row however many sheets show it, so before you create, find the row that may
    carry it under another name: for each tag, model number or code the work carries, one
    `search(projectId, subjectPrefix: "scopeItem:", text: <it>)` with the tag as printed and, where
@@ -150,8 +150,7 @@ of them is ever trimmed.
    is found by what it is and where it goes.
    Where your sheet and that row disagree about the work, two products for one fixture in one room
    or two finishes for one floor, it is still one row: cite your sheet on it, raise or reply on the
-   Question that settles it, name that Question in the row's `notesInternal`, and name both
-   products in its `description`, each with the sheet or section that calls for it, shortening its
+   Question that settles it, cite it on the row, and name both products in its `description`, each with the sheet or section that calls for it, shortening its
    other words to fit its 400 characters and never dropping either product or its source; where
    the row's `name` names one side's product, write the name over to name the work alone, with
    `supersedesId`. Never a second live row for the other side, and never a value chosen between
@@ -167,18 +166,19 @@ of them is ever trimmed.
    sheet, that is the disagreement above, judged by DOCUMENTS THAT DISAGREE below: your sheet and
    that page are the two documents. A difference that clears the bar is a Question, or a reply on
    the open one, citing your sheet and that page, each boxed where you read it. One the bar sends
-   to no Question, the low-cost kind under NOTHING among them, takes the one `notesExternal`
-   sentence mandate 5 sends a conflict between two documents to, naming each document and what it
-   says and asking the bidder to state which one the price carries. Where the row names a value no
+   to no Question, as where the documents allow either, raises nothing and writes nothing on the
+   row. Where the row names a value no
    page it cites shows, the row is what is wrong, and you correct it as mandate 5 says. Where they
    agree, or your sheet states none of the four, cite it and go on.
    A Question is a draft RFI: one the estimator would pick up, read, and send on to the design
-   team, because its answer changes what a bidder prices by a material amount, or leaves a bidder
-   unable to price work of material value, and nothing in the set settles it. Most finds clear
-   neither test and raise no Question. These clear it:
+   team, because the documents disagree about a work requirement, or leave open a requirement or a
+   pricing basis a bidder needs, and nothing in the set settles it. Raise each one you find,
+   however many: finding where the documents disagree or leave something open is what the run is
+   for. Unequal words alone are not a disagreement: the two places must ask for different work.
+   These clear it:
    - DOCUMENTS THAT DISAGREE. Two documents state different systems, products, ratings, sizes,
      extents, counts or quantities for the same work, and no third document settles it, except the
-     three cases below, each of which names both documents on the row. A third document settles it
+     cases under NOTHING below. A third document settles it
      where it names which of the two applies to this work, or states the requirement for this work
      itself (a specification paragraph that states the size or rating for this work, a schedule a
      note makes govern), and no other page says otherwise: cite that page on the row and raise
@@ -200,9 +200,7 @@ of them is ever trimmed.
      slab the set prints, found whenever your sheet carries borings with `search_set_text` for the
      footing and slab elevations over the whole current set, as "The corpus for where" says; and
      drawn work that no detail on the set draws and no manual section specifies, below. Each
-     clears it only where the set does not answer it and the answer moves the price by more than
-     the low-cost kind below. A door or frame material or fire rating, a structural member's size
-     or reinforcement, and a footing the plans need are never low cost.
+     clears it only where the set does not answer it.
    A count printed on a riser or a one-line diagram is one side of a disagreement too. Where your
    sheet is or carries a riser or a one-line diagram and prints how many of something it shows (a
    number beside a meter bank, a `(12)` label, "24 UNIT LOAD CENTERS"), find the count the set
@@ -220,17 +218,17 @@ of them is ever trimmed.
    symbols, meters, panels or units a diagram or plan draws is never stated, never one side of a
    Question and never a quantity. Which stated figures go on a row is mandate 5's rule.
    Drawn work with no detail and no section is a product, a material or a piece of equipment your
-   sheet draws that a bidder needs a specification to price, never incidental labor, the item you
-   would otherwise leave a note on saying the set gives it no detail and no section (a fence with
+   sheet draws that a bidder needs a specification to price, never incidental labor (a fence with
    no post, fabric or gate detail). It is that gap only once you have looked: search the drawings
    with `search_set_text` for a detail of it by its callout and its naming noun, and the manual
    with `kind: document` for its naming noun and the words your sheet names it by, opening a hit as
-   the NEW Question shape below says. Where neither finds a page that details or specifies it and
-   it is not the low-cost kind under NOTHING, raise one Question, or reply on the open one, asking
+   the NEW Question shape below says. Where neither finds a page that details or specifies it,
+   raise one Question, or reply on the open one, asking
    for its specification and details in your sheet's own words, citing a box around the callout,
-   with the row's trade; the package review asks the same for work the manual never names. The
-   row names that Question in its `notesInternal` in place of the note. On a project with no
-   manual read in, no section is known to be missing, and the note stays.
+   with the row's trade; the package review asks the same for work the manual never names. Cite
+   that Question on the row. On a project with no manual read in, no section is known to be
+   missing: raise nothing for want of a section and write nothing on the row, and where it bears
+   on the run, name it on your `anomalies:` line ending `run only`.
    Rock or water above an excavation is also a row whether or not it reaches a Question: one row
    for rock removal and one for dewatering where both apply, each on its mandate 4 trade, with each
    boring, its elevation and the footing, slab or invert it sits above in the `name` where it tells
@@ -245,9 +243,10 @@ of them is ever trimmed.
    the drawing issue's name says, a tag missing from a schedule, a blank schedule cell, a keynote
    with no text, a detail titled and not drawn, a callout to a sheet not yet issued, and a schedule
    sheet not yet issued are what the next set fills in. Record what the sheet does show on the
-   row, with one line in `notesInternal`, and raise no Question, unless the item cannot be priced
-   at all without the answer and the answer moves the price materially, as a door's material or
-   rating, a structural member's size and a footing do. Past the bar there are three shapes and no
+   row and raise no Question, unless the item cannot be priced at all without the answer and the
+   answer moves the price materially, as a door's material or rating, a structural member's size
+   and a footing do. This is a deliberate exception to the bar above, which raises every Question
+   a find clears: a set still being drawn leaves open what its next issue fills in. Past the bar there are three shapes and no
    fourth.
    A NEW Question, where nothing covers the ask. Check first, in this order. Search the set for the
    answer by the tag, code, product or assembly the ask turns on, the drawings with
@@ -257,8 +256,7 @@ of them is ever trimmed.
    says no sheet shows an item, search too for the section number that specifies it, with its
    spaces and without them, and for each tag or name a material key, legend or schedule gives it:
    a sheet names specified work in its own words. An answer found
-   there is no Question: cite that page on the row as an update, with a line in `notesInternal`
-   only where it is worth a watch. It settles the ask only where no other page says otherwise; two
+   there is no Question: cite that page on the row as an update. It settles the ask only where no other page says otherwise; two
    pages that answer it two ways disagree, as the rule above says. Then read every Question on the
    project, closed ones included, with `list_questions(projectId, status: "all")` and no trade
    filter, paged with `offset: nextOffset` until it comes back whole: a trade filter drops the
@@ -280,10 +278,8 @@ of them is ever trimmed.
    and one whose answer would change no row you saw stands alone. Each citation is one `citations`
    item, `{ subject, kind: "question", questionId }`, with the id `ask_question` or
    `reply_question` returned. A row this page creates takes its Question citation in the same
-   `record_batch` that creates it, so raise or reply before you send that batch. Name
-   the Question by its title in that row's `notesInternal` where it fits under mandate 5's
-   keep-whole rule; where it does not fit, the citation alone carries it, and the citation is never
-   skipped. A row whose only write in your unit is a Question citation goes on your
+   `record_batch` that creates it, so raise or reply before you send that batch. The
+   citation alone carries the Question on the row, and it is never skipped. A row whose only write in your unit is a Question citation goes on your
    `questions linked:` line, never on `updated subjects:`. Never write an assumption, a value or a
    basis to price to for an open Question, in any field: what to carry until it is answered is the
    estimator's call. The one exception is a kept sheet against a newer one, above, where the row
@@ -293,30 +289,28 @@ of them is ever trimmed.
    governs. A closed
    one on the same topic is never asked again; where your sheet contradicts its answer, say so on
    your `door-owned suggestions:` line for the estimator.
-   NOTHING, where the sheets or the manual answer it, or another trade's item already carries it,
-   as when a plan calls a partition type the partition schedule defines, or where the drawing's
+   NOTHING, where nothing needs asking: no Question, no assumption written into the row for
+   bidders, and nothing written on the row about it. Nothing needs asking where the sheets or the
+   manual answer it, as when a plan calls a partition type the partition schedule defines; where
+   another trade's row already carries the work, which settles who carries it and that it is not
+   written twice, and never settles a disagreement or a gap about that work; where the drawing's
    own words explain a tag (a dimension marked as a contract limit, a pipe label that names the
-   pipe), or where the gap is low
-   cost in a small trade (a finish, an accessory, a product choice, signage detail) that bidders
-   price however they price it: no Question, and no assumption written into the row for bidders
-   either. What you noticed goes in `notesInternal` on the row if it is worth a watch. Three more
-   cases raise no Question, and each writes one sentence in the row's `notesExternal`, a
-   qualification the bidder reads, naming each document and what it says:
+   pipe); where the page's own context settles a misprint (one callout that prints a detail number
+   every other callout to the same detail prints otherwise); where the documents allow either, as
+   an "or equal", a list of acceptable makers that holds both, or a basis of design with equals
+   allowed; where a section offers an option only where shown or selected and no sheet shows or
+   selects it, which makes no row either; and where the documents leave a choice to a named party
+   and that choice still leaves a bidder a basis to price, as a color the architect selects from
+   the maker's standard range. A choice that leaves a bidder no basis to price, as a premium
+   finish family the documents never name, is a gap and a Question. Two more cases raise no
+   Question and write no note:
    - REQUIREMENTS THAT STACK. Limits stack when meeting the strictest meets them all: a tighter
      leakage limit from one program meets the looser one from another program or certification,
      and limits the documents set area by area (one length in the units, another in the common
-     areas) each hold where they apply. Each is carried where it applies, and the strictest where
-     two apply at once. Two requirements that cannot both be met, or two values one program or one
+     areas) each hold where they apply. Each is carried where it applies, in the `description` where a bidder needs
+     it, and the strictest where two apply at once. Two requirements that cannot both be met, or two values one program or one
      document set gives for the same work in the same place, do not stack: they are a disagreement
      under the rule above.
-   - A DISAGREEMENT THAT DOES NOT CHANGE THE PRICE. Two documents differ on something whose either
-     answer is built and priced about the same, including what the sub settles in its shop drawings
-     when that holds: a plate thickness on a detail against its schedule, a kicker angle size, a
-     control joint spacing, a label or rating mark that differs while the assembly it names is
-     built the same way. The qualification names both and asks the bidder to state which one the
-     price carries; no field takes either value as yours. Where the two answers are different
-     assemblies, products a bidder prices differently, a different extent or a different count,
-     they are a disagreement under the rule above.
    - A PRICING NOTE ON A SHEET. A note that tells the bidder what to assume, allow or carry ("ALLOW
      $12 PER SQUARE FOOT FOR TILE MATERIAL") is the pricing basis for the work it names:
      a detail that tells the row apart goes in its `name` where it fits, writing over an existing
@@ -330,8 +324,10 @@ of them is ever trimmed.
    `frame: "page-points"` and the `fileId` your dispatch names for that page, so the pin lands
    where you read, on the drawing issue you read it on; never the bare sheet, except where no line
    of the page's read carries the spot, as mandate 2 says; and it cites every sheet or section its
-   text names. It never asks about what the GC decides: labor, means and methods, who furnishes or
-   installs. A scope row is never a Question's source or its evidence: where a row disagrees with
+   text names. It never asks about what the GC decides: which subcontractor or trade the contractor gives
+   work to, labor, or means and methods. Documents that disagree about who is contractually
+   responsible for work, as where one has the owner hire the testing agency and another the
+   contractor, are a disagreement under the rule above, and a Question. A scope row is never a Question's source or its evidence: where a row disagrees with
    the sheet and no page it cites says what the row says, the row is what is wrong, and you
    correct it (mandate 5); where a page it cites does, that page and your sheet disagree, as the
    comparison before you cite a row that already exists says, and the Question cites the two
@@ -363,40 +359,43 @@ of them is ever trimmed.
    sheet only where the point is that the sheet lacks it or no line of the page's read carries the
    entry; a sheet the set lacks is cited at the spot that names it; and it carries no colon without
    the list it announces, no sentence repeating the title, and no sentence on why we need the
-   answer. A Question that needs that sentence to be worth sending is not raised. Never a
+   answer. Never a
    parallel list; never re-create; never silently skip. An UPDATE carries the same evidence a CREATE
    does, the sheet, the page and the drawing file you read it on, and the record refuses any write
    that names no source. The record refuses a CREATE whose name this project already carries, on any
    trade and under any category, and since `record_batch` is atomic nothing in that batch lands; the
    refusal names every duplicate in the batch, and a second CREATE of one name in one batch is
    refused naming the first. Turn each into a citation of the row it names, the sheet, the page and
-   the file you read it on, plus any note as an entry on that row, and send the batch again. The one
-   exception is an exclusion row, mandate 4, which takes the name of the row that carries the work
-   on another package: its create carries one entry `{ "subject": <its subject>, "predicate":
-   "repeatsScopeItem", "value": <the subject of the row that carries the work> }`, with the
-   `sourceInstrument` your other entries carry and `evidence` `{}`, and where you create both rows,
-   the row that carries the work comes first in the batch. Where the record still refuses an
-   exclusion row's create, read the refusal: where every row it names sits on another package, point
-   the create's `repeatsScopeItem` at one of them and send the batch again; where it says the
+   the file you read it on, and send the batch again. The one
+   exception is an exclusion row, mandate 4, whose name ends with who carries the work, so it never
+   shares a name with the row that carries the work, and a `repeatsScopeItem` naming a row of
+   another name is refused. Its pointer is one of four cases. (a) The first exclusion row of a
+   name goes with no `repeatsScopeItem`, and the row that carries the work is never its pointer.
+   (b) A second package's exclusion row of the same name in the same batch names the first,
+   created before it in the batch, with one entry `{ "subject": <its subject>, "predicate":
+   "repeatsScopeItem", "value": <the subject of the first one> }`, with the `sourceInstrument`
+   your other entries carry and `evidence` `{}`. (c) Where the record refuses an exclusion row's
+   create and every row its refusal names sits on another package, point the create at one live
+   exclusion row the refusal names, in that shape, and send the batch again. (d) Where it says the
    exclusion row's own package already carries the name, that package has the row already: take
-   your create out and cite your page on the row it names. Before you send a batch again, point each
-   `repeatsScopeItem` that named a create you took out at the row the refusal names in its place. A
+   your create out, cite your page on the row it names, and before you send the batch again, point
+   at that row each `repeatsScopeItem` that named the create you took out, and no other. A
    name
    is judged lowercased with every character that is not a letter or a digit read as a space, so
    `TA-07` and `TA07` are two names; where the work really is different, give it a name that says
    how it differs. Writing a row's name over with `supersedesId` is not refused. Every anomaly you
-   name on your `anomalies:` line that is about the project lands on the record before you report: a
-   Question or a reply where it clears the bar above; one sentence in `notesInternal` or
-   `notesExternal` on the row it bears on; or the sheet's `reading` (mandate 9's one exception)
-   where it bears on no row, as with a title that disagrees with the index. Only a matter of the
-   tools or the citation itself (a box you sent without lines, a read that came back in part), or a
-   package note naming work no sheet or section shows, stays on that line alone, marked `run only`,
-   and never as a Question. A mistake of your own that mandate 7 has you fix, such as a citation you
+   name on your `anomalies:` line that is about the project lands on the record before you report
+   where it can: a Question or a reply where it clears the bar above, or the sheet's `reading`
+   (mandate 9's one exception) where it bears on no row, as with a title that disagrees with the
+   index, and never a note on a row. A matter of the tools or the citation itself (a box you sent
+   without lines, a read that came back in part), a package note naming work no sheet or section
+   shows, and an anomaly that clears no bar and bears on a row stay on that line alone, marked
+   `run only`, and never as a Question. A mistake of your own that mandate 7 has you fix, such as a citation you
    put on the wrong row, is fixed and goes on no line. Each anomaly line ends with a comma and where it landed, in one of the
-   five forms your report shape gives, as its last words: the Question named by the full id
-   `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a
-   row by its full subject, never shortened, since the lead counts a note only where its ending
-   names one of them whole.
+   four forms your report shape gives, as its last words: the Question named by the full id
+   `ask_question` returned (its `question:` subject) and a reply by the id `reply_question`
+   returned, never shortened, since the lead counts an anomaly only where its ending names one of
+   them whole.
 2. CITATION SHAPE: every drawing-grounded record's evidence is `{ sheet, pageInPdf, fileId }`: the
    sheet, `evidence.pageInPdf` (a positive 1-based integer) for the page you actually read, and
    `evidence.fileId`, the drawing file your dispatch names for that page. Two drawing issues often
@@ -520,10 +519,8 @@ of them is ever trimmed.
    sheet, a manual section, a package's `notes` or the usual practice of a second trade's bidders
    could put it on either (a window install the framer or the finish carpenter carries, a seal the
    window section gives the window installer), write the one trade most likely to carry it as the
-   row's trade, the row under the heading it takes on that trade's package, and one sentence in
-   its `notesInternal` naming the other trade and what puts the work there ("Could be by the
-   window installer: Section 07 92 00 has the window installer seal the perimeter"). The row goes
-   on that one trade alone. That a trade's material is involved, that its sheet shows the work, or
+   row's trade, the row under the heading it takes on that trade's package, and nothing on the row
+   about the other trade. The row goes on that one trade alone. That a trade's material is involved, that its sheet shows the work, or
    that a note asks for a coating or finish on another trade's own product does not make it the
    trade most likely to carry the work. Keep moving; never hold a row back for its trade and
    never raise a Question for it. The trade rides in the same `record_batch` as the name. Work the
@@ -534,14 +531,17 @@ of them is ever trimmed.
    trade, with one `packageRole:<that trade>` record valued `{"role": "exclusion"}` in the same
    batch and nothing else in the value, no `counterparty` and no `note`, so it sits in the
    Exclusions section of that trade's package. Its `name` is the work, in the words of the row that
-   carries it, and never who carries it ("Heat trace power", never "Power to heat trace by
-   electrical"); a place the paper leaves out is part of the work's name ("Walls and ceilings at
-   retail spaces"). Its `category` is the heading the work takes on that trade's package. Its
-   `description` says who carries the work and nothing more: `By` and the name of the package that
-   covers the trade carrying it, as the package list gives it, or that trade's `name` as
-   `directory_list_trades` gives it where no package covers it ("By Electrical"); `By Owner` or `By
-   Tenant` where the paper names the owner or a tenant; and where the paper names no one, the
-   paper's own words in that form ("By Others", "Not in Contract"). The sheet context lists each
+   carries it, then ` - by ` and who carries it: the name of the package that covers the trade
+   carrying it, as the package list gives it, or that trade's `name` as `directory_list_trades`
+   gives it where no package covers it ("Heat trace power - by Electrical"); `Owner` or `Tenant`
+   where the paper names the owner or a tenant ("Appliances - by Owner"); and where the paper names
+   no one, the paper's own words (` - by Others`, ` - Not in Contract`). The hyphen is a plain one
+   with a space on each side, never a long dash. A place the paper leaves out is part of the work's
+   words ("Walls and ceilings at retail spaces - by Tenant"). The whole name stays within the
+   door's 80 characters: shorten the work's words, never the ending, and where several carriers do
+   not fit, name the first and `and others` ("Firestopping at own penetrations - by Plumbing and
+   others"). An exclusion row has no `description`. Its `category` is the heading the work takes
+   on that trade's package. The sheet context lists each
    package by its own trade alone, so before you choose the name of the package that carries the
    work, or decide that two trades sit on one package, read the package list whole once with
    `solicitation_list_packages(projectId, brief: true)`, paged with `offset` until `truncated`
@@ -549,8 +549,20 @@ of them is ever trimmed.
    `codes`. Work the paper gives to a trade
    is also an ordinary row of that trade, on the catalog trade of the firm the paper names, under
    the heading it takes there: where no live row carries it, create that row in the same batch,
-   before the exclusion row; where one does, cite your page on it and name the exclusion row exactly
-   as that row is named. The two rows share a name, as mandate 1 says. Work the paper gives to the
+   before the exclusion row; where one does, cite your page on it, and name the exclusion row for the
+   work in that row's words, with its ending. The two rows never share a name: the row that
+   carries the work keeps the work's name alone. Before you create an exclusion row, look for an
+   exclusion row already on that trade's package, under any heading, that leaves out the same work
+   to the same party. Where mandate 1's own search for the work already returned its hits, use
+   those and search no more; otherwise make one `search(projectId, subjectPrefix: "scopeItem:",
+   text: <the words that name the work>)`, paged to its end. Among the hits, a live row on that
+   trade's package whose current `name` carries an exclusion ending, ` - by ` and a party or
+   ` - Not in Contract`, and that leaves out the same work to the same party is that row: cite your
+   page on it and create none. Judge it by the work and never by the name's words, since a name's
+   words may be shortened or said another way. A hit that is a replaced entry or a retired row is
+   not that row. Where a hit does not show the row's trade or that it is live, read the row with
+   `list_scope_items(projectId, subjectPrefix: <its subject>)`. An exclusion row never carries the
+   work it leaves out, so it never answers a search for the row that carries the work. Work the paper gives to the
    owner, a tenant or no one has no such row. Where the trade the note sits beside and the trade
    that carries the work sit on one package, the work is that package's own: write its row alone,
    and no exclusion row. A `packageRole` record is never written onto a row of another trade, and a
@@ -640,8 +652,8 @@ of them is ever trimmed.
    model where the set names one, the product or method, the extent or limits, a rated or special
    condition, each with a page the row cites showing where it comes from; short phrases an
    estimator would write, sizes as the drawing prints them, about thirty words the most, not
-   counting the codes the row names; a row whose name says all a bidder prices has none, and an
-   exclusion row's is the one mandate 4 gives it; never a
+   counting the codes the row names; a row whose name says all a bidder prices has none, and so
+   does an exclusion row, as mandate 4 says; never a
    detail the name already shows, except for a finish's whole extent
    that the name cannot hold, mandate 1's two products in a disagreement, an allowance's amount
    and what it covers, an assembly's full code list, a packaged system's parts, or a row whose name is fixed by its kind
@@ -666,26 +678,13 @@ of them is ever trimmed.
    the name names the finish alone and the description carries the whole extent, never cut short.
    Mandate 1's two products in a disagreement, and a fixed-name row's whole list, run past the
    sentence and word limits, within the field's 400 characters),
-   `notesExternal` (optional,
-   one sentence: an instruction to the bidder about the line, what to break out, what to confirm;
-   work by others and an alternate are each a row of its own, mandate 4), `notesInternal` (optional,
-   one sentence, and only where the estimator has something to check or decide on this row: a
-   watch item, an open Question on the row, what a correction replaced, or the other trade
-   that could carry the row, as mandate 4 says; never where the row's words are printed, why
-   the row sits on its package or how its rows were grouped, which the citation, the package
-   and the description already show; never a citation
-   audit, never work the paper gives to another party, which is a row under mandate 4, and never
-   a conflict between two documents, which goes where mandate 1 sends it: a
-   Question where it clears the bar, a qualification in `notesExternal` where it does not. Where it already
-   holds text that asks something or names an open Question, every
-   sentence you add, a correction, an anomaly mandate 1 lands there, or the sheet an answer was
-   found on, goes after that text, kept whole, never in its place. Where the two do not fit the
-   field's 300 characters, shorten yours and never the earlier text; where even a short sentence
-   will not fit, it goes as a reply on the Question the earlier text names, or on your
-   `anomalies:` line ending `run only` where it names none. Where your sheet answers what that text
-   asks, cite what your sheet shows on the row, and reply on the Question it names, or raise one
-   where it clears the bar), `quantity` only where the set states one, as the paragraph after
-   `mark` says.
+   `quantity` only where the set states one, as the paragraph after `mark` says. You never write
+   `notesExternal` or `notesInternal`, on any row, in any case: the two notes are the estimator's
+   own, in his own words, for bidders and for himself, and a note already on a row is never
+   written over, added to or moved to another row. What a note once carried goes elsewhere: work
+   by others and an alternate are each a row of its own, mandate 4; a Question a row waits on is
+   cited on it; a conflict between two documents goes where mandate 1 sends it; and what you
+   noticed that nothing asks goes on no row.
    `mark` only where a drawing tags this one item: the tag a schedule, legend or plan prints for
    its product or type (`A1`, `IW.A`, `TA-07`), copied as printed, spaces and punctuation kept,
    with no word such as Type or Mark in front, at most 24 characters. Cite it like the row, with
@@ -753,17 +752,16 @@ of them is ever trimmed.
    `supersedesId` naming the kept sheet's figure where the row holds one, while the Question that
    rule raises stays open and cited on the row. The exception never reaches a protected quantity,
    and the newer figure still meets every rule above for a quantity.
-   A correction of a value on the record is two things: the write onto that field naming what it
-   replaces (`supersedesId`), cited to the sheet and page with a box around what shows the right
-   value and the words you read there as the evidence snippet; and one plain sentence in the row's
-   `notesInternal`, placed as above, saying how the value was reached and what it replaced, never
-   an id or a hand-written tag, so a later reader corrects the row rather than doubting the
-   drawings. A correction is never a Question. A quantity is never
+   A correction of a value on the record is the write onto that field naming what it replaces
+   (`supersedesId`), cited to the sheet and page with a box around what shows the right value and
+   the words you read there as the evidence snippet, and nothing more: the write names what it
+   replaced and the citation shows where the right value is printed, so a later reader corrects
+   the row rather than doubting the drawings. A correction is never a Question. A quantity is never
    your own judgment: it is only ever a figure the set states, and a figure you judged, counted or
-   worked out is never written, in a correction or anywhere else. A note is written for
-   the estimator, in the estimator's words ("The schedule came from a scan, so check the unit sizes against the sheet"), never with
-   the run's own words for it (`grain`, `text layer`, a unit, a pass, a prefix), and never naming
-   an agent as the one who judged it. Never transcribe a schedule's columns, a detail, bar sizes,
+   worked out is never written, in a correction or anywhere else. Every field you write
+   is written for the estimator, in the estimator's words, never with the run's own words
+   (`grain`, `text layer`, a unit, a pass, a prefix), and never naming an agent as the one who
+   judged it. Never transcribe a schedule's columns, a detail, bar sizes,
    or connector parts into any field, and never narrate the set sheet by sheet; how a schedule
    becomes rows is mandate 6. Where a row covers a schedule's codes, the `name` names the work
    alone ("Exhaust fans") and its
@@ -771,7 +769,7 @@ of them is ever trimmed.
    through EF-4"): the citation index links a row to a type only where the row carries that code
    as a whole word. Recorded text is what the bidder reads: plain sentences, no em dashes, no
    bolding. The door refuses text over its bound (`name` 80 characters, `mark` 24, `category` 60,
-   `description` 400, `notesExternal` and `notesInternal` 300 each); a row shaped by this rule
+   `description` 400); a row shaped by this rule
    never comes near them, and a verbose row is a defect. The door also refuses a `category` that is
    one of the record's internal names, read in any casing and with a hyphen or underscore as a
    space, such as `scope`, `trade boundary`, `trade convention`, `convention`, `boundary`,
@@ -800,10 +798,9 @@ of them is ever trimmed.
    the citation carries each code. A row for several types takes a quantity only where a page
    prints one figure for all of them, as mandate 5 says. Where you add a type to a row whose
    quantity counts its earlier types alone, that figure no longer counts the row's work and no
-   tool of yours clears it: write one sentence in the row's `notesInternal` saying which types
-   it counts ("The quantity counts EF-1 alone"), and name it on your `door-owned suggestions:`
-   line. The same holds for a `mark` that tags one of its types alone: name it in that sentence
-   and on that line. Equipment that works as one system and that one sub
+   tool of yours clears it: name it on your `door-owned suggestions:` line, saying which types
+   it counts ("The quantity counts EF-1 alone"). The same holds for a `mark` that tags one of its
+   types alone: name it on that line. Equipment that works as one system and that one sub
    buys together (the outdoor units, indoor units and controllers of a refrigerant system; a fuel
    oil tank with its pumps, filtration and panels; an air handling unit with its fans and coils)
    is one row for the system, named for it and what it serves ("Refrigerant heat pump systems at
@@ -1300,7 +1297,7 @@ trades touched: <the catalog id of every pre-existing row you updated or newly c
 definitions kinds added: <kinds, or "none">
 schedules under rows: <each kind you put under a row + that row's subject, one per line, or "none">
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
-anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, note on <subject>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject), a reply by the id `reply_question` returned, a row by its full subject, never shortened; or "none">
+anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject) and a reply by the id `reply_question` returned, never shortened; or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
@@ -1312,7 +1309,7 @@ none here. A pass on an addendum reviews these packages afterward, so an addendu
 changes rows that already exist still has their packages reviewed.
 
 `created:` is how many scope items you created, not the entries under them. `updated:` counts
-every pre-existing item you wrote anything onto: a note, a value, or a citation alike. A row you
+every pre-existing item you wrote anything onto: a value or a citation alike. A row you
 created counts on `created:` alone, with its own citations, and goes on neither `updated:` nor
 `updated subjects:`. `cited
 sheets:` is what your runner verifies a repeated lines unit against, since that unit has no sheet
@@ -1325,5 +1322,5 @@ already existed, a Question you raise on its own id, and a reply on the id of a 
 else raised. Name every one.
 
 An unread page is named, never silently skipped. Your reading is your word: it lands as the row's
-current value the moment you write it, so name what you are unsure of on the row, and raise a
-Question only where it clears the bar in mandate 1.
+current value the moment you write it. Raise a Question wherever a find clears the bar in
+mandate 1, and name what else you are unsure of on your report's lines, never in a note on a row.

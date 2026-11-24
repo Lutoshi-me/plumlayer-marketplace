@@ -937,8 +937,7 @@ through this skill. Points 1, 2 and 4 run only where this delivery is stated as 
   entry it names there, and cited as the whole sheet only where the point is that the sheet lacks it
   or no line of the page's read carries the entry; a sheet the set lacks is cited at the spot that
   names it; and it carries no colon without the list it announces, no sentence repeating the title,
-  and no sentence on why we need the answer. A Question that needs that sentence to be worth sending
-  is not raised.
+  and no sentence on why we need the answer.
 - **Sheet typing is unskippable, on every door this skill supports.** A run through this skill
   (a fresh baseline, a bulletin or partial revision, the cloud-resident re-recognition branch in
   1c, or a corrected re-read once a force-re-recognize path exists) never reaches its closing

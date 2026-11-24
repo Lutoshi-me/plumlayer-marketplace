@@ -116,21 +116,21 @@ Three modes:
         name.
 
         An anomaly ends with where it landed, after a comma, as the reader's and the reviewer's
-        report shapes ask. One that ends `Question <id>`, `reply <id>` or `note on <subject>` is
-        on a trade's page, where the estimator reads it, so it is counted rather than printed,
-        where the id or subject is one the record writes: a Question's id as `ask_question`
-        returns it, `question:proj-<uuid>:<uuid>`; after `reply`, that id or the reply's own
-        entry id, `clm-<uuid>`; and after `note on`, a row's subject, `scopeItem:<id>`, its id
-        letters, digits and hyphens. Any other ending prints whole, a placeholder such as
-        `Question <id>` and words such as `note on hold` among them:
+        report shapes ask. One that ends `Question <id>` or `reply <id>` is on a trade's
+        page, where the estimator reads it, so it is counted rather than printed, where the id is
+        one the record writes: a Question's id as `ask_question` returns it,
+        `question:proj-<uuid>:<uuid>`; and after `reply`, that id or the reply's own entry id,
+        `clm-<uuid>`. No agent of the run writes a note on a row, so no ending names one. Any
+        other ending prints whole, a placeholder such as `Question <id>` and a row's subject
+        among them:
 
-            on the record: Questions <n>, replies <n>, notes on rows <n>, in pass <pass id>
-            on the record: Questions <n>, replies <n>, notes on rows <n>, in the review of <package name>, trade <catalog id>
-            on the record over these passes: Questions <n>, replies <n>, notes on rows <n>
+            on the record: Questions <n>, replies <n>, in pass <pass id>
+            on the record: Questions <n>, replies <n>, in the review of <package name>, trade <catalog id>
+            on the record over these passes: Questions <n>, replies <n>
 
         A window 3 anomaly is counted under the review its unit id names on the read plan beside
         the ledger; any other anomaly, and one whose unit the plan does not name, under its pass.
-        One that names a pair of rows carrying the same work prints whole wherever it landed,
+        One that names a pair of rows carrying the same work prints whole, ending `run only`,
         since the estimator reads which row a review kept, and so does one ending `sheet reading` or
         `run only`, or with an ending this does not read. A line under a note that opens with
         none of the summary's labels continues that note, so an anomaly carrying one prints
@@ -224,20 +224,18 @@ CHECKIN_LABELS = {
     "deviations and repairs": "what went wrong and how it was fixed",
 }
 
-# Where an anomaly landed, as its last words after a comma, for the three places a trade's page
+# Where an anomaly landed, as its last words after a comma, for the two places a trade's page
 # shows it, each with the word its count prints under. `sheet reading` and `run only` are not
 # here: no trade's page shows either, so those notes print whole.
-LANDED_COUNTED = {"Question": "Questions", "reply": "replies", "note on": "notes on rows"}
+LANDED_COUNTED = {"Question": "Questions", "reply": "replies"}
 
-# The ids an ending names, in the forms the record writes them, so a placeholder or a word after
-# `note on` never reads as a place on the record.
+# The ids an ending names, in the forms the record writes them, so a placeholder never reads as a
+# place on the record.
 _UUID = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 _QUESTION_ID = rf"question:proj-{_UUID}:{_UUID}"
 _REPLY_ENTRY_ID = rf"clm-{_UUID}"
-_ROW_SUBJECT = r"scopeItem:[0-9A-Za-z](?:[0-9A-Za-z-]*[0-9A-Za-z])?"
 _LANDED_RE = re.compile(
-    rf", (?:(Question) {_QUESTION_ID}|(reply) (?:{_QUESTION_ID}|{_REPLY_ENTRY_ID})"
-    rf"|(note on) {_ROW_SUBJECT})$"
+    rf", (?:(Question) {_QUESTION_ID}|(reply) (?:{_QUESTION_ID}|{_REPLY_ENTRY_ID}))$"
 )
 
 # Every label the summary opens a line with. A line under a note that opens with none of them
@@ -248,7 +246,7 @@ SUMMARY_LABELS = tuple(CHECKIN_LABELS) + (
 )
 
 # A pair of rows carrying the same work, as the reviewer names it, tells the estimator which row
-# was kept and whether the other was retired, so it prints whole wherever its sentence landed.
+# was kept and whether the other was retired, so it prints whole.
 SAME_WORK = " same work: "
 
 # A window 3 review's unit line as the plan script writes it, its manual pages after `reads`, and

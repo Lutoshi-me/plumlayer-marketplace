@@ -409,7 +409,7 @@ Worked shapes, invented, never from a real project:
 ```text
 dispatch 1 A2 A2-3 sheets A-9.02 purpose door and frame schedule
 verified 1 A2 A2-3 created 126 items 34 updated 4 questions 2 replied 1 sent 140 landed 140 conflicts 0 result ok
-note 1 A2 A2-3 anomaly A-9.02 p61 two frame marks carry the same model number, note on scopeItem:A2-3-14
+note 1 A2 A2-3 anomaly A-9.02 p61 the title block names the sheet otherwise than the index, sheet reading
 note 1 A2 - kinds doorType frameType finishType
 dispatch 2 A2 A2-7 sheets A-1.30 purpose roof plan read whole
 dispatch 2 L2 L2-6 sheets file-1a2b3c-p108 purpose further page of a shared number

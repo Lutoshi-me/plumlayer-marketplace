@@ -67,8 +67,7 @@ problem; a parenthesis holds a short qualifier, never a sentence; every sheet it
 citations, boxed on the entry it names there, and cited as the whole sheet only where the point is
 that the sheet lacks it or no line of the page's read carries the entry; a sheet the set lacks is
 cited at the spot that names it; and it carries no colon without the list it announces, no sentence
-repeating the title, and no sentence on why we need the answer. A Question that needs that sentence
-to be worth sending is not raised. What
+repeating the title, and no sentence on why we need the answer. What
 makes a Question worth raising, and its title, its citations and how it reads to the design team, is
 the standard the `ask_question` verb's own description states, where every agent reads it at the
 verb; this section keeps only the plain-words rule, and `learn-project` keeps one worked example.
@@ -86,7 +85,8 @@ tag typed into the text itself. Where one entry needs to point at another for th
 the way an estimator would, "the wall tile line above," never by its subject id. Every skill or
 agent file that writes one of these fields points at this rule instead of restating it. The record
 refuses text that carries a record id or such a tag, so a write that does this fails rather than
-lands.
+lands. A scope item's two notes are the estimator's own, in his own words: no agent of the scope
+run writes either, and a person's own agent writes one only when the person asks.
 
 ## 2. The frontmatter description contract
 
@@ -188,11 +188,19 @@ Each of these is a harness check.
      `"operator"` — is exempt; it is a real name, not the retired concept.
    - A list matched over each whole file with whitespace collapsed, since its phrases wrap across
      lines: the shape an exclusion had before it was a row of its own, a `"counterparty"` key in a
-     role's value, the script's old `exclusion on:` line, and an instruction to write an exclusion
-     record or role onto the carrying row or a row of another trade. A sentence telling the agent
+     role's value, the script's old `exclusion on:` line, an instruction to write an exclusion
+     record or role onto the carrying row or a row of another trade, an instruction that has an
+     agent of the run write `notesInternal` or `notesExternal` on a row, an exclusion row's
+     description saying who carries the work (`description: By`), and an exclusion row's
+     `repeatsScopeItem` naming the row that carries the work, which has another name. A sentence telling the agent
      to write no `counterparty` passes, since it names the field in a code span and gives it no
      value, and so does a sentence that forbids the old write or puts the role on the exclusion
-     row itself.
+     row itself, and one that forbids a row note ("You never write `notesExternal`"). A row note
+     sentence passes only where the forbidding word governs the write ("never write", "writes
+     no", "is not written", "no agent writes"), never for a "no" elsewhere in the sentence, and an
+     instruction is matched in any case, so "Write the other trade in `notesInternal`" is refused.
+     The check runs each of the three newest phrases over an old sentence it refuses and a new one
+     it passes.
    - A **scoped** list (e.g. `supersede`/`supersession`, `fan-out`, `idempotency`, `census`,
      `grain`) is legitimate agent-facing machinery vocabulary everywhere else in a
      skill, and is banned only inside a `<!-- user-facing -->` span or an `Audience: user` artifact
@@ -235,9 +243,18 @@ Each of these is a harness check.
     the wording of a Question rule the draft-RFI standard retired: "always raises a Question",
     "raise a Question if inferred" or "when inferred", "Question naming the grain", "a correction
     of an earlier write, that is a Question", `mepDeliveryShape`, or a `"scope-item"` source type, matched over the whole file with whitespace collapsed because those
-    phrases wrap across lines. This cannot judge whether a Question an agent raises clears the bar,
-    only that the bar is stated and the retired rules have not come back; that judgment stays in
-    review.
+    phrases wrap across lines. The bar is where the documents disagree about a
+    work requirement or leave open a requirement or a pricing basis a bidder needs, with no price
+    test and no cap: both readers carry it whole, each case under NOTHING with it and the set still
+    being drawn as a stated exception, the reviewer and the skill their restatements, and the
+    review, the manual part and the skill's copy of the review's shape the no-Question values
+    (`left open` with `the sheets select none of it` or `closed Question <id>`, and `agree`),
+    the review asking about a document the set lacks by the readers' test, asking nothing about
+    work a section requires only where shown or selected when none is, and naming a silence on a
+    set still being drawn on its anomaly line alone, with no low-cost wording anywhere and ten
+    breaks refused. This cannot judge whether a
+    Question an agent raises clears the bar, only that the bar is stated and the retired rules
+    have not come back; that judgment stays in review.
 14. Question-text plain-words pointer. Every shipped skill or agent file that names `ask_question`
     or tells the agent to raise a Question carries the fixed phrase "Question text is plain
     estimator words", either stating the rule in full (this file's own Question text on the record
@@ -460,15 +477,13 @@ Each of these is a harness check.
     reads verified no, is refused; window 3's line for a tagged pass of two reviews carries both
     counts and the reviews' pages opened and searches, and its listing gives each review's
     prefix; the
-    check-in counts each anomaly that landed on a Question, a reply or a row by pass, or in window
-    3 by the review the plan names, and prints none of them, while every other note line, an
-    anomaly ending `run only` or `sheet reading` or with no ending, a pair of rows carrying the
+    check-in counts each anomaly that landed on a Question or a reply by pass, or in window
+    3 by the review the plan names, and prints none of them, while every other note line, an anomaly ending `run only` or `sheet reading` or with no ending or a row's subject, a pair of rows carrying the
     same work, and every grain and door note among them, comes once across its calls, under labels
     in estimator words, each call under Bash's output limit, and a note longer than one call is
     cut under a line naming it and finished in the next; the skill's reader and reviewer report
-    shapes, both agents' shapes and the reader's mandate on the ending say a Question is named by
-    the full id `ask_question` returned, a reply by the id `reply_question` returned and a row by
-    its full subject, never shortened, since a short id prints the note whole; and the skill's
+    shapes, both agents' shapes and the reader's mandate on the ending say a Question is named by the full id `ask_question` returned and a reply by the id
+    `reply_question` returned, never shortened, since a short id prints the note whole; and the skill's
     own three command lines are fed to the script's arguments. The check-in and the record speak
     the estimator's words: a pass is named by the sheets it read, or in window 3 the packages it
     reviewed, with its new items summed off its trades, items updated, Questions raised and
@@ -593,12 +608,16 @@ Each of these is a harness check.
     package's files, each once with its kind, row name, condition and place to look, a line with no
     condition, and a line whose condition says only that the sub supplies material, with its
     instrument at the plugin version, no other line with one, and nothing where no file goes to it. Each
-    Which Trade case prints its halves' writers, their internal notes and the exclusion rows the one
-    review the script names writes, each with its package and description, and with every file on its own
-    package every half of every Which Trade line has one set of writers every other package names,
-    each exclusion row is written by one package and never on the package that writes the half's
-    own row, its description opening `By` within 400 characters, and every printed name is the
-    line's row name alone within 80 characters, whatever the package is called. A bad kind, an empty line, a short row, a number
+    Which Trade case prints its halves' writers and the exclusion rows the one review the script
+    names writes, each with its package and its whole name, the half's row name, ` - by ` and who
+    carries the work, and no internal note; with every file on its own package every half of every
+    Which Trade line has one set of writers every other package names, each exclusion row is
+    written by one package and never on the package that writes the half's own row, its name
+    ending with the writers' package names, the trade titles where no package writes it, or the
+    owner's words, within 80 characters, and past 80 an ending of several carriers names the first
+    and `and others` while one carrier is printed whole for the review to shorten the work's words;
+    and every other printed name is the line's row name alone within 80 characters, whatever the
+    package is called. A bad kind, an empty line, a short row, a number
     two files claim, a number not written as pairs of digits, a table with no header, no Home line,
     a Home number outside the file's numbers, an `Else:` line naming no other file, a long row
     name, a row name with a comma, one row name for two halves, an unknown trade, a code spaced
@@ -609,18 +628,28 @@ Each of these is a harness check.
     to another trade over what the script printed, name each row and each
     kind row of mandate 12 for its package, put the headings in build order and save that order,
     and shape the exclusion rows and the general requirement records: an exclusion row on the
-    trade that leaves the work out, its one role record holding the role alone, its description
-    saying who carries the work, its name shared with the carrying row through `repeatsScopeItem`,
-    no role on another trade's row, and an exclusion row a fold left beside the row of its work
-    retired. The full rule for home rows on
+    trade that leaves the work out, its one role record holding the role alone, its name ending
+    with who carries the work within 80 characters and no description, its `repeatsScopeItem`
+    naming only another package's exclusion row of its own name, the first of a batch or one a
+    refusal names; where a refusal says the row's own package already carries the name, two steps
+    apart: the create taken out and the page cited on the row that package already has, and a
+    `repeatsScopeItem` that named the removed create pointed at that row, with nothing ever
+    pointed at a package's own row to get past the rule that a package holds one row of a name;
+    one already on the package for the same work, under any heading, found by one search for the work's words and
+    cited and never made again, two such rows on one package a pair, no role on another trade's row, an
+    exclusion row a fold left beside the row of its work judged by the work and retired, and a
+    stale ending after a fold written over by the review. The project-record skill carries the
+    same exclusion procedure for a person's own agent: the row and its role record, its name and
+    ending, no description, the search before a create and the four pointer cases. The full rule for home rows on
     `01 11 13` is pinned word for word after whitespace collapse in each carrier: the seven
     headings in order, the full mapping and Miscellaneous examples, allowances, unit prices and
     alternates, the tie-breaks, each heading only where a home row goes under it, general costs as
     home rows with no General Items or general-requirement role, Exclusions kept and shared
     categories unchanged on other packages, and no heading, package name or row saying General
     Conditions. Mutations moving allowances to Miscellaneous in one reader, removing its
-    examples, allowing empty headings, changing one reader's trade code and putting a counterparty
-    back in one reader are refused.
+    examples, allowing empty headings, changing one reader's trade code, putting a counterparty
+    back in one reader and looking for an exclusion row under one heading in one reader are
+    refused.
     This cannot judge whether a running
     review finds a condition rightly; that is the measured run's.
 36. A runner counts every read of a unit one way. `agents/scope-round-runner.md` counts a unit's
