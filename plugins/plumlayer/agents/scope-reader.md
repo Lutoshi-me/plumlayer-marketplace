@@ -515,7 +515,10 @@ of them is ever trimmed.
    the trade whose work the note sits beside, its value `{"role": "exclusion", "counterparty": "<the
    catalog id of the trade that carries it, owner where the owner or a tenant does, or left off
    where the paper names no one>"}`. Where the paper names the owner, a tenant or no one, the row's
-   own trade is the trade it sits beside, and the exclusion is on that same trade. Name the row the
+   own trade is the trade it sits beside, and the exclusion is on that same trade. No bidder prices
+   that row, so it has no `description`: its name says the work and the record says who carries
+   it. Where the paper says more that a bidder needs, such as the spaces left out, write it as the
+   record's `note`. Name the row the
    way the bidder reads it ("Power to heat trace by electrical", "Retail walls and ceilings not in
    contract"). Where a live row already carries the work, write the exclusion record onto it and
    cite your page there. On every trade except `01 11 13`, a note that has a trade carry its own
@@ -603,12 +606,14 @@ of them is ever trimmed.
    model where the set names one, the product or method, the extent or limits, a rated or special
    condition, each with a page the row cites showing where it comes from; short phrases an
    estimator would write, sizes as the drawing prints them, about thirty words the most, not
-   counting the codes the row names; a row whose name says all a bidder prices has none; never a
+   counting the codes the row names; a row whose name says all a bidder prices has none, and neither has a row
+   mandate 4 writes as an exclusion on its own trade; never a
    detail the name already shows, except for a finish's whole extent
    that the name cannot hold, mandate 1's two products in a disagreement, an allowance's amount
    and what it covers, an assembly's full code list, a packaged system's parts, or a row whose name is fixed by its kind
    (a grouped requirement row or a standard line), which carries in its description the products,
-   sections, amounts and the job's own words its mandate lists, whole; never a spec article number,
+   sections, amounts and the job's own words its mandate lists, whole, an exclusion on its own trade aside, which
+   carries them in its record's `note`; never a spec article number,
    a schedule's columns copied out whole or a tag the row is not for, since the citation carries
    them. Say the work in plain words of your own: never a note or a schedule line copied out or
    set in quotation marks, never the sheet, detail, note or section the words are printed on,

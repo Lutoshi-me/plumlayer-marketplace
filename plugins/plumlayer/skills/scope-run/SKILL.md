@@ -342,11 +342,12 @@ A newly created scope item is a full row, not a name. Every new item writes:
   limits, a rated or special condition, each with a page the row cites showing where it comes
   from. Short phrases an estimator would write, sizes as the drawing prints them, about thirty
   words the most, not counting the codes the row names. A row whose name says all a bidder prices
-  has none. Never a detail the name already shows, except for a finish's
+  has none, and neither has a row written as an exclusion on its own trade. Never a detail the name already shows, except for a finish's
   whole extent that the name cannot hold, the reader's mandate 1's two products in a disagreement,
   an allowance's amount and what it covers, an assembly's full code list, or a row whose name is
   fixed by its kind (a grouped requirement row or a standard line), which carries in its description
-  the products, sections, amounts and the job's own words its mandate lists, whole; never a spec
+  the products, sections, amounts and the job's own words its mandate lists, whole, an exclusion on its own trade aside, which
+  carries them in its record's `note`; never a spec
   article number, a schedule's columns copied out whole or a tag the row is not for, since the
   citation carries them. The description says the work in plain words of the reader's own: never
   a note or a schedule line copied out or set in quotation marks, never the sheet, detail, note
