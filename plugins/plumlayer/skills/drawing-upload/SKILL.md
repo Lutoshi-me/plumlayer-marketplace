@@ -327,7 +327,8 @@ Every file you upload in step 4 attaches to this one `deliveryId`.
    ```
 3. `register_file(projectId, fileId, filename, contentType, deliveryId)`: always pass `deliveryId`
    and leave `kind` out, so the server sorts the file by its page sizes (see "Wait for the sort"
-   below). The delivery makes chronology come from the delivery, not upload order. Idempotent: a
+   below). Pass `folder` when the file sat in a subfolder of the delivery (see "The sender's
+   folders" below). The delivery makes chronology come from the delivery, not upload order. Idempotent: a
    retried call for the same
    `fileId` returns the existing row. Rejects `not_found` (PUT didn't land), `empty`, or `oversize`
    (2 GB ceiling per file): if any of these fire, stop and report rather than retrying blindly.
@@ -351,13 +352,24 @@ calls of at most 250:
    done
    ```
 3. `register_files(projectId, files, deliveryId)`: pass every file's `{fileId, filename,
-   contentType?}` and the same `deliveryId` from step 3, so chronology comes from the delivery, not
+   contentType?, folder?}` and the same `deliveryId` from step 3, so chronology comes from the delivery, not
    upload order, and leave `kind` out, so the server sorts each file by its page sizes (see "Wait
    for the sort" below). Answers per file, never all-or-nothing: `{registered, failed, counts}`.
    `counts.registered` must equal the number of files you sent. Anything in `failed` names its
    `fileId`, `filename`, `reason`, and `message`: re-PUT and re-register only those files, by
    `fileId`, never the whole batch again, and never blindly. A `reason` of `not_found` (the PUT
-   didn't land) is worth that retry; any other reason is stopped and reported.
+   didn't land) is worth that retry. A `reason` of `folder` means the folder you sent was refused:
+   correct it and register that file again with no new PUT. Any other reason is stopped and
+   reported.
+
+**The sender's folders.** When the delivery came as a folder with subfolders, or as a zip, pass
+each file's `folder`: the folders above it inside the delivery, `/` between them, as the sender
+named them (`Combined`, `Disciplines/Architectural`). Unzip a zip into a scratch folder first and
+read the folders from inside it; when everything in it sits in one top folder, read from inside
+that folder too, since it is the delivery itself. Leave `folder` out for a file at the top and for
+a delivery of loose files. The Documents page shows the set in those folders; `folder` changes
+nothing else, so never derive a file's discipline or kind from it. Leave out operating system
+litter (`.DS_Store`, `Thumbs.db`, `desktop.ini`, `__MACOSX/`, names starting `._`).
 
 **Wait for the sort.** A file registered with no `kind` reads `unsorted` in `list_files` until the
 server has measured it. A PDF whose pages are mostly large-format sheets becomes `drawing`, and
