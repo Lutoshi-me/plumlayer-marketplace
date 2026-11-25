@@ -196,6 +196,10 @@ Within Plans the first line a title matches decides, so "ENLARGED FLOOR PLAN" is
 A title that matches lines of two sheet types decides only two ways: a plan with sections, details
 or elevations is the plan's line ("FLOOR PLAN AND DETAILS" is `floor-plan`), and a legend with
 notes is `legend`. Any other pair, such as "DOOR SCHEDULE AND DETAILS", leaves the type unclear.
+Details drawn in plan are details: "PLAN DETAILS" and "PLAN & SECTION DETAILS" are `detail`,
+whatever level or place the title names, unless the title names a plan's own line ("ROOF PLAN &
+SECTION DETAILS" is `floor-plan`, "REFLECTED CEILING PLAN DETAILS" is `RCP`). "SITE LINES" are
+sight lines, never a site plan.
 
 A plan or elevation title that names no drawing type ("PLUMBING PLANS", "ELEVATIONS"), or an
 elevation title that matches both elevation lines ("INTERIOR ELEVATIONS - NORTH"), leaves the type
@@ -204,6 +208,30 @@ a page you rendered, read, and saw is not a drawing: a blank page, a narrative p
 specification page bound into the set. A title that matches none of the lines above is never
 `other` on the title alone. Where the render still leaves the drawing type unclear, the sheet gets
 no entry and stays untyped, reading Uncategorized: skip it and count it, and never guess.
+
+A title that names a subject and no kind of drawing, such as "SPECIAL INSPECTIONS" or "WALL TYPES",
+leaves the type unclear too: render the page. Type a rendered page by the drawings that fill it,
+in this order, so every reader of the same page records the same type:
+
+- a page that shows a plan of a floor, a room, an area or the site, with anything else beside it,
+  takes the plan's drawing type: a bathroom sheet with its enlarged plans and its wall elevations
+  is `enlarged-plan`. A detail drawn in plan, such as a jamb or a wall corner cut in plan, is a
+  detail, never a plan, and a small key plan that only shows where the work is counts for nothing.
+  A plan of one stair, elevator, room, unit or other part of a floor, drawn larger than the floor
+  plans, is `enlarged-plan`, whatever the title calls it;
+- a page with no plans, elevations, sections or details that carries a legend, symbols or
+  abbreviations beside notes, schedules or diagrams is `legend`. A page of wall, partition or
+  assembly types drawn in section is `detail`, whatever key it carries;
+- a page of elevations with sections or details takes the elevation's drawing type: a sheet of
+  room or casework elevations marked with mounting heights is `interior-elevation`. An elevation
+  of one product type, such as a door, frame or window type, is a detail;
+- a table of symbols or abbreviations is `legend`, and a list of the set's sheets is
+  `cover-index`. Any other table of items and their properties, in rows and columns, is
+  `schedule`, a matrix and a table of required inspections included;
+- a page of written notes, in sentences or numbered paragraphs, is `notes`, a code analysis or
+  code summary of this building included, never `other`; a drawing of lines joining equipment or
+  devices, such as a riser or a one-line, is `diagram`;
+- any other mix, such as sections with details, takes the kind that fills most of the page.
 
 Render a sheet only when its number and title genuinely leave the type unclear. One entry per
 sheet:
