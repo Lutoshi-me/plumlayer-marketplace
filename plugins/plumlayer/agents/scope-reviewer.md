@@ -116,7 +116,9 @@ them is ever trimmed.
    the box. Where they differ, the page changed since your read: read it again in text and take
    the boxes again. Where no entry of the page's
    read carries the words, cite the section's page with no box and name it on `anomalies:` as
-   `<section> p<page> no box: <the rows>, <why no line carries them>, run only`.
+   `<section> p<page> no box: <the rows>, <why no line carries them>, run only`. Wherever you cite
+   a page on a row that already exists, under any mandate of yours, say which kind, as reader
+   mandate 1 says; a manual page is never `shownOnly`.
 3. THE QUERY BUDGET AND THE CAPS. One query string per call, no boolean, no list. Rank your
    harvested words most distinguishing first: a mark or a code, then a product or assembly name of
    several words, then the distinguishing noun of a section title, then the catalog name and its
@@ -169,7 +171,8 @@ them is ever trimmed.
    alternate is never the work of the base row it resembles: its row is the alternate's own,
    found or created as reader mandate 4 says.
    - The hit is the work of a row on this package that does not cite that page. It is a citation on
-     that row, after you open the page. It is not a create.
+     that row, after you open the page: say which kind, as reader mandate 1 says. It is not a
+     create.
    - The hit is the work of a row on another package that a sheet, a manual section, a package's
      `notes` or the usual practice of this trade's bidders could put on this package too. The row
      stays on its own trade and on that package alone, and you write no record on it for this
@@ -181,19 +184,21 @@ them is ever trimmed.
      page> p<page> of <fileId>`, one line per row, so the check-in puts it to the estimator. Where
      nothing but a guess puts this package on it, the hit is that row's work and you name nothing.
      It is not a create.
-   - The hit is work no row carries. Create it, at the grain of your own mandate 5, its `name` and
+   - The hit is work no row carries. Create it by reader mandate 6's test, at the grain of your own
+     mandate 5, its `name` and
      `description` written as reader mandate 5 says, after reader mandate 1's search for the row
      that may already carry it under another name, and with your
      batch's own rows held against each other by its test, as a reader's are. The record
      refuses a create whose name this project already carries, on any trade, and names the row that
      holds it; turn such a refusal into the citation on that named row and send again, the way reader
-     mandate 1 does, except an exclusion row, whose refusal reader mandate 1's four cases for an
+     mandate 1 does (say which kind, as reader mandate 1 says), except an exclusion row, whose refusal reader mandate 1's four cases for an
      exclusion row's pointer settle, and except where the named row is different work on another
      trade, which leaves that row alone and takes a name saying how yours differs, as reader
      mandate 5 says ("Plumbing access panels"). Before you create an exclusion row on this
      package, judge it against every exclusion row on this package, under any heading, among the
      rows you harvested, with no search: where one leaves out the same work to the same party,
-     judged by the work and never by the name, cite your page on it and create none. Reader
+     judged by the work and never by the name, cite your page on it, saying which kind as reader
+     mandate 1 says, and create none. Reader
      mandate 4's search is for an exclusion row you write on another package.
 5. ONE ROW PER PRODUCT ON THIS PACKAGE. You hold this package's whole row set, which is the only
    place in the run where it sits in one context. Use reader mandate 6's grain and reader mandate
@@ -206,8 +211,8 @@ them is ever trimmed.
    written one row each, as reader mandate 6's list says, and rows that each carry one tag, size
    or model of one kind of product, or one part of equipment that works as one system, which
    reader mandate 6 makes one row for the kind or the system and which take the system's
-   treatment here, the kept row named for the kind. A row reader mandate 6's five tests make a
-   row of its own is never one of these. The system's one row carries no part's
+   treatment here, the kept row named for the kind. A row reader mandate 6's five reasons make a
+   row of its own is never one of these, and two rows those reasons separate are never a pair. The system's one row carries no part's
    quantity and no part's mark, and none of your tools clears either, so it carries a quantity only
    where the set prints a figure for the system itself, written by reader mandate 5's quantity
    rules. For a system, the kept row is the part row created first among those that carry no
@@ -221,34 +226,46 @@ them is ever trimmed.
    mandate 1 lets them split, are not a pair. An exclusion row and the row on another package that
    carries its work are never a pair: reader mandate 4 writes both. The row created first, by the earliest `assertedAt`
    among its entries, keeps the work, and a system's row keeps it over its parts, as above. Where
-   the kept row already cites every page the other row cites, as after a review before yours named
-   the pair, add nothing, and name the pair again on the same two lines below. Cite on the kept row each page the other row's `drawingRefs` lists
-   (`list_scope_items(subjectPrefix: <its subject>, full: true, tallies: false)`), by your own citation path:
+   the kept row already holds every page the guard below names, as after a review before yours
+   named the pair, add nothing, and name the pair again on the same two lines below. Cite on the
+   kept row each page the other row's `drawingRefs` lists that is not marked `shownOnly`
+   (`list_scope_items(subjectPrefix: <its subject>, full: true, tallies: false)`). A page marked
+   `shownOnly` there is not copied: it defines nothing the kept row lacks, and the index puts the
+   kept row back on every page that prints its codes. A page the kept row holds only marked
+   `shownOnly` while the other row holds it unmarked is one the kept row lacks: cite it on the
+   kept row with no `shownOnly`, and count it toward the twelve pages below. Cite each such page
+   by your own citation path:
    open the page on its `fileId` and `page` as mandate 2 says, name it on your `pages opened:`
    line, and cite it with your own box around the line that carries the work, or with no box in
    mandate 2's no-box shape where no line of the page's read carries it. Where the two disagree
    about the work, raise or reply on the Question that settles it, cite it on the kept row, and name both
    products in the kept row's `description`, each with the sheet or
-   section that calls for it, as reader mandate 1 says. Then combine the two, where the other row
+   section that calls for it, as reader mandate 1 says. Cite on the kept row too each manual page
+   the other row cites, read off the `entries` of the same full read, as a manual citation in
+   reader mandate 2's shape for a spec section, the box around the paragraph as mandate 2 says.
+   Then combine the two, where the other row
    sits on this package: retire the other row with `retire_scope_item(projectId, subject, basis, reason)`, one call a
    row, its `basis` these words, `The scope run's read plan, which you approved, has each package
    review combine rows that carry the same work.`, and its `reason` naming the kept row and what
    the two share, in the estimator's words ("Same work as the row named Lavatory L-1: both are
    lavatory L-1 on the plumbing schedule"), and write nothing on the kept row about it. A retired
    row leaves the list with everything on it, so retire it only once the kept row carries all of
-   it: every page it cites is cited on the kept row, and every tag, code or size its `description`
-   names is in the kept row's. Where the test above shows that an
+   it: every page it cites that is not marked `shownOnly` is cited on the kept row, not marked
+   `shownOnly` there either, every manual page it cites is cited on the kept row, and every tag,
+   code or size its `description` names is in the kept row's. Where the test above shows that an
    exclusion row on this package and a row outside its Exclusions section carry the same work, and
    never on their names alone, the exclusion row is the one retired. Two exclusion rows on this
    package that leave out the same work to the same party are a pair whatever their names, judged
    against every exclusion row on this package under any heading: the row created first is kept,
-   each page the other cites is cited on it, and the other is retired, with the same cases that
+   each page the other cites is cited on it as the pair rule above copies pages, and the other is
+   retired, with the same cases that
    retire nothing as any pair below, so a row that holds a note is never retired. A fold can put an
    exclusion row on this package beside a row outside its Exclusions section, on another of its
    trades: judge the two by the same-work test above, by the work and never by the name, since
    the exclusion row's name ends with who carries the work and its work's words may be shortened,
    so a name that matches before its ending is a hint and never a condition. Once that test holds, the package carries that work, so the exclusion row is the other row of a pair on this
-   package. Retire it as above once the row that carries the work cites every page it cites,
+   package. Retire it as above once the row that carries the work holds every page the guard
+   above names,
    writing nothing on that row, its `reason` naming that row ("This package carries the work on
    the row named Heat trace power"). An exclusion row's ending can go stale
    when a fold moves or renames a package, and the folder writes no names, so you check each
@@ -259,7 +276,8 @@ them is ever trimmed.
    false)`, and take the name of the package that covers that trade off the list, or that
    trade's `name` off `directory_list_trades` where no package covers it; write the exclusion
    row's `name` over with `supersedesId`, the work's words and that new ending within 80
-   characters, its evidence a page the row already cites or, where it cites none, the
+   characters, its evidence a page the row already cites that is not marked `shownOnly` or, where
+   it cites none, the
    `sourceInstrument` and `evidence` its current name carries, and name the write on your
    `field updates:` line. Where the row that carries the work now sits on this package, the pair
    rule above retires the exclusion row instead. Where no row carries the work, leave the name
@@ -275,8 +293,9 @@ them is ever trimmed.
    the estimator's own, the exclusion row a fold left aside included; it cites a Question, or holds
    a role or an assumption, that the kept row does not, an exclusion row a fold left aside apart
    for its exclusion role; it is one this review created or wrote a field or a heading on; or the
-   other rows of the group cite more than twelve pages the kept row lacks, which would crowd out
-   your review. In those, write nothing on either row: name the pair on your `anomalies:` line as
+   pages the pair rule above would cite on the kept row, the copies and the pages cited again as
+   defining together, come to more than twelve, which would crowd out your review. In those,
+   write nothing on either row: name the pair on your `anomalies:` line as
    below, left for the estimator, and on your `door-owned suggestions:` line as `<the other row's
    full subject>, same work as <the kept row's full subject>: retire it`, so the check-in puts it
    to the estimator. Where the
@@ -423,7 +442,8 @@ them is ever trimmed.
        mandate 5 says, the Question ends "please provide the locations." instead, and asks for no
        quantity. Where the work could go by another name on a sheet, the Question names the
        words searched in one short clause. The section puts the work in this package's scope, so
-       it is also one row on this package at reader mandate 6's grain, cited to the Part 2 page
+       it is also a row on this package for each piece of work the section requires, by reader
+       mandate 6's test, and one row where it requires one, cited to the Part 2 page
        that names it in reader mandate 2's shape for a new row, with no value, and with the
        section's stated figure as its quantity only where the Question asks for no quantity; where
        the Question asks for the quantities, the row carries none until the answer comes. Its
@@ -584,8 +604,9 @@ them is ever trimmed.
     reader mandate 6's grain ("Install windows", one install row covering all window types), after reader mandate 1's
     search for the row that may already carry it and with your batch's own rows held against each
     other by its test, as mandate 4 says. Cite it to the pages the
-    furnished item's rows cite, listed in their `drawingRefs`, by your own citation path as
-    mandate 5 cites a kept row's pages. Where it rests on the section the notes name, its creation
+    furnished item's rows cite that are not marked `shownOnly`, listed in their `drawingRefs`, by
+    your own citation path as mandate 5 cites a kept row's pages. A page marked `shownOnly` there
+    is left off the install row. Where it rests on the section the notes name, its creation
     evidence names that section in reader mandate 2's shape for a new row, on the page of the
     section you read, found with `list_spec_sections(projectId, sections: [<its code>])`. Its `belongsToTrade` is this package's `tradeCode`: the notes are the record's statement of which firm does that labor, the exception
     reader mandate 4 names. Where the notes name an item no sheet and no section shows, it raises
@@ -644,7 +665,10 @@ them is ever trimmed.
       otherwise in `description` only as reader mandate 5 permits. Where it does not fit
       there, it goes on your `anomalies:` line as
       `section <code> p<page> no room: <the material> for <the row's name>, run only`. Work an
-      existing row carries never gets a second row for its material. Off a section several
+      existing row carries never gets a second row for its material, where the material is an
+      attribute of that work; a product whose count and specification a bid is checked on by
+      itself, or one made of another material or built another way than the rest, is a row by
+      reader mandate 6's first reason, never "its material". Off a section several
       packages share, the package `notes` and this package's trade limit what you record: only the
       products or the part of the work this package carries, its installation or its own joints,
       never another package's share.
@@ -656,12 +680,17 @@ them is ever trimmed.
       and toe kicks a casework section requires at the cabinets drawn, the coring a trade does for
       its own openings. Read it off the section's page as you read the section whole: it takes no
       drawing search, and it is never left open because a search for it was too general, found
-      nothing or was not run. Where a row on this package carries the work, the requirement goes
-      on that row, every system, surface, area or level the section lists for it named in the
+      nothing or was not run. Where a row on this package carries the work and the requirement
+      falls on the whole of it, the requirement goes on that row, every system, surface, area or level the section lists for it named in the
       row's `description` as the extent reader mandate 5 permits, its `name` staying the short
       line reader mandate 5 asks for, and
       the section's page cited on it. A row that names the work and leaves out a system or level
-      the section lists for it does not yet carry the requirement. Where no row carries the work,
+      the section lists for it does not yet carry the requirement. Where the requirement falls on
+      part of a row's work only, that part is a row of its own by reader mandate 6's second
+      reason, created as mandate 4 creates work no row carries, with the requirement on it. The
+      broad row is not split, retired or renamed: it stands for the work less its rows of their
+      own, as "Unit kitchen cabinets" does beside "Removable base cabinets at accessible units",
+      and the overlap is intended. Where no row carries the work,
       it is one row at reader mandate 6's grain, cited to the page that states it in reader
       mandate 2's shape for a new row. A part of the requirement the section limits to where
       indicated or where shown is named on that row as the section states it. It raises no
@@ -690,7 +719,9 @@ them is ever trimmed.
       ("Makers: Maker A, Maker B or Maker C"; "Installer with five years on similar work";
       "One source, FM 4991 approved"), cited to its article. Where it governs every row
       the section covers, write it once, on the row that carries the section's main product.
-      Where it governs only some rows of the section, write it on those rows. Where the
+      Where it governs only some rows of the section, write it on those rows. Where it governs
+      part of one row's work only, it goes on that part's row, created as the bullet on
+      requirements above says. Where the
       `description` has no room, it goes on your `anomalies:` line as `section <code> p<page> no
       room: <the qualification> for <the row's name>, run only`. A qualification is never a row of its own. Where a row it governs
       sits on another package, as when a section on this package governs work whose row is on
@@ -723,7 +754,8 @@ them is ever trimmed.
       already on the record. A page you open for any other mandate that states such a figure for a
       row on this package is read the same way. Where the row already carries a quantity, reader
       mandate 5 says when the figure is a citation, a correction or a Question.
-    - One row per kind for the package. The package's special warranties, its extra materials,
+    - One row per kind for the package, settled for every run whatever reader mandate 6's tests
+      would give. The package's special warranties, its extra materials,
       the mockups its sections have its installer build and the field tests its
       sub performs are one row each, never one row per product, per section or per mockup: the
       row cites each article it carries and names in its `description` each product or section it
@@ -879,16 +911,20 @@ them is ever trimmed.
       line, the whole of the half this package writes, never the other half), for the doors line
       that the doors and frames are painted on all six sides, or on their tops, bottoms and edges;
       a row that names the same items among other surfaces, a paint color row listing walls,
-      doors, frames and trim, does not, and the line writes its own row. Only a row that states the line is named `already on` it. An exclusion row never carries the
+      doors, frames and trim, does not, and the line writes its own row. You never write a
+      standard line's work into another row's `description`. Only a row that states the line is named `already on` it. An exclusion row never carries the
       line, so it is never named `already on`, and it answers no search for the row that carries
       the work. A role for a standard line
       is written only on the row's own trade, never onto a row already on another package, and a
       citation only onto the writer's row of a Which Trade half the paper gives to this package's
-      trade, below.
+      trade, below. Each page this mandate has you cite on a row that already exists, say which
+      kind, as reader mandate 1 says.
     - No note. A row a line writes carries no note, in either field: never that it is a standard
       line, that bids for the trade carry it, what its citation shows, or which other trade could
       carry it.
-    - What each kind writes.
+    - What each kind writes. Each kind's line is a row, never one of the parts reader mandate 6's
+      NO ROW paragraph gives no row: those are the parts no bid leaves out, and a standard line
+      is work bids do leave out.
       - Pricing, a cost of the sub's own (tax, delivery, hoisting his own material, tariffs,
         pricing supply and install apart): one row on this package's `tradeCode`, `category`
         `General Items`, with one `packageRole:<tradeCode>` record valued
@@ -1050,7 +1086,9 @@ them is ever trimmed.
     - Writing it: where a row's heading is not the one this mandate gives it, write its `category`
       over with `supersedesId` set to the category record
       `list_scope_items(subjectPrefix: <its subject>, full: true, tallies: false)` shows, with a page the row
-      already cites as the evidence and no new citation, and name the row on `headings written:`
+      already cites that is not marked `shownOnly` as the evidence, which every row has, the page
+      its `name` was read from, so a heading never turns a page that only shows the work into one
+      that defines it, and no new citation, and name the row on `headings written:`
       with its new heading. A heading never changes what a row covers. A row whose only write in
       your review is its heading goes on `headings written:`, never on `updated subjects:`.
     - Saving the order: last, call
@@ -1059,20 +1097,27 @@ them is ever trimmed.
       `headings written:`, and nothing else on the package. Your runner reads that order back off
       the package and counts a heading of your first line that the saved list lacks or holds out
       of order as a mismatch.
-    - The rows' order. Rows stand under a heading in the order the readers wrote them, so two
-      rows of one element can sit far apart. Once the headings are settled and mandate 5's pairs
-      are combined, read each heading's home rows top to bottom as the estimator will and put
-      them in the order he reads the work: the rows of one element or system next to each other,
-      the main work first and what goes with it after (the slab, then its joints, then its
-      vapor retarder), and the way the work is built where that is plain. Leave a heading as it
-      stands where no better order is plain. For each heading whose order you change, one
+    - The rows' order. Rows stand under a heading in the order the readers wrote them, so the
+      main work can sit below its own hardware. Once the headings are settled and mandate 5's
+      pairs are combined, order the home rows under every heading that holds two or more, with
+      no heading skipped. Read them top to bottom as the estimator will and put them in the
+      order he reads the work, by three rules in this order: the rows of one element or system
+      sit next to each other; within one element the main work comes first and what goes with
+      it after (the slab, then its joints, then its vapor retarder; the cabinets, then their
+      islands, then their pulls); and the elements follow the way the work is built where that
+      is plain, otherwise the order the schedule or legend that defines them lists them, and
+      otherwise the order they stand in now. For each such heading, one
       `order_scope_items({ projectId, trade: <this package's tradeCode>, subjects: [<every home
-      row under the heading, in the new order, each by its full subject>] })` call: the door
-      keeps each row in its section, leaves a row you did not name where it is, and answers
-      `changed`. A refusal naming a row is a row that left the heading since you read it: read
-      the heading again and send it once more, and no further. The call takes at most 500 rows:
-      leave a heading that holds more as it stands. Never order the Exclusions
-      section, and never the rows of another package.
+      row under the heading, in that order, each by its full subject>] })` call, whether or not
+      you expect the order to change: the door keeps each row in its section, leaves a row you
+      did not name where it is, and answers `changed`, true where a row moved and false where
+      the rows already stood that way. Either answer is a heading done. Name each heading on
+      your `rows ordered:` line with its count of home rows and that answer. A refusal naming a
+      row is a row that left the heading since you read it: read the heading again and send it
+      once more, and no further; a heading refused twice is named `refused`. The call takes at
+      most 500 rows: a heading that holds more stays as it stands and is named `over 500 rows`.
+      A heading with one home row is named `one row`. Never order the Exclusions section, and
+      never the rows of another package.
 
 Never author door-owned records. Retractions, Question resolutions, and questions-as-answers are
 created only at their own doors, and two are yours to make: mandate 5's retire of the other row
@@ -1112,8 +1157,8 @@ before mandate 8, and mandate 9 to the line before mandate 10. The rest of that 
 mandate 10, how a reader reads a sheet and its report, is the reader's alone.
 
 Two of the reader's mandates read differently for you, and this is the whole of the difference.
-Mandate 6, how finely work splits into rows, shapes the rows you create and the rows mandate 5 above
-folds. Mandate
+Mandate 6, how finely work splits into rows, is the test every row you create follows, held in
+its order before you write, and it shapes the rows mandate 5 above folds. Mandate
 8, the vocabulary sheets, does not apply to you: every schedule in the set was read in window 1,
 and a schedule you open is one you are citing, not one you are transcribing.
 
@@ -1192,6 +1237,7 @@ sections not checked: <one per line, the section code + the reason: "manual remo
 families not checked: <row family, one per line, or "none">
 standard lines: <each line the script printed + how it ended, one per line, or "none">
 headings written: <the headings in their order on the first line, then each row whose heading you wrote + its subject + the heading, one per line, or "none">
+rows ordered: <each heading on the first line of `headings written:`, in that order + its count of home rows + `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 
@@ -1216,7 +1262,10 @@ this read, or `no page` where its evidence names none. A field you wrote more th
 review is named once, for its last write. The runner finds each of those lines back as a write
 this review made, the current entry on that subject with that predicate written at or after it
 dispatched you, so a write that did not land reads mismatch and an older entry never stands in
-for it. A heading is on neither line: `headings written:` carries it. A row with a new citation
+for it. A heading is on neither line: `headings written:` carries it. The rows' order is on
+neither line either: `rows ordered:` names every heading of that first line once, with `changed`
+where `order_scope_items` answered that a row moved and `as it stood` where it answered that
+none did. A row with a new citation
 on a drawing page you opened is found on `pages opened:`, and its writes that carry no new
 citation are on `field updates:` all the same.
 

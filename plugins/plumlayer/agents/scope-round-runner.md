@@ -291,7 +291,7 @@ nothing has run.
    check could not find back: `<sheet>` the unit's sheet, or its package's name on a review;
    `<check>` the check's name as the bullets above give it (`created`, `created subjects`,
    `updated`, `questions raised`, `questions replied`, `questions linked`, `trades`,
-   `page citations`, `manual updates`, `field updates`, `headings`); and `<value>` the subject or id it named, for
+   `page citations`, `manual updates`, `field updates`, `headings`, `rows ordered`); and `<value>` the subject or id it named, for
    `field updates` the subject and the predicate, or for `created` the subject count and the
    reader's figure. A `verified`
    line reading mismatch takes no kinds, trades or names lines. Then, where step 2's count allows
@@ -570,10 +570,13 @@ over up to eight reviews, or one trade's reviews where that trade has more, with
   and `questions alone:` lines. Always send `questionsAlone`, as `[]` where the line reads none:
   with it, the record also holds every raised and replied id to a `questions linked:` line or the
   `questions alone:` line, which a review owes. Leave out any other list the report names none on,
-  and make no claims call where all of them are empty. `result` reads ok or mismatch, and each of
+  and make no claims call where all of them are empty and no heading on its `rows ordered:` line
+  reads `changed`: the `fieldUpdates` entry the rows' order check below adds is reason enough for
+  the call on its own. `result` reads ok or mismatch, and each of
   its `mismatches` is a mismatch of this unit, its check named off its `check` (`manual updates`,
   `field updates`, `headings`, `questions raised`, `questions replied`, `questions linked`, or
-  `questions alone`). The claims answer lists no subjects, so the names of step 4 come off the
+  `questions alone`), except a mismatch on the subject `scopeOrder:<the package's tradeCode>`,
+  which is named `rows ordered`. The claims answer lists no subjects, so the names of step 4 come off the
   sheet call. Send the lists in parts as pass mode's Questions check says, manual updates up to
   200 a call and field updates and headings up to 500 a call each; a truncated answer is sent
   again in halves the same way. You run no `search` for a `field updates:` or `headings written:`
@@ -584,6 +587,24 @@ over up to eight reviews, or one trade's reviews where that trade has more, with
   same way, in that order. A heading the review wrote that the list lacks or holds out of that
   order, or no list, is a mismatch; a listed heading the review did not write is not one, since
   the package keeps a listed heading no row carries.
+  The rows' order is checked off the review's `rows ordered:` line against the first line of
+  `headings written:`. Every heading on that first line must be on `rows ordered:` once, with its
+  count of home rows and one of `changed`, `as it stood`, `one row`, `over 500 rows` or
+  `refused`. A heading of that first line that `rows ordered:` lacks, names twice, or names with
+  no count or with another word, and no `rows ordered:` line at all where that first line names
+  headings, is a mismatch named `rows ordered`, its value the heading. Where any heading reads
+  `changed`, the claims call above carries one more `fieldUpdates` entry,
+  `{ "subject": "scopeOrder:<the package's own tradeCode>", "predicate": "scopeItemOrder", "since" }`,
+  with `since` off this read's `.dispatched` file as for a `field updates:` line and no `fileId`
+  and no page. The package's own `tradeCode` is the one `solicitation_get_package(packageId)`
+  gives for the package you dispatched it for, the call the headings check above makes, so make
+  that call before the claims call; it is never another trade code the package also holds. A
+  read with no `.dispatched` file sends no such entry, and a heading of its `rows ordered:` line
+  reading `changed` is then a mismatch named `rows ordered`. A mismatch the record names on that
+  subject is named `rows ordered`, never `field updates`. This check proves that the review
+  reported every heading it wrote, and that the package's saved row order was written at or after
+  this read was dispatched where the review says one changed. The counts and the outcomes are the
+  review's own, and nothing more of the rows' order is checked.
   A created subject with no `belongsToTrade` is a mismatch. A reviewer puts every Question
   it raises or replies to on a row, or names why no row carries it, which the claims call above
   holds it to. The sheet call takes at most 20 sheets, so a review that

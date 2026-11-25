@@ -79,7 +79,9 @@ Each row gets exactly one outcome, and you write one outcome line for it.
      of the read carries the work you see, cite the whole sheet, `kind: "sheet"`. Send every
      citation of the sheet in one `record_batch` as items of `citations`, or one `cite_source`
      where there is one, with mandate 7's count check; a citation the door answers `duplicate`
-     means the item already holds that place, and the row is still recited.
+     means the item already holds that place, and the row is still recited. Say which kind, as
+     reader mandate 1 says, judged afresh from what the new page says about the work and never
+     copied from the kind the old page's citation had.
    - updated: the new page carries the work changed, a size, a product, a count or a note. Write
      the field onto the record naming what it replaces (`supersedesId`, the entry the full read
      gives you), cited to the new box with the words you read there as the snippet, in the same batch as the
@@ -131,7 +133,8 @@ file of the new manual not read yet.
    section's number as `specSection`, and the `fileId` and `pageInPdf` you read it on, with
    `bboxPts` and `frame: "page-points"` around the paragraph that carries it, the lowest `x0` and
    `y0` to the highest `x1` and `y1` of its entries (a manual page most often comes back one
-   entry per word), or with no box where no entry of the read carries it. Updated: the field written as step 4 says, cited
+   entry per word), or with no box where no entry of the read carries it, and never `shownOnly`,
+   since a manual page is never one. Updated: the field written as step 4 says, cited
    the same way. Removed: the new manual's page that shows the work gone, such as the paragraph
    that no longer lists it.
 3. Where the section is not printed, not in the manual or not read yet, or the reprinted section

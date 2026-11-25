@@ -8827,7 +8827,8 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     if not any("`deliveries.json`, the delivery list" in p and "Audience: machine" in p for p in paragraphs):
         errors.append("the skill names deliveries.json with no `Audience: machine` clause beside it")
     for phrase in (
-        '{ subject, kind: "sheet", sheet, pageInPdf, fileId }',
+        # The citation carries the optional `shownOnly` for a page that only shows the work.
+        '{ subject, kind: "sheet", sheet, pageInPdf, fileId, shownOnly }',
         "`{ sheet, pageInPdf, fileId }`",
         "`citesThisPage`",
         # The answer leaves the sheet number null on a replaced page, and every row then reads
@@ -14393,9 +14394,9 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "Two exclusion rows on this package that leave out the same work to the same party are "
                  "a pair whatever their names, judged against every exclusion row on this package under "
                  "any heading"),
-    ("reviewer", "the row created first is kept, each page the other cites is cited on it, and the other "
-                 "is retired, with the same cases that retire nothing as any pair below, so a row that "
-                 "holds a note is never retired."),
+    ("reviewer", "the row created first is kept, each page the other cites is cited on it as the pair "
+                 "rule above copies pages, and the other is retired, with the same cases that retire "
+                 "nothing as any pair below, so a row that holds a note is never retired."),
     ("reviewer", "An exclusion row never carries the line, so it is never named `already on`"),
     ("reviewer", "point at that row each `repeatsScopeItem` that named the create you took out, and no "
                  "other pointer: an exclusion row's pointer only ever names another exclusion row of "
@@ -16832,6 +16833,480 @@ def check_read_again(plugin_path: Path, marketplace_root: Path) -> Result:
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# Check: rows ordered
+# --------------------------------------------------------------------------- #
+#
+# On a measured run 8 of 48 packages had a row order saved: the review was told to leave a heading
+# as it stood "where no better order is plain", and no report line or runner check could tell a heading left alone from one never read. So the review
+# orders every heading of two rows or more, by three rules in order with a last fallback, calls
+# `order_scope_items` on each whether or not it expects a change, and names each heading on a
+# `rows ordered:` line right after `headings written:` with its count and one of five outcomes. The
+# runner holds every heading of `headings written:`'s first line to that line, and where one reads
+# `changed` adds one `fieldUpdates` claim on the package's `scopeOrder:` subject. The let-out and
+# the garbled skill sentence beside its row-order sentence must be absent. Each phrase taken out,
+# each retired one put back and each shape's line dropped is refused. Honest bound: text only; the
+# runner check proves every heading was reported and the order written at or after dispatch where
+# one changed, never that the order a review chose is the right one.
+
+_ROWS_REVIEWER = "agents/scope-reviewer.md"
+_ROWS_MANUAL = "agents/scope-manual-reader.md"
+_ROWS_RUNNER = "agents/scope-round-runner.md"
+_ROWS_SKILL = "skills/scope-run/SKILL.md"
+_ROWS_FIXTURE = "harness/fixtures/reviewer-report-fixture.md"
+_ROWS_SHAPE = (
+    "rows ordered: <each heading on the first line of `headings written:`, in that order + its "
+    "count of home rows + `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`, one "
+    "per line, or \"none\">"
+)
+_ROWS_PINS: tuple[tuple[str, str], ...] = (
+    (_ROWS_REVIEWER, "order the home rows under every heading that holds two or more, with no "
+     "heading skipped."),
+    (_ROWS_REVIEWER, "by three rules in this order: the rows of one element or system sit next to "
+     "each other;"),
+    (_ROWS_REVIEWER, "otherwise the order the schedule or legend that defines them lists them, and "
+     "otherwise the order they stand in now."),
+    (_ROWS_REVIEWER, "whether or not you expect the order to change"),
+    (_ROWS_REVIEWER, "For each such heading, one `order_scope_items({ projectId, trade: <this "
+     "package's tradeCode>, subjects: [<every home row under the heading, in that order, each by its "
+     "full subject>] })` call, whether or not you expect the order to change:"),
+    (_ROWS_REVIEWER, "Either answer is a heading done."),
+    (_ROWS_REVIEWER, "a heading refused twice is named `refused`"),
+    (_ROWS_REVIEWER, "a heading that holds more stays as it stands and is named `over 500 rows`."),
+    (_ROWS_REVIEWER, "A heading with one home row is named `one row`."),
+    (_ROWS_REVIEWER, _ROWS_SHAPE),
+    (_ROWS_MANUAL, _ROWS_SHAPE),
+    (_ROWS_MANUAL, "`headings written:` and `rows ordered:` as the review's mandate 15 writes them "
+     "where step 8 ran"),
+    (_ROWS_SKILL, _ROWS_SHAPE),
+    (_ROWS_SKILL, "puts the rows under every heading in the order the estimator reads the work"),
+    (_ROWS_SKILL, "and puts the rows under every heading in the order the estimator reads the work."),
+    (_ROWS_RUNNER, "Every heading on that first line must be on `rows ordered:` once, with its count "
+     "of home rows and one of `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`."),
+    (_ROWS_RUNNER, "and no `rows ordered:` line at all where that first line names headings, is a "
+     "mismatch named `rows ordered`"),
+    (_ROWS_RUNNER, "`{ \"subject\": \"scopeOrder:<the package's own tradeCode>\", \"predicate\": "
+     "\"scopeItemOrder\", \"since\" }`"),
+    (_ROWS_RUNNER, "make no claims call where all of them are empty and no heading on its `rows "
+     "ordered:` line reads `changed`"),
+    (_ROWS_RUNNER, "A read with no `.dispatched` file sends no such entry, and a heading of its `rows "
+     "ordered:` line reading `changed` is then a mismatch named `rows ordered`."),
+    (_ROWS_RUNNER, "A mismatch the record names on that subject is named `rows ordered`, never "
+     "`field updates`."),
+    (_ROWS_RUNNER, "`field updates`, `headings`, `rows ordered`)"),
+    (_ROWS_RUNNER, "This check proves that the review reported every heading it wrote, and that the "
+     "package's saved row order was written at or after this read was dispatched where the review "
+     "says one changed."),
+    (_ROWS_FIXTURE, "rows ordered: none"),
+)
+_ROWS_RETIRED: tuple[tuple[str, str], ...] = (
+    (_ROWS_REVIEWER, "where no better order is plain"),
+    (_ROWS_REVIEWER, "For each heading whose order you change"),
+    (_ROWS_SKILL, "writesnames"),
+)
+# Each shape carries `rows ordered:` on the line right after `headings written:`.
+_ROWS_SHAPES = (_ROWS_REVIEWER, _ROWS_MANUAL, _ROWS_SKILL, _ROWS_FIXTURE)
+
+
+def _rows_order_errors(texts: dict[str, str]) -> list[str]:
+    errors = [f"{label} does not read {phrase!r}" for label, phrase in _ROWS_PINS
+              if phrase not in _collapsed(texts[label])]
+    errors += [f"{label} still reads {phrase!r}" for label, phrase in _ROWS_RETIRED
+               if phrase in _collapsed(texts[label])]
+    for label in _ROWS_SHAPES:
+        lines = texts[label].splitlines()
+        after = [lines[i + 1] if i + 1 < len(lines) else "" for i, line in enumerate(lines)
+                 if line.startswith("headings written: ")]
+        if not after or any(not line.startswith("rows ordered: ") for line in after):
+            errors.append(f"{label}: a report shape's `headings written:` line is not followed by "
+                          f"its `rows ordered:` line")
+    return errors
+
+
+def check_rows_ordered(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "rows-ordered"
+    texts: dict[str, str] = {}
+    for label in {label for label, _ in _ROWS_PINS + _ROWS_RETIRED}:
+        path = (marketplace_root if label == _ROWS_FIXTURE else plugin_path) / label
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[label] = path.read_text(encoding="utf-8")
+    errors = _rows_order_errors(texts)
+
+    # Each pin taken out, each retired phrase put back, and a shape's line dropped, so every
+    # refusal is shown rather than assumed.
+    refused = 0
+    mutations: list[tuple[str, dict[str, str]]] = []
+    if not errors:
+        for label, phrase in _ROWS_PINS:
+            mutations.append((f"{label} with {phrase[:60]!r} taken out",
+                              {**texts, label: _collapsed(texts[label]).replace(phrase, "")}))
+        for label, phrase in _ROWS_RETIRED:
+            mutations.append((f"{label} with {phrase!r} put back",
+                              {**texts, label: texts[label] + f"\n{phrase}\n"}))
+        for label in _ROWS_SHAPES:
+            dropped = "\n".join(line for line in texts[label].splitlines()
+                                if not line.startswith("rows ordered: "))
+            mutations.append((f"{label} with its `rows ordered:` line dropped", {**texts, label: dropped}))
+        for what, broken in mutations:
+            if broken == texts:
+                errors.append(f"the case {what} changed nothing")
+            elif _rows_order_errors(broken):
+                refused += 1
+            else:
+                errors.append(f"the check passed {what}")
+
+    detail = (
+        f"{len(_ROWS_PINS)} phrases held and {len(_ROWS_RETIRED)} retired ones absent over "
+        f"{len(texts)} files (every heading of two rows or more ordered by three rules and a last "
+        f"fallback, one `order_scope_items` call each whether or not a change is expected, five "
+        f"outcomes on a `rows ordered:` line after `headings written:` in the reviewer's, the manual "
+        f"reader's, the skill's and the fixture's shapes; the runner holding every heading to that "
+        f"line and adding one `scopeOrder:` field claim where one changed, a missing dispatch time "
+        f"a mismatch, and saying what the check proves), {refused} of {len(mutations)} mutations "
+        f"refused; bound: text only, not whether a review's order is the right one"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+def _order_errors(label: str, text: str, anchors: tuple[str, ...]) -> list[str]:
+    collapsed = _collapsed(text)
+    places = [collapsed.find(anchor) for anchor in anchors]
+    missing = [anchor for anchor, at in zip(anchors, places) if at < 0]
+    if missing:
+        return [f"{label} lacks {anchor!r}, so its order cannot be read" for anchor in missing]
+    return [f"{label} reads {anchors[k + 1]!r} before {anchors[k]!r}"
+            for k in range(len(anchors) - 1) if places[k] >= places[k + 1]]
+
+
+def _order_swaps(text: str, anchors: tuple[str, ...]) -> list[tuple[str, str]]:
+    """Each two neighboring spans between the anchors swapped, the words otherwise unchanged."""
+    collapsed = _collapsed(text)
+    places = [collapsed.find(anchor) for anchor in anchors]
+    spans = [collapsed[places[k]:places[k + 1]] for k in range(len(anchors) - 1)]
+    swaps = []
+    for k in range(len(spans) - 1):
+        moved = spans[:k] + [spans[k + 1], spans[k]] + spans[k + 2:]
+        swaps.append((f"{anchors[k + 1][:40]!r} moved ahead of {anchors[k][:40]!r}",
+                      collapsed[:places[0]] + "".join(moved) + collapsed[places[-1]:]))
+    return swaps
+
+
+def _pinned_text_check(name: str, plugin_path: Path, pins: tuple[tuple[str, str], ...],
+                       retired: tuple[tuple[str, str], ...], what: str,
+                       orders: tuple[tuple[str, tuple[str, ...]], ...] = ()) -> Result:
+    """Hold each pin present and each retired phrase absent, whitespace collapsed, and each
+    `orders` file's anchors in their order, and show every refusal: each pin taken out, each
+    retired phrase put back and each two neighboring spans between anchors swapped must fail."""
+    def _order_found(texts: dict[str, str]) -> list[str]:
+        return [error for label, anchors in orders
+                for error in _order_errors(label, texts[label], anchors)]
+
+    def _errors(texts: dict[str, str]) -> list[str]:
+        found = [f"{label} does not read {phrase!r}" for label, phrase in pins
+                 if phrase not in _collapsed(texts[label])]
+        found += [f"{label} still reads {phrase!r}" for label, phrase in retired
+                  if phrase in _collapsed(texts[label])]
+        return found + _order_found(texts)
+
+    texts: dict[str, str] = {}
+    for label in sorted({label for label, _ in pins + retired + orders}):
+        path = plugin_path / label
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[label] = path.read_text(encoding="utf-8")
+    errors = _errors(texts)
+    refused = 0
+    mutations: list[tuple[str, dict[str, str]]] = []
+    if not errors:
+        for label, phrase in pins:
+            mutations.append((f"{label} with {phrase[:60]!r} taken out",
+                              {**texts, label: _collapsed(texts[label]).replace(phrase, "")}))
+        for label, phrase in retired:
+            mutations.append((f"{label} with {phrase!r} put back",
+                              {**texts, label: texts[label] + f"\n{phrase}\n"}))
+        reorders = []
+        for label, anchors in orders:
+            for case, moved in _order_swaps(texts[label], anchors):
+                reorders.append((f"{label} with {case}", {**texts, label: moved}))
+        for case, broken in mutations + reorders:
+            if broken == texts:
+                errors.append(f"the case {case} changed nothing")
+            elif _errors(broken):
+                refused += 1
+            else:
+                errors.append(f"the check passed {case}")
+        # A swap keeps every word, so the order arm alone has to be what refuses it.
+        for case, broken in reorders:
+            if not _order_found(broken):
+                errors.append(f"the order arm passed {case}")
+        mutations += reorders
+    held = f"{len(pins)} phrases held and {len(retired)} retired ones absent over {len(texts)} files"
+    if orders:
+        held += (f", and {sum(len(anchors) for _, anchors in orders)} anchors in order in "
+                 f"{len(orders)} of them")
+    detail = (
+        f"{held} ({what}), {refused} of {len(mutations)} mutations refused; bound: text only, not "
+        f"how a running agent judges"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: the grain test
+# --------------------------------------------------------------------------- #
+#
+# The readers' old mandate 6 listed five tests for a row of its own with no order between them, so
+# two readers of one page could split it two ways, and sentences in mandate 1, mandate 5 and the
+# review pulled the other way: a live row naming the same tag "is the row", a closed list of when
+# one product is two rows, a material never a second row, a qualification always in the
+# description. So both readers open
+# mandate 6 with one test: the largest piece of work a bidder answers with one yes or no, settled
+# before the batch, ONE ROW, NO ROW and A ROW OF ITS OWN by five reasons, held in that order, with a
+# tie-breaker; the list of schedules of types still governs; and the skill restates it in that
+# order. The sentences that pulled the other way carry their clause. The old five-tests sentence
+# must be gone. After the estimator read a sorted sample, the hardware or the accessories a
+# schedule lists for one kind of door or room are one group row, a difference in material or build
+# makes a different kind, and the old row for each kind of a set is gone from every restatement.
+# Each phrase taken out and each retired phrase put back is refused, and so is each two neighboring
+# paragraphs of mandate 6's test swapped, by the order arm alone. Honest bound: text only; whether
+# a running reader splits a page rightly is the measured run's.
+
+_GRAIN_READERS = ("agents/scope-reader.md", "agents/scope-vocabulary-reader.md")
+_GRAIN_READER_PHRASES = (
+    "6. GRAIN: settle your rows before you write one. A row is the largest piece of work a bidder "
+    "answers with one yes or no: work one bid carries or leaves out as a whole, written as one line "
+    "on the trade's scope sheet.",
+    "The page never sets the shape of a row",
+    "ONE ROW where things differ only in size, capacity, model, finish, mounting or place",
+    "NO ROW for the parts every bid that carries a row carries with it",
+    "A ROW OF ITS OWN where bids on this trade do carry the rest and leave this out, or price it "
+    "apart. Five reasons make it so:",
+    "The tests are held in that order.",
+    "The tests are held in that order. A variant or a group under ONE ROW and a part under NO ROW "
+    "become a row of their own only by the second to the fifth reason",
+    "a towel bar of the bathroom accessories is no row of its own",
+    "ONE ROW too for the hardware or the accessories a schedule lists together for one kind of door "
+    "or room and one supplier furnishes as a group, since a bidder answers for the group",
+    "Where the schedule lists the group apart for the units and for the common areas, each is a "
+    "row. An item of a group is a row of its own only by the second to the fifth reason below.",
+    "the glass lites and louvers of a door under the door row;",
+    "it is a different kind of thing, one whose count and specification a bid is checked on by "
+    "itself",
+    "A difference in what a thing is made of or how it is built makes it a different kind",
+    "A group above is never split by this reason, and a group is never the one system above, whose "
+    "parts work only together;",
+    "neither is one rating beside another",
+    "is never one row for the assembly: each trade's part is a row on that trade",
+    "The hardware sets of the door hardware schedule are never part of a door row: they are the "
+    "group row above. Hardware that comes with a door as one assembly",
+    "the row you create is the group's, named for the group and its place, with the items your "
+    "page shows in its `description`.",
+    "and create no row for the item.",
+    "write two where bidders on this trade do in practice carry one and leave out or qualify the "
+    "other, and one where they do not.",
+    "Where this list and the rule above differ, this list governs. The list holds the splits settled "
+    "for every run, whatever the three tests above would give.",
+    "unless what your page shows is a row of its own by mandate 6",
+    "and work mandate 6 makes a row of its own, which is never cited onto the broader row.",
+    "rows, unless the part is one mandate 6 gives no row.",
+    "A group of small items one supplier furnishes together is one row, as mandate 6 says.",
+    "a variant in the row's `description` as its ONE ROW paragraph says",
+    "two rows mandate 6 already separates",
+    "never a rated or special version mandate 6 makes a row of its own, which is that row",
+    "while a type under a requirement the others are not under is a row of its own by the second "
+    "reason above.",
+    "and a type under a requirement the others are not under is the second reason's row.",
+    "a product schedule of six sizes of one kind is one row, never a row per code",
+)
+_GRAIN_PINS: tuple[tuple[str, str], ...] = (
+    tuple((reader, phrase) for reader in _GRAIN_READERS for phrase in _GRAIN_READER_PHRASES)
+    + (
+        ("skills/scope-run/SKILL.md", "6. **Grain.** A row is the largest piece of work a bidder "
+         "answers with one yes or no"),
+        ("skills/scope-run/SKILL.md", "holding each piece of work against three tests in this order"),
+        ("skills/scope-run/SKILL.md", "A variant, a group or a part is a row of its own only by the "
+         "second to the fifth reason"),
+        ("skills/scope-run/SKILL.md", "the hardware or the accessories a schedule lists together for "
+         "one kind of door or room and one supplier furnishes as a group are one row for the group"),
+        ("skills/scope-run/SKILL.md", "one whose count and specification a bid is checked on by "
+         "itself, a difference in what a thing is made of or how it is built among them and a group "
+         "never split this way"),
+        ("skills/scope-run/SKILL.md", "`how finely to split` note that the reader's mandate 6 tests, "
+         "held in their order, or its list of schedules of types settles is left out"),
+        ("agents/scope-reviewer.md", "A row reader mandate 6's five reasons make a row of its own is "
+         "never one of these, and two rows those reasons separate are never a pair."),
+        ("agents/scope-reviewer.md", "a product whose count and specification a bid is checked on "
+         "by itself, or one made of another material or built another way than the rest, is a row "
+         "by reader mandate 6's first reason, never \"its material\"."),
+        ("agents/scope-reviewer.md", "The broad row is not split, retired or renamed: it stands for "
+         "the work less its rows of their own"),
+        ("agents/scope-reviewer.md", "Where it governs part of one row's work only, it goes on that "
+         "part's row"),
+        ("agents/scope-reviewer.md", "One row per kind for the package, settled for every run "
+         "whatever reader mandate 6's tests would give."),
+        ("agents/scope-reviewer.md", "You never write a standard line's work into another row's "
+         "`description`."),
+        ("agents/scope-reviewer.md", "Each kind's line is a row, never one of the parts reader "
+         "mandate 6's NO ROW paragraph gives no row"),
+        ("agents/scope-reviewer.md", "it is also a row on this package for each piece of work the "
+         "section requires, by reader mandate 6's test"),
+        ("agents/scope-reviewer.md", "is the test every row you create follows, held in its order "
+         "before you write"),
+        ("agents/scope-manual-reader.md", "Every row you create follows reader mandate 6's test, held "
+         "before you write"),
+    )
+)
+_GRAIN_RETIRED: tuple[tuple[str, str], ...] = (
+    *((reader, phrase) for reader in _GRAIN_READERS for phrase in (
+        "is a row of its own only where one of five things is true",
+        "the five tests below aside",
+        "GRAIN: one row per product across the job",
+        "A distinction that does not earn a row is on the sheet the row cites",
+        "are still a row for each kind",
+        "a towel bar, a robe hook and a medicine cabinet are three rows",
+        "Door hardware is its own rows",
+        "is a row per kind",
+        "one a sub buys and installs as its own line",
+    )),
+    ("skills/scope-run/SKILL.md", "of its own only where another trade could carry it"),
+    ("skills/scope-run/SKILL.md", "its mandate 1 test of one row per product settles"),
+    ("skills/scope-run/SKILL.md", "thing a sub buys and installs as its own line"),
+    ("agents/scope-reviewer.md", "five tests make a row of its own"),
+    ("agents/scope-reviewer.md", "it is also one row on this package at reader mandate 6's grain"),
+    ("agents/scope-reviewer.md", "a product bought and installed as its own line"),
+)
+# In each reader, mandate 6's three tests stand in their order and the order sentence after them,
+# before the text that follows the tie-breaker.
+_GRAIN_ORDER: tuple[tuple[str, tuple[str, ...]], ...] = tuple(
+    (reader, ("ONE ROW where things differ only", "NO ROW for the parts", "A ROW OF ITS OWN where bids",
+              "The tests are held in that order.", "Work the set shows in the base work"))
+    for reader in _GRAIN_READERS
+)
+
+
+def check_grain_test(plugin_path: Path, marketplace_root: Path) -> Result:
+    return _pinned_text_check(
+        "grain-test", plugin_path, _GRAIN_PINS, _GRAIN_RETIRED,
+        "both readers open mandate 6 with one test, ONE ROW with its group of hardware or "
+        "accessories, NO ROW and A ROW OF ITS OWN by five reasons, standing in that order with a "
+        "tie-breaker, the list of schedules of types still governing and door hardware its group "
+        "row; the readers', the review's and the manual reader's sentences that pulled the other way "
+        "carrying their clause; the skill restating the test in order; the old five tests and the "
+        "row for each kind of a set gone",
+        orders=_GRAIN_ORDER,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Check: the kind of a citation
+# --------------------------------------------------------------------------- #
+#
+# On a measured run 1,790 of 5,245 references on the Package page were ones the index wrote, and
+# 65 of 1,196 rows carried more than 15 references. So a citation on a row that already exists says whether the page defines the work or
+# only shows it (`shownOnly: true`), judged from the reader's own page alone; the record keeps
+# every page and a person sees the defining ones. Both readers carry the test in mandate 1 and its
+# exception to mandate 2's never re-cite, the citation shape carries `shownOnly`, the reviewer, the
+# rechecker and the manual reader point at reader mandate 1 wherever they cite a row that exists,
+# the review's pair copies only the pages not marked `shownOnly` and the manual pages, and a
+# heading's or a rename's evidence is a page not marked `shownOnly`. A page a later issue replaced
+# is cited again where its one reference is marked and the page defines the work; the pair's
+# twelve pages count the pages it would cite, the skill's pair retire waits on the same pages, and
+# an install row copies only the unmarked pages. Each phrase taken out and each retired phrase put
+# back is refused. Honest bound: text only; the server's marks are the api's to prove.
+
+_KIND_POINTER = "say which kind, as reader mandate 1 says"
+_KIND_READER_PHRASES = (
+    "A citation on a row that already exists is one of two kinds, and you say which.",
+    "The kind is what your page says about the work, whether or not the row's words already say it",
+    "Judge it from your own page alone and open no other page to decide.",
+    "Cite this page only where none of its `drawingRefs` names this `fileId` and this `page`, or "
+    "where the one that does carries `shownOnly: true` and your page defines the work, as mandate 1 "
+    "says.",
+    "The citation on a row you create is never `shownOnly`, and neither is the page a field you "
+    "write is read from.",
+    "cite it again without `shownOnly`: that citation lands and is never a re-cite.",
+    "never re-cite a page the item carries, except a row the context read gives `citesThisPage: "
+    "true` with `thisPageShownOnly: true`",
+    "frame: \"page-points\", shownOnly }`, with `shownOnly: true` on a row that already exists where "
+    "your page only shows its work",
+    "`{ subject, kind: \"sheet\", sheet, pageInPdf, fileId, shownOnly }`, `shownOnly` as mandate 2 "
+    "says",
+    "citing your page on the row it names instead: say which kind, as mandate 1 says;",
+    "and you cite that row instead, saying which kind, as mandate 1 says",
+)
+_KIND_PINS: tuple[tuple[str, str], ...] = (
+    tuple((reader, phrase) for reader in _GRAIN_READERS for phrase in _KIND_READER_PHRASES)
+    + (
+        ("agents/scope-reader.md", "cite your sheet on it as an update: say which kind, as mandate 1 "
+         "says."),
+        ("agents/scope-reviewer.md", f"It is a citation on that row, after you open the page: "
+         f"{_KIND_POINTER}."),
+        ("agents/scope-reviewer.md", f"the way reader mandate 1 does ({_KIND_POINTER})"),
+        ("agents/scope-reviewer.md", f"under any mandate of yours, {_KIND_POINTER}; a manual page is "
+         f"never `shownOnly`."),
+        ("agents/scope-reviewer.md", "Cite on the kept row each page the other row's `drawingRefs` "
+         "lists that is not marked `shownOnly`"),
+        ("agents/scope-reviewer.md", "A page marked `shownOnly` there is not copied"),
+        ("agents/scope-reviewer.md", "cite it on the kept row with no `shownOnly`, and count it toward "
+         "the twelve pages below."),
+        ("agents/scope-reviewer.md", "Cite on the kept row too each manual page the other row cites, "
+         "read off the `entries` of the same full read"),
+        ("agents/scope-reviewer.md", "every page it cites that is not marked `shownOnly` is cited on "
+         "the kept row, not marked `shownOnly` there either, every manual page it cites is cited on "
+         "the kept row"),
+        ("agents/scope-reviewer.md", "with a page the row already cites that is not marked `shownOnly` "
+         "as the evidence"),
+        ("agents/scope-reviewer.md", "its evidence a page the row already cites that is not marked "
+         "`shownOnly`"),
+        ("agents/scope-reviewer.md", "or the pages the pair rule above would cite on the kept row, "
+         "the copies and the pages cited again as defining together, come to more than twelve"),
+        ("agents/scope-reviewer.md", "Cite it to the pages the furnished item's rows cite that are "
+         "not marked `shownOnly`, listed in their `drawingRefs`, by your own citation path as "
+         "mandate 5 cites a kept row's pages. A page marked `shownOnly` there is left off the "
+         "install row."),
+        ("skills/scope-run/SKILL.md", "once the kept row cites every page the other did that is not "
+         "marked `shownOnly`, and every manual page"),
+        ("agents/scope-rechecker.md", "Say which kind, as reader mandate 1 says, judged afresh from "
+         "what the new page says about the work and never copied from the kind the old page's "
+         "citation had."),
+        ("agents/scope-rechecker.md", "and never `shownOnly`, since a manual page is never one."),
+        ("agents/scope-manual-reader.md", f"Where you cite a page on a row that already exists, "
+         f"{_KIND_POINTER}: a manual page is never `shownOnly`"),
+        ("skills/scope-run/SKILL.md", "the row's reference list is the pages that define it"),
+        ("skills/scope-run/SKILL.md", "that every item lists the sheets that say what it is"),
+    )
+)
+_KIND_RETIRED: tuple[tuple[str, str], ...] = (
+    ("skills/scope-run/SKILL.md", "every item and every definition now shows every sheet it appears "
+     "on, plans included"),
+    ("skills/scope-run/SKILL.md", "so every row cites every page it appears on"),
+    ("agents/scope-reviewer.md", "with a page the row already cites as the evidence"),
+    ("agents/scope-reviewer.md", "cite more than twelve pages the kept row lacks"),
+    ("agents/scope-reviewer.md", "furnished item's rows cite, listed in their `drawingRefs`"),
+    ("skills/scope-run/SKILL.md", "once the kept row cites every page the other did, with"),
+    *((reader, "names this `fileId` and this `page`. Either way") for reader in _GRAIN_READERS),
+)
+
+
+def check_citation_kind(plugin_path: Path, marketplace_root: Path) -> Result:
+    return _pinned_text_check(
+        "citation-kind", plugin_path, _KIND_PINS, _KIND_RETIRED,
+        "both readers' test for a citation that defines the work or only shows it, judged from the "
+        "reader's own page, with mandate 2's exception and the shape's `shownOnly`; the reviewer, the "
+        "rechecker and the manual reader pointing at reader mandate 1, a manual page never "
+        "`shownOnly`; a replaced page cited again where its one reference is marked and the page "
+        "defines the work; the review's pair copying only unmarked pages and the manual pages, the "
+        "twelve counting the pages it would cite, and the install row copying only unmarked pages; a "
+        "heading's and a rename's evidence unmarked; the skill's pair retire on the unmarked pages "
+        "and the manual pages, and its reference list the defining pages",
+    )
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -16876,6 +17351,9 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_kept_sheet_conflict(plugin_path, marketplace_root),
         check_scanned_plans(plugin_path, marketplace_root),
         check_read_again(plugin_path, marketplace_root),
+        check_rows_ordered(plugin_path, marketplace_root),
+        check_grain_test(plugin_path, marketplace_root),
+        check_citation_kind(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

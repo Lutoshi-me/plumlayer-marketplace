@@ -117,7 +117,9 @@ of them is ever trimmed.
    rows are that kind of thing>)`. `search` returns raw entries, live and replaced alike, so read a
    hit's current row with `list_scope_items(subjectPrefix: <its subject>)` before you rely on it.
    A live row naming the same tag, model or code within one tag system, or the same named product,
-   is the row: cite your sheet on it as an UPDATE. LVT-1 and LVT-01 are one tag. The
+   is the row: cite your sheet on it as an UPDATE, unless what your page shows is a row of its own
+   by mandate 6 (the removable base cabinets at accessible units are not the standard cabinets'
+   row). LVT-1 and LVT-01 are one tag. The
    tag, model or code names the item itself, never what it sits on, under, beside or serves (the
    underlayment beneath LVT-1 is its own work), and a model number is the item's own, never a part
    it shares with other items: a tub and a shower on one valve model are two fixtures. One product
@@ -126,7 +128,25 @@ of them is ever trimmed.
    for a second row, so the subfloor on six floor plans, the holdowns on every level and one
    panelboard type in many rooms are one row each. A row naming no place, a door type or a typical
    detail, covers wherever its type is used, so a plan showing that type in a named room is cited on
-   the type row, never a new one. One product is two rows only where the drawings or the manual
+   the type row, never a new one.
+   A citation on a row that already exists is one of two kinds, and you say which. The kind is
+   what your page says about the work, whether or not the row's words already say it, so every
+   page has one answer and the order pages are read in changes nothing. Your page DEFINES the
+   work where it says what the work is made of, how it is built or what it must meet: the
+   schedule line, legend entry or type that lists it, a detail, a section or an elevation of the
+   item itself, a note or a manual paragraph that puts a requirement on it. Cite it as you always
+   have. Your page only SHOWS the work where it carries the work as a tag, a label or a callout
+   that places it or counts it, with or without a size beside it, and says nothing more about
+   it: a unit plan that prints its label, a floor plan or a reflected ceiling plan that tags its
+   type, a building elevation that keys it. Cite it with `shownOnly: true`, so the record still
+   holds every page the work appears on and the row's reference list holds the pages that define
+   it. A sheet that does both, a plan with a keyed note that puts a requirement on the work,
+   defines it. Judge it from your own page alone and open no other page to decide. The citation
+   on a row you create is never `shownOnly`, and neither is the page a field you write is read
+   from. Where the context read gives the row `citesThisPage: true` with `thisPageShownOnly:
+   true`, as where the index put the row on your page, and your page defines the work, cite it
+   again without `shownOnly`: that citation lands and is never a re-cite.
+   One product is two rows only where the drawings or the manual
    separate the work: its supply and its install, where a package's `notes` put them on two
    packages, a schedule calls it furnished by one party and installed by another, or the manual
    specifies the supply and the install in separate sections, each row named for its half ("Supply
@@ -136,15 +156,18 @@ of them is ever trimmed.
    each row named for its area; and an alternate the set names, which is a row of its own beside
    the base row of the same work, as mandate 4 says, and is never cited onto that base row; and an
    exclusion row, mandate 4, on the trade that leaves the work out, beside the row of the trade that
-   carries it.
+   carries it; and work mandate 6 makes a row of its own, which is never cited onto the broader
+   row.
    Hold a batch's own rows against each other by this test too: a
    schedule row and a plan row for one item are one row. Two rows each claiming the whole of one
    surface or one fixture in one place are one piece of work even under different codes, the
    disagreement below, while the layers or parts of one assembly under their own codes stay separate
-   rows. The parts of a system one vendor supplies as a package, and of equipment that works as
-   one system, are the exception: they are
+   rows, unless the part is one mandate 6 gives no row. The parts of a system one vendor supplies
+   as a package, and of equipment that works as one system, are the exception only where those
+   parts work only together: they are
    one row for the system, with each part named in its `description`, even where a legend or
-   schedule tags each part, as mandate 6 says. Two schedules that
+   schedule tags each part, as mandate 6 says. A group of small items one supplier furnishes
+   together is one row, as mandate 6 says. Two schedules that
    number their tags apart (a fixture list on an architectural sheet and the plumbing schedule) are
    two tag systems: a tag both print is not by itself the same work, and one fixture under two tags
    is found by what it is and where it goes.
@@ -366,7 +389,7 @@ of them is ever trimmed.
    trade and under any category, and since `record_batch` is atomic nothing in that batch lands; the
    refusal names every duplicate in the batch, and a second CREATE of one name in one batch is
    refused naming the first. Turn each into a citation of the row it names, the sheet, the page and
-   the file you read it on, and send the batch again. The one
+   the file you read it on, saying which kind as above, and send the batch again. The one
    exception is an exclusion row, mandate 4, whose name ends with who carries the work, so it never
    shares a name with the row that carries the work, and a `repeatsScopeItem` naming a row of
    another name is refused. Its pointer is one of four cases. (a) The first exclusion row of a
@@ -403,7 +426,9 @@ of them is ever trimmed.
    it every time. Never a sheet without a page; never a fabricated page. Where the door refuses a
    citation, fix it to what you actually read, and never game the shape. An item already cites the
    pages the index found it on; cite what the index did not, and never re-cite a page the item
-   carries. Where the context read names a `sheetNumber`, a row it gives with
+   carries, except a row the context read gives `citesThisPage: true` with `thisPageShownOnly:
+   true`: where your page defines its work, cite it again without `shownOnly`, as mandate 1
+   says. Where the context read names a `sheetNumber`, a row it gives with
    `citesThisPage: false` does not carry this page (it cites the number only on another page, an
    earlier drawing issue's or another page of the number in this file, names the sheet with no
    file, or is there for its codes alone): where you read its work on this page, cite this page on
@@ -411,10 +436,13 @@ of them is ever trimmed.
    reads `citesThisPage: false` whatever it cites, so before you cite such a row, read
    it with `list_scope_items(subjectPrefix: "<subject>", full: true)`: the row whose `subject` is
    that one carries its `drawingRefs`, the live citations of its current fields, each
-   `{ sheet, page, fileId }` (the raw `search` also returns superseded and removed ones). Cite this
-   page only where none of its `drawingRefs` names this `fileId` and this `page`. Either way, a row
-   is updated only where a write of yours landed on it: a citation the door answers `duplicate`
-   wrote nothing, so it puts the row on neither your `updated:` nor your `updated subjects:` line.
+   `{ sheet, page, fileId }`, with `shownOnly: true` on a page the row is cited on only as shown
+   (the raw `search` also returns superseded and removed ones). Cite this
+   page only where none of its `drawingRefs` names this `fileId` and this `page`, or where the one
+   that does carries `shownOnly: true` and your page defines the work, as mandate 1 says. Either
+   way, a row is updated only where a write of yours landed on it: a citation the door answers
+   `duplicate` wrote nothing, so it puts the row on neither your `updated:` nor your
+   `updated subjects:` line.
    A citation rides the batch, on a row that already exists or on one the same batch creates. A
    row you create carries its source twice in that one batch: as the `evidence` on each of its
    entries, and as one item of `citations` naming its new subject, in the citation shapes below.
@@ -425,12 +453,15 @@ of them is ever trimmed.
    `frame: "page-points"` and never converted. On a new row's entries the evidence is `{ sheet,
    pageInPdf, fileId, locator: { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }`;
    the citation, on a new row or one that already exists, is `{ subject, kind: "sheet-region",
-   sheet, pageInPdf, fileId, bboxPts, frame: "page-points" }`. Two rows share one box only where they name the same line. A
+   sheet, pageInPdf, fileId, bboxPts, frame: "page-points", shownOnly }`, with `shownOnly: true`
+   on a row that already exists where your page only shows its work, as mandate 1 says, and no
+   `shownOnly` otherwise. Two rows share one box only where they name the same line. A
    box is never measured off a render: no pixel, tile, `clipPt` or `pxPerPt` is turned into points
    for a citation, and no box is drawn where you judge the row sits on the picture. Where no line
    of the page's read carries the row you read (the read came back bounded or `workerCapped`, or
    it missed that line), cite the sheet with no box, `{ sheet, pageInPdf, fileId }` as a new row's
-   evidence and `{ subject, kind: "sheet", sheet, pageInPdf, fileId }` as the citation, and
+   evidence and `{ subject, kind: "sheet", sheet, pageInPdf, fileId, shownOnly }` as the citation,
+   `shownOnly` as above, and
    name it on your `anomalies:` line as
    `<sheet> p<page> no box: <the rows>, <why no line carries them>, run only`. The same holds for
    every box this file asks for, a Question's included.
@@ -473,8 +504,10 @@ of them is ever trimmed.
    question for the corpus (`search_set_text(projectId, query)`), never for memory and never for a
    render. Items other units and other passes recorded are on the record; resolve them from there.
 4. CAPTURE EVERYTHING, AND NAME THE TRADE AS YOU WRITE: capture everything you see, whatever trade
-   it belongs to, at the grain of mandate 6. A distinction that does not earn a row is on the
-   sheet the row cites, not written into the row. Every row you write carries its trade, right
+   it belongs to, at the grain of mandate 6. A distinction that does not earn a row is written as
+   mandate 6 says: a variant in the row's `description` as its ONE ROW paragraph says, every code
+   with what tells each apart, and a part as its NO ROW paragraph says. Every row you write
+   carries its trade, right
    then: `belongsToTrade` is the catalog trade that names the work as the firm that installs it,
    the finest such trade the catalog carries. Where the manual specifies the work in a numbered
    section, use the catalog trade for that section, `directory_list_trades(code: <the section
@@ -599,8 +632,9 @@ of them is ever trimmed.
    fixed by its kind, a grouped requirement row or a standard line, keeps that name. A size, a
    thickness, a capacity, a rating, a maker, a model number and a list of tags go in
    the `description`, never the name, and bar sizes and spacings are left to the citation, as
-   below. A size or a tag is in the name only where it alone tells
-   two rows apart ("Window type W-2", "6 inch slab on grade"), never more than two tags, and
+   below. A size or a tag is in the name only where it alone tells apart
+   two rows mandate 6 already separates ("Window type W-2", "6 inch slab on grade"), since a size
+   never makes a row, never more than two tags, and
    never a size beside a tag that already states it: a beam the schedule marks `B12x28` is never
    also "12 by 28 inch". Write a size, wherever it goes, as the drawing prints it (`12" x 28"`,
    `1'-0"`), never spelled out in words. A place is in the name only where the set limits the
@@ -650,7 +684,9 @@ of them is ever trimmed.
    bidder prices that the name leaves out, written wherever the row has any: the tags or codes
    the row covers, the sizes, thicknesses or capacities that tell its types apart, the maker and
    model where the set names one, the product or method, the extent or limits, a rated or special
-   condition, each with a page the row cites showing where it comes from; short phrases an
+   condition of the row's own work, each with a page the row cites showing where it comes from,
+   never a rated or special version mandate 6 makes a row of its own, which is that row; short
+   phrases an
    estimator would write, sizes as the drawing prints them, about thirty words the most, not
    counting the codes the row names; a row whose name says all a bidder prices has none, and so
    does an exclusion row, as mandate 4 says; never a
@@ -781,45 +817,92 @@ of them is ever trimmed.
    subject id or a hand-written SUPERSEDED or date tag, per docs/plugin-text-style.md. Where an
    existing item needs to split into two, `retire_scope_item` names why and you CREATE each half
    fresh.
-6. GRAIN: one row per product across the job, as mandate 1 says, and a product here is a line an
-   estimator writes on the trade's scope sheet: a system, an element or a kind of product, never
-   a tag, a size or a model. A
-   kind of product is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
-   medicine cabinet, a walk-off mat, an acoustic underlayment. Products of different kinds are a
-   row each, named for what they are ("Towel bars", "Medicine cabinets"). Where a legend or
-   schedule lists several of one kind that differ only in size, capacity, model, mounting or
-   place (towel bars at two lengths, exhaust fans at six sizes, fan coil units by capacity, water
-   heaters by gallons, footings by size), they are one row for the kind ("Exhaust fans"), its
-   `description` writing out every code it covers with what tells each apart and, where the
-   schedule prints a count for each, that count beside its code ("EF-1 (2) roof, EF-2 (4) trash
-   rooms"), and the maker and model where the set names one. Where the codes do not fit the
-   description's 400 characters, write how many types there are and how they differ ("50 fan coil unit
-   types by capacity") and cite the schedule on the row, so
-   the citation carries each code. A row for several types takes a quantity only where a page
-   prints one figure for all of them, as mandate 5 says. Where you add a type to a row whose
-   quantity counts its earlier types alone, that figure no longer counts the row's work and no
-   tool of yours clears it: name it on your `door-owned suggestions:` line, saying which types
-   it counts ("The quantity counts EF-1 alone"). The same holds for a `mark` that tags one of its
-   types alone: name it on that line. Equipment that works as one system and that one sub
-   buys together (the outdoor units, indoor units and controllers of a refrigerant system; a fuel
-   oil tank with its pumps, filtration and panels; an air handling unit with its fans and coils)
-   is one row for the system, named for it and what it serves ("Refrigerant heat pump systems at
-   common areas"), with its parts and their tags in its `description`, by kind where they do not
-   fit. The parts every bidder who prices a row carries are never rows, the five tests below
-   aside: hangers, supports,
-   fittings, risers and connections under the piping or ductwork row; registers, grilles and
-   diffusers under the ductwork row; laps, hooks, corner bars, trim bars, stirrups and ties under
-   the reinforcing row; control joints and steps under the slab row. A typical detail is a
-   citation on the row of the element it details, and a general note a citation on the row of
-   the work it governs, never a row of its own. Work under a broader row is a row of its own only
-   where one of five things is true: another trade could carry it (furnished by one trade and
-   installed by another, or work where two trades meet); bidders often leave it out or qualify
-   it (seismic restraint, an extended warranty, a return trip months after the pour); it is
-   priced on its own and no broader row covers it (a separate system, a different kind of
-   equipment); an unusual requirement moves the price (a named proprietary assembly, a rating
-   beyond the usual, a wait the detail imposes); or the set asks for a separate price (an
-   alternate, a unit price, an allowance). Where none is true, what you read goes in the broader
-   row's `description` or is left to its citation. Work the set shows in the base work and also
+6. GRAIN: settle your rows before you write one. A row is the largest piece of work a bidder
+   answers with one yes or no: work one bid carries or leaves out as a whole, written as one line
+   on the trade's scope sheet. Read your page, work out the pieces of work it shows, hold each
+   against the three tests below and against the live list as mandate 1 says, and only then
+   write. This is your own reckoning before the batch: it is written nowhere, and it holds back no
+   Question. The page never sets the shape of a row: a note, a legend entry, a schedule line or a
+   manual paragraph that names several pieces of work is a row for each, every one citing it (a
+   general note that calls for base cabinets, a movable island and a relocatable counter is three
+   rows), and several notes about one piece of work are one row.
+   ONE ROW where things differ only in size, capacity, model, finish, mounting or place (a finish
+   trade's areas aside, mandate 1), since a bidder answers for the kind: towel bars at two
+   lengths, exhaust fans at six sizes, fan coil units by capacity, water heaters by gallons,
+   footings by size. The row is named for the kind ("Exhaust fans"), and its `description` writes
+   out every code it covers with what tells each apart and, where the schedule prints a count for
+   each, that count beside its code ("EF-1 (2) roof, EF-2 (4) trash rooms"), and the maker and
+   model where the set names one. Where the codes do not fit the description's 400 characters,
+   write how many types there are and how they differ ("50 fan coil unit types by capacity") and
+   cite the schedule on the row, so the citation carries each code. A row for several types takes
+   a quantity only where a page prints one figure for all of them, as mandate 5 says. Where you
+   add a type to a row whose quantity counts its earlier types alone, that figure no longer counts
+   the row's work and no tool of yours clears it: name it on your `door-owned suggestions:` line,
+   saying which types it counts ("The quantity counts EF-1 alone"). The same holds for a `mark`
+   that tags one of its types alone: name it on that line. Equipment that works as one system and
+   that one sub buys together (the outdoor units, indoor units and controllers of a refrigerant
+   system; a fuel oil tank with its pumps, filtration and panels; an air handling unit with its
+   fans and coils) is one row for the system, named for it and what it serves ("Refrigerant heat
+   pump systems at common areas"), with its parts and their tags in its `description`, by kind
+   where they do not fit.
+   ONE ROW too for the hardware or the accessories a schedule lists together for one kind of
+   door or room and one supplier furnishes as a group, since a bidder answers for the group: the
+   hardware sets of a door hardware schedule; the accessories of a unit bathroom (paper holder,
+   towel bar, robe hook, shower rod, grab bars); the accessories of a public toilet room. The
+   row is named for the group and its place ("Door hardware", "Unit bathroom accessories") and
+   its `description` lists what it holds with each code, by kind where they do not fit. Where
+   the schedule lists the group apart for the units and for the common areas, each is a row. An
+   item of a group is a row of its own only by the second to the fifth reason below. Where your
+   page shows an item of such a group and no row for the group stands yet, the row you create
+   is the group's, named for the group and its place, with the items your page shows in its
+   `description`. Where the group's row stands and does not list an item your page shows, add
+   the item to its `description`, as a type is added to a row for a kind above, and create no
+   row for the item.
+   NO ROW for the parts every bid that carries a row carries with it: hangers, supports, fittings,
+   risers and connections under the piping or ductwork row; registers, grilles and diffusers
+   under the ductwork row; laps, hooks, corner bars, trim bars, stirrups and ties under the
+   reinforcing row; control joints and steps under the slab row; the glass lites and louvers of a
+   door under the door row; fillers, scribes, finished ends, moldings and toe kicks under the
+   cabinet row. A typical
+   detail is a citation on the row of the element it details,
+   and a general note a citation on the row of the work it governs, never a row of its own. What
+   you read of such a part is left to the row's citation, and goes in the row's `description`
+   only where a bidder needs it to price the row.
+   A ROW OF ITS OWN where bids on this trade do carry the rest and leave this out, or price it
+   apart. Five reasons make it so:
+   - it is a different kind of thing, one whose count and specification a bid is checked on by
+     itself (kitchen cabinets, vanities, a kitchen island and a linen tower are four rows; a
+     mirror, a medicine cabinet and a shower door are each a row beside the bathroom
+     accessories). A difference in what a thing is made of or how it is built makes it a
+     different kind: solid core doors and hollow core doors, carpet tile and broadloom carpet.
+     A group above is never split by this reason, and a group is never the one system above,
+     whose parts work only together;
+   - it is a version of the work under a requirement the rest of the work is not under, one a bid
+     could miss while it carries the rest (the removable base cabinets at accessible units beside
+     the standard cabinets, a rated assembly beside the unrated one, a named proprietary product,
+     a wait a detail imposes). A difference in size or model alone is never this, neither is one
+     rating beside another (doors rated 20, 45 and 90 minutes are one rated row, each rating in
+     its `description`), and a requirement on the whole of a row's work rides that row;
+   - another trade could carry it (furnished by one trade and installed by another, or work where
+     two trades meet): the hardware of an automatic door or a storefront door, which the firm
+     that furnishes that door may carry, beside the door hardware row; electrified hardware
+     and its hookup to access control. Such work is one row for all of it, never a row for each
+     item that needs it: the in-wall blocking behind every accessory and cabinet is one row. An
+     assembly several trades build (a recessed floor of framing, insulation and a rubber
+     surface) is never one row for the assembly: each trade's part is a row on that trade, named
+     for the part and its place ("Rubber flooring at fitness center");
+   - bidders often leave it out or qualify it (seismic restraint, an extended warranty, floor
+     preparation and moisture mitigation under a floor, a return trip months after the pour, a
+     movable island beside the fixed ones);
+   - the set asks for a separate price (an alternate, a unit price, an allowance).
+   The tests are held in that order. A variant or a group under ONE ROW and a part under NO ROW
+   become a row of their own only by the second to the fifth reason, never by the first and
+   never because a bid could in principle leave one out: a fan at another size is no row of its
+   own, a towel bar of the bathroom accessories is no row of its own, and a seismic restraint
+   on the fans is. Where the tests still leave you between one row and two,
+   write two where bidders on this trade do in practice carry one and leave out or qualify the
+   other, and one where they do not.
+   Work the set shows in the base work and also
    names as an alternate is two rows: the base row carries the base work alone, and the
    alternate is a row of its own, marked as mandate 4 says. Instances are never rows:
    one towel bar
@@ -830,7 +913,9 @@ of them is ever trimmed.
    flooring, LVT"), never one row for the whole schedule, and each finish row names its extent as
    mandate 5 says; a door schedule's doors land as the list below says. A schedule of one
    assembly's types that differ only in size or spacing (shear walls, footings, lintels) stays one
-   row for the assembly, with every code written out in its `description`. Windows and doors are
+   row for the assembly, with every code written out in its `description`, while a type under a
+   requirement the others are not under is a row of its own by the second reason above. Windows
+   and doors are
    never such an assembly. These schedules of types land the same way on every run, and none is
    a question:
    - Windows, and balcony, terrace or patio doors on a window type list: one row per type, named
@@ -850,7 +935,10 @@ of them is ever trimmed.
    - Interior doors: one row per family of doors by material and use ("Unit entry doors, solid
      core wood", "Unit interior doors, hollow core", "Hollow metal doors and frames"), never one
      row per door type, each family row writing out every type code it covers in its
-     `description`. Door hardware is its own rows.
+     `description`. The hardware sets of the door hardware schedule are never part of a door
+     row: they are the group row above. Hardware that comes with a door as one assembly (the
+     track and guide of a sliding door, the hardware of an integrated door assembly) rides
+     that door's row.
    - Partitions on a wall or partition type schedule: one row per family of partitions by
      construction and place ("Non-load-bearing metal stud partitions", "Shaft walls", "Rated
      partitions at stairs"), never one row per type, each family row writing out every type code
@@ -867,13 +955,15 @@ of them is ever trimmed.
      name the parts by kind instead ("Call stations, relays and power supplies, as the device
      legend lists them") and cite the legend or schedule that lists them on the row, so the
      citation carries each tag.
-   Where this list and the rule above differ, this list governs. A family row writes its
+   Where this list and the rule above differ, this list governs. The list holds the splits
+   settled for every run, whatever the three tests above would give. A family row writes its
    codes out in full in its `description`, as mandate 5 says ("P1, P2, P3 and P4"), never as a
    range ("P1-P4"), which the citation index cannot link; where a row's codes do not fit the
    description's 400 characters, a row of this list takes the same way out as a row for a kind,
    above. A schedule of types this list does not
    name takes one row where its types are one kind, and a row for each kind where they are not,
-   as above. Never copy a schedule's columns into a row: the row names
+   as above, and a type under a requirement the others are not under is the second reason's row.
+   Never copy a schedule's columns into a row: the row names
    its product and cites the schedule row that defines it (mandate 2). A row is never a whole sheet
    and never a package header. Any other attribute of a piece of work, a finish or a mounting
    height, rides the row it belongs to rather than becoming a row of its own. Where neither this
@@ -888,14 +978,16 @@ of them is ever trimmed.
    for updates), or a JSONL file sent with `record_batch_file` for larger runs. An entry carries `subject`, `predicate`, `value`, `sourceInstrument` and
    `evidence` in mandate 2's shape, plus `supersedesId` where you are replacing a value. A
    citation, of a row that already exists or of a row the same call creates, is one item of
-   `citations`, `{ subject, kind: "sheet", sheet, pageInPdf, fileId }`, or for a row read off a
+   `citations`, `{ subject, kind: "sheet", sheet, pageInPdf, fileId, shownOnly }`, `shownOnly` as
+   mandate 2 says, or for a row read off a
    schedule or a legend the `sheet-region` shape mandate 2 gives, or one line `{"citation": {...}}` in the file. Leave `versionScope` off: a sheet read names no issue label. After every
    batch, read the record back and confirm the count that landed equals the count sent, entries
    and citations alike; a citation answered `duplicate` wrote nothing and is in neither count.
    Recheck any conflicting ids individually. Readers run alongside you and write the rows you
    read, so the door can refuse a batch over a row that moved after your read, and nothing in that
    batch landed. Two refusals are that, and you send the batch again each time: where the door names
-   a row already carrying the name, as mandate 1 says, however many times it names another; and
+   a row already carrying the name, as mandate 1 says, however many times it names another, citing
+   your page on the row it names instead: say which kind, as mandate 1 says; and
    where the door says a field already holds a value or that the record you named was replaced, once
    you read that row again with `search(subject: "<its subject>")`, judge your write against what it
    now says as mandate 1 does, and either cite the row where it already says what you read or write
@@ -945,15 +1037,16 @@ of them is ever trimmed.
    under the kind under that one row, so the row is one this batch creates or one the record
    already carries, cited to the schedule, on the kind's own `belongsToTrade`, and writing out
    every code the kind holds, codes another schedule recorded under it among them
-   (`list_definition_kinds` gives the count). Where the schedule's codes stand on a row each, as a
-   product schedule's or a window type list's do, or on more than one
+   (`list_definition_kinds` gives the count). Where the schedule's codes stand on a row each, as
+   mandate 6 gives a window type list's (a product schedule of six sizes of one kind is one row,
+   never a row per code), or on more than one
    row, as the family rows of an interior door, partition or panelboard schedule can, or on rows of more than one trade, or where the kind
    also holds codes another schedule defines and the row does not write out, or where the kind has
    no `belongsToTrade`, record no `belongsToScopeItem`: no one row carries that kind, and the link
    is never a guess. Where you read the schedule of a kind `list_definition_kinds` lists with a
    null `belongsToScopeItem` and the one row stands on the record, record it the same way, once.
    Where the door refuses your new row because a live row carries its name and you cite that row
-   instead, as mandate 1 says, send the link with that row's subject in place of yours. A kind
+   instead, saying which kind, as mandate 1 says, send the link with that row's subject in place of yours. A kind
    already under a row stays there: where the door says that field already holds a value, send the
    batch again without your `belongsToScopeItem`, and where you added codes to that kind that its
    row does not write out, name the kind and the row on your `anomalies:` line, run only. A row's
@@ -1019,7 +1112,8 @@ so in your report, and the lead closes it only if the user settles the answer in
 The call shape of one page, end to end: one `read_sheet_context`, one `get_page_text` in lines
 walked on `nextOffset` to its end, a render only where text cannot give what you are after, one
 `record_batch` carrying its new rows and every citation, of the rows it creates and of rows that
-already exist, with mandate 7's count check,
+already exist, each citation of a row that already exists with `shownOnly: true` where your page
+only shows its work, as mandate 1 says, with mandate 7's count check,
 a resend of that batch each time the door answers one of the two refusals mandate 7 names,
 and one report. A page whose `pageRead`
 came back null costs a second context read. Anything past that shape is a named fallback: a list
@@ -1249,8 +1343,8 @@ that file leave these lines out of their sheets, so what you do not record from 
    convert a number. On a new row's entries the evidence is `{ sheet, pageInPdf, fileId, locator:
    { pageInPdf, frame: "page-points", bboxPts: [x0, y0, x1, y1] } }`; the citation, on a new row or
    one that already exists, is one item of the batch's `citations`, `{ subject, kind:
-   "sheet-region", sheet, pageInPdf, fileId, bboxPts, frame: "page-points" }`, and a new row
-   carries both. A Question about a note cites the same sheet, box and file. `repeated: "only"`
+   "sheet-region", sheet, pageInPdf, fileId, bboxPts, frame: "page-points", shownOnly }`,
+   `shownOnly` as mandate 2 says, and a new row carries both. A Question about a note cites the same sheet, box and file. `repeated: "only"`
    takes no `region`, since it reads the whole file's set: to box a note on one page, read that
    page with `repeated: "include"` and a `region`. A note whose lines sit in two blocks cites the
    first sheet of the block that prints on fewer pages; where that block does not carry every line

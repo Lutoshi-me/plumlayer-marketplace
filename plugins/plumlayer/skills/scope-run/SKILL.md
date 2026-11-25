@@ -38,17 +38,19 @@ The three windows:
    general and plan notes and the fixed part of its title block, once for the whole file, so no
    sheet reader in the next window reads them again. When the window closes, the
    record's citation index runs: a mechanical pass that locates every defined code and every
-   item's tag on every page of the set and cites those pages onto the items and definitions. After
-   this window every trade's page is usable.
+   item's tag on every page of the set and cites those pages onto the items and definitions, on an
+   item as pages that only show its work. After this window every trade's page is usable.
 2. **Every sheet.** Every sheet the first window did not read, once each, grouped into passes by
    discipline and read composition before extent: sections and details ahead of plans, because the
    sheet showing what an assembly is made of writes the better row, and the plan that calls it out
-   then updates that row rather than creating a coarser duplicate beside it. A reader reads its
+   then cites that row as a page that only shows its work rather than creating a coarser
+   duplicate beside it. A reader reads its
    sheet whole, for everything on it, whatever trade the work belongs to. This is where the scope
    is, and it is
    the bulk of the run: quantities where the set states them, the splits the vocabulary read was
    too coarse for, the Questions that clear the bar for an RFI. When the window closes the index
-   runs again, so every row cites every page it appears on before a review reads it.
+   runs again, so the record holds every page each row appears on before a review reads it, and
+   each row's reference list holds the pages that define it.
 3. **The reviews.** One review per bid package, read off the record rather than off the set: the
    package's own rows and the rows a role puts on it, the definition codes that resolve to it, the manual sections
    it lists in `manualSections`, and its catalog name and aliases. Those are the words the review searches the
@@ -57,11 +59,12 @@ The three windows:
    section on the package whose work no sheet shows, and work on the package's rows that no page
    of the manual names. A section none of whose work any sheet shows, after a search for its
    number and the tags a material key, legend or schedule gives it, is a Question asking the design
-   team to confirm the work is not required, cited to the start of the section and on its own row
-   with no value, so the Question shows on the trade's page. One product of a section whose other
+   team to confirm the work is not required, cited to the start of the section and on a row for
+   each piece of work the section requires, with no value, so the Question shows on the trade's page. One product of a section whose other
    work the sheets show raises nothing, since bidders price what the sheets place, while a
    requirement a section puts on the work the sheets show, each piping system it insulates or the
-   finish level of the board drawn, is a row however few sheets draw it. Work the manual
+   finish level of the board drawn, is scope however few sheets draw it, on the row of the work it
+   falls on, or on a row of its own where it falls on part of that work. Work the manual
    never names is a Question, cited to a box around the callout. Each clears the Question bar
    below first, and every one that clears it is raised. A package's page is finished when its review is.
 
@@ -109,7 +112,11 @@ that relaxes any one of them reproduces a measured, named failure.
    integer for the page actually read. A sheet named with no page cannot be render-verified and the
    record door refuses it. Never fabricate a page or sheet to satisfy the door. A citation the
    index wrote is the index's own, recorded as a text match; a reader cites what the index did
-   not already cite and never re-cites a page the item already carries.
+   not already cite and never re-cites a page the item already carries, except a page the item
+   holds only as one that shows its work, which the reader cites again where that page defines
+   the work. The record holds every page a row appears on, and the row's reference list is the
+   pages that define it: a citation on a row that exists says which kind it is, as the reader's
+   mandate 1 says.
    A manual-grounded record cites its spec section the way a drawing-grounded one cites its
    sheet, with the section number, the file and the page read: in `source` on a new row's
    entries, and as a `kind: "spec-section"` citation on any row, a new row in the batch that
@@ -186,26 +193,32 @@ that relaxes any one of them reproduces a measured, named failure.
    lead reports as runner-verified rather than asserting a check it did not run. The lead never calls the unfiltered `list_scope_items` during
    the run: that verb walks the whole scope list, and pulling it is how the lead's context stops
    being cheap. Counts only, `limit: 0`, is the one call the lead makes on it.
-6. **Grain.** One row per product across the job, as the reader's mandate 1 says, and a product
-   here is a line an estimator writes on the trade's scope sheet: a system, an element or a kind
-   of product, never a tag, a size or a model. A
-   kind of product is a thing a sub buys and installs as its own line: a towel bar, a robe hook, a
-   medicine cabinet, a walk-off mat, an acoustic underlayment. Several of one kind that differ
-   only in size, capacity, model, mounting or place are one row for the kind ("Exhaust fans"),
-   with every code written out in its description. Equipment that works as one system and that
-   one sub buys together is one row for the system. The parts every bidder who prices a row
-   carries, a typical detail and a general note are never rows, the tests that follow aside. Work
-   under a broader row is a row
-   of its own only where another trade could carry it, bidders often leave it out or qualify it,
-   it is priced on its own and no broader row covers it, an unusual requirement moves the price,
-   or the set asks for a separate price; the reader's mandate 6 says each in full. Instances are
+6. **Grain.** A row is the largest piece of work a bidder answers with one yes or no, written as
+   one line on the trade's scope sheet, and a reader settles its rows before it writes one,
+   holding each piece of work against three tests in this order, as the reader's mandate 6 says
+   in full. One row where things differ only in size, capacity, model, finish, mounting or place,
+   named for the kind ("Exhaust fans") with every code written out in its description; equipment
+   that works as one system and that one sub buys together is one row for the system; and the
+   hardware or the accessories a schedule lists together for one kind of door or room and one
+   supplier furnishes as a group are one row for the group, named for it and its place ("Door
+   hardware", "Unit bathroom accessories") with what it holds in its description, and a row
+   each where the schedule lists the group apart for the units and for the common areas. No row
+   for the parts every bid that carries a row carries with it, and a typical detail or a general
+   note is a citation on the row it details or governs. A row of its own where bids on the trade
+   carry the rest and leave this out or price it apart, for one of five reasons: a different kind
+   of thing, one whose count and specification a bid is checked on by itself, a difference in
+   what a thing is made of or how it is built among them and a group never split this way; a
+   version of the work under a requirement the rest is not under; work another trade could carry;
+   work bidders often leave out or qualify; or a separate price the set asks for. A variant, a
+   group or a part is a row of its own only by the second to the fifth reason, and where the tests leave one row or two open, it is two where bidders on
+   the trade do in practice carry one and leave out or qualify the other. Instances are
    never rows: one towel bar
    TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
    where the set states how many there are, that figure is its quantity, and a count the run
    makes of them never is. One product is two rows only where the
    drawings or the manual separate its supply from its install, on a finish trade by area, or
    where one trade leaves out work another trade carries, which takes an exclusion row beside the
-   carrying row, as the reader's mandate 1 says. A schedule of places, such as a room finish schedule or a door schedule,
+   carrying row, or where those tests make it two rows, as the reader's mandates 1 and 6 say. A schedule of places, such as a room finish schedule or a door schedule,
    is read for the products and types it calls for ("Luxury vinyl tile flooring, LVT"), never
    one row for the whole schedule. A schedule of one assembly's types that differ only in size or
    spacing (shear walls, footings, lintels) stays one row for the assembly, with every code
@@ -260,7 +273,8 @@ recheck plan, which retires the rows the new delivery removed, is that ask: the 
 step puts the words the user approved the plan with in `basis`, and nothing else it retires. The
 read plan the user approves before the reading starts is that ask for one more act: a package
 review retires the other row of two rows on its package that carry the same work, once the kept
-row cites every page the other did, with the plan's sentence in `basis`, and names the pair for
+row cites every page the other did that is not marked `shownOnly`, and every manual page, with
+the plan's sentence in `basis`, and names the pair for
 the check-in. Where the user asks for a combined row back, `restore_scope_item` puts it back:
 name the row you restored.
 
@@ -1092,9 +1106,9 @@ Before any reading runs, tell the user, in a few plain sentences, not a table:
 - What is deliberately left out, by sheet family or number. Say it plainly: anything here will not
   be scoped.
 - When the first check-in will be, roughly.
-- That each package review combines rows that carry the same work into one and puts each
-  heading's rows in order, and that the check-in names every row a review combined, so they can
-  have one put back.
+- That each package review combines rows that carry the same work into one and puts the rows
+  under every heading in the order the estimator reads the work, and that the check-in names
+  every row a review combined, so they can have one put back.
 - On a pass on an addendum: you read only the sheets the addendum prints, naming how many, its
   schedules and legends first where it has any, and afterward you review only the packages this
   pass writes rows on.
@@ -1259,8 +1273,8 @@ nothing else:
 ## 5. The citation index
 
 After each of the three windows, and never skipped. It runs after window 1 so every trade's page is
-usable at the first check-in, after window 2 so every reviewer works from a record whose rows
-already cite every page they appear on, and after window 3 so the rows the reviews created carry
+usable at the first check-in, after window 2 so every reviewer works from a record that holds
+every page each row appears on, and after window 3 so the rows the reviews created carry
 every page too. In a pass on an addendum it runs the index after each window that ran: a window 1
 that was skipped has none, and a window 3 that planned no review has none:
 
@@ -1299,8 +1313,8 @@ that was skipped has none, and a window 3 that planned no review has none:
 
 <!-- user-facing -->
 At this check-in, name the window you finished and what it covered, then say plainly that every
-item and every definition now shows every sheet it appears on, plans included, and that each
-trade's page is ready to look at.
+definition now shows every sheet it appears on, that every item lists the sheets that say what
+it is, and that each trade's page is ready to look at.
 <!-- /user-facing -->
 
 ## 6. Window 2: every sheet once
@@ -1359,7 +1373,8 @@ On the go-ahead:
    here is at a pass boundary and loses nothing.
 4. **Close the window** with a boundary runner, as in stage 4 step 4, then append
    `phase: window 2 complete` with the window's verified totals, run the index (stage 5, steps 1 to
-   4) so every row cites every page it appears on before any review reads it, fold the packages
+   4) so the record holds every page each row appears on before any review reads it, fold the
+   packages
    (step 5), and check in on the passes `since the last check-in:` names, whatever `check-in due:`
    reads, since the passes that came after the last check-in report here.
    When the plan deferred sheets, the window is not closed. After the slice's passes, run the
@@ -1518,10 +1533,11 @@ On the go-ahead:
    `starts after:` line names the pass they came out of and every earlier pass of a trade it
    holds, so no two units of one trade run at once; the listing offers it once that pass is
    recorded, and you start it as any pass. You never read a manual section yourself, and never
-   send an agent to read one outside the plan. Each review also writesnames those sections as not read. Each review also writes the standard lines whose condition it finds on this
-   job's own drawings or manual, each cited to where it found it, and settles its package's headings
-   in the order the work is built, or on the general requirements package in the order of its
-   seven headings.
+   send an agent to read one outside the plan. Each review also writes the standard lines whose
+   condition it finds on this job's own drawings or manual, each cited to where it found it,
+   settles its package's headings in the order the work is built, or on the general requirements
+   package in the order of its seven headings, and puts the rows under every heading in the order
+   the estimator reads the work.
 3. **Check in every few packages.** Where the listing reads `check-in due: yes`,
    four `pass:` lines have landed since the last `checkin:` line: check in (format below) on the
    passes `since the last check-in:` names: the packages finished, their pages ready, what was raised. A
@@ -1947,6 +1963,7 @@ sections not checked: <one per line, the section code + the reason: "manual remo
 families not checked: <row family, one per line, or "none">
 standard lines: <each line the script printed + how it ended, one per line, or "none">
 headings written: <the headings in their order on the first line, then each row whose heading was written + its subject + the heading, one per line, or "none">
+rows ordered: <each heading on the first line of `headings written:`, in that order + its count of home rows + `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 
@@ -1989,8 +2006,8 @@ long for one call where the call's room ends and naming where, and where its las
 it did not print, run the command that line gives for the rest. What it prints is for you to read:
 say what it names in the estimator's words, as the next section names them, and never paste a
 note or a label as it printed. Carry only what gives the estimator something to settle. A
-`how finely to split` note that the reader's mandate 6 list of schedules of types or its mandate 1
-test of one row per product settles is left out, at the check-in and at the close out, and so is
+`how finely to split` note that the reader's mandate 6 tests, held in their order, or its list of
+schedules of types settles is left out, at the check-in and at the close out, and so is
 a note that asks nothing, such as a statement that the owner furnishes an item a row already
 carries, and one saying that a reader or a reviewer took a citation of its own off the wrong row
 and cited the right row itself. A wrong citation that another reader or a person wrote, named as

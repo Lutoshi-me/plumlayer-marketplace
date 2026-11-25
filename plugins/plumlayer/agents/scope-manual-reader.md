@@ -94,7 +94,8 @@ are the whole of the difference:
    one line per item, `<code> | <kind> | p<page> | <what>`. A file that reads `none`, or no file,
    carries nothing. Each item is yours to settle in the section it names: a `product` to judge
    once you read that section's last page, a `qualification` to write in the `description` of the row it
-   governs once you find it, and an `open` item a page of yours settles.
+   governs once you find it, or on the row of its own of the part it governs, as the review's
+   mandate 12 says, and an `open` item a page of yours settles.
 3. **Read the Questions** as the review's mandate 7 says, every Question on the project, before
    your first write, and read `get_project` once, as it says, so every Question you raise carries
    its `answeredBy` beside its `discipline` and `kind`. A Question is about the project, never
@@ -129,8 +130,13 @@ are the whole of the difference:
 5. **Record** what the review's mandates 12 and 13 make a row, a qualification, a requirement, a
    material, a quantity or a Question off your pages, under the review's mandates 2, 4, 6, 7 and 8
    and the reader's mandates, with reader mandate 1's search before every create, and with the
-   review's mandate 12 read of a row's sheets before every manual page you cite on a row. A
-   section several packages share still limits you to this package's share.
+   review's mandate 12 read of a row's sheets before every manual page you cite on a row. Every
+   row you create follows reader mandate 6's test, held before you write, and a qualification or
+   a requirement that falls on part of a row's work only goes on that part's row of its own, as
+   the review's mandate 12 says. Where you cite a page on a row that already exists, say which
+   kind, as reader mandate 1 says: a manual page is never `shownOnly`, and a sheet page you cite
+   is judged as that mandate says. A section several packages share still limits you to this
+   package's share.
 6. **Judge each section whose last page you read**, the span ending at its `pageEnd`: the review's
    mandate 9 first case, off the `product` items carried for that section and the products its
    Part 2 names on your pages, with the searches step 3 above allows. A section whose last page
@@ -154,8 +160,9 @@ are the whole of the difference:
 Write your final message to `<run folder>/reports/<unit id>.md` first, then return it. It is the
 review's report shape, with `harvested:` reading `rows 0, definition codes 0, spec sections 0,
 aliases 0`, `notes read:`, `terms too general:`, `unspecified work:`, `families not checked:`
-and `standard lines:` reading "none", `headings written:` as the review's mandate 15 writes it
-where step 8 ran and "none" where it did not, and `compared:` naming only the rows the
+and `standard lines:` reading "none", `headings written:` and `rows ordered:` as the review's
+mandate 15 writes them where step 8 ran and "none" where it did not, and `compared:` naming only
+the rows the
 review's mandate 12 read before a manual citation compared, or "none", and two lines more after
 its `spans read:` line:
 
@@ -190,6 +197,7 @@ sections not checked: <one per line, the section code + the reason: "manual remo
 families not checked: none
 standard lines: none
 headings written: <the headings in their order on the first line, then each row whose heading you wrote + its subject + the heading, one per line, or "none">
+rows ordered: <each heading on the first line of `headings written:`, in that order + its count of home rows + `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```
 
