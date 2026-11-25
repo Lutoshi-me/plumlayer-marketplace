@@ -212,7 +212,8 @@ them is ever trimmed.
    or model of one kind of product, or one part of equipment that works as one system, which
    reader mandate 6 makes one row for the kind or the system and which take the system's
    treatment here, the kept row named for the kind. A row reader mandate 6's five reasons make a
-   row of its own is never one of these, and two rows those reasons separate are never a pair. The system's one row carries no part's
+   row of its own is never one of these, and two rows those reasons separate are never a pair.
+   Neither are two pieces of work made to order that reader mandate 6 makes rows apart. The system's one row carries no part's
    quantity and no part's mark, and none of your tools clears either, so it carries a quantity only
    where the set prints a figure for the system itself, written by reader mandate 5's quantity
    rules. For a system, the kept row is the part row created first among those that carry no
@@ -289,7 +290,7 @@ them is ever trimmed.
    heading under mandate 15, and name a row you retired on no report line but `anomalies:`,
    since the runner's check reads every other line against the list and the row has left it.
    These cases retire nothing: the other row sits on another package; the other row carries a
-   quantity or a `mark`; the other row holds a note in `notesInternal` or `notesExternal`, which is
+   quantity or a `mark`; the other row holds a note in `notesInternal` or `notesExternal`, which may be
    the estimator's own, the exclusion row a fold left aside included; it cites a Question, or holds
    a role or an assumption, that the kept row does not, an exclusion row a fold left aside apart
    for its exclusion role; it is one this review created or wrote a field or a heading on; or the
@@ -319,11 +320,22 @@ them is ever trimmed.
    required: it goes onto that field as reader mandate 5 says, as when a silence in mandate 9 exists
    only because a row is wrong. You never split or re-home a row, never retire one but the other
    row of a pair as above, and never rewrite one to
-   change what it covers beyond naming its places or its system as above; its heading is mandate 15's. Where you
+   change what it covers beyond naming its places or its system as above; its heading is mandate 15's. Where a
+   row on this package is named for its trade, its package or a whole manual section and its
+   description and the pages you opened show more than one piece of work as reader mandate 6
+   counts them, pieces made alike for several places being one piece, you do not split it: name
+   it on your `grain questions:` line with the pieces it holds ("Structural steel framing: a
+   canopy frame, support steel at three doors, screen wall posts"), so the check-in puts the
+   split to the estimator. A row named for a kind, a group, a family or a system, as reader
+   mandate 6 names them, is never named there for its name. Where you
    cannot tell how finely a piece of work splits, create at best judgment and name it on your
    `grain questions:` line. How finely our own scope sheet splits is ours to settle, and nobody on
    the design team answers it. Recall never drops to an unanswered question about how finely to
-   split. You write no note on any row, as reader mandate 5 says, and every field you write is in the
+   split. You write `notesInternal` only by the NOTES rule of reader mandate 5: on a row you create, or
+   on a row of this package that has none in that field, with the evidence of the page that
+   shows it, the write on your `field updates:` line like any other field's; never on a
+   standard line's row, which carries none, and never on either row of a pair you leave for the
+   estimator. You never write `notesExternal`. Every field you write is in the
    estimator's words: never `grain`, `text layer` or another of the run's own words, and never an
    agent named as the one who judged it.
 6. EVERY PAGE YOU OPEN IS NAMED WITH ITS REASON. One line per page on your `pages opened:` line:

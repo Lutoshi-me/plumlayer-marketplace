@@ -1154,15 +1154,17 @@ RETIRED_COLLAPSED_TERMS: list[tuple[str, re.Pattern]] = [
             re.IGNORECASE,
         ),
     ),
-    # A note on a scope row is the estimator's own, in his words, and no agent of the run writes
-    # one: the run once wrote the other trade that could carry a row, a Question's title, a
-    # correction and a qualification there, and an agent that reads any of it writes one again.
-    # A match passes only where a forbidding word governs the write itself ("You never write
-    # `notesExternal`"), never for a forbidding word elsewhere in its sentence; see
-    # `_retired_note_forbidden`. A directive is matched in any case ("Write the other trade in ...").
+    # The note to bidders is the estimator's own and no agent of the run writes it; the internal
+    # note is written by the readers' NOTES rule alone. The run once wrote the other trade that
+    # could carry a row, a Question's title, a correction and a qualification in a note, and an
+    # agent that reads any of it writes one again. A match passes where a forbidding word governs
+    # the write itself ("You never write `notesExternal`"), never for a forbidding word elsewhere
+    # in its sentence; see `_retired_note_forbidden`. A write of `notesInternal` also passes where
+    # "only by the NOTES rule" follows the field at once; see `_retired_note_by_rule`. A directive
+    # is matched in any case ("Write the other trade in ...").
     (
-        "a sentence that has an agent of the run write a row note (both notes are the estimator's "
-        "own, and no agent of the run writes either)",
+        "a sentence that has an agent of the run write a row note outside the NOTES rule (the note "
+        "to bidders is the estimator's own, and the internal note is written only by the NOTES rule)",
         re.compile(
             r"\b(?:write|writes|add|adds|put|puts|name|names|say|says)\b[^.;]{0,60}`notes(?:Internal|External)`"
             r"|\b(?:sentence|line|words|title)\b[^.;]{0,30}\b(?:in|on|onto|to|into|as)\b[^.;]{0,25}"
@@ -1249,6 +1251,35 @@ def _retired_note_forbidden(flat: str, m: re.Match) -> bool:
     )
 
 
+# The one instruction that writes the internal note defers to the NOTES rule in so many words, right
+# after the field: "write `notesInternal` only by the NOTES rule ...". The rule named elsewhere in
+# the sentence ("despite the NOTES rule", "where the NOTES rule passes it, write ...") excuses
+# nothing, and neither does it excuse a write of `notesExternal` or a match that names both fields.
+_NOTE_BY_RULE = re.compile(r"`notesInternal`\s+only\s+by\s+the\s+NOTES\s+rule\b")
+_NOTE_AFTER_RULE_WINDOW = 480
+_NOTE_DENIED_NEAR_FIELD = re.compile(
+    r"(?:\b(?:never|not|nor|neither)\b|n't|\bno\s+(?:agent|one|reader|review|step)\b)[^.;:]*$",
+    re.IGNORECASE,
+)
+
+
+def _retired_note_by_rule(flat: str, m: re.Match) -> bool:
+    """Whether the match is a write of `notesInternal` alone that "only by the NOTES rule" governs."""
+    fields = list(_NOTE_FIELD.finditer(flat, m.start(), m.end()))
+    if len(fields) != 1 or fields[0].group(0) != "`notesInternal`":
+        return False
+    # A note field named in the words that follow, whatever punctuation stands between ("..., and
+    # `notesExternal` too", "...; the same in `notesExternal`", "... (e.g. for gaps), and
+    # `notesExternal` too"), is a write the rule does not excuse, unless a forbidding word stands
+    # just before it ("You never write `notesExternal`", "No agent of the run writes ...").
+    # Honest bound: the words that follow, to `_NOTE_AFTER_RULE_WINDOW` characters.
+    after = m.end()
+    for later in _NOTE_FIELD.finditer(flat, after, after + _NOTE_AFTER_RULE_WINDOW):
+        if not _NOTE_DENIED_NEAR_FIELD.search(flat[max(after, later.start() - 48):later.start()]):
+            return False
+    return bool(_NOTE_BY_RULE.match(flat, fields[0].start()))
+
+
 def _retired_carrying_row_forbidden(flat: str, m: re.Match) -> bool:
     """Whether a forbidding word governs the write verb nearest the exclusion record the match names."""
     sentence = max(flat.rfind(". ", 0, m.start()), flat.rfind(";", 0, m.start()), -1) + 1
@@ -1299,6 +1330,33 @@ _RETIRED_COLLAPSED_SAMPLES: tuple[tuple[str, bool], ...] = (
     ("Do not write the other trade in `notesInternal`.", False),
     ("No agent of the run writes `notesInternal` or `notesExternal`.", False),
     ("The other trade's name is never written in `notesInternal`.", False),
+    # The internal note is written by the NOTES rule alone: the write passes only where the rule
+    # governs it right after the field, never where the rule is named elsewhere in the sentence,
+    # and never for the note to bidders.
+    ("You write `notesInternal` only by the NOTES rule below.", False),
+    ("Under both, you write `notesInternal` only by the NOTES rule of reader mandate 5, on a row "
+     "you create. You never write `notesExternal`.", False),
+    ("An agent of the run writes `notesInternal` only by the NOTES rule of the reader's mandate 5.",
+     False),
+    ("Write the Question title in `notesInternal` despite the NOTES rule.", True),
+    ("Where the NOTES rule passes it, write the other trade in `notesInternal`.", True),
+    ("Write `notesExternal` only by the NOTES rule below.", True),
+    ("You write `notesInternal` only by the NOTES rule, and write the other trade in "
+     "`notesExternal`.", True),
+    ("Write `notesInternal` and `notesExternal` only by the NOTES rule.", True),
+    ("You write `notesInternal` only by the NOTES rule of reader mandate 5, and `notesExternal` "
+     "too.", True),
+    ("You write `notesInternal` only by the NOTES rule below, and the same in `notesExternal` for "
+     "bidders.", True),
+    # Punctuation between the rule and a second field ends no permission an agent reads on.
+    ("You write `notesInternal` only by the NOTES rule of reader mandate 5; the same in "
+     "`notesExternal` for bidders.", True),
+    ("You write `notesInternal` only by the NOTES rule below (e.g. for gaps), and `notesExternal` "
+     "too.", True),
+    ("You write `notesInternal` only by the NOTES rule below. The same holds for `notesExternal`.",
+     True),
+    ("You write `notesInternal` only by the NOTES rule below. You never write `notesExternal`, on "
+     "any row, in any case.", False),
     ("Never write an exclusion record onto the row that carries the work.", False),
     ("No review puts an exclusion role on another trade's row.", False),
     ("An exclusion row has no `description`.", False),
@@ -1313,7 +1371,9 @@ def _retired_collapsed_hits(flat: str, name: str) -> list[str]:
         for m in pattern.finditer(flat):
             if at == _RETIRED_CARRYING_ROW_TERM and _retired_carrying_row_forbidden(flat, m):
                 continue
-            if at == _RETIRED_NOTE_TERM and _retired_note_forbidden(flat, m):
+            if at == _RETIRED_NOTE_TERM and (
+                _retired_note_forbidden(flat, m) or _retired_note_by_rule(flat, m)
+            ):
                 continue
             hits.append(f"{name}: retired term {label}: {m.group(0)!r}")
     return hits
@@ -1466,9 +1526,9 @@ def check_retired_vocabulary(plugin_path: Path, marketplace_root: Path) -> Resul
     detail = (
         f"{len(full_scope_files)} files scanned for retired vocabulary; "
         f"{sum(1 for _s, r in _RETIRED_COLLAPSED_SAMPLES if r)} old sentences refused and "
-        f"{sum(1 for _s, r in _RETIRED_COLLAPSED_SAMPLES if not r)} forbidding ones passed (a row "
-        f"note written by the run, an exclusion row's `By` description, its pointer at the row "
-        f"that carries the work)"
+        f"{sum(1 for _s, r in _RETIRED_COLLAPSED_SAMPLES if not r)} new ones passed (a row "
+        f"note written outside the NOTES rule, an exclusion row's `By` description, its pointer at "
+        f"the row that carries the work)"
     )
     if hits:
         detail += " | " + "; ".join(hits)
@@ -10427,7 +10487,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     # The check-in names in full each anomaly that landed nowhere on a trade's page and counts the
     # ones on a Question or a reply by pass. The fixture carries each ending the report shape gives,
     # one with no ending, a pair of rows carrying the same work, which ends `run only`, an ending
-    # naming a row, which no shape offers since no agent of the run writes a note on a row, and a
+    # naming a row, which no shape offers since no anomaly lands in a note on a row, and a
     # grain and a door note whose endings read as counted ones, since neither is an anomaly and
     # both print whole. An ending is counted only where it names an id in the form the record
     # writes, so a row's subject, words after `note on` and the shape's own placeholder print whole.
@@ -17122,6 +17182,33 @@ _GRAIN_READER_PHRASES = (
     "reason above.",
     "and a type under a requirement the others are not under is the second reason's row.",
     "a product schedule of six sizes of one kind is one row, never a row per code",
+    "and work made to order for its place aside, below",
+    "Work made to order for its place is never one row for its kind.",
+    "Work is made to order where the documents detail it for the one place it goes, with its own "
+    "plan, section or detail and its own members and dimensions",
+    "a product, the same manufactured thing put in many places, is never split this way",
+    "and names no piece of work makes no row: cite it on a live row whose work it governs",
+    "One that gives a grade, a coating or a size for a piece of work it names is read for that "
+    "piece by the tests.",
+    "never one row for all of a trade's fabrications",
+    "a building's steel frame is one row across its floors",
+    "Pieces made alike, to one detail with the same members whatever their lengths, are one row that "
+    "names their places",
+    "and pieces with details of their own are rows apart",
+    "A named place alone never makes work made to order, and neither does the package it sits on",
+    "and the list of schedules of types below still governs windows, doors, partitions and "
+    "panelboards.",
+    "connections, base plates, anchor rods, stiffeners and bolts under the row of the steel they "
+    "fasten;",
+    "never a row of its own unless it calls for a piece of work or a requirement a bid answers for "
+    "on its own",
+    "(pieces made to order with details of their own are not instances, as above)",
+    "A row's name is the sign of its width.",
+    "it holds more than one piece of work as the tests above count them",
+    "is never such a name, whatever heading the row later sits under",
+    "neither is the name of the one row the tests give a package that holds one product, kind or "
+    "system",
+    "is a row for that, as the tests say.",
 )
 _GRAIN_PINS: tuple[tuple[str, str], ...] = (
     tuple((reader, phrase) for reader in _GRAIN_READERS for phrase in _GRAIN_READER_PHRASES)
@@ -17159,6 +17246,22 @@ _GRAIN_PINS: tuple[tuple[str, str], ...] = (
          "before you write"),
         ("agents/scope-manual-reader.md", "Every row you create follows reader mandate 6's test, held "
          "before you write"),
+        ("skills/scope-run/SKILL.md", "is a row for each piece, named for what it is and where it "
+         "stands, one row however many plans and levels show it and one row for pieces made alike "
+         "at several places; a product put in many places is never split this way."),
+        ("skills/scope-run/SKILL.md", "a row whose only fitting name is its trade's, its package's or "
+         "a whole manual section's holds more than one piece of work"),
+        ("skills/scope-run/SKILL.md", "while a name the tests give a kind, a group, a family or a "
+         "system is never such a name"),
+        ("skills/scope-run/SKILL.md", "A review's note that a row is named for its trade, its package "
+         "or a whole manual section is never left out"),
+        ("agents/scope-reviewer.md", "Neither are two pieces of work made to order that reader "
+         "mandate 6 makes rows apart."),
+        ("agents/scope-reviewer.md", "is named for its trade, its package or a whole manual section "
+         "and its description and the pages you opened show more than one piece of work as reader "
+         "mandate 6 counts them, pieces made alike for several places being one piece, you do not "
+         "split it"),
+        ("agents/scope-reviewer.md", "is never named there for its name."),
     )
 )
 _GRAIN_RETIRED: tuple[tuple[str, str], ...] = (
@@ -17172,6 +17275,9 @@ _GRAIN_RETIRED: tuple[tuple[str, str], ...] = (
         "Door hardware is its own rows",
         "is a row per kind",
         "one a sub buys and installs as its own line",
+        "(a finish trade's areas aside, mandate 1), since a bidder answers for the kind",
+        "never a row of its own. What you read of such a part",
+        "A row is never a whole sheet and never a package header. Any other attribute",
     )),
     ("skills/scope-run/SKILL.md", "of its own only where another trade could carry it"),
     ("skills/scope-run/SKILL.md", "its mandate 1 test of one row per product settles"),
@@ -17183,7 +17289,9 @@ _GRAIN_RETIRED: tuple[tuple[str, str], ...] = (
 # In each reader, mandate 6's three tests stand in their order and the order sentence after them,
 # before the text that follows the tie-breaker.
 _GRAIN_ORDER: tuple[tuple[str, tuple[str, ...]], ...] = tuple(
-    (reader, ("ONE ROW where things differ only", "NO ROW for the parts", "A ROW OF ITS OWN where bids",
+    (reader, ("ONE ROW where things differ only", "ONE ROW too for the hardware",
+              "Work made to order for its place is never one row", "NO ROW for the parts",
+              "A ROW OF ITS OWN where bids",
               "The tests are held in that order.", "Work the set shows in the base work"))
     for reader in _GRAIN_READERS
 )
@@ -17197,8 +17305,106 @@ def check_grain_test(plugin_path: Path, marketplace_root: Path) -> Result:
         "tie-breaker, the list of schedules of types still governing and door hardware its group "
         "row; the readers', the review's and the manual reader's sentences that pulled the other way "
         "carrying their clause; the skill restating the test in order; the old five tests and the "
-        "row for each kind of a set gone",
+        "row for each kind of a set gone; work made to order for its place a row for each piece, a "
+        "name as wide as the trade, the package or a manual section sending the reader back to the "
+        "tests, and a general note of standards making no row",
         orders=_GRAIN_ORDER,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Check: the NOTES rule
+# --------------------------------------------------------------------------- #
+#
+# The run once wrote a note on about half its rows, most of them boilerplate, and was then told to
+# write none. The estimator's rule since: an agent of the run writes the internal note only where
+# it rests on this job's documents, tells the estimator what the row does not, and is one he would
+# act on, worded as one estimator's word to the next; the note to bidders stays his own. Both
+# readers carry the rule whole in mandate 5, and the review, the manual reader and the skill defer
+# to it. The sentences that forbade every note must be gone, or an agent that reads one writes none.
+# Honest bound: text only; whether a running reader writes only notes an estimator would act on is
+# the measured run's.
+
+_NOTE_READERS = ("agents/scope-reader.md", "agents/scope-vocabulary-reader.md")
+_NOTE_READER_PHRASES = (
+    "You write `notesInternal` only by the NOTES rule below.",
+    "You never write `notesExternal`, on any row, in any case: a note to bidders is the estimator's "
+    "own, in his own words.",
+    "NOTES. A row's note is one estimator's word to the next about buying out that row.",
+    "Its reader is the estimator on this job",
+    "A note passes the NOTES rule only where all three of these hold:",
+    "it rests on this job's documents",
+    "What bidders on a trade usually do is never enough by itself;",
+    "the row does not already say it.",
+    "he would do something because of it. Where he would read it and go on, there is no note.",
+    "Only three kinds pass: work a page calls for and hands to no one it names",
+    "which sits on this row's trade by your judgment, so that trade's bidders may leave it out;",
+    "work two places in the documents each have a different trade provide, so two bids could each "
+    "carry it,",
+    "and work called for with no size, count or extent, where the bidder or the contractor carries "
+    "whatever it turns out to be",
+    "never work the documents give one named party, which is an exclusion row under mandate 4 (two "
+    "places that each give the work to a different trade are the second kind below)",
+    "which two disciplines' sheets showing the same work never is;",
+    "These never pass: that bids for the trade carry the line; another trade that could carry the "
+    "row with nothing on the page behind it;",
+    "Word it as he would across a desk: one or two short plain sentences",
+    "Call a trade by its name, never its code;",
+    "Most rows take no note.",
+    "A note already on a row, whoever wrote it, is never written over, added to or moved to another "
+    "row.",
+    "about the other trade unless mandate 5's NOTES rule passes it",
+    "never for what you are unsure you read.",
+)
+_NOTE_PINS: tuple[tuple[str, str], ...] = (
+    tuple((reader, phrase) for reader in _NOTE_READERS for phrase in _NOTE_READER_PHRASES)
+    + (
+        ("agents/scope-reviewer.md", "You write `notesInternal` only by the NOTES rule of reader "
+         "mandate 5: on a row you create, or on a row of this package that has none in that field"),
+        ("agents/scope-reviewer.md", "never on a standard line's row, which carries none, and never "
+         "on either row of a pair you leave for the estimator. You never write `notesExternal`."),
+        ("agents/scope-reviewer.md", "which may be the estimator's own"),
+        ("agents/scope-manual-reader.md", "you write `notesInternal` only by the NOTES rule of reader "
+         "mandate 5, and only on a row you create in this read: never on a row that already stands, "
+         "a standard line's row among them. You never write `notesExternal`."),
+        ("skills/scope-run/SKILL.md", "An agent of the run writes `notesInternal` only by the NOTES "
+         "rule of the reader's mandate 5"),
+        ("skills/scope-run/SKILL.md", "No agent of the run writes `notesExternal`, on any row, in any "
+         "case."),
+        ("skills/scope-run/SKILL.md", "that is a note on the row where the reader's mandate 5 NOTES "
+         "rule passes it, and otherwise a report line;"),
+    )
+)
+_NOTE_RETIRED: tuple[tuple[str, str], ...] = (
+    *((reader, phrase) for reader in _NOTE_READERS for phrase in (
+        "You never write `notesExternal` or `notesInternal`, on any row, in any case",
+        "and what you noticed that nothing asks goes on no row",
+        "and nothing on the row about the other trade. The row goes on that one trade alone.",
+    )),
+    ("agents/scope-reviewer.md", "You write no note on any row"),
+    ("agents/scope-reviewer.md", "which is the estimator's own, the exclusion row"),
+    ("agents/scope-manual-reader.md", "you write no `notesInternal` or `notesExternal` on any row"),
+    ("agents/scope-rechecker.md", "no note on the row, as the reader's mandate 5 says"),
+    ("skills/scope-run/SKILL.md", "No agent of the run writes either"),
+    ("skills/scope-run/SKILL.md", "that is a report line, never a note on the row"),
+)
+# In each reader the rule states its reader and purpose, then its three tests, then the kinds that
+# pass, then how a note is worded.
+_NOTE_ORDER: tuple[tuple[str, tuple[str, ...]], ...] = tuple(
+    (reader, ("NOTES. A row's note is one estimator's word", "A note passes the NOTES rule only where",
+              "Only three kinds pass:", "Word it as he would across a desk", "`mark` only where a drawing tags"))
+    for reader in _NOTE_READERS
+)
+
+
+def check_note_rule(plugin_path: Path, marketplace_root: Path) -> Result:
+    return _pinned_text_check(
+        "note-rule", plugin_path, _NOTE_PINS, _NOTE_RETIRED,
+        "both readers carry the NOTES rule in mandate 5, its reader and purpose, its three tests, "
+        "the three kinds that pass and how a note is worded, in that order; the review, the manual "
+        "reader and the skill write the internal note only by it and never the note to bidders; "
+        "the sentences that forbade every note gone",
+        orders=_NOTE_ORDER,
     )
 
 
@@ -17353,6 +17559,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_read_again(plugin_path, marketplace_root),
         check_rows_ordered(plugin_path, marketplace_root),
         check_grain_test(plugin_path, marketplace_root),
+        check_note_rule(plugin_path, marketplace_root),
         check_citation_kind(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)

@@ -55,8 +55,9 @@ once, before your first record read, and never again in this read:
   warranties` or `Mockups`, is created beside the rows of the same name other packages carry.
   Where they say "your review", read
   "your manual part"; where they name "mandate <n>", they mean the review's own mandate of that
-  number, and "reader mandate <n>" the reader's. Under both, you write no `notesInternal` or
-  `notesExternal` on any row, as reader mandate 5 says.
+  number, and "reader mandate <n>" the reader's. Under both, you write `notesInternal` only by the NOTES
+  rule of reader mandate 5, and only on a row you create in this read: never on a row that
+  already stands, a standard line's row among them. You never write `notesExternal`.
 
 These are not guidance. Each one exists because its absence produced a named failure, and none of
 them is ever trimmed or softened here. Where the steps below differ from them, the steps below

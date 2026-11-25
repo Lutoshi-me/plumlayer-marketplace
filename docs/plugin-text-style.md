@@ -85,8 +85,10 @@ tag typed into the text itself. Where one entry needs to point at another for th
 the way an estimator would, "the wall tile line above," never by its subject id. Every skill or
 agent file that writes one of these fields points at this rule instead of restating it. The record
 refuses text that carries a record id or such a tag, so a write that does this fails rather than
-lands. A scope item's two notes are the estimator's own, in his own words: no agent of the scope
-run writes either, and a person's own agent writes one only when the person asks.
+lands. A scope item's note to bidders is the estimator's own, in his own words, and no agent of
+the scope run writes it. An agent of the scope run writes the internal note only by the reader's
+NOTES rule: it rests on this job's documents, tells the estimator what the row does not, and is
+one he would act on. A person's own agent writes either note only when the person asks.
 
 ## 2. The frontmatter description contract
 
@@ -190,7 +192,8 @@ Each of these is a harness check.
      lines: the shape an exclusion had before it was a row of its own, a `"counterparty"` key in a
      role's value, the script's old `exclusion on:` line, an instruction to write an exclusion
      record or role onto the carrying row or a row of another trade, an instruction that has an
-     agent of the run write `notesInternal` or `notesExternal` on a row, an exclusion row's
+     agent of the run write `notesInternal` outside the readers' NOTES rule or `notesExternal` at
+     all, an exclusion row's
      description saying who carries the work (`description: By`), and an exclusion row's
      `repeatsScopeItem` naming the row that carries the work, which has another name. A sentence telling the agent
      to write no `counterparty` passes, since it names the field in a code span and gives it no
@@ -199,6 +202,9 @@ Each of these is a harness check.
      sentence passes only where the forbidding word governs the write ("never write", "writes
      no", "is not written", "no agent writes"), never for a "no" elsewhere in the sentence, and an
      instruction is matched in any case, so "Write the other trade in `notesInternal`" is refused.
+     A write of `notesInternal` also passes where the words "only by the NOTES rule" follow the
+     field at once ("You write `notesInternal` only by the NOTES rule below"); the rule named
+     elsewhere in the sentence excuses nothing, and it never excuses a write of `notesExternal`.
      The check runs each of the three newest phrases over an old sentence it refuses and a new one
      it passes.
    - A **scoped** list (e.g. `supersede`/`supersession`, `fan-out`, `idempotency`, `census`,

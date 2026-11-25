@@ -202,7 +202,11 @@ that relaxes any one of them reproduces a measured, named failure.
    hardware or the accessories a schedule lists together for one kind of door or room and one
    supplier furnishes as a group are one row for the group, named for it and its place ("Door
    hardware", "Unit bathroom accessories") with what it holds in its description, and a row
-   each where the schedule lists the group apart for the units and for the common areas. No row
+   each where the schedule lists the group apart for the units and for the common areas. Work
+   made to order for its place, which the documents detail for the one place it goes (a steel
+   frame, a canopy, a stair, a piece of millwork), is a row for each piece, named for what it is
+   and where it stands, one row however many plans and levels show it and one row for pieces
+   made alike at several places; a product put in many places is never split this way. No row
    for the parts every bid that carries a row carries with it, and a typical detail or a general
    note is a citation on the row it details or governs. A row of its own where bids on the trade
    carry the rest and leave this out or price it apart, for one of five reasons: a different kind
@@ -230,7 +234,10 @@ that relaxes any one of them reproduces a measured, named failure.
    the schedule row that defines it, with a box on that schedule row built from the page's text
    read, never from a render, or the sheet with no box where no line of the read carries that
    row, named on the reader's `anomalies:` line. A row is never a whole sheet
-   and never a package header. Where the reader or the reviewer cannot tell how finely the work in
+   and never a package header, and a row whose only fitting name is its trade's, its package's
+   or a whole manual section's holds more than one piece of work and is written as a row for
+   each, while a name the tests give a kind, a group, a family or a system is never such a
+   name. A general note that states only the standards a trade's work meets makes no row. Where the reader or the reviewer cannot tell how finely the work in
    front of it splits, and neither the set nor a rule of its mandates settles it, it creates at best
    judgment and names it on its `grain questions:` report line, which the check-in and the close
    out carry to the user; how finely our own scope sheet splits is ours to settle, and nobody on
@@ -387,9 +394,14 @@ A newly created scope item is a full row, not a name. Every new item writes:
   points at the sheet, and the doctrine is cite, don't rewrite: never transcribe a schedule's
   columns, the detail, or the bar sizes into the row. How a schedule becomes rows is
   non-negotiable 6.
-- **notesExternal** and **notesInternal**: the estimator's own notes, for bidders and for
-  himself. No agent of the run writes either, on any row, in any case, and a note already on a
-  row is never written over, added to or moved to another row. Work by others and an alternate
+- **notesInternal**: the row's note, one estimator's word to the next about buying out the
+  row, read in the Notes column. An agent of the run writes `notesInternal` only by the NOTES
+  rule of the reader's mandate 5: the note rests on what this job's documents show or leave
+  out, tells the estimator what the row does not, and is one he would act on. Most rows take
+  none.
+- **notesExternal**: the estimator's own note to bidders. No agent of the run writes
+  `notesExternal`, on any row, in any case. A note already on a row, in either field, is never
+  written over, added to or moved to another row. Work by others and an alternate
   are each a row of their own, as the reader's mandate 4 says; a Question a row waits on is cited
   on it; a conflict between two documents is a Question where it clears the Question bar below
   and nothing on the row where it does not; and a correction of a value on the record is the
@@ -464,7 +476,8 @@ not clear the bar:
 - when a Question already asks it: read every Question on the project first, closed ones
   included, with no trade filter (non-negotiable 2);
 - when it is a grain call: that is a report line (non-negotiable 6);
-- when it is something for the estimator alone: that is a report line, never a note on the row;
+- when it is something for the estimator alone: that is a note on the row where the reader's
+  mandate 5 NOTES rule passes it, and otherwise a report line;
 - when it is about a scope row: the row is what is wrong, and it is corrected on the record;
 - when it is which subcontractor or trade the contractor gives work to, labor, or means and
   methods; documents that disagree about who is contractually responsible for work, as where one
@@ -2010,7 +2023,9 @@ note or a label as it printed. Carry only what gives the estimator something to 
 schedules of types settles is left out, at the check-in and at the close out, and so is
 a note that asks nothing, such as a statement that the owner furnishes an item a row already
 carries, and one saying that a reader or a reviewer took a citation of its own off the wrong row
-and cited the right row itself. A wrong citation that another reader or a person wrote, named as
+and cited the right row itself. A review's note that a row is named for its trade, its package
+or a whole manual section is never left out: no agent of the run splits a row, so that split
+is the estimator's. A wrong citation that another reader or a person wrote, named as
 a door-owned suggestion, is the estimator's to settle and is carried. An anomaly carrying
 `not read from the picture:` names a scanned sheet, or a part of one, that no reader could read:
 it is always carried, by its sheet and the part left, at the check-in that prints it and at the

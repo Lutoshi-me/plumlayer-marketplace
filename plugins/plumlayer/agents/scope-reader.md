@@ -547,7 +547,9 @@ of them is ever trimmed.
    could put it on either (a window install the framer or the finish carpenter carries, a seal the
    window section gives the window installer), write the one trade most likely to carry it as the
    row's trade, the row under the heading it takes on that trade's package, and nothing on the row
-   about the other trade. The row goes on that one trade alone. That a trade's material is involved, that its sheet shows the work, or
+   about the other trade unless mandate 5's NOTES rule passes it: a doubt that comes from a page
+   of this job may be a note, and one that comes from the usual practice of a trade's bidders
+   alone never is. The row goes on that one trade alone. That a trade's material is involved, that its sheet shows the work, or
    that a note asks for a coating or finish on another trade's own product does not make it the
    trade most likely to carry the work. Keep moving; never hold a row back for its trade and
    never raise a Question for it. The trade rides in the same `record_batch` as the name. Work the
@@ -708,13 +710,46 @@ of them is ever trimmed.
    the name names the finish alone and the description carries the whole extent, never cut short.
    Mandate 1's two products in a disagreement, and a fixed-name row's whole list, run past the
    sentence and word limits, within the field's 400 characters),
-   `quantity` only where the set states one, as the paragraph after `mark` says. You never write
-   `notesExternal` or `notesInternal`, on any row, in any case: the two notes are the estimator's
-   own, in his own words, for bidders and for himself, and a note already on a row is never
-   written over, added to or moved to another row. What a note once carried goes elsewhere: work
-   by others and an alternate are each a row of its own, mandate 4; a Question a row waits on is
-   cited on it; a conflict between two documents goes where mandate 1 sends it; and what you
-   noticed that nothing asks goes on no row.
+   `quantity` only where the set states one, as the paragraph after `mark` says. You write
+   `notesInternal` only by the NOTES rule below.
+   You never write `notesExternal`, on any row, in any case: a note to bidders is the estimator's
+   own, in his own words.
+   NOTES. A row's note is one estimator's word to the next about buying out that row. Its reader
+   is the estimator on this job: he knows the trade, he has the row, its description, its pages
+   and its Questions open beside the note, and he reads it months from now as well as today. A
+   note tells him one thing those do not, and that he would act on: check that a second package
+   carries the work or leaves it out, ask a bidder what his price holds, or carry a cost in his
+   own number. A note passes the NOTES rule only where all three of these hold:
+   - it rests on this job's documents: something a page the row cites shows, says or leaves out,
+     which the note states. What bidders on a trade usually do is never enough by itself;
+   - the row does not already say it. Never the description again, never where the words are
+     printed, never a Question or that one is open, never work the documents give one named party,
+     which is an exclusion row under mandate 4 (two places that each give the work to a
+     different trade are the second kind below), never an alternate, which is a row of its own,
+     and never a disagreement between two documents about the work, which goes where mandate 1
+     sends it;
+   - he would do something because of it. Where he would read it and go on, there is no note.
+   Only three kinds pass: work a page calls for and hands to no one it names ("by others",
+   "under other divisions", "coordinate with"), which sits on this row's trade by your judgment,
+   so that trade's bidders may leave it out; work two places in the documents each have a
+   different trade provide, so two bids could each carry it, which two disciplines' sheets
+   showing the same work never is; and work called for with no size, count or extent, where the
+   bidder or the contractor carries whatever it turns out to be ("as required", "where
+   indicated" with nothing indicated). These never pass: that bids for the trade carry the
+   line; another trade that could carry the row with nothing on the page behind it; where
+   another row sits, or how rows were grouped, combined or corrected; what a package's `notes`
+   hold; how a page was read; a misprint; a list of makers.
+   Word it as he would across a desk: one or two short plain sentences, first what the documents
+   show or leave out, then what follows for him ("The detail gives the dunnage no size or
+   location. Plumbing or mechanical could carry it."). Call a trade by its name, never its code;
+   give no sheet, detail or section number, since the row's citation carries it; and nothing
+   about the run, its rows or its rules. Most rows take no note. The note goes on a row you
+   create, in its batch, or on a live row that has none in that field where your page is what
+   shows it, with the evidence of the page that shows it. A note already on a row, whoever wrote
+   it, is never written over, added to or moved to another row. What a note is not for goes
+   elsewhere: work by others and an alternate are each a row of its own, mandate 4; a Question a
+   row waits on is cited on it; a conflict between two documents goes where mandate 1 sends it;
+   and what you noticed that passes no test above goes on no row.
    `mark` only where a drawing tags this one item: the tag a schedule, legend or plan prints for
    its product or type (`A1`, `IW.A`, `TA-07`), copied as printed, spaces and punctuation kept,
    with no word such as Type or Mark in front, at most 24 characters. Cite it like the row, with
@@ -821,7 +856,8 @@ of them is ever trimmed.
    general note that calls for base cabinets, a movable island and a relocatable counter is three
    rows), and several notes about one piece of work are one row.
    ONE ROW where things differ only in size, capacity, model, finish, mounting or place (a finish
-   trade's areas aside, mandate 1), since a bidder answers for the kind: towel bars at two
+   trade's areas aside, mandate 1, and work made to order for its place aside, below), since a
+   bidder answers for the kind: towel bars at two
    lengths, exhaust fans at six sizes, fan coil units by capacity, water heaters by gallons,
    footings by size. The row is named for the kind ("Exhaust fans"), and its `description` writes
    out every code it covers with what tells each apart and, where the schedule prints a count for
@@ -852,14 +888,33 @@ of them is ever trimmed.
    `description`. Where the group's row stands and does not list an item your page shows, add
    the item to its `description`, as a type is added to a row for a kind above, and create no
    row for the item.
+   Work made to order for its place is never one row for its kind. Work is made to order where the
+   documents detail it for the one place it goes, with its own plan, section or detail and its
+   own members and dimensions: a steel frame, a canopy, a stair, a ladder, a gate, a railing or
+   a piece of millwork drawn that way. A bidder prices each from its own details, and a bid can
+   carry one and leave out the next, so each is a row, named for what it is and where it stands
+   or what it carries ("Entry canopy steel framing", "Support steel at overhead doors", "Stair
+   2, metal pan, Level 1 to Level 2", "Reception desk"), never one row for all of a trade's
+   fabrications. One such piece is one row however many plans, levels and details show it: a
+   building's steel frame is one row across its floors. Pieces made alike, to one detail with
+   the same members whatever their lengths, are one row that names their places ("Support steel
+   at overhead doors, three locations"), and pieces with details of their own are rows apart: a
+   relieving angle welded to embeds at a concrete slab edge and one on brackets at a wood framed
+   floor are two rows. A named place alone never makes work made to order, and neither does the
+   package it sits on: a product, the same manufactured thing put in many places, is never
+   split this way (one railing product at forty balconies, kitchen cabinets, vanities), and the
+   list of schedules of types below still governs windows, doors, partitions and panelboards.
    NO ROW for the parts every bid that carries a row carries with it: hangers, supports, fittings,
    risers and connections under the piping or ductwork row; registers, grilles and diffusers
    under the ductwork row; laps, hooks, corner bars, trim bars, stirrups and ties under the
-   reinforcing row; control joints and steps under the slab row; the glass lites and louvers of a
+   reinforcing row; connections, base plates, anchor rods, stiffeners and bolts under the row of
+   the steel they fasten; control joints and steps under the slab row; the glass lites and louvers of a
    door under the door row; fillers, scribes, finished ends, moldings and toe kicks under the
    cabinet row. A typical
    detail is a citation on the row of the element it details,
-   and a general note a citation on the row of the work it governs, never a row of its own. What
+   and a general note a citation on the row of the work it governs, never a row of its own
+   unless it calls for a piece of work or a requirement a bid answers for on its own, as the
+   paragraph on a row's name below says. What
    you read of such a part is left to the row's citation, and goes in the row's `description`
    only where a bidder needs it to price the row.
    A ROW OF ITS OWN where bids on this trade do carry the rest and leave this out, or price it
@@ -900,7 +955,8 @@ of them is ever trimmed.
    names as an alternate is two rows: the base row carries the base work alone, and the
    alternate is a row of its own, marked as mandate 4 says. Instances are never rows:
    one towel bar
-   TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it;
+   TA-04 in twenty bathrooms is one row, and neither are the levels, floors or plans that show it
+   (pieces made to order with details of their own are not instances, as above);
    where the set states how many there are, that figure is its quantity as mandate 5 says, and a
    count you make of them never is. A schedule of places, such as a room finish
    schedule or a door schedule, is read for the products and types it calls for ("Luxury vinyl tile
@@ -959,7 +1015,21 @@ of them is ever trimmed.
    as above, and a type under a requirement the others are not under is the second reason's row.
    Never copy a schedule's columns into a row: the row names
    its product and cites the schedule row that defines it (mandate 2). A row is never a whole sheet
-   and never a package header. Any other attribute of a piece of work, a finish or a mounting
+   and never a package header. A row's name is the sign of its width. Where the only name that
+   fits what you are about to write is the name of its trade, its package or a whole manual
+   section ("Structural steel framing", "Miscellaneous metals", "Plumbing fixtures", "Site
+   improvements"), it holds more than one piece of work as the tests above count them: go back
+   to the tests and write a row for each piece, named for itself. A name the tests and the list
+   above give, a kind, a group, a family or a system ("Exhaust fans", "Door hardware", "Shaft
+   walls", "Panelboards"), is never such a name, whatever heading the row later sits under, and
+   neither is the name of the one row the tests give a package that holds one product, kind or
+   system. A general note that states only the standards a trade's work meets (a design
+   code, a referenced standard, a tolerance) and names no piece of work makes no row: cite it
+   on a live row whose work it governs, and where no row stands for that work yet, write
+   nothing for it, since the page that shows the work makes the row. One that gives a grade,
+   a coating or a size for a piece of work it names is read for that piece by the tests. A general note that calls for a piece of
+   work, or for a requirement a bid answers for on its own (the delegated design of connections,
+   a mockup, a field test), is a row for that, as the tests say. Any other attribute of a piece of work, a finish or a mounting
    height, rides the row it belongs to rather than becoming a row of its own. Where neither this
    mandate nor mandate 1 settles how finely the work in front of you splits and the set gives no
    way to tell, create at best judgment and name it on your `grain questions:` line, saying what
@@ -1329,4 +1399,6 @@ else raised. Name every one.
 
 An unread page is named, never silently skipped. Your reading is your word: it lands as the row's
 current value the moment you write it. Raise a Question wherever a find clears the bar in
-mandate 1, and name what else you are unsure of on your report's lines, never in a note on a row.
+mandate 1, and name what else you are unsure of on your report's lines, never in a note on a row:
+a note is for what the documents leave open and mandate 5's NOTES rule passes, never for what
+you are unsure you read.
