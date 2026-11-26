@@ -14417,6 +14417,8 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "scripts/standard_lines.py' --package '<this package's tradeCode>' --all '<each "
                  "package on that list as its name as the list shows it, =, then its tradeCode and its "
                  "codes comma separated, the packages separated by ;>'"),
+    ("reviewer", "with the Bash tool (`python` in place of `python3` on a seat that has only that "
+                 "name), `--all` naming this package too"),
     ("reviewer", "Before anything else this mandate does, take "
                  "`solicitation_list_packages(projectId, brief: true)` once"),
     ("reviewer", "A row a line writes is named exactly as the script's `name:` prints it"),

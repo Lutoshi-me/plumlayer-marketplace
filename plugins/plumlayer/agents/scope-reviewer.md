@@ -861,7 +861,8 @@ them is ever trimmed.
       reads every package off that one list.
     - Your lines. Run
       `python3 '<the folder holding the reader definition>/../scripts/standard_lines.py' --package '<this package's tradeCode>' --all '<each package on that list as its name as the list shows it, =, then its tradeCode and its codes comma separated, the packages separated by ;>'`
-      with the Bash tool, `--all` naming this package too
+      with the Bash tool (`python` in place of `python3` on a seat that has only that name),
+      `--all` naming this package too
       (`--all 'Plumbing=22 00 00,22 05 00; Electrical=26 00 00; Drywall=09 21 16,09 29 00'`). The
       script gives each trade's file of lines to one live package, the same way in every review of
       the run, so no two packages take one trade's lines. It prints a `places:` line naming each
