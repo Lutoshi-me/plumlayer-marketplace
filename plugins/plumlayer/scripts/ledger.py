@@ -2,8 +2,8 @@
 ledger.py: the one way a line reaches a scope run's ledger.
 
 Every line of `<run folder>/ledger.md` goes on through this script: the pass runners' `dispatch`,
-`verified` and `note` lines, the boundary runner's, and the lead's `pass:`, `phase:` and `checkin:`
-lines (`lead_pass.py record` calls the same function). Nothing else writes the file, and no line
+`verified` and `note` lines, the boundary runner's, and the lead's `pass:`, `phase:`, `short:`,
+`amending:`, `amended:` and `unplaced:` lines (`lead_pass.py record` calls the same function). Nothing else writes the file, and no line
 already on it is ever changed.
 
 Usage:
@@ -29,7 +29,12 @@ ends, however it ends), the script:
    writes (`heal` below).
 2. Checks the whole batch in order, against the ledger and the batch's own lines before each one:
    the three runner shapes, read with `pass_summary.py`'s own parser and its closed set of note
-   kinds; the lead's `pass:`, `phase:` and `checkin:` shapes; and the rule that a unit carries
+   kinds; a deviation note is a block or an interruption only where its tail is the whole shape
+   the runner writes (`blocked: <tool> <sign-in, refused by the client or server>` or
+   `interrupted: no report on file`) directly before `, read <k>`, as `pass_summary.py` reads it,
+   and any other note holding those words is an ordinary deviation and is taken; the lead's shapes, a
+   `phase: reading started` line carrying its UTC time, and no new `checkin:` line, since a scope
+   run has no check-in; and the rule that a unit carries
    another `verified` line only where a `dispatch` line for that unit sits between it and the
    unit's `verified` line before. One line that fails refuses the whole batch, and nothing is
    written; the refusal names the line and what is wrong with it.
@@ -52,8 +57,8 @@ The heal, before every append, on `heal`, and whenever `lead_pass.py` reads the 
 - The ledger's bytes equal the shadow's: nothing to do.
 - The ledger is a strict prefix of the shadow: a writer stopped between its two writes. The
   ledger is completed from the shadow, and nothing is said.
-- The shadow is a strict prefix of the ledger, and every line past it is a whole `phase:` or
-  `checkin:` line, holding no control character, that the check of step 2 takes, as an append of
+- The shadow is a strict prefix of the ledger, and every line past it is a whole `phase:` line,
+  holding no control character, that the check of step 2 takes, as an append of
   those lines would be checked:
   the lead or the package folder appended its own standalone line by hand. Those lines are added
   to the shadow as they stand, the ledger is left as it is, and nothing is said, so a `phase:`
@@ -67,8 +72,8 @@ The heal, before every append, on `heal`, and whenever `lead_pass.py` reads the 
       repaired: lines differing from the run's own copy <n>, first at line <i>; the ledger was written again from that copy
 
   `<n>` counts the whole lines changed, taken out or added, and `<i>` is the first line, counted
-  in the run's own copy, where the two differed. The lead's check-in and close-out say it to the
-  estimator in plain words.
+  in the run's own copy, where the two differed. The closing report says it to the estimator in
+  plain words.
 - No shadow yet (the first append on this version, or a new run): the shadow becomes a copy of
   the ledger's whole lines, and a last line with no newline is dropped from both.
 - A shadow whose last line has no newline, which no run of this script leaves, and a ledger that
@@ -134,18 +139,37 @@ REPAIRED_RE = re.compile(
 )
 
 # The lead's own line shapes. The `pass:` figures after `replied` differ by window, so any number of
-# `<figure> <n>` pairs may stand between it and `lead-verified`.
+# `<figure> <n>` pairs may stand between it and `lead-verified`: `skipped <n>` in every window, then
+# window 3's and window r's own.
 _PASS_RE = re.compile(
     r"^pass: (?:[1-9][0-9]*|r) \S+ units \d+ created \d+ updated \d+ questions \d+ replied \d+"
     r"(?: [a-z][a-z-]* \d+)* lead-verified (?:yes|no)$"
 )
 _PHASE_RE = re.compile(r"^phase: \S.*$")
-_CHECKIN_RE = re.compile(r"^checkin: (?:[1-9][0-9]*|r) \S+ (?:go|pause)$")
-LEAD_SHAPES = {"pass:": _PASS_RE, "phase:": _PHASE_RE, "checkin:": _CHECKIN_RE}
+# The line the lead appends when reading starts carries the time in UTC, which the closing report
+# measures the run from. An older ledger's `phase: plan approved` line is still read.
+READING_STARTED = "phase: reading started"
+_READING_STARTED_RE = re.compile(r"^phase: reading started \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
+# What the lead writes down when it happens, for the closing report: a unit the record holds fewer
+# entries under than its runner verified (written by `lead_pass.py record`), a package amendment
+# with its reason, and a manual section left on no package with why.
+_SHORT_RE = re.compile(r"^short: (?:[1-9][0-9]*|r) \S+ \S+ record \d+ runner \d+$")
+# A package amendment is written twice: `amending:` before its calls, and `amended:` with the same
+# text once they succeed, so the closing report says a change was made only once it was.
+_AMENDING_RE = re.compile(r"^amending: \S.*$")
+_AMENDED_RE = re.compile(r"^amended: \S.*$")
+_UNPLACED_RE = re.compile(r"^unplaced: \S+ \S.*$")
+LEAD_SHAPES = {
+    "pass:": _PASS_RE, "phase:": _PHASE_RE, "short:": _SHORT_RE, "amending:": _AMENDING_RE,
+    "amended:": _AMENDED_RE, "unplaced:": _UNPLACED_RE,
+}
+# A scope run has no check-in. A ledger written before still holds `checkin:` lines, and every
+# script reads past them, but no new one goes on.
+RETIRED_KEYWORDS = {"checkin:": "a scope run has no check-in, so no `checkin:` line goes on the ledger"}
 # The lines the heal adopts when they were appended by hand: the lead's and the package folder's
-# standalone lines. A runner's lines land as one closing group and a `pass:` line goes on through
-# the lead's record script, so neither is adopted.
-ADOPTED_KEYWORDS = ("phase:", "checkin:")
+# standalone `phase:` lines. A runner's lines land as one closing group and a `pass:` line goes on
+# through the lead's record script, so neither is adopted.
+ADOPTED_KEYWORDS = ("phase:",)
 
 # A character no ledger line holds: a control character (a tab and a carriage return among them) or
 # a line or paragraph separator. An append writes each as a space; the heal adopts no line holding one.
@@ -276,8 +300,8 @@ def _difference(shadow: bytes, ledger: bytes) -> tuple[int, int]:
 
 def _adoptable(shadow: bytes, extra: bytes) -> bool:
     """
-    Whether the lines past the shadow are whole, not blank, each a `phase:` or `checkin:` line
-    holding no control character, and taken by the check of an append.
+    Whether the lines past the shadow are whole, not blank, each a `phase:` line holding no
+    control character, and taken by the check of an append.
     """
     if not extra.endswith(b"\n"):
         return False
@@ -404,14 +428,21 @@ def check_line(line: str, state: _State, where: str) -> None:
     if keyword.endswith(":"):
         if keyword == REPAIRED_KEYWORD:
             raise LedgerError(f"{where}: a `repaired:` line is written by this script alone")
+        if keyword in RETIRED_KEYWORDS:
+            raise LedgerError(f"{where}: {RETIRED_KEYWORDS[keyword]}")
         shape = LEAD_SHAPES.get(keyword)
         if shape is None:
             raise LedgerError(
                 f"{where}: the line starts with {keyword!r}, and the lead's lines start with "
-                f"`pass:`, `phase:` or `checkin:`"
+                f"{', '.join(f'`{k}`' for k in LEAD_SHAPES)}"
             )
         if shape.match(line) is None:
             raise LedgerError(f"{where}: the {keyword} line is not in the shape the skill gives it")
+        if line.startswith(READING_STARTED) and _READING_STARTED_RE.match(line) is None:
+            raise LedgerError(
+                f"{where}: `{READING_STARTED}` carries the time reading started in UTC, as "
+                f"`{READING_STARTED} 2026-01-31T22:10:00Z`"
+            )
         return
     try:
         parsed = pass_summary.parse_runner_line(parts, where)
@@ -423,6 +454,9 @@ def check_line(line: str, state: _State, where: str) -> None:
         raise LedgerError(f"{where}: the dispatch line names no `purpose` with words after it")
     if keyword == "note" and len(parts) < 6:
         raise LedgerError(f"{where}: the note line carries a kind and no clause")
+    # A deviation note is a block or an interruption only by its whole tail, as `pass_summary.py`
+    # reads it; a note that holds the words anywhere else, or a near miss of the shape, is an
+    # ordinary deviation, so nothing here refuses one for the words it carries.
     if keyword == "verified":
         if parsed["result"] not in ("ok", "mismatch"):
             raise LedgerError(f"{where}: the verified line's result reads {parsed['result']!r}, not ok or mismatch")

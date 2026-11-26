@@ -49,6 +49,12 @@ Before anything else, write the one word `started` to
 `<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
 this read against your unit only where that file is there.
 
+Where a call you need cannot be made, because Claude Code refused it, your sign-in failed, or
+Plumlayer did not answer after one try more, write nothing more: put the one line
+`blocked: <the tool's name> <sign-in, refused by the client or server>` first in your report and
+in your returned message, and end. A blocked read counts against nothing, and the run tries
+the same step again.
+
 A row in the rows file is the comparison's own: `subject`, `sheetNumber`, `old` and `new` pages
 (`fileId`, `page`), `box` on the old page or null for a reference to the whole sheet, `answer`
 (`moved` with `movedTo`, `gone`, `foundAtSeveralPlaces` with `places`, `notComparable` with

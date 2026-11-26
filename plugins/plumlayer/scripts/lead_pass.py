@@ -12,14 +12,14 @@ It never reads the record. The counts come from the lead, off its own `count_ent
 script compares them with the summary the pass's runner wrote; it never takes a created figure from
 that summary.
 
-Three modes:
+Four modes:
 
     python lead_pass.py passes --plan <run folder>/read-plan.md [--running <pass id>,<pass id>]
         [--reported <pass id>]
 
         Every pass the read plan carries, in its order, two lines each:
 
-            <pass id>: units <n>, units verified <k>, summed <yes, or no and why>
+            <pass id>: units <n>, units verified <k>, units skipped <s>, summed <yes, or no and why>
             <pass id> prefixes: ["scopeItem:<unit id>-", ...]
 
         then `passes <n>, finished <k>; to dispatch: <pass ids, or none>`, and what the lead does
@@ -27,14 +27,14 @@ Three modes:
 
             start now: <pass ids, or none>
             waiting: <pass ids, or none>
-            since the last check-in: <pass ids, or none>
-            check-in due: <yes or no>
 
-        A pass is finished where its `units:` and `units verified:` agree and it reads `summed: yes`,
-        the rule the skill gives. Those two values are taken as a plan run would write them now, off
-        the ledger and the summaries on file, since the plan file is rewritten only by a plan run; a
-        plan with no ledger yet has nothing finished. The prefixes are built from the unit ids the
-        plan block carries, in its order.
+        A pass is finished where its units verified and its units skipped add up to its `units:`
+        and it reads `summed: yes`. A unit is skipped where `plan_inventory.settled_units` reads it
+        so, its two reads spent on failed checks; the recheck's window `r` skips none, so a unit
+        there whose reads are spent leaves its pass unfinished. Those values are taken as a plan run
+        would write them now, off the ledger and the summaries on file, since the plan file is
+        rewritten only by a plan run; a plan with no ledger yet has nothing finished. The prefixes
+        are built from the unit ids the plan block carries, in its order.
 
         `--running` is the passes the lead started and has not recorded. `start now:` is the passes
         not finished, not running and with every pass on their `starts after:` line finished, in
@@ -43,24 +43,11 @@ Three modes:
 
         `--reported` is the pass that just handed back. It prints only that pass's prefixes line,
         read off the plan at this call, so a window 3 manual part a replan put in the pass is in it,
-        then the five closing lines, `passes` through `check-in due:`. A pass the plan does not carry
+        then the three closing lines, `passes` through `waiting:`. A pass the plan does not carry
         is refused. It counts as running until it is recorded, so it is never offered to start.
 
-        `since the last check-in:` is what the lead hands to `checkin --passes`: the passes with a
-        `pass:` line of this window since the last check-in was shown, last recorded last. A
-        `checkin:` line is appended when the user answers, so a pass recorded while the check-in
-        stood open sits above it; the line's second field names the last pass recorded when it was
-        shown, and this reads from that pass's line, from the window's first line where the field
-        reads `none`, and from the `checkin:` line itself otherwise. With no `checkin:` line of this
-        window it reads every `pass:` line of the window.
-
-        `check-in due:` is yes in windows 2 and 3 where CHECK_IN_EVERY `pass:` lines or more of this
-        window sit after its last `checkin:` line, a pass run again counted at each of its lines, and
-        always no in window 1, which has no check-in inside it. Where one is due, `start now:` reads
-        `none, a check-in is due`, and every pass not finished and not running goes on `waiting:`.
-
         A plan with no pass, as window 2's is where window 1 selected or left out every sheet, prints
-        `passes 0, finished 0; to dispatch: none` and those four lines, each reading none or no.
+        `passes 0, finished 0; to dispatch: none` and those two lines, each reading none.
 
     python lead_pass.py record <run folder>/ledger.md <window> <pass id>
         --plan <run folder>/read-plan.md --counts-json '<the counts array>'
@@ -75,109 +62,84 @@ Three modes:
         a line was taken out of, is refused before any count is compared. A unit the summary reads
         verified whose latest `verified` line after those lines reads mismatch is refused too, since
         the summary no longer speaks for it.
-        Where every count holds, it appends one `pass:` line to the ledger and prints it:
 
-            pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> lead-verified yes
-            pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> pages-opened <n> searches <n> reports-restored <n> lead-verified yes
+        A unit the summary reads `verified skipped`, in windows 1, 2 and 3, is settled: its writes
+        stay on the record, and its count is held to the `created` of its latest `verified` line as
+        a floor where one is summed, and to nothing where none is. A unit it reads `verified no` is
+        refused, as is a skipped unit in window `r`, since the recheck stops there. It appends one
+        `pass:` line to the ledger and prints it:
+
+            pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> skipped <n> lead-verified yes
+            pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> skipped <n> pages-opened <n> searches <n> reports-restored <n> lead-verified yes
 
         The line goes on through `ledger.py`'s append, under its lock and checked, as every line
         of the ledger does.
 
-        Under it, it prints the pass as the estimator hears it, the line the check-in prints for
-        it below, with the new items off the summary's trades line, so the one line the lead says
-        as the pass is recorded names the sheets or packages and the items, never the pass id or
-        the entry count.
+        Under it, it prints the pass as the estimator hears it, with the new items off the summary's
+        trades line, so the one line the lead says as the pass is recorded names the sheets or
+        packages and the items, never the pass id or the entry count.
 
         `created` is the sum of the lead's own counts. `updated`, `questions` and `replied` come off
-        the summary's totals line, and in window 3 `pages-opened`, `searches` and
-        `reports-restored` off its `review:` line. A unit whose count on the record is above the one its
-        runner verified is named under the line with both counts: an entry count under a prefix only
-        grows, so a later write onto that unit's rows raises it, and nothing removes one. A count
-        below the runner's is the record holding less than the runner verified: the script writes
-        nothing, names each such unit with both counts, and exits 3, and the run stops there.
+        the summary's totals line, `skipped` is the units it reads `verified skipped`, and in window
+        3 `pages-opened`, `searches` and `reports-restored` off its `review:` line, each 0 where
+        that line reads `review: not read, ...`, as on a pass whose every unit was skipped. A unit whose
+        count on the record is above the one its runner verified is named under the line with both
+        counts: an entry count under a prefix only grows, so a later write onto that unit's rows
+        raises it, and nothing removes one. A count below the runner's is the record holding less
+        than the runner verified: the line reads `lead-verified no`, and one
+        `short: <window> <pass id> <unit id> record <n> runner <n>` line per such unit goes on in the
+        same append, so the closing report names each first under what went wrong. The run goes on.
 
-    python lead_pass.py checkin <run folder> <window> --passes <pass id>,<pass id>,...
-        [--start <lines>[:<characters>]]
+        Where the pass skipped BREAKER_FLOOR units or more and more than half its units, it prints,
+        last, `breaker: <s> of <n> units skipped; stop the run` and one `skipped:` line per skipped
+        unit with its note: a guard against a failure the reads did not name, which the lead stops on.
 
-        What the check-in needs, off the ledger's `pass:` lines, the read plan beside them and the
-        summaries on file. Each pass by what it read, the sheet numbers its block carries or in
-        window 3 its packages, with its last `pass:` line's figures in the estimator's words, and
-        its id only on the lead's own line:
+    python lead_pass.py wait <seconds>
 
-            window <n>, <n> passes
-            <n> sheets read (<sheet numbers>): new items <n>, items updated <n>, Questions raised <n>, replies <n>
-            over <n> passes: new items <n>, items updated <n>, Questions raised <n>, replies <n>
-            your own check over <n> pass lines (<pass ids>), never said to the estimator: units <n>, entries <n>
+        Waits that many seconds, at most WAIT_CAP, and prints one line saying how long it waited.
+        It is the lead's wait between two tries of an operation that could not be made and between
+        two polls of a job: a foreground command that returns by itself, under the 300,000
+        milliseconds a Bash call allows, so no wait hangs on a notice that may never come.
 
-        The new items are the summaries' `trades:` lines summed, each a subject the pass's runner
-        found on the record. A pass line's `created` counts entries, every citation and trade
-        written with those items, so it goes on the lead's own line and never reads as items; in
-        window 3 that line adds the pages opened and the searches. Then the items by trade summed
-        off the same lines, the anomalies already on the record as counts, and every other note
-        line of each summary, under its pass, each copied whole under the label CHECKIN_LABELS
-        gives it, less the unit id it opens with, which a window 3 note trades for its package's
-        name.
+    python lead_pass.py seen '<run folder>' <key> '<signature>'
 
-        An anomaly ends with where it landed, after a comma, as the reader's and the reviewer's
-        report shapes ask. One that ends `Question <id>` or `reply <id>` is on a trade's
-        page, where the estimator reads it, so it is counted rather than printed, where the id is
-        one the record writes: a Question's id as `ask_question` returns it,
-        `question:proj-<uuid>:<uuid>`; and after `reply`, that id or the reply's own entry id,
-        `clm-<uuid>`. No agent of the run writes a note on a row, so no ending names one. Any
-        other ending prints whole, a placeholder such as `Question <id>` and a row's subject
-        among them:
+        Remembers how long one answer has stood, across polls and sessions, so a bound the skill
+        sets is counted by a script and not by the lead. It keeps `<run folder>/plan/seen.json`
+        (Audience: machine), replaced whole through `ledger.publish` each time, holding for each
+        key the signature last given, the UTC times it was first and last given unchanged, how
+        many times in a row it was given, how many of the latest of those came with no ledger line
+        added between one and the next, and the ledger's whole line count at the last. A key not
+        on file, or given a different signature, starts again at once. A ledger line added between
+        two times starts the last figure again at 1 and leaves the others, so a line another pass
+        wrote never keeps a repeated refusal from reaching 2. A key not given for twenty minutes
+        starts its minutes again and keeps its counts, so a later wait on a key of the same name
+        does not open already standing. It prints one line:
 
-            on the record: Questions <n>, replies <n>, in pass <pass id>
-            on the record: Questions <n>, replies <n>, in the review of <package name>, trade <catalog id>
-            on the record over these passes: Questions <n>, replies <n>
+            seen: <key> standing <m> minutes, <n> times in a row, <q> in a row with no ledger line added
 
-        A window 3 anomaly is counted under the review its unit id names on the read plan beside
-        the ledger; any other anomaly, and one whose unit the plan does not name, under its pass.
-        One that names a pair of rows carrying the same work prints whole, ending `run only`,
-        since the estimator reads which row a review kept, and so does one ending `sheet reading` or
-        `run only`, or with an ending this does not read. A line under a note that opens with
-        none of the summary's labels continues that note, so an anomaly carrying one prints
-        whole, its continuation under it, since its last words are not where it landed. Every
-        overlap, unread page, grain question, door-owned suggestion, definitions kind and
-        deviation line prints whole, with any continuation under it.
-
-        In window 3 the pass is named by the manual pages its manual parts read, each part's spans
-        once its `verified` line reads ok (`manual pages read (230000 pages 900 to 915 for HVAC)`),
-        beside the packages it reviewed; a part not verified is not named there, and a part whose
-        latest verified read counts off a report the run restored from the record, by the summary
-        script's own selection, is named under `manual pages whose report was written from the
-        record`. A manual part's counts fall under its package's review.
-
-        Each `repaired:` line `ledger.py` appended since the last `checkin:` line prints in the
-        estimator's words, `the run's log: <n> lines of it were changed outside the run and were
-        put back, the first at line <i>`.
-
-    Before `record`, `passes` and `checkin` read the ledger, each holds it to the run's own copy
-    through `ledger.py`, which puts back any line changed outside the run and appends its
-    `repaired:` line; nothing here refuses or stops over such a change.
-
-        Output stops before CHECKIN_CAP characters, below the 30,000 a Bash call returns, every
-        printed line counted, the closing line included, and its last line names the passes it did
-        not print and the command that prints the rest. A note longer than the room a call has
-        left once nothing else is printed is cut there, with a line under it naming the pass, the
-        note and the character it stops at, and the next call prints the rest of it. `--start` is
-        how many of the first pass's printed lines an earlier call already printed, and after a
-        colon (`--start 4:23000`) how many characters of the line after them.
+        The key of a poll is the job (its id where the answer gives one, and otherwise the verb
+        with the delivery or file it was asked about) and its signature the job's status and
+        progress fields; the key of a refusal is the operation (the pass id, or the boundary
+        step's name) and its signature the first line the script printed. A file in no shape this
+        mode writes is read as empty.
 
 The recheck, window r:
 
-    The recheck of a new delivery runs its passes as window `r` (`record <ledger> r <pass id>`,
-    `checkin <run folder> r`). Its units create nothing, so the lead's counts read 0 under every
-    prefix, and its `pass:` line carries, after the figures every window carries, what its units
-    found, copied off the summary's `recheck:` line, which the summary script counts off each
-    unit's own report:
+    The recheck of a new delivery runs its passes as window `r` (`record <ledger> r <pass id>`).
+    Its units create nothing, so the lead's counts read 0 under every prefix, and its `pass:` line
+    carries, after the figures every window carries, what its units found, copied off the
+    summary's `recheck:` line, which the summary script counts off each unit's own report:
 
-        pass: r <pass id> units <n> created <n> updated <n> questions <n> replied <n> recited <n> rows-changed <n> removed <n> not-found <n> retired <n> kept <n> refused <n> lead-verified yes
+        pass: r <pass id> units <n> created <n> updated <n> questions <n> replied <n> skipped 0 recited <n> rows-changed <n> removed <n> not-found <n> retired <n> kept <n> refused <n> lead-verified yes
 
     A pass names its sheets as `<n> sheets rechecked (<sheet numbers>)`, and a retire pass its units
-    as `<n> items checked for retiring`; the line under a recorded pass, and each pass of a
-    check-in, says the rows re-cited, changed, read as removed and not found, and the items
-    retired, kept and not retired, never the entries.
+    as `<n> items checked for retiring`; the line under a recorded pass says the rows re-cited,
+    changed, read as removed and not found, and the items retired, kept and not retired, never the
+    entries.
+
+    Before `record` and `passes` read the ledger, each holds it to the run's own copy through
+    `ledger.py`, which puts back any line changed outside the run and appends its `repaired:` line;
+    nothing here refuses or stops over such a change.
 
 Exit codes:
   0  printed, and in record mode the `pass:` line appended.
@@ -188,25 +150,25 @@ Exit codes:
      prefixes with whole numbers or whose prefixes are not exactly the plan block's, each once, a
      summary of another window or pass, one with no `ledger lines:` line or whose line does not
      name this ledger's first lines, one naming other units than the plan block carries, one
-     with a unit it reads `verified no`, one with a unit it reads verified whose latest
-     `verified` line past those lines reads mismatch, or one with no totals line, no trades line in
-     its shape or one summed with no trades file, or in
-     window 3 no `review:` line, or in window r no `recheck:` line; at the check-in, a `--start` that is not a count of lines and
-     characters or names a character past its line, and pass lines and totals that alone leave no
-     room under the cap.
-  2  argparse rejected the invocation.
-  3  record mode only: a count below the one its runner verified. Nothing was written.
+     with a unit it reads `verified no`, or in window `r` `verified skipped`, one with a unit it
+     reads verified whose latest `verified` line past those lines reads mismatch, or one with no
+     totals line, no trades line in its shape or one summed with no trades file, or in window 3
+     no `review:` line, or in window r no `recheck:` line.
+     In seen mode, a run folder that is not there, or a file that cannot be written.
+  2  argparse rejected the invocation, a mode this script does not have among them.
 
 Grounding role: reads files and copies byte values, and adds the counts it is given. Nothing here
-fills a gap: a pass with no `pass:` line or no summary on file is named as one at the check-in.
+fills a gap.
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import re
 import sys
+import time
 from pathlib import Path
 
 # The read plan's reader is the summary script's own, so the two read a pass's units one way.
@@ -217,62 +179,24 @@ import plan_inventory  # noqa: E402
 
 REPORTS_FOLDER = pass_summary.REPORTS_FOLDER
 
-# How many `pass:` lines land between check-ins inside windows 2 and 3.
-CHECK_IN_EVERY = 4
+# The breaker: a pass that skipped at least this many units, and more than half its units, stops
+# the run. It guards against a failure no read named as a block, and it guarantees nothing.
+BREAKER_FLOOR = 3
 
-# Under the 30,000 characters a Bash call returns. Every line a check-in call prints counts
-# against it, the closing line included.
-CHECKIN_CAP = 25_000
-
-# The summary lines a check-in carries, in the order the summary prints them, each with the label
-# the check-in prints it under, in the estimator's words, since the person watching reads what it
-# prints. The note behind the label is copied whole, as the reader wrote it, less the unit id it
-# opens with.
-CHECKIN_LABELS = {
-    "overlap notes": "maybe the same work twice",
-    "anomalies": "to look at",
-    "unread pages": "pages not read",
-    "grain questions": "how finely to split",
-    "door-owned suggestions": "for the estimator to decide",
-    "definitions kinds added": "kinds of marks defined",
-    "deviations and repairs": "what went wrong and how it was fixed",
-}
-
-# Where an anomaly landed, as its last words after a comma, for the two places a trade's page
-# shows it, each with the word its count prints under. `sheet reading` and `run only` are not
-# here: no trade's page shows either, so those notes print whole.
-LANDED_COUNTED = {"Question": "Questions", "reply": "replies"}
-
-# The ids an ending names, in the forms the record writes them, so a placeholder never reads as a
-# place on the record.
-_UUID = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-_QUESTION_ID = rf"question:proj-{_UUID}:{_UUID}"
-_REPLY_ENTRY_ID = rf"clm-{_UUID}"
-_LANDED_RE = re.compile(
-    rf", (?:(Question) {_QUESTION_ID}|(reply) (?:{_QUESTION_ID}|{_REPLY_ENTRY_ID}))$"
-)
-
-# Every label the summary opens a line with. A line under a note that opens with none of them
-# continues that note.
-SUMMARY_LABELS = tuple(CHECKIN_LABELS) + (
-    "window", "units read", "per unit", "totals verified", "trades", "conflicting rows", "review",
-    "ledger", "ledger lines",
-)
-
-# A pair of rows carrying the same work, as the reviewer names it, tells the estimator which row
-# was kept and whether the other was retired, so it prints whole.
-SAME_WORK = " same work: "
+# The longest the wait mode waits, under the 300 seconds a Bash call run with a timeout of
+# 300,000 milliseconds allows, so the call always returns before its timeout.
+WAIT_CAP = 280
 
 # A window 3 review's unit line as the plan script writes it, its manual pages after `reads`, and
-# ` verified` added once its review verified.
+# ` verified` added once its review verified, or ` skipped` once its reads were spent.
 _REVIEW_LINE_RE = re.compile(
-    r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?)(?:, reads .+)?, package \S+( verified)?$"
+    r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?)(?:, reads .+)?, package \S+( verified| skipped)?$"
 )
 
 # A manual part's unit line: the review's package and trade, the unit it reads on after, and each
 # span it reads, `; ` between them.
 _PART_LINE_RE = re.compile(
-    r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?), package \S+, manual part after (\S+), reads (.+?)( verified)?$"
+    r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?), package \S+, manual part after (\S+), reads (.+?)( verified| skipped)?$"
 )
 # One span as the plan script writes it: `<code> p<first>-p<last> of <fileId>`, and where it is not
 # the whole section, the section's own pages after it.
@@ -287,7 +211,7 @@ PASS_FIGURES = ("units", "created", "updated", "questions", "replied")
 REVIEW_FIGURES = ("pages-opened", "searches", "reports-restored")
 
 _SUMMARY_HEADER_RE = re.compile(r"^window: ([1-9][0-9]*|r)\s+pass: (\S+)$")
-_PER_UNIT_RE = re.compile(r"^per unit: (\S+) created (\d+|-) .* verified (yes|no)$")
+_PER_UNIT_RE = re.compile(r"^per unit: (\S+) created (\d+|-) .* verified (yes|no|skipped)$")
 _TOTALS_RE = re.compile(r"updated (\d+), questions (\d+) replied (\d+)")
 # One trade on a summary's trades line: a catalog id, which carries spaces, then ` x` and its count.
 _TRADE_ENTRY_RE = re.compile(r"^(.+) x(\d+)$")
@@ -310,10 +234,6 @@ class LeadPassError(Exception):
     """A named failure with a one-line reason, reported on stderr and exiting 1."""
 
 
-class CountMismatch(Exception):
-    """The record holds fewer entries under a unit's prefix than its runner verified."""
-
-
 def _named(items: list[str]) -> str:
     return pass_summary._named(items)
 
@@ -332,40 +252,6 @@ def _read_plan(path: Path, window: int, pass_id: str) -> dict:
 # --------------------------------------------------------------------------- #
 # passes
 # --------------------------------------------------------------------------- #
-
-def _since_checkin(ledger: Path, window: int) -> tuple[list[str], int]:
-    """
-    The passes the next check-in reports, each once, last recorded last, and how many `pass:` lines
-    sit after the last `checkin:` line, both of this window. No ledger yet is nothing reported.
-    """
-    if not ledger.is_file():
-        return [], 0
-    try:
-        text = ledger.read_text(encoding="utf-8")
-    except Exception as e:
-        raise LeadPassError(f"cannot read the ledger at {ledger}: {e}") from e
-    recorded: list[tuple[int, str]] = []
-    checkin: tuple[int, str] | None = None
-    for at, raw in enumerate(text.splitlines()):
-        parts = raw.strip().split()
-        if len(parts) >= 3 and parts[1] == str(window):
-            if parts[0] == "pass:":
-                recorded.append((at, parts[2]))
-            elif parts[0] == "checkin:":
-                checkin = (at, parts[2])
-    line_at, read_from = -1, -1
-    if checkin is not None:
-        line_at, shown_with = checkin
-        named = [at for at, pass_id in recorded if pass_id == shown_with and at < line_at]
-        read_from = -1 if shown_with == "none" else (named[-1] if named else line_at)
-    since: dict[str, int] = {}
-    for at, pass_id in recorded:
-        if at > read_from:
-            # Taken out and put back, so a pass recorded a second time sits at its last line.
-            since.pop(pass_id, None)
-            since[pass_id] = at
-    return list(since), sum(1 for at, _pass_id in recorded if at > line_at)
-
 
 def passes_lines(
     plan_path: Path, running: list[str] | None = None, reported: str | None = None
@@ -398,10 +284,10 @@ def passes_lines(
                     f"{plan_path}: pass {pass_id}'s block carries no `{field}:` line, which the "
                     f"plan script writes; run the plan script again"
                 )
+    units_by_pass = {pass_id: block["units"] for pass_id, block in blocks.items()}
     try:
-        live = plan_inventory.live_pass_state(
-            window, {pass_id: block["units"] for pass_id, block in blocks.items()}, plan_path.parent,
-        )
+        live = plan_inventory.live_pass_state(window, units_by_pass, plan_path.parent)
+        skipped_of = plan_inventory.live_pass_skipped(window, units_by_pass, plan_path.parent)
     except plan_inventory.PlanError as e:
         raise LeadPassError(str(e)) from None
 
@@ -410,11 +296,17 @@ def passes_lines(
     to_dispatch: list[str] = []
     for pass_id, block in blocks.items():
         verified, summed = live[pass_id]
-        lines.append(f"{pass_id}: units {block['fields']['units']}, units verified {verified}, summed {summed}")
+        skipped = skipped_of[pass_id]
+        lines.append(
+            f"{pass_id}: units {block['fields']['units']}, units verified {verified}, units skipped "
+            f"{skipped}, summed {summed}"
+        )
         prefixes = [f"scopeItem:{unit}-" for unit in block["units"]]
         prefixes_of[pass_id] = f"{pass_id} prefixes: {json.dumps(prefixes)}"
         lines.append(prefixes_of[pass_id])
-        if not (verified == len(block["units"]) and summed == "yes"):
+        # Settled is verified or skipped; a skipped unit holds its pass open nowhere but window r,
+        # whose units are never skipped.
+        if not (verified + skipped == len(block["units"]) and summed == "yes"):
             to_dispatch.append(pass_id)
     finished = len(pass_ids) - len(to_dispatch)
     closing = [
@@ -439,18 +331,9 @@ def passes_lines(
     out_now = len({pass_id for pass_id in out if pass_id in to_dispatch})
     ready = ready[:max(0, plan_inventory.PASSES_AT_ONCE - out_now)]
 
-    since, after_line = _since_checkin(plan_path.parent / plan_inventory.LEDGER_FILE, window)
-    due = window != 1 and after_line >= CHECK_IN_EVERY
-    if due:
-        ready = []
-        start_now = "none, a check-in is due"
-    else:
-        start_now = ", ".join(ready) or "none"
     waiting = [pass_id for pass_id in to_dispatch if pass_id not in out and pass_id not in ready]
-    closing.append(f"start now: {start_now}")
+    closing.append(f"start now: {', '.join(ready) or 'none'}")
     closing.append(f"waiting: {', '.join(waiting) or 'none'}")
-    closing.append(f"since the last check-in: {', '.join(since) or 'none'}")
-    closing.append(f"check-in due: {'yes' if due else 'no'}")
     if reported is not None:
         return [prefixes_of[reported], *closing]
     return [*lines, *closing]
@@ -527,6 +410,10 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         elif line.startswith("trades:"):
             trades_text = line
             trades = _trades_of(line)
+        elif line == pass_summary.REVIEW_NOT_READ_LINE:
+            # No review of the pass read ok, as where every unit was skipped: no pages and no
+            # searches were measured, and the pass is recorded with its skipped count all the same.
+            review = _REVIEW_RE.match("review: pages opened 0, searches 0, reports restored 0")
         elif line.startswith("review:"):
             review = _REVIEW_RE.match(line)
         elif line.startswith("recheck:"):
@@ -658,13 +545,21 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
             f"{summary_path} reads other units than the plan block carries: "
             + "; ".join(differences) + "; the pass is dispatched again for a new summary"
         )
-    unverified = [unit for unit in units if summary["perUnit"][unit][1] != "yes"]
+    # A skipped unit is settled in windows 1, 2 and 3: its writes stay on the record and its pass is
+    # finished without it. In window r no unit is skipped, and one whose reads are spent stops the
+    # recheck, so it is refused here as any unit not verified is.
+    skipped = [
+        unit for unit in units
+        if summary["perUnit"][unit][1] == "skipped" and window != RECHECK_WINDOW
+    ]
+    unverified = [unit for unit in units if summary["perUnit"][unit][1] != "yes" and unit not in skipped]
     if unverified:
         raise LeadPassError(
             f"{summary_path} reads verified no for {_named(unverified)}, so the pass gets no "
             f"pass line until its runner verifies every unit"
+            + (", and in the recheck a unit whose reads are spent stops it" if window == RECHECK_WINDOW else "")
         )
-    checked_again = _mismatched_since(data, summary["ledgerLines"], window, units)
+    checked_again = _mismatched_since(data, summary["ledgerLines"], window, [u for u in units if u not in skipped])
     if checked_again:
         raise LeadPassError(
             f"{summary_path} reads verified yes for {_named(checked_again)}, and a later verified "
@@ -672,20 +567,20 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
             f"runner verifies every unit"
         )
 
-    below: list[str] = []
+    below: list[tuple[str, int, int]] = []
     above: list[str] = []
     for unit in units:
         count = counts[unit]
-        verified = int(summary["perUnit"][unit][0])
+        summed = summary["perUnit"][unit][0]
+        # A skipped unit whose last read carries no verified line has no count to hold it to.
+        if summed == "-":
+            continue
+        verified = int(summed)
+        # A skipped unit's last check found a mismatch, so its count is a floor and never more.
         if count < verified:
-            below.append(f"{unit} {count} on the record, {verified} when its runner verified it")
-        elif count > verified:
+            below.append((unit, count, verified))
+        elif count > verified and unit not in skipped:
             above.append(f"{unit} {count} on the record, {verified} when its runner verified it")
-    if below:
-        raise CountMismatch(
-            f"the record holds less under these units of window {window} pass {pass_id} than "
-            f"their runner verified: " + "; ".join(below) + f"; nothing was written to {ledger}"
-        )
 
     if not ledger.is_file():
         raise LeadPassError(f"no ledger at {ledger}")
@@ -695,6 +590,7 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
         ("updated", summary["updated"]),
         ("questions", summary["questions"]),
         ("replied", summary["replied"]),
+        ("skipped", str(len(skipped))),
     ]
     if window == 3:
         figures += [
@@ -704,11 +600,14 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
     if window == RECHECK_WINDOW:
         figures += list(summary["recheck"].items())
     line = f"pass: {window} {pass_id} " + " ".join(f"{k} {v}" for k, v in figures)
-    line += " lead-verified yes"
+    # The record holding less than a runner verified is written down where it is found, and the run
+    # goes on; the closing report names it first under what went wrong.
+    line += " lead-verified no" if below else " lead-verified yes"
+    shorts = [f"short: {window} {pass_id} {unit} record {count} runner {verified}" for unit, count, verified in below]
 
     # Through the ledger script, as every line goes on: under its lock, checked, its shadow first.
     try:
-        ledger_script.append_lines(ledger, [line])
+        ledger_script.append_lines(ledger, [line, *shorts])
     except ledger_script.LedgerError as e:
         raise LeadPassError(f"cannot append to the ledger at {ledger}: {e}") from None
 
@@ -716,58 +615,21 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
     reads = _plan_reads(plan_path, window, _verified_ok(ledger, window) if window == 3 else frozenset())[0]
     said = {field: int(value) for field, value in figures if field in PASS_FIGURES + RECHECK_FIGURES}
     words = _said_recheck(said) if window == RECHECK_WINDOW else _said_figures(summary["items"], said)
-    out = [line, f"{reads.get(pass_id, 'nothing planned')}: {words}"]
+    if skipped:
+        words += f", read twice and not confirmed {len(skipped)}, named in the closing report"
+    out = [line, *shorts, f"{reads.get(pass_id, 'nothing planned')}: {words}"]
     out.extend(f"above the runner's count: {entry}" for entry in above)
     out.extend(healed)
+    if len(skipped) >= BREAKER_FLOOR and 2 * len(skipped) > len(units):
+        notes = plan_inventory.settled_units(ledger, window)[1]
+        out.append(f"breaker: {len(skipped)} of {len(units)} units skipped; stop the run")
+        out.extend(f"skipped: {unit} {notes.get(unit, 'read twice, not read again')}" for unit in skipped)
     return out
 
 
 # --------------------------------------------------------------------------- #
-# checkin
+# What a pass read, in the estimator's words
 # --------------------------------------------------------------------------- #
-
-def _last_pass_lines(ledger: Path, window: int) -> dict[str, str]:
-    if not ledger.is_file():
-        raise LeadPassError(f"no ledger at {ledger}")
-    try:
-        text = ledger.read_text(encoding="utf-8")
-    except Exception as e:
-        raise LeadPassError(f"cannot read the ledger at {ledger}: {e}") from e
-    last: dict[str, str] = {}
-    for raw in text.splitlines():
-        parts = raw.strip().split()
-        if len(parts) >= 3 and parts[0] == "pass:" and parts[1] == str(window):
-            last[parts[2]] = raw.strip()
-    return last
-
-
-def _repaired_since_checkin(ledger: Path) -> list[str]:
-    """
-    The ledger script's `repaired:` lines after the last `checkin:` line of any window, each a time
-    lines of the run's log were changed outside the run and put back, which the next check-in says.
-    """
-    try:
-        lines = [raw.strip() for raw in ledger.read_text(encoding="utf-8").splitlines()]
-    except OSError:
-        return []
-    found: list[str] = []
-    for line in lines:
-        if line.startswith("checkin:"):
-            found = []
-        elif line.startswith(ledger_script.REPAIRED_KEYWORD):
-            found.append(line)
-    return found
-
-
-def _figure(line: str, field: str) -> int | None:
-    parts = line.split()
-    if field not in parts:
-        return None
-    at = parts.index(field)
-    if at + 1 >= len(parts) or not parts[at + 1].isdigit():
-        return None
-    return int(parts[at + 1])
-
 
 def _trades_of(line: str) -> dict[str, int] | None:
     """
@@ -783,28 +645,6 @@ def _trades_of(line: str) -> dict[str, int] | None:
             return None
         by_trade[match.group(1)] = by_trade.get(match.group(1), 0) + int(match.group(2))
     return by_trade
-
-
-def _reviews_of(plan_path: Path) -> dict[str, str]:
-    """
-    Each window 3 review unit's place for its counts, `the review of <package name>, trade
-    <catalog id>`, off the read plan's unit lines; empty where the plan is not window 3's or is not
-    there, so every count falls under its pass.
-    """
-    try:
-        lines = plan_path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return {}
-    first = next((line.strip() for line in lines if line.strip()), "")
-    if first != "# Read plan: window 3":
-        return {}
-    reviews: dict[str, str] = {}
-    for line in lines:
-        # A manual part reads for its review's package, so its counts fall under that package.
-        unit = _PART_LINE_RE.match(line.strip()) or _REVIEW_LINE_RE.match(line.strip())
-        if unit:
-            reviews[unit.group(1)] = f"the review of {unit.group(2)}, trade {unit.group(3)}"
-    return reviews
 
 
 def _verified_ok(ledger: Path, window: int) -> set[str]:
@@ -850,10 +690,10 @@ def _plan_reads(
     plan_path: Path, window: int, verified: set[str] | frozenset[str] = frozenset(),
 ) -> tuple[dict[str, str], dict[str, str]]:
     """
-    What each pass of the read plan beside the ledger read, in the words a check-in says it in, and
-    what each unit id names: a sheet's number, the file a repeated lines unit reads, or a review's
-    package. Both are empty where the plan is not this window's or is not there, and the check-in
-    then names passes by id alone. A window 3 pass names the manual pages each of its manual
+    What each pass of the read plan beside the ledger read, in the words the lead says it in as the
+    pass is recorded, and what each unit id names: a sheet's number, the file a repeated lines unit
+    reads, or a review's package. Both are empty where the plan is not this window's or is not
+    there, and the pass is then named by id alone. A window 3 pass names the manual pages each of its manual
     parts read, once the part is in `verified`, this window's units verified ok on the ledger.
     """
     try:
@@ -948,17 +788,6 @@ def _plan_reads(
     return reads, named
 
 
-def _without_unit(note: str, named: dict[str, str], window: int) -> str:
-    """
-    A summary note without the unit id it opens with. A sheet's note names its sheet and page right
-    after it, so the id goes; a review's note names its package in the id's place.
-    """
-    unit, _space, rest = note.partition(" ")
-    if unit not in named or not rest:
-        return note
-    return f"{named[unit]}: {rest}" if window == 3 else rest
-
-
 def _said_figures(items: int | None, figures: dict[str, int]) -> str:
     """A pass line's figures as the estimator hears them, the new items off the summaries' trades."""
     return (
@@ -978,236 +807,83 @@ def _said_recheck(figures: dict[str, int]) -> str:
     )
 
 
-def _landed(note: str) -> str | None:
-    """The place an anomaly says it landed where a trade's page shows it, or None to print it."""
-    if SAME_WORK in note:
+# --------------------------------------------------------------------------- #
+# seen: how long one answer has stood
+# --------------------------------------------------------------------------- #
+
+SEEN_NAME = "seen.json"
+_STAMP = "%Y-%m-%dT%H:%M:%SZ"
+# Polls of one job are a minute apart; a key not given for this long belongs to an earlier wait.
+SEEN_GAP_SECONDS = 20 * 60
+
+
+def _stamp_of(value: object) -> datetime.datetime | None:
+    try:
+        return datetime.datetime.strptime(str(value), _STAMP).replace(tzinfo=datetime.timezone.utc)
+    except ValueError:
         return None
-    ending = _LANDED_RE.search(note)
-    return next(word for word in ending.groups() if word) if ending else None
 
 
-def _summary_label(line: str) -> str | None:
-    """The summary label a line opens with, or None where it continues the line above it."""
-    return next((label for label in SUMMARY_LABELS if line.startswith(f"{label}:")), None)
+def _utc_now() -> datetime.datetime:
+    return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
 
 
-def _on_record_figures(counts: dict[str, int]) -> str:
-    return ", ".join(f"{word} {counts[landed]}" for landed, word in LANDED_COUNTED.items())
+def _ledger_line_count(run_folder: Path) -> int:
+    """The ledger's whole lines, a last line with no newline left out; a missing ledger is 0."""
+    path = run_folder / pass_summary.LEDGER_NAME
+    try:
+        data = path.read_bytes() if path.is_file() else b""
+    except OSError as e:
+        raise LeadPassError(f"cannot read {path}: {e}") from e
+    return data.count(b"\n")
 
 
-def checkin_lines(
-    run_folder: Path, window: int, pass_ids: list[str], start: tuple[int, int],
-) -> list[str]:
-    ledger = run_folder / "ledger.md"
-    heal_ledger(ledger)
-    last = _last_pass_lines(ledger, window)
-    reads, named = _plan_reads(
-        run_folder / "read-plan.md", window, _verified_ok(ledger, window) if window == 3 else frozenset()
+def seen(run_folder: Path, key: str, signature: str) -> str:
+    """Record one more time `key` was given `signature`, and say how long and how often it has stood."""
+    if not run_folder.is_dir():
+        raise LeadPassError(f"{run_folder} is not a run folder")
+    path = run_folder / "plan" / SEEN_NAME
+    try:
+        kept = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        kept = {}
+    if not isinstance(kept, dict):
+        kept = {}
+    now = _utc_now()
+    lines = _ledger_line_count(run_folder)
+    entry = kept.get(key)
+    first = last = None
+    if isinstance(entry, dict) and entry.get("signature") == signature:
+        first = _stamp_of(entry.get("first"))
+        last = _stamp_of(entry.get("last")) or first
+    if first is not None and isinstance(entry.get("times"), int) and isinstance(entry.get("ledgerLines"), int):
+        quiet = entry.get("quiet") if isinstance(entry.get("quiet"), int) else 1
+        # The streak with no ledger line between two times starts again whenever a line was added,
+        # so it reaches two as soon as two refusals in a row have no line between them; lines
+        # other passes keep writing put that off and never rule it out.
+        quiet = quiet + 1 if lines == entry["ledgerLines"] else 1
+        # A key left for longer than polls are ever apart is a new wait: its minutes start again.
+        if (now - last).total_seconds() > SEEN_GAP_SECONDS:
+            first = now
+        times = entry["times"] + 1
+    else:
+        first = now
+        times = quiet = 1
+    entry = {
+        "signature": signature, "first": first.strftime(_STAMP), "last": now.strftime(_STAMP),
+        "times": times, "quiet": quiet, "ledgerLines": lines,
+    }
+    kept[key] = entry
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        ledger_script.publish(path, (json.dumps(kept, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+    except (OSError, ledger_script.LedgerError) as e:
+        raise LeadPassError(f"cannot write {path}: {e}") from e
+    minutes = max(0, int((now - first).total_seconds() // 60))
+    return (
+        f"seen: {key} standing {minutes} minute{'' if minutes == 1 else 's'}, {times} "
+        f"time{'' if times == 1 else 's'} in a row, {quiet} in a row with no ledger line added"
     )
-
-    by_trade: dict[str, int] = {}
-    items_of: dict[str, int] = {}
-    notes: list[tuple[str, str]] = []
-    no_trades: list[str] = []
-    no_summary: list[str] = []
-    reviews = _reviews_of(run_folder / "read-plan.md") if window == 3 else {}
-    # The anomalies already on the record, counted by where each landed, under its review or pass.
-    on_record: dict[str, dict[str, int]] = {}
-    for pass_id in pass_ids:
-        path = _summary_path(run_folder, window, pass_id)
-        if not path.is_file():
-            no_summary.append(pass_id)
-            continue
-        try:
-            text = path.read_text(encoding="utf-8")
-        except Exception as e:
-            raise LeadPassError(f"cannot read the summary at {path}: {e}") from e
-        trades = None
-        # Each note line, its label, and the unlabelled lines under it that continue it.
-        entries: list[tuple[str, str, list[str]]] = []
-        in_note = False
-        for raw in text.splitlines():
-            line = raw.strip()
-            if not line:
-                continue
-            label = _summary_label(line)
-            if label is None:
-                if in_note:
-                    entries[-1][2].append(line)
-                continue
-            if label == "trades":
-                trades = _trades_of(line)
-            in_note = label in CHECKIN_LABELS
-            if in_note:
-                entries.append((label, line, []))
-        for label, line, continued in entries:
-            if line == f"{label}: none" and not continued:
-                continue
-            landed = _landed(line) if label == "anomalies" and not continued else None
-            if landed is None:
-                body = _without_unit(line[len(label) + 2:], named, window)
-                notes.append((pass_id, f"{CHECKIN_LABELS[label]}: {body}"))
-                notes.extend((pass_id, more) for more in continued)
-                continue
-            unit = line[len("anomalies: "):].split(" ", 1)[0]
-            where = reviews[unit] if unit in reviews else f"pass {pass_id}"
-            counts = on_record.setdefault(where, {key: 0 for key in LANDED_COUNTED})
-            counts[landed] += 1
-        if trades is None:
-            no_trades.append(pass_id)
-            continue
-        for code, count in trades.items():
-            by_trade[code] = by_trade.get(code, 0) + count
-        items_of[pass_id] = sum(trades.values())
-
-    # Each pass by what it read, with its figures in the estimator's words. The new items are the
-    # pass's trades summed, every one a subject its runner found on the record; `created` on a pass
-    # line counts entries, every citation and trade written with those items, and is never an item
-    # count, so it goes on the lead's own line below and never on these.
-    head: list[str] = [f"window {window}, {len(pass_ids)} pass{'' if len(pass_ids) == 1 else 'es'}"]
-    totals = {field: 0 for field in PASS_FIGURES + REVIEW_FIGURES + RECHECK_FIGURES}
-    with_line: list[str] = []
-    items: int | None = 0
-    for pass_id in pass_ids:
-        line = last.get(pass_id)
-        name = reads.get(pass_id, pass_id)
-        if line is None:
-            head.append(f"{name}: no pass line on the ledger")
-            continue
-        with_line.append(pass_id)
-        for field in totals:
-            totals[field] += _figure(line, field) or 0
-        figures = {field: _figure(line, field) or 0 for field in PASS_FIGURES + RECHECK_FIGURES}
-        head.append(
-            f"{name}: "
-            + (_said_recheck(figures) if window == RECHECK_WINDOW else _said_figures(items_of.get(pass_id), figures))
-        )
-        items = None if items is None or pass_id not in items_of else items + items_of[pass_id]
-    head.append(
-        f"over {len(with_line)} pass{'' if len(with_line) == 1 else 'es'}: "
-        + (_said_recheck(totals) if window == RECHECK_WINDOW else _said_figures(items, totals))
-    )
-    head.append(
-        f"your own check over {len(with_line)} pass line{'' if len(with_line) == 1 else 's'} ({', '.join(with_line) or 'none'}), "
-        f"never said to the estimator: units {totals['units']}, entries {totals['created']}"
-        + (
-            f", pages opened {totals['pages-opened']}, searches {totals['searches']}, reports "
-            f"restored {totals['reports-restored']}" if window == 3 else ""
-        )
-    )
-    ordered = sorted(by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
-    head.append(
-        "items by trade: "
-        + (", ".join(f"{code} x{count}" for code, count in ordered) if ordered else "none")
-    )
-    totals_on_record = {key: 0 for key in LANDED_COUNTED}
-    for where, counts in on_record.items():
-        head.append(f"on the record: {_on_record_figures(counts)}, in {where}")
-        for key, count in counts.items():
-            totals_on_record[key] += count
-    head.append(f"on the record over these passes: {_on_record_figures(totals_on_record)}")
-    if no_trades:
-        head.append(f"summaries with no trades count: {', '.join(no_trades)}")
-    if no_summary:
-        head.append(f"no summary on file: {', '.join(no_summary)}")
-    head.extend(repaired_said(line) for line in _repaired_since_checkin(ledger))
-
-    # Each note's place among its own pass's lines, which is what `--start` and the markers count.
-    first_of: dict[str, int] = {}
-    for index, (pass_id, _line) in enumerate(notes):
-        first_of.setdefault(pass_id, index)
-
-    # The first pass's first `start` lines, and `chars` characters of the line after them, were
-    # printed by the call before this one.
-    start_lines, chars = start
-    skipped = 0
-    while skipped < start_lines and skipped < len(notes) and notes[skipped][0] == pass_ids[0]:
-        skipped += 1
-    if chars and (
-        skipped >= len(notes) or notes[skipped][0] != pass_ids[0] or chars >= len(notes[skipped][1])
-    ):
-        raise LeadPassError(
-            f"--start names character {chars + 1} of line {start_lines + 1} of pass {pass_ids[0]}, "
-            f"and that line is not that long; run the check-in again from its first call"
-        )
-
-    def closing(cut_pass: str, line_no: int, at: int) -> str:
-        rest = pass_ids[pass_ids.index(cut_pass):]
-        start_at = f"{line_no - 1}:{at}" if at else (str(line_no - 1) if line_no > 1 else "")
-        command = (
-            f"python3 '{Path(__file__).resolve()}' checkin '{run_folder}' {window} "
-            f"--passes {','.join(rest)}" + (f" --start {start_at}" if start_at else "")
-        )
-        return (
-            f"not printed: {cut_pass} from its line {line_no}"
-            + (f", character {at + 1}" if at else "")
-            + (f", and {', '.join(rest[1:])}" if len(rest) > 1 else "")
-            + f"; the rest: {command}"
-        )
-
-    def cut_marker(pass_id: str, line_no: int, at: int, length: int) -> str:
-        return f"cut: pass {pass_id}, line {line_no}, at character {at} of {length}; the rest is in the next call"
-
-    # Room for the longest closing line and cut marker this call could print, so the cap holds
-    # whatever line the call stops on.
-    longest_id = max(pass_ids, key=len)
-    longest_note = max((len(line) for _pass_id, line in notes), default=0)
-    reserve = (
-        len(closing(pass_ids[0], len(notes) + 1, longest_note)) + len(longest_id) - len(pass_ids[0])
-        + len(cut_marker(longest_id, len(notes) + 1, longest_note, longest_note)) + 2
-    )
-
-    widest_block = (
-        len(f"pass {longest_id}:") + 1
-        + len(f"pass {longest_id}, line {len(notes) + 1}, from character {longest_note + 1}:") + 1
-    )
-
-    out = list(head)
-    size = sum(len(line) + 1 for line in out)
-    # The first line a call prints always gets at least one character of room.
-    if size + reserve + widest_block + 2 > CHECKIN_CAP:
-        raise LeadPassError(
-            f"the pass lines and totals of {len(pass_ids)} passes alone leave no room under the "
-            f"{CHECKIN_CAP} characters one call prints; name fewer passes with --passes"
-        )
-    stopped: tuple[int, int] | None = None
-    current = None
-    printed = 0
-    for index in range(skipped, len(notes)):
-        pass_id, line = notes[index]
-        line_no = index - first_of[pass_id] + 1
-        begin = chars if index == skipped else 0
-        block = [] if pass_id == current else [f"pass {pass_id}:"]
-        if begin:
-            block.append(f"pass {pass_id}, line {line_no}, from character {begin + 1}:")
-        piece = line[begin:]
-        room = CHECKIN_CAP - reserve - size - sum(len(text) + 1 for text in block) - 1
-        if len(piece) <= room:
-            out.extend(block)
-            out.append(piece)
-            size += sum(len(text) + 1 for text in block) + len(piece) + 1
-            current = pass_id
-            printed += 1
-            continue
-        if printed:
-            stopped = (index, begin)
-            break
-        # A note longer than a whole call's room is cut where the room ends, so every call prints
-        # something new and nothing past the cap.
-        out.extend(block)
-        out.append(piece[:room])
-        out.append(cut_marker(pass_id, line_no, begin + room, len(line)))
-        stopped = (index, begin + room)
-        break
-
-    if stopped is None:
-        out.append(f"every line printed, {printed} in this call")
-        return out
-
-    index, at = stopped
-    cut_pass = notes[index][0]
-    out.append(closing(cut_pass, index - first_of[cut_pass] + 1, at))
-    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -1228,7 +904,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     passes.add_argument(
         "--reported",
-        help="the pass that just handed back; prints only its prefixes and the five closing lines",
+        help="the pass that just handed back; prints only its prefixes and the three closing lines",
     )
 
     rec = modes.add_parser("record", help="compare a pass's counts and append its pass line")
@@ -1241,17 +917,21 @@ def main(argv: list[str] | None = None) -> int:
         help="the `counts` array of the `count_entries` answer for the pass, as it came back",
     )
 
-    check = modes.add_parser("checkin", help="what a check-in needs, off the pass lines and summaries")
-    check.add_argument("run_folder", type=Path, help="the run folder")
-    check.add_argument("window", type=pass_summary.parse_window, help="the window the passes belong to: 1, 2, 3, or r")
-    check.add_argument("--passes", required=True, help="the pass ids, comma separated")
-    check.add_argument(
-        "--start", default="0",
-        help="how many of the first pass's lines an earlier call already printed, and after a "
-        "colon how many characters of the line after them",
-    )
+    wait = modes.add_parser("wait", help=f"wait up to {WAIT_CAP} seconds, then print one line")
+    wait.add_argument("seconds", type=int, help=f"how long to wait, at most {WAIT_CAP}")
+
+    held = modes.add_parser("seen", help="say how long and how often one answer has stood, and remember it")
+    held.add_argument("run_folder", type=Path, help="the run folder")
+    held.add_argument("key", help="the job polled, or the operation refused")
+    held.add_argument("signature", help="the job's status and progress fields, or the first line the script printed")
 
     args = parser.parse_args(argv)
+
+    if args.mode == "wait":
+        seconds = max(0, min(args.seconds, WAIT_CAP))
+        time.sleep(seconds)
+        print(f"waited {seconds} seconds" + (", the most this waits" if args.seconds > WAIT_CAP else ""))
+        return 0
 
     try:
         if args.mode == "passes":
@@ -1261,22 +941,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.mode == "record":
             lines = record(args.ledger, args.window, args.pass_id, args.plan, args.counts_json)
-        else:
-            pass_ids = [pass_id.strip() for pass_id in args.passes.split(",") if pass_id.strip()]
-            if not pass_ids:
-                raise LeadPassError("--passes names no pass")
-            start = re.fullmatch(r"(\d+)(?::(\d+))?", args.start)
-            if start is None:
-                raise LeadPassError(
-                    f"--start reads {args.start!r}, and it takes a count of lines, or lines and "
-                    f"characters as <lines>:<characters>"
-                )
-            lines = checkin_lines(
-                args.run_folder, args.window, pass_ids, (int(start.group(1)), int(start.group(2) or 0)),
-            )
-    except CountMismatch as e:
-        print(f"lead_pass: {e}", file=sys.stderr)
-        return 3
+        elif args.mode == "seen":
+            lines = [seen(args.run_folder, args.key, args.signature)]
     except LeadPassError as e:
         print(f"lead_pass: {e}", file=sys.stderr)
         return 1

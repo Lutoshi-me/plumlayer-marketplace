@@ -38,6 +38,12 @@ Before anything else, write the one word `started` to
 this read against your unit only where that file is there. If a path in your dispatch does not
 exist, say so and stop rather than reading blind.
 
+Where a call you need cannot be made, because Claude Code refused it, your sign-in failed, or
+Plumlayer did not answer after one try more, write nothing more: put the one line
+`blocked: <the tool's name> <sign-in, refused by the client or server>` first in your report and
+in your returned message, and end. A blocked read counts against nothing, and the run tries
+the same step again.
+
 On a read after your first, read your Owed file before your first write. Each `not written by
 read <j>:` line on it is work you owe: open the page it names and write it where your mandates
 put it, or say why you cannot. The `held:` lines name the rows that stood under your prefix

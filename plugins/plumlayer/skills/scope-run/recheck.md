@@ -3,7 +3,7 @@
 Read from `SKILL.md` stage 6 step 6, on a pass whose delivery precondition 7 found sized, with its
 plan approved. Every stage this file names is a stage of `SKILL.md`, and every rule there applies
 here unchanged: the non-negotiables, the dispatch and wait rules, the ledger's fixed shapes, the
-check-in, and the words the user reads.
+stops, and the words the user reads.
 
 The carry put each reference that read the same onto the new page, and this pass cited the new
 pages it read. What is left is each scope item's reference on a page the delivery replaced that
@@ -18,18 +18,18 @@ earlier manual unless it is listed for the user.
 
 The plan the user approved said the recheck does this, so their approval is its go-ahead and the
 ask the retires rest on: no further question is put to them before it starts. It runs on a new set and on
-an addendum alike, after `phase: packages folded` and the go-ahead at the check-in that follows
-it, and before stage 7. The ledger lines of the recheck carry window `r`.
+an addendum alike, right after `phase: packages folded`, and before stage 7. What it did goes to
+the closing report. The ledger lines of the recheck carry window `r`.
 
 ## 1. The comparison is complete
 
 `compare_delivery_status(projectId, deliveryId, kind: "scopeItem", limit: 1)`, reading `complete`.
 Where it is false, a box was added on a replaced page since the sizing: call
 `compare_delivery(projectId, deliveryId)` and poll `compare_delivery_status(projectId, deliveryId,
-limit: 1)` until its `job.status` is `succeeded` or `failed`, waiting between polls rather than
-polling back to back, then read `complete` again. A refusal, a failed job, or `complete` still
-false stops the recheck: check in, say in one sentence that the comparison could not be finished
-and why, and start nothing until it is settled.
+limit: 1)` until its `job.status` is `succeeded` or `failed`, with the wait mode between polls,
+bounded as the skill's stops section says, then read `complete` again. A refusal, a failed job, or `complete` still
+false stops the run, as the skill's stops section says for a window that cannot be planned: say
+in one sentence that the comparison could not be finished and why.
 
 ## 2. Copy the rows
 
@@ -58,6 +58,9 @@ Rows to: <rows-before or rows-after>.
    same place yourself, as JSON, and say so in your returned line.
 4. Return exactly one line: pages fetched, rows on disk, bytes, and copied or transcribed for each
    file. No account of what the rows are, no subjects, no sheet numbers.
+5. Where a call cannot be made, because Claude Code refused it, your sign-in failed, or Plumlayer
+   did not answer after one try more, stop and return exactly one line instead:
+   `blocked: <tool> <sign-in, refused by the client or server>`.
 ```
 
 ## 3. Plan the recheck
@@ -71,24 +74,16 @@ python3 '<plugin root>/scripts/recheck.py' plan --run '<run folder>' \
 rows read and open, the units, one per sheet, the passes, and the ids kept. A refusal names one
 thing wrong: a page of another delivery or rule version, a comparison not complete, a page missing,
 a manual row naming no section, or a drawing file of no delivery on the list. Copy the rows again, as step 2 says, or take the delivery
-list again as precondition 3 does, and plan again; never plan by hand. Where it reads `units 0`, no
+list again as precondition 3 does, and plan again; never plan by hand. A refusal that comes back
+after the rows are copied again is a stop, as step 1's is. Where it reads `units 0`, no
 row is open: go straight to step 6.
 
 ## 4. Run the sheet passes
 
 As stage 4 runs a window's passes, with window `r` in every call: `lead_pass.py passes`, one runner
 per pass that `start now:` names, your one `count_entries` call over the prefixes when it hands
-back, which reads 0 under each since the recheck creates nothing, `lead_pass.py record '<run
-folder>/ledger.md' r <pass id>`, and a check-in where `check-in due:` reads yes. Gather that
-check-in from the passes the listing's `since the last check-in:` line names:
-
-```sh
-python3 '<plugin root>/scripts/lead_pass.py' checkin '<run folder>' r --passes <pass id>,<pass id>
-```
-
-Where that line reads `none`, no pass is recorded since the last check-in and none is due: make no
-`checkin` call, since it refuses an empty list. Append `checkin: r <the last pass id that
-line names> <go|pause>` when the user answers. The runner dispatch:
+back, which reads 0 under each since the recheck creates nothing, and `lead_pass.py record '<run
+folder>/ledger.md' r <pass id>`. The runner dispatch:
 
 ```text
 subagent_type: plumlayer:scope-round-runner
@@ -97,18 +92,34 @@ Project: <projectId>. Window: r.
 Pass: <"recheck-<pass id>" or "retire-<pass id>">.
 Delivery: <deliveryId>, label <the delivery's label>. Plan file: <plan file>.
 Run folder: <path>. Scripts: <path to the plugin's scripts directory>.
-Read again: <"<unit id> read <n>", the unit the user said to read again and its next read, one more than the reads its unread note names, or none>.
+Read again: <"<unit id> read <n>", only after the stop below, the unit the user said to read again and one more than the reads its unread note names, or none>.
 Run your pass as your definition says.
 ```
 
 `recheck-<pass id>` runs a pass whose `reads for:` reads `the recheck`; `retire-<pass id>` one that
-reads `retiring`. A sheet read twice with no check confirming it stops the recheck as stage 4
-step 3 says.
+reads `retiring`.
+
+Here, unlike the windows, a unit whose two reads both failed their check is never skipped: the
+retires rest on every sheet's outcome, so its pass stays unfinished, its hand-back names it on
+`unverified:`, and the record script refuses the pass. That stops the run. Write the closing report
+so far as the skill's stops section says, and say:
 
 <!-- user-facing -->
-Between check-ins, tell the user at most one line per pass as it is recorded, naming the sheets in
-plain words with the line under its `pass:` line: "I've rechecked the first architectural sheets:
-14 rows cited again on the new sheets, 2 read as removed, 1 I could not find."
+"Rechecking <sheet> failed its check <n> times, so the recheck cannot tell which items the new
+drawings removed, and I stopped after <what finished>. Look at its items on <sheet>, then tell me
+to read it once more."
+<!-- /user-facing -->
+
+`<n>` is the reads its unread note names, three or more where a read granted after this stop
+failed too, which stops the run the same way.
+
+On that go-ahead, dispatch the pass again with `Read again: <unit id> read <n>`, `<n>` one more than
+the reads its unread note names; its runner reads the unit once more and then the ones after it.
+
+<!-- user-facing -->
+As each pass is recorded, tell the user one line naming the sheets in plain words with the line
+under its `pass:` line: "I've rechecked the first architectural sheets: 14 rows cited again on the
+new sheets, 2 read as removed, 1 I could not find."
 <!-- /user-facing -->
 
 ## 5. Retire what the delivery removed
@@ -140,48 +151,24 @@ python3 '<plugin root>/scripts/recheck.py' report --run '<run folder>' --deliver
 ```
 
 Its first line is `phase: recheck complete` with the recheck's figures: append it to the ledger as
-printed, once, before you check in, through the ledger script as every line goes on. Nothing else goes in the ledger. Where its last line names what
-it did not print, run the command that line gives for the rest. What it prints is for you to read:
-say it in the estimator's words, and never paste a line as it printed. Then check in. Take the
-passes listing as stage 4 step 1 does, and gather the passes its `since the last check-in:` line
-names, as the check-in section says:
-
-```sh
-python3 '<plugin root>/scripts/lead_pass.py' checkin '<run folder>' r --passes <pass id>,<pass id>
-```
-
-Where that line reads `none`, or step 3 read `units 0` and the recheck ran no pass, make no
-`checkin` call, which refuses an empty list: the check-in is the one line below. Append `checkin: r
-window <go|pause>` when the user answers.
+printed, once, through the ledger script as every line goes on. Nothing else goes in the ledger,
+and you read nothing more of what it prints: the closing report takes the recheck's figures by
+package off the same script. Then dispatch the package folder in mode `recheck` where the fold
+deleted a package, as the skill's stage 6 step 5 says, and go to stage 7.
 
 <!-- user-facing -->
 Where the recheck ran no pass, say in one line that no scope item on the sheets the delivery
-replaced needed a recheck, then proceed, adjust, or pause.
-
-Otherwise, at this check-in, say you rechecked every scope item on the sheets the delivery replaced, then, for
-each package on its own, in a few plain sentences and never a table: the references carried
-forward, the ones this pass cited again on the new sheets, the ones the recheck cited again, the
-rows it changed, the rows it removed, and the rows left for them. Name each row removed by its item
-and its sheet, and say they can have any of them put back. Name each row left for them with what you
-searched, and say it is theirs to settle: keep it, move it, or have it removed. For a row on a
-section of the manual, say how the new manual carries that section, such as listed in its contents
-with no page printed. Say an item on two
-packages counts in each. Where the carry's own count and the references carried forward differ,
-say both. Then name the Questions the recheck put on the record by the trades they name, and what
-comes next in one sentence: each package
-reviewed on its own against what landed. Proceed, adjust, or pause.
+replaced needed a recheck.
 <!-- /user-facing -->
 
 ## 7. Resume
 
 On a start, the ledger's lines say where the recheck stands:
 
-- `phase: packages folded` and a `checkin: 2 window go` after it, and no line of window `r`: the
-  recheck starts at step 1.
+- `phase: packages folded` and no line of window `r`: the recheck starts at step 1.
 - A `dispatch r` or `pass: r` line and no `phase: recheck complete`: run step 3's plan again with
   the same arguments, which keeps every id and marks the units verified; where
   `<run folder>/recheck/rows-after/` holds pages, run step 5's retire again after it. Then list the
-  passes and start what the listing names. A pass already summed is not run again.
-- `phase: recheck complete` and no `checkin: r window` line after it: the check-in was never
-  answered. Run step 6's report again and show it.
-- `checkin: r window go`: stage 7 step 1.
+  passes and start what the listing names. A pass already summed is not run again, and a pass
+  holding a unit whose two reads both failed brings back step 4's stop.
+- `phase: recheck complete`: stage 7 step 1, after the folder's recheck mode where step 6 says.

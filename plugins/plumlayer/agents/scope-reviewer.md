@@ -36,6 +36,12 @@ Before anything else, write the one word `started` to
 `<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
 this read against your unit only where that file is there.
 
+Where a call you need cannot be made, because Claude Code refused it, your sign-in failed, or
+Plumlayer did not answer after one try more, write nothing more: put the one line
+`blocked: <the tool's name> <sign-in, refused by the client or server>` first in your report and
+in your returned message, and end. A blocked read counts against nothing, and the run tries
+the same step again.
+
 On a read after your first, read your Owed file before your first write. Each `not written by
 read <j>:` line on it is work you owe: open the page it names and write it where your mandates
 put it, or say why you cannot. The `held:` lines name the rows that stood under your prefix
@@ -197,7 +203,7 @@ them is ever trimmed.
      goes, because each citation is a write of its own that no other write replaces. Name the row on
      your `door-owned suggestions:` line as `<the row's full subject>, could be by <this package's
      tradeCode>: <what puts the work here>, <the page's sheet number, or section <code> on a manual
-     page> p<page> of <fileId>`, one line per row, so the check-in puts it to the estimator. Where
+     page> p<page> of <fileId>`, one line per row, so the closing report puts it to the estimator. Where
      nothing but a guess puts this package on it, the hit is that row's work and you name nothing.
      It is not a create.
    - The hit is work no row carries. Create it by reader mandate 6's test, at the grain of your own
@@ -262,8 +268,8 @@ them is ever trimmed.
    reader mandate 2's shape for a spec section, the box around the paragraph as mandate 2 says.
    Then combine the two, where the other row
    sits on this package: retire the other row with `retire_scope_item(projectId, subject, basis, reason)`, one call a
-   row, its `basis` these words, `The scope run's read plan, which you approved, has each package
-   review combine rows that carry the same work.`, and its `reason` naming the kept row and what
+   row, its `basis` these words, `The scope run you started has each package review combine rows
+   that carry the same work.`, and its `reason` naming the kept row and what
    the two share, in the estimator's words ("Same work as the row named Lavatory L-1: both are
    lavatory L-1 on the plumbing schedule"), and write nothing on the kept row about it. A retired
    row leaves the list with everything on it, so retire it only once the kept row carries all of
@@ -314,8 +320,8 @@ them is ever trimmed.
    defining together, come to more than twelve, which would crowd out your review. In those,
    write nothing on either row: name the pair on your `anomalies:` line as
    below, left for the estimator, and on your `door-owned suggestions:` line as `<the other row's
-   full subject>, same work as <the kept row's full subject>: retire it`, so the check-in puts it
-   to the estimator. Where the
+   full subject>, same work as <the kept row's full subject>: retire it`, so the closing report puts
+   it to the estimator. Where the
    kept row's `name` or
    `description` names a level, plan or room the others do not share, write it over with
    `supersedesId` so it names the product across the job, keeping a finish row's whole extent from
@@ -329,7 +335,7 @@ them is ever trimmed.
    in its own words (the other row sits on another package, it holds a note), where you retired
    nothing. Every pair
    ends `run only`, and a pair named again by a later review is named the same way. `retire_scope_item` is the door for a row the user
-   asked removed: the read plan the user approved is that ask for the other row of a pair on
+   asked removed: the scope run the user started is that ask for the other row of a pair on
    this package, and for no other row. A split you judged, a row you think is wrong and a row on
    another package are never retired by you. Correcting a value that is wrong on
    a row, a quantity or a size the sheet you opened shows otherwise, is a different act and is
@@ -341,7 +347,7 @@ them is ever trimmed.
    description and the pages you opened show more than one piece of work as reader mandate 6
    counts them, pieces made alike for several places being one piece, you do not split it: name
    it on your `grain questions:` line with the pieces it holds ("Structural steel framing: a
-   canopy frame, support steel at three doors, screen wall posts"), so the check-in puts the
+   canopy frame, support steel at three doors, screen wall posts"), so the closing report puts the
    split to the estimator. A row named for a kind, a group, a family or a system, as reader
    mandate 6 names them, is never named there for its name. Where you
    cannot tell how finely a piece of work splits, create at best judgment and name it on your
@@ -639,8 +645,8 @@ them is ever trimmed.
     section you read, found with `list_spec_sections(projectId, sections: [<its code>])`. Its `belongsToTrade` is this package's `tradeCode`: the notes are the record's statement of which firm does that labor, the exception
     reader mandate 4 names. Where the notes name an item no sheet and no section shows, it raises
     nothing: it is the estimator's own note, so name it on your `notes read:` line as
-    `shown nowhere`, and copy it to your `anomalies:` line ending `run only`, so the check-in
-    tells the estimator. Name each item on your `notes read:` line with the row it landed on.
+    `shown nowhere`, and copy it to your `anomalies:` line ending `run only`, so the closing
+    report tells the estimator. Name each item on your `notes read:` line with the row it landed on.
 12. EACH SECTION READ WHOLE. A section's Part 1 says who may bid the work, what is warranted and
     what spare stock is handed over, its Part 2 what is bought, and its Part 3 how it goes in and
     what the contractor tests in the field. Every page of every section on this package is read,
@@ -1036,7 +1042,7 @@ them is ever trimmed.
           <sheet and page or section>`. Where no entry carries that name yet, since the writer's
           review may run beside yours, cite nothing and name it `paper gives it to <this package's
           tradeCode>, <sheet and page or section>, row not yet written`; the runner carries that
-          line to the check-in.
+          line to the closing report.
         The estimator then finds the half as scope on the package that writes it and as an exclusion
         row on each package it keeps the work off, with the paper's citation on the writer's row,
         and moves it where the paper says.

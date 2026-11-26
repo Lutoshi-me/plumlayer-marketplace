@@ -200,8 +200,10 @@ Checks:
       prefixes included, and an empty window 2 lists none to dispatch; a record pairs the
       `count_entries` answer's counts with their units by prefix, so an answer in another order
       appends exactly the `pass:` line built here, which the plan script then reads as
-      `summed: yes`; a count below the runner's appends nothing and exits 3 naming the unit and
-      both counts, as an answer whose short unit a pairing by place would pass does; a prefix
+      `summed: yes`; a count below the runner's appends the line reading `lead-verified no` and a
+      `short:` line with both counts, as an answer whose short unit a pairing by place would pass
+      does, and the run goes on; a skipped unit records `skipped 1` and leaves its pass finished,
+      and three of four skipped trip the breaker; a prefix
       missing, not in the pass or given twice, a summary naming other units, or one reading a unit
       verified no, is refused; in run folders of their own, a unit read again after a mismatch
       reads verified to the plan script and records where its second check reads ok, reads
@@ -210,14 +212,10 @@ Checks:
       summed from another ledger, and one reading a unit ok is refused where a later check of the
       unit past its lines reads mismatch; window 3's line for a tagged pass of two reviews carries both
       counts and the reviews' pages opened and searches, and its listing gives each review's
-      prefix; the
-      check-in counts each anomaly on a Question or a reply by pass, or by the review the
-      plan names in window 3, where its ending names an id in the record's form and no
-      continuation line runs under it, and carries every other note line once across calls,
-      under its printed label, each call under Bash's output limit and a note longer than one
-      call cut under a line naming it; every reader and reviewer report shape and the reader's
-      mandate name a Question and a reply by the full id, never shortened; and the
-      skill's own three command lines are fed to the script's arguments.
+      prefix; an older ledger's `checkin:` lines are read past and the `checkin` mode is gone;
+      every reader and reviewer report shape and the reader's mandate name a Question and a reply
+      by the full id, never shortened; and the skill's own command lines are fed to the script's
+      arguments.
   29. Fold one level down: stage 6 step 5 of the scope-run skill names no fold verb and carries
       the package folder dispatch, the `fold_report.py print` read and the recheck; the fold's
       rule sentences stand in agents/scope-package-folder.md and nowhere in the skill; the
@@ -245,7 +243,7 @@ Checks:
       carries a full pass's continuation into a pass of continuations that waits for it, carries
       on the sections a continuation never reached, and refuses its broken cases in one line,
       a full pass with no letter left among them; pass_summary.py counts the continuations and
-      lead_pass.py records them and shows a continued section as read at the check-in, naming
+      lead_pass.py records them and shows a continued section as read on the record's line, naming
       the pass by each section its chain read to its end, once, and never by one still open. A
       lock a run held when its process ended is taken over in one line, and a replan deleting a
       package with section pages a continuation still owes a read is refused until the ledger
@@ -268,11 +266,11 @@ Checks:
   32. Passes at once: the shipped scripts/plan_inventory.py writes `starts after:` under every pass
       block off the classes of sheet each window pins, and window 1 reads its vocabulary ahead of
       what `--include` added; the shipped scripts/lead_pass.py says what to start off those lines,
-      the ledger and the summaries, up to the limit the check pins, and which passes the next
-      check-in reports, and `passes --reported` prints what a hand-back needs. Both are run
-      in-process over invented grids, through windows 1, 2 and 3 driven to their end, a pass reported
-      only where a check-in printed it; the skill, the runner and both readers carry the rules; and
-      each fix broken again is refused.
+      the ledger and the summaries, up to the limit the check pins, never held for a check-in, a
+      pass with a skipped unit finished, and `passes --reported` prints what a hand-back needs.
+      Both are run in-process over invented grids, through windows 1, 2 and 3 driven to their end,
+      every pass finished once; the skill, the runner and both readers carry the rules; and each
+      fix broken again is refused.
   45. Failed unit: the shipped scripts/ledger.py and scripts/unit_report.py, run in-process over
       invented run folders with real files. Every ledger line goes on through `ledger.py append`,
       under a lock, checked as a batch, with a shadow copy that puts back a line changed outside
@@ -281,6 +279,13 @@ Checks:
       unit's lost report from the record. A runner stopped at each point after its closing append
       and dispatched again sums one total with each line once; the runner, the four readers and
       the skill carry the rules, each taken out refused.
+  46. Closing report: the shipped scripts/close_report.py, imported in-process over an invented
+      run folder carrying every kind of note a check-in printed. Its `ids` mode writes the copy
+      agent's calls; its `write` mode puts each item once in its own section, prints no record id,
+      keeps the short version under its cap, and is never refused for a missing copy, a missing
+      fold report, a missing ledger or an early stop. The skill carries stage 9's three facts in
+      order, the stops and their messages, the one permission sentence, no settings file and no
+      rule string, and none of the attended run's words; each broken and refused.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -288,6 +293,7 @@ Grounding role: reads files and shells out to the claude CLI. No inference.
 from __future__ import annotations
 
 import contextlib
+import datetime
 import fnmatch
 import importlib.util
 import io
@@ -4020,8 +4026,10 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     # three and counts them on their pass block, so the lead dispatches that part again and its
     # runner skips them.
     ledger_units = expected_slice[:4]
+    # A slice closes with its paused line and then its index, so the rest of the window plans after both.
     write_ledger(slice_dir, [
         "phase: window 2 paused",
+        "phase: index built unmatchedTag 0 codeNoLocation 0",
         "dispatch: window 2 pass A2a units 6",
         *[
             f"dispatch 2 A2a {unit_id} sheets {sheet} purpose the sheet"
@@ -4554,6 +4562,88 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     f"{summed_label}: the lead's line after the new summary leaves A1 reading "
                     f"`summed: {summed_of(summed_closed).get('A1')}`, expected yes"
                 )
+
+    # --- a skipped unit settles its pass ---------------------------------- #
+    #
+    # A1's first unit read twice with both checks failed and its runner's unread note after them:
+    # the plan reads it skipped, `units skipped: 1` on the block and ` skipped` on its line, its
+    # pass summed only where the lead's `pass:` line carries `skipped 1`, and the pass that waits on
+    # A1 starts once A1's other units verify. In window r nothing is skipped.
+    skip_label = "a skipped unit"
+    skip_dir = replan_root / "skipped-settles"
+    skip_inventory = write_replan_inventory(
+        skip_dir,
+        [slice_row("A", f"A-0.{i:02d}", "schedule", i) for i in range(1, 9)]
+        + [slice_row("A", f"A-5.{i:02d}", "detail", 20 + i) for i in range(1, 9)],
+    )
+    code, _bounds, err, skip_first = run_replan(skip_dir, 1, skip_inventory, ["--include", "A-5.*:the details carry a schedule"])
+    skip_ids = [p["id"] for p in skip_first]
+    if code != 0 or len(skip_ids) < 2:
+        errors.append(f"{skip_label}: the first plan reads {skip_ids}, expected two passes: {err}")
+    else:
+        first_pass, later_pass = skip_first[0], skip_first[1]
+        skipped_unit, skipped_sheet = first_pass["units"][0][0], first_pass["units"][0][1]
+        dispatch = f"dispatch 1 {first_pass['id']} {skipped_unit} sheets {skipped_sheet} purpose the vocabulary"
+        skip_ledger = [
+            dispatch,
+            f"verified 1 {first_pass['id']} {skipped_unit} created 1 items 1 updated 0 questions 0 replied 0 "
+            f"sent 1 landed 1 conflicts 0 result mismatch",
+            dispatch,
+            f"note 1 {first_pass['id']} {skipped_unit} deviation {skipped_sheet} reader stopped answering, read 2",
+            f"note 1 {first_pass['id']} {skipped_unit} unread {skipped_sheet} read 2 times, not read again",
+        ]
+        for unit_id, sheet, _page in first_pass["units"][1:]:
+            skip_ledger += [
+                f"dispatch 1 {first_pass['id']} {unit_id} sheets {sheet} purpose the vocabulary",
+                f"verified 1 {first_pass['id']} {unit_id} created 2 items 2 updated 0 questions 0 "
+                f"replied 0 sent 2 landed 2 conflicts 0 result ok",
+            ]
+        write_ledger(skip_dir, skip_ledger)
+        code, _bounds, err, skip_again = run_replan(skip_dir, 1, skip_inventory, ["--include", "A-5.*:the details carry a schedule"])
+        block = next((p for p in skip_again if p["id"] == first_pass["id"]), {"fields": {}})
+        plan_text = (skip_dir / "read-plan.md").read_text(encoding="utf-8") if code == 0 else ""
+        unit_lines = [l for l in plan_text.splitlines() if l.startswith(f"{skipped_unit}. ")]
+        if code != 0 or block["fields"].get("units skipped") != "1" or (
+            block["fields"].get("units verified") != str(len(first_pass["units"]) - 1)
+        ) or len(unit_lines) != 1 or not unit_lines[0].endswith(" skipped"):
+            errors.append(
+                f"{skip_label}: the plan does not read it skipped on its block and its line: "
+                f"{block['fields']}, {unit_lines}: {err}"
+            )
+        later = next((p for p in skip_again if p["id"] == later_pass["id"]), {"fields": {}})
+        if later["fields"].get("starts after") != "none":
+            errors.append(
+                f"{skip_label}: the pass after it still waits on a pass whose units are all verified "
+                f"or skipped: `starts after: {later['fields'].get('starts after')}`"
+            )
+        lines = sum_passes(skip_dir, 1, [first_pass["id"]], "")
+        if lines:
+            no_figure = lines[0]
+            with_figure = lines[0].replace(" lead-verified yes", " skipped 1 lead-verified yes")
+            for pass_line, wanted in ((no_figure, "no"), (with_figure, "yes")):
+                write_ledger(skip_dir, skip_ledger + [pass_line])
+                code, _bounds, err, summed_now = run_replan(skip_dir, 1, skip_inventory, ["--include", "A-5.*:the details carry a schedule"])
+                got = summed_of(summed_now).get(first_pass["id"], "")
+                if code != 0 or not got.startswith(wanted):
+                    errors.append(
+                        f"{skip_label}: a `pass:` line {'without' if wanted == 'no' else 'with'} its "
+                        f"`skipped 1` figure reads `summed: {got}`, expected {wanted}: {err}"
+                    )
+        # Window r reads a spent unit as not settled: its two failed reads stop the recheck.
+        r_ledger = skip_dir / "recheck-ledger.md"
+        r_ledger.write_text("".join(f"{line}\n" for line in (
+            "dispatch r RA RA-1 sheets x purpose recheck",
+            "verified r RA RA-1 created 0 items 0 updated 0 questions 0 replied 0 sent 0 landed 0 conflicts 0 result mismatch",
+            "dispatch r RA RA-1 sheets x purpose recheck",
+            "note r RA RA-1 deviation x recheck report refused, read 2",
+            "note r RA RA-1 unread x read 2 times, not read again",
+        )), encoding="utf-8")
+        r_settled = module.settled_units(r_ledger, "r")
+        if r_settled != (set(), {}):
+            errors.append(f"{skip_label}: window r reads a spent unit as settled: {r_settled}")
+        w1_settled = module.settled_units(skip_dir / "ledger.md", 1)
+        if skipped_unit not in w1_settled[1] or skipped_unit in w1_settled[0]:
+            errors.append(f"{skip_label}: the settled units read {w1_settled}, without {skipped_unit} skipped")
 
     # Window 3: every pass's summary sits at `<pass id>.md`, the reviews are verified by unit
     # whatever pass the line names, and a package added between plans moves reviews between passes,
@@ -5685,6 +5775,12 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
     # An honest bound, not a pass: the fixtures are invented and small. They carry the field names
     # the shipped verbs return, so a rename on the record's side would fail here, but nothing about
     # a real grid or a real packages read is proved by them.
+    detail += (
+        "; a unit read twice with both checks failed and its unread note after them read skipped, "
+        "`units skipped: 1` on its block and ` skipped` on its line, the pass after it no longer "
+        "waiting, its pass summed only off a `pass:` line carrying `skipped 1`, and window r "
+        "reading such a unit as not settled"
+    )
     detail += "; bound: invented fixtures, not a real grid or a real packages read"
     if errors:
         detail += " | " + "; ".join(errors)
@@ -5979,6 +6075,8 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
             ]
             or ["unverified: none"]
         ),
+        "skipped: none",
+        "stopped: none",
         "unread: none",
         f"notes: anomalies {note_count['anomaly']}, overlaps {note_count['overlap']}, deviations "
         f"{note_count['deviation']}, kinds {note_count['kinds']}",
@@ -6651,15 +6749,85 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
     code, renamed_out, renamed_err, renamed_hand_back = summarize([
         str(renamed / "ledger.md"), "3", "W3-1", "--plan", str(renamed / "read-plan.md"),
     ])
+    # Its two reads are spent, a mismatch and a reader that stopped answering, so it is skipped:
+    # named on `skipped:` with its unread note, adding nothing to the figures.
     if (
-        code != 0 or f"unverified: {w3_units[2]} read 2 no verified line" not in renamed_hand_back.splitlines()
+        code != 0 or f"skipped: {w3_units[2]} a third invented package read 2 times, not read again"
+        not in renamed_hand_back.splitlines() or "unverified: none" not in renamed_hand_back.splitlines()
         or wanted_short not in renamed_out.splitlines()
     ):
         errors.append(
-            f"a review dispatched again after its mismatch, with no verified line since, is not "
-            f"named with that read and left out of the figures: exit {code}, "
+            f"a review dispatched again after its mismatch, whose second read the reader stopped "
+            f"answering, is not handed back skipped and left out of the figures: exit {code}, "
             f"{renamed_err or renamed_hand_back!r}"
         )
+    # The same review with its second read cut off, the reader's `.started` file there and no
+    # report, the runner's interrupted note after it: one read spent, so it is no skip, and named
+    # unverified with that read, waiting on its next read.
+    interrupted_ledger = mixed_text.replace(third_ok + "\n", "".join(f"{line}\n" for line in (
+        third_ok.replace("result ok", "result mismatch"),
+        f"dispatch 3 W3-1 {w3_units[2]} sheets none purpose review a third invented package",
+        f"note 3 W3-1 {w3_units[2]} deviation a third invented package interrupted: no report on file, read 2",
+    )), 1)
+    interrupted = w3_folder("interrupted-read", dict(list(w3_reports.items())[:2]), interrupted_ledger)
+    code, _int_out, int_err, int_hand_back = summarize([
+        str(interrupted / "ledger.md"), "3", "W3-1", "--plan", str(interrupted / "read-plan.md"),
+    ])
+    if code != 0 or f"unverified: {w3_units[2]} read 2 no verified line" not in int_hand_back.splitlines() or (
+        "skipped: none" not in int_hand_back.splitlines() or "stopped: none" not in int_hand_back.splitlines()
+    ):
+        errors.append(
+            f"a review whose second read was cut off before its report spends that read or stops the "
+            f"run: exit {code}, {int_err or int_hand_back!r}"
+        )
+    # Three reads in a row cut off or blocked on one review stop the run: named on `stopped:`
+    # with its last note, and never skipped. A `go on given` note after them clears the count.
+    blocked_lines = [
+        f"note 3 W3-1 {w3_units[2]} deviation a third invented package interrupted: no report on file, read 1",
+        f"dispatch 3 W3-1 {w3_units[2]} sheets none purpose review a third invented package",
+        f"note 3 W3-1 {w3_units[2]} deviation a third invented package blocked: record_batch server, read 2",
+        f"dispatch 3 W3-1 {w3_units[2]} sheets none purpose review a third invented package",
+        f"note 3 W3-1 {w3_units[2]} deviation a third invented package interrupted: no report on file, read 3",
+    ]
+    third_row = mixed_text.replace(third_ok + "\n", "".join(f"{line}\n" for line in blocked_lines), 1)
+    in_a_row = w3_folder("three-in-a-row", dict(list(w3_reports.items())[:2]), third_row)
+    code, _row_out, row_err, row_hand_back = summarize([
+        str(in_a_row / "ledger.md"), "3", "W3-1", "--plan", str(in_a_row / "read-plan.md"),
+    ])
+    row_hand = row_hand_back.splitlines()
+    if code != 0 or not any(
+        l.startswith(f"stopped: {w3_units[2]} ") and "interrupted: no report on file, read 3" in l
+        and "the third read in a row" in l for l in row_hand
+    ) or "skipped: none" not in row_hand:
+        errors.append(
+            f"a review cut off or blocked three reads in a row is not handed back stopped: exit {code}, "
+            f"{row_err or row_hand_back!r}"
+        )
+    go_on = mixed_text.replace(third_ok + "\n", "".join(f"{line}\n" for line in (
+        *blocked_lines,
+        f"note 3 W3-1 {w3_units[2]} deviation a third invented package go on given after three reads that spent nothing",
+        f"dispatch 3 W3-1 {w3_units[2]} sheets none purpose review a third invented package",
+    )), 1)
+    went_on = w3_folder("three-in-a-row-go-on", dict(list(w3_reports.items())[:2]), go_on)
+    code, _go_out, go_err, go_hand_back = summarize([
+        str(went_on / "ledger.md"), "3", "W3-1", "--plan", str(went_on / "read-plan.md"),
+    ])
+    if code != 0 or "stopped: none" not in go_hand_back.splitlines():
+        errors.append(
+            f"a review read again after the go on note still reads stopped: exit {code}, {go_err or go_hand_back!r}"
+        )
+    # One blocked read stops the run at once, whatever came before it.
+    one_block = mixed_text.replace(third_ok + "\n", "".join(f"{line}\n" for line in (
+        f"note 3 W3-1 {w3_units[2]} deviation a third invented package blocked: record_batch refused by the client, read 1",
+    )), 1)
+    one = w3_folder("one-block", dict(list(w3_reports.items())[:2]), one_block)
+    code, _one_out, one_err, one_hand_back = summarize([
+        str(one / "ledger.md"), "3", "W3-1", "--plan", str(one / "read-plan.md"),
+    ])
+    if code != 0 or not any(
+        l.startswith(f"stopped: {w3_units[2]} ") and "refused by the client, read 1" in l for l in one_hand_back.splitlines()
+    ):
+        errors.append(f"a review whose read was blocked is not handed back stopped: exit {code}, {one_err or one_hand_back!r}")
     # A review whose latest verified line reads mismatch needs no report: the pass sums, the
     # review adds nothing, and it is named a mismatch, with no report of it on file at all.
     mismatch_ledger = mixed_text.replace(
@@ -6806,14 +6974,19 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         "read-again-mismatch", deviation, a1_dispatch, a1_first.replace("result ok", "result mismatch"),
         outside, spent,
     )
+    # The unit is skipped and the pass goes on: the hand-back names it on `skipped:` with its
+    # unread note, never on `unverified:`, `stopped:` or `unread:`.
     code, _twice_out, twice_err, twice_hand_back = summarize([str(twice_ledger), "1", "A1", *plan_of(twice_ledger)])
-    if code != 0 or "unverified: A1-1 mismatch" not in twice_hand_back.splitlines() or "per unit: A1-1 " not in _twice_out or (
-        "read twice verified no" not in _twice_out
-    ) or "unread: A1-1 A-0.11 read 2 times, not read again" not in twice_hand_back.splitlines() or (
+    twice_hand = twice_hand_back.splitlines()
+    if code != 0 or "unverified: none" not in twice_hand or "per unit: A1-1 " not in _twice_out or (
+        "read twice verified skipped" not in _twice_out
+    ) or "skipped: A1-1 A-0.11 read 2 times, not read again" not in twice_hand or "stopped: none" not in twice_hand or (
+        "unread: none" not in twice_hand
+    ) or (
         "deviations and repairs: A1-1 A-0.11 created subjects scopeItem:A1-2-1, read 2" not in _twice_out.splitlines()
     ):
         errors.append(
-            f"a unit whose second check also found a mismatch is not handed back as a mismatch, "
+            f"a unit whose second check also found a mismatch is not handed back skipped, "
             f"read twice: exit {code}, {twice_err or twice_hand_back!r}"
         )
 
@@ -10531,27 +10704,21 @@ def check_setup_lead_reads(plugin_path: Path, marketplace_root: Path) -> Result:
 # --------------------------------------------------------------------------- #
 #
 # The lead checks each pass with one count call and writes its `pass:` line through
-# lead_pass.py, and gathers each check-in through it, so it never holds a summary. A measured
-# lead that took a count per unit by hand and held every summary grew its context past 850k
-# tokens. The script is the join between three readers that would otherwise first meet mid-run:
-# the read plan the prefixes come from, the summary file the runner's script writes, and the
-# plan script that reads the `pass:` line back as `summed: yes`. So the check runs all three in
-# process over one invented run folder.
+# lead_pass.py, so it never holds a summary. A measured lead that took a count per unit by hand and
+# held every summary grew its context past 850k tokens. The script is the join between three
+# readers that would otherwise first meet mid-run: the read plan the prefixes come from, the
+# summary file the runner's script writes, and the plan script that reads the `pass:` line back as
+# `summed: yes`. So the check runs all three in process over one invented run folder.
 #
 # Arms: the prefixes are a tally of each plan block, and a plan with no pass lists none; a record
 # pairs each count with its unit by prefix, so an answer in another order appends exactly the line
-# built here, which the plan script then reads as summed; a count below the runner's appends
-# nothing and exits 3 naming the unit and both counts; an answer whose prefixes are not the pass's,
-# each once, a summary naming other units, or a unit it reads verified no, is refused; window 3's
-# line carries the pages opened and searches; the check-in counts each anomaly that landed on a
-# Question or a reply by pass, or in window 3 by the review the plan names, where its ending names
-# the id in the record's form, and prints every other note line once across calls under its
-# printed label: an anomaly ending `run only` or `sheet reading` or with no ending, one ending a
-# row's subject, `note on hold` or the placeholder `Question <id>`, one with a continuation line under it,
-# printed with it, a pair of rows carrying the same work, and grain and door notes whose endings
-# read as counted ones; each call under Bash's limit, the last line naming the
-# rest, and a note longer than one call cut and finished in the next; and the skill's own three
-# command lines are fed to the script's arguments.
+# built here, which the plan script then reads as summed; a count below the runner's appends the
+# line reading `lead-verified no` and a `short:` line naming the unit and both counts, and the run
+# goes on; an answer whose prefixes are not the pass's, each once, a summary naming other units,
+# or a unit it reads verified no, is refused; a skipped unit records `skipped 1`, and three of four
+# skipped trip the breaker while two do not; window 3's line carries the pages opened and searches
+# and names the pass by its packages; an older ledger's `checkin:` lines are read past and the
+# `checkin` mode is gone; and the skill's own command lines are fed to the script's arguments.
 #
 # Honest bound: the counts are given here, so this proves the bookkeeping and nothing about a
 # count the record returns.
@@ -10665,7 +10832,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             fields = block["fields"]
             wanted.append(
                 f"{pass_id}: units {fields['units']}, units verified {fields['units verified']}, "
-                f"summed {fields['summed']}"
+                f"units skipped {fields.get('units skipped', '0')}, summed {fields['summed']}"
             )
             wanted.append(
                 f"{pass_id} prefixes: "
@@ -10700,7 +10867,6 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         code, out, err = run(lead, ["passes", "--plan", str(empty / "read-plan.md")])
         if code != 0 or out.splitlines() != [
             "passes 0, finished 0; to dispatch: none", "start now: none", "waiting: none",
-            "since the last check-in: none", "check-in due: no",
         ]:
             errors.append(
                 f"a window 2 plan with no pass does not list `passes 0, finished 0; to dispatch: "
@@ -10733,8 +10899,8 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
 
     for unit_id, sheet, _page in blocks["A1"]["units"]:
         ledger_lines += unit_lines("A1", unit_id, sheet)
-    # A check-in on a sheet that stopped answering in the window's first pass comes before any
-    # `pass:` line of the window, so its line names no pass, and every script reads past it.
+    # An older ledger's `checkin:` line, from a run before a scope run had no check-in, is read past
+    # by every script.
     ledger_lines.insert(3, "checkin: 1 none go")
     # The check-in names in full each anomaly that landed nowhere on a trade's page and counts the
     # ones on a Question or a reply by pass. The fixture carries each ending the report shape gives,
@@ -10803,7 +10969,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     wanted_line = (
         f"pass: 1 A1 units {len(a1_units)} created {sum(a1_counts)} updated "
         f"{sum(updated[u] for u in a1_units)} questions {sum(questions[u] for u in a1_units)} "
-        f"replied 0 lead-verified yes"
+        f"replied 0 skipped 0 lead-verified yes"
     )
     appended = ledger.read_bytes()[len(before):].decode("utf-8")
     if code != 0 or appended != wanted_line + "\n" or out.splitlines()[:1] != [wanted_line]:
@@ -10836,41 +11002,36 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         blocks = blocks_after
     check_listing("after A1 is recorded")
 
-    # The `checkin:` line the lead appends when the user answers a check-in, so a later session
-    # never shows that check-in again, is read past by every script that reads this ledger: the
+    # An older ledger's `checkin:` line after a `pass:` line is read past by every script too: the
     # summary sums A1 as before and the plan still reads it finished.
     _write_run_ledger(ledger, ledger.read_text(encoding="utf-8") + "checkin: 1 A1 go\n")
     summarize("A1")
     if (plan_blocks().get("A1") or {}).get("fields", {}).get("summed") != "yes":
-        errors.append("a `checkin:` line on the ledger leaves A1 read as unsummed")
-    check_listing("with a checkin line on the ledger")
+        errors.append("an older ledger's `checkin:` line leaves A1 read as unsummed")
+    check_listing("with an older checkin line on the ledger")
     skill_text = " ".join(
         (plugin_path / "skills" / "scope-run" / "SKILL.md").read_text(encoding="utf-8").split()
     )
     for phrase in (
-        "checkin: <window> <window, the id of the last pass recorded when it was shown, or none> <go|pause>",
-        "and `none` for one inside a window shown before any pass of that window is recorded",
-        "reads the ledger's `phase:`, `pass:` and `checkin:` lines first",
-        "A check-in a `checkin:` line records was shown and answered, and is never shown again",
-        "When the user answers a check-in, append its one `checkin:` line to the ledger",
-        # The resume rules at a check-in, each pinned so deleting one fails here: `go` starts the
-        # step after the check-in and never shows it again, `pause` asks before starting it, and a
-        # check-in with no `checkin:` line after it is shown.
-        "Where the last of those lines is a `checkin:` line reading `go`, start the step that follows "
-        "that check-in: after window 1's, stage 6 step 1, the window 2 plan; after window 2's, stage 6 "
-        "step 6, the recheck, on a pass whose delivery was sized, and stage 7 step 1 otherwise, or stage "
-        "6 step 1 again after a paused slice; inside the recheck and after its own, as `recheck.md` "
-        "step 7 says; after one inside a window, its second "
-        "field a pass id or `none`, the passes that are not finished, or the window's close where "
-        "every pass is finished.",
-        "Where it reads `pause`, the user stopped the run there: say in one sentence what the run does "
-        "next, and start it on their go-ahead, with a `checkin:` line reading `go` for the same "
-        "check-in first.",
-        "and no `checkin:` line follows it, that check-in was never answered: gather it and show it.",
-        "never showing again a check-in a `checkin:` line records",
+        # The ledger shapes the lead writes now, and the line that replaced the plan's approval.
+        "pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> skipped <n> lead-verified <yes|no>",
+        "short: <window> <pass id> <unit id> record <n> runner <n>",
+        "phase: reading started <UTC time, as 2026-01-31T22:10:00Z>",
+        "The script refuses a new `checkin:` line, which no scope run writes now",
+        # The turn rule: no rule ends the lead's turn on its own.
+        "No rule ends your turn on its own.",
+        # The resume rule reads past an older ledger's check-in lines.
+        "An older ledger's `checkin:` lines are read past, and its `phase: plan approved` is the reading started line.",
     ):
         if phrase not in skill_text:
             errors.append(f"the skill does not carry {phrase!r}")
+    for gone in ("check-in due:", "since the last check-in:", "checkin: <window>"):
+        if gone in skill_text:
+            errors.append(f"the skill still carries {gone!r}, which a run with no check-in has no use for")
+    # The check-in mode is gone: the script's own argument parser refuses it.
+    code, out, err = run(lead, ["checkin", str(folder), "1", "--passes", "A1"])
+    if code != 2:
+        errors.append(f"`lead_pass.py checkin` is not refused by the argument parser: exit {code}, {err or out!r}")
 
     # ------------------------------------------------------------------ #
     # record: the refusals, each writing nothing
@@ -10888,22 +11049,31 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append(f"{label}: the ledger changed")
 
     a1_record = ["record", str(ledger), "1", "A1", "--plan", str(plan), "--counts-json"]
+
+    def short_recorded(label: str, pairs: list[tuple[str, int]], unit: str, on_record: int, verified: int) -> None:
+        """A record holding less than a runner verified: the pass line reads `lead-verified no`, a
+        `short:` line under it names the unit and both counts, the run goes on, exit 0. The ledger is
+        put back after, so the cases after it start from the same file."""
+        before = ledger.read_bytes()
+        code, out, err = run(lead, [*a1_record, answer(pairs)])
+        appended = ledger.read_bytes()[len(before):].decode("utf-8").splitlines()
+        wanted_short = f"short: 1 A1 {unit} record {on_record} runner {verified}"
+        if code != 0 or len(appended) != 2 or not appended[0].startswith(f"pass: 1 A1 units {len(a1_units)} ") or (
+            not appended[0].endswith(" lead-verified no") or appended[1] != wanted_short
+        ) or out.splitlines()[:2] != appended:
+            errors.append(f"{label}: exit {code}, appended {appended}, expected the pass line reading lead-verified no and {wanted_short!r}: {err or out!r}")
+        _write_run_ledger(ledger, before.decode("utf-8"))
+
     low = list(a1_counts)
     low[2] = created[a1_units[2]] - 1
-    refused(
-        "a count below the runner's",
-        [*a1_record, answer(list(zip(a1_units, low)))],
-        3, [a1_units[2], f"{low[2]} on the record", f"{created[a1_units[2]]} when its runner verified it"],
-    )
+    short_recorded("a count below the runner's", list(zip(a1_units, low)), a1_units[2], low[2], created[a1_units[2]])
     # Each count stands where its own unit's count stands in plan order, under the other unit's
     # prefix: a pairing by place passes all four, and by prefix the second unit is short.
     swapped = [(a1_units[1], created[a1_units[0]]), (a1_units[0], created[a1_units[1]])]
     swapped += [(u, created[u]) for u in a1_units[2:]]
-    refused(
+    short_recorded(
         "an answer in another order whose short unit a pairing by place would pass",
-        [*a1_record, answer(swapped)],
-        3, [a1_units[1], f"{created[a1_units[0]]} on the record",
-            f"{created[a1_units[1]]} when its runner verified it"],
+        swapped, a1_units[1], created[a1_units[0]], created[a1_units[1]],
     )
     before = ledger.read_bytes()
     code, _out, _err = run(lead, [
@@ -10991,21 +11161,6 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     if code != 0:
         errors.append(f"G1 once every unit verifies does not record: {err}")
 
-    def on_record_lines(tally: list[tuple[str, str]]) -> list[str]:
-        """The check-in's counts lines for (where, landing) pairs, each place in the order it first comes."""
-        words = {"Question": "Questions", "reply": "replies"}
-        places: dict[str, dict[str, int]] = {}
-        for where, landed in tally:
-            places.setdefault(where, {k: 0 for k in words})[landed] += 1
-        every = {k: sum(c[k] for c in places.values()) for k in words}
-
-        def figures(c: dict[str, int]) -> str:
-            return ", ".join(f"{words[k]} {c[k]}" for k in words)
-
-        return [f"on the record: {figures(c)}, in {where}" for where, c in places.items()] + [
-            f"on the record over these passes: {figures(every)}"
-        ]
-
     # ------------------------------------------------------------------ #
     # record: a window 3 pass of two reviews carries their two figures
     # ------------------------------------------------------------------ #
@@ -11076,7 +11231,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             ])
             wanted_review = (
                 f"pass: 3 {review} units 2 created {sum(review_counts.values())} updated 4 "
-                f"questions 2 replied 2 pages-opened {figures.group(1)} searches "
+                f"questions 2 replied 2 skipped 0 pages-opened {figures.group(1)} searches "
                 f"{figures.group(2)} reports-restored {figures.group(3)} lead-verified yes"
             )
             if code != 0 or out.splitlines()[:1] != [wanted_review]:
@@ -11088,277 +11243,15 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             }
             if summed.get(review) != "yes":
                 errors.append(f"after the window 3 record the plan script reads {review} as summed {summed.get(review)!r}")
-            code, out, err = run(lead, ["checkin", str(review_folder), "3", "--passes", review])
+            # The record names the pass by the packages it reviewed, never by its id.
             names = {
                 review_units[0]: "Invented drywall, trade 09 21 16",
                 review_units[1]: "Invented plumbing, trade 22 11 16",
             }
-            wanted_counts = on_record_lines(
-                [(f"the review of {names[u]}", landed) for u, (_c, landed) in review_landed.items()]
-            )
-            got_counts = [l for l in out.splitlines() if l.startswith("on the record")]
-            if code != 0 or got_counts != wanted_counts:
-                errors.append(
-                    f"the window 3 check-in's counts read {got_counts}, and a tally by the review "
-                    f"each anomaly names reads {wanted_counts}: {err}"
-                )
-            # The pass is named by the packages it reviewed, and the entries, pages opened and
-            # searches go on the lead's own line alone.
             reviewed = f"2 packages reviewed ({names[review_units[0]]}; {names[review_units[1]]}): new items "
-            own = (
-                f"your own check over 1 pass line ({review}), never said to the estimator: units 2, entries "
-                f"{sum(review_counts.values())}, pages opened {figures.group(1)}, searches {figures.group(2)}, "
-                f"reports restored {figures.group(3)}"
-            )
-            w3_lines = out.splitlines()
-            w3_head = w3_lines[:next((i for i, l in enumerate(w3_lines) if l.startswith("items by trade: ")), len(w3_lines))]
-            if (
-                not any(l.startswith(reviewed) for l in w3_lines) or own not in w3_lines
-                or any(review in l for l in w3_head if l != own)
-            ):
-                errors.append(f"the window 3 check-in does not name its pass by its packages and keep the lead's figures apart: {w3_lines[:4]}")
-
-    # ------------------------------------------------------------------ #
-    # checkin: every line once, every call under Bash's limit
-    # ------------------------------------------------------------------ #
-    # The labels a check-in prints its notes under, pinned here: the person watching reads them,
-    # so every one is in estimator words, and the note behind each is the reader's own text,
-    # copied whole less the unit id it opens with.
-    checkin_labels = {
-        "overlap notes": "maybe the same work twice",
-        "anomalies": "to look at",
-        "unread pages": "pages not read",
-        "grain questions": "how finely to split",
-        "door-owned suggestions": "for the estimator to decide",
-        "definitions kinds added": "kinds of marks defined",
-        "deviations and repairs": "what went wrong and how it was fixed",
-    }
-    plan_units = {unit_id for block in blocks.values() for unit_id, _s, _p in block["units"]}
-
-    def printed(label: str, body: str) -> str:
-        """A summary note as the check-in prints it: its check-in label, and no unit id in front."""
-        unit, _space, rest = body.partition(" ")
-        return f"{checkin_labels[label]}: {rest if unit in plan_units and rest else body}"
-
-    # The summary lines of the anomalies the fixture counts, which the check-in never prints.
-    counted_lines = {f"anomalies: {unit} {clause}" for _p, unit, clause, _w in counted_anomalies}
-
-    def checkin_notes() -> list[str]:
-        """
-        Every note line of the two summaries on file the check-in prints, under its label: all of
-        them but the anomalies the fixture counts.
-        """
-        notes: list[str] = []
-        for p in ("A1", "G1"):
-            for l in (folder / "reports" / f"{p}.md").read_text(encoding="utf-8").splitlines():
-                label = l.split(":", 1)[0]
-                if label in checkin_labels and not l.endswith(": none") and l not in counted_lines:
-                    notes.append(printed(label, l[len(label) + 2:]))
-        return notes
-
-    code, out, err = run(lead, ["checkin", str(folder), "1", "--passes", "A1,G1"])
-    pass_lines = [l for l in ledger.read_text(encoding="utf-8").splitlines() if l.startswith("pass: 1 ")]
-    last_lines = {l.split()[2]: l for l in pass_lines}
-    carried = checkin_notes()
-
-    def figures_of(line: str) -> dict[str, int]:
-        parts = line.split()
-        return {
-            field: int(parts[parts.index(field) + 1])
-            for field in ("units", "created", "updated", "questions", "replied")
-        }
-
-    def said(items: int, f: dict[str, int]) -> str:
-        return (
-            f"new items {items}, items updated {f['updated']}, Questions raised {f['questions']}, "
-            f"replies {f['replied']}"
-        )
-
-    per_pass = {p: figures_of(last_lines[p]) for p in ("A1", "G1") if p in last_lines}
-    totals = {field: sum(f[field] for f in per_pass.values()) for field in ("units", "created", "updated", "questions", "replied")}
-    items = {"A1": 2 * len(a1_units), "G1": len(g1_units)}
-    sheets_of = {p: [sheet for _u, sheet, _pg in blocks[p]["units"]] for p in ("A1", "G1")}
-    if code != 0:
-        errors.append(f"the check-in refused: {err}")
-    elif len(per_pass) != 2:
-        errors.append(f"the check-in fixture carries pass lines for {sorted(per_pass)}, not A1 and G1")
-    else:
-        lines = out.splitlines()
-        for wanted in (
-            *(
-                f"{len(sheets_of[p])} sheets read ({', '.join(sheets_of[p])}): {said(items[p], per_pass[p])}"
-                for p in ("A1", "G1")
-            ),
-            f"over 2 passes: {said(items['A1'] + items['G1'], totals)}",
-            "window 1, 2 passes",
-            f"your own check over 2 pass lines (A1, G1), never said to the estimator: units {totals['units']}, "
-            f"entries {totals['created']}",
-            f"items by trade: 09 21 16 x{2 * len(a1_units)}, 03 30 00 x{len(g1_units)}",
-            *carried,
-        ):
-            if wanted not in lines:
-                errors.append(f"the check-in does not carry {wanted!r}")
-        # The pass lines are the lead's own, and `created` counts entries, never items: no line
-        # the check-in prints carries either.
-        head = lines[:next((i for i, l in enumerate(lines) if l.startswith("items by trade: ")), len(lines))]
-        machine = [l for l in lines if l.startswith("pass: ")] + [l for l in head if "created" in l]
-        if machine:
-            errors.append(f"the check-in prints a pass line or a created figure: {machine[:2]}")
-        # A pass id goes on the lead's own line alone, never on a line said to the estimator.
-        with_id = [
-            l for l in head
-            if not l.startswith("your own check ") and re.search(r"\b(A1|G1)\b", l)
-        ]
-        if with_id:
-            errors.append(f"the check-in names a pass by its id on a line for the estimator: {with_id[:2]}")
-        if not any(l.startswith("how finely to split: ") for l in carried) or not any(
-            l.startswith("for the estimator to decide: ") for l in carried
-        ):
-            errors.append("the check-in fixture carries no grain question or door-owned suggestion")
-        internal = [l for l in lines if l.startswith(tuple(f"{label}:" for label in checkin_labels if checkin_labels[label] != label))]
-        if internal:
-            errors.append(f"the check-in prints a note under the summary's own label: {internal[:2]}")
-        with_unit = [
-            l for l in lines
-            if any(l.startswith(f"{label}: {u} ") for label in checkin_labels.values() for u in plan_units)
-        ]
-        if with_unit:
-            errors.append(f"the check-in prints a note with the unit id it opens with: {with_unit[:2]}")
-        for kind, (unit, clause) in whole_anomalies.items():
-            if printed("anomalies", f"{unit} {clause}") not in lines:
-                errors.append(f"the check-in does not print the anomaly with {kind} whole: {clause!r}")
-        for kind, clause in (("grain", "may split by frame"), ("door", "looks retired")):
-            if not any(clause in l for l in lines):
-                errors.append(f"the check-in does not print the {kind} note whose ending reads as a counted one")
-        shown = [clause for _p, _u, clause, _w in counted_anomalies if any(clause in l for l in lines)]
-        if shown:
-            errors.append(f"the check-in prints an anomaly already on the record rather than counting it: {shown}")
-        wanted_counts = on_record_lines([(f"pass {p}", w) for p, _u, _c, w in counted_anomalies])
-        got_counts = [l for l in lines if l.startswith("on the record")]
-        if got_counts != wanted_counts:
-            errors.append(f"the check-in's counts read {got_counts}, and a tally of the fixture reads {wanted_counts}")
-
-    # A note that runs onto an unlabelled line under it: its last words are not where it landed, so
-    # it prints whole with its continuation under it, and is not counted.
-    _p, continued_unit, continued_clause, _w = counted_anomalies[1]
-    continued_first = f"anomalies: {continued_unit} {continued_clause}"
-    continuation = "and the schedule on the next sheet reads it otherwise, run only"
-    a1_summary = folder / "reports" / "A1.md"
-    a1_text = a1_summary.read_text(encoding="utf-8")
-    if continued_first + "\n" not in a1_text:
-        errors.append(f"the A1 summary does not carry {continued_first!r}, so the continuation case proves nothing")
-    a1_summary.write_text(a1_text.replace(continued_first + "\n", f"{continued_first}\n{continuation}\n"), encoding="utf-8")
-    code, out, err = run(lead, ["checkin", str(folder), "1", "--passes", "A1,G1"])
-    lines = out.splitlines()
-    continued_printed = printed("anomalies", f"{continued_unit} {continued_clause}")
-    at = lines.index(continued_printed) if continued_printed in lines else -1
-    if code != 0 or at < 0 or lines[at + 1:at + 2] != [continuation]:
-        errors.append(
-            f"the check-in does not print a note with a continuation line whole, its continuation "
-            f"under it: exit {code}, {err}"
-        )
-    wanted_counts = on_record_lines(
-        [(f"pass {p}", w) for i, (p, _u, _c, w) in enumerate(counted_anomalies) if i != 1]
-    )
-    got_counts = [l for l in lines if l.startswith("on the record")]
-    if got_counts != wanted_counts:
-        errors.append(
-            f"the check-in counts a note with a continuation line: its counts read {got_counts}, "
-            f"and without it {wanted_counts}"
-        )
-    a1_summary.write_text(a1_text, encoding="utf-8")
-
-    cut_re = re.compile(
-        r"^cut: pass (\S+), line (\d+), at character (\d+) of (\d+); the rest is in the next call$"
-    )
-    resumed_re = re.compile(r"^pass (\S+), line (\d+), from character (\d+):$")
-
-    def walk_checkin(label: str, all_notes: list[str]) -> tuple[int, list[str]]:
-        """
-        Every check-in call the last line of each hands on, to the end, each under Bash's limit,
-        with every note line printed once and in order, a note cut across calls joined back from
-        its pieces. Returns the number of calls and the cut markers.
-        """
-        seen: list[str] = []
-        markers: list[str] = []
-        partial: str | None = None
-        argv = ["checkin", str(folder), "1", "--passes", "A1,G1"]
-        calls = 0
-        while argv and calls < 12:
-            calls += 1
-            code, out, err = run(lead, argv)
-            if code != 0:
-                errors.append(f"{label}: a check-in call refused: {err}")
-                break
-            if len(out) >= BASH_OUTPUT_LIMIT:
-                errors.append(
-                    f"{label}: a check-in call printed {len(out)} characters, past Bash's {BASH_OUTPUT_LIMIT}"
-                )
-            lines = out.splitlines()
-            at = 0
-            while at < len(lines):
-                line = lines[at]
-                following = lines[at + 1] if at + 1 < len(lines) else ""
-                if partial is not None and resumed_re.match(line):
-                    piece, at = following, at + 2
-                elif partial is None and cut_re.match(following):
-                    partial, piece, at = "", line, at + 1
-                else:
-                    if line in all_notes:
-                        seen.append(line)
-                    at += 1
-                    continue
-                partial += piece
-                if at < len(lines) and cut_re.match(lines[at]):
-                    at += 1
-                    continue
-                seen.append(partial)
-                partial = None
-            markers += [l for l in lines if cut_re.match(l)]
-            rest = re.match(r"^not printed: .*; the rest: python3 '[^']*' (checkin .*)$", lines[-1])
-            argv = (
-                [token.strip("'") for token in re.findall(r"'[^']*'|\S+", rest.group(1))] if rest else []
-            )
-        if seen != all_notes:
-            errors.append(
-                f"{label}: across {calls} check-in calls the note lines came {len(seen)} times over "
-                f"{len(all_notes)}, or out of order or not whole"
-            )
-        return calls, markers
-
-    # Long notes, so the check-in has to stop and name the rest.
-    long_lines = ledger_lines + [
-        f"note 1 A1 {a1_units[i % len(a1_units)]} anomaly invented long note {i} " + "word " * 180
-        for i in range(60)
-    ] + [wanted_line]
-    _write_run_ledger(ledger, "\n".join(long_lines) + "\n")
-    summarize("A1")
-    calls, _markers = walk_checkin("sixty long notes", checkin_notes())
-    if calls < 2:
-        errors.append("the long check-in fit in one call, so it proves nothing about the stop")
-
-    # One note longer than a whole call prints: it is cut where the call's room ends, under a line
-    # naming the pass, the note and its length, and the next call prints the rest of it.
-    huge = f"invented note longer than one call {'word ' * 6400}".strip()
-    _write_run_ledger(
-        ledger, "\n".join(ledger_lines + [f"note 1 A1 {a1_units[1]} anomaly {huge}", wanted_line]) + "\n",
-    )
-    summarize("A1")
-    huge_notes = checkin_notes()
-    huge_note = next((l for l in huge_notes if huge in l), "")
-    if len(huge_note) <= BASH_OUTPUT_LIMIT:
-        errors.append("the long note fixture is not over Bash's limit, so it proves nothing about the cut")
-    huge_at = huge_notes.index(huge_note) + 1 if huge_note else 0
-    huge_calls, markers = walk_checkin("one note over Bash's limit", huge_notes)
-    if not markers or any(
-        not (m := cut_re.match(marker)) or m.group(1) != "A1" or m.group(2) != str(huge_at)
-        or m.group(4) != str(len(huge_note))
-        for marker in markers
-    ):
-        errors.append(
-            f"the note over Bash's limit is not cut under a line naming pass A1, its line "
-            f"{huge_at} and its length {len(huge_note)}: {markers}"
-        )
+            said_lines = out.splitlines()[1:2]
+            if not said_lines or not said_lines[0].startswith(reviewed) or review in said_lines[0]:
+                errors.append(f"the window 3 record does not name its pass by its packages: {said_lines}")
 
     # ------------------------------------------------------------------ #
     # The skill's own command lines, fed to the script's arguments
@@ -11367,10 +11260,10 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     skill_text = skill.read_text(encoding="utf-8").replace("\\\n", " ") if skill.is_file() else ""
     commands = re.findall(r"python3 '<plugin root>/scripts/lead_pass\.py' (\w+)([^\n]*)", skill_text)
     modes = sorted(mode for mode, _rest in commands)
-    if modes != ["checkin", "passes", "passes", "record"]:
+    if modes != ["passes", "passes", "record", "wait"]:
         errors.append(
-            f"the skill carries the lead_pass commands {modes}, expected one each of checkin and "
-            f"record, and passes twice, whole and with --reported"
+            f"the skill carries the lead_pass commands {modes}, expected one record, passes "
+            f"twice, whole and with --reported, and the wait between tries"
         )
     # The skill names the line an empty window prints, so the lead reads it as a window with
     # nothing to run.
@@ -11389,12 +11282,17 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         # The lead passes the answer's array through as it came back, single quoted.
         filled = re.sub(r"--counts-json '<[^']*>'", lambda _m: f"--counts-json '{a1_answer}'", filled)
         argv = [mode, *[token.strip("'") for token in re.findall(r"'[^']*'|\S+", filled)]]
+        if mode == "wait":
+            # Its seconds are read as written and then not waited out here.
+            if argv[1:] != ["280"]:
+                errors.append(f"the skill's wait command reads {argv}, not a wait of 280 seconds")
+            argv = ["wait", "0"]
         code, _out, err = run(lead, argv)
         if code != 0:
             errors.append(f"the skill's {mode} command, filled in, exits {code}: {argv}, {err}")
 
-    # The check-in counts a note only where its ending names a Question or a reply whole, so
-    # a reader or reviewer writing a short id prints every note in full. Each report shape, and each
+    # The closing report names a Question or a reply off its full id, so a reader or reviewer
+    # writing a short id leaves it unnamed. Each report shape, and each
     # reader's mandate on the ending, says the ending names the full id.
     shape_texts = {
         "skill": skill.read_text(encoding="utf-8") if skill.is_file() else "",
@@ -11544,6 +11442,87 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
                 f"for another reason: exit {code}, {err or out!r}"
             )
 
+    # Skipped: two reads spent and the runner's unread note after them. The plan script reads the
+    # unit settled, units skipped 1, the record writes `skipped 1` and says the unit was read twice
+    # and not confirmed, and no breaker trips for one unit.
+    skip_note = f"note 1 A1 {settle_first} unread {settle_sheet} read 2 times, not read again"
+    skipped_at, skipped_block = settle_folder(
+        "read-again-skipped",
+        [settle_mismatch, settle_note, settle_dispatch, settle_verified(settle_first, "mismatch", made=1), skip_note],
+    )
+    if skipped_block:
+        settle_cases += 1
+        fields = skipped_block["fields"]
+        if fields.get("units verified") != str(len(settle_units) - 1) or fields.get("units skipped") != "1":
+            errors.append(f"the plan script does not read one unit verified less and one skipped: {fields}")
+        code, hand_back, err = settle_sum(skipped_at, skipped_at / "ledger.md")
+        if code != 0 or f"skipped: {settle_first} {settle_sheet} read 2 times, not read again" not in hand_back.splitlines():
+            errors.append(f"the summary of a skipped unit does not name it on skipped: exit {code}, {err or hand_back!r}")
+        before = (skipped_at / "ledger.md").read_bytes()
+        code, out, err = settle_record(skipped_at)
+        appended = (skipped_at / "ledger.md").read_bytes()[len(before):].decode("utf-8")
+        if code != 0 or " replied 0 skipped 1 lead-verified yes\n" not in appended or (
+            ", read twice and not confirmed 1, named in the closing report" not in out
+        ) or "breaker:" in out:
+            errors.append(f"a pass with one skipped unit does not record skipped 1 with no breaker: exit {code}, {appended!r}, {err or out!r}")
+        run(plan_module, ["plan", "--window", "1", "--inventory", str(skipped_at / "inventory.json"), "--out", str(skipped_at / "read-plan.md")])
+        after = {p["id"]: p for p in _plan_passes((skipped_at / "read-plan.md").read_text(encoding="utf-8"))}
+        if after.get("A1", {}).get("fields", {}).get("summed") != "yes":
+            errors.append(f"a pass recorded with one skipped unit is not read back as summed: {after.get('A1', {}).get('fields')}")
+        code, out, err = run(lead, ["passes", "--plan", str(skipped_at / "read-plan.md")])
+        if code != 0 or "passes 2, finished 1; to dispatch: G1" not in out.splitlines():
+            errors.append(f"a pass with a skipped unit, recorded, is not finished in the listing: {out!r} {err}")
+
+    # The breaker: three units skipped of four trips it, two of four, just under, does not.
+    def skipped_folder(case: str, n: int) -> Path | None:
+        at = root / "settle" / case
+        at.mkdir(parents=True)
+        shutil.copy(inventory, at / "inventory.json")
+        argv = ["plan", "--window", "1", "--inventory", str(at / "inventory.json"), "--out", str(at / "read-plan.md")]
+        lines = ["phase: reading started 2026-01-31T22:10:00Z"]
+        for i, (unit_id, sheet) in enumerate(settle_units):
+            dispatch = f"dispatch 1 A1 {unit_id} sheets {sheet} purpose the vocabulary"
+            if i < n:
+                reason = "reader stopped answering, read 2" if i % 2 else "no report, read 2"
+                lines += [
+                    dispatch, settle_verified(unit_id, "mismatch", made=1), dispatch,
+                    f"note 1 A1 {unit_id} deviation {sheet} {reason}",
+                    f"note 1 A1 {unit_id} unread {sheet} read 2 times, not read again",
+                ]
+            else:
+                lines += [dispatch, settle_verified(unit_id, "ok")]
+        (at / "ledger.md").write_bytes(("\n".join(lines) + "\n").encode("utf-8"))
+        (at / "trades").mkdir()
+        (at / "trades" / "A1.txt").write_text(
+            "".join(f"{u} trade 09 21 16 2\n" for u, _s in settle_units[n:]), encoding="utf-8"
+        )
+        code, _bounds, err = run(plan_module, argv)
+        if code != 0:
+            errors.append(f"the plan script refused the {case} run folder: {err}")
+            return None
+        code, hand_back, err = settle_sum(at, at / "ledger.md")
+        if code != 0:
+            errors.append(f"the summary refused the {case} run folder: {err}")
+            return None
+        return at
+
+    for case, n, trips in (("breaker-trips", 3, True), ("breaker-just-under", 2, False)):
+        at = skipped_folder(case, n)
+        if at is None:
+            continue
+        settle_cases += 1
+        code, out, err = settle_record(at)
+        lines = out.splitlines()
+        tripped = f"breaker: {n} of {len(settle_units)} units skipped; stop the run" in lines
+        named = [l for l in lines if l.startswith("skipped: ")]
+        if code != 0 or tripped != trips or (trips and len(named) != n) or (not trips and named):
+            errors.append(
+                f"{n} units skipped of {len(settle_units)} {'does not trip' if trips else 'trips'} the breaker, "
+                f"or names other units: exit {code}, {err or out!r}"
+            )
+        if trips and named and not all("read 2 times, not read again" in l for l in named):
+            errors.append(f"the breaker does not name each skipped unit with its note: {named}")
+
     # The plan script judges a unit by its latest verified line, so an ok line followed by a
     # mismatch leaves the unit to read again, though the summary refuses that ledger.
     latest_at, latest_block = settle_folder(
@@ -11643,43 +11622,35 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
 
     detail = (
         f"one invented run folder planned by the plan script: the passes listing's values and "
-        f"prefixes a tally of each plan block, with the passes to dispatch, and a window 2 with no "
-        f"pass listing none; a record whose counts hold, answered in reverse order, appending "
-        f"exactly the line built here, a count above the runner's named with both, and the plan "
-        f"script then reading the pass as summed; a count below the runner's exiting 3 with both "
-        f"counts named and the ledger unchanged, as for an answer whose short unit a pairing by "
-        f"place would pass, with a bare list of counts refused and eight other "
-        f"refusals (a prefix missing, not in the pass or given twice, a count not whole, counts "
-        f"not JSON, a summary naming other units, one reading a unit verified no, one of another "
-        f"pass); window 3's line for a tagged pass of two reviews, i1-W3-1, carrying both counts "
-        f"and the pages opened and searches off the review reports, its listing giving each "
-        f"review's prefix, and "
-        f"read back as summed; the record and the check-in naming each pass by the sheets it read, "
-        f"or in window 3 the packages it reviewed, with its new items off its trades and no pass "
-        f"id, `pass:` line or entry count but on the lead's own line, every note under an "
-        f"estimator-words label less its unit id, a `checkin:` line naming no pass, before the "
-        f"window's first `pass:` line, read past by the summary, plan and lead scripts, and its "
-        f"shape with `none` and the go, pause and unanswered resume rules read in the skill; the check-in "
-        f"carrying the totals, the items by trade, the {len(counted_anomalies)} anomalies on a Question or a reply counted by "
-        f"pass and never printed, each ending on an id in the record's form, two of "
-        f"window 3 counted by the review the plan names, and every "
-        f"other note line under its printed label, the anomalies ending run only or sheet reading "
-        f"or with no ending, a row's subject, `note on hold` and the placeholder `Question <id>`, a pair carrying "
-        f"the same work, and grain and door notes with counted endings among them, a note with a "
-        f"continuation line printed whole with it and not counted, a long one stopping under Bash's "
-        f"limit with the rest printed once over {calls} calls, and one note over the limit cut "
-        f"under a line naming it and joined whole over {huge_calls} calls; the skill's passes, "
-        f"record and checkin commands fed to the script; the skill's reader and reviewer shapes, "
-        f"both readers' and the reviewer's shapes and each reader's mandate on the ending naming a Question by the full "
-        f"id `ask_question` returned and a reply by the id `reply_question` returned, never "
-        f"shortened, with {full_id_refused} breaks refused; {settle_cases} "
-        f"run folders of a unit read again after a mismatch, its second check ok read verified by "
-        f"the plan script and recorded, its second check a mismatch read unverified and refused, "
-        f"an ok line followed by a mismatch read unverified by the plan script, a summary summed off a copy of the ledger with a line taken out refused as summed "
-        f"from another ledger, and a summary reading a unit ok refused where a later check of it "
-        f"past the summary's lines reads mismatch, a half written line past them not read until it "
-        f"is whole; the lead's own finished units read off each "
-        f"unit's latest verified line; bound: the counts are given here, not returned by the record"
+        f"prefixes a tally of each plan block, units skipped among them, with the passes to "
+        f"dispatch and its two closing lines, and a window 2 with no pass listing none; a record "
+        f"whose counts hold, answered in reverse order, appending exactly the line built here with "
+        f"`skipped 0`, a count above the runner's named with both, and the plan script then reading "
+        f"the pass as summed; a count below the runner's, and an answer whose short unit a pairing "
+        f"by place would pass, each appending the pass line reading lead-verified no and a `short:` "
+        f"line with both counts, exit 0, the run going on; a bare list of counts refused and eight "
+        f"other refusals (a prefix missing, not in the pass or given twice, a count not whole, "
+        f"counts not JSON, a summary naming other units, one reading a unit verified no, one of "
+        f"another pass); window 3's line for a tagged pass of two reviews, i1-W3-1, carrying both "
+        f"counts and the pages opened and searches off the review reports, its listing giving each "
+        f"review's prefix, read back as summed, and the record naming the pass by its packages; "
+        f"an older ledger's `checkin:` lines, before and after a `pass:` line, read past by the "
+        f"summary, plan and lead scripts; the skill carrying the new ledger shapes and the turn "
+        f"rule, and no check-in listing line; the skill's passes and record commands fed to the "
+        f"script; both readers' and the reviewer's shapes and each reader's mandate on the ending "
+        f"naming a Question by the full id `ask_question` returned and a reply by the id "
+        f"`reply_question` returned, never shortened, with {full_id_refused} breaks refused; "
+        f"{settle_cases} run folders of a unit read again after a mismatch: its second check ok read "
+        f"verified and recorded, its second check a mismatch with no unread note read unverified "
+        f"and refused, with the runner's unread note read skipped, recorded `skipped 1`, said read "
+        f"twice and not confirmed, finished in the listing and no breaker; three of four units "
+        f"skipped tripping the breaker with each named, two of four just under it tripping nothing; "
+        f"an ok line followed by a mismatch read unverified by the plan script, a summary summed "
+        f"off a copy of the ledger with a line taken out refused as summed from another ledger, and "
+        f"a summary reading a unit ok refused where a later check of it past the summary's lines "
+        f"reads mismatch, a half written line past them not read until it is whole; the lead's own "
+        f"finished units read off each unit's latest verified line; bound: the counts are given "
+        f"here, not returned by the record"
     )
     if errors:
         detail += " | " + "; ".join(errors)
@@ -11761,11 +11732,11 @@ def _collapsed(text: str) -> str:
 
 
 def _fold_step(skill_text: str) -> str | None:
-    """Stage 6 step 5 of the scope-run skill, up to the check-in text that follows it."""
+    """Stage 6 step 5 of the scope-run skill, up to the step that follows it."""
     start = skill_text.find(_FOLD_STEP_HEADING)
     if start < 0:
         return None
-    end = skill_text.find("<!-- user-facing -->", start)
+    end = skill_text.find("6. **Recheck the scope items", start)
     return skill_text[start:end if end > 0 else len(skill_text)]
 
 
@@ -11790,6 +11761,14 @@ def _fold_text_errors(skill_text: str, definition_text: str) -> list[str]:
         errors.append("stage 6 step 5 does not read the fold report with `fold_report.py print`")
     if "`deleted:`" not in step or "recheck" not in step:
         errors.append("stage 6 step 5 does not dispatch the recheck where the report carries a `deleted:` line")
+    # The folder's description names when it is dispatched and who reads its report, with no check-in.
+    description = re.search(r"(?m)^description: *(.*)$", definition_text)
+    wanted_description = (
+        "Dispatched by the scope-run skill at the end of window 2, and again where a package for the "
+        "owner's work could have come back; writes the fold report the closing report reads."
+    )
+    if description is None or wanted_description not in description.group(1) or "check-in" in description.group(1):
+        errors.append(f"the folder's description does not read {wanted_description!r}, or still names a check-in")
     templates = [
         block for block in _fenced_block_bodies(skill_text.splitlines())
         if any(line.strip() == "subagent_type: plumlayer:scope-package-folder" for line in block)
@@ -13032,13 +13011,11 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
 # `--include` added with every id the ledger binds kept; `starts after:` for a discipline of many
 # parts, a mixed part, a folded pass, the repeated lines pass, a resumed plan, a slice and window 3,
 # read back by the summary script's own plan reader; `start now:` at the limit, with gates open and
-# shut, on a stale plan block, past a pass stopped on a mismatch, and at a check-in; each value a
-# `checkin:` line's second field takes, read back through the listing; what the next check-in reports
-# where a pass was recorded while one stood open; the `--reported` call a hand-back makes, a window 3
+# shut, on a stale plan block, and past a pass stopped on a mismatch; no start ever held for a
+# check-in; a pass with a skipped unit finished; the `--reported` call a hand-back makes, a window 3
 # continuation among its prefixes; windows 1, 2 and 3 driven to their end as the skill's steps say,
-# never stuck, never past the limit, every pass reported once by a check-in the check-in script
-# printed; the skill, the runner and both readers saying so; and each fix broken again, in the script
-# and in the text, and refused. Honest bound: invented grids and a hand-driven ledger, so this proves
+# never stuck, never past the limit, every pass finished once; the skill, the runner and both
+# readers saying so; and each fix broken again, in the script and in the text, and refused. Honest bound: invented grids and a hand-driven ledger, so this proves
 # the schedule and nothing about how a real run's readers behave.
 
 _PASSES_AT_ONCE = 6
@@ -13052,18 +13029,13 @@ _WINDOW_1_CLASS_OF = {
     "schedule": 0, "legend": 0, "notes": 0, "cover-index": 0, "detail": 1, "plan": 1, "untyped": 1,
     "a type nobody ranked": 1,
 }
-_LISTING_LABELS = ("start now", "waiting", "since the last check-in", "check-in due")
+_LISTING_LABELS = ("start now", "waiting")
 
 # What the lead, the runner and the readers each have to say, whitespace collapsed.
 _PASSES_AT_ONCE_SKILL_PHRASES = (
     "start what `start now:` names",
     "You never pick a pass yourself",
     "--running",
-    "`check-in due: yes`",
-    "While a check-in is due or open you start nothing",
-    "the count of four restarts at the `checkin:` line",
-    "every pass `since the last check-in:` names",
-    "the id of the last pass recorded when it was shown",
     "about 5 to 6 minutes a sheet",
     "about 3 minutes a sheet",
     "six passes running at once",
@@ -13072,16 +13044,8 @@ _PASSES_AT_ONCE_SKILL_PHRASES = (
     "listing holds you to six at once in every window, because Claude Code stops agents past 20 running together",
     "Wait on an agent by ending the turn and nothing else",
 )
-# The three values of a `checkin:` line's second field, in the section the lead writes it from.
-_CHECKIN_FIELD_PHRASES = (
-    "It reads `window` after a window's closing lines, whatever `since the last check-in:` shows.",
-    "Inside a window it reads the pass that was last on `since the last check-in:` when you showed it",
-    "Inside a window where that line read `none`",
-    "the pass of the last `pass:` line of this window on the ledger when you showed it",
-    "`none` only where the window has no `pass:` line yet",
-)
-# A check-in with nothing since the last one: the script refuses an empty `--passes`.
-_CHECKIN_EMPTY_PHRASE = "skip this call, which refuses an empty list"
+# Whatever wakes the lead, it takes the listing and acts: no rule ends its turn on its own.
+_WAKE_PHRASE = "finish by taking the passes listing and doing what it shows"
 # What a hand-back runs, in this order, whatever the window.
 _HAND_BACK_ORDER = (
     "--reported '<pass id>' --running '<pass id>,<pass id>'",
@@ -13093,20 +13057,10 @@ _HAND_BACK_ORDER = (
 # What that call reads, what the lead holds of it, and how a `go` and a continuation use it.
 _HAND_BACK_PHRASES = (
     "read off the plan as it stands now",
-    "You act on those five closing lines and keep no prefix",
+    "You act on those three closing lines and keep no prefix",
     "the prefixes line and the closing lines of step 3's two calls",
     "the prefixes it prints for the pass carry them",
-    "`--reported` naming the pass on that line",
 )
-_WINDOW_3_CLOSING_PHRASE = "gather the check-in on those passes before you close, as its own check-in"
-# What each window's own step says about the check-in that closes it. The driver reports a window's
-# last passes only where its step carries this, so a step that drops it fails the drive.
-_WINDOW_CLOSING_CHECKINS = {
-    1: "After window 1, check in (format below)",
-    2: "fold the packages (step 5), and check in on the passes `since the last check-in:` names",
-    3: _WINDOW_3_CLOSING_PHRASE,
-}
-_CADENCE_PHRASE = "four `pass:` lines have landed since the last `checkin:` line"
 _PASSES_AT_ONCE_RETIRED_SKILL_PHRASES = (
     "passes the plan marks",
     "marks as seeing the same work",
@@ -13120,6 +13074,9 @@ _PASSES_AT_ONCE_RETIRED_SKILL_PHRASES = (
     "list the passes again whole",
     "that pass still on `--running`",
     "four passes have reported",
+    "check-in due:",
+    "since the last check-in:",
+    "a check-in is due",
 )
 # A reader's mandate 7: the two refusals a row moving causes, what the reader does on the second,
 # in that order, and that no other refusal is sent again on this rule.
@@ -13157,10 +13114,7 @@ def _in_order(text: str, phrases: tuple[str, ...]) -> list[str]:
 def _passes_at_once_text_errors(skill: str, runner: str, readers: dict[str, str]) -> list[str]:
     """What the lead, the runner and the readers fail to say, each text whitespace collapsed."""
     errors: list[str] = []
-    wanted = (
-        *_PASSES_AT_ONCE_SKILL_PHRASES, *_CHECKIN_FIELD_PHRASES, _CHECKIN_EMPTY_PHRASE, *_HAND_BACK_PHRASES,
-        *_WINDOW_CLOSING_CHECKINS.values(), _CADENCE_PHRASE,
-    )
+    wanted = (*_PASSES_AT_ONCE_SKILL_PHRASES, *_HAND_BACK_PHRASES, _WAKE_PHRASE)
     errors += [f"the skill does not say {phrase!r}" for phrase in wanted if phrase not in skill]
     errors += [f"the skill still says {phrase!r}" for phrase in _PASSES_AT_ONCE_RETIRED_SKILL_PHRASES if phrase in skill]
     errors += [f"a hand-back's step does not say, in its order, {phrase!r}" for phrase in _in_order(skill, _HAND_BACK_ORDER)]
@@ -13190,7 +13144,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
     errors: list[str] = []
     root = Path(__file__).parent / ".test-results" / "passes-at-once"
     shutil.rmtree(root, ignore_errors=True)
-    tally = {"arms": 0, "simulated": 0, "checkins": 0, "peak": 0}
+    tally = {"arms": 0, "simulated": 0, "peak": 0}
 
     def expect(label: str, got, wanted) -> None:
         if got != wanted:
@@ -13355,23 +13309,13 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         """
         runner_reports(where, window, pass_id)
         before = listed(where, running, reported=pass_id)
-        expect(f"{where.name}: the `--reported` call's lines", len(before["lines"]), 6)
+        expect(f"{where.name}: the `--reported` call's lines", len(before["lines"]), 4)
         expect(
             f"{where.name}: {pass_id}, handed back and not recorded, offered again",
             pass_id in names(before["start now"]) + names(before["waiting"]), False,
         )
         record_pass(where, window, pass_id, before["prefixes"])
         return listed(where, running, reported=pass_id)
-
-    def checkin_covers(where: Path, window: int, shown: list[str]) -> list[str]:
-        """What a check-in shown covers, read off what the check-in script printed for it."""
-        code, out, err = run(lead, ["checkin", str(where), str(window), "--passes", ",".join(shown)])
-        if code != 0:
-            raise ValueError(f"{where.name}: the check-in refused what the listing named: {err}")
-        own = re.search(r"your own check over \d+ pass lines? \(([^)]*)\)", out)
-        if own is None:
-            raise ValueError(f"{where.name}: the check-in printed no line of the passes it covers: {out!r}")
-        return names(own.group(1))
 
     # Three parts of one discipline in order of work, the middle one mixed; a discipline of one
     # class in two parts, its second carrying a small discipline folded in; two more of two classes.
@@ -13595,18 +13539,15 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         expect("window 3 with all of them out", listed(where, everything)["start now"], "none")
         append(where, *[pass_line(3, f"W3-{n}") for n in range(1, 5)])
         listing = listed(where, ["W3-5", "W3-6"])
-        expect("window 3's check-in due", listing["check-in due"], "yes")
-        expect("window 3 holds its starts at a check-in", listing["start now"], "none, a check-in is due")
+        # Four `pass:` lines whose passes the ledger does not finish hold nothing: the four start
+        # again beside the two out, with no check-in between.
+        expect("window 3 after four `pass:` lines, nothing held", names(listing["start now"]), ["W3-1", "W3-2", "W3-3", "W3-4"])
 
-        # A resume with four of seven recorded and no answer on the ledger: the check-in comes first.
+        # A resume with four of seven recorded: what is left starts at once.
         resumed = window_3_folder("w3-resume")
         for n in range(1, 5):
             finish_window_3(resumed, f"W3-{n}")
-        listing = listed(resumed)
-        expect("a window 3 resume at a check-in", listing["start now"], "none, a check-in is due")
-        expect("what waits on it", names(listing["waiting"]), ["W3-5", "W3-6", "W3-7"])
-        append(resumed, "checkin: 3 W3-4 go")
-        expect("past its go-ahead, what is left starts", names(listed(resumed)["start now"]), ["W3-5", "W3-6", "W3-7"])
+        expect("a window 3 resume, what is left starts", names(listed(resumed)["start now"]), ["W3-5", "W3-6", "W3-7"])
 
     arm("window 3", arm_window_3)
 
@@ -13642,8 +13583,6 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         expect("start now with the gates shut", names(listing["start now"]), ["A2a", "S2a", "S2b", "T2a", "P2a"])
         expect("waiting with the gates shut", names(listing["waiting"]), ["A2b", "A2c", "T2b", "P2b"])
         expect("with no ledger, nothing is finished", "finished 0;" in listing["dispatch"], True)
-        expect("with no ledger, nothing is due", listing["check-in due"], "no")
-        expect("with no ledger, nothing has reported", listing["since the last check-in"], "none")
 
         finish(where, 2, "A2a")
         expect("the plan file between plan runs", (where / "read-plan.md").read_bytes(), before)
@@ -13651,10 +13590,9 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         expect("a gate opened by the ledger", names(listing["start now"]), ["A2b"])
         expect("what still waits", names(listing["waiting"]), ["A2c", "T2b", "P2b"])
         lines = listing["lines"]
-        expect("the pass's own line, live", lines[0], "A2a: units 12, units verified 12, summed yes")
+        expect("the pass's own line, live", lines[0], "A2a: units 12, units verified 12, units skipped 0, summed yes")
         expect("finished and to dispatch, live", listing["dispatch"],
                "passes 9, finished 1; to dispatch: A2b, A2c, S2a, S2b, T2a, T2b, P2a, P2b")
-        expect("since the last check-in, live", listing["since the last check-in"], "A2a")
 
         # A plan run gives what the listing already said: the same readers over the same files.
         live = listed(where)["lines"]
@@ -13681,93 +13619,62 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
     arm("a pass stopped on a mismatch", arm_mismatch)
 
     # ------------------------------------------------------------------ #
-    # The check-in: due, restarted, and a pass recorded while one stood open
+    # No check-in holds a start, and a skipped unit settles its pass
     # ------------------------------------------------------------------ #
-    def checkin_folder(case: str) -> tuple[Path, list[str]]:
-        where = new_folder(case, sheets("A", "1", "plan", 96))
+    def arm_no_checkin() -> None:
+        # Many `pass:` lines, an older ledger's `checkin:` lines among them: nothing is held for a
+        # check-in, and the listing prints only its three closing lines.
+        where = new_folder("no-checkin", sheets("A", "1", "plan", 96))
         plan_1(where)
         plan_2(where)
-        return where, [f"A2{letter}" for letter in "abcdefgh"]
+        ids = [f"A2{letter}" for letter in "abcdefgh"]
+        append(where, pass_line(1, "A1"), "checkin: 1 window go", *[pass_line(2, p) for p in ids[:5]], f"checkin: 2 {ids[3]} pause")
+        listing = listed(where, ids[5:6])
+        expect("start now past five `pass:` lines and two older check-in lines", names(listing["start now"]), ids[:5])
+        expect("the listing's closing lines", [line.split(":", 1)[0] for line in listing["lines"][-2:]], ["start now", "waiting"])
+        expect("no check-in line in the listing", [line for line in listing["lines"] if "check-in" in line], [])
+        window_1 = new_folder("no-checkin-window-1", window_1_rows)
+        plan_1(window_1, include)
+        append(window_1, *[pass_line(1, p) for p in ("A1a", "A1b", "G1a", "G1b", "RS1")])
+        expect("window 1 starts on", "is due" in listed(window_1)["start now"], False)
 
-    def arm_checkin_due() -> None:
-        where, ids = checkin_folder("checkin-due")
-        append(where, pass_line(1, "A1"), pass_line(1, "A1b"), "checkin: 1 window go")
-        append(where, *[pass_line(2, p) for p in ids[:3]])
+    arm("no check-in holds a start", arm_no_checkin)
+
+    def arm_skipped_gate() -> None:
+        # A pass whose first unit is skipped, its two reads spent and its unread note on, and the
+        # rest verified: once recorded it is finished, and the part waiting on it starts.
+        where = new_folder("skipped-gate", many_parts)
+        plan_1(where)
+        plan_2(where)
+        units = blocks_of(where)["A2a"]["units"]
+        first, sheet = units[0][0], units[0][1]
+        dispatch = f"dispatch 2 A2a {first} sheets {sheet} purpose the sheet"
+        append(
+            where, dispatch, verified_line(2, "A2a", first, "mismatch"), dispatch,
+            f"note 2 A2a {first} deviation {sheet} reader stopped answering, read 2",
+            f"note 2 A2a {first} unread {sheet} read 2 times, not read again",
+        )
+        for unit, unit_sheet, _page in units[1:]:
+            append(where, f"dispatch 2 A2a {unit} sheets {unit_sheet} purpose the sheet", verified_line(2, "A2a", unit))
+        (where / "reports").mkdir(exist_ok=True)
+        (where / "trades").mkdir(exist_ok=True)
+        (where / "trades" / "A2a.txt").write_text("".join(f"{u[0]} trade 09 00 00 1\n" for u in units[1:]), encoding="utf-8")
+        code, _out, err = run(summary, [
+            str(where / "ledger.md"), "2", "A2a", "--plan", str(where / "read-plan.md"),
+            "--out", str(where / "reports" / "A2a.md"), "--trades", str(where / "trades" / "A2a.txt"),
+        ])
+        if code != 0:
+            raise ValueError(f"the summary script refused a pass with a skipped unit: {err}")
         listing = listed(where)
-        expect("three passes", listing["check-in due"], "no")
-        expect("three passes, another window's lines left out", names(listing["since the last check-in"]), ids[:3])
-        expect("three passes start on", names(listing["start now"]), ids[:6])
-        append(where, pass_line(2, ids[3]))
-        listing = listed(where, ids[4:6])
-        expect("four passes", listing["check-in due"], "yes")
-        expect("four passes hold the start", listing["start now"], "none, a check-in is due")
-        expect("what waits on the check-in", names(listing["waiting"]), ids[:4] + ids[6:])
-        expect("what it reports", sorted(names(listing["since the last check-in"])), sorted(ids[:4]))
-        append(where, f"checkin: 2 {ids[3]} go")
-        listing = listed(where)
-        expect("after the go-ahead", (listing["check-in due"], listing["since the last check-in"]), ("no", "none"))
-        expect("after the go-ahead, the start", names(listing["start now"]), ids[:6])
+        expect("a skipped unit counted on its pass's line, before the record",
+               listing["lines"][0].startswith(f"A2a: units {len(units)}, units verified {len(units) - 1}, units skipped 1, summed no"), True)
+        record_pass(where, 2, "A2a", [f"scopeItem:{u[0]}-" for u in units])
+        listing = listed(where, ["S2a", "S2b", "T2a", "P2a"])
+        expect("the pass with a skipped unit, recorded", listing["lines"][0],
+               f"A2a: units {len(units)}, units verified {len(units) - 1}, units skipped 1, summed yes")
+        expect("the part waiting on it starts", names(listing["start now"]), ["A2b"])
 
-    arm("a check-in due", arm_checkin_due)
-
-    def arm_cadence() -> None:
-        # The cadence is every fourth `pass:` line. A pass run again carries a second line, which
-        # counts, and the check-in names it once, at its last line.
-        where, ids = checkin_folder("checkin-cadence")
-        a, b, c = ids[:3]
-        append(where, *[pass_line(2, p) for p in (a, b, c)])
-        expect("three lines", listed(where)["check-in due"], "no")
-        append(where, pass_line(2, a))
-        listing = listed(where)
-        expect("a fourth line, one of its passes run again", listing["check-in due"], "yes")
-        expect("that pass named once, at its last line", names(listing["since the last check-in"]), [b, c, a])
-
-    arm("the cadence", arm_cadence)
-
-    def arm_checkin_field() -> None:
-        # Each value the check-in section gives for the second field, read back through the listing.
-        # A check-in with nothing since the last one names the pass of the window's last `pass:` line.
-        nothing, ids = checkin_folder("field-nothing-since")
-        a, b, c, d, e = ids[:5]
-        append(nothing, *[pass_line(2, p) for p in (a, b, c, d)], f"checkin: 2 {d} go")
-        expect("nothing since the last check-in", listed(nothing)["since the last check-in"], "none")
-        append(nothing, f"checkin: 2 {d} go")
-        expect("a check-in that names the last pass, the window not read again",
-               listed(nothing)["since the last check-in"], "none")
-        append(nothing, pass_line(2, e))
-        expect("the next pass after it", names(listed(nothing)["since the last check-in"]), [e])
-
-        # A pass recorded while that one stood open is reported at the next one.
-        stood, ids = checkin_folder("field-nothing-since-open")
-        a, b, c, d, e = ids[:5]
-        append(stood, *[pass_line(2, p) for p in (a, b, c, d)], f"checkin: 2 {d} go", pass_line(2, e), f"checkin: 2 {d} go")
-        expect("recorded while it stood open", names(listed(stood)["since the last check-in"]), [e])
-
-        # After a paused slice's check-in, the same value: the slice's last pass.
-        slice_end, ids = checkin_folder("field-after-slice")
-        a, b = ids[:2]
-        append(slice_end, pass_line(2, a), "phase: index built", "checkin: 2 window go", f"checkin: 2 {a} go")
-        expect("after a `window` line, the window not read again", listed(slice_end)["since the last check-in"], "none")
-        append(slice_end, pass_line(2, b))
-        expect("the next pass after that", names(listed(slice_end)["since the last check-in"]), [b])
-
-        # `window` after a window's closing lines, whatever the line showed, leaves nothing to report.
-        closing, ids = checkin_folder("field-window")
-        append(closing, *[pass_line(2, p) for p in ids[:3]], "phase: packages folded", "checkin: 2 window go")
-        expect("a closing check-in's line", listed(closing)["since the last check-in"], "none")
-
-        # `none` where the window has no `pass:` line yet, and a pass recorded while it stood open.
-        first, ids = checkin_folder("field-none")
-        append(first, "checkin: 2 none go")
-        expect("a check-in before the window's first line", listed(first)["since the last check-in"], "none")
-        append(first, pass_line(2, ids[0]))
-        expect("the first pass after it", names(listed(first)["since the last check-in"]), [ids[0]])
-
-        # A check-in with nothing since has no `--passes` to give, and the script says so in one line.
-        code, out, err = run(lead, ["checkin", str(first), "2", "--passes", ""])
-        expect("an empty `--passes`", (code, out, len(err.splitlines())), (1, "", 1))
-
-    arm("the second field of a `checkin:` line", arm_checkin_field)
+    arm("a skipped unit settles its pass", arm_skipped_gate)
 
     def arm_reported() -> None:
         where = new_folder("reported", sheets("A", "1", "plan", 96))
@@ -13780,7 +13687,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         expect("the `--reported` call's first line", call["lines"][0], whole[1])
         expect("the `--reported` call's closing lines, against a whole listing's labels",
                [line.split(":", 1)[0] for line in call["lines"][1:]],
-               [line.split(":", 1)[0] for line in whole[-5:]])
+               [line.split(":", 1)[0] for line in whole[-3:]])
         expect("the pass it names, out until recorded", ids[0] in names(call["start now"]) + names(call["waiting"]), False)
         expect("the pass it names, not finished", ids[0] in call["dispatch"], True)
         expect("a pass it names counts toward the limit", names(listed(where, ids[1:5], reported=ids[0])["start now"]), [ids[5]])
@@ -13791,7 +13698,6 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         before = listed(where, ids[1:3], reported=ids[0])
         record_pass(where, 2, ids[0], before["prefixes"])
         after = listed(where, ids[1:3], reported=ids[0])
-        expect("the call again, past the record", names(after["since the last check-in"]), [ids[0]])
         expect("the call again, what is finished", "finished 1;" in after["dispatch"], True)
         expect("the plan untouched by a hand-back", (where / "read-plan.md").read_bytes(), plan_bytes)
 
@@ -13829,62 +13735,9 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         runner_reports(joined, 3, pass_id)
         call = listed(joined, reported=pass_id)
         record_pass(joined, 3, pass_id, call["prefixes"])
-        expect("the pass past the record", listed(joined, reported=pass_id)["since the last check-in"], pass_id)
+        expect("the pass past the record", "finished 1;" in listed(joined, reported=pass_id)["dispatch"], True)
 
     arm("the `--reported` call", arm_reported)
-
-    def arm_stood_open() -> None:
-        where, ids = checkin_folder("checkin-open")
-        a, b, c, d, e, f, g, h = ids
-        append(where, *[pass_line(2, p) for p in (a, b, c, d)])
-        # The check-in is shown on these four, with others out; one reports while it stands open.
-        append(where, pass_line(2, e))
-        listing = listed(where, [f])
-        expect("while it stands open, nothing starts", listing["start now"], "none, a check-in is due")
-        append(where, f"checkin: 2 {d} go")
-        listing = listed(where, [f])
-        expect("the pass recorded while it stood open", names(listing["since the last check-in"]), [e])
-        expect("the count restarts at the line", listing["check-in due"], "no")
-        append(where, *[pass_line(2, p) for p in (f, g, h)])
-        listing = listed(where)
-        expect("three after the line", listing["check-in due"], "no")
-        expect("the next check-in's passes so far", names(listing["since the last check-in"]), [e, f, g, h])
-        append(where, pass_line(2, a))
-        listing = listed(where)
-        expect("four after the line", listing["check-in due"], "yes")
-        expect("the next check-in's passes", names(listing["since the last check-in"]), [e, f, g, h, a])
-
-        # Shown before any pass was recorded, as on a sheet that stopped in the window's first pass.
-        first, ids = checkin_folder("checkin-none")
-        append(first, pass_line(2, ids[0]), "checkin: 2 none go")
-        expect("recorded while a `none` check-in stood open", names(listed(first)["since the last check-in"]), [ids[0]])
-
-        # The check-in after a window's closing lines has nothing out, so it reads from its line.
-        closing, ids = checkin_folder("checkin-window")
-        append(closing, pass_line(2, ids[0]), "checkin: 2 window go", pass_line(2, ids[1]))
-        expect("after a paused slice's check-in", names(listed(closing)["since the last check-in"]), [ids[1]])
-
-        # A pause held until what was out has reported, then the go-ahead for the same check-in.
-        paused, ids = checkin_folder("checkin-pause")
-        a, b, c, d, e = ids[:5]
-        append(
-            paused, *[pass_line(2, p) for p in (a, b, c, d, e)], f"checkin: 2 {d} pause", f"checkin: 2 {d} go",
-        )
-        listing = listed(paused)
-        expect("after a pause and its go-ahead", names(listing["since the last check-in"]), [e])
-        expect("after a pause and its go-ahead, the count", listing["check-in due"], "no")
-
-    arm("a pass recorded while a check-in stood open", arm_stood_open)
-
-    def arm_window_1_never_due() -> None:
-        where = new_folder("checkin-window-1", window_1_rows)
-        plan_1(where, include)
-        append(where, *[pass_line(1, p) for p in ("A1a", "A1b", "G1a", "G1b", "RS1")])
-        listing = listed(where)
-        expect("window 1 has no check-in inside it", listing["check-in due"], "no")
-        expect("window 1 starts on", listing["start now"].endswith("is due"), False)
-
-    arm("window 1", arm_window_1_never_due)
 
     # ------------------------------------------------------------------ #
     # A whole window, driven to its end
@@ -13904,12 +13757,10 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         plan_2(where)
         return where
 
-    def drive(case: str, window: int, take_next, skill: str) -> None:
+    def drive(case: str, window: int, take_next) -> None:
         """
-        A window as a lead with the skill's text runs it. A pass counts as reported only where a
-        check-in shown printed it, and the check-in that closes a window is shown only where that
-        window's own step carries it, so a pass that reaches no check-in fails `every pass reported
-        once`.
+        A window as a lead with the skill's text runs it: start what the listing names, take each
+        hand-back, and go on until nothing is running or left, every pass finished once.
         """
         where = drive_folder(case, window)
         plan_order = list(starts_of(where))
@@ -13920,7 +13771,6 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         ids = sheet_of_unit(where)
         running: list[str] = []
         finished: list[str] = []
-        reported: list[str] = []
         steps = 0
         replanned = window != 2
         listing = listed(where)
@@ -13928,21 +13778,6 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
             steps += 1
             if steps > 10 * len(plan_order):
                 raise ValueError(f"{case}: the window did not end: {finished}")
-            if listing["check-in due"] == "yes":
-                shown = names(listing["since the last check-in"])
-                reported.extend(checkin_covers(where, window, shown))
-                tally["checkins"] += 1
-                # What is out reports while it stands open, one of them before the answer.
-                if running:
-                    done = take_next(running)
-                    running.remove(done)
-                    open_listing = hand_back(where, window, done, running)
-                    finished.append(done)
-                    expect(f"{case}: while the check-in stands open", open_listing["start now"],
-                           "none, a check-in is due")
-                append(where, f"checkin: {window} {shown[-1]} go")
-                listing = listed(where, running, reported=shown[-1])
-                continue
             start = names(listing["start now"])
             for pass_id in start:
                 open_gates = [g for g in waits[pass_id] if g not in finished]
@@ -13968,14 +13803,8 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
                 expect(f"{case}: a replan midway", sheet_of_unit(where), ids)
                 expect(f"{case}: what is out after a replan", running, out_before)
                 listing = listed(where, running)
-
-        since = names(listing["since the last check-in"])
-        if _WINDOW_CLOSING_CHECKINS[window] in skill and since:
-            reported.extend(checkin_covers(where, window, since))
-            tally["checkins"] += 1
-            append(where, f"checkin: {window} {'window' if window != 3 else since[-1]} go")
-            expect(f"{case}: past its closing check-in", listed(where)["since the last check-in"], "none")
-        expect(f"{case}: every pass reported once", sorted(reported), sorted(plan_order))
+        expect(f"{case}: every pass finished once", sorted(finished), sorted(plan_order))
+        expect(f"{case}: the listing at the end", listing["dispatch"].endswith("to dispatch: none"), True)
         tally["simulated"] += len(plan_order)
 
     skill_text = " ".join((plugin_path / "skills" / "scope-run" / "SKILL.md").read_text(encoding="utf-8").split())
@@ -13986,14 +13815,14 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
     def last_out(out: list[str]) -> str:
         return out[-1]
 
-    def drive_every_window(skill: str) -> None:
-        drive("drive-1", 1, first_out, skill)
-        drive("drive-2-first", 2, first_out, skill)
-        drive("drive-2-last", 2, last_out, skill)
-        drive("drive-3-first", 3, first_out, skill)
-        drive("drive-3-last", 3, last_out, skill)
+    def drive_every_window() -> None:
+        drive("drive-1", 1, first_out)
+        drive("drive-2-first", 2, first_out)
+        drive("drive-2-last", 2, last_out)
+        drive("drive-3-first", 3, first_out)
+        drive("drive-3-last", 3, last_out)
 
-    arm("windows driven to their end", lambda: drive_every_window(skill_text))
+    arm("windows driven to their end", drive_every_window)
 
     # ------------------------------------------------------------------ #
     # What the lead, the runner and the readers read
@@ -14024,24 +13853,22 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         return found
 
     def listing_arms() -> None:
-        for body in (arm_window_3, arm_limit, arm_cadence, arm_checkin_field, arm_stood_open, arm_reported):
+        for body in (arm_window_3, arm_limit, arm_no_checkin, arm_skipped_gate, arm_reported):
             try:
                 body()
             except Exception as e:
                 errors.append(f"{type(e).__name__}: {e}")
-        drive_every_window(skill_text)
+        drive_every_window()
 
     # (what the mutation breaks, the shipped script's text, what it reads instead)
     script_mutations = [
-        ("a window 3 start offered while a check-in is due", "    if due:\n        ready = []",
-         "    if due and window != 3:\n        ready = []"),
-        ("the cadence counting distinct passes", "sum(1 for at, _pass_id in recorded if at > line_at)",
-         "len({pass_id for at, pass_id in recorded if at > line_at})"),
-        ("a `checkin:` line's second field not read",
-         'read_from = -1 if shown_with == "none" else (named[-1] if named else line_at)', "read_from = line_at"),
         ("a pass on `--reported` offered to start", "out = {*running, *([reported] if reported else [])}", "out = set(running)"),
         ("`--reported` printing every pass", "return [prefixes_of[reported], *closing]", "return [*lines, *closing]"),
         ("`--reported` taking a pass the plan does not carry", "if reported is not None and reported not in pass_ids:", "if False:"),
+        ("a skipped unit holding its pass open", "if not (verified + skipped == len(block[\"units\"]) and summed == \"yes\"):",
+         "if not (verified == len(block[\"units\"]) and summed == \"yes\"):"),
+        ("a check-in held every fourth pass line", "    closing.append(f\"start now: {', '.join(ready) or 'none'}\")",
+         "    ready = [] if len(lines) > 6 else ready\n    closing.append(f\"start now: {', '.join(ready) or 'none'}\")"),
     ]
     mutated_dir = root / "mutated"
     mutated_dir.mkdir(parents=True, exist_ok=True)
@@ -14073,10 +13900,8 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         else:
             errors.append(f"the text with {label} passes")
 
-    # One rule covers the three values, an empty check-in skips its call, and a hand-back's sequence
-    # and what the lead holds stay as written.
-    for phrase in (*_CHECKIN_FIELD_PHRASES, _CHECKIN_EMPTY_PHRASE, *_HAND_BACK_ORDER, *_HAND_BACK_PHRASES,
-                   _WINDOW_CLOSING_CHECKINS[2], _WINDOW_3_CLOSING_PHRASE, _CADENCE_PHRASE):
+    # A hand-back's sequence, what the lead holds and the wake rule stay as written.
+    for phrase in (*_HAND_BACK_ORDER, *_HAND_BACK_PHRASES, _WAKE_PHRASE):
         text_refused(f"{phrase!r} taken out", skill_text.replace(phrase, ""))
     for phrase in _PASSES_AT_ONCE_RETIRED_SKILL_PHRASES[-6:]:
         text_refused(f"{phrase!r} put back", skill_text + " " + phrase)
@@ -14090,33 +13915,21 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         for phrase in _READER_RETIRED_PHRASES:
             text_refused(f"{reader} with {phrase!r} put back", readers={**reader_texts, reader: reader_texts[reader] + " " + phrase})
 
-    # A window whose step drops its closing check-in leaves its last passes unreported, and the
-    # driver says which.
-    def closing_dropped(window: int):
-        return lambda: drive(f"drive-{window}-no-closing", window, first_out, skill_text.replace(_WINDOW_CLOSING_CHECKINS[window], ""))
-
-    for window in (1, 2, 3):
-        if any("every pass reported once" in finding for finding in found_by(closing_dropped(window))):
-            refused_mutations += 1
-        else:
-            errors.append(f"window {window}'s step with its closing check-in taken out passes the drive")
-
     detail = (
         f"{tally['arms']} arms over invented grids: the class of each sheet type per window and the "
         f"limit of {_PASSES_AT_ONCE} pinned; window 1's vocabulary ahead of what --include added, with "
         f"every id a ledger binds kept; `starts after:` for a discipline of many parts, a mixed part, "
         f"a folded pass, the repeated lines pass, a resumed plan, a slice and window 3, read back by "
         f"the summary script's own reader; `start now:` at the limit, with gates open and shut, off "
-        f"the ledger with the plan file untouched, past a pass stopped on a mismatch and at a "
-        f"check-in; every fourth `pass:` line due, a pass run again counted at each line; each value "
-        f"of a `checkin:` line's second field read back; a pass recorded while a check-in stood open "
-        f"reported at the next one with the count restarted at the line; the `--reported` call's "
-        f"lines, its pass out until recorded and a continuation among its prefixes taken by the real "
-        f"record; {tally['simulated']} passes driven to the end of windows 1, 2 and 3 over "
-        f"{tally['checkins']} check-ins the check-in script printed, never stuck, at most "
-        f"{tally['peak']} at once in every window, every pass reported once; the skill, the runner "
-        f"and both readers carrying the rules; {refused_mutations} mutations of the script and the "
-        f"text refused; bound: invented grids and a hand-driven ledger, not a real run's readers"
+        f"the ledger with the plan file untouched, and past a pass stopped on a mismatch; no start "
+        f"held for a check-in, whatever `pass:` and older `checkin:` lines the ledger carries, in any "
+        f"window; a pass with a skipped unit finished once recorded, opening the part that waits on "
+        f"it; the `--reported` call's lines, its pass out until recorded and a continuation among its "
+        f"prefixes taken by the real record; {tally['simulated']} passes driven to the end of windows "
+        f"1, 2 and 3, never stuck, at most {tally['peak']} at once in every window, every pass "
+        f"finished once; the skill, the runner and both readers carrying the rules; "
+        f"{refused_mutations} mutations of the script and the text refused; bound: invented grids "
+        f"and a hand-driven ledger, not a real run's readers"
     )
     if errors:
         detail += " | " + "; ".join(errors)
@@ -14738,7 +14551,7 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "Name the half `paper gives it to <this package's tradeCode>, <sheet and page or "
                  "section>`"),
     ("reviewer", "cite nothing and name it `paper gives it to <this package's tradeCode>, <sheet and "
-                 "page or section>, row not yet written`; the runner carries that line to the check-in."),
+                 "page or section>, row not yet written`; the runner carries that line to the closing report."),
     ("runner", "that ends `row not yet written` goes on the ledger the same way, as `note <window> "
                "<pass> <unit> anomaly <the entry>`"),
     ("fixture", "paper gives it to 09 99 99, X-1.01 file-0000 p3"),
@@ -16036,8 +15849,13 @@ _RECHECK_PINS: tuple[tuple[str, str], ...] = (
     (RECHECK_SKILL_FILE, "recheck.py' report --run"),
     (RECHECK_SKILL_FILE, 'compare_delivery_status(projectId: "<projectId>", deliveryId: "<deliveryId>", kind: "scopeItem", limit: 200, offset: 0)'),
     (RECHECK_SKILL_FILE, "Nothing else goes in the ledger"),
-    (RECHECK_SKILL_FILE, "lead_pass.py' checkin '<run folder>' r --passes <pass id>,<pass id>"),
-    (RECHECK_SKILL_FILE, "make no `checkin` call, which refuses an empty list"),
+    # The resume reads the ledger's phase and pass lines, and a sheet whose two reads both failed
+    # stops the run here, never skipped, since the retires rest on every sheet's outcome.
+    (RECHECK_SKILL_FILE, "- `phase: packages folded` and no line of window `r`: the recheck starts at step 1."),
+    (RECHECK_SKILL_FILE, "- A `dispatch r` or `pass: r` line and no `phase: recheck complete`: run step 3's plan again"),
+    (RECHECK_SKILL_FILE, "- `phase: recheck complete`: stage 7 step 1"),
+    (RECHECK_SKILL_FILE, "Here, unlike the windows, a unit whose two reads both failed their check is never skipped"),
+    (RECHECK_SKILL_FILE, "the closing report takes the recheck's figures by package off the same script"),
 )
 # A current page read off a sheet number: an unnumbered current page then reads as not current.
 _RECHECK_SHEET_NUMBER_CURRENT_RE = re.compile(r"names\s+a\s+`sheetNumber`\s+and\s+an\s+empty", re.I)
@@ -16074,11 +15892,9 @@ def _recheck_text_errors(texts: dict[str, str]) -> list[str]:
         errors.append(f"{RECHECKER} tells the rechecker to write `movedTo` as the box")
     if _RECHECK_SHEET_NUMBER_CURRENT_RE.search(_collapsed(rechecker)):
         errors.append(f"{RECHECKER} reads a page as current only where it names a `sheetNumber`")
-    # The check-in inside the passes and the one closing the recheck each name their passes,
-    # since `checkin` refuses a call without --passes.
-    checkins = re.findall(r"lead_pass\.py'? checkin [^\n`]*", texts[RECHECK_SKILL_FILE])
-    if checkins != ["lead_pass.py' checkin '<run folder>' r --passes <pass id>,<pass id>"] * 2:
-        errors.append(f"{RECHECK_SKILL_FILE} carries the checkin commands {checkins}, not the two naming --passes")
+    # The recheck has no check-in: no `checkin` call and no `checkin: r` line.
+    if re.search(r"\bcheckin\b|\bcheck-in\b", texts[RECHECK_SKILL_FILE]):
+        errors.append(f"{RECHECK_SKILL_FILE} still names a check-in")
     runner_blocks = [body for _at, body in _fenced_blocks(texts["agents/scope-round-runner.md"].splitlines())[0]]
     dispatch = next((b for b in runner_blocks if any("plumlayer:scope-rechecker" in l for l in b)), None)
     if dispatch is None:
@@ -16401,9 +16217,38 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
         errors.append(f"the lead's record of a window r pass reads {out!r} {err!r}")
     elif "4 sheets rechecked (A-101, A-102, A-103, S-201)" not in out:
         errors.append(f"the line under the recorded recheck pass does not name its sheets: {out!r}")
-    code, out, err = run(lead, ["checkin", str(main), "r", "--passes", "i2-RA"])
-    if code != 0 or "rows cited again 1, rows changed 1, rows read as removed 4, rows not found 2" not in out:
-        errors.append(f"the recheck check-in reads {out[:400]!r} {err!r}")
+    if "rows cited again 1, rows changed 1, rows read as removed 4, rows not found 2" not in out:
+        errors.append(f"the line under the recorded recheck pass does not give its figures in the estimator's words: {out[:400]!r}")
+    # In window r a unit whose two reads are spent is never skipped: the summary hands it back
+    # unverified, and the record refuses the pass, which stops the run.
+    spent_at = main.parent.parent / "spent-project" / "run"
+    shutil.rmtree(spent_at.parent, ignore_errors=True)
+    shutil.copytree(main, spent_at)
+    (spent_at / "ledger.shadow").unlink(missing_ok=True)
+    first_unit = next(iter(reports))
+    spent_lines = ["phase: plan approved", "phase: packages folded"]
+    for unit, lines in reports.items():
+        updated = sum(1 for l in lines if "| recited |" in l or "| updated |" in l)
+        ok = (f"verified r i2-RA {unit} created 0 items 0 updated {updated} questions 0 replied 0 "
+              f"sent {updated} landed {updated} conflicts 0 result ok")
+        dispatch = f"dispatch r i2-RA {unit} sheets x purpose recheck"
+        if unit == first_unit:
+            spent_lines += [dispatch, ok.replace("result ok", "result mismatch"), dispatch,
+                            f"note r i2-RA {unit} deviation x recheck report refused, read 2",
+                            f"note r i2-RA {unit} unread x read 2 times, not read again"]
+        else:
+            spent_lines += [dispatch, ok]
+    write(spent_at / "ledger.md", "\n".join(spent_lines) + "\n")
+    code, hand_back, err = run(summary_module, [str(spent_at / "ledger.md"), "r", "i2-RA", "--plan", str(spent_at / "read-plan.md"),
+                                                "--trades", str(spent_at / "trades" / "i2-RA.txt"), "--out", str(spent_at / "reports" / "i2-RA.md")])
+    if code != 0 or "skipped: none" not in hand_back.splitlines() or not any(
+        l.startswith(f"unverified: {first_unit}") for l in hand_back.splitlines()
+    ):
+        errors.append(f"a recheck unit whose reads are spent is not handed back unverified: exit {code}, {err or hand_back!r}")
+    before = (spent_at / "ledger.md").read_bytes()
+    code, out, err = run(lead, ["record", str(spent_at / "ledger.md"), "r", "i2-RA", "--plan", str(spent_at / "read-plan.md"), "--counts-json", counts])
+    if code != 1 or "a unit whose reads are spent stops it" not in err or (spent_at / "ledger.md").read_bytes() != before:
+        errors.append(f"a recheck pass with a unit whose reads are spent is recorded, or refused for another reason: exit {code}, {err or out!r}")
 
     # A unit whose check found a mismatch, its report renamed for a read that wrote none: its latest
     # dispatch line has no verified line after it, so it is named with that read and its outcomes
@@ -16601,6 +16446,32 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append(f"the report does not print {missing[0]!r}; it reads {lines[:8]}")
         if sum(1 for l in lines if l.startswith("left for you: ")) != 2 or sum(1 for l in lines if l.startswith("removed: ")) != 2:
             errors.append("the report does not name each of the two rows left for him and the two rows removed")
+        # The closing report over the finished recheck: its section carries the same figures by
+        # package, with no package id and no ledger line, once `phase: recheck complete` is on.
+        try:
+            close_mod = _load_script_module(plugin_path / "scripts" / "close_report.py", "close_report")
+            # In a project folder of its own, so no other pass shares its unit tag.
+            finished = Path(__file__).parent / ".test-results" / "recheck-closing" / main.name
+            shutil.rmtree(finished.parent, ignore_errors=True)
+            shutil.copytree(main, finished)
+            held = (finished / "ledger.md").read_text(encoding="utf-8") if (finished / "ledger.md").is_file() else ""
+            _write_run_ledger(finished / "ledger.md", held + lines[0] + "\n")
+            code_c, _short, err_c = _run_script_main(
+                close_mod, ["write", str(finished), "--delivery-plan", str(finished / "plan.md")])
+            closing = (finished / "closing-report.md").read_text(encoding="utf-8") if code_c == 0 else ""
+            section = closing.split("## The recheck of the new drawings\n", 1)[-1].split("\n## ", 1)[0] if (
+                "## The recheck of the new drawings\n" in closing) else ""
+            for want_line in (
+                "- package Invented package one (09 99 99): carried forward 2, re-cited by the pass 1, re-cited by the recheck 1",
+                "- package No Package: carried forward 0, re-cited by the pass 0, re-cited by the recheck 0",
+                "- an item on two or more packages counts in each package: 1 item does",
+            ):
+                if not any(line.startswith(want_line) for line in section.splitlines()):
+                    errors.append(f"the closing report over a finished recheck does not read {want_line!r}: {section[:500]!r} {err_c!r}")
+            if "phase: recheck complete" in section or "pkg-" in section or not section:
+                errors.append(f"the closing report's recheck section carries the ledger line or a package id: {section[:300]!r}")
+        except Exception as e:
+            errors.append(f"the closing report over a finished recheck raised {type(e).__name__}: {e}")
     write(main / "plan.md", plan_fixture.replace("last call: carried 2 on scope items", "last call: carried 3 on scope items"))
     code, out, _err = run(recheck, ["report", "--run", str(main), "--delivery-plan", str(main / "plan.md")])
     if "carried forward 2, against 3 the carry wrote and found there on scope items: differ by 1" not in out.splitlines():
@@ -16753,8 +16624,7 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
             runner = texts["agents/scope-round-runner.md"]
             mutations.append(("the runner's rechecker dispatch with no plan file line", {**texts, "agents/scope-round-runner.md": runner.replace(
                 "Plan file: <path to plan.md>.\n", "", 1)}))
-            mutations.append(("the check-in inside the passes naming no --passes", {**texts, RECHECK_SKILL_FILE: texts[RECHECK_SKILL_FILE].replace(
-                "checkin '<run folder>' r --passes <pass id>,<pass id>", "checkin '<run folder>' r", 1)}))
+            mutations.append(("a `checkin: r` line put back", {**texts, RECHECK_SKILL_FILE: texts[RECHECK_SKILL_FILE] + "\nAppend `checkin: r <pass id> go`.\n"}))
             for label, broken in mutations:
                 text_mutations += 1
                 if broken == texts:
@@ -16891,15 +16761,17 @@ _SCANNED_READER_PHRASES = (
     _SCANNED_UNREAD_SHAPE,
 )
 _SCANNED_SKILL = "skills/scope-run/SKILL.md"
+# Where a scanned sheet not read reaches the estimator: the closing report's stage 9 text, its
+# template line, and the closing report script's own table of sources.
 _SCANNED_SKILL_PHRASES = (
     _SCANNED_UNREAD_SHAPE,
-    "An anomaly carrying `not read from the picture:` names a scanned sheet, or a part of one, that "
-    "no reader could read: it is always carried, by its sheet and the part left, at the check-in "
-    "that prints it and at the close out.",
-    "Each sheet that could not be read from its picture, whole or in part, with the part left, and"
-    " that what is drawn there may be missing from the rows",
-    "The scanned sheets not read are the window 1 and 2 `anomaly` notes that carry "
-    "`not read from the picture:`",
+    "and the scanned sheets off the `anomaly` notes that carry `not read from the picture:`, each "
+    "sheet and part once",
+    "- <sheet>, <part>: it is a scan, and I could not read that part from its picture.",
+)
+_SCANNED_CLOSE = "scripts/close_report.py"
+_SCANNED_CLOSE_PHRASES = (
+    "| scanned parts not read | `anomaly` notes carrying `not read from the picture:` |",
 )
 _SCANNED_RETIRED = (
     "A page that would take more than three renders is reported on that line as needing more, "
@@ -16908,6 +16780,7 @@ _SCANNED_RETIRED = (
 _SCANNED_PINS: tuple[tuple[str, str], ...] = (
     tuple((reader, phrase) for reader in _SCANNED_READERS for phrase in _SCANNED_READER_PHRASES)
     + tuple((_SCANNED_SKILL, phrase) for phrase in _SCANNED_SKILL_PHRASES)
+    + tuple((_SCANNED_CLOSE, phrase) for phrase in _SCANNED_CLOSE_PHRASES)
 )
 
 
@@ -16922,7 +16795,7 @@ def _scanned_errors(texts: dict[str, str]) -> list[str]:
 def check_scanned_plans(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "scanned-plans"
     texts: dict[str, str] = {}
-    for label in (*_SCANNED_READERS, _SCANNED_SKILL):
+    for label in (*_SCANNED_READERS, _SCANNED_SKILL, _SCANNED_CLOSE):
         path = plugin_path / label
         if not path.is_file():
             return Result(name, False, detail=f"not found: {path}")
@@ -16950,11 +16823,11 @@ def check_scanned_plans(plugin_path: Path, marketplace_root: Path) -> Result:
                     errors.append(f"the check passed {label} with the retired {phrase!r} put back")
 
     detail = (
-        f"{len(_SCANNED_PINS)} phrases held over {len(_SCANNED_READERS)} readers and the skill (a "
+        f"{len(_SCANNED_PINS)} phrases held over {len(_SCANNED_READERS)} readers, the skill and the closing report script (a "
         f"scanned plan read from its picture within three renders, boxes only off the text read, no "
         f"quantity off a render alone, a printed riser count held against another sheet's and never "
         f"a count the reader makes, each page or part left named in one shape on `pages unread:` "
-        f"and the anomaly line, and named at the check-in and the close out), the retired "
+        f"and the anomaly line, and named in the closing report by its sheet and part), the retired "
         f"three-render stop absent, {refused} of {mutations} mutations refused; bound: text only, "
         f"not how a running reader reads a scan"
     )
@@ -16975,9 +16848,11 @@ def check_scanned_plans(plugin_path: Path, marketplace_root: Path) -> Result:
 # answering, then a mismatch, used both reads with one `verified` line; a settle by name let a unit
 # claim rows outside its prefix that nothing tied to it, with an omitted `created subjects:` line
 # never refused; a `dispatch` line with no reader started after it spent a read; and a resume with
-# the same `Read again:` line granted the read again. So the runner counts every read by its
-# `dispatch` lines with a reader started after each, the reader's `.started` file the mark, grants
-# a `Read again:` read once by its number with one note, checks a unit against its own prefix alone,
+# the same `Read again:` line granted the read again. So the runner counts every attempt by its
+# `dispatch` lines with a reader started after each, the reader's `.started` file the mark, spends
+# a read only on a failed check, never on a read cut off or blocked, skips a unit whose two reads are
+# spent and goes on to its next unit, grants a `Read again:` read once by its number with one note,
+# checks a unit against its own prefix alone,
 # refuses a report with no `created subjects:` line, finds a by-count unit's created rows back by
 # name, and takes a failed claim off only its own list. Each phrase taken out, and each retired
 # phrase put back, is refused. Honest bound: text only; whether a running runner counts and checks
@@ -16990,47 +16865,53 @@ _READ_AGAIN_STARTED = (
     "counts this read against your unit only where that file is there."
 )
 _READ_AGAIN_PINS: tuple[tuple[str, str], ...] = (
-    # Every read counted one way, by its dispatch lines with a reader started after each.
-    (READ_AGAIN_RUNNER, "A unit's reads are its `dispatch` lines in your window, whatever pass they "
-     "name, each with a reader started after it, and each counts the same whatever ended it: a "
-     "check that found a mismatch, a reader that stopped answering, a recheck report the check "
-     "refused, or a runner that stopped before its check."),
+    # Attempts counted by their dispatch lines with a reader started after each; spent reads by
+    # the failed checks alone. A read cut off or blocked spends nothing.
+    (READ_AGAIN_RUNNER, "Its attempts are its `dispatch` lines in your window, whatever pass they "
+     "name, each with a reader started after it"),
+    (READ_AGAIN_RUNNER, "Its spent reads are the attempts that failed their check: a `verified` line "
+     "reading mismatch, or a `no report`, `reader stopped answering` or `recheck report refused` note."),
     (READ_AGAIN_RUNNER, "A reader shows it started by writing "
-     "`<run folder>/reports/<unit id>.read-<k>.started` before anything else, `<k>` the read its "
-     "dispatch's `Read:` line names."),
-    (READ_AGAIN_RUNNER, "carries one `deviation` note or more ending `, read <k>`, `<k>` the number of "
-     "that read"),
-    (READ_AGAIN_RUNNER, "where only that read's `.started` file is there, append "
-     "`note <window> <pass> <unit> deviation <sheet> no report, read <k>` first"),
-    (READ_AGAIN_RUNNER, "where neither is there, no reader started after that line, so it is no "
-     "read: count the unit's reads without it, and dispatch that read's reader under that same "
-     "line, appending no second `dispatch` line for it."),
+     "`<run folder>/reports/<unit id>.read-<k>.started` first."),
+    (READ_AGAIN_RUNNER, "An attempt that ended with no check confirming it carries one `deviation` "
+     "note or more ending `, read <k>`."),
+    (READ_AGAIN_RUNNER, "where only the `.started` file is there, append "
+     "`note <window> <pass> <unit> deviation <sheet> interrupted: no report on file, read <k>` first, "
+     "which spends nothing"),
+    (READ_AGAIN_RUNNER, "where neither is there, no reader started, so it is no attempt: dispatch its "
+     "reader under that same line, appending no second `dispatch` line."),
+    (READ_AGAIN_RUNNER, "append `note <window> <pass> <unit> deviation <sheet> blocked: <tool> <class>, read <k>`, "
+     "which spends nothing, and go straight to your summary, which names it on `stopped:`."),
+    (READ_AGAIN_RUNNER, "A unit whose last three attempts were each interrupted or blocked, with no "
+     "`go on given` note after them, is not dispatched again"),
     (READ_AGAIN_RUNNER, "It also says `Read: <k>`, the number of this read, its own `dispatch` line "
      "counted"),
     (READ_AGAIN_RUNNER, "Read: <the number of this read, as pass mode's step 2 gives it>."),
     (READ_AGAIN_RUNNER, "`Read: <k>` as pass mode's step 2 gives it"),
-    # The user's go-ahead, granted once by the read it allows.
-    (READ_AGAIN_RUNNER, "A unit with two reads or more is read again only where your dispatch's "
-     "`Read again:` line names it with `read <n>`, `<n>` one more than its reads"),
+    # A `Read again:` read granted once by the read it allows; any other spent unit skipped, and
+    # the runner going on to its next unit.
+    (READ_AGAIN_RUNNER, "A unit with two spent reads is read again only where your dispatch's "
+     "`Read again:` line names it with `read <n>`, `<n>` one more than its spent reads"),
     (READ_AGAIN_RUNNER, "`note <window> <pass> <unit> deviation <sheet> read again granted for read <n>` "
      "where the look did not already find that note"),
-    (READ_AGAIN_RUNNER, "That note is the user's go-ahead spent, so a resume carrying the same "
-     "`Read again:` line finds the unit's reads at `<n>` already and grants no further read."),
+    (READ_AGAIN_RUNNER, "then read the unit once, so a resume carrying the same line grants no "
+     "further read."),
+    (READ_AGAIN_RUNNER, "Any other unit with two spent reads is skipped"),
     (READ_AGAIN_RUNNER, "`note <window> <pass> <unit> unread <sheet> read <k> times, not read again`"),
-    (READ_AGAIN_RUNNER, "A resume counts the same lines, so it reads a unit no more often than one "
-     "runner would."),
+    (READ_AGAIN_RUNNER, "and go on to your next unit. Its writes stay on the record, and the closing "
+     "report names it. A resume counts the same lines."),
     (READ_AGAIN_RUNNER, "`note <window> <pass> <unit> deviation <sheet> reader stopped answering, read <k>`"),
     (READ_AGAIN_RUNNER, "`note r <pass> <unit> deviation <sheet> recheck report refused, read <k>`"),
-    (READ_AGAIN_RUNNER, "Dispatch a unit that already has two reads, counted as pass mode's step 2 "
-     "counts them, unless your dispatch's `Read again:` line names it with the read that comes "
-     "next, and then once."),
+    # The never-do list points at step 2's rule, and says the recheck's skip is a stop.
+    (READ_AGAIN_RUNNER, "Dispatch a unit pass mode's step 2 says is not dispatched again. A skipped "
+     "unit ends the pass only in window `r`; a block always does."),
     # A unit is checked against its own prefix alone.
     (READ_AGAIN_RUNNER, "A unit's first dispatch holds 0. A later read of a unit with no"),
     (READ_AGAIN_RUNNER, "`verify_unit` call against its prefix with `sheets: []`, since an earlier read of it can have"),
     (READ_AGAIN_RUNNER, "A report with no `created subjects:` line, a line that names another number, "
      "and a line naming a subject outside the prefix are each a mismatch too, with one "
      "`created subjects` deviation note per subject outside the prefix, written at the check that "
-     "first finds it, so the check-in names each one to the estimator whatever a later read ends in."),
+     "first finds it, so the closing report names each one whatever a later read ends in."),
     (READ_AGAIN_RUNNER, "A later read whose reader finds those rows on the live list and updates "
      "them, creating nothing new, passes its check against the count step 2 held: the record is "
      "right, and those notes are what the estimator sees."),
@@ -17063,20 +16944,18 @@ _READ_AGAIN_PINS: tuple[tuple[str, str], ...] = (
     ("skills/scope-run/SKILL.md", "created subjects: <the subject of every row created, each under "
      "the unit's prefix, or \"none\">"),
     ("skills/scope-run/SKILL.md", "Read: <the number of this read of the unit, its own dispatch line counted>."),
-    # The skill routes every spent unit one way and names the go-ahead by its read.
-    ("skills/scope-run/SKILL.md", "Where the `unread:` line names a unit as `read <k> times, not read "
-     "again`, its runner read it twice and no check confirmed it. Every read counts the same, "
-     "whatever ended it"),
-    ("skills/scope-run/SKILL.md", "what each read ended in, which the check-in prints off the pass's "
-     "deviation notes, each ending with the number of its read"),
-    ("skills/scope-run/SKILL.md", "A reader that numbered a new row under another unit's prefix left a "
-     "`created subjects` note naming that row, so the check-in names each such row"),
-    ("skills/scope-run/SKILL.md", "dispatch that pass again with `Read again: <unit id> read <n>` on the "
-     "runner dispatch, `<n>` one more than the reads its `unread` note names"),
-    ("skills/scope-run/SKILL.md", "Read again: <\"<unit id> read <n>\", the unit the user said to read "
-     "again and its next read, one more than the reads its unread note names, or none>."),
-    ("skills/scope-run/recheck.md", "Read again: <\"<unit id> read <n>\", the unit the user said to "
-     "read again and its next read, one more than the reads its unread note names, or none>."),
+    # The skill takes a skipped unit as settled and never reads it again in windows 1, 2 and 3;
+    # the recheck alone stops on one and reads it again on the estimator's go-ahead.
+    ("skills/scope-run/SKILL.md", "A `skipped:` line names a unit whose two reads both failed their "
+     "check: its writes stay on the record, the closing report names it with the reason off its "
+     "last read, and its pass is finished without it; you never dispatch it again"),
+    ("skills/scope-run/SKILL.md", "Read again: none."),
+    ("skills/scope-run/SKILL.md", "`Read again:` reads `none` in windows 1, 2 and 3: a skipped unit is "
+     "never read again by this run."),
+    ("skills/scope-run/recheck.md", "Read again: <\"<unit id> read <n>\", only after the stop below, "
+     "the unit the user said to read again and one more than the reads its unread note names, or none>."),
+    ("skills/scope-run/recheck.md", "On that go-ahead, dispatch the pass again with `Read again: <unit "
+     "id> read <n>`, `<n>` one more than the reads its unread note names"),
 )
 # The wording of the old rules, which counted a retry by what failed and let a unit claim rows
 # outside its prefix by name: none may come back.
@@ -17100,6 +16979,13 @@ _READ_AGAIN_RETIRED: tuple[tuple[str, str], ...] = (
     ("skills/scope-run/SKILL.md", "with the unit on the runner dispatch's `Read again:` line"),
     ("skills/scope-run/recheck.md", "stopped answering twice"),
     ("skills/scope-run/recheck.md", "second mismatch"),
+    # Every read counted the same whatever ended it, and a spent unit ending its pass, are gone.
+    (READ_AGAIN_RUNNER, "each counts the same whatever ended it"),
+    (READ_AGAIN_RUNNER, "and stop the pass there"),
+    (READ_AGAIN_RUNNER, "the pass stops there"),
+    (READ_AGAIN_RUNNER, "the read after the first that ends any of those ways ends the pass"),
+    ("skills/scope-run/SKILL.md", "Start no further pass, and check in at once"),
+    ("skills/scope-run/SKILL.md", "Every read counts the same, whatever ended it"),
 )
 # Each report shape names its created subjects on the line right after its counts, where the
 # runner reads the counts.
@@ -17110,9 +16996,20 @@ _READ_AGAIN_SHAPES = (
 _COUNTS_LINE = "created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>"
 
 
+# A `Read again:` value that names a unit: a placeholder for one, or a real id with its read.
+_READ_AGAIN_NAMES_UNIT = re.compile(r"Read again:\s*`?<?\"?(?:<unit id>|[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+ read)")
+
+
 def _read_again_errors(texts: dict[str, str]) -> list[str]:
     errors = [f"{label} does not read {phrase!r}" for label, phrase in _READ_AGAIN_PINS
               if phrase not in _collapsed(texts[label])]
+    # Both sides of the lead's `Read again:` line: in windows 1, 2 and 3 the skill never names a
+    # unit on it, and recheck.md still does after its stop on a unit whose reads are spent.
+    naming = [m.group(0) for m in _READ_AGAIN_NAMES_UNIT.finditer(texts["skills/scope-run/SKILL.md"])]
+    if naming:
+        errors.append(f"skills/scope-run/SKILL.md names a unit on `Read again:` for windows 1, 2 and 3: {naming}")
+    if len(_READ_AGAIN_NAMES_UNIT.findall(texts["skills/scope-run/recheck.md"])) < 2:
+        errors.append("skills/scope-run/recheck.md no longer names the unit on `Read again:` after its stop, in its template and its go-ahead")
     errors += [f"{label} still reads {phrase!r}" for label, phrase in _READ_AGAIN_RETIRED
                if phrase in _collapsed(texts[label])]
     for label in _READ_AGAIN_SHAPES:
@@ -17147,6 +17044,14 @@ def check_read_again(plugin_path: Path, marketplace_root: Path) -> Result:
         for label in _READ_AGAIN_SHAPES:
             dropped = "\n".join(line for line in texts[label].splitlines() if not line.startswith("created subjects: "))
             mutations.append((f"{label} with its `created subjects:` line dropped", {**texts, label: dropped}))
+        skill = "skills/scope-run/SKILL.md"
+        mutations.append(("the skill's runner dispatch naming a unit to read again", {**texts, skill: texts[skill].replace(
+            "Read again: none.", 'Read again: <"<unit id> read <n>", the unit the user said to read again, or none>.', 1)}))
+        mutations.append(("the skill telling the lead to send a unit's id on `Read again:`", {
+            **texts, skill: texts[skill] + "\nOn the go-ahead, dispatch the pass with `Read again: A2b-3 read 3`.\n"}))
+        recheck = "skills/scope-run/recheck.md"
+        mutations.append(("recheck.md's go-ahead naming no unit to read again", {**texts, recheck: texts[recheck].replace(
+            "`Read again: <unit id> read <n>`", "`Read again: none`")}))
         for what, broken in mutations:
             if broken == texts:
                 errors.append(f"the case {what} changed nothing")
@@ -17157,13 +17062,17 @@ def check_read_again(plugin_path: Path, marketplace_root: Path) -> Result:
 
     detail = (
         f"{len(_READ_AGAIN_PINS)} phrases held and {len(_READ_AGAIN_RETIRED)} retired ones absent "
-        f"over {len(texts)} files (every read of a unit counted by its dispatch lines with a reader "
-        f"started after each, the reader's `.started` file the mark and a line with none no read, "
-        f"each failed read noted with its number, two reads the last automatic one, a `Read again:` "
-        f"read granted once by its number with one note, and a resume counting the same lines; a "
+        f"over {len(texts)} files (every attempt of a unit counted by its dispatch lines with a reader "
+        f"started after each, the reader's `.started` file the mark and a line with none no attempt, "
+        f"a read spent only on a failed check and a read cut off or blocked spending nothing, a unit "
+        f"with two spent reads skipped and the runner going on to its next unit, three cut off or "
+        f"blocked in a row not dispatched again, a `Read again:` read granted once by its number with "
+        f"one note, the skill's runner dispatch for windows 1 to 3 naming no unit on `Read again:` and "
+        f"recheck.md naming one in its template and after its stop, and a resume "
+        f"counting the same lines; a "
         f"unit checked against its own prefix alone, its first dispatch holding 0, a report with no "
         f"`created subjects:` line or one naming a row outside the prefix a mismatch with each such "
-        f"row named for the check-in; a unit with no subject count verified only once every created "
+        f"row named for the closing report; a unit with no subject count verified only once every created "
         f"subject it names is found by name, never by figures added up; a failed claim taken off its "
         f"own list alone), {len(_READ_AGAIN_SHAPES)} report shapes naming their created subjects after "
         f"their counts, {refused} mutations refused; bound: text only, not how a running runner counts"
@@ -17504,8 +17413,8 @@ _GRAIN_PINS: tuple[tuple[str, str], ...] = (
         ("skills/scope-run/SKILL.md", "one whose count and specification a bid is checked on by "
          "itself, a difference in what a thing is made of or how it is built among them and a group "
          "never split this way"),
-        ("skills/scope-run/SKILL.md", "`how finely to split` note that the reader's mandate 6 tests, "
-         "held in their order, or its list of schedules of types settles is left out"),
+        ("skills/scope-run/SKILL.md", "Every item a reader was not sure how finely to split goes "
+         "under its own heading, all of them, and the short version gives their count."),
         ("agents/scope-reviewer.md", "A row reader mandate 6's five reasons make a row of its own is "
          "never one of these, and two rows those reasons separate are never a pair."),
         ("agents/scope-reviewer.md", "a product whose count and specification a bid is checked on "
@@ -17534,8 +17443,7 @@ _GRAIN_PINS: tuple[tuple[str, str], ...] = (
          "a whole manual section's holds more than one piece of work"),
         ("skills/scope-run/SKILL.md", "while a name the tests give a kind, a group, a family or a "
          "system is never such a name"),
-        ("skills/scope-run/SKILL.md", "A review's note that a row is named for its trade, its package "
-         "or a whole manual section is never left out"),
+        ("skills/scope-run/SKILL.md", "- Items I was not sure how finely to split: ..."),
         ("agents/scope-reviewer.md", "Neither are two pieces of work made to order that reader "
          "mandate 6 makes rows apart."),
         ("agents/scope-reviewer.md", "is named for its trade, its package or a whole manual section "
@@ -17765,7 +17673,7 @@ _KIND_PINS: tuple[tuple[str, str], ...] = (
         ("agents/scope-manual-reader.md", f"Where you cite a page on a row that already exists, "
          f"{_KIND_POINTER}: a manual page is never `shownOnly`"),
         ("skills/scope-run/SKILL.md", "the row's reference list is the pages that define it"),
-        ("skills/scope-run/SKILL.md", "that every item lists the sheets that say what it is"),
+        ("skills/scope-run/SKILL.md", "every item lists the sheets that say what it is"),
     )
 )
 _KIND_RETIRED: tuple[tuple[str, str], ...] = (
@@ -17871,14 +17779,14 @@ _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
     (_FAILED_UNIT_SKILL, "Owed: <run folder>/owed/<unit id>.read-<k>.md on a read after the first, or none. "
      "Reading for:"),
     (_FAILED_UNIT_SKILL, "Nothing stops for it and nobody puts a line back by hand."),
-    (_FAILED_UNIT_SKILL, "Whole `phase:` and `checkin:` lines added at the end outside the script, each one "
-     "the script would have taken, are kept and added to the copy."),
+    (_FAILED_UNIT_SKILL, "Whole `phase:` lines added at the end outside the script, each one the script "
+     "would have taken, are kept and added to the copy."),
     (_FAILED_UNIT_SKILL, "or a line added outside the script is a runner's line, a `pass:` line, one the "
      "script would refuse, one holding a control character or one with no line ending"),
     ("agents/scope-package-folder.md", "python3 '<plugin root>/scripts/ledger.py' append "
      "'<run folder>/ledger.md' <<'EOF' phase: packages folded EOF"),
-    ("skills/scope-run/recheck.md", "append it to the ledger as printed, once, before you check in, "
-     "through the ledger script as every line goes on."),
+    ("skills/scope-run/recheck.md", "append it to the ledger as printed, once, through the ledger "
+     "script as every line goes on."),
     (_FAILED_UNIT_RUNNER, "append each line it prints to the ledger as printed, in one append through "
      "the ledger script."),
     # A runner heals before it reads, and a refused verified line of a closed read is not resent.
@@ -17926,7 +17834,7 @@ _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
     # Every not written entry of a read goes on its closing append.
     (_FAILED_UNIT_RUNNER, "Every entry of its `not written:` line goes on, whether or not an earlier read carried "
      "it, each entry once in the read"),
-    # A failed claim answered not needed reaches the ledger, the check-in and the close-out.
+    # A failed claim answered not needed reaches the ledger and the closing report.
     (_FAILED_UNIT_RUNNER, "`note <window> <pass> <unit> anomaly not needed: <that owed line, copied whole>`"),
     *((reader, "(an update, a field update, a Question on a row, a manual update, a page citation) is an "
        "owed line too: copy it whole on `owed:`, then ` | ` and `written <subject>` for that row, which you "
@@ -17954,10 +17862,10 @@ _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
     (_FAILED_UNIT_VOCABULARY, "`page citations:` for a citation on a page with no sheet number"),
     *((reader, "`manual updates:` for a manual citation and `field updates:` for a field")
       for reader in (_FAILED_UNIT_REVIEWER, _FAILED_UNIT_MANUAL)),
-    (_FAILED_UNIT_SKILL, "The writes a read claimed that the next read said were not needed are the `anomaly` "
-     "notes that carry `not needed:`"),
-    (_FAILED_UNIT_SKILL, "An anomaly carrying `not needed:` names a write a read said it made that its check did "
-     "not find"),
+    # The closing report takes them off the ledger, under a heading of their own.
+    ("scripts/close_report.py", "`not written:` and `not needed:` notes"),
+    ("scripts/close_report.py", "Writes a read said it made that its check did not find, which the next read "
+     "said were not needed"),
     # What a check confirmed off a returned message is kept, and merged by a later runner.
     (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' confirmed '<run folder>' <window> <unit id> "
      "--read <k> <<'EOF'"),
@@ -18164,6 +18072,7 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         report_mod = _load_script_module(scripts / "unit_report.py", "unit_report")
         summary_mod = _load_script_module(scripts / "pass_summary.py", "pass_summary")
         lead_mod = _load_script_module(scripts / "lead_pass.py", "lead_pass")
+        close_mod = _load_script_module(scripts / "close_report.py", "close_report")
     except Exception as e:
         return Result(name, False, detail=f"cannot import the scripts: {e}")
 
@@ -18272,10 +18181,10 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
             and len(found) == (0 if wanted_repair is None else 1),
             lines,
         )
-    # A whole `phase:` or `checkin:` line added by hand at the end, each one an append takes, is the
-    # lead's or the folder's standalone line: kept, in the shadow too, with nothing said, a Windows
-    # line ending read as a line ending. A `phase:` line written by hand is never lost.
-    by_hand = b"phase: packages folded\r\ncheckin: 2 P1 go\n"
+    # Whole `phase:` lines added by hand at the end, each one an append takes, are the lead's or the
+    # folder's standalone lines: kept, in the shadow too, with nothing said, a Windows line ending
+    # read as a line ending. A `phase:` line written by hand is never lost.
+    by_hand = b"phase: packages folded\r\nphase: window 3 complete\n"
     at = folder("heal-added-phase")
     append(at, *base)
     with (at / "ledger.md").open("ab") as handle:
@@ -18283,8 +18192,8 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
     hand_bytes = (at / "ledger.md").read_bytes()
     healed_line = ledger_mod.heal(at / "ledger.md")
     expect(
-        "whole `phase:` and `checkin:` lines added by hand, one with a Windows line ending, are not kept "
-        "as they stand, the ledger unchanged, the shadow equal to it and no `repaired:` line",
+        "whole `phase:` lines added by hand, one with a Windows line ending, are not kept as they "
+        "stand, the ledger unchanged, the shadow equal to it and no `repaired:` line",
         healed_line is None and (at / "ledger.md").read_bytes() == hand_bytes
         and (at / "ledger.shadow").read_bytes() == hand_bytes,
         healed_line or (at / "ledger.md").read_bytes().decode("utf-8").splitlines(),
@@ -18292,8 +18201,76 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
     ok, said = append(at, later)
     lines = (at / "ledger.md").read_bytes().decode("utf-8").splitlines()
     expect("an append after lines kept from a hand writer does not go on after them",
-           ok and lines == [*base, "phase: packages folded", "checkin: 2 P1 go", later] and "repaired:" not in said,
+           ok and lines == [*base, "phase: packages folded", "phase: window 3 complete", later] and "repaired:" not in said,
            lines)
+    # A `checkin:` line added by hand is no longer adopted: a scope run has no check-in, so the heal
+    # takes it off and names it on a `repaired:` line, and the append script refuses a new one.
+    at = folder("heal-added-checkin")
+    append(at, *base)
+    shadow_before = (at / "ledger.shadow").read_bytes()
+    with (at / "ledger.md").open("ab") as handle:
+        handle.write(b"checkin: 2 P1 go\n")
+    healed_line = ledger_mod.heal(at / "ledger.md")
+    expect(
+        "a `checkin:` line added by hand is adopted by the heal, or taken off with nothing said",
+        healed_line is not None and healed_line.startswith("repaired: ")
+        and b"checkin:" not in (at / "ledger.md").read_bytes()
+        and (at / "ledger.md").read_bytes().startswith(shadow_before),
+        healed_line or (at / "ledger.md").read_bytes().decode("utf-8").splitlines(),
+    )
+    ok, said = append(at, "checkin: 2 P1 go")
+    expect("the ledger script takes a new `checkin:` line, or refuses it without saying the run has no check-in",
+           not ok and "has no check-in" in said, said)
+
+    # Every line this release adds goes on through the script, each on its own and in one batch;
+    # a ledger whose plan line is the older `phase: plan approved` takes them too.
+    new_lines = (
+        "phase: reading started 2026-01-31T22:10:00Z",
+        "pass: 1 P1 units 1 created 4 updated 0 questions 0 replied 0 skipped 1 lead-verified yes",
+        "pass: 3 i1-W3-1 units 2 created 4 updated 0 questions 0 replied 0 skipped 0 pages-opened 3 "
+        "searches 2 reports-restored 0 lead-verified no",
+        "pass: r i2-RA units 1 created 0 updated 1 questions 0 replied 0 skipped 0 recited 1 rows-changed 0 "
+        "removed 0 not-found 0 retired 0 kept 0 refused 0 lead-verified yes",
+        "short: 3 i1-W3-1 i1-rev-092116-1 record 3 runner 4",
+        "amending: Invented framing: split off the invented soffits; one sub bids the soffits on their own",
+        "amended: Invented framing: split off the invented soffits; one sub bids the soffits on their own",
+        "unplaced: 08 71 00 no package bids door hardware here, and the spec places it with the doors",
+        "note 2 P1 P1-1 deviation A-1.01 blocked: record_batch server, read 2",
+        "note 2 P1 P1-1 deviation A-1.01 blocked: render_page refused by the client, read 3",
+        "note 2 P1 P1-1 deviation A-1.01 blocked: whoami sign-in, read 4",
+        "note 2 P1 P1-1 deviation A-1.01 interrupted: no report on file, read 5",
+        "note 2 P1 P1-1 deviation A-1.01 go on given after three reads that spent nothing",
+    )
+    for line in new_lines:
+        at = folder(f"new-line-{new_lines.index(line)}", base)
+        ok, said = append(at, line)
+        expect(f"the ledger script refuses the new line {line!r}", ok, said)
+    at = folder("new-lines-batch", base)
+    ok, said = append(at, *new_lines)
+    expect("the ledger script refuses this release's lines in one batch", ok, said)
+    for label, line, needle in (
+        ("a reading started line with no time", "phase: reading started", "UTC"),
+        ("a reading started line with a local time", "phase: reading started 2026-01-31 17:10", "UTC"),
+        ("a short line with no counts", "short: 3 i1-W3-1 i1-rev-092116-1", "short:"),
+    ):
+        at = folder(f"refused-{label.replace(' ', '-')}", base)
+        before_bytes = (at / "ledger.md").read_bytes()
+        ok, said = append(at, line)
+        expect(f"the ledger script takes {label}, or refuses it without naming why",
+               not ok and needle in said and (at / "ledger.md").read_bytes() == before_bytes, said)
+    # A note is a block or an interruption only where its tail is the runner's whole shape before
+    # `, read <k>`: a near miss is an ordinary deviation, taken, and the summary counts no block.
+    for label, line in (
+        ("a block note with a class it does not name", "note 2 P1 P1-1 deviation A-1.01 blocked: record_batch timeout, read 2"),
+        ("a block note with no read", "note 2 P1 P1-1 deviation A-1.01 blocked: record_batch server"),
+        ("an interrupted note with no read", "note 2 P1 P1-1 deviation A-1.01 interrupted: no report on file"),
+    ):
+        at = folder(f"ordinary-{label.replace(' ', '-')}", base)
+        ok, said = append(at, line)
+        clause = " ".join(line.split()[5:])
+        expect(f"the ledger script refuses {label}, an ordinary deviation, or the summary reads it as a block",
+               ok and not summary_mod.BLOCKED_NOTE_RE.search(clause) and not summary_mod.INTERRUPTED_NOTE_RE.search(clause),
+               said)
     # A runner's line added by hand, here a `verified` line an append would take, is put back and
     # named: a runner's closing group lands whole, and the heal cannot tell a whole group from the
     # first part of one.
@@ -18381,6 +18358,10 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
     taken_phases: list[str] = []
     for value in phase_values:
         line = re.sub(r"<[^>]*>", "1", value).replace("...", "x").strip()
+        # The reading started line carries its time in UTC, which the text gives as a placeholder or
+        # names the line by without; the line a lead writes carries one.
+        if line.startswith("phase: reading started"):
+            line = "phase: reading started 2026-01-31T22:10:00Z"
         try:
             ledger_mod.check_batch("", [line])
             taken_phases.append(value)
@@ -18567,7 +18548,7 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
                "another process held it open" in published and "\n" not in published
                and target.read_bytes() == b"new\n" and not list(at.glob(".held.txt.*.tmp")), published)
 
-    # The lead's reads heal too, and the check-in says it in the estimator's words.
+    # The lead's reads heal too, and the closing report says it in the estimator's words.
     lead_at = folder("lead-heal")
     fixture_plan = (marketplace_root / "harness" / "fixtures" / "read-plan-fixture-w3.md").read_text(encoding="utf-8")
     # The passes listing reads a plan the plan script wrote, which carries each block's `starts after:`.
@@ -18580,14 +18561,17 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
              "landed 2 conflicts 0 result ok")
     append(lead_at, "phase: plan approved", w3_dispatch, w3_ok)
     (lead_at / "ledger.md").write_bytes((lead_at / "ledger.shadow").read_bytes().replace(b"created 4", b"created 9"))
-    code, out, err = _run_script_main(lead_mod, ["checkin", str(lead_at), "3", "--passes", "W3-1"])
+    code, out, err = _run_script_main(lead_mod, ["passes", "--plan", str(lead_at / "read-plan.md")])
+    close_code, close_out, close_err = _run_script_main(close_mod, ["write", str(lead_at)])
+    close_text = (lead_at / "closing-report.md").read_text(encoding="utf-8") if (lead_at / "closing-report.md").is_file() else ""
     expect(
-        "the check-in does not put back a changed line and say so in the estimator's words",
-        code == 0 and "the run's log: 1 line of it was changed outside the run and was put back, "
-        "line 3" in out.splitlines()
+        "the passes listing does not put back a changed line, or the closing report does not say so "
+        "in the estimator's words",
+        code == 0 and close_code == 0
+        and "1 line of the run's log was changed outside the run and put back." in close_text
         and (lead_at / "ledger.md").read_bytes() == (lead_at / "ledger.shadow").read_bytes()
         and b"created 9" not in (lead_at / "ledger.md").read_bytes(),
-        f"exit {code}, {out!r}, {err!r}",
+        f"exit {code}, {err!r}, closing report exit {close_code}, {close_err!r}",
     )
     (lead_at / "ledger.md").write_bytes((lead_at / "ledger.shadow").read_bytes() + w3_ok.encode() + b"\n")
     code, out, err = _run_script_main(lead_mod, ["passes", "--plan", str(lead_at / "read-plan.md")])
@@ -19651,24 +19635,24 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
     code, _hand, err = _run_script_main(summary_mod, [
         str(nw_at / "ledger.md"), "3", "W3-1", "--plan", str(nw_at / "read-plan.md"),
         "--trades", str(nw_at / "trades" / "W3-1.txt"), "--out", str(nw_at / "reports" / "W3-1.md")])
-    checkin_code, checkin_out, checkin_err = _run_script_main(lead_mod, ["checkin", str(nw_at), "3", "--passes", "W3-1"])
-    # The close-out's filter: the unit's notes between its last dispatch line and its last ok line.
+    checkin_code, _close_out, checkin_err = _run_script_main(close_mod, ["write", str(nw_at)])
+    checkin_out = (nw_at / "closing-report.md").read_text(encoding="utf-8") if (nw_at / "closing-report.md").is_file() else ""
+    # The closing report's filter: the unit's notes between its last dispatch line and its last ok line.
     ledger_now = (nw_at / "ledger.md").read_text(encoding="utf-8").splitlines()
     last_dispatch = max(i for i, l in enumerate(ledger_now) if l == unit_dispatch)
     closeout = [l for l in ledger_now[last_dispatch:] if l.startswith(f"note 3 W3-1 {unit} anomaly ")]
     expect(
         "an entry an earlier read carried and the second read still did not write is not on the "
-        "ledger under the second read, in the owed file a third read gets, in the check-in and in "
-        "the close-out",
+        "ledger under the second read, in the owed file a third read gets and in the closing report",
         f"note 3 W3-1 {unit} anomaly not written: {entry_x}" in read_2_notes
         and f"not written by read 2: {entry_x}" in owed_3
         and code == 0 and checkin_code == 0 and "an invented stud gauge" in checkin_out
         and f"note 3 W3-1 {unit} anomaly not written: {entry_x}" in closeout,
-        f"read 2 notes {read_2_notes}, owed {owed_3}, summary {code} {err}, check-in {checkin_code} {checkin_err}",
+        f"read 2 notes {read_2_notes}, owed {owed_3}, summary {code} {err}, closing report {checkin_code} {checkin_err}",
     )
     expect(
-        "a failed claim answered not needed is not on the ledger as a `not needed:` note, in the "
-        "check-in and in the close-out",
+        "a failed claim answered not needed is not on the ledger as a `not needed:` note and in the "
+        "closing report",
         any(l.startswith(f"note 3 W3-1 {unit} anomaly not needed: {claim_x} | not needed,") for l in read_2_notes)
         and "the row already cites the page" in checkin_out
         and any(" anomaly not needed: " in l for l in closeout),
@@ -19720,7 +19704,7 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
                f"before {len(before_bytes)} bytes, after the stopped write {len(stopped_bytes)} bytes")
 
     # ------------------------------------------------------------------ #
-    # The check-in names a manual part restored by the summary's own selection of its latest read
+    # The record's line names a manual part restored by the summary's own selection of its latest read
     # ------------------------------------------------------------------ #
     part = "rev-099999-1c-1"
     for label, reads, wanted in (
@@ -19745,7 +19729,7 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         said = lead_mod._plan_reads(part_at / "read-plan.md", 3, {part})[0].get("W3-1", "")
         other = ("manual pages whose report was written from the record (" if reads == 2
                  else "manual pages read (")
-        expect(f"the check-in does not name a manual part {label} under {wanted[:-2]!r}",
+        expect(f"the record's line does not name a manual part {label} under {wanted[:-2]!r}",
                wanted in said and other not in said, said)
 
     # ------------------------------------------------------------------ #
@@ -19770,8 +19754,9 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         f"{arms} script arms over invented run folders with real files: ledger.py appending a batch "
         f"with an apostrophe and a dollar sign as written, its shadow alike, and refusing nine "
         f"batches by name with nothing written, a verified line with no dispatch since among them; "
-        f"the heal equal, a strict prefix completed silently, whole `phase:` and `checkin:` lines "
-        f"added by hand, one with a Windows line ending, kept as they stand with nothing said, a "
+        f"the heal equal, a strict prefix completed silently, whole `phase:` lines added by hand, "
+        f"one with a Windows line ending, kept as they stand with nothing said, a `checkin:` line "
+        f"added by hand taken off and named, a new one refused, a "
         f"line changed or removed, an added line an append refuses (alone and after a valid one), "
         f"a `verified` line added by hand that an append would take, a `phase:` line hiding a "
         f"verified line after a carriage return, the pass then totalling off the run's own lines, "
@@ -19785,8 +19770,8 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         f"batches each at once leaving every batch whole, in order and once under the lock and not "
         f"without it, and a replace refused while a reader holds the file tried again until it "
         f"lands and failing in one line past its bound; each of the {len(phase_values)} `phase:` values the "
-        f"shipped text writes taken by the check; the lead's check-in and "
-        f"passes listing healing before they read, the check-in saying it in the estimator's words; "
+        f"shipped text writes taken by the check; the lead's passes listing healing before it "
+        f"reads, the closing report saying it in the estimator's words; "
         f"the report script's labels equal to each agent's report shape and the skill's copies, "
         f"stubs in three measured shapes held not whole, a count disagreeing with its list a "
         f"mismatch named report for `created` and `questions raised`, and for `questions replied` "
@@ -19828,8 +19813,8 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         f"command runs; the owed "
         f"file, the restored report and the pass summary each left whole by a write stopped "
         f"partway and written whole by the next run; an entry not written by two reads on the ledger under "
-        f"the second, in the third read's owed file, the check-in and the close-out, and a failed "
-        f"claim answered not needed reaching the same three; a manual part named restored only where "
+        f"the second, in the third read's owed file and in the closing report, and a failed "
+        f"claim answered not needed reaching the ledger and the closing report; a manual part named restored only where "
         f"its latest read counts off the restored report; {text_result.detail.split(' | ', 1)[0]}; "
         f"bound: invented run folders, real processes for the ledger's writes and simulated runners "
         f"for the rest, not a running runner"
@@ -19837,6 +19822,1700 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
     if errors:
         detail += " | " + "; ".join(str(e) for e in errors)
     return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: the closing report
+# --------------------------------------------------------------------------- #
+#
+# A scope run goes from its read plan to its end with no check-in, so everything a check-in once
+# told the estimator reaches him in one file, `closing-report.md`, written by `close_report.py` off
+# the run folder. The lead never retells the run's notes: a script decides what appears, in what
+# order and with what dedupe, so this check can prove it. One invented run folder carries every
+# kind of note a check-in used to print, a skipped unit of each reason, a blocked and a cut off
+# read, fold lines, amendments, sections on no package, the copies of the lookups and the index's
+# leftovers; the report is written over it and each item is found once, in its own section, every
+# id named by a copy or said as a count, and the short version under its cap. The same folder with
+# the copy step failed and with no fold report is written too, never refused, each missing input
+# said; a run that stopped early gets a report headed as stopped. The text arms pin stage 9's
+# three ordered facts, the stops and their messages, the first message's permission sentence,
+# that nothing in the run writes or reads a settings file, and that the attended run's words are
+# gone; each is broken again and refused. Honest bound: an invented folder and copies in the shape
+# the verbs return, not a live run's.
+
+_CLOSE_SCRIPT = ("scripts", "close_report.py")
+_CLOSE_SKILL = "skills/scope-run/SKILL.md"
+_CLOSE_RECHECK = "skills/scope-run/recheck.md"
+_CLOSE_RUNNER = "agents/scope-round-runner.md"
+_CLOSE_PINS: tuple[tuple[str, str], ...] = (
+    # Stage 9: three facts in this order, the report written by the script, never retold.
+    (_CLOSE_SKILL, "The close-out is three facts, in this order, and a session that stops between two of them "
+     "resumes at the next: the report file is written; you have said its short version with the link; "
+     "`phase: closed out` is appended."),
+    (_CLOSE_SKILL, "python3 '<plugin root>/scripts/close_report.py' ids '<run folder>' --project <projectId>"),
+    (_CLOSE_SKILL, "python3 '<plugin root>/scripts/close_report.py' write '<run folder>' [--delivery-plan '<plan file>']"),
+    (_CLOSE_SKILL, "You never write the report yourself, and never read the run's notes to retell them"),
+    (_CLOSE_SKILL, "Copy it. Never retype it."),
+    (_CLOSE_SKILL, "| `closing-report.md` finished, no `closed out` | stage 9 step 2: say the short version again, then append |"),
+    # The stops, each with its message, and the report so far at every one.
+    (_CLOSE_SKILL, "Once reading has started, these are the only stops, and nothing else waits on him"),
+    (_CLOSE_SKILL, "A `whoami` that answers does not clear it; only the operation that failed succeeding does."),
+    (_CLOSE_SKILL, "At every stop, first write the closing report so far"),
+    (_CLOSE_SKILL, "Type /mcp, choose plumlayer, pick Re-authenticate, then tell me to go on."),
+    (_CLOSE_SKILL, "Claude Code did not allow <what the call does, in plain words>"),
+    (_CLOSE_SKILL, "Plumlayer is not answering, so I stopped after <what finished>."),
+    (_CLOSE_SKILL, "was cut off three times in a row, so I stopped after <what finished>"),
+    (_CLOSE_SKILL, "I could not confirm <n> of the <m> sheets after two reads each"),
+    (_CLOSE_SKILL, "Claude Code waits in the open session and goes on by itself once the limit resets"),
+    # The first message: the run starts in the same turn, and one permission sentence every run.
+    (_CLOSE_SKILL, "Then, in the same turn, append `phase: reading started <the time now in UTC>` to the ledger"),
+    # The sentence promises no run free of asking, and says the computer has to stay awake.
+    (_CLOSE_SKILL, "\"If Claude asks you to approve a tool while the run works, the run waits until you answer; "
+     "starting Claude in auto mode, or always allowing Plumlayer's tools and scripts the first time each "
+     "asks, means the run rarely has to ask. Keep this computer on and awake until the run finishes, since "
+     "a sleeping computer stops it.\""),
+    (_CLOSE_SKILL, "make one `whoami`, the Python probe of precondition 2 if this session has not made it, and one "
+     "`search(projectId, subjectPrefix: \"scopeItem:\", limit: 1)`"),
+    # The runner's probe after a read with no report: a search that errors twice is a block.
+    (_CLOSE_RUNNER, "first make one `search(projectId, subjectPrefix: \"scopeItem:<unit id>-\", limit: 1)`: one "
+     "that errors twice is a block, `search server`."),
+    (_CLOSE_RECHECK, "the closing report takes the recheck's figures by package off the same script"),
+)
+# The attended run's words, which no text the lead reads may carry again.
+_CLOSE_RETIRED: tuple[tuple[str, str], ...] = tuple(
+    (label, phrase)
+    for label in (_CLOSE_SKILL, _CLOSE_RECHECK)
+    for phrase in ("This run is attended", "check-in", "Go, or change anything", "Proceed, adjust, or pause",
+                   "staying for", "Run unattended")
+)
+# Anything that has the run write or read a settings file, or hand Claude Code a rule string.
+_SETTINGS_RE = re.compile(
+    r"settings(?:\.local)?\.json|allowed-tools|permissions\.allow|bypassPermissions|dangerously-skip|Bash\(python",
+    re.IGNORECASE,
+)
+
+
+def _closing_text_errors(texts: dict[str, str]) -> list[str]:
+    errors = [f"{label} does not read {phrase[:90]!r}" for label, phrase in _CLOSE_PINS
+              if _collapsed(phrase) not in _collapsed(texts[label])]
+    errors += [f"{label} still reads {phrase!r}" for label, phrase in _CLOSE_RETIRED
+               if phrase in _collapsed(texts[label])]
+    description = re.search(r"(?m)^description:(.*(?:\n  .*)*)", texts[_CLOSE_SKILL])
+    if description is None or "Attended" in description.group(1) or "check-in" in description.group(1):
+        errors.append("the skill's description still says the run is attended or names a check-in")
+    for label, text in texts.items():
+        found = _SETTINGS_RE.search(text)
+        if found:
+            errors.append(f"{label} has the run touch a settings file or a rule string: {found.group(0)!r}")
+    # The three facts of stage 9 in their order.
+    stage = texts[_CLOSE_SKILL][texts[_CLOSE_SKILL].find("## 9. Close out"):]
+    order = ("1. **Write the closing report.**", "2. **Say the short version, with the link.**",
+             "3. **Append `phase: closed out`.**")
+    at = [stage.find(step) for step in order]
+    if any(a < 0 for a in at) or at != sorted(at):
+        errors.append(f"stage 9's three steps are not in the order file, short version, closed out: {at}")
+    return errors
+
+
+def _close_fixture(at: Path, copies: bool, fold: bool) -> dict[str, str]:
+    """An invented run folder carrying every kind of thing the closing report says; the ids it names."""
+    project = "proj-0c1d2e3f-0000-4000-8000-00000000c001"
+    qid = f"question:{project}:0c1d2e3f-0000-4000-8000-000000000001"
+    landed = f"question:{project}:0c1d2e3f-0000-4000-8000-000000000002"
+    at.mkdir(parents=True)
+    (at / "plan").mkdir()
+    (at / "trades").mkdir()
+    (at / "reports").mkdir()
+
+    def write_json(path: Path, data) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data), encoding="utf-8")
+
+    write_json(at / "run.json", {"label": "an invented issue for bid"})
+    sheets = [f"A-0.0{i}" for i in (1, 2)] + [f"A-1.0{i}" for i in (1, 2, 3, 4)]
+    write_json(at / "inventory.json", {"sheets": [
+        {"unitKey": f"{s}@file-a#{n}", "sheetNumber": s, "discipline": "A", "sheetType": "plan",
+         "fileId": "file-a", "pageInPdf": n, "pageTitle": f"plan on {s}"}
+        for n, s in enumerate(sheets, 1)
+    ]})
+    write_json(at / "plan" / "window-1.json", {
+        "window": 1, "selected": ["A-0.01@file-a#1", "A-0.02@file-a#2"], "excluded": ["A-9.01@file-a#9"],
+        "units": {}, "include": [], "exclude": [{"pattern": "A-9.*", "reason": "the invented landscape sheets"}],
+        "leftByPlan": ["A-8.01@file-a#8"],
+    })
+    write_json(at / "plan" / "packages.json", {"packages": [
+        {"id": "pkg-c1", "tradeCode": "09 21 16", "name": "Invented drywall"},
+        {"id": "pkg-c2", "tradeCode": "01 11 13", "name": "Invented general requirements"},
+    ]})
+    ok = "sent 2 landed 2 conflicts 0 result ok"
+    bad = "sent 2 landed 1 conflicts 0 result mismatch"
+    lines = [
+        "phase: reading started 2026-01-31T10:00:00Z",
+        "dispatch 1 A1 A1-1 sheets A-0.01 purpose the vocabulary",
+        "note 1 A1 A1-1 kinds door window",
+        "note 1 A1 A1-1 grain an invented panel family may split by frame, note on scopeItem:A1-1-1",
+        f"note 1 A1 A1-1 door an invented row looks retired, Question {qid}",
+        "note 1 A1 A1-1 anomaly A-0.01 p1 an invented mark carries no schedule row, run only",
+        f"note 1 A1 A1-1 anomaly A-0.01 p1 an invented tag the set defines nowhere, Question {landed}",
+        f"verified 1 A1 A1-1 created 3 items 2 updated 1 questions 1 replied 0 {ok}",
+        "dispatch 1 A1 A1-2 sheets A-0.02 purpose the vocabulary",
+        f"verified 1 A1 A1-2 created 1 items 1 updated 0 questions 0 replied 0 {bad}",
+        "note 1 A1 A1-2 deviation A-0.02 created 1 under the prefix, reader created 3, read 1",
+        "dispatch 1 A1 A1-2 sheets A-0.02 purpose the vocabulary",
+        "note 1 A1 A1-2 deviation A-0.02 no report, read 2",
+        "note 1 A1 A1-2 unread A-0.02 read 2 times, not read again",
+        "pass: 1 A1 units 2 created 4 updated 1 questions 1 replied 0 skipped 1 lead-verified yes",
+        "phase: window 1 complete",
+        "phase: index built unmatchedTag 2 codeNoLocation 1 codeOnlyOnReplacedPages 0",
+        "dispatch 2 A2 A2-1 sheets A-1.01 purpose the sheet",
+        "note 2 A2 A2-1 deviation A-1.01 blocked: record_batch server, read 1",
+        "dispatch 2 A2 A2-1 sheets A-1.01 purpose the sheet",
+        "note 2 A2 A2-1 anomaly A-1.01 p3 not read from the picture: the east half, a faint scan, run only",
+        f"verified 2 A2 A2-1 created 2 items 2 updated 0 questions 0 replied 0 {ok}",
+        "dispatch 2 A2 A2-2 sheets A-1.02 purpose the sheet",
+        "note 2 A2 A2-2 deviation A-1.02 interrupted: no report on file, read 1",
+        "dispatch 2 A2 A2-2 sheets A-1.02 purpose the sheet",
+        "note 2 A2 A2-2 deviation A-1.02 reader stopped answering, read 2",
+        "dispatch 2 A2 A2-2 sheets A-1.02 purpose the sheet",
+        "note 2 A2 A2-2 deviation A-1.02 reader stopped answering, read 3",
+        "note 2 A2 A2-2 unread A-1.02 read 2 times, not read again",
+        "dispatch 2 A2 A2-3 sheets A-1.03 purpose the sheet",
+        f"verified 2 A2 A2-3 created 1 items 1 updated 0 questions 0 replied 0 {bad}",
+        "note 2 A2 A2-3 deviation A-1.03 created subjects scopeItem:A2-4-1, read 1",
+        "dispatch 2 A2 A2-3 sheets A-1.03 purpose the sheet",
+        f"verified 2 A2 A2-3 created 1 items 1 updated 0 questions 1 replied 0 {bad}",
+        "note 2 A2 A2-3 deviation A-1.03 questions raised, read 2",
+        "note 2 A2 A2-3 unread A-1.03 read 2 times, not read again",
+        "note 2 A2 - overlap an invented casework run in A2-1 and A2-3",
+        "pass: 2 A2 units 3 created 4 updated 0 questions 1 replied 0 skipped 2 lead-verified no",
+        "short: 2 A2 A2-1 record 1 runner 2",
+        "repaired: lines differing from the run's own copy 1, first at line 7; the ledger was written again from that copy",
+        "phase: window 2 complete",
+        "phase: index built unmatchedTag 2 codeNoLocation 1 codeOnlyOnReplacedPages 0",
+        "phase: packages folded",
+        "dispatch 3 W3-1 rev-092116-1 sheets none purpose review the package",
+        "note 3 W3-1 rev-092116-1 anomaly A-1.01 p3 same work: scopeItem:rev-092116-1-1 and "
+        "scopeItem:A2-1-2, model X-1, combined, run only",
+        "note 3 W3-1 rev-092116-1 anomaly A-1.01 p3 same work: scopeItem:rev-092116-1-2 and "
+        "scopeItem:A2-1-3, model X-2, left for the estimator: it holds a note, run only",
+        "note 3 W3-1 rev-092116-1 anomaly unsearched invented soffit, refused by the rate limit five times, run only",
+        "note 3 W3-1 rev-092116-1 anomaly section 092216 not read: manual removed, run only",
+        "note 3 W3-1 rev-092116-1 anomaly not written: section 092116 p14 | an invented stud gauge | no row | the page is a scan",
+        # Each note as its producer writes it: the runner's copy of an `owed:` answer, the touched
+        # command's note for a read whose trades are not known, and the restore command's note.
+        "note 3 W3-1 rev-092116-1 anomaly not needed: check read 1 failed: Invented drywall updated "
+        "scopeItem:rev-092116-1-1, read 1 | not needed, the row already cites the page",
+        "note 3 W3-1 rev-092116-1 anomaly the trades read 1 of rev-092116-1 wrote to are not known, since "
+        "neither a whole report of that read nor the runner's record of its check is on file, run only",
+        "note 3 W3-1 rev-092116-1 deviation Invented drywall report written from the record to "
+        "reports/rev-092116-1.read-1.restored.md, read 1",
+        f"verified 3 W3-1 rev-092116-1 created 3 items 3 updated 2 questions 0 replied 1 {ok}",
+        "dispatch 3 W3-1 rev-092116-1c-1 sheets none purpose read the invented manual pages",
+        f"verified 3 W3-1 rev-092116-1c-1 created 1 items 1 updated 0 questions 0 replied 0 {bad}",
+        "note 3 W3-1 rev-092116-1c-1 deviation Invented drywall spans, read 1",
+        "dispatch 3 W3-1 rev-092116-1c-1 sheets none purpose read the invented manual pages",
+        f"verified 3 W3-1 rev-092116-1c-1 created 1 items 1 updated 0 questions 0 replied 0 {bad}",
+        "note 3 W3-1 rev-092116-1c-1 deviation Invented drywall spans, read 2",
+        "note 3 W3-1 rev-092116-1c-1 unread Invented drywall read 2 times, not read again",
+        "pass: 3 W3-1 units 2 created 4 updated 2 questions 0 replied 1 skipped 1 pages-opened 3 searches 2 reports-restored 1 lead-verified yes",
+        "amended: Invented drywall: split off the invented soffits; one sub bids the soffits on their own",
+        "unplaced: 08 71 00 no package bids the invented hardware here",
+        "phase: window 3 complete",
+        "phase: packages amended",
+    ]
+    (at / "ledger.md").write_text("".join(f"{line}\n" for line in lines), encoding="utf-8")
+    (at / "trades" / "A1.txt").write_text("A1-1 trade 09 21 16 2\n", encoding="utf-8")
+    (at / "trades" / "A2.txt").write_text("A2-1 trade 09 21 16 2\n", encoding="utf-8")
+    (at / "trades" / "W3-1.txt").write_text("rev-092116-1 trade 09 21 16 3\n", encoding="utf-8")
+    (at / "read-plan.md").write_text("\n".join((
+        "# Read plan: window 3",
+        "",
+        "## Passes",
+        "",
+        "### W3-1",
+        "1. rev-092116-1: Invented drywall, trade 09 21 16, reads 092116 p40-p60 of file-m1, package pkg-c1 verified",
+        "2. rev-092116-1c-1: Invented drywall, trade 09 21 16, package pkg-c1, manual part after rev-092116-1, reads 092116 p61-p70 of file-m1 skipped",
+        "",
+        "## Manual sections not read",
+        "",
+        "1. 092900 on rev-092116-1, package pkg-c1: the section list gives it no page range",
+        "",
+        "## Nothing read for",
+        "",
+        "1. Invented roofing, trade 07 50 00",
+        "",
+    )), encoding="utf-8")
+    if fold:
+        (at / "reports" / "fold.md").write_text(
+            "folded: Invented gypsum finishing into Invented drywall, one firm bids both\n"
+            "deleted: Invented security, trade 28 00 00, package pkg-c9, the owner hires this work under section 01 10 00\n",
+            encoding="utf-8",
+        )
+    if copies:
+        close = at / "plan" / "close"
+        write_json(close / "questions.json", {"tradeCounts": {"09 21 16": 5, "22 11 16": 3, "26 05 00": 1}, "everyTradeCount": 1, "untradedCount": 2})
+        write_json(close / "packages.json", {
+            "packages": [{"id": "pkg-c1", "tradeCode": "09 21 16", "name": "Invented drywall"}],
+            "manualSectionPlacement": {"onNoPackage": ["08 71 00"], "truncated": False},
+        })
+        write_json(close / "general-requirements.json", {"package": {"manualSections": ["011000", "012500"]}})
+        write_json(close / "leftover-codeNoLocation.json", {"rows": [{"code": "X-9", "sheets": ["A-1.01"]}]})
+        write_json(close / "questions-named-000.json", {"questions": [{"questionId": qid, "title": "Invented door hardware"}]})
+        write_json(close / "name-000.json", {"results": [{"subject": "scopeItem:rev-092116-1-1", "value": "Invented gypsum board"}]})
+    return {"project": project, "qid": qid, "landed": landed}
+
+
+# Each item the folder carries, where the report says it, as words the report must hold once.
+_CLOSE_ITEMS: tuple[tuple[str, str], ...] = (
+    ("What I could not read", "A-0.02: I read it 2 times and could not confirm what I wrote. The last time, it ended without a report I could check."),
+    ("What I could not read", "A-1.02: I read it 2 times and could not confirm what I wrote. The last time, the reading stopped answering partway."),
+    ("What I could not read", "A-1.03: I read it 2 times and could not confirm what I wrote. The last time, a Question it said it raised is not on the project."),
+    ("What I could not read", "Manual pages for Invented drywall (section 092116, pages 61 to 70): I read it 2 times"),
+    ("What I could not read", "A-1.01 p3 not read from the picture: the east half, a faint scan. It is a scan"),
+    ("What I could not read", "Left out of the read plan at the start: A-9.01 (A-9.*: the invented landscape sheets)."),
+    ("What I could not read", "Left unread by the plan you approved for this delivery: A-8.01."),
+    ("What I could not read", "Section 092900 for Invented drywall: no review read it, because the section list gives it no page range."),
+    ("What I could not read", "Invented drywall: section 092216 not read: manual removed."),
+    ("What I could not read", "Invented drywall: I could not search for invented soffit"),
+    # The copy counts every Question on the project, open and closed, and the heading says so.
+    # Each trade's figure is the server's, which already includes the every-trade Questions, and the
+    # section says so, so the every-trade figure never reads as one to add.
+    ("Every Question on the project, open and closed, by trade", "These count every Question on the project, open "
+     "and closed. Each trade's figure includes the Questions that apply to every trade."),
+    ("Every Question on the project, open and closed, by trade", "Invented drywall: 5; 22 11 16: 3; 26 05 00: 1"),
+    ("Every Question on the project, open and closed, by trade", "Of those, on every trade: 1, already in each trade's "
+     "figure. Trade not known yet: 2."),
+    ("Every Question on the project, open and closed, by trade", "The open ones are on each trade's page on plumlayer.com."),
+    ("To look at", "A-0.01: A-0.01 p1 an invented mark carries no schedule row."),
+    ("To look at", "A-1.03: an item was written under another reading's numbering"),
+    ("To look at", "A-0.01: an invented panel family may split by frame, note on an item"),
+    ("To look at", "A-0.01: an invented row looks retired, the Question “Invented door hardware”"),
+    ("To look at", "“an invented casework run” on A-1.01 and on A-1.03"),
+    ("To look at", "Combined: “Invented gypsum board” and an item, model X-1. Tell me to put the retired item back."),
+    ("To look at", "Left for you: an item and an item, model X-2, left for the estimator: it holds a note. Retire one"),
+    ("To look at", "Invented drywall: section 092116 p14: an invented stud gauge, for no row, not written because the page is a scan."),
+    ("To look at", "Invented drywall: an update to “Invented gypsum board”; the row already cites the page"),
+    ("To look at", "1 more note already sits on a Question or a reply"),
+    ("Package changes", "Folded: Invented gypsum finishing into Invented drywall, one firm bids both."),
+    ("Package changes", "Deleted as the owner's work: Invented security: the owner hires this work under section 01 10 00."),
+    ("Package changes", "Amended: Invented drywall: split off the invented soffits; one sub bids the soffits on their own."),
+    ("Package changes", "General requirements: the package carries 2 Division 01 sections (011000, 012500)."),
+    ("Package changes", "On no package: 08 71 00 no package bids the invented hardware here."),
+    ("Package changes", "Manual sections still on no package: 08 71 00."),
+    # What the index left uncited is a thing the run could not do, so it is in the one collection
+    # the short version counts; the codes themselves are named under Still open.
+    ("What I could not read", "2 tags I could not match to any item"),
+    ("What I could not read", "1 code found on no page, named under Still open."),
+    ("Still open", "Codes found nowhere: X-9 (on A-1.01)."),
+    ("What went wrong along the way", "The record holds fewer entries for A-1.01 than the check of it found (1 against 2)."),
+    ("What went wrong along the way", "1 line of the run's log was changed outside the run and put back."),
+    ("What went wrong along the way", "1 read stopped because a call to Plumlayer could not be made"),
+    ("What went wrong along the way", "1 read cut off when the session stopped"),
+    # The review's report was written from the record and neither it nor the reader's is on file:
+    # its pages read are not known, so none is counted read (an earlier fixture counted 21).
+    ("What I could not read", "The Invented drywall review: its reader's report was lost, so I wrote it from the record"),
+    ("What I could not read", "the trades it wrote to are not known"),
+    ("In detail", "- Invented roofing: this pass wrote no item on its trade"),
+    ("In detail", "- Kinds of marks defined: door, window."),
+    ("In detail", "- Invented drywall: 7"),
+)
+
+
+def check_closing_report(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "closing-report"
+    script = plugin_path.joinpath(*_CLOSE_SCRIPT)
+    if not script.is_file():
+        return Result(name, False, detail=f"closing report script not found at {script}")
+    try:
+        close = _load_script_module(script, "close_report")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import {script.name}: {e}")
+    errors: list[str] = []
+    root = Path(__file__).parent / ".test-results" / "closing-report"
+    shutil.rmtree(root, ignore_errors=True)
+
+    def run(argv: list[str]) -> tuple[int, str, str]:
+        try:
+            return _run_script_main(close, argv)
+        except SystemExit as e:
+            return (e.code if isinstance(e.code, int) else 2), "", ""
+
+    def sections_of(text: str) -> dict[str, str]:
+        out: dict[str, str] = {}
+        current = ""
+        for line in text.splitlines():
+            if line.startswith("## "):
+                current = line[3:].strip()
+                out.setdefault(current, "")
+                continue
+            out[current] = out.get(current, "") + line + "\n"
+        return out
+
+    # ------------------------------------------------------------------ #
+    # ids: the copy agent's calls
+    # ------------------------------------------------------------------ #
+    whole = root / "whole"
+    ids_of = _close_fixture(whole, copies=False, fold=True)
+    code, out, err = run(["ids", str(whole), "--project", ids_of["project"]])
+    calls_file = whole / "reports" / "close-ids.txt"
+    calls = calls_file.read_text(encoding="utf-8").splitlines() if calls_file.is_file() else []
+    verbs = [line.split(" ", 2)[:2] for line in calls]
+    wanted_first = [["questions.json", "list_questions"], ["packages.json", "solicitation_list_packages"],
+                    ["general-requirements.json", "solicitation_get_package"],
+                    ["leftover-codeNoLocation.json", "index_citations_leftover"]]
+    if code != 0 or verbs[:4] != wanted_first:
+        errors.append(f"the ids call writes {verbs[:4]}, expected {wanted_first}: exit {code}, {err or out!r}")
+    named_questions = [line for line in calls if line.startswith("questions-named-")]
+    if len(named_questions) != 1 or ids_of["qid"] not in named_questions[0] or ids_of["landed"] in calls_file.read_text(encoding="utf-8"):
+        errors.append(f"the ids call does not look up the one Question a note names in one batch, leaving the landed one: {named_questions}")
+    if not all(json.loads(line.split(" ", 2)[2]).get("projectId", ids_of["project"]) == ids_of["project"] for line in calls if " " in line):
+        errors.append("a call in the calls file names another project")
+    if len([line for line in calls if line.startswith("name-")]) > close.MAX_IDS:
+        errors.append("the ids call looks up more names than its cap")
+
+    # ------------------------------------------------------------------ #
+    # write: every item once, in its section
+    # ------------------------------------------------------------------ #
+    copied = root / "copied"
+    _close_fixture(copied, copies=True, fold=True)
+    code, out, err = run(["write", str(copied)])
+    report = copied / "closing-report.md"
+    text = report.read_text(encoding="utf-8") if report.is_file() else ""
+    if code != 0 or not text:
+        errors.append(f"the report over the whole folder is not written: exit {code}, {err or out!r}")
+    sections = sections_of(text)
+    placed = 0
+    for section, words in _CLOSE_ITEMS:
+        body = sections.get(section, "")
+        found = text.count(words)
+        # A fold act is said once under the package changes and once more in the detail, with how
+        # to undo it, as stage 9's template gives them.
+        allowed = 2 if words.startswith(("Folded: ", "Deleted as the owner's work: ")) else 1
+        if found != allowed or body.count(words) != 1:
+            errors.append(f"{words[:70]!r} is in the report {found} times, and {'not ' if words not in body else ''}under {section!r}")
+        else:
+            placed += 1
+    for raw_id in (ids_of["qid"], ids_of["landed"], "scopeItem:", "clm-", "pkg-c"):
+        if raw_id in text:
+            errors.append(f"the report prints a record id {raw_id!r}")
+    if "Some notes above name an item or a Question I could not look up by name" not in text:
+        errors.append("the report does not count the items it could not name")
+    if "Audience: user" not in text.splitlines()[0]:
+        errors.append("the report's first line is not its Audience: user marker")
+    short = out.splitlines()
+    if len(out) >= close.SHORT_CAP or not short or not short[-1].startswith("The full report: ") or not short[-1].endswith("closing-report.md"):
+        errors.append(f"the short version is not under {close.SHORT_CAP} characters ending with the report's path: {short[-2:]}")
+    could_not = [line for line in sections.get("What I could not read", "").splitlines() if line.startswith("- ")]
+    if f"Could not read: {len(could_not)} (A-0.02, A-1.02, A-1.03, Manual pages for Invented drywall" not in out:
+        errors.append(f"the short version does not count and name what the report could not read: {len(could_not)} in the report, {out!r}")
+    if "pages of the project manual" in text or "1 review or manual part was checked whose pages read are not known" not in text:
+        errors.append("the report counts manual pages read off a review whose report is not on file")
+    if "of them not sure how finely to split: 1" not in out:
+        errors.append(f"the short version does not count the items not sure how finely to split: {out!r}")
+    # Written again, the report keeps the time it first finished.
+    stamp = next((line for line in text.splitlines() if line.startswith("<!-- finished ")), "")
+    run(["write", str(copied)])
+    again = report.read_text(encoding="utf-8") if report.is_file() else ""
+    if not stamp or stamp not in again:
+        errors.append("a report written again does not keep the time it first finished")
+
+    # ------------------------------------------------------------------ #
+    # Never refused: the copy failed, the fold left no report, the run stopped early
+    # ------------------------------------------------------------------ #
+    bare = root / "no-copy-no-fold"
+    _close_fixture(bare, copies=False, fold=False)
+    code, out, err = run(["write", str(bare)])
+    bare_text = (bare / "closing-report.md").read_text(encoding="utf-8") if (bare / "closing-report.md").is_file() else ""
+    for words in (
+        "The Questions by trade are not available: the copy of the project's Question counts is not on file.",
+        "The fold's report is not on file, so the packages folded are not listed here.",
+        "General requirements: the package's sections are not available, since its copy is not on file.",
+        "Codes found nowhere: 1; the list of them is not available, since its copy is not on file.",
+    ):
+        if code != 0 or words not in bare_text:
+            errors.append(f"the report with the copy failed and no fold report does not say {words!r}: exit {code}, {err!r}")
+    # The early stop comes with window 3 unfinished: one more review dispatched and not settled, and
+    # one planned and not started, written through the ledger script as the runner writes them.
+    stopped = root / "stopped"
+    _close_fixture(stopped, copies=False, fold=False)
+    plan_text = (stopped / "read-plan.md").read_text(encoding="utf-8")
+    (stopped / "read-plan.md").write_text(plan_text.replace(
+        "## Manual sections not read",
+        "### W3-2\n"
+        "1. rev-092116-2: Invented second drywall, trade 09 21 16, package pkg-c3\n"
+        "2. rev-092116-3: Invented third drywall, trade 09 21 16, package pkg-c4\n\n"
+        "## Manual sections not read", 1), encoding="utf-8")
+    ledger_mod = _load_script_module(plugin_path / "scripts" / "ledger.py", "ledger")
+    (stopped / "ledger.shadow").write_bytes((stopped / "ledger.md").read_bytes())
+    ledger_mod.append_lines(stopped / "ledger.md", ["dispatch 3 W3-2 rev-092116-2 sheets none purpose review the package"])
+    code, out, err = run(["write", str(stopped), "--stopped", "Plumlayer is not answering"])
+    stopped_text = (stopped / "closing-report.md").read_text(encoding="utf-8") if (stopped / "closing-report.md").is_file() else ""
+    if code != 0 or "stopped" not in stopped_text.splitlines()[1] or "<!-- finished" in stopped_text or (
+        "The run stopped before its end: Plumlayer is not answering." not in stopped_text
+    ) or not out.startswith("The scope run stopped "):
+        errors.append(f"a report written on an early stop is not headed as stopped: exit {code}, {stopped_text[:300]!r}, {out!r}")
+    far = sections_of(stopped_text).get("How far the run got", "")
+    if ("- The package reviews and their manual pages: 4 planned, 1 read and checked, 1 read and not confirmed, "
+            "named above, 1 started and not finished, 1 not started." not in far
+            or "Every sheet and manual page planned was read and checked" in stopped_text):
+        errors.append(f"a report written on an early stop with window 3 unfinished does not say what was planned, "
+                      f"finished and not started: {far!r}")
+    empty = root / "empty"
+    empty.mkdir(parents=True)
+    code, out, err = run(["write", str(empty)])
+    if code != 0 or not (empty / "closing-report.md").is_file():
+        errors.append(f"a report over a folder with no ledger is refused: exit {code}, {err or out!r}")
+    # Forty sheets skipped: the short version still fits, naming five and counting the rest.
+    many = root / "many-skipped"
+    _close_fixture(many, copies=True, fold=True)
+    extra = []
+    for n in range(40):
+        unit = f"A2-{10 + n}"
+        sheet = f"A-2.{n:02d}"
+        extra += [f"dispatch 2 A2 {unit} sheets {sheet} purpose the sheet",
+                  f"note 2 A2 {unit} deviation {sheet} reader stopped answering, read 1",
+                  f"dispatch 2 A2 {unit} sheets {sheet} purpose the sheet",
+                  f"note 2 A2 {unit} deviation {sheet} no report, read 2",
+                  f"note 2 A2 {unit} unread {sheet} read 2 times, not read again"]
+    with (many / "ledger.md").open("a", encoding="utf-8") as handle:
+        handle.write("".join(f"{line}\n" for line in extra))
+    code, out, err = run(["write", str(many)])
+    many_text = (many / "closing-report.md").read_text(encoding="utf-8") if (many / "closing-report.md").is_file() else ""
+    many_gaps = [l for l in sections_of(many_text).get("What I could not read", "").splitlines() if l.startswith("- ")]
+    if code != 0 or len(out) >= close.SHORT_CAP or f"and {len(many_gaps) - 5} more" not in out or len(many_gaps) < 44:
+        errors.append(f"the short version over 44 things not read does not fit its cap naming five: {len(out)} characters, {out[:300]!r}")
+
+    # ------------------------------------------------------------------ #
+    # The text
+    # ------------------------------------------------------------------ #
+    labels = sorted({label for label, _ in _CLOSE_PINS + _CLOSE_RETIRED})
+    texts = {label: (plugin_path / label).read_text(encoding="utf-8") for label in labels}
+    errors += _closing_text_errors(texts)
+    refused = 0
+    mutations = 0
+    if not errors:
+        broken: list[tuple[str, dict[str, str]]] = []
+        for label, phrase in _CLOSE_PINS:
+            broken.append((f"{phrase[:50]!r} taken out", {**texts, label: _collapsed(texts[label]).replace(_collapsed(phrase), "")}))
+        for label, phrase in _CLOSE_RETIRED:
+            broken.append((f"{phrase!r} put back in {label}", {**texts, label: texts[label] + f"\n{phrase}\n"}))
+        broken.append(("the skill writing an allow rule to a settings file", {**texts, _CLOSE_SKILL: texts[_CLOSE_SKILL] + "\nAdd the plugin's tools to `.claude/settings.local.json` so the run asks nothing.\n"}))
+        broken.append(("the skill handing over a rule string", {**texts, _CLOSE_SKILL: texts[_CLOSE_SKILL] + "\nAllow `Bash(python3 *)` once.\n"}))
+        broken.append(("the description saying Attended", {**texts, _CLOSE_SKILL: texts[_CLOSE_SKILL].replace("description: ", "description: Attended. ", 1)}))
+        broken.append(("stage 9 saying the short version before the file", {**texts, _CLOSE_SKILL: texts[_CLOSE_SKILL].replace(
+            "1. **Write the closing report.**", "1. **Say the short version first.**", 1).replace(
+            "2. **Say the short version, with the link.**", "2. **Write the closing report.**", 1)}))
+        for label, changed in broken:
+            mutations += 1
+            if changed == texts:
+                errors.append(f"the case {label} changed nothing")
+            elif _closing_text_errors(changed):
+                refused += 1
+            else:
+                errors.append(f"the check passed {label}")
+
+    detail = (
+        f"one invented run folder carrying every kind of note a check-in printed: the ids call's "
+        f"copies in order, the one Question a note names looked up in one batch and the landed one "
+        f"left out; the report {placed} of {len(_CLOSE_ITEMS)} items each once in its own section "
+        f"(skipped sheets with the reason off their last read, a skipped manual part with its pages, "
+        f"a scan, sheets left out and left by the delivery's plan, sections not read, words not "
+        f"searched, Questions by trade, notes to look at, grain, door, overlap and same work notes, "
+        f"requirements not written and writes not needed, fold acts, amendments, the general "
+        f"requirements package, sections on no package, leftovers, a short count, a line put back, "
+        f"a block, a cut off read, a restored report, trades not known, manual pages read, packages "
+        f"an addendum did not review, kinds and items by trade), no record id printed and the ones "
+        f"not named counted, the short version under {close.SHORT_CAP} characters naming five of "
+        f"44 things not read, the finished time kept when written again; the copy failed with no "
+        f"fold report, a folder with no ledger, and an early stop each written and never refused; "
+        f"{len(_CLOSE_PINS)} phrases held and {len(_CLOSE_RETIRED)} retired ones absent over the "
+        f"skill, recheck.md and the runner, no settings file or rule string anywhere, "
+        f"{refused} of {mutations} mutations refused; bound: an invented folder and copies in the "
+        f"shape the verbs return, not a live run's"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: the repairs to a run that stops only where the estimator acts
+# --------------------------------------------------------------------------- #
+#
+# A scope run that goes to its end on its own is read the next morning, so it must not strand
+# itself and its report must never say more was read than was. Each repair is held here by the
+# producers' own output over invented run folders: every ledger line goes on through `ledger.py`,
+# every summary comes from `pass_summary.py`, every `pass:` line from `lead_pass.py record`, every
+# read plan from `plan_inventory.py`, trades through `unit_report.py`, and the closing report from
+# `close_report.py`. Arms are named by the repair they hold (U1 to U9, then V1 to V8 of the second
+# repair). The resume rows are folders as each stop leaves them, and the arm reads the skill's own
+# resume table to say what comes next, beside what the passes listing names; where the next step is
+# a script call it is run and its output held, and where it is the lead's own act (an agent, an MCP
+# call, a line appended), or the recheck's plan, whose copied rows the folder does not hold, the
+# fixture pins the table's wording and no more. Honest bound: invented folders and simulated
+# runners, not a live run.
+
+_REPAIR_SKILL = "skills/scope-run/SKILL.md"
+_REPAIR_RECHECK = "skills/scope-run/recheck.md"
+_REPAIR_RUNNER = "agents/scope-round-runner.md"
+
+# Each phrase the repairs put in the text, by the item it holds.
+_REPAIR_PINS: tuple[tuple[str, str, str], ...] = (
+    ("U4", _REPAIR_SKILL, "A `stopped:` line naming the third read in a row is stop 2, never tried again."),
+    ("U4", _REPAIR_SKILL, "as the third read in a row, whatever ended the last: stop at once"),
+    ("U4", _REPAIR_SKILL, "for a blocked unit exactly as for one cut off, which lets its runner read it once more, "
+     "then dispatch the pass again."),
+    ("U6", _REPAIR_SKILL, "python3 '<plugin root>/scripts/lead_pass.py' wait 280"),
+    ("U6", _REPAIR_SKILL, "before each try running the wait mode as a foreground Bash command with a timeout of "
+     "300000 milliseconds, single quoted; it returns by itself, and nothing else wakes you"),
+    # The two bounds, counted by the seen mode (V6 rewrote U6's two paragraphs to use it).
+    ("V6", _REPAIR_SKILL, "run `lead_pass.py seen '<run folder>' <pass id or step name> '<its first line>'`. At "
+     "`2 in a row with no ledger line added` or more, stop, and tell him what the script printed, in his "
+     "words where this skill gives them and as printed otherwise."),
+    ("V6", _REPAIR_SKILL, "run `lead_pass.py seen '<run folder>' <the job's id, or the verb and the delivery or "
+     "file it names> '<its status and progress fields>'`, then `lead_pass.py wait 60`. At `standing` 30 "
+     "minutes or more, it is a call that could not be made, class server."),
+    ("U6", _REPAIR_SKILL, "stop and return exactly one line instead: `blocked: <tool> <sign-in, refused by the "
+     "client or server>`."),
+    ("U6", _REPAIR_RECHECK, "stop and return exactly one line instead: `blocked: <tool> <sign-in, refused by the "
+     "client or server>`."),
+    ("U6", _REPAIR_RECHECK, "with the wait mode between polls, bounded as the skill's stops section says"),
+    ("U6", _REPAIR_RUNNER, "`python3 '<scripts path>/lead_pass.py' wait 20` as a call of its own"),
+    ("U7", _REPAIR_SKILL, "| every pass of a slice finished, no `window 2 paused` | stage 6 step 4: boundary, the "
+     "paused line, then the index |"),
+    ("U7", _REPAIR_SKILL, "| `window 2 paused` and no `index built` after it | stage 5, then stage 6 step 1 |"),
+    ("U7", _REPAIR_SKILL, "| `index built` after `window 2 paused`, no window 2 `dispatch` after it | stage 6 step 1, the plan "
+     "without `--only` |"),
+    ("U7", _REPAIR_SKILL, "and then run the index, in that order, as for a complete window."),
+    ("U7", _REPAIR_SKILL, "after window 2 paused, stage 6 step 1 with the plan run without `--only`"),
+    # An amendment is said as made only once it is (V2 replaced U7's one line before the change).
+    ("V2", _REPAIR_SKILL, "Before each amendment's calls, append `amending: <package name>: <what you did>; "
+     "<the reason>`"),
+    ("V2", _REPAIR_SKILL, "and once they succeed, `amended:` with that text. On resume, hold each `amending:` "
+     "line no `amended:` line follows to a fresh `solicitation_list_packages`, finish what is missing, then "
+     "append its `amended:` line"),
+    ("V2", _REPAIR_SKILL, "| `window 3 complete`, no `packages amended` | stage 8 from its start; each `amending:` "
+     "line no `amended:` line follows is finished against the live packages, its `amended:` appended |"),
+    ("U7", _REPAIR_SKILL, "a create is done where a live package carries the new name and its trade; a split "
+     "where every package the line names is live with the trades and sections the line gives it; a "
+     "collapse where the folded package is gone and the keeping package carries its trade as its "
+     "`tradeCode` or in its `codes`; a rename where a live package carries the new name and none the old."),
+    ("U7", _REPAIR_SKILL, "A session that stops after the short version and before the line says the short "
+     "version again, which is accepted."),
+    ("U8", _REPAIR_RUNNER, "In window `r` it is a stop instead: append that note and nothing else for it, write "
+     "no trades, dispatch no further unit, and go straight to your summary."),
+    ("U8", _REPAIR_RUNNER, "A read `Read again:` granted that fails its check too ends the same way, its note's "
+     "`<k>` its real spent reads."),
+    ("U9", _REPAIR_SKILL, "and the three closing lines, and it refuses a pass the plan does not carry"),
+    ("U9", _REPAIR_SKILL, "Say the short version only after it exits 0."),
+    ("U9", _REPAIR_SKILL, "goes on by itself once the limit resets, while this session stays open and the "
+     "computer stays awake"),
+    ("U9", _REPAIR_SKILL, "Claude Code waits and goes on by itself while this session stays open and the "
+     "computer stays awake"),
+    ("U9", _REPAIR_RUNNER, "`<k>` the attempt number of the read that wrote it"),
+)
+# What the repairs took out, which no text may carry again.
+_REPAIR_RETIRED: tuple[tuple[str, str, str], ...] = (
+    ("U6", _REPAIR_SKILL, "sleep 290"),
+    ("U6", _REPAIR_SKILL, "run_in_background: true"),
+    ("U6", _REPAIR_SKILL, "its exit wakes you"),
+    ("U6", _REPAIR_SKILL, "waiting between polls rather than polling back to back"),
+    ("U6", _REPAIR_SKILL, "waiting between tries rather than trying back to back"),
+    ("U6", _REPAIR_RECHECK, "waiting between polls rather than polling back to back"),
+    ("U6", _REPAIR_RUNNER, "`sleep 20`"),
+    ("U7", _REPAIR_SKILL, "stage 6 step 4: boundary, index, then the paused line"),
+    ("U7", _REPAIR_SKILL, "As each amendment is applied, append"),
+    ("V2", _REPAIR_SKILL, "Before each amendment is applied, append its one `amended:"),
+    ("V6", _REPAIR_SKILL, "This session keeps the count; a new one starts it again."),
+    ("U9", _REPAIR_SKILL, "and the five closing lines"),
+    ("U9", _REPAIR_SKILL, "lets it run on its own"),
+    ("U9", _REPAIR_RUNNER, "the reads so far"),
+)
+
+
+def _repair_text_errors(texts: dict[str, str]) -> list[str]:
+    errors = [f"{item}: {label} does not read {phrase[:100]!r}" for item, label, phrase in _REPAIR_PINS
+              if _collapsed(phrase) not in _collapsed(texts[label])]
+    errors += [f"{item}: {label} still reads {phrase!r}" for item, label, phrase in _REPAIR_RETIRED
+               if _collapsed(phrase) in _collapsed(texts[label])]
+    # No wait in the run's text hangs on a background command's exit.
+    for label, text in texts.items():
+        for found in re.finditer(r"`sleep \d+`|sleep \d+ ?&|&& *sleep", text):
+            errors.append(f"U6: {label} waits with a bare sleep: {found.group(0)!r}")
+    return errors
+
+
+# The skill's resume table, read as the lead reads it: the row a folder's state matches, and what it
+# says to do next. Each state is decided here off the folder alone, never handed the answer.
+_RESUME_ROW_RE = re.compile(r"^\| (.+?) \| (.+?) \|$")
+
+
+def _resume_table(skill_text: str) -> dict[str, str]:
+    rows: dict[str, str] = {}
+    at = skill_text.find("| What the ledger and the run folder show | Where you pick up |")
+    for line in skill_text[at:].splitlines()[2:]:
+        match = _RESUME_ROW_RE.match(line.strip())
+        if match is None:
+            break
+        rows[match.group(1)] = match.group(2)
+    return rows
+
+
+def _resume_state(folder: Path, sized: bool, listing: str) -> str:
+    """The first column of the resume row the folder's state matches, decided off its files."""
+    lines = [l.strip() for l in (folder / "ledger.md").read_text(encoding="utf-8").splitlines()] if (
+        folder / "ledger.md").is_file() else []
+    phases = [l for l in lines if l.startswith("phase:")]
+
+    def after(marker: str, wanted: str) -> bool:
+        at = max((i for i, l in enumerate(lines) if l.startswith(marker)), default=-1)
+        return at >= 0 and any(l.startswith(wanted) for l in lines[at + 1:])
+
+    def has(marker: str) -> bool:
+        return any(l.startswith(marker) for l in phases)
+
+    finished = "to dispatch: none" in listing
+    report = folder / "closing-report.md"
+    report_text = report.read_text(encoding="utf-8") if report.is_file() else ""
+    if not phases:
+        return "no `phase:` line"
+    if has("phase: packages amended"):
+        if report_text and "<!-- finished " in report_text:
+            return "`closing-report.md` finished, no `closed out`"
+        return "`packages amended`, no `closing-report.md` or one headed as stopped"
+    if has("phase: window 3 complete"):
+        return "`window 3 complete`, no `packages amended`"
+    if any(l.startswith("dispatch 3 ") for l in lines):
+        if after("dispatch 3 ", "phase: index built"):
+            return "`index built` after window 3's passes, no `window 3 complete`"
+        if finished:
+            return "every window 3 pass finished, no `index built` after them"
+        return "a window 3 `dispatch` line, no `window 3 complete`"
+    if has("phase: recheck complete") or (has("phase: packages folded") and not sized):
+        return ("`packages folded` on an unsized delivery, or `recheck complete`")
+    if has("phase: packages folded"):
+        return "`packages folded` on a sized delivery, no `recheck complete`"
+    if has("phase: window 2 complete"):
+        if after("phase: window 2 complete", "phase: index built"):
+            return "`index built` after window 2, no `packages folded`"
+        return "`window 2 complete` and no `index built` after it"
+    # A slice paused and indexed, whose rest of the window has dispatched nothing yet. Once a
+    # window 2 `dispatch` line follows the paused line, the window 2 rows read it.
+    if has("phase: window 2 paused") and not after("phase: window 2 paused", "dispatch 2 "):
+        if after("phase: window 2 paused", "phase: index built"):
+            return "`index built` after `window 2 paused`, no window 2 `dispatch` after it"
+        return "`window 2 paused` and no `index built` after it"
+    if any(l.startswith("dispatch 2 ") for l in lines):
+        if finished:
+            window_2 = json.loads((folder / "plan" / "window-2.json").read_text(encoding="utf-8"))
+            return ("every pass of a slice finished, no `window 2 paused`" if window_2.get("deferredCount")
+                    else "every window 2 pass finished, no `window 2 complete`")
+        return "window 2 passes, some not finished, one out or none"
+    if (has("phase: window 1 complete") and after("phase: window 1 complete", "phase: index built")) or has(
+            "phase: window 1 skipped"):
+        return "`index built` after window 1, or `window 1 skipped`"
+    if has("phase: window 1 complete"):
+        return "`window 1 complete` and no `index built` after it"
+    if any(l.startswith("dispatch 1 ") for l in lines) and finished:
+        return "every window 1 pass finished, no `window 1 complete`"
+    return "reading started; window 1 passes, some not finished, one out or none"
+
+
+def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "no-stops-repair"
+    scripts = plugin_path / "scripts"
+    try:
+        ledger_mod = _load_script_module(scripts / "ledger.py", "ledger")
+        report_mod = _load_script_module(scripts / "unit_report.py", "unit_report")
+        summary_mod = _load_script_module(scripts / "pass_summary.py", "pass_summary")
+        plan_mod = _load_script_module(scripts / "plan_inventory.py", "plan_inventory")
+        lead_mod = _load_script_module(scripts / "lead_pass.py", "lead_pass")
+        close_mod = _load_script_module(scripts / "close_report.py", "close_report")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import the scripts: {e}")
+    errors: list[str] = []
+    held: dict[str, int] = {}
+    root = Path(__file__).parent / ".test-results" / "no-stops-repair"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+
+    def expect(item: str, label: str, ok: bool, seen: object = "") -> None:
+        held[item] = held.get(item, 0) + 1
+        if not ok:
+            errors.append(f"{item}: {label}" + (f": {str(seen)[:600]}" if seen != "" else ""))
+
+    def run(module, argv: list[str]) -> tuple[int, str, str]:
+        try:
+            return _run_script_main(module, argv)
+        except SystemExit as e:
+            return (e.code if isinstance(e.code, int) else 2), "", ""
+        except Exception as e:
+            return 99, "", f"raised {type(e).__name__}: {e}"
+
+    def folder(case: str) -> Path:
+        at = root / case
+        for sub in ("reports", "trades", "plan", "names"):
+            (at / sub).mkdir(parents=True, exist_ok=True)
+        return at
+
+    def append(at: Path, *lines: str) -> None:
+        ledger_mod.append_lines(at / "ledger.md", list(lines))
+
+    seen: dict = {}
+    arms: list = []
+    rows = json.loads((marketplace_root / "harness" / "fixtures" / "packages-fixture.json").read_text(encoding="utf-8"))
+    ok_fields = "created 0 items 0 updated 0 questions 0 replied 0 sent 0 landed 0 conflicts 0"
+
+    def sheet_of(at: Path, window, unit: str) -> str:
+        """The `sheets ... purpose ...` of a unit's dispatch line, off its own plan line."""
+        for raw in (at / "read-plan.md").read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if line.startswith(f"{unit}. "):
+                what = line[len(unit) + 2:].split(", ", 1)[0]
+                if what.startswith("file "):
+                    return f"sheets none purpose repeated lines of {what}"
+                return f"sheets {what} purpose an invented sheet"
+            review = re.match(rf"^[1-9][0-9]*\. {re.escape(unit)}: (.+?), trade ", line)
+            if review:
+                return f"sheets none purpose review {review.group(1)}"
+        raise AssertionError(f"{unit} is on no plan line")
+
+    def finish(at: Path, window, pass_id: str) -> tuple[int, str, str]:
+        """Settle every unit of a pass ok as a runner does, sum it and record it as the lead does."""
+        plan = at / "read-plan.md"
+        units = summary_mod.read_plan(plan, window, pass_id)["units"]
+        done, _skipped = plan_mod.settled_units(at / "ledger.md", window)
+        for unit in units:
+            if unit in done:
+                continue
+            append(at, f"dispatch {window} {pass_id} {unit} {sheet_of(at, window, unit)}")
+            append(at, f"verified {window} {pass_id} {unit} {ok_fields} result ok")
+            if window == 3:
+                (at / "reports" / f"{unit}.md").write_text(_whole_review_report(unit), encoding="utf-8")
+            report_mod.write_trades(at, pass_id, unit, "none\n")
+        code, _out, err = run(summary_mod, [str(at / "ledger.md"), str(window), pass_id, "--plan", str(plan),
+                                            "--trades", str(at / "trades" / f"{pass_id}.txt"),
+                                            "--out", str(at / "reports" / f"{pass_id}.md")])
+        if code != 0:
+            return code, "", err
+        counts = json.dumps([{"subjectPrefix": f"scopeItem:{u}-", "entryCount": 0} for u in units])
+        return run(lead_mod, ["record", str(at / "ledger.md"), str(window), pass_id, "--plan", str(plan),
+                              "--counts-json", counts])
+
+    def listing(at: Path) -> str:
+        return run(lead_mod, ["passes", "--plan", str(at / "read-plan.md")])[1]
+
+    def passes_of(at: Path) -> list[str]:
+        return summary_mod.plan_passes(at / "read-plan.md")[1]
+
+    # ------------------------------------------------------------------ #
+    # The text
+    # ------------------------------------------------------------------ #
+    texts = {label: (plugin_path / label).read_text(encoding="utf-8")
+             for label in (_REPAIR_SKILL, _REPAIR_RECHECK, _REPAIR_RUNNER)}
+    for line in _repair_text_errors(texts):
+        expect(line.split(":", 1)[0], line.split(": ", 1)[1], False)
+    held["text"] = len(_REPAIR_PINS) + len(_REPAIR_RETIRED)
+
+    # ------------------------------------------------------------------ #
+    # U3: a window 3 pass whose every unit was skipped is recorded, and the breaker trips on four
+    # ------------------------------------------------------------------ #
+    def arm_1() -> None:
+        for case, count, breaker in (("u3-two-skipped", 2, False), ("u3-four-skipped", 4, True)):
+            at = folder(case)
+            (at / "plan" / "packages.json").write_text(json.dumps({"packages": rows["packages"][:count]}), encoding="utf-8")
+            code, _bounds, err = run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"),
+                                                *_no_sections(), "--out", str(at / "read-plan.md")])
+            pass_id = passes_of(at)[0] if code == 0 else ""
+            units = summary_mod.read_plan(at / "read-plan.md", 3, pass_id)["units"] if code == 0 else []
+            for unit in units:
+                package = re.search(rf"{re.escape(unit)}: (.+?), trade", (at / "read-plan.md").read_text(encoding="utf-8")).group(1)
+                append(at, f"dispatch 3 {pass_id} {unit} sheets none purpose review {package}",
+                       f"verified 3 {pass_id} {unit} created 1 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0 result mismatch",
+                       f"note 3 {pass_id} {unit} deviation {package} created 1 under the prefix, reader created 3, read 1")
+                append(at, f"dispatch 3 {pass_id} {unit} sheets none purpose review {package}",
+                       f"note 3 {pass_id} {unit} deviation {package} no report, read 2",
+                       f"note 3 {pass_id} {unit} unread {package} read 2 times, not read again")
+                report_mod.write_trades(at, pass_id, unit, "none\n")
+            code, hand_back, err = run(summary_mod, [str(at / "ledger.md"), "3", pass_id, "--plan", str(at / "read-plan.md"),
+                                                     "--trades", str(at / "trades" / f"{pass_id}.txt"),
+                                                     "--out", str(at / "reports" / f"{pass_id}.md")])
+            expect("U3", f"the summary of a window 3 pass of {count} skipped units does not read review not read",
+                   code == 0 and summary_mod.REVIEW_NOT_READ_LINE in hand_back, f"{code} {err} {hand_back}")
+            counts = json.dumps([{"subjectPrefix": f"scopeItem:{u}-", "entryCount": 1} for u in units])
+            code, out, err = run(lead_mod, ["record", str(at / "ledger.md"), "3", pass_id, "--plan", str(at / "read-plan.md"),
+                                            "--counts-json", counts])
+            wanted = (f"pass: 3 {pass_id} units {count} created {count} updated 0 questions 0 replied 0 skipped {count} "
+                      f"pages-opened 0 searches 0 reports-restored 0 lead-verified yes")
+            expect("U3", f"record does not take an all-skipped window 3 pass of {count} as no pages and searches measured",
+                   code == 0 and out.splitlines()[:1] == [wanted], f"exit {code}, {out!r}, {err!r}")
+            expect("U3", f"record over {count} skipped units {'does not trip' if breaker else 'trips'} the breaker",
+                   code == 0 and (f"breaker: {count} of {count} units skipped; stop the run" in out) == breaker, out)
+            expect("U3", f"the pass of {count} skipped units is not finished, so the run would send it again",
+                   code == 0 and "to dispatch: none" in listing(at), listing(at))
+            if case == "u3-two-skipped":
+                seen["u3"] = (out, err)
+
+    arms.append(("U3", arm_1))
+
+    # ------------------------------------------------------------------ #
+    # U4: three reads in a row that spent nothing stop for the estimator, whatever the last one's class
+    # ------------------------------------------------------------------ #
+    def arm_2() -> None:
+        u4_seen = seen.setdefault("u4", {})
+        for case, ends in (
+            ("u4-three-blocked", ("blocked: record_batch server", "blocked: record_batch server", "blocked: record_batch server")),
+            ("u4-blocked-cut-blocked", ("blocked: record_batch refused by the client", "interrupted: no report on file",
+                                        "blocked: search server")),
+        ):
+            at = folder(case)
+            (at / "plan" / "packages.json").write_text(json.dumps({"packages": rows["packages"][:1]}), encoding="utf-8")
+            run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"), *_no_sections(),
+                           "--out", str(at / "read-plan.md")])
+            pass_id = passes_of(at)[0]
+            unit = summary_mod.read_plan(at / "read-plan.md", 3, pass_id)["units"][0]
+            for read, end in enumerate(ends, 1):
+                append(at, f"dispatch 3 {pass_id} {unit} sheets none purpose review the package",
+                       f"note 3 {pass_id} {unit} deviation Drywall and framing {end}, read {read}")
+            code, hand_back, err = run(summary_mod, [str(at / "ledger.md"), "3", pass_id, "--plan", str(at / "read-plan.md"),
+                                                     "--out", str(at / "reports" / f"{pass_id}.md")])
+            stopped = [l for l in hand_back.splitlines() if l.startswith("stopped: ")]
+            u4_seen[case] = "\n".join(stopped)
+            expect("U4", f"{case}: the stopped line does not name the class of the last read and that it is the third in a row",
+                   code == 0 and len(stopped) == 1 and ends[-1].split(":")[0] in stopped[0]
+                   and ends[-1].rsplit(" ", 1)[-1] in stopped[0] and "the third read in a row" in stopped[0], hand_back)
+            # The estimator says go on: the lead's note, then the next attempt is dispatched.
+            append(at, f"note 3 {pass_id} {unit} deviation Drywall and framing {summary_mod.GO_ON_NOTE}")
+            code, hand_back, err = run(summary_mod, [str(at / "ledger.md"), "3", pass_id, "--plan", str(at / "read-plan.md"),
+                                                     "--out", str(at / "reports" / f"{pass_id}.md")])
+            listed = listing(at)
+            expect("U4", f"{case}: after the go on note the unit still reads stopped, or its pass is not offered to start",
+                   code == 0 and "stopped: none" in hand_back.splitlines() and f"start now: {pass_id}" in listed,
+                   f"{hand_back} | {listed}")
+        # The summary's handling of a block note on a write: the runner's note names the refused
+        # write, and the summary stops the unit on it. No write is made or refused here.
+        at = folder("u4-blocked-write")
+        (at / "plan" / "packages.json").write_text(json.dumps({"packages": rows["packages"][:1]}), encoding="utf-8")
+        run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"), *_no_sections(),
+                       "--out", str(at / "read-plan.md")])
+        pass_id = passes_of(at)[0]
+        unit = summary_mod.read_plan(at / "read-plan.md", 3, pass_id)["units"][0]
+        returned = "blocked: record_batch refused by the client\n"
+        blocked_line = next(l for l in returned.splitlines() if l.startswith("blocked: "))
+        append(at, f"dispatch 3 {pass_id} {unit} sheets none purpose review the package",
+               f"note 3 {pass_id} {unit} deviation Drywall and framing {blocked_line}, read 1")
+        code, hand_back, err = run(summary_mod, [str(at / "ledger.md"), "3", pass_id, "--plan", str(at / "read-plan.md"),
+                                                 "--out", str(at / "reports" / f"{pass_id}.md")])
+        expect("U4", "the summary does not stop a unit on a block note naming a refused write, with its class",
+               code == 0 and any(l.startswith(f"stopped: {unit} ") and "blocked: record_batch refused by the client, read 1" in l
+                                 and "third" not in l for l in hand_back.splitlines()), hand_back)
+
+    arms.append(("U4", arm_2))
+
+    # ------------------------------------------------------------------ #
+    # U5: an addendum's unit with a read that left no report reviews every package
+    # ------------------------------------------------------------------ #
+    def arm_3() -> None:
+        at = folder("u5-addendum")
+        run_json = _issue_run("deliv-add", ["deliv-add"], "i3")
+        run_json["issue"] = "addendum"
+        (at / "run.json").write_text(json.dumps(run_json), encoding="utf-8")
+        (at / "read-plan.md").write_text("\n".join((
+            "# Read plan: window 2", "", "### i3-A2. Invented sheets", "", "window: 2", "reads for: the sheet",
+            "units: 1", "units verified: 0", "summed: no, no summary on file", "starts after: none", "",
+            "i3-A2-1. A-1.01, file file-0001, page 3", "", _LEFT_OUT_HEADING, "", "Nothing.", "",
+        )), encoding="utf-8")
+        unit = "i3-A2-1"
+        labels = report_mod.LABELS["sheet"]
+        append(at, f"dispatch 2 i3-A2 {unit} sheets A-1.01 purpose an invented sheet")
+        (at / "reports" / f"{unit}.md").write_text(_filled_report("sheet", unit, labels, **{"trades touched": "22 11 16"}),
+                                                  encoding="utf-8")
+        append(at, f"verified 2 i3-A2 {unit} created 2 items 1 updated 1 questions 0 replied 0 sent 2 landed 2 conflicts 0 result mismatch",
+               f"note 2 i3-A2 {unit} deviation A-1.01 created 1 under the prefix, reader created 2, read 1")
+        touched, _unknown = report_mod.touched_of_reads(at, "2", unit, "sheet")
+        report_mod.write_trades(at, "i3-A2", unit, f"{unit} trade 09 21 16 1\n" + "".join(f"{unit} touched {c}\n" for c in touched))
+        (at / "reports" / f"{unit}.md").rename(at / "reports" / f"{unit}.read-1.md")
+        append(at, f"dispatch 2 i3-A2 {unit} sheets A-1.01 purpose an invented sheet",
+               f"note 2 i3-A2 {unit} deviation A-1.01 no report, read 2",
+               f"note 2 i3-A2 {unit} unread A-1.01 read 2 times, not read again")
+        packages = marketplace_root / "harness" / "fixtures" / "packages-fixture.json"
+        code, bounds, err = run(plan_mod, ["plan", "--window", "3", "--packages", str(packages), *_no_sections(),
+                                           "--out", str(at / "read-plan-w3.md")])
+        reviewed = _issue_ids((at / "read-plan-w3.md").read_text(encoding="utf-8"))[1] if code == 0 else []
+        seen["u5"] = bounds or err
+        expect("U5", "an addendum's unit whose second read ended with no report, its trades marked for read 1, does not "
+                     "review every package", code == 0 and len(reviewed) == len(rows["packages"]) and unit in bounds,
+               f"{len(reviewed)} reviewed: {bounds or err}")
+
+    arms.append(("U5", arm_3))
+
+    # ------------------------------------------------------------------ #
+    # U6: the wait mode returns by itself within its cap
+    # ------------------------------------------------------------------ #
+    def arm_4() -> None:
+        code, out, err = run(lead_mod, ["wait", "0"])
+        expect("U6", "the wait mode does not return at once on 0 seconds with one line", code == 0 and out == "waited 0 seconds",
+               f"{code} {out!r} {err!r}")
+        slept: list[float] = []
+        real_sleep = lead_mod.time.sleep if hasattr(lead_mod, "time") else None
+        if real_sleep is not None:
+            lead_mod.time.sleep = slept.append
+            try:
+                code, out, err = run(lead_mod, ["wait", "900"])
+            finally:
+                lead_mod.time.sleep = real_sleep
+        expect("U6", "the wait mode does not cap a long wait at 280 seconds", slept == [280] and out.startswith("waited 280 seconds"),
+               f"{slept} {out!r}")
+
+    arms.append(("U6", arm_4))
+
+    # ------------------------------------------------------------------ #
+    # U7: a window 2 slice paused before its index is told apart from one after it, by the ledger
+    # ------------------------------------------------------------------ #
+    def arm_5() -> None:
+        grid_fixture = marketplace_root / "harness" / "fixtures" / "set-grid-fixture.json"
+        base = folder("u7-run")
+        (base / "grid").mkdir()
+        shutil.copy(grid_fixture, base / "grid" / "page-000.json")
+        grid_count = json.loads(grid_fixture.read_text(encoding="utf-8"))["count"]
+        run(plan_mod, ["inventory", "--grid", str(base / "grid"), "--expect-count", str(grid_count), "--out-dir", str(base)])
+        states: dict[str, tuple[Path, bool, str]] = seen.setdefault("states", {})
+
+        def snapshot(label: str, sized: bool = False) -> None:
+            copy = root / f"u7-state-{len(states):02d}"
+            shutil.copytree(base, copy)
+            states[label] = (copy, sized, listing(copy) if (copy / "read-plan.md").is_file() else "")
+
+        snapshot("no `phase:` line")
+        run(plan_mod, ["plan", "--window", "1", "--inventory", str(base / "inventory.json"), "--out", str(base / "read-plan.md")])
+        append(base, "phase: reading started 2026-01-31T22:10:00Z")
+        w1 = passes_of(base)
+        first_unit = summary_mod.read_plan(base / "read-plan.md", 1, w1[0])["units"][0]
+        append(base, f"dispatch 1 {w1[0]} {first_unit} {sheet_of(base, 1, first_unit)}")
+        snapshot("reading started; window 1 passes, some not finished, one out or none")
+        finish(base, 1, w1[0])
+        snapshot("between passes")
+        for pass_id in w1[1:]:
+            finish(base, 1, pass_id)
+        snapshot("every window 1 pass finished, no `window 1 complete`")
+        append(base, "phase: window 1 complete units 1 created 0")
+        snapshot("`window 1 complete` and no `index built` after it")
+        append(base, "phase: index built unmatchedTag 0 codeNoLocation 0")
+        snapshot("`index built` after window 1, or `window 1 skipped`")
+        code, _b, err = run(plan_mod, ["plan", "--window", "2", "--inventory", str(base / "inventory.json"),
+                                       "--window-1", str(base / "plan" / "window-1.json"),
+                                       "--only", "A-2.0[1-3]:the estimator asked for three plans first",
+                                       "--out", str(base / "read-plan.md")])
+        expect("U7", "the window 2 slice is not planned", code == 0, err)
+        w2 = passes_of(base)
+        slice_unit = summary_mod.read_plan(base / "read-plan.md", 2, w2[0])["units"][0]
+        append(base, f"dispatch 2 {w2[0]} {slice_unit} {sheet_of(base, 2, slice_unit)}")
+        snapshot("window 2 passes, some not finished, one out or none")
+        for pass_id in w2:
+            finish(base, 2, pass_id)
+        snapshot("every pass of a slice finished, no `window 2 paused`")
+        append(base, "phase: window 2 paused units 3 created 0 deferred 20")
+        snapshot("`window 2 paused` and no `index built` after it")
+        paused_listing = states["`window 2 paused` and no `index built` after it"][2]
+        guard_before = run(plan_mod, ["plan", "--window", "2", "--inventory", str(base / "inventory.json"),
+                                      "--window-1", str(base / "plan" / "window-1.json"), "--out", str(base / "read-plan-check.md")])
+        append(base, "phase: index built unmatchedTag 0 codeNoLocation 0")
+        snapshot("`index built` after `window 2 paused`, no window 2 `dispatch` after it")
+        after_listing = states["`index built` after `window 2 paused`, no window 2 `dispatch` after it"][2]
+        guard_after = run(plan_mod, ["plan", "--window", "2", "--inventory", str(base / "inventory.json"),
+                                     "--window-1", str(base / "plan" / "window-1.json"), "--out", str(base / "read-plan.md")])
+        seen["u7"] = (paused_listing, guard_before, after_listing, guard_after)
+        expect("U7", "the slice paused before its index is planned on, or the one after its index is refused",
+               guard_before[0] != 0 and "index built" in guard_before[2] and not (base / "read-plan-check.md").is_file()
+               and guard_after[0] == 0 and "to dispatch: none" in paused_listing and "to dispatch: none" in after_listing,
+               f"{guard_before} {guard_after}")
+        for pass_id in passes_of(base):
+            finish(base, 2, pass_id)
+        snapshot("every window 2 pass finished, no `window 2 complete`")
+        append(base, "phase: window 2 complete units 30 created 0")
+        snapshot("`window 2 complete` and no `index built` after it")
+        append(base, "phase: index built unmatchedTag 0 codeNoLocation 0")
+        snapshot("`index built` after window 2, no `packages folded`")
+        (base / "reports" / "fold.md").write_text("folded: Invented gypsum finishing into Invented drywall, one firm bids both\n",
+                                                 encoding="utf-8")
+        snapshot("mid-fold")
+        append(base, "phase: packages folded")
+        snapshot("`packages folded` on an unsized delivery, or `recheck complete`")
+        append(base, "dispatch r RC1 RC1-1 sheets A-1.01 purpose recheck the rows on A-1.01")
+        snapshot("`packages folded` on a sized delivery, no `recheck complete`", sized=True)
+        (base / "ledger.md").write_bytes((base / "ledger.md").read_bytes().replace(
+            b"dispatch r RC1 RC1-1 sheets A-1.01 purpose recheck the rows on A-1.01\n", b""))
+        (base / "ledger.shadow").write_bytes((base / "ledger.md").read_bytes())
+        (base / "plan" / "packages.json").write_text(json.dumps({"packages": rows["packages"][:3]}), encoding="utf-8")
+        run(plan_mod, ["plan", "--window", "3", "--packages", str(base / "plan" / "packages.json"), *_no_sections(),
+                       "--out", str(base / "read-plan.md")])
+        w3 = passes_of(base)
+        review_unit = summary_mod.read_plan(base / "read-plan.md", 3, w3[0])["units"][0]
+        append(base, f"dispatch 3 {w3[0]} {review_unit} {sheet_of(base, 3, review_unit)}")
+        snapshot("a window 3 `dispatch` line, no `window 3 complete`")
+        for pass_id in w3:
+            finish(base, 3, pass_id)
+        snapshot("every window 3 pass finished, no `index built` after them")
+        append(base, "phase: index built unmatchedTag 0 codeNoLocation 0")
+        snapshot("`index built` after window 3's passes, no `window 3 complete`")
+        amendment = "Drywall and framing: split off the invented soffits into Invented soffits; one sub bids them alone"
+        append(base, "phase: window 3 complete units 3 created 0", f"amending: {amendment}")
+        snapshot("`window 3 complete`, no `packages amended`")
+        append(base, f"amended: {amendment}", "phase: packages amended")
+        snapshot("`packages amended`, no `closing-report.md` or one headed as stopped")
+        run(close_mod, ["write", str(base)])
+        snapshot("`closing-report.md` finished, no `closed out`")
+        table = _resume_table(texts[_REPAIR_SKILL])
+        wanted_next = {
+            "no `phase:` line": "stage 3 from step 1",
+            "reading started; window 1 passes, some not finished, one out or none": "window 1: its plan again, then the listing",
+            "between passes": "window 1: its plan again, then the listing",
+            "every window 1 pass finished, no `window 1 complete`": "stage 4 step 4",
+            "`window 1 complete` and no `index built` after it": "stage 5",
+            "`index built` after window 1, or `window 1 skipped`": "stage 6 step 1",
+            "window 2 passes, some not finished, one out or none": "window 2: its plan again, then the listing",
+            "every pass of a slice finished, no `window 2 paused`": "the paused line, then the index",
+            "`window 2 paused` and no `index built` after it": "stage 5, then stage 6 step 1",
+            "`index built` after `window 2 paused`, no window 2 `dispatch` after it": "stage 6 step 1, the plan without `--only`",
+            "every window 2 pass finished, no `window 2 complete`": "stage 6 step 4: boundary, then the line",
+            "`window 2 complete` and no `index built` after it": "stage 5",
+            "`index built` after window 2, no `packages folded`": "stage 6 step 5",
+            "mid-fold": "mid-fold included",
+            "`packages folded` on an unsized delivery, or `recheck complete`": "stage 7 step 1",
+            "`packages folded` on a sized delivery, no `recheck complete`": "`recheck.md` step 7",
+            "a window 3 `dispatch` line, no `window 3 complete`": "window 3: its plan again",
+            "every window 3 pass finished, no `index built` after them": "stage 7 step 4",
+            "`index built` after window 3's passes, no `window 3 complete`": "append `window 3 complete`",
+            "`window 3 complete`, no `packages amended`": "each `amending:` line no `amended:` line follows is finished",
+            "`packages amended`, no `closing-report.md` or one headed as stopped": "stage 9 step 1",
+            "`closing-report.md` finished, no `closed out`": "stage 9 step 2",
+        }
+        for label, (copy, sized, listed) in states.items():
+            row = _resume_state(copy, sized, listed)
+            says = table.get(row, "")
+            expect("U7", f"the folder left by {label!r} matches no row of the skill's resume table, or its row does not "
+                         f"say {wanted_next[label]!r}", says and wanted_next[label] in says, f"{row!r}: {says!r}")
+        # Where a row's next step is a script call, it is run on the folder as the stop left it and
+        # its output held: the plan again with the stage's own arguments and then the listing, the
+        # index guard (above), and the report. Where the next step is the lead's own act, an agent,
+        # an MCP call or a line appended, the fixture pins the table's wording and no more.
+        only = ["--only", "A-2.0[1-3]:the estimator asked for three plans first"]
+        plan_args = {
+            1: lambda c: ["--inventory", str(c / "inventory.json")],
+            2: lambda c: ["--inventory", str(c / "inventory.json"), "--window-1", str(c / "plan" / "window-1.json"), *only],
+            3: lambda c: ["--packages", str(c / "plan" / "packages.json"), *_no_sections()],
+        }
+        script_steps = (
+            ("reading started; window 1 passes, some not finished, one out or none", 1, w1[0]),
+            ("between passes", 1, None),
+            ("`index built` after window 1, or `window 1 skipped`", 2, w2[0]),
+            ("window 2 passes, some not finished, one out or none", 2, w2[0]),
+            ("`packages folded` on an unsized delivery, or `recheck complete`", 3, w3[0]),
+            ("a window 3 `dispatch` line, no `window 3 complete`", 3, w3[0]),
+        )
+        ran = seen.setdefault("u7_next", {})
+        for label, window, starts in script_steps:
+            copy = states[label][0]
+            if window == 3 and not (copy / "plan" / "packages.json").is_file():
+                # Stage 7 step 1 writes the package list before its plan, as the base folder did.
+                shutil.copy(base / "plan" / "packages.json", copy / "plan" / "packages.json")
+            code, _out, err = run(plan_mod, ["plan", "--window", str(window), *plan_args[window](copy),
+                                             "--out", str(copy / "read-plan.md")])
+            listed = listing(copy) if code == 0 else ""
+            start_now = next((l for l in listed.splitlines() if l.startswith("start now: ")), "")
+            ran[label] = start_now or err
+            expect("V7", f"the folder left by {label!r}: its plan again does not run, or the listing after it does "
+                         f"not name {'the pass that was out' if starts else 'a pass other than the one recorded'}",
+                   code == 0 and start_now not in ("", "start now: none")
+                   and ((starts in start_now.split(": ", 1)[1].split(", ")) if starts else (w1[0] not in start_now)),
+                   f"exit {code}, {err!r}, {start_now!r}")
+        copy = states["`packages amended`, no `closing-report.md` or one headed as stopped"][0]
+        code, short_said, err = run(close_mod, ["write", str(copy)])
+        written = (copy / "closing-report.md").read_text(encoding="utf-8") if (copy / "closing-report.md").is_file() else ""
+        ran["report"] = short_said.splitlines()[-1:] or err
+        expect("V7", "the folder left before the closing report: the report is not written finished, or its short "
+                     "version does not end with its path",
+               code == 0 and "<!-- finished " in written and short_said.splitlines()[-1:] == [f"The full report: {copy / 'closing-report.md'}"]
+               and f"Amended: {amendment}." in written, f"exit {code}, {err!r}, {short_said!r}")
+        mid_one = states["reading started; window 1 passes, some not finished, one out or none"][2]
+        between = states["between passes"][2]
+        expect("U7", "the listing mid-pass in window 1 does not offer the pass that was out",
+               f"start now: {w1[0]}" in mid_one, mid_one)
+        expect("U7", "the listing between passes offers the recorded pass again",
+               "start now: " in between and w1[0] not in between.split("start now: ", 1)[1].split("\n", 1)[0], between)
+        recheck_resume = _collapsed(texts[_REPAIR_RECHECK])
+        expect("U7", "recheck.md's resume does not pick up a recheck with a dispatch line and no pass line",
+               "A `dispatch r` or `pass: r` line and no `phase: recheck complete`" in recheck_resume)
+
+    arms.append(("U7", arm_5))
+
+    # ------------------------------------------------------------------ #
+    # U8: in the recheck a unit whose reads are spent stops the run
+    # ------------------------------------------------------------------ #
+    def arm_6() -> None:
+        at = folder("u8-recheck")
+        (at / "read-plan.md").write_text("\n".join((
+            "# Read plan: window r", "", "### RC1. Recheck", "", "window: r", "reads for: the recheck", "units: 1",
+            "units verified: 0", "summed: no, no summary on file", "starts after: none", "",
+            "RC1-1. A-1.01, file file-0002, page 3", "", _LEFT_OUT_HEADING, "", "Nothing.", "",
+        )), encoding="utf-8")
+        for read in (1, 2):
+            append(at, "dispatch r RC1 RC1-1 sheets A-1.01 purpose recheck the rows on A-1.01",
+                   f"note r RC1 RC1-1 deviation A-1.01 recheck report refused, read {read}")
+        append(at, "note r RC1 RC1-1 unread A-1.01 read 2 times, not read again")
+        code, hand_back, err = run(summary_mod, [str(at / "ledger.md"), "r", "RC1", "--plan", str(at / "read-plan.md"),
+                                                 "--out", str(at / "reports" / "RC1.md")])
+        expect("U8", "a recheck unit whose reads are spent reads skipped, or is not left unverified with its note",
+               code == 0 and "skipped: none" in hand_back.splitlines() and "unverified: RC1-1 read 2 no verified line" in hand_back
+               and "unread: RC1-1 A-1.01 read 2 times, not read again" in hand_back, hand_back or err)
+        code, out, err = run(close_mod, ["write", str(at), "--stopped", "a sheet of the recheck failed its check twice"])
+        text = (at / "closing-report.md").read_text(encoding="utf-8") if (at / "closing-report.md").is_file() else ""
+        expect("U8", "the report so far at the recheck's stop does not name the sheet whose reads were spent",
+               code == 0 and "A-1.01: the recheck read its rows 2 times and could not confirm what it wrote" in text, text[:400])
+
+    arms.append(("U8", arm_6))
+
+    # ------------------------------------------------------------------ #
+    # U9: a deviation that quotes `blocked: ` is taken, a block note is still known by its place
+    # ------------------------------------------------------------------ #
+    def arm_7() -> None:
+        at = folder("u9-ledger")
+        append(at, "dispatch 2 P1 P1-1 sheets A-1.01 purpose an invented sheet")
+        quoted = ("note 2 P1 P1-1 deviation A-1.01 report file not whole: no created subjects, the file reads blocked: "
+                  "record_batch server, checked off the returned report, read 1")
+        try:
+            append(at, quoted)
+            taken = True
+        except Exception as e:
+            taken = str(e)
+        expect("U9", "a deviation quoting a report check's line that holds `blocked: ` is refused", taken is True, taken)
+        # V8 replaced U9's refusal of a near miss: a note is a block or an interruption only where its
+        # tail is the runner's whole shape before `, read <k>`, and any other is an ordinary deviation.
+        for near in ("note 2 P1 P1-1 deviation A-1.01 blocked: record_batch timeout, read 1",
+                     "note 2 P1 P1-1 deviation A-1.01 blocked: record_batch server",
+                     "note 2 P1 P1-1 deviation A-1.01 the report check printed blocked: two rows, read 1",
+                     "note 2 P1 P1-1 deviation A-1.01 the reader said interrupted: no report, read 1"):
+            try:
+                append(at, near)
+                taken = True
+            except Exception as e:
+                taken = str(e)
+            expect("V8", f"a note holding the word outside the block's whole shape is refused: {near!r}", taken is True, taken)
+        lines = (at / "ledger.md").read_text(encoding="utf-8").splitlines()
+        expect("V8", "a note outside the block's whole shape reads as a block or an interruption", not any(
+            summary_mod.BLOCKED_NOTE_RE.search(" ".join(l.split()[5:])) or summary_mod.INTERRUPTED_NOTE_RE.search(" ".join(l.split()[5:]))
+            for l in lines if l.startswith("note ")), lines)
+        append(at, "note 2 P1 P1-1 deviation A-1.01 blocked: record_batch server, read 2")
+        expect("V8", "a block note in the runner's whole shape is not read as a block",
+               bool(summary_mod.BLOCKED_NOTE_RE.search((at / "ledger.md").read_text(encoding="utf-8").splitlines()[-1])))
+        # A run.json in the wrong shape, a count that is a string, and a report that cannot be written.
+        at = folder("u9-shapes")
+        (at / "run.json").write_text("[1, 2]", encoding="utf-8")
+        (at / "inventory.json").write_text(json.dumps({"sheets": "forty"}), encoding="utf-8")
+        (at / "plan" / "close").mkdir()
+        (at / "plan" / "close" / "questions.json").write_text(json.dumps({"tradeCounts": {"09 21 16": "5"},
+                                                                           "everyTradeCount": "1", "untradedCount": 0}), encoding="utf-8")
+        append(at, "phase: reading started 2026-01-31T22:10:00Z")
+        code, out, err = run(close_mod, ["write", str(at)])
+        text = (at / "closing-report.md").read_text(encoding="utf-8") if (at / "closing-report.md").is_file() else ""
+        seen["u9"] = (code, out, err, text)
+        expect("U9", "a run.json that is a list or a count that is a string stops the report, or is not said as not available",
+               code == 0 and "run.json is not in its shape" in text and "whose label is not available" in text
+               and "not in its shape." in text, f"exit {code}, {err!r}, {text[:500]!r}")
+        at = folder("u9-not-written")
+        (at / "closing-report.md").mkdir()
+        code, out, err = run(close_mod, ["write", str(at)])
+        expect("U9", "a report that could not be written exits 0", code != 0 and "could not be written" in out, f"{code} {out!r}")
+
+    arms.append(("U9", arm_7))
+
+    # ------------------------------------------------------------------ #
+    # U1 and U2: one collection of what the run could not do, and nothing claimed past the folder
+    # ------------------------------------------------------------------ #
+    def arm_8() -> None:
+        at = folder("u1-gaps")
+        (at / "run.json").write_text(json.dumps(_issue_run("deliv-gaps", ["deliv-gaps"], "i1")), encoding="utf-8")
+        sheets = ["A-0.01", "A-1.01", "A-1.02", "A-1.03"]
+        (at / "inventory.json").write_text(json.dumps({"sheets": [
+            {"unitKey": f"{s}@file-a#{n}", "sheetNumber": s, "fileId": "file-a", "pageInPdf": n} for n, s in enumerate(sheets, 1)
+        ]}), encoding="utf-8")
+        (at / "plan" / "window-1.json").write_text(json.dumps({"units": [{"id": "i1-A1-1", "unitKey": "A-0.01@file-a#1"}],
+                                                               "repeatedSets": [{"unitId": "i1-RS1-1", "fileId": "file-a"}],
+                                                               "excluded": [], "leftByPlan": []}), encoding="utf-8")
+        (at / "plan" / "window-2.json").write_text(json.dumps({"units": [{"id": f"i1-A2-{n}"} for n in (1, 2, 3)],
+                                                               "deferredCount": 0}), encoding="utf-8")
+        review_packages = [{"id": "pkg-g1", "tradeCode": "09 21 16", "name": "Invented drywall", "manualSections": ["092116"]},
+                           {"id": "pkg-g2", "tradeCode": "22 11 16", "name": "Invented plumbing", "manualSections": ["221116"]},
+                           {"id": "pkg-g3", "tradeCode": "26 00 00", "name": "Invented electrical", "manualSections": ["260000"]},
+                           {"id": "pkg-g4", "tradeCode": "07 21 00", "name": "Invented insulation", "manualSections": ["072100"]}]
+        (at / "plan" / "packages.json").write_text(json.dumps({"packages": review_packages}), encoding="utf-8")
+        (at / "plan" / "spec-sections.json").write_text(json.dumps({"count": 4, "unparsedDivisions": 0, "residueSections": 0,
+                                                                    "truncated": False, "sections": [
+            {"csi": "072100", "title": "Invented insulation", "division": "07", "fileId": "file-m1", "pageStart": 5, "pageEnd": 6},
+            {"csi": "092116", "title": "Invented gypsum board", "division": "09", "fileId": "file-m1", "pageStart": 10, "pageEnd": 13},
+            {"csi": "221116", "title": "Invented water piping", "division": "22", "fileId": "file-m1", "pageStart": 20, "pageEnd": 24},
+            {"csi": "260000", "title": "Invented electrical", "division": "26", "fileId": "file-m1", "pageStart": 30, "pageEnd": 31},
+        ]}), encoding="utf-8")
+        append(at, "phase: reading started 2026-01-31T22:10:00Z")
+        # Window 1: the schedule sheet skipped, and the file's repeated lines not read once.
+        append(at, "dispatch 1 i1-A1 i1-A1-1 sheets A-0.01 purpose the vocabulary",
+               f"verified 1 i1-A1 i1-A1-1 created 1 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0 result mismatch",
+               "note 1 i1-A1 i1-A1-1 deviation A-0.01 created 1 under the prefix, reader created 2, read 1")
+        append(at, "dispatch 1 i1-A1 i1-A1-1 sheets A-0.01 purpose the vocabulary",
+               "note 1 i1-A1 i1-A1-1 deviation A-0.01 reader stopped answering, read 2",
+               "note 1 i1-A1 i1-A1-1 unread A-0.01 read 2 times, not read again")
+        append(at, "dispatch 1 i1-RS1 i1-RS1-1 sheets none purpose repeated lines of file file-a",
+               f"note 1 i1-RS1 i1-RS1-1 unread file file-a repeated lines not read, the notes are drawn as a picture",
+               f"verified 1 i1-RS1 i1-RS1-1 {ok_fields} result ok")
+        append(at, "phase: window 1 complete", "note 1 boundary - deviation overlap scan not run, names missing for 2 units")
+        append(at, "phase: index built unmatchedTag 2 codeNoLocation 0 codeTooShort 3 codeIsAWord 1 fragmentUnresolvable 1 "
+                   "pageNotASheet 4 hitNotDrawable 2 overRunCap 5 codeOnlyOnReplacedPages 0")
+        # Window 2: a scan, a check off the returned report, and a sheet that cited no sheet.
+        append(at, "dispatch 2 i1-A2 i1-A2-1 sheets A-1.01 purpose the sheet",
+               "note 2 i1-A2 i1-A2-1 anomaly A-1.01 p2 not read from the picture: the east half, a faint scan, run only",
+               f"note 2 i1-A2 i1-A2-1 deviation A-1.01 report file not whole: no owed, checked off the returned report, read 1",
+               f"verified 2 i1-A2 i1-A2-1 {ok_fields} result ok")
+        append(at, "dispatch 2 i1-A2 i1-A2-2 sheets A-1.02 purpose the sheet",
+               "note 2 i1-A2 i1-A2-2 deviation verified with no sheet, no sheet cited",
+               f"verified 2 i1-A2 i1-A2-2 {ok_fields} result ok")
+        append(at, "dispatch 2 i1-A2 i1-A2-3 sheets A-1.03 purpose the sheet", f"verified 2 i1-A2 i1-A2-3 {ok_fields} result ok",
+               "phase: window 2 complete", "phase: index built unmatchedTag 2 codeNoLocation 0 codeTooShort 3 codeIsAWord 1 "
+               "fragmentUnresolvable 1 pageNotASheet 4 hitNotDrawable 2 overRunCap 5 codeOnlyOnReplacedPages 0",
+               "phase: packages folded")
+        code, _b, err = run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"),
+                                       "--sections", str(at / "plan" / "spec-sections.json"), "--out", str(at / "read-plan.md")])
+        expect("U1", "the window 3 plan of the coverage folder is refused", code == 0, err)
+        w3_pass = passes_of(at)[0] if code == 0 else "W3-1"
+        plan_units = summary_mod.read_plan(at / "read-plan.md", 3, w3_pass)["units"] if code == 0 else []
+        named = {re.search(r"rev-(\d+)", u).group(1): u for u in plan_units if re.search(r"rev-(\d+)", u)}
+        drywall, plumbing, electrical, insulation = (named.get(c, "") for c in ("092116", "221116", "260000", "072100"))
+        expect("U1", "the coverage folder's plan does not carry the four reviews", all((drywall, plumbing, electrical, insulation)),
+               plan_units)
+        entry_a = "section 092116 p11 | an invented stud gauge | no row | the page is a scan"
+        entry_b = "section 092116 p12 | an invented track | no row | not reached"
+        # The drywall review: read 1 names two entries and fails, read 2 writes one and notes the other
+        # again, verified ok with the reader's own report: its pages are read, one entry outstanding.
+        append(at, f"dispatch 3 {w3_pass} {drywall} sheets none purpose review Invented drywall",
+               f"note 3 {w3_pass} {drywall} anomaly not written: {entry_a}", f"note 3 {w3_pass} {drywall} anomaly not written: {entry_b}",
+               f"verified 3 {w3_pass} {drywall} created 1 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0 result mismatch",
+               f"note 3 {w3_pass} {drywall} deviation Invented drywall spans, read 1")
+        # Read 2 is given what read 1 left by the runner's owed command, and its report answers it:
+        # entry b written, entry a not written again. The report check holds that report to the
+        # owed file, so the answer on the report is what clears entry b; its `spans read:` line names
+        # the planned span, as the runner's check holds it.
+        owed_2 = report_mod.write_owed(at, "3", drywall, 2, "none\n")
+        append(at, f"dispatch 3 {w3_pass} {drywall} sheets none purpose review Invented drywall")
+        planned_span = re.search(rf"{re.escape(drywall)}: .*?, reads (.+?), package ",
+                                 (at / "read-plan.md").read_text(encoding="utf-8")).group(1)
+        report_2 = _filled_report("review", drywall, report_mod.LABELS["review"], **{
+            "created": "1   updated: 0   questions raised: 0   questions replied: 0",
+            "created subjects": f"scopeItem:{drywall}-1",
+            "sent": "1   landed: 1   conflicts: none",
+            "spans read": planned_span,
+            "not written": entry_a,
+            "owed": f"not written by read 1: {entry_a} | not written, the page is a scan\n"
+                    f"not written by read 1: {entry_b} | written scopeItem:{drywall}-1",
+        })
+        broken, mismatches = report_mod.problems(report_2, "review", report_mod.read_owed_file(owed_2), owed_given=True)
+        expect("V7", "the later read's report, answering the owed file the runner's command wrote, is not held agreeing",
+               not broken and not mismatches and f"not written by read 1: {entry_b}" in owed_2.read_text(encoding="utf-8"),
+               broken + mismatches)
+        (at / "reports" / f"{drywall}.md").write_text(report_2, encoding="utf-8")
+        append(at, f"note 3 {w3_pass} {drywall} anomaly not written: {entry_a}",
+               f"verified 3 {w3_pass} {drywall} created 1 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0 result ok")
+        report_mod.write_trades(at, w3_pass, drywall, "none\n")
+        # The plumbing review: verified ok off its returned message, its report restored from the record.
+        append(at, f"dispatch 3 {w3_pass} {plumbing} sheets none purpose review Invented plumbing",
+               f"verified 3 {w3_pass} {plumbing} {ok_fields} result ok")
+        report_mod.write_trades(at, w3_pass, plumbing, "none\n")
+        report_mod.restore(at, "3", plumbing)
+        # The electrical review: verified ok, and no report of its read on file at all.
+        append(at, f"dispatch 3 {w3_pass} {electrical} sheets none purpose review Invented electrical",
+               f"note 3 {w3_pass} {electrical} anomaly unsearched invented busway, refused by the rate limit five times, run only",
+               f"verified 3 {w3_pass} {electrical} {ok_fields} result ok")
+        report_mod.write_trades(at, w3_pass, electrical, "none\n")
+        report_mod.note_unknown_touched(at, "3", electrical, [1])
+        # The insulation review, skipped after two reads whose checks failed, the first naming an entry
+        # no later read answered, so it stays to look at.
+        skipped_entry = "section 072100 p5 | an invented vapor barrier | no row | no room"
+        append(at, f"dispatch 3 {w3_pass} {insulation} sheets none purpose review Invented insulation",
+               f"note 3 {w3_pass} {insulation} anomaly not written: {skipped_entry}",
+               f"verified 3 {w3_pass} {insulation} created 1 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0 result mismatch",
+               f"note 3 {w3_pass} {insulation} deviation Invented insulation created 1 under the prefix, reader created 2, read 1")
+        append(at, f"dispatch 3 {w3_pass} {insulation} sheets none purpose review Invented insulation",
+               f"verified 3 {w3_pass} {insulation} created 1 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0 result mismatch",
+               f"note 3 {w3_pass} {insulation} deviation Invented insulation created 1 under the prefix, reader created 2, read 2",
+               f"note 3 {w3_pass} {insulation} unread Invented insulation read 2 times, not read again")
+        report_mod.write_trades(at, w3_pass, insulation, "none\n")
+        append(at, "phase: index built unmatchedTag 2 codeNoLocation 0 codeTooShort 3 codeIsAWord 1 fragmentUnresolvable 1 "
+                   "pageNotASheet 4 hitNotDrawable 2 overRunCap 5 codeOnlyOnReplacedPages 0",
+               "phase: window 3 complete", "phase: packages amended")
+        code, short, err = run(close_mod, ["write", str(at)])
+        text = (at / "closing-report.md").read_text(encoding="utf-8") if (at / "closing-report.md").is_file() else ""
+        could = [l[2:] for l in text.split("## What I could not read", 1)[-1].split("\n## ", 1)[0].splitlines() if l.startswith("- ")]
+        seen["u1"] = (short, text)
+        for item, words in (
+            ("U1", "A-0.01: I read it 2 times and could not confirm what I wrote."),
+            ("U1", "so those sheets may be less complete for it."),
+            ("U1", "The notes repeated across the sheets of the drawing file of A-0.01 to A-1.03 were not read once for the file: "
+                   "the notes are drawn as a picture."),
+            ("U1", "A-1.01 p2 not read from the picture: the east half, a faint scan. It is a scan"),
+            ("U1", "At the end of window 1, the check for the same work written by two groups of sheets read side by side was not run"),
+            ("U1", "A-1.02: its reading cited no sheet"),
+            ("U1", "2 tags I could not match to any item"),
+            ("U1", "3 codes of two characters or fewer, left uncited"),
+            ("U1", "1 code printed as ordinary words, left uncited."),
+            ("U1", "1 mark printed only in part"),
+            ("U1", "4 matches on pages that are not drawing sheets"),
+            ("U1", "2 matches that could not be placed on their sheet"),
+            ("U1", "5 matches past the most one index run cites"),
+            ("U1", "The Invented plumbing review: its reader's report was lost, so I wrote it from the record"),
+            ("U2", "The Invented electrical review: it was checked, but no report of its last read is on file, so which pages it read is not known."),
+            ("U1", "The Invented electrical review, read 1: the trades it wrote to are not known"),
+            ("U1", "Invented electrical: I could not search for invented busway"),
+        ):
+            expect(item, f"the collection does not hold {words[:80]!r} once", sum(words in entry for entry in could) == 1, could)
+        expect("U1", "the short version's count is not the collection's", f"Could not read: {len(could)} (" in short, short)
+        first_five = [entry["name"] for entry in close_mod.gaps(close_mod.Facts(at, None))][:5]
+        expect("U1", "the short version does not name the first five of the collection, in order",
+               len(first_five) == 5 and f"Could not read: {len(could)} ({', '.join(first_five)}, and {len(could) - 5} more)." in short,
+               f"{first_five} | {short}")
+        expect("U1", "a unit skipped after a read that named an entry does not keep it, or an answered entry is kept",
+               "an invented vapor barrier" in text and "an invented stud gauge" in text and "an invented track" not in text,
+               text.split("## To look at", 1)[-1][:900])
+        expect("U2", "the report counts pages read off a restored report or no report on file",
+               "and 4 pages of the project manual" in text and "2 reviews or manual parts were checked whose pages read are not known" in text,
+               text[:700])
+        expect("U2", "a read checked off the returned report is counted a failed check, or a skipped unit's last failure is "
+                     "said as read again",
+               "- 3 checks of a read did not pass, and each of those was read again." in text
+               and "- 1 check did not pass on a last read, and each of those was skipped" in text, text.split("## What went wrong", 1)[-1][:600])
+        expect("U2", "the report says every sheet and page was read while its collection holds entries",
+               "Every sheet and manual page planned was read and checked" not in text)
+        # An empty folder, and a run that stopped in window 2: what was planned, finished, not started.
+        empty = folder("u2-empty")
+        code, out, err = run(close_mod, ["write", str(empty)])
+        text = (empty / "closing-report.md").read_text(encoding="utf-8") if (empty / "closing-report.md").is_file() else ""
+        seen["u2_empty"] = text
+        expect("U2", "a report over an empty folder says every sheet was read, or not what was planned",
+               code == 0 and "Every sheet and manual page planned was read and checked" not in text
+               and "- Every sheet once: not planned when this report was written" in text, text[:600])
+        clean = folder("u2-clean")
+        for sub in ("plan",):
+            (clean / sub).mkdir(exist_ok=True)
+        (clean / "plan" / "window-1.json").write_text(json.dumps({"units": [{"id": "A1-1"}]}), encoding="utf-8")
+        (clean / "plan" / "window-2.json").write_text(json.dumps({"units": [{"id": "A2-1"}], "deferredCount": 0}), encoding="utf-8")
+        (clean / "read-plan.md").write_text("# Read plan: window 3\n\n## Nothing read for\n\nNothing.\n", encoding="utf-8")
+        append(clean, "phase: reading started 2026-01-31T22:10:00Z", "dispatch 1 A1 A1-1 sheets A-0.01 purpose the vocabulary",
+               f"verified 1 A1 A1-1 {ok_fields} result ok", "dispatch 2 A2 A2-1 sheets A-1.01 purpose the sheet",
+               f"verified 2 A2 A2-1 {ok_fields} result ok", "phase: window 3 complete")
+        code, out, err = run(close_mod, ["write", str(clean)])
+        text = (clean / "closing-report.md").read_text(encoding="utf-8") if (clean / "closing-report.md").is_file() else ""
+        expect("U2", "a run whose every planned unit verified ok with nothing it could not do does not say so",
+               code == 0 and "Every sheet and manual page planned was read and checked." in text and "Could not read: none." in out,
+               text[:600])
+
+    arms.append(("U1", arm_8))
+
+    # ------------------------------------------------------------------ #
+    # V1: a note is classified by its producer's whole shape; any other is printed in its own words
+    # ------------------------------------------------------------------ #
+    def arm_v1() -> None:
+        at = folder("v1-shapes")
+        (at / "plan" / "packages.json").write_text(json.dumps({"packages": rows["packages"][:1]}), encoding="utf-8")
+        run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"), *_no_sections(),
+                       "--out", str(at / "read-plan.md")])
+        pass_id = passes_of(at)[0]
+        unit = summary_mod.read_plan(at / "read-plan.md", 3, pass_id)["units"][0]
+        package = re.search(rf"{re.escape(unit)}: (.+?), trade", (at / "read-plan.md").read_text(encoding="utf-8")).group(1)
+        # Each holds a classifier's key words, and none is in the shape that classifier's producer writes.
+        prose = (
+            "A-1.01 p2 the required fire ratings are not known",
+            "A-1.01 p2 the legend calls the hatch not read from the picture: see the keynote",
+            "A-1.01 p2 the note on section 092116 not read: the spec governs",
+            "unsearched areas of the attic are marked as no work",
+            "A-1.01 p2 the schedule puts two rows on the same work: one tag covers both, combined",
+            "not written: the general notes for the stair",
+            "not needed: the second hose bib",
+        )
+        append(at, "phase: reading started 2026-01-31T22:10:00Z",
+               f"dispatch 3 {pass_id} {unit} sheets none purpose review {package}",
+               *(f"note 3 {pass_id} {unit} anomaly {words}, run only" for words in prose),
+               f"verified 3 {pass_id} {unit} {ok_fields} result ok",
+               "note 2 boundary - overlap the scan saw two casework runs on one wall")
+        (at / "reports" / f"{unit}.md").write_text(_whole_review_report(unit), encoding="utf-8")
+        code, short, err = run(close_mod, ["write", str(at)])
+        text = (at / "closing-report.md").read_text(encoding="utf-8") if (at / "closing-report.md").is_file() else ""
+        look = text.split("## To look at", 1)[-1].split("\n## ", 1)[0]
+        could = text.split("## What I could not read", 1)[-1].split("\n## ", 1)[0]
+        seen["v1"] = look
+        for words in prose:
+            expect("V1", f"an anomaly holding a classifier's key words is not printed whole under To look at: {words!r}",
+                   code == 0 and f"\n- {package}: {words}.\n" in look and words not in could, look)
+        expect("V1", "an overlap note in no shape the scan writes is not printed in its own words under To look at",
+               "- the sheets: the scan saw two casework runs on one wall." in look, look)
+
+    arms.append(("V1", arm_v1))
+
+    # ------------------------------------------------------------------ #
+    # V2: an amendment is said as made only once its `amended:` line follows its `amending:` line
+    # ------------------------------------------------------------------ #
+    def arm_v2() -> None:
+        at = folder("v2-amending")
+        text = "Invented drywall: split off the invented soffits into Invented soffits; one sub bids them alone"
+        appended = subprocess.run([sys.executable, str(scripts / "ledger.py"), "append", str(at / "ledger.md")],
+                                  input=f"phase: reading started 2026-01-31T22:10:00Z\nphase: window 3 complete\namending: {text}\n",
+                                  capture_output=True, text=True, encoding="utf-8")
+        expect("V2", "the ledger script refuses an `amending:` line", appended.returncode == 0, appended.stderr or appended.stdout)
+        code, out, err = run(close_mod, ["write", str(at), "--stopped", "Plumlayer is not answering"])
+        started = (at / "closing-report.md").read_text(encoding="utf-8") if (at / "closing-report.md").is_file() else ""
+        changes = started.split("## Package changes", 1)[-1].split("\n## ", 1)[0]
+        expect("V2", "a stopped report over an `amending:` line with no `amended:` line says the change was made, or not "
+                     "that it was started and not confirmed",
+               code == 0 and f"Started and not confirmed: {text}. The package on plumlayer.com may or may not show this change."
+               in changes and "Amended:" not in changes and "Package changes: 0." in out, changes)
+        done = subprocess.run([sys.executable, str(scripts / "ledger.py"), "append", str(at / "ledger.md")],
+                              input=f"amended: {text}\n", capture_output=True, text=True, encoding="utf-8")
+        code, out, err = run(close_mod, ["write", str(at), "--stopped", "Plumlayer is not answering"])
+        made = (at / "closing-report.md").read_text(encoding="utf-8") if (at / "closing-report.md").is_file() else ""
+        changes_after = made.split("## Package changes", 1)[-1].split("\n## ", 1)[0]
+        seen["v2"] = (appended.stdout + done.stdout, changes, changes_after)
+        expect("V2", "the same report after the `amended:` line does not say the change was made, once",
+               done.returncode == 0 and code == 0 and changes_after.count(f"Amended: {text}.") == 1
+               and "Started and not confirmed" not in changes_after and "Package changes: 1." in out, changes_after)
+        # An older ledger's `amended:` line, with no `amending:` line before it, is a change made.
+        old = folder("v2-older")
+        append(old, "phase: reading started 2026-01-31T22:10:00Z", f"amended: {text}")
+        run(close_mod, ["write", str(old)])
+        older = (old / "closing-report.md").read_text(encoding="utf-8") if (old / "closing-report.md").is_file() else ""
+        expect("V2", "an older ledger's `amended:` line is not said as made", f"Amended: {text}." in older
+               and "Started and not confirmed" not in older, older[:600])
+
+    arms.append(("V2", arm_v2))
+
+    # ------------------------------------------------------------------ #
+    # V3: manual pages read are the spans the verified report says it read, held to the plan
+    # ------------------------------------------------------------------ #
+    def arm_v3() -> None:
+        at = folder("v3-omitted")
+        (at / "run.json").write_text(json.dumps(_issue_run("deliv-v3", ["deliv-v3"], "i7")), encoding="utf-8")
+        (at / "plan" / "packages.json").write_text(json.dumps({"packages": [
+            {"id": "pkg-v3", "tradeCode": "09 21 16", "name": "Invented drywall", "manualSections": ["092116", "092216", "092900"]},
+        ]}), encoding="utf-8")
+        (at / "plan" / "spec-sections.json").write_text(json.dumps({"count": 3, "unparsedDivisions": 0, "residueSections": 0,
+                                                                    "truncated": False, "sections": [
+            {"csi": "092116", "title": "Invented gypsum board", "division": "09", "fileId": "file-m1", "pageStart": 10, "pageEnd": 29},
+            {"csi": "092216", "title": "Invented framing", "division": "09", "fileId": "file-m1", "pageStart": 30, "pageEnd": 32},
+            {"csi": "092900", "title": "Invented finishing", "division": "09", "fileId": "file-m1", "pageStart": 33, "pageEnd": 35},
+        ]}), encoding="utf-8")
+        code, bounds, err = run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"),
+                                           "--sections", str(at / "plan" / "spec-sections.json"), "--out", str(at / "read-plan.md")])
+        plan_text = (at / "read-plan.md").read_text(encoding="utf-8") if code == 0 else ""
+        part = re.search(r"^[1-9][0-9]*\. (\S+): Invented drywall, trade 09 21 16, package \S+, manual part after \S+, reads (.+)$",
+                         plan_text, re.M)
+        expect("V3", "the plan does not give one manual part two sections", code == 0 and part and len(part.group(2).split("; ")) == 2,
+               err or plan_text[-900:])
+        if not part:
+            return
+        unit, spans = part.group(1), part.group(2).split("; ")
+        pass_id = passes_of(at)[0]
+        kept, omitted = spans[0], spans[1]
+        omitted_code = omitted.split()[0]
+        # The runner's permitted path: the part names the removed section on `sections not checked:`
+        # and leaves its span off `spans read:`, and the runner copies its `not read:` note.
+        report = _filled_report("manual", unit, report_mod.LABELS["manual"], **{
+            "spans read": kept, "sections not checked": f"{omitted_code} manual removed",
+            "anomalies": f"section {omitted_code} not read: manual removed, run only",
+        })
+        broken, mismatches = report_mod.problems(report, "manual")
+        expect("V3", "the part's report leaving the removed section off is not held whole", not broken and not mismatches,
+               broken + mismatches)
+        append(at, "phase: reading started 2026-01-31T22:10:00Z",
+               f"dispatch 3 {pass_id} {unit} sheets none purpose read the invented manual pages",
+               f"note 3 {pass_id} {unit} anomaly section {omitted_code} not read: manual removed, run only",
+               f"verified 3 {pass_id} {unit} {ok_fields} result ok")
+        (at / "reports" / f"{unit}.md").write_text(report, encoding="utf-8")
+        report_mod.write_trades(at, pass_id, unit, "none\n")
+        code, short, err = run(close_mod, ["write", str(at)])
+        text = (at / "closing-report.md").read_text(encoding="utf-8") if (at / "closing-report.md").is_file() else ""
+        first, last = (int(p) for p in re.match(r"^\S+ p([0-9]+)-p([0-9]+) ", kept).groups())
+        o_first, o_last = (int(p) for p in re.match(r"^\S+ p([0-9]+)-p([0-9]+) ", omitted).groups())
+        detail = text.split("### Manual sections read, by package", 1)[-1].split("\n### ", 1)[0]
+        seen["v3"] = (text.split("\n\n", 3)[2] if text.count("\n\n") > 2 else text[:400], detail)
+        expect("V3", "the headline counts the pages of a section the part left unread",
+               code == 0 and f"and {last - first + 1} pages of the project manual" in text, text[:700])
+        expect("V3", "the package detail names the pages of a section the part left unread, or not the ones it read",
+               f"{kept.split()[0]} pages {first} to {last}" in detail and f"{omitted_code} pages {o_first} to {o_last}" not in detail,
+               detail)
+        expect("V3", "the section the part left unread is not in the collection",
+               f"Invented drywall: section {omitted_code} not read: manual removed." in text)
+
+    arms.append(("V3", arm_v3))
+
+    # ------------------------------------------------------------------ #
+    # V5: recovered bookkeeping is no gap, and gaps are told apart by what they are about
+    # ------------------------------------------------------------------ #
+    def arm_v5() -> None:
+        at = folder("v5-gaps")
+        (at / "plan" / "packages.json").write_text(json.dumps({"packages": rows["packages"][:1]}), encoding="utf-8")
+        (at / "plan" / "spec-sections.json").write_text(json.dumps({"count": 2, "unparsedDivisions": 0, "residueSections": 0,
+                                                                    "truncated": False, "sections": [
+            {"csi": code, "title": "Invented section", "division": code[:2], "fileId": "file-m1", "pageStart": a, "pageEnd": b}
+            for code, a, b in (("092116", 10, 29), ("092216", 30, 32))
+        ]}), encoding="utf-8")
+        package = rows["packages"][0]
+        (at / "plan" / "packages.json").write_text(json.dumps({"packages": [dict(package, manualSections=["092116", "092216"])]}),
+                                                   encoding="utf-8")
+        run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"),
+                       "--sections", str(at / "plan" / "spec-sections.json"), "--out", str(at / "read-plan.md")])
+        pass_id = passes_of(at)[0]
+        units = summary_mod.read_plan(at / "read-plan.md", 3, pass_id)["units"]
+        part = next(u for u in units if "c-" in u)
+        # Window 1: two files' repeated lines not read for the same reason, neither file on the
+        # inventory, so the two sentences read alike; then the boundary's names fetched again and its
+        # scan run, and a later boundary's scan that stayed incomplete.
+        append(at, "phase: reading started 2026-01-31T22:10:00Z")
+        for n, file_id in enumerate(("file-x1", "file-x2"), 1):
+            append(at, f"dispatch 1 RS{n} RS{n}-1 sheets none purpose repeated lines of file {file_id}",
+                   f"note 1 RS{n} RS{n}-1 unread file {file_id} repeated lines not read, the notes are drawn as a picture",
+                   f"verified 1 RS{n} RS{n}-1 {ok_fields} result ok")
+        append(at, "note 1 boundary - deviation names of RS1-1 written from the record at the boundary",
+               "note 1 boundary - overlap scan read 0 new item names, every unit of 2 in 2 passes", "phase: window 1 complete",
+               "note 2 boundary - deviation overlap scan not run, names missing for 3 units")
+        # Window 3: the manual part verified ok off its returned message, its report restored.
+        append(at, f"dispatch 3 {pass_id} {part} sheets none purpose read the invented manual pages",
+               f"verified 3 {pass_id} {part} {ok_fields} result ok")
+        report_mod.write_trades(at, pass_id, part, "none\n")
+        report_mod.restore(at, "3", part)
+        code, short, err = run(close_mod, ["write", str(at)])
+        text = (at / "closing-report.md").read_text(encoding="utf-8") if (at / "closing-report.md").is_file() else ""
+        could = [l for l in text.split("## What I could not read", 1)[-1].split("\n## ", 1)[0].splitlines() if l.startswith("- ")]
+        detail = text.split("### What failed and how it was fixed", 1)[-1].split("\n### ", 1)[0]
+        seen["v5"] = (could, detail)
+        alike = "The notes repeated across the sheets of one drawing file were not read once for the file"
+        expect("V5", "two gaps about two files whose sentences read alike are merged",
+               code == 0 and sum(alike in l for l in could) == 2, could)
+        expect("V5", "names fetched again at a boundary whose scan then ran are in the collection, or not in the detail",
+               not any("names of the items" in l for l in could)
+               and "At the end of window 1, the names of the items" in detail, f"{could} | {detail}")
+        expect("V5", "a boundary's scan that stayed incomplete is not in the collection",
+               any(l.startswith("- At the end of window 2, the check for the same work") for l in could), could)
+        part_line = re.search(rf"^[1-9][0-9]*\. {re.escape(part)}: .*?, reads (.+)$", (at / "read-plan.md").read_text(encoding="utf-8"), re.M)
+        span = re.match(r"^(\S+) p([0-9]+)-p([0-9]+) ", part_line.group(1)) if part_line else None
+        expect("V5", "a restored manual part is not named by its sections and page range",
+               span is not None and any(l.startswith(f"- Manual pages for {package['name']} (section {span.group(1)}, pages "
+                                                     f"{span.group(2)} to {span.group(3)}): its reader's report was lost") for l in could),
+               could)
+
+    arms.append(("V5", arm_v5))
+
+    # ------------------------------------------------------------------ #
+    # V6: the seen mode remembers a signature across calls and processes
+    # ------------------------------------------------------------------ #
+    def arm_v6() -> None:
+        at = folder("v6-seen")
+        append(at, "phase: reading started 2026-01-31T22:10:00Z")
+        said: list[str] = []
+
+        def given(key: str, signature: str, fresh: bool = False) -> str:
+            if fresh:
+                done = subprocess.run([sys.executable, str(scripts / "lead_pass.py"), "seen", str(at), key, signature],
+                                      capture_output=True, text=True, encoding="utf-8")
+                line = done.stdout.strip() if done.returncode == 0 else f"exit {done.returncode}: {done.stderr.strip()}"
+            else:
+                code, out, err = run(lead_mod, ["seen", str(at), key, signature])
+                line = out.strip() if code == 0 else f"exit {code}: {err.strip()}"
+            said.append(line)
+            return line
+
+        signature = "lead_pass: reports/W3-1.md carries no review: pages opened <n> line"
+        first = given("W3-1", signature)
+        second = given("W3-1", signature, fresh=True)
+        append(at, "note 3 W3-1 - deviation an invented line between the two")
+        changed = given("W3-1", "lead_pass: reports/W3-1.md names a unit the plan block does not carry")
+        again = given("W3-1", "lead_pass: reports/W3-1.md names a unit the plan block does not carry", fresh=True)
+        seen["v6"] = list(said)
+        expect("V6", "the first time a key is given it does not read one time",
+               first == "seen: W3-1 standing 0 minutes, 1 time in a row, 1 in a row with no ledger line added", first)
+        expect("V6", "the same signature again, from a fresh process, does not read two times in a row",
+               second == "seen: W3-1 standing 0 minutes, 2 times in a row, 2 in a row with no ledger line added", second)
+        expect("V6", "a changed signature does not start the key again",
+               changed == "seen: W3-1 standing 0 minutes, 1 time in a row, 1 in a row with no ledger line added", changed)
+        expect("V6", "the same signature after a change, from a fresh process, does not read two times in a row",
+               again == "seen: W3-1 standing 0 minutes, 2 times in a row, 2 in a row with no ledger line added", again)
+        kept = json.loads((at / "plan" / "seen.json").read_text(encoding="utf-8")) if (at / "plan" / "seen.json").is_file() else {}
+        expect("V6", "the file the mode keeps does not hold the key's signature, first and last time, counts and ledger lines",
+               kept.get("W3-1", {}).get("times") == 2 and kept["W3-1"].get("quiet") == 2 and kept["W3-1"].get("ledgerLines") == 2
+               and all(re.match(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$", str(kept["W3-1"].get(k))) for k in ("first", "last")), kept)
+        # Another pass's line between two refusals starts the quiet streak again and never ends it
+        # for good: the same refusal once more with the ledger still reaches 2, where the lead stops.
+        same = "lead_pass: reports/W3-1.md names a unit the plan block does not carry"
+        append(at, "note 3 W3-1 - deviation another pass's invented line")
+        after_line = given("W3-1", same)
+        once_more = given("W3-1", same, fresh=True)
+        expect("V6", "a ledger line added between two times does not start the quiet streak again at 1",
+               after_line == "seen: W3-1 standing 0 minutes, 3 times in a row, 1 in a row with no ledger line added", after_line)
+        expect("V6", "the same refusal again with the ledger still does not reach 2 in a row with no ledger line added",
+               once_more == "seen: W3-1 standing 0 minutes, 4 times in a row, 2 in a row with no ledger line added", once_more)
+        # A poll a minute at a time stands thirty one minutes; ledger lines do not touch its minutes.
+        job = "index job-0001"
+        real_now = lead_mod._utc_now
+        polls: list[str] = []
+        try:
+            for minute in (0, 15, 31):
+                lead_mod._utc_now = lambda minute=minute: real_now() + datetime.timedelta(minutes=minute)
+                append(at, f"note 3 W3-1 - deviation an invented line at minute {minute}")
+                polls.append(given(job, "state running, done 40, total 90"))
+            # The same key and status given hours later, as a new job with the old one's name
+            # would, opens at 0 minutes.
+            lead_mod._utc_now = lambda: real_now() + datetime.timedelta(hours=9)
+            stale = given(job, "state running, done 40, total 90")
+        finally:
+            lead_mod._utc_now = real_now
+        expect("V6", "a job polled at 0, 15 and 31 minutes with ledger lines between does not stand 31 minutes",
+               polls[-1].startswith(f"seen: {job} standing 31 minutes, 3 times in a row"), polls)
+        expect("V6", "a key not given for nine hours does not open at 0 minutes",
+               stale.startswith(f"seen: {job} standing 0 minutes, 4 times in a row"), stale)
+
+    arms.append(("V6", arm_v6))
+
+    for item, arm in arms:
+        try:
+            arm()
+        except Exception as e:
+            expect(item, "the arm raised", False, f"{type(e).__name__}: {e}")
+
+    detail = (
+        f"{sum(held.values())} arms by repair: {', '.join(f'{k} {v}' for k, v in sorted(held.items()))}; every ledger "
+        f"line through ledger.py, every summary from pass_summary.py, every pass line from lead_pass.py record, every "
+        f"plan from plan_inventory.py and the report from close_report.py; U3 an all-skipped review pass of two "
+        f"recorded and the run going on, of four tripping the breaker; U4 three blocked and blocked, cut off, blocked "
+        f"each stopped as the third in a row with its last class, the pass offered again after the go on note, and the "
+        f"summary stopping a unit on a block note that names a refused write; U5 an addendum unit with a read that left no report reviewing every "
+        f"package; U6 the wait mode returning and capped at 280; U7 a slice paused before its index refused a plan "
+        f"and one after it planned, and {len(seen.get('states', {}))} folders, each as a stop leaves it, matched to the skill's resume "
+        f"table row that names its next step, and where that step is a script call (the plan again and the listing, "
+        f"the index guard, the report) its output held; U8 the recheck's spent unit left unverified and named; U9 a "
+        f"quoted `blocked: ` taken, a list run.json and a string count said not available, an "
+        f"unwritable report exiting 1; U1 and U2 one collection of what could not be done printed in the report and "
+        f"counted in the short version naming its first five, an entry kept after a skip and dropped once the later "
+        f"read's report, held to the owed file the runner's command wrote, answered it, pages counted off the "
+        f"reader's report alone, failed checks off mismatch lines, and the every-sheet sentence only where every planned "
+        f"unit verified ok; V1 an anomaly holding each classifier's key words, and an overlap note in no shape, printed "
+        f"whole under To look at; V2 an `amending:` line taken by the ledger script and said as started and not "
+        f"confirmed, then as made once its `amended:` line follows, and an older `amended:` line said as made; V3 a "
+        f"manual part of two planned sections, one left unread as the runner allows, counting only the other's pages; "
+        f"V5 two gaps whose sentences read alike both named, names fetched again at a boundary in the detail and an "
+        f"incomplete scan in the collection, a restored manual part named by its sections and pages; V6 the seen mode "
+        f"over four calls, two from fresh processes, its file, a ledger line added and thirty one minutes standing; V8 "
+        f"a near miss of the block and interruption shapes taken as an ordinary deviation; {len(_REPAIR_PINS)} phrases "
+        f"held and {len(_REPAIR_RETIRED)} retired; bound: invented folders and simulated runners, not a live run"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    result = Result(name, passed=not errors, detail=detail)
+    result.seen = seen
+    return result
 
 
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
@@ -19888,6 +21567,8 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_note_rule(plugin_path, marketplace_root),
         check_citation_kind(plugin_path, marketplace_root),
         check_failed_unit(plugin_path, marketplace_root),
+        check_closing_report(plugin_path, marketplace_root),
+        check_no_stops_repair(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

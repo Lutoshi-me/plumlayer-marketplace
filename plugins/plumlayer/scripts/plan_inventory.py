@@ -118,7 +118,9 @@ The three windows, and what each selects:
      plan run of this window without `--only` plans it again. The partition is then planned plus
      read earlier plus deferred, once each; the bounds line adds `plus read earlier <r>` only
      when nonzero, and its deferred count excludes those sheets. The lead uses that count for
-     the paused line's `deferred <m>`. Grouping, the type order and the split are unchanged over the
+     the paused line's `deferred <m>`, which goes on before the slice's index; a window 2 plan run
+     while the last paused line has no `phase: index built` line after it is refused, since that
+     slice's index has not run. Grouping, the type order and the split are unchanged over the
      slice, except that a discipline the whole window would split into lettered parts is lettered
      in the slice too (`A2a` for a slice of six), so the slice's unit ids already name the part
      they sit at the front of when the whole window is planned. Every window 2 run writes
@@ -232,6 +234,18 @@ Units already verified, in every window:
   `ok` marks nothing, and one naming an id this plan neither carries nor holds is ignored rather
   than refused. A held unit verified ok counts as read earlier in a window 2 slice.
 
+Units skipped, in windows 1, 2 and 3:
+
+  A unit is settled where it is verified ok or skipped (`settled_units`). It is skipped where a
+  `note <window> <pass> <unit> unread <sheet> read <k> times, not read again` line sits after its
+  latest `dispatch` line and no `verified ... result ok` line follows that dispatch: a runner
+  writes that note once two reads of the unit failed their check, and goes on to its next unit.
+  A later `dispatch` line makes the unit unsettled until it settles again. A unit line whose id
+  is skipped ends with ` skipped`, and every pass block says `units skipped: <s>` under
+  `units verified:`, so a pass is finished where its verified and skipped units are all its units.
+  The recheck's window `r` counts no unit skipped: a unit there whose reads are spent stops the
+  recheck.
+
 Passes already summed, in every window:
 
   Every unit verified is not enough on its own, because a replan can change which units a pass
@@ -241,8 +255,9 @@ Passes already summed, in every window:
   `summed: yes` or `summed: no, <why>` under `units verified:`. It reads yes when the pass's
   summary on file, `reports/<pass id>.md` in the run folder, names on its `per unit:` lines
   exactly the unit ids the block carries, and the ledger's last
-  `pass: <window> <pass id>` line carries that summary's figures: its units count, and the
-  updated, questions and replied totals the lead copies off it. A pass reading no is summed again:
+  `pass: <window> <pass id>` line carries that summary's figures: its units count, the
+  updated, questions and replied totals the lead copies off it, and its units skipped (a `pass:`
+  line written before units were skipped carries none, which reads as 0). A pass reading no is summed again:
   its runner skips the units already verified and writes a new summary. The reasons it names:
 
       summed: no, no summary on file
@@ -278,11 +293,11 @@ Which passes wait, in every window:
   and details, then its elevations, ceiling plans and enlarged plans, then everything else, an
   untyped sheet and a type no list names among them.
 
-  A pass waits for an earlier pass of the same discipline that holds a unit not yet verified of a
-  lower class than the highest class among the pass's own units not yet verified. The rule runs per
+  A pass waits for an earlier pass of the same discipline that holds a unit not yet settled of a
+  lower class than the highest class among the pass's own units not yet settled. The rule runs per
   discipline, so a folded pass carrying several applies it for each, and the parts in plan order
-  say which pass is earlier. A verified unit holds nothing back, so a resumed plan waits on no work
-  already read. A sheet a slice deferred is in no pass, so it holds nothing back either. A repeated
+  say which pass is earlier. A settled unit, verified or skipped, holds nothing back, so a resumed
+  plan waits on no work already read and a skipped sheet never holds its discipline back. A sheet a slice deferred is in no pass, so it holds nothing back either. A repeated
   lines pass waits for nothing and nothing waits for it. A window 3 pass of reviews reads
   `starts after: none`, since no two of them share a trade; a pass of manual parts carried out of
   a full pass waits for each earlier pass holding a unit its parts read on after or a unit of a
@@ -291,8 +306,9 @@ Which passes wait, in every window:
   A pass waits only on passes before it in plan order, so the waits cannot cycle: the first pass
   not finished always has every pass it waits on finished, and the lead's listing can always start
   it or has one running. `lead_pass.py passes` reads these lines and the ledger and says what to
-  start, reading the ledger through `live_pass_state`: a block's `units verified:` and `summed:`
-  are as of the last plan run, and a pass reports between plan runs.
+  start, reading the ledger through `live_pass_state` and `live_pass_skipped`: a block's
+  `units verified:`, `units skipped:` and `summed:` are as of the last plan run, and a pass
+  reports between plan runs.
 
 Reviews to a pass, in window 3:
 
@@ -1716,7 +1732,8 @@ def _read_ledger_units(path: Path, window: int) -> dict[str, tuple[str, ...]]:
     """
     This window's `dispatch` lines, as unit id -> the sheet numbers the line names. A missing file
     is no bindings, which is right for the first plan run of a window: the ledger's own
-    `phase: plan approved` line is only appended after the window 1 plan is written.
+    `phase: reading started` line (`phase: plan approved` on an older ledger) is only appended
+    after the window 1 plan is written.
 
     The lead's own lines (`dispatch:`, `pass:`, `phase:`) are skipped by the colon after the
     keyword; another window's lines are skipped by the window field. The same unit dispatched twice
@@ -1923,6 +1940,60 @@ def _read_ledger_verified(path: Path, window: int) -> set[str]:
     return {unit for unit, ok in last_ok.items() if ok}
 
 
+# The ending of the one note a runner writes when a unit's two reads both failed their check. A
+# note of another shape (`unread file ...`, `unread section ...`) never matches it.
+SKIPPED_NOTE_RE = re.compile(r" read [1-9][0-9]* times, not read again$")
+
+
+def settled_of_lines(lines, window) -> tuple[set[str], dict[str, str]]:
+    """
+    Off ledger lines, this window's units verified ok and its units skipped, each skipped unit with
+    its `unread` note's clause. A unit is verified ok where its latest `verified` line after its
+    latest `dispatch` line reads `result ok`, and skipped where an `unread` note ending
+    `read <k> times, not read again` sits after its latest `dispatch` line and no `result ok`
+    follows that dispatch. A later `dispatch` line unsettles a unit until it settles again. The
+    recheck's window `r` skips no unit, so there the skipped set is always empty.
+    """
+    want = str(window)
+    ok: dict[str, bool] = {}
+    skipped: dict[str, str] = {}
+    for raw in lines:
+        parts = raw.strip().split()
+        if len(parts) < 4 or parts[1] != want or parts[0] not in ("dispatch", "verified", "note"):
+            continue
+        unit = parts[3]
+        if parts[0] == "dispatch":
+            ok[unit] = False
+            skipped.pop(unit, None)
+        elif parts[0] == "verified":
+            ok[unit] = "result" in parts and parts[parts.index("result") + 1:][:1] == ["ok"]
+        elif len(parts) > 5 and parts[4] == "unread" and unit != "-":
+            clause = " ".join(parts[5:])
+            if SKIPPED_NOTE_RE.search(" " + clause):
+                skipped[unit] = clause
+    verified = {unit for unit, good in ok.items() if good}
+    if want == "r":
+        return verified, {}
+    return verified, {unit: clause for unit, clause in skipped.items() if unit not in verified}
+
+
+def settled_units(ledger: Path, window) -> tuple[set[str], dict[str, str]]:
+    """
+    The units of a window that are settled, read off the ledger's whole lines: the set verified ok,
+    and each skipped unit with its `unread` note's clause. A missing ledger settles nothing. This
+    is the one predicate a later stage waits on: a stage starts once every unit of the stage before
+    it is in one of the two.
+    """
+    if not ledger.is_file():
+        return set(), {}
+    try:
+        data = ledger.read_bytes()
+        text = data[: data.rfind(b"\n") + 1].decode("utf-8", "replace")
+    except OSError as e:
+        raise PlanError(f"cannot read the run ledger at {ledger}: {e}") from e
+    return settled_of_lines(text.splitlines(), window)
+
+
 def _read_ledger_pass_lines(path: Path, window: int) -> dict[str, list[str]]:
     """Each pass's last `pass: <window> <pass id> ...` line of this window, split into fields."""
     if not path.is_file():
@@ -1970,11 +2041,14 @@ def _summed(
         except Exception as e:
             raise PlanError(f"cannot read the pass summary at {path}: {e}") from e
         named: list[str] = []
+        skipped: set[str] = set()
         totals = None
         for line in text.splitlines():
             parts = line.split()
             if parts[:2] == ["per", "unit:"] and len(parts) > 2 and parts[2] not in named:
                 named.append(parts[2])
+                if parts[-2:] == ["verified", "skipped"]:
+                    skipped.add(parts[2])
             elif line.startswith("totals verified:"):
                 totals = _SUMMARY_TOTALS_RE.search(line)
         without = [unit_id for unit_id in unit_ids if unit_id not in named]
@@ -1993,7 +2067,9 @@ def _summed(
             summed[pass_id] = "no, no pass line on the ledger"
             continue
         wanted = dict(zip(PASS_LINE_FIGURES, [str(len(named)), *totals.groups()]))
-        if any(_figure(line, field) != value for field, value in wanted.items()):
+        wanted["skipped"] = str(len(skipped))
+        # A pass line written before units were skipped carries no `skipped` figure: it skipped none.
+        if any((_figure(line, field) or ("0" if field == "skipped" else None)) != value for field, value in wanted.items()):
             summed[pass_id] = "no, the last pass line does not carry the summary on file"
             continue
         summed[pass_id] = "yes"
@@ -2024,6 +2100,15 @@ def live_pass_state(
         pass_id: (sum(1 for unit in units if unit in verified), summed[pass_id])
         for pass_id, units in units_by_pass.items()
     }
+
+
+def live_pass_skipped(window, units_by_pass: dict[str, list[str]], run_folder: Path) -> dict[str, int]:
+    """
+    Each pass's units skipped as a plan run would count them now, beside `live_pass_state`, whose
+    shape the recheck's script reads and which stays as it is. Window `r` skips none.
+    """
+    _verified, skipped = settled_units(run_folder / LEDGER_FILE, window)
+    return {pass_id: sum(1 for unit in units if unit in skipped) for pass_id, units in units_by_pass.items()}
 
 
 def _bind_unit_ids(
@@ -2857,7 +2942,7 @@ def _read_ledger_window_3_ids(path: Path) -> set[str]:
     return named
 
 
-_READ_PLAN_REVIEW_RE = re.compile(r"^[1-9][0-9]*\. (?P<unit>\S+): .*?(?:, package (?P<package>\S+))?(?: verified)?$")
+_READ_PLAN_REVIEW_RE = re.compile(r"^[1-9][0-9]*\. (?P<unit>\S+): .*?(?:, package (?P<package>\S+))?(?: verified| skipped)?$")
 
 
 def _read_plan_window_3_bindings(path: Path) -> list[tuple[str, str]] | None:
@@ -3536,11 +3621,42 @@ def _read_pass_trades(folder: Path) -> tuple[set[str], set[str]]:
     return written_on, touched_units
 
 
+PAUSED_LINE = "phase: window 2 paused"
+INDEX_LINE = "phase: index built"
+
+
+def _refuse_slice_before_its_index(ledger: Path) -> None:
+    """
+    A slice of window 2 closes with its `phase: window 2 paused` line and then its index, in that
+    order. A ledger whose last paused line has no `phase: index built` line after it is a slice
+    whose index has not run, so the rest of the window waits for it: the plan is refused and
+    nothing is written. A missing ledger, or one with no paused line, refuses nothing.
+    """
+    if not ledger.is_file():
+        return
+    try:
+        lines = [raw.strip() for raw in ledger.read_text(encoding="utf-8").splitlines()]
+    except Exception as e:
+        raise PlanError(f"cannot read the run ledger at {ledger}: {e}") from e
+    paused = [at for at, line in enumerate(lines) if line.startswith(PAUSED_LINE)]
+    if paused and not any(line.startswith(INDEX_LINE) for line in lines[paused[-1] + 1:]):
+        raise PlanError(
+            f"{ledger}: the slice paused at line {paused[-1] + 1} has no `{INDEX_LINE}` line after it, "
+            f"so its index has not run; run the index before the rest of window 2 is planned. "
+            f"Nothing written"
+        )
+
+
 def _units_touching_unnamed_trades(ledger: Path, touched_units: set[str]) -> list[str]:
     """
     The units whose last `verified` line in windows 1 and 2 shows a row updated or a Question
     raised, and that carry no `touched` line: their reader named no trade it touched, so the trades
-    this pass wrote on are not all known, and no package can be left out as untouched.
+    this pass wrote on are not all known, and no package can be left out as untouched. So is any
+    unit of windows 1 and 2 one of whose reads could have written where nothing on file says what
+    it touched: a unit counts as naming its trades only where every read it was dispatched for, the
+    last one included, left a report the report check holds whole or a confirmed file of the
+    runner's, and its trades set was written for its last read. A set written for an earlier read
+    is not enough, since a later read that ended with no report can have written too.
     """
     if not ledger.is_file():
         return []
@@ -3561,6 +3677,43 @@ def _units_touching_unnamed_trades(ledger: Path, touched_units: set[str]) -> lis
         )
         if wrote and unit_id not in touched_units:
             unnamed.append(unit_id)
+    # A failed or cut off read's writes stay on the record, so every read a unit was dispatched for
+    # could have written. Each needs a report the check holds whole or the runner's confirmed file,
+    # and the unit's trades set has to be the one written for its last read.
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import pass_summary
+    import unit_report as unit_report_script
+
+    written: dict[str, set[int]] = {}
+    for path in sorted((ledger.parent / "trades").glob("*.written")):
+        try:
+            marks = path.read_text(encoding="utf-8").splitlines()
+        except Exception as e:
+            raise PlanError(f"cannot read {path}: {e}") from e
+        for line in marks:
+            parts = line.split()
+            if len(parts) == 3 and parts[1] == "read" and _WHOLE_NUMBER_RE.match(parts[2]):
+                written.setdefault(parts[0], set()).add(int(parts[2]))
+    reports = ledger.parent / REPORTS_FOLDER
+    confirmed = ledger.parent / unit_report_script.CONFIRMED_FOLDER
+    for window, kind in (("1", "vocabulary"), ("2", "sheet")):
+        dispatches: dict[str, int] = {}
+        for raw in text.splitlines():
+            parts = raw.split()
+            if len(parts) >= 4 and parts[0] == "dispatch" and parts[1] == window:
+                dispatches[parts[3]] = dispatches.get(parts[3], 0) + 1
+        for unit_id, reads in dispatches.items():
+            if unit_id in unnamed:
+                continue
+            known = all(
+                not unit_report_script.problems_of_file(pass_summary.unit_report(reports, unit_id, read, reads), kind)
+                or (confirmed / unit_report_script.confirmed_name(unit_id, read)).is_file()
+                for read in range(1, reads + 1)
+            )
+            if not known or reads not in written.get(unit_id, set()):
+                unnamed.append(unit_id)
     return unnamed
 
 
@@ -3737,6 +3890,7 @@ def _render(
         lines.append(f"units: {len(pass_units)}")
         unit_ids = [unit["id"] if window == 3 else unit["unitId"] for unit in pass_units]
         lines.append(f"units verified: {sum(1 for u in unit_ids if u in plan['verified'])}")
+        lines.append(f"units skipped: {sum(1 for u in unit_ids if u in plan.get('skipped', {}))}")
         lines.append(f"summed: {plan['summed'][host['id']]}")
         lines.append(f"starts after: {plan['startsAfter'][host['id']]}")
         lines.append("")
@@ -3749,7 +3903,9 @@ def _render(
             if window == 2 and _text(unit.get("fileId")) in marked:
                 # The version the file's unit read, which the reader compares its page against.
                 line += f"{REPEATED_MARK} in set {marked[_text(unit.get('fileId'))]}"
-            lines.append(line + (" verified" if unit_id in plan["verified"] else ""))
+            lines.append(
+                line + (" verified" if unit_id in plan["verified"] else " skipped" if unit_id in plan.get("skipped", {}) else "")
+            )
         lines.append("")
 
     lines.append("## Deliberately left out")
@@ -4052,6 +4208,7 @@ def plan(args) -> str:
         # than recomputing window 1's selection from arguments it might not be given identically.
         window_1_path = args.out.parent.joinpath(*WINDOW_1_FILE)
     elif window == 2:
+        _refuse_slice_before_its_index(args.out.parent / LEDGER_FILE)
         keys, selected, excluded, repeated_sets, left_with_number, left_by_plan_count = _read_window_1(
             args.window_1, rows, tag
         )
@@ -4145,7 +4302,9 @@ def plan(args) -> str:
     result["summed"] = _summed(
         window, runner_passes, args.out.parent, _read_ledger_pass_lines(ledger_path, window)
     )
-    result["startsAfter"] = _starts_after(window, runner_passes, result["verified"])
+    result["skipped"] = settled_units(ledger_path, window)[1]
+    # A skipped unit is settled, so it holds no later pass of its discipline back.
+    result["startsAfter"] = _starts_after(window, runner_passes, result["verified"] | set(result["skipped"]))
     body, total_units, total_passes = _render(window, result, inventory_rows, show_file, runner_passes)
     payload = body.encode("utf-8")
     _write_atomically(args.out, payload)

@@ -1,18 +1,18 @@
 """
-fold_report.py: read the package fold's report, for the lead's check-in and for the folder's hand-back.
+fold_report.py: read the package fold's report, for the closing report and for the folder's hand-back.
 
 The package folder folds a scope run's bid packages into what one kind of firm bids, one level down
 from the lead, and appends each act it makes to `<run folder>/reports/fold.md` right after the call
 that made it returns, one act per line under a closed label. This script reads that file. It reads
-no record and judges nothing: it copies the lines and counts them, so the lead holds the report only
-as long as a check-in needs it and the folder adds no number of its own.
+no record and judges nothing: it copies the lines and counts them, so the lead never holds the
+report and the folder adds no number of its own. `close_report.py` reads it with `read_report`.
 
 Two modes:
 
     python fold_report.py print <run folder> [--start <lines>[:<characters>]]
 
-        Every line of the report, as written, for the lead to say in the estimator's words at the
-        check-in that ends window 2 and at close-out. Output stops before PRINT_CAP characters,
+        Every line of the report, as written, for the lead to read where a step needs a line of it,
+        such as the `deleted:` lines the general requirements package leaves off. Output stops before PRINT_CAP characters,
         below the 30,000 a Bash call returns, every printed line counted, the closing line
         included, and its last line names the command that prints the rest. A line longer than the
         room a call has once nothing else is printed is cut there, under a line naming where, and
@@ -76,7 +76,7 @@ NO_REPORT_LINE = (
     "folded or deleted."
 )
 
-# The acts the check-in that ends window 2 names, one label each, in the order it names them.
+# The acts the closing report names, one label each, in the order it names them.
 LABELS = (
     "folded", "split", "moved", "supplier", "sealant kept", "default", "deleted",
     "owner's work still covered", "kept", "changed", "re-homed", "question", "fold touched",

@@ -432,7 +432,7 @@ Each of these is a harness check.
     id and cites its file. This cannot judge whether a reader sends the file on
     every citation; that stays in review and the measured pass.
 25. The runner copies each worker's anomalies onto the ledger. The summary script builds the
-    summary's `anomalies:` line from the ledger's `anomaly` notes alone, and the close-out names
+    summary's `anomalies:` line from the ledger's `anomaly` notes alone, and the closing report names
     the pairs of rows carrying the same work off them, so `agents/scope-round-runner.md` carries,
     in pass mode, the step that appends one `anomaly` note per line of a report's `anomalies:`
     line, copied whole, with review mode copying the reviewer's the same way, and its
@@ -477,40 +477,31 @@ Each of these is a harness check.
 28. The lead's pass script keeps its bookkeeping. The scope run's lead takes one `count_entries`
     call per pass and writes the pass's `pass:` line with the shipped `lead_pass.py`, so it never
     holds a summary. The script is run in-process with the plan and summary scripts over one
-    invented run folder: its passes listing is a tally of each plan block, the prefixes included,
-    and a window 2 plan with no pass lists none to dispatch; a record takes the `count_entries`
-    answer's `counts` array and pairs each count with its unit by prefix, so an answer in another
-    order records exactly the line the check builds, and the plan script then reads the pass as
-    `summed: yes`, while an answer whose short unit a pairing by place would pass is refused; a
-    count below the runner's appends nothing and names the unit with both counts; an answer with
-    a prefix missing, not in the pass or given twice, a summary naming other units, or a unit it
-    reads verified no, is refused; window 3's line for a tagged pass of two reviews carries both
-    counts and the reviews' pages opened, searches and reports restored, and its listing gives
-    each review's prefix; the
-    check-in counts each anomaly that landed on a Question or a reply by pass, or in window
-    3 by the review the plan names, and prints none of them, while every other note line, an anomaly ending `run only` or `sheet reading` or with no ending or a row's subject, a pair of rows carrying the
-    same work, and every grain and door note among them, comes once across its calls, under labels
-    in estimator words, each call under Bash's output limit, and a note longer than one call is
-    cut under a line naming it and finished in the next; the skill's reader and reviewer report
-    shapes, both agents' shapes and the reader's mandate on the ending say a Question is named by the full id `ask_question` returned and a reply by the id
-    `reply_question` returned, never shortened, since a short id prints the note whole; and the skill's
-    own three command lines are fed to the script's arguments. The check-in and the record speak
-    the estimator's words: a pass is named by the sheets it read, or in window 3 the packages it
-    reviewed, with its new items summed off its trades, items updated, Questions raised and
-    replies, the record printing that line under the `pass:` line it
-    appends; the check-in prints no `pass:` line and no `created` figure there, keeping the units
-    and the entry count, and in window 3 the pages opened and searches, on the lead's own line
-    apart, and no line but that one names a pass by its id; and a note prints under its label less
-    the unit id it opens with. The `checkin:` line the lead appends when the user answers a
-    check-in, one naming no pass before the window's first `pass:` line among them, is read past by
-    the summary, plan and lead scripts, and the skill carries its shape with the `none` value, the
-    resume read of it, the rule that a check-in it records is never shown again, and each resume
-    rule, `go`, `pause` and a check-in with no line after it, so deleting one fails the check. A
-    record whose summary reads a unit verified, where a later `verified` line of that unit past
-    the summary's lines reads mismatch, is refused, a line past them still being written, with no
-    newline yet, is not read, and the lead reads a unit finished off its latest `verified` line,
-    as the plan script does. This cannot judge a count the record returns: the counts are the check's
-    own.
+    invented run folder: its passes listing is a tally of each plan block, units verified and
+    units skipped among its values, the prefixes included, with its three closing lines and no
+    check-in line, and a window 2 plan with no pass lists none to dispatch; a record takes the
+    `count_entries` answer's `counts` array and pairs each count with its unit by prefix, so an
+    answer in another order records exactly the line the check builds, `skipped 0` in it, and the
+    plan script then reads the pass as `summed: yes`; a count below the runner's, and an answer
+    whose short unit a pairing by place would pass, append the `pass:` line reading
+    `lead-verified no` and a `short:` line naming the unit with both counts, and the run goes on;
+    an answer with a prefix missing, not in the pass or given twice, a summary naming other units,
+    or a unit it reads verified no, is refused; window 3's line for a tagged pass of two reviews
+    carries both counts and the reviews' pages opened, searches and reports restored, and its
+    listing gives each review's prefix. The record speaks the estimator's words: a pass is named by
+    the sheets it read, or in window 3 the packages it reviewed, with its new items summed off its
+    trades, items updated, Questions raised and replies, and a unit skipped is said as read twice
+    and not confirmed. A pass whose unit was skipped records `skipped 1` and is finished; three of
+    four units skipped print the breaker with each unit named, two of four do not. An older
+    ledger's `checkin:` lines are read past by the summary, plan and lead scripts, the `checkin`
+    mode is gone, and the skill carries the new ledger shapes and the turn rule. Both agents'
+    shapes and the reader's mandate on the ending name a Question by the full id `ask_question`
+    returned and a reply by the id `reply_question` returned, never shortened, and the skill's own
+    command lines are fed to the script's arguments. A record whose summary reads a unit verified,
+    where a later `verified` line of that unit past the summary's lines reads mismatch, is refused,
+    a line past them still being written, with no newline yet, is not read, and the lead reads a
+    unit finished off its latest `verified` line, as the plan script does. This cannot judge a count
+    the record returns: the counts are the check's own.
 29. The package fold runs one level down. The scope run's lead dispatches the package folder at
     stage 6 step 5 and reads its report with the shipped `fold_report.py`, so no package list, row
     or manual page of the fold reaches its context. The step names no fold verb and carries the
@@ -576,26 +567,22 @@ Each of these is a harness check.
     `--include` added with every id a ledger binds kept, and writes `starts after:` under `summed:`
     in every pass block, for a discipline of many parts, a mixed part, a folded pass, the repeated
     lines pass, a resumed plan, a slice and window 3, which the summary script's plan reader reads
-    past. The shipped `lead_pass.py passes` prints `start now:`, `waiting:`,
-    `since the last check-in:` and `check-in due:`, off those lines, the ledger and the summaries,
-    with the plan file untouched since a pass reported: at the limit with `--running`, with gates
-    open and shut, past a pass stopped on a mismatch, and at a check-in in every window, due at every
-    fourth `pass:` line, a pass recorded while one stood open reported at the next with the count
-    restarted at the `checkin:` line. Each value a `checkin:` line's second field takes is read back
-    through that listing. `passes --reported` prints the one pass's prefixes off the plan at call time,
-    a window 3 manual part among them and taken by the real record, and the five closing lines, keeps
-    that pass out until it is recorded, and refuses a pass the plan does not carry. Windows 1, 2 and 3
-    are driven to their end, never stuck, never past the limit, each hand-back taking its prefixes off
-    that call, and a pass counts as reported only where a check-in the check-in script printed covers
-    it, the check-in that closes a window shown only where that window's step says so, so a pass that
-    reaches no check-in fails. The skill says the lead starts what `start now:` names and never picks
-    a pass, gives the second field's three values, a hand-back's calls in their order and what the lead
-    holds of them, each window's closing check-in, and the measured basis of its time estimate; the
-    runner's boundary says what a reader sees; and both readers read a row that moved again, judge
-    their write against it, and send a batch again only on the two refusals a row moving causes. Each
-    fix broken again, in the script and in the text, is refused. This cannot judge how a running
-    reader handles a refusal, or a run's real wall time and duplicate groups; those are the measured
-    run's.
+    past. The shipped `lead_pass.py passes` prints `start now:` and `waiting:` off those lines, the
+    ledger and the summaries, with the plan file untouched since a pass reported: at the limit with
+    `--running`, with gates open and shut, and past a pass stopped on a mismatch. Nothing holds a
+    start for a check-in, whatever `pass:` lines and older `checkin:` lines the ledger carries, and
+    a pass whose unit was skipped is finished, so the part that waits on it starts. `passes
+    --reported` prints the one pass's prefixes off the plan at call time, a window 3 manual part
+    among them and taken by the real record, and the three closing lines, keeps that pass out until
+    it is recorded, and refuses a pass the plan does not carry. Windows 1, 2 and 3 are driven to
+    their end, never stuck, never past the limit, each hand-back taking its prefixes off that call,
+    every pass finished once. The skill says the lead starts what `start now:` names and never picks
+    a pass, that whatever wakes it takes the listing and acts, a hand-back's calls in their order and
+    what the lead holds of them, and the measured basis of its time estimate; the runner's boundary
+    says what a reader sees; and both readers read a row that moved again, judge their write against
+    it, and send a batch again only on the two refusals a row moving causes. Each fix broken again,
+    in the script and in the text, is refused. This cannot judge how a running reader handles a
+    refusal, or a run's real wall time and duplicate groups; those are the measured run's.
 33. Question text reads easily. Every shipped skill or agent file, and this file, that carries
     the phrase "Question text is plain estimator words" carries the two writing sentences after
     it, word for word, and the files known to carry the phrase are pinned. This cannot judge
@@ -662,38 +649,42 @@ Each of these is a harness check.
     refused.
     This cannot judge whether a running
     review finds a condition rightly; that is the measured run's.
-36. A runner counts every read of a unit one way. `agents/scope-round-runner.md` counts a unit's
-    reads by its `dispatch` lines with a reader started after each, whatever ended each, a line
-    with no `.started` file and no report after it no read; it notes each read that no check
-    confirmed with its number, stops at two reads unless the user's `Read again:` names the unit
-    with its next read, which one note spends once, and says a resume counts the same lines. It
-    checks a unit against its own prefix alone, its first dispatch holding 0: a report with no
-    `created subjects:` line, or one naming a row outside the prefix, is a mismatch, each such row
-    named on a note written at the check that first finds it, which the check-in prints whatever a
-    later read ends in; a later read that updates those rows and creates nothing new passes. A unit checked by count, with no subject count, verifies
-    only once every created subject it names is found on the record by name, never by figures
-    added up. It takes a failed claim off only the list its own check read. The reader, the
-    vocabulary reader, the reviewer and the rechecker each write their `.started` file first, every
-    report shape carries `created subjects:`, and the skill routes every unit whose reads are spent
-    the same way. Each phrase taken out, and each retired phrase of the old rules put back, is
-    refused. This cannot judge whether a running runner counts and checks as written; that is the
-    measured pass's.
+36. A runner counts a unit's attempts and its spent reads apart. `agents/scope-round-runner.md`
+    counts a unit's attempts by its `dispatch` lines with a reader started after each, a line with no
+    `.started` file and no report after it no attempt, and spends a read only on a failed check: a
+    read cut off before its report and a blocked call each spend nothing, each noted with its number.
+    A unit with two spent reads is skipped, its writes left on the record, and the runner goes on to
+    its next unit; three reads in a row cut off or blocked, or one block, stop the pass for the lead.
+    A `Read again:` line, which the lead sends only after the recheck's stop, grants one read by its
+    number with one note, and a resume counts the same lines. It checks a unit against its own prefix
+    alone, its first dispatch holding 0: a report with no `created subjects:` line, or one naming a
+    row outside the prefix, is a mismatch, each such row named on a note written at the check that
+    first finds it, which the closing report names whatever a later read ends in; a later read that
+    updates those rows and creates nothing new passes. A unit checked by count, with no subject
+    count, verifies only once every created subject it names is found on the record by name, never
+    by figures added up. It takes a failed claim off only the list its own check read. The reader,
+    the vocabulary reader, the reviewer and the rechecker each write their `.started` file first,
+    every report shape carries `created subjects:`, and the skill takes every skipped unit as settled
+    and never reads it again in windows 1, 2 and 3. Each phrase taken out, and each retired phrase of
+    the old rules put back, is refused. This cannot judge whether a running runner counts and checks
+    as written; that is the measured pass's.
 37. A scanned plan is read from its picture. Both readers read a plan, a riser or one-line
     diagram, or a schedule or legend whose text came back machine read and thin from a render,
     within three renders a page, citing only boxes the text read gives and writing no quantity off
     a render alone; a count printed on a riser or one-line diagram is held against the count
     another sheet states, and a count the reader makes never is one; each page or part left is
-    named in one shape on `pages unread:` and on the anomaly line the check-in prints, and the
-    skill has the lead name those sheets at the check-in and the close out. Each phrase taken out
+    named in one shape on `pages unread:` and on the anomaly line, and the closing report names
+    each sheet and part, as stage 9 and `close_report.py` give its source. Each phrase taken out
     is refused. This cannot judge whether a running reader reads a scan well; that is the measured
     run's.
 38. A unit that fails its check or ends without a usable report is read again or restored, and
     nobody writes a reader's report or changes a ledger line. Every ledger line goes on through the
     shipped `ledger.py`, under a lock, checked as a batch, with a shadow copy, replaced whole each
-    time, that keeps whole `phase:` and `checkin:` lines added by hand that an append would take,
+    time, that keeps whole `phase:` lines added by hand that an append would take, takes off a
+    `checkin:` line added by hand and refuses a new one,
     rebuilds a shadow short only of its final newline from the whole ledger, never adopts a line
     written by hand that holds a control character and puts back any other change under one
-    `repaired:` line, which the lead's check-in says in the estimator's words; an append writes
+    `repaired:` line, which the closing report says in the estimator's words; an append writes
     each control character inside a line as one space and refuses none; a runner runs `ledger.py
     heal` before its first look at the ledger. The shipped `unit_report.py` holds each kind of report to its
     agent's own shape, a stub refused, `created` and `questions raised` held to their lists,
@@ -722,6 +713,52 @@ Each of these is a harness check.
     commands, the confirmed command's exemption, the retry of a lock or replace failure and the
     restore, each phrase taken out and each retired one put back refused. This cannot judge how a
     running runner keeps to them.
+39. A scope run says everything at its end, in one file a script writes. With no check-in, what a
+    check-in told the estimator reaches him in `closing-report.md`, written by the shipped
+    `close_report.py` off the run folder: the lead never retells the run's notes, and every id the
+    report would print is a name off a byte-for-byte copy a copy agent makes, or a count by package.
+    Over one invented run folder carrying every kind of note, a skipped unit of each reason, a
+    blocked and a cut off read, fold lines, amendments, sections on no package, the copies and the
+    index's leftovers, each of forty-two items lands once in its own section, no record id is printed,
+    the short version stays under its cap, and a report written with the copy failed, with no fold
+    report, with no ledger or on an early stop is written and never refused. The skill carries stage
+    9's three facts in order (the file written, its short version said with the link, `phase: closed
+    out` appended), the stops and each one's message, the first message's one permission sentence,
+    and nothing that writes or reads a settings file or hands Claude Code a rule string; the
+    attended run's words are gone. Each phrase taken out and each retired one put back is refused.
+    This cannot judge how a live run's lead says the short version; that is the live run's.
+
+40. A run that goes to its end on its own never strands itself, and its report never says more
+    was read than was. Between tries and polls the lead runs `lead_pass.py wait` in the
+    foreground, which returns by itself within 280 seconds, and never waits on a background
+    command's exit; every poll is bounded at thirty minutes of unchanged answers, and the same
+    refusal twice with no new ledger line between is a stop. A unit's third read in a row that
+    spent nothing stops at once, whatever ended the last, and the estimator's go on is noted for a
+    blocked unit as for a cut off one. A window 3 pass whose every unit was skipped is recorded, so
+    the breaker reads it. A slice's paused line goes on before its index, and the plan refuses the
+    rest of the window until the index follows it. In the recheck a unit whose reads are spent is a
+    stop. The closing report prints what the run could not read and the short version's count of
+    it from one list, counts manual pages only off a reader's own report that passes its check,
+    counts failed checks off mismatch lines, and says every sheet was read only where every planned
+    unit verified ok and the list is empty. Each is held over invented run folders the shipped
+    scripts build, every resume row of the skill's table among them, and each fails on the text and
+    scripts before the repair. This cannot judge a live run's waits; that is the live run's.
+
+41. The closing report never rewords a note into something else and never says a change was made
+    that was not. A note is classified only by the whole shape its producer writes, and a note in no
+    shape is printed under To look at in its own words. A package amendment is written as
+    `amending:` before its calls and `amended:` after they succeed, and the report says one as made
+    only off its `amended:` line, and one with no `amended:` line as started and not confirmed.
+    Manual pages read are the spans the reader's verified report says it read, held to the plan.
+    The Questions are headed as every Question on the project, open and closed, and each trade's
+    figure is said to include the ones that apply to every trade. Gaps are told
+    apart by what they are about, and names a boundary fetched again are history in the detail.
+    The skill's two bounds, thirty minutes of one answer and the same refusal twice with no ledger
+    line between, are counted by `lead_pass.py seen`, which keeps its count in the run folder, so
+    a new session keeps it too. A note is a block or an interruption only where its tail is the
+    runner's whole shape. Each is held over invented run folders the shipped scripts build, and
+    each fails on the scripts before this repair. This cannot judge whether a live lead runs the
+    seen mode where the skill says; that is the live run's.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

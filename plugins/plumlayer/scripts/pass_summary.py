@@ -57,12 +57,32 @@ The hand-back, in this order:
     window: <n>   pass: <pass id>
     units: <units the plan block carries>, verified <those whose latest verified line reads result ok>
     unverified: <unit id> mismatch | <unit id> read <k> no verified line, one line each, or "none"
-    unread: <unit id> <clause>, one line per `unread` note, or "none"
+    skipped: <unit id> <sheet> read <k> times, not read again, one line each, or "none"
+    stopped: <unit id> <the note that stopped it>, one line each, or "none"
+    unread: <unit id> <clause>, one line per `unread` note a skipped unit does not carry, or "none"
     notes: anomalies <n>, overlaps <n>, deviations <n>, kinds <n>
     review: pages opened <n>, searches <n>, reports restored <n>        (window 3 only)
     report: <the --out path>
 
 The `notes:` figures count the pass's notes of each kind, and the summary file carries every one.
+
+A unit is skipped, in windows 1, 2 and 3, where `plan_inventory.settled_units` reads it so: an
+`unread` note ending `read <k> times, not read again` after its latest `dispatch` line, and no
+`result ok` after that dispatch. Its `per unit:` line ends `verified skipped`, it is named on
+`skipped:` and not on `unverified:`, and its pass is finished without it. `unverified:` names only a
+unit that is neither verified ok nor skipped, whose pass is dispatched again. The recheck's window
+`r` skips no unit: a unit there whose reads are spent stays on `unverified:`.
+
+A read ends one of three ways when no check confirms it. It failed its check: a `verified` line
+reading mismatch, or a deviation note ending `, read <k>` of any other shape. It was interrupted:
+the runner stopped and no usable report was on file, noted
+`deviation <sheet> interrupted: no report on file, read <k>`. It was blocked: a tool call was
+refused, the sign-in failed or the server did not answer, noted
+`deviation <sheet> blocked: <tool> <sign-in, refused by the client or server>, read <k>`. A unit
+not settled whose latest read was blocked, or whose last three reads were each interrupted or
+blocked, is named on `stopped:`, its note copied, and the lead stops the run there. The count is
+read first: where the last three reads each spent nothing, the line adds that it is the third read
+in a row, whatever ended the last, so the lead stops for the estimator and never tries it again.
 
   --out     the summary file, `<run folder>/reports/<pass id>.md` in every window. Written whole
             on every run, so a summary run again replaces the one before it.
@@ -173,10 +193,23 @@ from pathlib import Path
 # The report check is the report script's own, so the summary and the runner hold a report whole
 # by one rule.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import plan_inventory  # noqa: E402
 import unit_report as unit_report_script  # noqa: E402
 
 # The recheck's window, which the ledger writes as `r` beside the three numbered ones.
 RECHECK_WINDOW = "r"
+
+# The two shapes of a read that spent nothing, as the runner writes them on a `deviation` note.
+# `ledger.py` holds a note carrying `blocked:` or `interrupted:` to them.
+BLOCK_CLASSES = ("sign-in", "refused by the client", "server")
+BLOCKED_NOTE_RE = re.compile(
+    r"(?:^| )blocked: (\S+) (sign-in|refused by the client|server), read ([1-9][0-9]*)$"
+)
+INTERRUPTED_NOTE_RE = re.compile(r"(?:^| )interrupted: no report on file, read ([1-9][0-9]*)$")
+# How many interrupted or blocked reads in a row on one unit stop the run, and the note the lead
+# appends when the estimator says to go on after that stop.
+ENDED_IN_A_ROW = 3
+GO_ON_NOTE = "go on given after three reads that spent nothing"
 
 # The outcomes a rechecker gives a row of a sheet unit and an item of a retire unit, in the order
 # the summary's `recheck:` line counts them.
@@ -535,6 +568,10 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
     other_lines = 0
     total_lines = 0
     last_line = ""
+    # The pass's own unit lines, which settle each unit, and each read that spent nothing, by unit
+    # and read: `blocked` or `interrupted`, with its note.
+    member_lines: list[str] = []
+    ended: dict[str, dict[int, tuple[str, str]]] = {}
 
     for number, raw in enumerate(text.splitlines(), 1):
         line = raw.strip()
@@ -600,6 +637,18 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
             kind = parsed["kind"]
             notes_by_kind[kind] += 1
             notes.append({"unit": parts[3], "kind": kind, "clause": parsed["clause"]})
+            if kind == "deviation" and unit != "-":
+                if GO_ON_NOTE in parsed["clause"]:
+                    # The estimator said to go on after the stop: the reads before it stop nothing.
+                    ended[unit] = {}
+                blocked = BLOCKED_NOTE_RE.search(parsed["clause"])
+                interrupted = INTERRUPTED_NOTE_RE.search(parsed["clause"])
+                if blocked:
+                    ended.setdefault(unit, {})[int(blocked.group(3))] = ("blocked", parsed["clause"])
+                elif interrupted:
+                    ended.setdefault(unit, {})[int(interrupted.group(1))] = ("interrupted", parsed["clause"])
+        if unit != "-":
+            member_lines.append(line)
         last_line = line
 
     if not dispatched and not verified and not notes:
@@ -615,7 +664,29 @@ def read_pass(path: Path, window: int, pass_id: str, plan: dict) -> dict:
     }
     verified = [entry for entry in verified if entry["unit"] not in read_again]
 
+    ok, skipped = plan_inventory.settled_of_lines(member_lines, window)
+    # A unit not settled stops the run where its latest read was blocked, or where its last
+    # ENDED_IN_A_ROW reads each spent nothing.
+    stopped: dict[str, str] = {}
+    for unit, reads_ended in ended.items():
+        if unit in ok or unit in skipped:
+            continue
+        latest = dispatch_count.get(unit, 0)
+        here = reads_ended.get(latest)
+        if here is None:
+            continue
+        tail = [reads_ended.get(k) for k in range(latest - ENDED_IN_A_ROW + 1, latest + 1)]
+        # The count comes first: a third read in a row that spent nothing is the estimator's to
+        # clear, whatever ended it, and is never tried again as a lone block would be.
+        if latest >= ENDED_IN_A_ROW and all(tail):
+            stopped[unit] = f"{here[1]}, the third read in a row that was interrupted or blocked"
+        elif here[0] == "blocked":
+            stopped[unit] = here[1]
+
     return {
+        "ok": ok,
+        "skipped": skipped,
+        "stopped": stopped,
         "dispatched": dispatched,
         "verified": verified,
         "readAgain": read_again,
@@ -741,10 +812,10 @@ def summary_lines(
         entry = by_unit.get(unit)
         if entry is None:
             counts = " ".join(f"{field} -" for field in SUMMARY_FIELDS)
-            lines.append(f"per unit: {unit} {counts} verified no")
+            lines.append(f"per unit: {unit} {counts} verified {'skipped' if unit in pass_data['skipped'] else 'no'}")
             continue
         counts = " ".join(f"{field} {entry['fields'][field]}" for field in SUMMARY_FIELDS)
-        verdict = "yes" if entry["result"] == "ok" else "no"
+        verdict = "yes" if entry["result"] == "ok" else "skipped" if unit in pass_data["skipped"] else "no"
         again = _read_again(pass_data["reads"][unit])
         lines.append(f"per unit: {unit} {counts}{again} verified {verdict}")
 
@@ -1003,8 +1074,11 @@ def hand_back_lines(
 ) -> list[str]:
     """The few lines the runner returns to the lead; the summary file carries the rest."""
     result_of = {entry["unit"]: entry["result"] for entry in pass_data["verified"]}
+    skipped = pass_data["skipped"]
     unverified: list[str] = []
     for unit in plan["units"]:
+        if unit in skipped:
+            continue
         if unit not in result_of:
             # A unit whose latest dispatch line has no verified line after it names that read.
             read = pass_data["dispatchCount"].get(unit, 0)
@@ -1013,9 +1087,19 @@ def hand_back_lines(
             unverified.append(f"{unit} mismatch")
 
     lines = [f"window: {window}   pass: {pass_id}"]
-    lines.append(f"units: {len(plan['units'])}, verified {len(plan['units']) - len(unverified)}")
+    lines.append(f"units: {len(plan['units'])}, verified {len(plan['units']) - len(unverified) - len(skipped)}")
     lines.extend(f"unverified: {entry}" for entry in unverified or ["none"])
-    unread = [note for note in pass_data["notes"] if note["kind"] == "unread"]
+    lines.extend(
+        [f"skipped: {unit} {skipped[unit]}" for unit in plan["units"] if unit in skipped] or ["skipped: none"]
+    )
+    stopped = pass_data["stopped"]
+    lines.extend(
+        [f"stopped: {unit} {stopped[unit]}" for unit in plan["units"] if unit in stopped] or ["stopped: none"]
+    )
+    unread = [
+        note for note in pass_data["notes"]
+        if note["kind"] == "unread" and not (note["unit"] in skipped and note["clause"] == skipped[note["unit"]])
+    ]
     if unread:
         for note in unread:
             where = "" if note["unit"] == "-" else f"{note['unit']} "

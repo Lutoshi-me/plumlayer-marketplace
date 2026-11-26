@@ -44,6 +44,12 @@ Before anything else, write the one word `started` to
 `<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
 this read against your unit only where that file is there.
 
+Where a call you need cannot be made, because Claude Code refused it, your sign-in failed, or
+Plumlayer did not answer after one try more, write nothing more: put the one line
+`blocked: <the tool's name> <sign-in, refused by the client or server>` first in your report and
+in your returned message, and end. A blocked read counts against nothing, and the run tries
+the same step again.
+
 On a read after your first, read your Owed file before your first write. Each `not written by
 read <j>:` line on it is work you owe: open the page it names and write it where your mandates
 put it, or say why you cannot. The `held:` lines name the rows that stood under your prefix
@@ -1300,7 +1306,7 @@ render only what text cannot give.
   orientation. Three renders is the cap for a page, a tiled call counted as one: a page that needs
   more is read as far as three renders take you, and what they leave goes on `pages unread:` with
   why and, in the same words, on your `anomalies:` line ending `, run only`, so it reaches the
-  check-in; never a fourth render.
+  closing report; never a fourth render.
 - **A whole sheet that must be read visually is one tiled call, not a crop walk.** When the text
   read came back bounded or `workerCapped`, or the work you are after is in the linework across the
   sheet, call `render_page` with `tiles: {maxPx: 2000, dpi: 120}`: one call returns a small
@@ -1344,8 +1350,8 @@ render only what text cannot give.
   each render. A page, or a part of one, that the cap leaves or that no render shows clearly
   enough to read (a faint scan, a render that came back blank) goes on `pages unread:` as
   `<sheet> p<page> not read from the picture: <the whole sheet, or each part left by where it sits on the sheet>, <why>`,
-  and the same words go on your `anomalies:` line ending `, run only`, so the estimator hears at
-  the check-in that nothing drawn there is on a row.
+  and the same words go on your `anomalies:` line ending `, run only`, so the estimator reads in
+  the closing report that nothing drawn there is on a row.
 Then emit against the live list.
 
 ## Reading a file's repeated lines
