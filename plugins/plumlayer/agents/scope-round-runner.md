@@ -40,7 +40,7 @@ manual parts the plan puts after them. A review's line names its unit id, the pa
 catalog trade, the manual pages it reads after `reads` and its package id
 (`2. i2-rev-092116-1: Drywall and framing, trade 09 21 16, reads 092116 p402-p415 of file-1a2b, package pkg-4c1e`).
 A manual part's line names the same, then the unit it reads on after and its pages
-(`3. i2-rev-092116-1c-1: Drywall and framing, trade 09 21 16, package pkg-4c1e, manual part after i2-rev-092116-1, reads 092900 p416-p440 of file-1a2b`). A unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
+(`3. i2-rev-092116-1c-1: Drywall and framing, trade 09 21 16, package pkg-4c1e, manual part after i2-rev-092116-1, reads 092900 p416-p425 of file-1a2b`). A unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
 line and in the `verify_unit` prefix; never rebuild it from the pass id and the line's position. A
 pass the plan folded carries units of more than one discipline, each under the id its own
 discipline gave it, and its `folded in:` line names the parts it took in. If a path is missing,

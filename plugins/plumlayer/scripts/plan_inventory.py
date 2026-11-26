@@ -343,8 +343,8 @@ Manual parts, in window 3:
   section's code, its file, the first and last page the part reads and the section's own first and
   last page. Each unit line names its spans, so the runner copies them into the dispatch:
 
-      1. rev-230000-1: HVAC, trade 23 00 00, reads 230000 p880-p899 of file-1a2b (section p880-p915), package pkg-4c1e
-      2. rev-230000-1c-1: HVAC, trade 23 00 00, package pkg-4c1e, manual part after rev-230000-1, reads 230000 p900-p915 of file-1a2b (section p880-p915)
+      1. rev-230000-1: HVAC, trade 23 00 00, reads 230000 p880-p899 of file-1a2b (section p880-p907), package pkg-4c1e
+      2. rev-230000-1c-1: HVAC, trade 23 00 00, package pkg-4c1e, manual part after rev-230000-1, reads 230000 p900-p907 of file-1a2b (section p880-p907)
 
   A part's unit line follows the unit it reads on after, in the same pass, and counts against the
   REVIEW_PASS_UNITS units a pass holds, so a pass carrying parts takes in another trade's reviews

@@ -162,7 +162,7 @@ them is ever trimmed.
    other searches. A search refused on that fifth send too is named on your `anomalies:` line as
    `unsearched <the query string>, refused by the rate limit five times, run only`, one line per
    search, and not counted on your `searches:` line, so the close-out names the words your review
-   could not search. The fifty searches here, the ten of a manual part and the two of a standard
+   could not search. The fifty searches here, the four of a manual part and the two of a standard
    line each count a search once, whether it was answered or named `unsearched`, and never count
    a resend.
 4. WHAT COUNTS AS WORK NO ROW CARRIES. A hit is new work only when both hold: the page it names is

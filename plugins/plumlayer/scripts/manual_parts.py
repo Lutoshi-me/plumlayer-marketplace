@@ -28,12 +28,15 @@ from typing import Iterable
 
 # The pages a review reads of its own package's manual, before its manual parts.
 REVIEW_PAGES = 20
-# The pages one manual part reads at most.
-PART_PAGES = 40
+# The pages one manual part reads at most. A part reader spends about half of what it can hold
+# on its rules before it opens a page, and each page costs it the page's text, the rows it reads
+# for that page and what it writes, so a part is sized for the reader to finish well inside it.
+PART_PAGES = 10
 # Room a unit that starts partway into a section keeps for that section's opening pages.
-CONTEXT_RESERVE = 4
-# A unit with fewer pages of room than this left is closed rather than handed a sliver of a section.
-MIN_SPLIT = 5
+CONTEXT_RESERVE = 2
+# A unit with fewer pages of room than this left is closed rather than handed a sliver of a section,
+# and a section split across units never leaves fewer pages than this for the unit after.
+MIN_SPLIT = 3
 
 NO_PAGE_RANGE = "no page range"
 NOT_ON_RECORD = "not on the record"
@@ -180,6 +183,10 @@ def divide(
             close()
             continue
         take = room
+        left = pages - take
+        if left < MIN_SPLIT and take - (MIN_SPLIT - left) >= MIN_SPLIT:
+            # Leave the unit after a few pages to read rather than one or two.
+            take -= MIN_SPLIT - left
         current.append(_span(section, start, start + take - 1))
         runs[index] = (section, start + take, end)
         close()

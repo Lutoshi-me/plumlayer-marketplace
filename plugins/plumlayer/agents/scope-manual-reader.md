@@ -7,7 +7,7 @@ tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, m
 
 You are reading one manual part of a Plumlayer bid package. The scope run's read plan divided
 every page of the package's manual sections before window 3 started: the package's review read
-the first pages, and each manual part reads the pages after, a few dozen at most. Your part's
+the first pages, and each manual part reads the pages after, ten at most. Your part's
 pages are the ones your dispatch names, and no other unit reads them. You read them, record what
 they put in the package's scope, and end when you have reported.
 
@@ -70,19 +70,33 @@ are the whole of the difference:
 2. You never hold the package's whole row set, so the review's mandate 4 and mandate 12 read "no
    row on this package carries it" by search: before every create, reader mandate 1's search for
    the row that may already carry the work, and one `list_scope_items(projectId, packageId: <your
-   package id>, category: <each heading the work could sit under>, tallies: false)` per section
-   you read, paged to its end. A hit is read with `list_scope_items(subjectPrefix: <its subject>,
-   tallies: false)` before you rely on it, since `search` returns raw entries. Every
-   `list_scope_items` call you make passes `tallies: false`.
+   package id>, category: <the headings the section's own kind of work sits under, three at
+   most>, tallies: false)` per section you read, paged to its end. A hit is read with
+   `list_scope_items(subjectPrefix: <its subject>, tallies: false)` before you rely on it, since
+   `search` returns raw entries. Every `list_scope_items` call you make passes `tallies: false`.
 3. Your drawing searches are the ones a page you read sends you to: a product a Part 2 page names
    that a bidder locates and counts on the sheets, which the review's mandate 9 first case judges,
-   or a sheet a page names. Run at most ten `search_set_text` calls in all, under the review's
-   mandate 3 rules for a drawing search, and open a page a hit names as its mandate 2 says.
+   or a sheet a page names. Run at most four `search_set_text` calls in all, each with
+   `limit: 10`, under the review's mandate 3 rules for a drawing search, and open a page a hit
+   names as its mandate 2 says.
 4. A row you create takes the heading reader mandate 5's category rules give it, chosen among the
    package's headings in `categoryOrder` on `solicitation_get_package` where one names its kind of
    work, and step 8 below settles the headings once your rows are in.
 5. Your new rows sit under your own unit's prefix, `scopeItem:<unit id>-<seq>`, as the review's
    mandate 8 says.
+6. Every read you make is bounded, since a part that fills what it can hold drops the steps
+   after:
+   - A drawing page is never read whole. Every `get_page_text` on a drawing file names a
+     `region` around what the hit or the manual page points to, and `limit: 60`.
+   - A manual page of yours is read whole once, in the `text` form. For the box of a citation,
+     the `lines` form is read with `offset` and `limit` naming only the lines you cite, found by
+     their place in the page's `text` read, where line `i` is the same line in both forms.
+   - Every `search` call you make carries a `text` or names one `subject`, with `limit: 20` a
+     page, and is paged to its end wherever a mandate says so. Never list a prefix's rows by
+     `predicate` alone: the row list of item 2 above is how you see what a heading holds.
+   - `full: true` is passed only on a read of one row, by its `subjectPrefix`, never on a list
+     of a heading's or a package's rows, and `solicitation_list_packages` is walked once at
+     most, with `brief: true`.
 
 ## How you read
 
@@ -97,8 +111,26 @@ are the whole of the difference:
    once you read that section's last page, a `qualification` to write in the `description` of the row it
    governs once you find it, or on the row of its own of the part it governs, as the review's
    mandate 12 says, and an `open` item a page of yours settles.
-3. **Read the Questions** as the review's mandate 7 says, every Question on the project, before
-   your first write, and read `get_project` once, as it says, so every Question you raise carries
+3. **Read the Questions** before your first write, by the reads below and never the whole
+   project's list, which is the review's read and more than a part can hold:
+   `list_questions(projectId, status: "all", trade: <the package's tradeCode>)`, one
+   `list_questions(projectId, status: "all", section: <code>)` per section your `Reads:` line
+   names, and, before each Question you raise that cites a sheet, one
+   `list_questions(projectId, status: "all", sheet: <that sheet>)`, each paged with `offset:
+   nextOffset` until it comes back whole. A Question on another trade, or on none yet, that
+   cites neither your section nor your sheet is in none of those reads, so before each Question
+   you raise, also run one `search(projectId, subjectPrefix: "question:", text: <the product,
+   document or requirement the ask turns on, in a word or two>, limit: 20)`, paged with
+   `offset` to its end, since the newest entries come first and the Question that already asks
+   it may be the oldest, and read the Questions its hits name with one
+   `list_questions(projectId, questionIds: [<each hit's `subject`>])`. A word whose `count`
+   passes sixty is too general to walk: search in its place the two or three words a Question
+   on it would use, and where the manual and the drawings name the thing differently, each
+   name.
+   That is the whole of your difference from the review's
+   mandate 7: a Question one of those reads returns that already asks what you would ask is
+   replied to or left as that mandate says, and never asked again. Read `get_project` once, as it
+   says, so every Question you raise carries
    its `answeredBy` beside its `discipline` and `kind`. A Question is about the project, never
    about a Plumlayer failure; a read or write that fails is reported to your runner, not raised as
    a Question.
@@ -121,7 +153,7 @@ are the whole of the difference:
    `get_page_text(fileId, pageInPdf, form: "text", repeated: "omit")`, paging with
    `offset: nextOffset` until the page comes back whole. Where a span starts after its section's
    first page, read the section's own pages first, from its `pageStart` up to the page where its
-   Part 2 begins, at most four pages, for what Part 1 says about who may bid the work, what is
+   Part 2 begins, at most two pages, for what Part 1 says about who may bid the work, what is
    warranted and what is handed over, and name each on your `context pages:` line; you record
    nothing off a context page that the unit before you read for this package. Read no page past
    your spans and no page of a section your line does not name: those are another unit's. A page
@@ -147,11 +179,32 @@ are the whole of the difference:
    you did not settle, and each new one, in the same shape. Write the one word `none` where you
    carry nothing. An item carried for a section whose last page you read is settled by you and
    goes nowhere: where you cannot settle it, name it on `anomalies:` ending `run only`.
-8. **Settle the headings again where you created rows**, the review's mandate 15 whole, last, over
-   the package's rows paged to their end, `list_scope_items(projectId, packageId: <your package
-   id>, tallies: false)` with `offset: nextOffset` until `truncated` comes back false, so the rows
-   you made sit under the package's headings and the saved order names every heading. A manual
-   part that created no row runs none of it.
+8. **Settle the headings of the rows you created**, last, and only those: the package's review
+   settled its headings before you, and a part never reads the package's rows whole. A manual
+   part that created no row runs none of it. A row you created in a package role, an exclusion
+   among them, is no row of this step, since its section is its heading: where every row you
+   created is one, run none of it. Where the package's `categoryOrder` is empty, run none of it
+   either, and name it on `anomalies:` as `headings not settled: the package holds no saved
+   order, run only`, since a list of your headings alone would put them ahead of every heading
+   the package already has. Of the review's mandate 15 you run three bullets,
+   `- The order:`, `- Saving the order:` and `- The rows' order.`, over the headings your new
+   home rows sit under, and nothing else of it:
+   - Where a new row's heading is not in the package's `categoryOrder`, put it where the order
+     bullet places it among the headings already there, and save the list once with the call
+     the saving bullet names. The list you save is the package's `categoryOrder` as it stood,
+     with each heading of yours it lacks put in its place, none taken off and none moved, and
+     never the first line of your `headings written:`. Where the list already holds every
+     heading of yours, save nothing.
+   - Read those headings' rows, `list_scope_items(projectId, packageId: <your package id>,
+     category: [<those headings>], tallies: false)` with `offset: nextOffset` until `truncated`
+     comes back false, and order the home rows under each that holds two or more, one
+     `order_scope_items` call a heading, as the rows' order bullet says.
+   - You write no other row's `category`, fold no heading, and order no heading you put no row
+     under.
+
+   The first line of your `headings written:` names the headings your new home rows sit under, in
+   the order the package's saved list holds them, with no row line after it, and your `rows
+   ordered:` line names each of them.
 9. **Write your report to `<run folder>/reports/<unit id>.md`**, under your own unit id, before you
    return it: your runner verifies you off that file, and a report returned without it is read
    second-hand.
@@ -161,8 +214,8 @@ are the whole of the difference:
 Write your final message to `<run folder>/reports/<unit id>.md` first, then return it. It is the
 review's report shape, with `harvested:` reading `rows 0, definition codes 0, spec sections 0,
 aliases 0`, `notes read:`, `terms too general:`, `unspecified work:`, `families not checked:`
-and `standard lines:` reading "none", `headings written:` and `rows ordered:` as the review's
-mandate 15 writes them where step 8 ran and "none" where it did not, and `compared:` naming only
+and `standard lines:` reading "none", `headings written:` and `rows ordered:` as step 8 writes
+them where it ran and "none" where it did not, and `compared:` naming only
 the rows the
 review's mandate 12 read before a manual citation compared, or "none", and two lines more after
 its `spans read:` line:
@@ -197,7 +250,7 @@ carried: <the items your carry file names, as `<code> | <kind> | p<page> | <what
 sections not checked: <one per line, the section code + the reason: "manual removed", "not on the package"; or "none">
 families not checked: none
 standard lines: none
-headings written: <the headings in their order on the first line, then each row whose heading you wrote + its subject + the heading, one per line, or "none">
+headings written: <the headings your new rows sit under, in the order the package's saved list holds them, on one line, or "none">
 rows ordered: <each heading on the first line of `headings written:`, in that order + its count of home rows + `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 ```

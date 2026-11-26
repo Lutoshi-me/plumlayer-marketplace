@@ -12246,9 +12246,9 @@ _MANUAL_READER_PHRASES = (
     "mandate 12 to the line before mandate 14, and mandate 15 to the line before `## The reader "
     "mandates you work under`",
     "Read no page past your spans and no page of a section your line does not name",
-    "up to the page where its Part 2 begins, at most four pages",
+    "up to the page where its Part 2 begins, at most two pages",
     "**Judge each section whose last page you read**",
-    "Run at most ten `search_set_text` calls in all",
+    "Run at most four `search_set_text` calls in all",
     "`<run folder>/carry/<the unit after After>.md`",
     "A manual part that created no row runs none of it.",
 )
@@ -12497,8 +12497,8 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
         json.loads((folder / "plan" / "spec-sections.json").read_text(encoding="utf-8")), "fixture"))[0])]
     hvac_units = [spans_of.get(review) or [], *(e["sections"] for e in entries if e["review"] == review)]
     errors += [f"the planned HVAC manual: {e}" for e in _manual_spans_cover(hvac, hvac_units)]
-    if [e["id"] for e in entries if e["review"] == review] != [f"{review}c-1", f"{review}c-2"]:
-        errors.append(f"the HVAC manual parts are not {review}c-1 and c-2: {[e['id'] for e in entries]}")
+    if [e["id"] for e in entries if e["review"] == review] != [f"{review}c-{n}" for n in range(1, 10)]:
+        errors.append(f"the HVAC manual parts are not {review}c-1 to c-9: {[e['id'] for e in entries]}")
     chain = [review, *(e["id"] for e in entries if e["review"] == review)]
     if [e["continues"] for e in entries if e["review"] == review] != chain[:-1]:
         errors.append("a manual part does not read on after the unit before it")
@@ -12512,12 +12512,12 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
         f"1. {review}: Invented HVAC, trade 23 00 00, reads 230000 p100-p111 of file-m1; 233113 p112-p119 "
         f"of file-m1 (section p112-p190), package pkg-hvac",
         f"2. {review}c-1: Invented HVAC, trade 23 00 00, package pkg-hvac, manual part after {review}, reads "
-        f"233113 p120-p155 of file-m1 (section p112-p190)",
+        f"233113 p120-p127 of file-m1 (section p112-p190)",
         "## Manual sections not read",
         f"1. 230999 on {review}, package pkg-hvac: no page range",
     )
     errors += [f"the read plan does not carry `{line}`" for line in wanted_lines if line not in plan_text]
-    for figure in ("manual parts 2", "manual pages 101", "sections not read 2"):
+    for figure in ("manual parts 9", "manual pages 101", "sections not read 2"):
         if figure not in bounds:
             errors.append(f"the bounds line does not name `{figure}`: {bounds.strip()[:300]}")
 
@@ -12532,7 +12532,7 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
     if "manual pages read" in reads.get("i1-W3-1", ""):
         errors.append(f"the pass names manual pages no part verified: {reads}")
     reads, _named = lead._plan_reads(folder / "read-plan.md", 3, {f"{review}c-1"})
-    if "manual pages read (233113 pages 120 to 155 for Invented HVAC)" not in reads.get("i1-W3-1", ""):
+    if "manual pages read (233113 pages 120 to 127 for Invented HVAC)" not in reads.get("i1-W3-1", ""):
         errors.append(f"the pass does not name the pages its verified part read: {reads}")
 
     # A unit already dispatched keeps its pages; a dispatched part whose section moved is retired,
@@ -12747,8 +12747,12 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
         carried_text = (carried / "read-plan.md").read_text(encoding="utf-8")
         passes = {e.get("pass") for e in plan_file(carried)["continuations"] if e.get("pass")}
         block = carried_text.split("### i1-W3-1b.", 1)[1].split("###", 1)[0] if "### i1-W3-1b." in carried_text else ""
-        if passes != {"i1-W3-1b"} or "starts after: i1-W3-1" not in block:
-            errors.append(f"a long manual's parts are not carried into i1-W3-1b after i1-W3-1: {sorted(passes)}")
+        lettered = [f"i1-W3-1{letter}" for letter in "bcdefghijklmnopqrstuvwxyz"[:len(passes)]]
+        if len(passes) < 2 or sorted(passes) != lettered or "starts after: i1-W3-1" not in block:
+            errors.append(
+                f"a long manual's parts are not carried into passes lettered from i1-W3-1b, the first "
+                f"after i1-W3-1: {sorted(passes)}"
+            )
         totals = [len(_plan_passes(carried_text))]
         if totals[0] < 2:
             errors.append("a long manual planned into one pass")
@@ -14565,7 +14569,7 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("runner", "must carry the headings on the review's `headings written:` first line, each trimmed "
                "the same way, in that order"),
     ("runner", "a listed heading the review did not write is not one"),
-    ("manual reader", "**Settle the headings again where you created rows**, the review's mandate 15 whole, last"),
+    ("manual reader", "**Settle the headings of the rows you created**, last, and only those"),
     (SHEET_READER, "A phase or building heading only where the drawings or the manual separate the "
                    "work by phase or by building"),
     (VOCABULARY_READER, "A phase or building heading only where the drawings or the manual separate "
@@ -16936,8 +16940,9 @@ _ROWS_PINS: tuple[tuple[str, str], ...] = (
     (_ROWS_REVIEWER, "A heading with one home row is named `one row`."),
     (_ROWS_REVIEWER, _ROWS_SHAPE),
     (_ROWS_MANUAL, _ROWS_SHAPE),
-    (_ROWS_MANUAL, "`headings written:` and `rows ordered:` as the review's mandate 15 writes them "
-     "where step 8 ran"),
+    (_ROWS_MANUAL, "`headings written:` and `rows ordered:` as step 8 writes them where it ran"),
+    (_ROWS_MANUAL, "order the home rows under each that holds two or more, one `order_scope_items` "
+     "call a heading"),
     (_ROWS_SKILL, _ROWS_SHAPE),
     (_ROWS_SKILL, "puts the rows under every heading in the order the estimator reads the work"),
     (_ROWS_SKILL, "and puts the rows under every heading in the order the estimator reads the work."),

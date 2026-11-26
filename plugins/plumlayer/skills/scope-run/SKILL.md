@@ -136,7 +136,10 @@ that relaxes any one of them reproduces a measured, named failure.
    work, so it shares no name with the row that carries it, as the reader's mandate 1 says. Before raising a Question, read every Question on the project, closed
    ones included: `list_questions` with `status: "all"` and no trade filter, paged until it comes
    back whole. A trade filter drops the Questions that name other trades and the ones still at not
-   known yet, and the reader's own page read carries only the open ones on its own trades. Where an
+   known yet, and the reader's own page read carries only the open ones on its own trades. A
+   manual part alone reads them another way, since the whole list is more than a part can hold:
+   by its package's trade, by each section it reads and by a sheet its ask cites, and by a search
+   of the Questions for what its ask turns on, as its definition says. Where an
    open one already covers the same ask, reply to it instead of
    asking it a second time; a closed one is never asked again. A Question is about the project,
    never about a Plumlayer failure; a read or write that fails is reported and handled in the run's
@@ -1495,7 +1498,7 @@ On the go-ahead:
    trade; a trade of more than eight packages is a pass of its own, and one of more than ten is
    refused, since a window 3 pass holds at most ten units. It reads no sheets and takes
    no inventory. It divides each package's manual sections, in its `manualSections` order, between
-   its review, whole sections up to twenty pages, and manual parts of up to forty pages each after
+   its review, whole sections up to twenty pages, and manual parts of up to ten pages each after
    it, so every page of every section is planned before any review runs. Read back only its bounds
    line: packages, reviews, manual parts, manual pages, sections not read, passes, reviews per
    pass, units per pass, trades, and the packages sharing a trade. Where it refuses because the
