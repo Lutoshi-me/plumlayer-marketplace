@@ -579,11 +579,38 @@ record files, never recorded as project entries:
   nobody copies it, filters it into another file, or edits a line of it. Audience: agent, and it feeds the close-out report, so whatever crosses into that
   report becomes user-facing at the crossing and is translated there.
 
+  Every line reaches the ledger through one script, yours as much as a runner's: each `phase:`,
+  `checkin:` and `note` line this skill tells you to append goes on with
+
+  ```bash
+  python3 '<plugin root>/scripts/ledger.py' append '<run folder>/ledger.md' <<'EOF'
+  <the line>
+  EOF
+  ```
+
+  and `lead_pass.py record` writes each `pass:` line through the same script. It holds
+  `ledger.lock` in the run folder while it reads, checks and writes, writes each control character
+  inside a line (a tab, a form feed, a line separator and the rest) as one space, refuses a batch
+  with a line in no shape the ledger holds and writes none of it, and keeps `ledger.shadow` beside
+  the ledger, the run's own copy, which only it writes, replacing it whole each time so a stop
+  leaves it as it was or with the whole batch. Before every append, whenever `lead_pass.py` reads the ledger, and
+  when a runner runs `ledger.py heal` before its first look at the ledger, the ledger is held to
+  that copy. Whole `phase:` and `checkin:` lines added at the end outside the script, each one the
+  script would have taken, are kept and added to the copy. Where a line was changed or taken out,
+  or a line added outside the script is a runner's line, a `pass:` line, one the script would
+  refuse, one holding a control character or one with no line ending, the
+  ledger is written again from the copy and one line is appended, `repaired: lines
+  differing from the run's own copy <n>, first at line <i>; the ledger was written again from that
+  copy`. Nothing stops for it and nobody puts a line back by hand. A refused line is sent again,
+  correct, as a new line. The run's scripts replace a file whole by writing
+  `.<file name>.<process>.tmp` beside it first; one left behind by a stopped script is never read.
+  Audience of `ledger.shadow`, `ledger.lock` and those temporary files: machine.
+
   The lead's own three line shapes, which the runner never writes:
 
   ```text
   pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> lead-verified <yes|no>
-  pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> pages-opened <n> searches <n> lead-verified <yes|no>
+  pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> pages-opened <n> searches <n> reports-restored <n> lead-verified <yes|no>
   pass: r <pass id> units <n> created <n> updated <n> questions <n> replied <n> recited <n> rows-changed <n> removed <n> not-found <n> retired <n> kept <n> refused <n> lead-verified <yes|no>
   phase: <boundary name>
   checkin: <window> <window, the id of the last pass recorded when it was shown, or none> <go|pause>
@@ -603,9 +630,11 @@ record files, never recorded as project entries:
   Every figure on a `pass:` line is written by `lead_pass.py record` (stage 4 step 3) off the
   pass's summary file and your own count call, never typed by hand: `created` is the sum of your
   counts, and `updated`, `questions` and `replied` come off the summary's totals line, in every
-  window. A window 3 line carries two fields more, `pages-opened` and
-  `searches`, off the summary's `review:` line, which the summary script reads off the reviewer's
-  own `pages opened:` and `searches:` lines. Those fields are what make the run countable from the
+  window. A window 3 line carries three fields more, `pages-opened`, `searches` and
+  `reports-restored`, off the summary's `review:` line, which the summary script reads off the
+  reviewer's own `pages opened:` and `searches:` lines, each report counted only where the report
+  script holds it whole, and counts on `reports-restored` each unit whose report was restored from
+  the record, its pages and searches not known. Those fields are what make the run countable from the
   ledger afterwards.
 
 - `grid/`, `inventory.md`, `inventory.json`: the sheet grid as the fetch agent put it on disk, and
@@ -647,9 +676,26 @@ record files, never recorded as project entries:
   them on disk rather than in its context. One file per pass holds the pass summary, written by
   the summary script the runner runs, and the runner returns only the hand-back; `lead_pass.py`
   and the plan script read the summary here. The package folder writes `fold.md` here, one act
-  of the fold per line, which you read only through `fold_report.py print`. Audience: agent, and
+  of the fold per line, which you read only through `fold_report.py print`. Nobody but its reader
+  ever writes, completes or copies into a reader's report. Beside a window 3 unit's report, where
+  that unit passed its check and its own report was missing or not whole, the report script
+  writes `<unit id>.read-<k>.restored.md`, the report of read `<k>` restored from what the run
+  already holds off the record; it says on its first line that the run's script wrote it, and no
+  line of it says a page was read or a search was run. Audience: agent, and
   `fold.md` feeds the check-in that ends window 2 and the close-out, so whatever crosses from it
   into those becomes user-facing at the crossing and is translated there.
+- `owed/`: one file per read after a unit's first in windows 1, 2 and 3, `<unit id>.read-<k>.md`,
+  written by the report script off the ledger alone: the rows under the unit's prefix before that
+  read, what earlier reads noted they did not write, the checks they failed and the reads that
+  ended with no report. The runner names it on the reader's `Owed:` line. Audience: agent.
+- `confirmed/`: one file per read the runner verified off the reader's returned message because
+  the report file was not whole, `<unit id>.read-<k>.md`, written by the report script before
+  that read's closing append: the `updated subjects:`, `questions raised ids:` and `questions
+  replied ids:` the runner's check confirmed, and the `trades touched:` catalog ids as the reader
+  reported them. It is the runner's record of its own check, not a report, and no line of it says
+  a page was read. A later runner of the unit merges that read's lists from it, and writes the
+  unit's `touched` trades lines off it after a stop, where no whole report of the read is on file,
+  and ignores it where the read has no `verified` line. Audience: agent.
 - `names/`: one file per pass, each unit's new items as its runner's check read them off the
   record, one line per item (`<unit id>`, its subject and its name, tab separated), checked whole
   against each unit's verified item count and matched for overlaps by `names_scan.py`, in the pass
@@ -657,10 +703,16 @@ record files, never recorded as project entries:
 - `kinds/`: one file per pass, the definition kinds each unit's reader named, one per line,
   appended a unit at a time, and the window boundary takes their union with a local command to
   find every kind a reader named without holding any of them itself. Audience: machine.
-- `trades/`: one file per pass, the trades each unit's own verification read, appended a unit at a
-  time: one line per trade as `<unit id> trade <catalog id> <count>`, that count being the unit's
-  created subjects on that trade, and one line per trade it touched as `<unit id> touched <catalog
-  id>`. The pass summary script sums this file, so no runner adds the trades up itself. Audience: machine.
+- `trades/`: one file per pass, the trades each unit's own verification read, written a unit at a
+  time by the report script's `trades` command, which replaces the unit's earlier lines with its
+  latest set: one line per trade as `<unit id> trade <catalog id> <count>`, that count being the
+  unit's created subjects on that trade, and one line per trade it touched as `<unit id> touched
+  <catalog id>`. The pass summary script sums this file, so no runner adds the trades up itself.
+  Beside it, `<pass id>.written` names each unit whose set was written and the read it was written
+  for, `<unit id> read <k>` one unit per line, so a unit with no trades is told from one whose
+  trades were never written, and the latest read's set from an earlier read's. A unit's `touched`
+  lines are every trade any of its verified reads touched, ok or mismatch, gathered by the report
+  script's `touched` command. Audience: machine.
 - `records/`: JSONL files for large batch writes (these do get uploaded, as the write
   mechanism). Audience: machine.
 
@@ -743,10 +795,21 @@ sent again (stage 3 step 2), the package folder (stage 6 step 5), and the copy o
 window 3 (stage 7 step 1). Where the call comes back with an agent id, end the turn after that
 dispatch and continue at the next step when its report arrives.
 
-Where a reader, a reviewer or a runner has ended and its report did not arrive in the message, as
-with a completion notice that carries no hand-back, its report file under `reports/` is the report,
-written before it returned; open that file rather than re-running the unit. A unit whose report
-file is also absent is re-run on its own unit, against the live list, so nothing is created twice.
+Where a runner has ended and its hand-back did not arrive in the message, as with a completion
+notice that carries no hand-back, dispatch its pass again: the new runner skips every unit already
+verified and writes what the one before it left. A missing or stub report of a reader or a reviewer
+is never a reason to read a unit again. The runner holds every report to the report script's
+check, verifies off the reader's returned message where the file is not whole, and in window 3
+restores the lost report of a unit that passed its check from what the run already holds. You
+restore one yourself the same way, for a window 3 unit whose latest `verified` line reads ok, with
+no page read:
+
+```bash
+python3 '<plugin root>/scripts/unit_report.py' restore '<run folder>' 3 <unit id>
+```
+
+A unit is read again only where its check found a mismatch or no check could be made, against the
+live list, so nothing is created twice.
 
 An agent that stops answering partway is ended by the client within about ten minutes, and its
 dispatch comes back as an error whose whole text is `[Request interrupted by user for tool use]`.
@@ -1689,7 +1752,15 @@ Report to the user, in plain words:
   or that the count of them is incomplete when it was cut short. Name each manual section no
   review could read, with the reason: the manual lists it and holds none of its pages, its manual
   was removed, it left its package before the rest of it was read, or a pass had no room left to
-  read its last pages, with those pages. Name each package you could not finish searching, with
+  read its last pages, with those pages. Name each requirement a review or a manual part read and
+  did not write, with its page and why, and say that no later read wrote it. Name each write a
+  read said it made that its check did not find on the record, which the next read said was not
+  needed, with the row and why. Name each review or
+  manual part whose report was written by the run from the record because the reader's own
+  report was lost, and say that its pages opened and searches are not known. Name each sheet,
+  review or manual part with a read whose trades are not known, and say that a later pass on an
+  addendum may leave out a package that read wrote to. Where lines of the
+  run's log were changed outside the run and put back, say so, with how many. Name each package you could not finish searching, with
   the exact words you could not search. Say that you may have missed work for that package, and
   that they can search those words in the drawings on plumlayer.com. On a pass
   on an addendum, also name the packages you did not review, and say why: this pass wrote no row
@@ -1705,8 +1776,8 @@ Report to the user, in plain words:
 - **How long it took**: wall-clock from the read plan's approval to this report.
 <!-- /user-facing -->
 
-The report is written off the ledger's `pass:` and `phase:` lines, and the `grain`, `same work:`,
-`not read:`, `not read from the picture:`, `unsearched` and window 3 `unread` notes named below, read with a local filter, and the one package read named below,
+The report is written off the ledger's `pass:`, `phase:` and `repaired:` lines, and the `grain`, `same work:`,
+`not read:`, `not read from the picture:`, `unsearched`, `not written:`, `not needed:`, `report written from the record`, `wrote to are not known` and window 3 `unread` notes named below, read with a local filter, and the one package read named below,
 never off memory and never off the whole file. Everything the report needs is on those lines: the
 wall-clock between the first and last of them, the counts, the deviations, and what is still open.
 Read them with one filter each and count them locally: the sheet reads are the `dispatch` lines,
@@ -1721,7 +1792,13 @@ manual sections no review could read are the sections the read plan lists under
 or a manual part writes only for a section whose manual was removed, and the window 3 `unread`
 notes that name a section, each section named once. The words a review could not
 search are the window 3 `anomaly` notes that carry `unsearched`, named under the package of the
-review whose unit the note names, each word once. The scanned sheets not read are the window 1
+review whose unit the note names, each word once. The requirements read and not written are the
+window 3 `anomaly` notes that carry `not written:`, each entry once, taken from each unit's last
+read that verified ok, the notes between its last `dispatch` line and its `verified` line: a read
+owed an earlier read's entries and noted again each one it still did not write. The writes a
+read claimed that the next read said were not needed are the `anomaly` notes that carry `not
+needed:`, in windows 1, 2 and 3, each once. The reports written from the record are the window 3 `deviation` notes that carry
+`report written from the record`, and the lines put back are the ledger's `repaired:` lines. The scanned sheets not read are the window 1
 and 2 `anomaly` notes that carry `not read from the picture:`, each sheet and part once. What the index left
 open comes off the
 `phase: index built` lines, which carry its counts, and the codes found nowhere and the codes a
@@ -1809,6 +1886,7 @@ subagent_type: <plumlayer:scope-vocabulary-reader in window 1, plumlayer:scope-r
 run_in_background: false
 Project: <projectId>. Window: <n>. Pass: <pass id>. Unit: <unit id>.
 Read: <the number of this read of the unit, its own dispatch line counted>.
+Owed: <run folder>/owed/<unit id>.read-<k>.md on a read after the first, or none.
 Reading for: <"the vocabulary", "the sheet", or "the repeated lines">.
 Pages: <sheet number + fileId + 1-based pageInPdf, one per page>.
 Repeated lines: <"read in set <version>" or "not read">.
@@ -1830,6 +1908,7 @@ subagent_type: plumlayer:scope-reviewer
 run_in_background: false
 Project: <projectId>. Window: 3. Pass: <pass id>. Unit: <unit id>.
 Read: <the number of this read of the unit, its own dispatch line counted>.
+Owed: <run folder>/owed/<unit id>.read-<k>.md on a read after the first, or none.
 Reviewing: <the package's catalog trade id>. Package: <the package id>.
 Reads: <the spans after "reads" on the unit line, as written there>.
 Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>.
@@ -1852,6 +1931,7 @@ subagent_type: plumlayer:scope-manual-reader
 run_in_background: false
 Project: <projectId>. Window: 3. Pass: <pass id>. Unit: <manual part unit id>.
 Read: <the number of this read of the unit, its own dispatch line counted>.
+Owed: <run folder>/owed/<unit id>.read-<k>.md on a read after the first, or none.
 Reviewing: <the package's catalog trade id>. Package: <the package id>.
 After: <the unit id after "manual part after" on the unit line>.
 Reads: <the spans after "reads" on the unit line, as written there>.
@@ -1890,6 +1970,7 @@ sheet readings written: <sheet number, one per sheet whose reading was recorded,
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject) and a reply by the id `reply_question` returned, never shortened; or "none">
 grain questions: <one line each, with sheet and page, or "none">
 door-owned suggestions: <one line each, or "none">
+owed: <each `not written by read` line of the Owed file, copied whole, then ` | ` and `written <subject>`, `read, nothing to write` or `not written, <why>`, and each `check read` line of an update, a field update, a Question on a row, a manual update or a page citation, copied whole, then ` | ` and `written <subject>` or `not needed, <why>`, one per line, or "none">
 ```
 
 `cited sheets:` is what the runner verifies a repeated lines unit against, since that unit reads a
@@ -1906,13 +1987,20 @@ update lands on a subject that already existed, a raise on a fresh Question id a
 id of a Question somebody else raised, and nothing else in the report names them. The
 `created subjects:` line names each create, which the runner holds to the unit's prefix and finds
 back by name among the subjects the record lists under it; a report without it reads as a
-mismatch.
+mismatch. The runner holds every report of windows 1, 2 and 3 to the report script's check before
+it verifies: every line of the shape there, `created:` and `questions raised:` each equal to its
+own list, `questions replied:` above 0 with at least one id on its list and never fewer replies
+than ids, and 0 with none, and on a read after
+the first, `owed:` answering the Owed file. The file is the report; where it is missing or not
+whole, the runner checks the reader's returned message the same way and verifies off that, and
+where neither is whole the read ended with no report.
 
 **The runner's summary** is written in this shape by the summary script the runner runs, to
 `<run folder>/reports/<pass id>.md`, where `lead_pass.py` reads it when you record the pass and
 at the check-in; you never read it yourself. `created` is an entry count under each unit's prefix,
 never the reader's own item count, which travels separately as `items`. The `review:` line is
-window 3's only, the pages opened and the searches run added up over the pass's verified reviews:
+window 3's only, the pages opened and the searches run added up over the reports of the pass's
+units verified ok, and beside them the units whose report was restored from the record:
 
 ```text
 window: <n>   pass: <pass id>
@@ -1928,7 +2016,7 @@ grain questions: <one line each, as the report wrote it, or "none">
 door-owned suggestions: <one line each, as the report wrote it, or "none">
 definitions kinds added: <kinds, or "none">
 deviations and repairs: <one line each, or "none">
-review: pages opened <n>, searches <n>
+review: pages opened <n>, searches <n>, reports restored <n>
 ledger: <path>, appended through <last line written>
 ledger lines: <whole lines read> sha256 <the hash of those lines>
 ```
@@ -1939,16 +2027,16 @@ whole of what a pass's report puts in your context. The `review:` line is window
 ```text
 window: <n>   pass: <pass id>
 units: <n>, verified <k>
-unverified: <unit id + mismatch | no verified line, one per line, or "none">
+unverified: <unit id + mismatch | read <k> no verified line, one per line, or "none">
 unread: <each unread note verbatim, or "none">
 notes: anomalies <n>, overlaps <n>, deviations <n>, kinds <n>
-review: pages opened <n>, searches <n>
+review: pages opened <n>, searches <n>, reports restored <n>
 report: <run folder>/reports/<pass id>.md
 ```
 
 **The reviewer's report** comes back in this shape, and the summary script reads its
 `pages opened:` and `searches:` lines into the summary's `review:` line, which is where the
-`pass:` line's two extra fields come from:
+`pass:` line's `pages-opened` and `searches` fields come from:
 
 ```text
 unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
@@ -1981,6 +2069,8 @@ standard lines: <each line the script printed + how it ended, one per line, or "
 headings written: <the headings in their order on the first line, then each row whose heading was written + its subject + the heading, one per line, or "none">
 rows ordered: <each heading on the first line of `headings written:`, in that order + its count of home rows + `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
+not written: <each requirement a page gives the package that was not written, as `<section code + page, or sheet + page> | <what the page gives> | <the subject of the row it belongs on, or no row> | <why>`, one per line, or "none">
+owed: <each `not written by read` line of the Owed file, copied whole, then ` | ` and `written <subject>` or `not written, <why>`, and each `check read` line of an update, a field update, a Question on a row, a manual update or a page citation, copied whole, then ` | ` and `written <subject>` or `not needed, <why>`, one per line, or "none">
 ```
 
 A boundary runner returns this shape instead:
@@ -2032,7 +2122,12 @@ is the estimator's. A wrong citation that another reader or a person wrote, name
 a door-owned suggestion, is the estimator's to settle and is carried. An anomaly carrying
 `not read from the picture:` names a scanned sheet, or a part of one, that no reader could read:
 it is always carried, by its sheet and the part left, at the check-in that prints it and at the
-close out. The second is `list_questions(projectId, limit: 0)`,
+close out. An anomaly carrying `not written:` names a requirement a review or a manual part read
+and did not write, and is always carried with its page and why. An anomaly carrying `not needed:`
+names a write a read said it made that its check did not find, which the next read said was not
+needed, and is always carried with its row and why. Where it prints a line saying
+lines of the run's log were changed outside the run and put back, say that, with how many, under
+what went sideways. The second is `list_questions(projectId, limit: 0)`,
 whose `tradeCounts`, `everyTradeCount` and `untradedCount` give the project's Questions by the
 trades they name, the every-trade ones and the not-known-yet ones, with no rows to page through.
 

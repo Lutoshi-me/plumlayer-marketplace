@@ -338,13 +338,17 @@ Each of these is a harness check.
     each opened and the searches each ran off its own report, a review that ran no search and one
     that opened no page included, stopping at the labels of the skill's own reviewer block, which
     `agents/scope-reviewer.md`'s report shape has to equal, and a review with no verified line
-    adds nothing and is named on the hand-back. A unit read again after a mismatch counts its
-    latest verified line alone, a verified line after an ok one or after a mismatch with no
-    dispatch line between is refused, and a ledger not named `ledger.md` beside its read plan is
-    refused. A review or a recheck unit is summed off the report of the read its latest verified
-    line checked, that read numbered by the unit's `dispatch` lines above the line: its renamed
-    `<unit id>.read-<k>.md` where a later read followed, never a newer report no check read and
-    never just the highest renamed one; and a last line still being written, with no newline yet,
+    adds nothing and is named on the hand-back. A unit read again counts its latest verified line
+    alone, whether the line before it read ok or mismatch, and its trades off its latest set,
+    which `unit_report.py trades` leaves alone in the file in place of the unit's earlier lines,
+    run twice to no change; a verified line with no dispatch line since the unit's last one is
+    refused, and a ledger not named `ledger.md` beside its read plan is refused. A unit whose
+    latest dispatch line has no verified line after it is not verified, adds nothing and is named
+    with that read; one whose latest verified line reads mismatch needs no report. A passed review
+    is summed off the report of the read its latest verified line checked where that report is
+    whole by the report script's check, and off the restored report of that read otherwise,
+    counted on `reports restored`; a stub with only a searches and a pages opened line is refused
+    until the restored report is there; and a last line still being written, with no newline yet,
     is neither read nor hashed. Its
     bound is stated in the harness README entry and in the check's own detail line: the fixtures
     are ledger text, so this proves the arithmetic and not a real verification.
@@ -481,8 +485,8 @@ Each of these is a harness check.
     count below the runner's appends nothing and names the unit with both counts; an answer with
     a prefix missing, not in the pass or given twice, a summary naming other units, or a unit it
     reads verified no, is refused; window 3's line for a tagged pass of two reviews carries both
-    counts and the reviews' pages opened and searches, and its listing gives each review's
-    prefix; the
+    counts and the reviews' pages opened, searches and reports restored, and its listing gives
+    each review's prefix; the
     check-in counts each anomaly that landed on a Question or a reply by pass, or in window
     3 by the review the plan names, and prints none of them, while every other note line, an anomaly ending `run only` or `sheet reading` or with no ending or a row's subject, a pair of rows carrying the
     same work, and every grain and door note among them, comes once across its calls, under labels
@@ -683,6 +687,41 @@ Each of these is a harness check.
     skill has the lead name those sheets at the check-in and the close out. Each phrase taken out
     is refused. This cannot judge whether a running reader reads a scan well; that is the measured
     run's.
+38. A unit that fails its check or ends without a usable report is read again or restored, and
+    nobody writes a reader's report or changes a ledger line. Every ledger line goes on through the
+    shipped `ledger.py`, under a lock, checked as a batch, with a shadow copy, replaced whole each
+    time, that keeps whole `phase:` and `checkin:` lines added by hand that an append would take,
+    rebuilds a shadow short only of its final newline from the whole ledger, never adopts a line
+    written by hand that holds a control character and puts back any other change under one
+    `repaired:` line, which the lead's check-in says in the estimator's words; an append writes
+    each control character inside a line as one space and refuses none; a runner runs `ledger.py
+    heal` before its first look at the ledger. The shipped `unit_report.py` holds each kind of report to its
+    agent's own shape, a stub refused, `created` and `questions raised` held to their lists,
+    `questions replied` held to at least one id above 0, none at 0 and never fewer replies than
+    ids, while `updated` is held to none, and bytes that are not UTF-8 refused alike off a file
+    and off stdin, hands a read the work earlier reads left off the ledger, a failed claim on a
+    named row among it, answered written off the read's own list for that write, the predicate of
+    a field update and the Question of a link held to the same write, and every other failed check
+    taken answered or not, restores a
+    passed window 3 unit's lost report from the record without touching the reader's file, writes
+    a unit's trades as one set, its marker naming the read, gathers the `touched` trades of every
+    verified read of a unit, ok or mismatch, noting once on the ledger a read whose trades are not
+    known, and keeps the lists a check confirmed off a returned message. An `owed:` list is read past its `-` or `*` markers. Every file either script, and
+    the summary script, writes under the run folder is replaced whole, the ledger's own append
+    aside, and a write stopped partway leaves the file as it was. Both scripts run in-process over
+    invented run folders with real files, and the ledger's writes in real processes too: one
+    killed partway through the shadow and one between the shadow and the ledger, and six at once
+    with the lock and without it. A runner stopped before each step of closing a unit, and a
+    second runner deciding from the run folder alone off the report on disk and a record answer
+    for that read, sums one total with no line but a dispatch written twice. The runner's tools
+    line carries no `Edit`; the runner, the four readers and the skill carry the ledger script and
+    its heal step, the one closing append, the report check, the Owed line and file, the `owed:`
+    and `not written:` lines, the answer to a failed claim and the five claimed writes it covers,
+    the Question's id on a failed link's note, the control character written as a space, the
+    trades, touched and confirmed
+    commands, the confirmed command's exemption, the retry of a lock or replace failure and the
+    restore, each phrase taken out and each retired one put back refused. This cannot judge how a
+    running runner keeps to them.
 
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is

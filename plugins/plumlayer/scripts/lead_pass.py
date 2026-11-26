@@ -78,7 +78,10 @@ Three modes:
         Where every count holds, it appends one `pass:` line to the ledger and prints it:
 
             pass: <window> <pass id> units <n> created <n> updated <n> questions <n> replied <n> lead-verified yes
-            pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> pages-opened <n> searches <n> lead-verified yes
+            pass: 3 <pass id> units <n> created <n> updated <n> questions <n> replied <n> pages-opened <n> searches <n> reports-restored <n> lead-verified yes
+
+        The line goes on through `ledger.py`'s append, under its lock and checked, as every line
+        of the ledger does.
 
         Under it, it prints the pass as the estimator hears it, the line the check-in prints for
         it below, with the new items off the summary's trades line, so the one line the lead says
@@ -86,8 +89,8 @@ Three modes:
         the entry count.
 
         `created` is the sum of the lead's own counts. `updated`, `questions` and `replied` come off
-        the summary's totals line, and in window 3 `pages-opened` and `searches` off its `review:`
-        line. A unit whose count on the record is above the one its
+        the summary's totals line, and in window 3 `pages-opened`, `searches` and
+        `reports-restored` off its `review:` line. A unit whose count on the record is above the one its
         runner verified is named under the line with both counts: an entry count under a prefix only
         grows, so a later write onto that unit's rows raises it, and nothing removes one. A count
         below the runner's is the record holding less than the runner verified: the script writes
@@ -140,8 +143,18 @@ Three modes:
 
         In window 3 the pass is named by the manual pages its manual parts read, each part's spans
         once its `verified` line reads ok (`manual pages read (230000 pages 900 to 915 for HVAC)`),
-        beside the packages it reviewed; a part not verified is not named there. A manual part's
-        counts fall under its package's review.
+        beside the packages it reviewed; a part not verified is not named there, and a part whose
+        latest verified read counts off a report the run restored from the record, by the summary
+        script's own selection, is named under `manual pages whose report was written from the
+        record`. A manual part's counts fall under its package's review.
+
+        Each `repaired:` line `ledger.py` appended since the last `checkin:` line prints in the
+        estimator's words, `the run's log: <n> lines of it were changed outside the run and were
+        put back, the first at line <i>`.
+
+    Before `record`, `passes` and `checkin` read the ledger, each holds it to the run's own copy
+    through `ledger.py`, which puts back any line changed outside the run and appends its
+    `repaired:` line; nothing here refuses or stops over such a change.
 
         Output stops before CHECKIN_CAP characters, below the 30,000 a Bash call returns, every
         printed line counted, the closing line included, and its last line names the passes it did
@@ -198,6 +211,7 @@ from pathlib import Path
 
 # The read plan's reader is the summary script's own, so the two read a pass's units one way.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ledger as ledger_script  # noqa: E402
 import pass_summary  # noqa: E402
 import plan_inventory  # noqa: E402
 
@@ -270,14 +284,14 @@ _PLAN_UNIT_RE = re.compile(r"^(\S+-[1-9][0-9]*)\. (.+?), (?:file |page |from pag
 
 # The figures of a `pass:` line, in its order, the window 3 pair included.
 PASS_FIGURES = ("units", "created", "updated", "questions", "replied")
-REVIEW_FIGURES = ("pages-opened", "searches")
+REVIEW_FIGURES = ("pages-opened", "searches", "reports-restored")
 
 _SUMMARY_HEADER_RE = re.compile(r"^window: ([1-9][0-9]*|r)\s+pass: (\S+)$")
 _PER_UNIT_RE = re.compile(r"^per unit: (\S+) created (\d+|-) .* verified (yes|no)$")
 _TOTALS_RE = re.compile(r"updated (\d+), questions (\d+) replied (\d+)")
 # One trade on a summary's trades line: a catalog id, which carries spaces, then ` x` and its count.
 _TRADE_ENTRY_RE = re.compile(r"^(.+) x(\d+)$")
-_REVIEW_RE = re.compile(r"^review: pages opened (\d+), searches (\d+)$")
+_REVIEW_RE = re.compile(r"^review: pages opened (\d+), searches (\d+), reports restored (\d+)$")
 _LEDGER_LINES_RE = re.compile(r"^ledger lines: (\d+) sha256 ([0-9a-f]{64})$")
 _RECHECK_RE = re.compile(
     r"^recheck: rows recited (\d+), updated (\d+), removed (\d+), not found (\d+); "
@@ -360,6 +374,7 @@ def passes_lines(
         window, pass_ids = pass_summary.plan_passes(plan_path)
     except pass_summary.SummaryError as e:
         raise LeadPassError(str(e)) from None
+    heal_ledger(plan_path.parent / plan_inventory.LEDGER_FILE)
     running = running or []
     not_planned = [pass_id for pass_id in running if pass_id not in pass_ids]
     if not_planned:
@@ -538,7 +553,9 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
             f"`trades: <catalog id> x<n>, ...` or `{pass_summary.TRADES_NONE_LINE}`"
         )
     if window == 3 and review is None:
-        raise LeadPassError(f"{path} carries no `review: pages opened <n>, searches <n>` line")
+        raise LeadPassError(
+            f"{path} carries no `review: pages opened <n>, searches <n>, reports restored <n>` line"
+        )
     if window == RECHECK_WINDOW and recheck is None:
         raise LeadPassError(f"{path} carries no `recheck: rows ...; items ...` line, the counts its units found")
     return {
@@ -549,6 +566,7 @@ def read_summary(path: Path, window: int, pass_id: str) -> dict:
         "items": sum(trades.values()),
         "pagesOpened": review.group(1) if review else None,
         "searches": review.group(2) if review else None,
+        "reportsRestored": review.group(3) if review else None,
         "recheck": dict(zip(RECHECK_FIGURES, recheck.groups())) if recheck else None,
         "ledgerLines": int(ledger_lines.group(1)),
         "ledgerHash": ledger_lines.group(2),
@@ -595,7 +613,34 @@ def _mismatched_since(data: bytes, lines: int, window: int, units: list[str]) ->
     return [unit for unit in units if latest.get(unit) is False]
 
 
+def heal_ledger(ledger: Path) -> list[str]:
+    """
+    Hold the ledger to the run's own copy before reading it, as `ledger.py` does before every
+    append, and say in the estimator's words where it put lines back.
+    """
+    try:
+        healed = ledger_script.heal(ledger)
+    except ledger_script.LedgerError as e:
+        raise LeadPassError(str(e)) from None
+    return [] if healed is None else [repaired_said(healed)]
+
+
+def repaired_said(line: str) -> str:
+    """A `repaired:` line as the estimator hears it."""
+    match = ledger_script.REPAIRED_RE.match(line.strip())
+    if match is None:
+        return f"the run's log: {line.strip()}"
+    count, first = match.groups()
+    if count == "1":
+        return f"the run's log: 1 line of it was changed outside the run and was put back, line {first}"
+    return (
+        f"the run's log: {count} lines of it were changed outside the run and were put back, the "
+        f"first at line {first}"
+    )
+
+
 def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text: str) -> list[str]:
+    healed = heal_ledger(ledger)
     plan = _read_plan(plan_path, window, pass_id)
     units = plan["units"]
     counts = _parse_counts(counts_text, pass_id, units)
@@ -652,20 +697,20 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
         ("replied", summary["replied"]),
     ]
     if window == 3:
-        figures += [("pages-opened", summary["pagesOpened"]), ("searches", summary["searches"])]
+        figures += [
+            ("pages-opened", summary["pagesOpened"]), ("searches", summary["searches"]),
+            ("reports-restored", summary["reportsRestored"]),
+        ]
     if window == RECHECK_WINDOW:
         figures += list(summary["recheck"].items())
     line = f"pass: {window} {pass_id} " + " ".join(f"{k} {v}" for k, v in figures)
     line += " lead-verified yes"
 
+    # Through the ledger script, as every line goes on: under its lock, checked, its shadow first.
     try:
-        existing = ledger.read_bytes()
-        with ledger.open("ab") as handle:
-            if existing and not existing.endswith(b"\n"):
-                handle.write(b"\n")
-            handle.write(f"{line}\n".encode("utf-8"))
-    except OSError as e:
-        raise LeadPassError(f"cannot append to the ledger at {ledger}: {e}") from e
+        ledger_script.append_lines(ledger, [line])
+    except ledger_script.LedgerError as e:
+        raise LeadPassError(f"cannot append to the ledger at {ledger}: {e}") from None
 
     # The pass as the estimator hears it, for the one line the lead says as each pass is recorded.
     reads = _plan_reads(plan_path, window, _verified_ok(ledger, window) if window == 3 else frozenset())[0]
@@ -673,6 +718,7 @@ def record(ledger: Path, window: int, pass_id: str, plan_path: Path, counts_text
     words = _said_recheck(said) if window == RECHECK_WINDOW else _said_figures(summary["items"], said)
     out = [line, f"{reads.get(pass_id, 'nothing planned')}: {words}"]
     out.extend(f"above the runner's count: {entry}" for entry in above)
+    out.extend(healed)
     return out
 
 
@@ -693,6 +739,24 @@ def _last_pass_lines(ledger: Path, window: int) -> dict[str, str]:
         if len(parts) >= 3 and parts[0] == "pass:" and parts[1] == str(window):
             last[parts[2]] = raw.strip()
     return last
+
+
+def _repaired_since_checkin(ledger: Path) -> list[str]:
+    """
+    The ledger script's `repaired:` lines after the last `checkin:` line of any window, each a time
+    lines of the run's log were changed outside the run and put back, which the next check-in says.
+    """
+    try:
+        lines = [raw.strip() for raw in ledger.read_text(encoding="utf-8").splitlines()]
+    except OSError:
+        return []
+    found: list[str] = []
+    for line in lines:
+        if line.startswith("checkin:"):
+            found = []
+        elif line.startswith(ledger_script.REPAIRED_KEYWORD):
+            found.append(line)
+    return found
 
 
 def _figure(line: str, field: str) -> int | None:
@@ -762,6 +826,26 @@ def _verified_ok(ledger: Path, window: int) -> set[str]:
     return {unit for unit, ok in last_ok.items() if ok}
 
 
+def _counts_off_restored(run_folder: Path, unit: str) -> bool:
+    """
+    Whether a window 3 unit's latest verified read counts off its restored report, by the summary
+    script's own selection: the reader's report of that read where the report check holds it
+    whole, and the restored one of that read only where it does not. An earlier read's restored
+    report says nothing about a later read that left a whole report.
+    """
+    try:
+        history = pass_summary.unit_report_script.unit_history(run_folder / pass_summary.LEDGER_NAME, "3", unit)
+    except pass_summary.unit_report_script.ReportError:
+        return False
+    if history["latest"] is None:
+        return False
+    read, _verified = history["latest"]
+    _path, restored, _problems = pass_summary.report_of_read(
+        run_folder / REPORTS_FOLDER, unit, read, history["dispatches"], "manual",
+    )
+    return restored
+
+
 def _plan_reads(
     plan_path: Path, window: int, verified: set[str] | frozenset[str] = frozenset(),
 ) -> tuple[dict[str, str], dict[str, str]]:
@@ -784,6 +868,7 @@ def _plan_reads(
     retire_items: dict[str, int] = {}
     packages: dict[str, list[str]] = {}
     read_on: dict[str, list[str]] = {}
+    restored_on: dict[str, list[str]] = {}
     named: dict[str, str] = {}
     current = None
     for raw in lines:
@@ -794,6 +879,7 @@ def _plan_reads(
         if heading:
             current = heading.group(1)
             sheets[current], files[current], packages[current], read_on[current] = [], 0, [], []
+            restored_on[current] = []
             retire_items[current] = 0
             continue
         if current is None:
@@ -803,7 +889,10 @@ def _plan_reads(
         part = _PART_LINE_RE.match(line) if window == 3 else None
         if part:
             if part.group(1) in verified:
-                read_on[current].extend(
+                # A part whose latest verified read counts off a report the run restored from the
+                # record is named apart: no reader's report says which of its pages were read.
+                restored = _counts_off_restored(plan_path.parent, part.group(1))
+                (restored_on if restored else read_on)[current].extend(
                     f"{span.group(1)} pages {span.group(2)} to {span.group(3)} for {part.group(2)}"
                     for span in map(_SPAN_RE.match, part.group(5).split("; ")) if span
                 )
@@ -838,6 +927,10 @@ def _plan_reads(
             )
         if read_on[pass_id]:
             parts.append(f"manual pages read ({'; '.join(read_on[pass_id])})")
+        if restored_on[pass_id]:
+            parts.append(
+                f"manual pages whose report was written from the record ({'; '.join(restored_on[pass_id])})"
+            )
         if sheets[pass_id]:
             parts.append(
                 f"{len(sheets[pass_id])} sheet{'' if len(sheets[pass_id]) == 1 else 's'} "
@@ -906,6 +999,7 @@ def checkin_lines(
     run_folder: Path, window: int, pass_ids: list[str], start: tuple[int, int],
 ) -> list[str]:
     ledger = run_folder / "ledger.md"
+    heal_ledger(ledger)
     last = _last_pass_lines(ledger, window)
     reads, named = _plan_reads(
         run_folder / "read-plan.md", window, _verified_ok(ledger, window) if window == 3 else frozenset()
@@ -996,7 +1090,10 @@ def checkin_lines(
     head.append(
         f"your own check over {len(with_line)} pass line{'' if len(with_line) == 1 else 's'} ({', '.join(with_line) or 'none'}), "
         f"never said to the estimator: units {totals['units']}, entries {totals['created']}"
-        + (f", pages opened {totals['pages-opened']}, searches {totals['searches']}" if window == 3 else "")
+        + (
+            f", pages opened {totals['pages-opened']}, searches {totals['searches']}, reports "
+            f"restored {totals['reports-restored']}" if window == 3 else ""
+        )
     )
     ordered = sorted(by_trade.items(), key=lambda pair: (-pair[1], pair[0]))
     head.append(
@@ -1013,6 +1110,7 @@ def checkin_lines(
         head.append(f"summaries with no trades count: {', '.join(no_trades)}")
     if no_summary:
         head.append(f"no summary on file: {', '.join(no_summary)}")
+    head.extend(repaired_said(line) for line in _repaired_since_checkin(ledger))
 
     # Each note's place among its own pass's lines, which is what `--start` and the markers count.
     first_of: dict[str, int] = {}

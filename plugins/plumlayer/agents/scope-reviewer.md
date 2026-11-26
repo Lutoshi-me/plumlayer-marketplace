@@ -23,6 +23,8 @@ Pointers only, never pasted text. Your dispatch names:
 
 - the project id, the window number, your pass id and your unit id;
 - `Read: <k>`, the number of this read of your unit;
+- `Owed: <path>`, the work earlier reads of your unit left, on a read after the first, or
+  `Owed: none`;
 - the package you review, as its package id, and the catalog trade id it reads for;
 - the run folder path, your pass brief path, and the reader definition path, the `scope-reader`
   agent definition whose mandates you work under;
@@ -33,6 +35,20 @@ Pointers only, never pasted text. Your dispatch names:
 Before anything else, write the one word `started` to
 `<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
 this read against your unit only where that file is there.
+
+On a read after your first, read your Owed file before your first write. Each `not written by
+read <j>:` line on it is work you owe: open the page it names and write it where your mandates
+put it, or say why you cannot. The `held:` lines name the rows that stood under your prefix
+before you started; they are an earlier read's, and a row of theirs never shows an owed line is
+written. Each `check read <j> failed:` line is a check your report has to pass, and each `no
+report from read <j>` line a read whose report never reached your runner. A `check read <j>
+failed:` line naming a row an earlier read said it wrote (an update, a field update, a Question
+on a row, a manual update, a page citation) is an owed line too: copy it whole on `owed:`, then
+` | ` and `written <subject>` for that row, which you name again on your report's own line for that
+write, the line your runner checks against the record, or `not needed, <why>`. Put every other
+failed check right in this read; it needs no line on `owed:`.
+Review your whole package as a first read does, and answer every owed line on your report's
+`owed:` line.
 
 Open your pass brief first, before any record read: what this review reads for and the subject
 prefix scheme. Then read the reader definition at the path your dispatch names, the mandates you
@@ -675,8 +691,7 @@ them is ever trimmed.
       Where a row carries the work and not its material, the material goes in that row's `name`
       where it tells the row apart and fits, writing over the name with `supersedesId`, and
       otherwise in `description` only as reader mandate 5 permits. Where it does not fit
-      there, it goes on your `anomalies:` line as
-      `section <code> p<page> no room: <the material> for <the row's name>, run only`. Work an
+      there, it goes on your `not written:` line with `no room` as its reason. Work an
       existing row carries never gets a second row for its material, where the material is an
       attribute of that work; a product whose count and specification a bid is checked on by
       itself, or one made of another material or built another way than the rest, is a row by
@@ -734,8 +749,8 @@ them is ever trimmed.
       Where it governs only some rows of the section, write it on those rows. Where it governs
       part of one row's work only, it goes on that part's row, created as the bullet on
       requirements above says. Where the
-      `description` has no room, it goes on your `anomalies:` line as `section <code> p<page> no
-      room: <the qualification> for <the row's name>, run only`. A qualification is never a row of its own. Where a row it governs
+      `description` has no room, it goes on your `not written:` line with `no room` as its reason.
+      A qualification is never a row of its own. Where a row it governs
       sits on another package, as when a section on this package governs work whose row is on
       another, write it on that row, found by reader mandate 1's search. Testing or
       inspection the section
@@ -1218,8 +1233,10 @@ other.
 
 ## Report back
 
-Write your final message to `<run folder>/reports/<unit id>.md` first, then return it. It is this
-shape and nothing else. No preamble, no prose paragraphs, no account of the package.
+Write your final message to `<run folder>/reports/<unit id>.md` first, then return it. The file
+is your report: your runner holds it to this shape with a script, a file that points at your
+returned message or holds only part of the shape is no report, and you write it whole before you
+return. It is this shape and nothing else. No preamble, no prose paragraphs, no account of the package.
 
 ```text
 unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
@@ -1252,7 +1269,23 @@ standard lines: <each line the script printed + how it ended, one per line, or "
 headings written: <the headings in their order on the first line, then each row whose heading you wrote + its subject + the heading, one per line, or "none">
 rows ordered: <each heading on the first line of `headings written:`, in that order + its count of home rows + `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
+not written: <each requirement a page gives this package that you did not write, as `<section code + page, or sheet + page> | <what the page gives> | <the subject of the row it belongs on, or no row> | <why>`, one per line, or "none">
+owed: <each `not written by read` line of your Owed file, copied whole, then ` | ` and `written <subject>` or `not written, <why>`, and each `check read` line of an update, a field update, a Question on a row, a manual update or a page citation, copied whole, then ` | ` and `written <subject>` or `not needed, <why>`, one per line, or "none">
 ```
+
+`not written:` names every requirement you read and left unwritten, whatever the reason: no room
+on the row, a row that is not yet written, a page not reached. Your runner copies each entry to
+the ledger, and the unit's next read is handed it as work it owes. `owed:` answers every `not
+written by read` line of your Owed file and every `check read` line of the five writes it names.
+On a `not written by read` line, `written <subject>` names a row you created in this read,
+on your `created subjects:`, or a row whose field you wrote in this read, on your `field updates:`;
+a row that stood under your prefix before you started, or a citation alone, discharges nothing.
+`not written, <why>` puts the entry on your own `not written:` line too. On such a `check read`
+line, `written <subject>` names that row on your own line for the write the earlier read
+claimed, `updated subjects:` for an update, `questions linked:` for a Question on a row,
+`manual updates:` for a manual citation and `field updates:` for a field, whether or not you
+created it, since your runner checks every row on those lines against the record again; and
+`not needed, <why>` says why that write is not owed. It reads "none" on a first read.
 
 `created:` is your own item count: how many scope items you created, not the entries under them.
 `updated:` counts every pre-existing row you wrote anything onto, a value or a citation alike, except a row whose only write of yours was a citation you took off. `sent:` and `landed:` count every write you made for this review, across every call, not

@@ -4382,11 +4382,11 @@ def _holder(handle: int) -> str:
 
 
 @contextlib.contextmanager
-def _window_3_lock(folder: Path):
+def hold_lock(path: Path, script: str, error: type[Exception]):
     """
-    Hold `plan/window-3.lock` in the run folder across a whole read, change and write of the window
-    3 plan file and the read plan, so two plan runs on one folder at once never each keep what the
-    other had not yet written.
+    Hold the lock file at `path` across a whole read, change and write, so two runs on one folder
+    at once never each keep what the other had not yet written. The window 3 plan and the run
+    ledger (`ledger.py`) both take their locks here, so the two share one copy of the rule.
 
     The operating system holds the lock for this process and lets it go when the process ends,
     however it ends, so a run stopped while holding it never stops a later one. The holder writes
@@ -4394,14 +4394,13 @@ def _window_3_lock(folder: Path):
     a run that finds them there on taking the lock took it over from a run that ended holding it,
     and says so in one line on stderr. The file itself stays, since removing a file another run
     waits on would let two runs each lock a file of that name. One a live run holds past
-    LOCK_WAIT_SECONDS is refused.
+    LOCK_WAIT_SECONDS is refused with `error`.
     """
-    path = _window_file(folder, 3).with_suffix(".lock")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         handle = os.open(path, os.O_CREAT | os.O_RDWR)
     except OSError as e:
-        raise PlanError(f"cannot open the lock {path}: {e}") from e
+        raise error(f"cannot open the lock {path}: {e}") from e
     try:
         deadline = time.monotonic() + LOCK_WAIT_SECONDS
         while True:
@@ -4409,10 +4408,10 @@ def _window_3_lock(folder: Path):
                 if _try_lock(handle):
                     break
             except OSError as e:
-                raise PlanError(f"cannot lock {path}: {e}") from e
+                raise error(f"cannot lock {path}: {e}") from e
             if time.monotonic() >= deadline:
                 held = _holder(handle)
-                raise PlanError(
+                raise error(
                     f"another run of this script{f' ({held})' if held else ''} has held {path} for "
                     f"{LOCK_WAIT_SECONDS:g} seconds; run again once it ends"
                 )
@@ -4425,10 +4424,10 @@ def _window_3_lock(folder: Path):
                 taken = time.strftime("%Y-%m-%d %H:%M:%S")
                 os.write(handle, f"process {os.getpid()}, took it {taken}\n".encode("utf-8"))
             except OSError as e:
-                raise PlanError(f"cannot write to the lock {path}: {e}") from e
+                raise error(f"cannot write to the lock {path}: {e}") from e
             if left:
                 print(
-                    f"plan_inventory: took over {path}, which a run of this script ({left}) held when it ended",
+                    f"{script}: took over {path}, which a run of this script ({left}) held when it ended",
                     file=sys.stderr,
                 )
             yield
@@ -4439,6 +4438,16 @@ def _window_3_lock(folder: Path):
                 _unlock(handle)
     finally:
         os.close(handle)
+
+
+@contextlib.contextmanager
+def _window_3_lock(folder: Path):
+    """
+    Hold `plan/window-3.lock` in the run folder across a whole read, change and write of the window
+    3 plan file and the read plan, by `hold_lock`'s rule.
+    """
+    with hold_lock(_window_file(folder, 3).with_suffix(".lock"), "plan_inventory", PlanError):
+        yield
 
 
 def _unread_notes(pass_id: str, unit_id: str, sections: list[dict]) -> list[str]:

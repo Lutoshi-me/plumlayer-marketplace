@@ -22,6 +22,8 @@ Pointers only, never pasted text. Your dispatch names:
 
 - the project id, the window number, your pass id and your unit id;
 - `Read: <k>`, the number of this read of your unit;
+- `Owed: <path>`, the work earlier reads of your unit left, on a read after the first, or
+  `Owed: none`;
 - the package, as its package id, and the catalog trade id it reads for;
 - `After:`, the unit before you in the package's manual, the review or the manual part before
   yours;
@@ -35,6 +37,20 @@ Before anything else, write the one word `started` to
 `<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
 this read against your unit only where that file is there. If a path in your dispatch does not
 exist, say so and stop rather than reading blind.
+
+On a read after your first, read your Owed file before your first write. Each `not written by
+read <j>:` line on it is work you owe: open the page it names and write it where your mandates
+put it, or say why you cannot. The `held:` lines name the rows that stood under your prefix
+before you started; they are an earlier read's, and a row of theirs never shows an owed line is
+written. Each `check read <j> failed:` line is a check your report has to pass, and each `no
+report from read <j>` line a read whose report never reached your runner. A `check read <j>
+failed:` line naming a row an earlier read said it wrote (an update, a field update, a Question
+on a row, a manual update, a page citation) is an owed line too: copy it whole on `owed:`, then
+` | ` and `written <subject>` for that row, which you name again on your report's own line for that
+write, the line your runner checks against the record, or `not needed, <why>`. Put every other
+failed check right in this read; it needs no line on `owed:`.
+Read every page of your part as a first read does, and answer every owed line on your report's
+`owed:` line.
 
 ## The mandates you work under
 
@@ -206,8 +222,9 @@ are the whole of the difference:
    the order the package's saved list holds them, with no row line after it, and your `rows
    ordered:` line names each of them.
 9. **Write your report to `<run folder>/reports/<unit id>.md`**, under your own unit id, before you
-   return it: your runner verifies you off that file, and a report returned without it is read
-   second-hand.
+   return it: the file is your report, your runner holds it to its shape with a script and
+   verifies you off it, and a file that points at your returned message or holds only part of
+   the shape is no report.
 
 ## Report back
 
@@ -217,7 +234,8 @@ aliases 0`, `notes read:`, `terms too general:`, `unspecified work:`, `families 
 and `standard lines:` reading "none", `headings written:` and `rows ordered:` as step 8 writes
 them where it ran and "none" where it did not, and `compared:` naming only
 the rows the
-review's mandate 12 read before a manual citation compared, or "none", and two lines more after
+review's mandate 12 read before a manual citation compared, or "none", `not written:` and
+`owed:` written as the review's shape gives them, and two lines more after
 its `spans read:` line:
 
 ```text
@@ -253,10 +271,17 @@ standard lines: none
 headings written: <the headings your new rows sit under, in the order the package's saved list holds them, on one line, or "none">
 rows ordered: <each heading on the first line of `headings written:`, in that order + its count of home rows + `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
+not written: <each requirement your pages give this package that you did not write, as `<section code + page> | <what the page gives> | <the subject of the row it belongs on, or no row> | <why>`, one per line, or "none">
+owed: <each `not written by read` line of your Owed file, copied whole, then ` | ` and `written <subject>` or `not written, <why>`, and each `check read` line of an update, a field update, a Question on a row, a manual update or a page citation, copied whole, then ` | ` and `written <subject>` or `not needed, <why>`, one per line, or "none">
 ```
 
 `created:`, `updated:`, `sent:` and `landed:` count as the review's report says. The `updated
 subjects:`, `manual updates:`, `field updates:` and Question lines are load-bearing in the same
 way: your runner finds every write of yours back through them, and through the pages on your
 `pages opened:` line, so every page you opened is named there with what you did, a page you
-opened and did nothing with among them.
+opened and did nothing with among them. `owed:` answers as the review's report says: on a `check
+read` line of the five writes it names, `written <subject>` names that row on your own line for the write the
+earlier read claimed, `updated subjects:` for an update, `questions linked:` for a Question on a
+row, `manual updates:` for a manual citation and `field updates:` for a field, whether or not you
+created it, since your runner checks every row on those lines against the record again; and
+`not needed, <why>` says why that write is not owed.

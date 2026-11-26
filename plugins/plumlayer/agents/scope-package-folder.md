@@ -239,9 +239,17 @@ why we need the answer.
 4. Read `solicitation_list_packages(projectId)` once more and keep its package count for your
    hand-back's `after`.
 5. Last, once every act is on the report: append the one line `phase: packages folded` to
-   `<run folder>/ledger.md`, in one append. Nothing else goes in the ledger: no heading, no
-   sentence, no act; the acts are on your report. Then run the hand-back command below and return
-   what it prints.
+   `<run folder>/ledger.md`, in one append, through the ledger script, which every line of the
+   ledger goes on through:
+
+   ```sh
+   python3 '<plugin root>/scripts/ledger.py' append '<run folder>/ledger.md' <<'EOF'
+   phase: packages folded
+   EOF
+   ```
+
+   Nothing else goes in the ledger: no heading, no sentence, no act; the acts are on your report.
+   Then run the hand-back command below and return what it prints.
 
 ## Recheck mode
 

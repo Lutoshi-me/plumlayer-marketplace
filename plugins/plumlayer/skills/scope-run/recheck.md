@@ -140,7 +140,7 @@ python3 '<plugin root>/scripts/recheck.py' report --run '<run folder>' --deliver
 ```
 
 Its first line is `phase: recheck complete` with the recheck's figures: append it to the ledger as
-printed, once, before you check in. Nothing else goes in the ledger. Where its last line names what
+printed, once, before you check in, through the ledger script as every line goes on. Nothing else goes in the ledger. Where its last line names what
 it did not print, run the command that line gives for the rest. What it prints is for you to read:
 say it in the estimator's words, and never paste a line as it printed. Then check in. Take the
 passes listing as stage 4 step 1 does, and gather the passes its `since the last check-in:` line

@@ -83,7 +83,11 @@ def read_ledger(path: Path, window: str) -> dict:
     units: dict[str, dict] = {}
     # Each overlap already on the ledger, as its name read alike and the two units it names.
     noted: set[tuple[str, frozenset[str]]] = set()
-    for number, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    # Only whole lines, each ending in a newline, as the summary script reads them, so a line still
+    # being appended is not read until it is whole.
+    data = path.read_bytes()
+    whole = data[: data.rfind(b"\n") + 1].decode("utf-8")
+    for number, raw in enumerate(whole.splitlines(), 1):
         parts = raw.split()
         if len(parts) < 4 or parts[0] not in ("dispatch", "verified", "note") or parts[1] != window:
             continue

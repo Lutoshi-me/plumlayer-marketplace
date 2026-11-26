@@ -133,15 +133,18 @@ Checks:
       up the pages opened and the searches off each review's report, zero searches and zero pages
       included, one review unverified adding up the others and named on the hand-back, its labels
       pinned to the skill's reviewer block and to agents/scope-reviewer.md's report shape; a unit
-      read again after a mismatch sums its latest verified line alone, reads `read twice`, and is
-      handed back verified where that line reads ok and as a mismatch where it does not; the
-      `ledger lines:` line names the ledger's whole lines and their hash, a last line still being
-      written neither read nor hashed; a review whose report was renamed after its mismatch, with
-      no later report, is summed off that renamed report and named a mismatch; every case sums a run
-      folder's own ledger.md beside its read plan; and twenty-five broken invocations each refuse
-      in one line with nothing on stdout and no summary file written, among them a verified line
-      after an ok one, a second after a mismatch with no dispatch line between, a ledger not named
-      ledger.md, one beside another read plan, and a summary written outside its reports folder.
+      read again sums its latest verified line alone, whether the line before it read ok or
+      mismatch, its trades once off its latest read, and is handed back verified where that line
+      reads ok and as a mismatch where it does not; a unit whose latest dispatch line has no
+      verified line after it is handed back with that read and adds nothing; the `ledger lines:`
+      line names the ledger's whole lines and their hash, a last line still being written neither
+      read nor hashed; a review whose latest verified line reads mismatch needs no report, and a
+      passed review's stub is refused until its restored report is there, then counted on
+      `reports restored`; every case sums a run folder's own ledger.md beside its read plan; and
+      twenty-six broken invocations each refuse in one line with nothing on stdout and no summary
+      file written, among them a verified line after an ok one and after a mismatch with no
+      dispatch line between, a ledger not named ledger.md, one beside another read plan, and a
+      summary written outside its reports folder.
   19. No shipped skill or agent file names `fork` as a subagent type, in either the
       `subagent_type:` dispatch-line shape or a `tools: Agent(fork)` frontmatter declaration.
   20. Agent tool surface: no agents/*.md tools line takes the whole connector as a wildcard;
@@ -270,6 +273,14 @@ Checks:
       in-process over invented grids, through windows 1, 2 and 3 driven to their end, a pass reported
       only where a check-in printed it; the skill, the runner and both readers carry the rules; and
       each fix broken again is refused.
+  45. Failed unit: the shipped scripts/ledger.py and scripts/unit_report.py, run in-process over
+      invented run folders with real files. Every ledger line goes on through `ledger.py append`,
+      under a lock, checked as a batch, with a shadow copy that puts back a line changed outside
+      the run under one `repaired:` line; the report script holds each kind of report to its
+      agent's shape, hands a read the work earlier reads left, and restores a passed window 3
+      unit's lost report from the record. A runner stopped at each point after its closing append
+      and dispatched again sums one total with each line once; the runner, the four readers and
+      the skill carry the rules, each taken out refused.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -2535,6 +2546,46 @@ _UNIT_ID_RE = re.compile(r"^rev-[0-9A-Za-z]+-[0-9]+$")
 _SUBJECT_PREFIX_RE = re.compile(r"^scopeItem:[0-9A-Za-z._-]+-$")
 
 
+def _write_run_ledger(ledger: Path, text: str) -> None:
+    """
+    Write a run ledger and its shadow copy alike, as if every line had gone on through
+    `ledger.py`, so a check that builds a ledger by hand between two of the lead's reads is not
+    read as one whose lines were changed outside the run.
+    """
+    data = text.encode("utf-8")
+    ledger.write_bytes(data)
+    (ledger.parent / "ledger.shadow").write_bytes(data)
+
+
+def _whole_review_report(unit_id: str) -> str:
+    """
+    A review's or a manual part's report whole in the shape the report script holds, every list
+    reading none, two searches run and no page opened, for the checks that need a window 3 pass to
+    sum and judge nothing in the report itself.
+    """
+    return "".join(f"{line}\n" for line in (
+        f"unit: {unit_id}   package: An invented package   trade: 09 99 99   window: 3",
+        "harvested: rows 0, definition codes 0, spec sections 0, aliases 0",
+        "notes read: none",
+        "searches: 2 run, 0 returned nothing, 0 of them standard line",
+        "terms too general: none",
+        "pages opened: none",
+        "created: 0   updated: 0   questions raised: 0   questions replied: 0",
+        *(f"{label}: none" for label in (
+            "created subjects", "updated subjects", "manual updates", "field updates",
+            "questions raised ids", "questions replied ids", "questions linked", "questions alone",
+        )),
+        "sent: 0   landed: 0   conflicts: none",
+        "trades: none",
+        *(f"{label}: none" for label in (
+            "sheet readings written", "anomalies", "grain questions", "silent sections",
+            "unspecified work", "compared", "spans read", "context pages", "carried",
+            "sections not checked", "families not checked", "standard lines", "headings written",
+            "rows ordered", "door-owned suggestions", "not written", "owed",
+        )),
+    ))
+
+
 def _load_script_module(script_path: Path, module_name: str):
     """
     Import a shipped script in-process, so the check runs no subprocess and no model. The source is
@@ -4549,8 +4600,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     f"replied 0 sent 4 landed 4 conflicts 0 result ok",
                 ]
                 (review_dir / "reports" / f"{unit_id}.md").write_text(
-                    "the review's own report\nsearches: 2 run, 0 returned nothing\npages opened: none\n",
-                    encoding="utf-8",
+                    _whole_review_report(unit_id), encoding="utf-8",
                 )
         write_ledger(review_dir, review_ledger)
         review_ledger += sum_passes(review_dir, 3, list(first_members), "")
@@ -4678,8 +4728,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                 f"landed 4 conflicts 0 result ok",
             ]
             (folder / "reports" / f"{unit_id}.md").write_text(
-                "the review's own report\nsearches: 2 run, 0 returned nothing\npages opened: none\n",
-                encoding="utf-8",
+                _whole_review_report(unit_id), encoding="utf-8",
             )
         write_ledger(folder, ledger_lines)
         if verify_all:
@@ -5909,6 +5958,10 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         if plan_pass["id"] == "A1" for unit_id, _sheet, _page in plan_pass["units"]
     ]
     ok_units = {parts[3] for parts in verified_rows if parts[parts.index("result") + 1] == "ok"}
+
+    def dispatched_of(unit_id: str) -> int:
+        return sum(1 for parts in rows if parts[0] == "dispatch" and parts[3] == unit_id)
+
     note_count = {
         kind: sum(1 for parts in rows if parts[0] == "note" and parts[4] == kind)
         for kind in ("anomaly", "overlap", "deviation", "kinds", "unread")
@@ -5919,7 +5972,11 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         "window: 1   pass: A1",
         f"units: {len(a1_plan_units)}, verified {sum(1 for u in a1_plan_units if u in ok_units)}",
         *(
-            [f"unverified: {u} no verified line" for u in a1_plan_units if u not in ok_units]
+            [
+                f"unverified: {u} read {dispatched_of(u)} no verified line" if dispatched_of(u)
+                else f"unverified: {u} no verified line"
+                for u in a1_plan_units if u not in ok_units
+            ]
             or ["unverified: none"]
         ),
         "unread: none",
@@ -6084,12 +6141,26 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         mixed_created = sum(field_of(parts, "created") for parts in mixed_verified)
         if f"created {mixed_created} (entry count" not in mixed_out:
             errors.append(f"the mixed fixture's totals are not the sum of its own verified lines")
-        for stranger in ("9999", "777", "333"):
-            if stranger in mixed_out:
+        # Each figure on the summary's count lines, read as a whole number, so a path elsewhere in
+        # the output (the `ledger:` line names the run folder) can never read as one.
+        def count_figures(text: str) -> set[str]:
+            return {
+                token for line in text.splitlines()
+                if line.startswith(("totals verified:", "per unit:"))
+                for token in line.split() if token.isdigit()
+            }
+
+        strangers = ("9999", "777", "333")
+        for stranger in strangers:
+            if stranger in count_figures(mixed_out):
                 errors.append(
                     f"a figure from the lead's own line, another pass or another window reached "
                     f"the totals: {stranger}"
                 )
+        # The test still catches a stranger on a count line, and only there.
+        planted = mixed_out.replace("totals verified: created ", "totals verified: created 333 ", 1)
+        if "333" not in count_figures(planted) or count_figures(mixed_out + "\nledger: C:/wt-3330/ledger.md 777\n") != count_figures(mixed_out):
+            errors.append("the stranger figure test does not read whole numbers on the count lines alone")
         # A dispatched unit with no verified line prints dashes and is named on the bounds line.
         if "per unit: B1-3 created - items - updated - questions - replied - verified no" not in mixed_lines:
             errors.append("a dispatched unit with no verified line does not print as unverified")
@@ -6127,7 +6198,7 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         for wanted in (
             "units: 3, verified 1",
             "unverified: B1-2 mismatch",
-            "unverified: B1-3 no verified line",
+            "unverified: B1-3 read 1 no verified line",
             *(f"unread: {parts[3]} {' '.join(parts[5:])}" for parts in unread_rows),
         ):
             if wanted not in mixed_hand_back_lines:
@@ -6159,6 +6230,108 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
             errors.append("the trades fixture never ties on count, so it proves nothing about the tie break")
     if "trades: no trades file for this pass" not in a1_lines:
         errors.append("without a trades file the trades line does not say so")
+
+    # A unit verified ok, dispatched again and verified ok again: the second line is taken and the
+    # latest counts. Its trades go through the report script's writer, which leaves the unit's
+    # latest set alone in the file: a set that changed between the two reads, and a set an
+    # in-place writer left part of before a stop, each end as the latest read's whole set once.
+    if code == 0:
+        first_ok = next(l for l in a1_text.splitlines() if l.startswith("verified 1 A1 A1-1 "))
+        first_dispatch = next(l for l in a1_text.splitlines() if l.startswith("dispatch 1 A1 A1-1 "))
+        earlier_ok = first_ok.replace("created 29 items 7", "created 3 items 2")
+        twice_ok = stage(
+            "verified-ok-twice",
+            a1_text.replace(first_ok + "\n", f"{earlier_ok}\n{first_dispatch}\n{first_ok}\n", 1),
+            w1_text,
+        )
+        fixture_trades = trades_fixture.read_text(encoding="utf-8")
+        a1_1_lines = [l for l in fixture_trades.splitlines() if l.startswith("A1-1 ")]
+        others = [l for l in fixture_trades.splitlines() if not l.startswith("A1-1 ")]
+        # Read 1's set: another trade, other counts and a touched line read 2 no longer names.
+        read_1_set = ["A1-1 trade 09 21 16 2", "A1-1 trade 09 91 00 5", "A1-1 touched 22 00 00"]
+        writer_cases: list[tuple[str, Path]] = []
+        try:
+            writer = _load_script_module(plugin_path / "scripts" / "unit_report.py", "unit_report")
+            for label, before, writes in (
+                ("its set changed between the two reads", read_1_set + others,
+                 [read_1_set, a1_1_lines, a1_1_lines]),
+                ("its set written partly before a stop", a1_1_lines[:1] + others,
+                 [a1_1_lines, a1_1_lines]),
+            ):
+                run = out_dir / "runs" / f"trades-{label.split()[2]}"
+                shutil.rmtree(run, ignore_errors=True)
+                (run / "trades").mkdir(parents=True)
+                # The writer names the read the unit's latest verified line closed, read 2 here.
+                (run / "ledger.md").write_bytes(twice_ok.read_bytes())
+                (run / "trades" / "A1.txt").write_text("".join(f"{l}\n" for l in before), encoding="utf-8")
+                written_bytes = []
+                for lines in writes:
+                    writer.write_trades(run, "A1", "A1-1", "".join(f"{l}\n" for l in lines))
+                    written_bytes.append((run / "trades" / "A1.txt").read_bytes())
+                held = [l for l in (run / "trades" / "A1.txt").read_text(encoding="utf-8").splitlines()
+                        if l.startswith("A1-1 ")]
+                if held != a1_1_lines:
+                    errors.append(f"a unit {label} does not hold its latest set alone after the writer: {held}")
+                if len(written_bytes) > 1 and written_bytes[-1] != written_bytes[-2]:
+                    errors.append(f"a unit {label}: the writer run twice with the same set changes the file")
+                if [l for l in (run / "trades" / "A1.txt").read_text(encoding="utf-8").splitlines()
+                        if not l.startswith("A1-1 ")] != others:
+                    errors.append(f"a unit {label}: the writer changed another unit's lines")
+                if (run / "trades" / "A1.written").read_text(encoding="utf-8").splitlines() != ["A1-1 read 2"]:
+                    errors.append(f"a unit {label}: the writer does not name the unit and its read on A1.written once")
+                writer_cases.append((label, run / "trades" / "A1.txt"))
+            # An empty set is written too, and told apart from a set never written.
+            empty_run = out_dir / "runs" / "trades-empty-set"
+            shutil.rmtree(empty_run, ignore_errors=True)
+            empty_run.mkdir(parents=True)
+            (empty_run / "ledger.md").write_text(
+                "dispatch 1 A1 A1-9 sheets A-6.30 purpose vocabulary\n"
+                "verified 1 A1 A1-9 created 0 items 0 updated 0 questions 0 replied 0 sent 0 landed 0 "
+                "conflicts 0 result ok\n", encoding="utf-8")
+            writer.write_trades(empty_run, "A1", "A1-9", "none\n")
+            if (empty_run / "trades" / "A1.txt").read_text(encoding="utf-8") != "" or (
+                empty_run / "trades" / "A1.written").read_text(encoding="utf-8") != "A1-9 read 1\n":
+                errors.append("a unit with no trades is not written as an empty set named on A1.written")
+        except Exception as e:
+            errors.append(f"the report script's trades writer does not write a unit's latest set: {e!r}")
+        for label, trades_path in writer_cases:
+            code_twice, twice_out, twice_err, twice_hand = summarize(
+                [str(twice_ok), "1", "A1", *plan_of(twice_ok), "--trades", str(trades_path)]
+            )
+            twice_lines = twice_out.splitlines()
+            if code_twice != 0:
+                errors.append(f"a unit verified ok, read again and verified ok again is refused: {twice_err}")
+                continue
+            if wanted not in twice_lines:
+                errors.append(
+                    f"a unit verified ok twice, {label}, is not counted once off its latest read: "
+                    f"{[l for l in twice_lines if l.startswith('trades:')]}, expected {wanted!r}"
+                )
+            if "per unit: A1-1 created 29 items 7 updated 0 questions 0 replied 0 read twice verified yes" not in twice_lines:
+                errors.append(
+                    f"a unit verified ok twice does not count its latest line, read twice: "
+                    f"{[l for l in twice_lines if l.startswith('per unit: A1-1 ')]}"
+                )
+            if "unverified: none" not in twice_hand.splitlines():
+                errors.append(f"a unit verified ok twice is not handed back verified: {twice_hand!r}")
+        # Dispatched again after its ok line and not verified since: not verified, named with that
+        # read, and its earlier figures left out.
+        pending = stage(
+            "verified-ok-then-dispatched",
+            a1_text.replace(first_ok + "\n", f"{first_ok}\n{first_dispatch}\n", 1), w1_text,
+        )
+        code_pending, pending_out, pending_err, pending_hand = summarize(
+            [str(pending), "1", "A1", *plan_of(pending)]
+        )
+        if code_pending != 0 or "unverified: A1-1 read 2 no verified line" not in pending_hand.splitlines() or (
+            "per unit: A1-1 created - items - updated - questions - replied - verified no"
+            not in pending_out.splitlines()
+        ) or f"totals verified: created {expected_totals['created'] - 29} " not in pending_out:
+            errors.append(
+                f"a unit dispatched again after its ok line, with no verified line since, is not "
+                f"named unverified with its read and left out of the totals: exit {code_pending}, "
+                f"{pending_err or pending_hand!r}"
+            )
 
     # ------------------------------------------------------------------ #
     # A pass a replan folded: every unit it carries, whatever pass verified it
@@ -6368,7 +6541,7 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         errors.append("the window 3 reports no longer carry a review with no search and one with no page")
     wanted_review = (
         f"review: pages opened {sum(p for p, _s in tallies.values())}, "
-        f"searches {sum(s for _p, s in tallies.values())}"
+        f"searches {sum(s for _p, s in tallies.values())}, reports restored 0"
     )
 
     w3_run = w3_folder("read", w3_reports)
@@ -6432,11 +6605,11 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
     )
     wanted_short = (
         f"review: pages opened {sum(tallies[u][0] for u in w3_units[:2])}, "
-        f"searches {sum(tallies[u][1] for u in w3_units[:2])}"
+        f"searches {sum(tallies[u][1] for u in w3_units[:2])}, reports restored 0"
     )
     if (
         code != 0 or wanted_short not in short_out.splitlines()
-        or f"unverified: {w3_units[2]} no verified line" not in short_hand_back.splitlines()
+        or f"unverified: {w3_units[2]} read 1 no verified line" not in short_hand_back.splitlines()
         or "units: 3, verified 2" not in short_hand_back.splitlines()
     ):
         errors.append(
@@ -6461,8 +6634,9 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
             f"{code}, {unverified_err or unverified_out}"
         )
     # A review whose check found a mismatch, its report renamed for a read whose reader then
-    # stopped answering, leaves `<unit id>.read-1.md` and no `<unit id>.md`: the summary reads the
-    # renamed report and names the review a mismatch, rather than refusing the pass.
+    # stopped answering, leaves `<unit id>.read-1.md` and no `<unit id>.md`: its latest dispatch
+    # line has no verified line after it, so it is not verified, is named with that read, and adds
+    # nothing, and its report is not read.
     mixed_text = mixed_fixture.read_text(encoding="utf-8")
     third_ok = next(l for l in mixed_text.splitlines() if l.startswith(f"verified 3 W3-1 {w3_units[2]} "))
     renamed_ledger = mixed_text.replace(third_ok + "\n", "".join(f"{line}\n" for line in (
@@ -6478,17 +6652,34 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         str(renamed / "ledger.md"), "3", "W3-1", "--plan", str(renamed / "read-plan.md"),
     ])
     if (
-        code != 0 or f"unverified: {w3_units[2]} mismatch" not in renamed_hand_back.splitlines()
-        or wanted_review not in renamed_out.splitlines()
+        code != 0 or f"unverified: {w3_units[2]} read 2 no verified line" not in renamed_hand_back.splitlines()
+        or wanted_short not in renamed_out.splitlines()
     ):
         errors.append(
-            f"a review whose report was renamed after its mismatch, with no later report, is not "
-            f"summed off its latest renamed report and named a mismatch: exit {code}, "
+            f"a review dispatched again after its mismatch, with no verified line since, is not "
+            f"named with that read and left out of the figures: exit {code}, "
             f"{renamed_err or renamed_hand_back!r}"
         )
+    # A review whose latest verified line reads mismatch needs no report: the pass sums, the
+    # review adds nothing, and it is named a mismatch, with no report of it on file at all.
+    mismatch_ledger = mixed_text.replace(
+        third_ok + "\n", third_ok.replace("result ok", "result mismatch") + "\n", 1,
+    )
+    no_report = w3_folder("mismatch-no-report", dict(list(w3_reports.items())[:2]), mismatch_ledger)
+    code, no_report_out, no_report_err, no_report_hand_back = summarize([
+        str(no_report / "ledger.md"), "3", "W3-1", "--plan", str(no_report / "read-plan.md"),
+    ])
+    if (
+        code != 0 or f"unverified: {w3_units[2]} mismatch" not in no_report_hand_back.splitlines()
+        or wanted_short not in no_report_out.splitlines()
+    ):
+        errors.append(
+            f"a review whose latest verified line reads mismatch and whose report is missing does "
+            f"not sum, adding nothing for it: exit {code}, {no_report_err or no_report_hand_back!r}"
+        )
     # A review read again whose runner stopped after the new reader wrote its report and before
-    # its check: the newer `<unit id>.md` was checked by nobody, so the summary reads the report of
-    # read 1, the read its latest verified line checked, and never the newer one.
+    # its check: the newer `<unit id>.md` was checked by nobody, and its latest dispatch line has no
+    # verified line after it, so neither report is read and it adds nothing.
     newer_ledger = mixed_text.replace(third_ok + "\n", "".join(f"{line}\n" for line in (
         third_ok.replace("result ok", "result mismatch"),
         f"note 3 W3-1 {w3_units[2]} deviation a third invented package updated scopeItem:x-1, read 1",
@@ -6503,14 +6694,14 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         str(newer / "ledger.md"), "3", "W3-1", "--plan", str(newer / "read-plan.md"),
     ])
     if (
-        code != 0 or f"unverified: {w3_units[2]} mismatch" not in newer_hand_back.splitlines()
-        or wanted_review not in newer_out.splitlines()
+        code != 0 or f"unverified: {w3_units[2]} read 2 no verified line" not in newer_hand_back.splitlines()
+        or wanted_short not in newer_out.splitlines()
     ):
         errors.append(
-            f"a review read again whose newer report no check read is summed off that newer report, "
-            f"not off the report of the read its latest verified line checked: exit {code}, "
+            f"a review read again whose newer report no check read is summed off a report: exit "
+            f"{code}, "
             f"{[l for l in newer_out.splitlines() if l.startswith('review:')] if code == 0 else newer_err}, "
-            f"expected {wanted_review!r}"
+            f"expected {wanted_short!r}"
         )
 
     # A line another runner is still appending, with no newline yet, is neither read nor hashed:
@@ -6583,7 +6774,7 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
             l for l in wanted_hand_back if l.startswith(("units:", "unverified:"))
         ] or "unverified: none" not in again_hand:
             errors.append(f"a unit read again, its second check ok, is not handed back verified: {again_hand}")
-        if "verified again after a mismatch: A1-1 (2 verified lines)" not in again_err:
+        if "verified again after a read again: A1-1 (2 verified lines)" not in again_err:
             errors.append(f"the bounds line does not name the unit read again: {again_err!r}")
     # Passes: the first read numbered two of its three rows under the next unit's prefix, a
     # mismatch whose notes name both rows; the second read finds them on the live list and updates
@@ -6626,6 +6817,25 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
             f"read twice: exit {code}, {twice_err or twice_hand_back!r}"
         )
 
+    # A third verified line after a mismatch, a dispatch, an ok and another dispatch is taken: a
+    # unit is verified again after any read again, whatever its line before reads.
+    third_ledger = stage(
+        "third-verified-line",
+        a1_text.replace(
+            a1_first + "\n", f"{first_mismatch}\n{a1_dispatch}\n{updated_ok}\n{a1_dispatch}\n{a1_first}\n", 1,
+        ),
+        w1_text,
+    )
+    code, third_out, third_err, third_hand_back = summarize([str(third_ledger), "1", "A1", *plan_of(third_ledger)])
+    if code != 0 or "per unit: A1-1 created 29 items 7 updated 0 questions 0 replied 0 read 3 times verified yes" not in (
+        third_out.splitlines()
+    ) or wanted_totals not in third_out.splitlines() or "unverified: none" not in third_hand_back.splitlines():
+        errors.append(
+            f"a third verified line after a mismatch and an ok, each after its dispatch line, is not "
+            f"summed off the latest line alone, read 3 times: exit {code}, "
+            f"{third_err or [l for l in third_out.splitlines() if l.startswith('per unit: A1-1 ')]}"
+        )
+
     # ------------------------------------------------------------------ #
     # Refusals, each exiting 1 with one line on stderr
     # ------------------------------------------------------------------ #
@@ -6640,13 +6850,6 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
             "a second verified line after a mismatch with no dispatch line between",
             a1_text.replace(a1_first + "\n", f"{first_mismatch}\n{deviation}\n{a1_first}\n", 1),
             "no dispatch line for it sits between the two",
-        ),
-        (
-            "a third verified line after a mismatch and an ok",
-            a1_text.replace(
-                a1_first + "\n", f"{first_mismatch}\n{a1_dispatch}\n{a1_first}\n{a1_dispatch}\n{a1_first}\n", 1,
-            ),
-            "reading result ok; a unit is verified again only after a mismatch",
         ),
         (
             "a count that is not a whole number",
@@ -6791,16 +6994,24 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
             reports[w3_units[1]] = report
         return reports
 
+    # A stub in the measured shape: a header, a pointer to the returned message, and the searches
+    # and pages opened lines copied in, which counts for nothing.
+    stub = (
+        f"unit: {w3_units[1]}   package: A second invented package   trade: 09 99 98   window: 3\n"
+        "the report was delivered in the returned message\n"
+        "searches: 9 run, 2 returned nothing, 0 of them standard line\n"
+        "pages opened: X-9.01 file-0000 p2 (invented term) read one note\n"
+    )
     refusals.extend([
         (
-            "a verified review whose report is not there",
+            "a verified review whose report is not there, and no restored report",
             w3_call(w3_folder("no-report", with_second(None))),
-            "no review report at",
+            "no restored report of that read",
         ),
         (
             "a review report with no searches line",
             w3_call(w3_folder("no-searches", with_second(without_searches))),
-            "carries no `searches:` line",
+            "no searches",
         ),
         (
             "a review report whose searches line carries no number",
@@ -6812,9 +7023,41 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         (
             "a review report with no pages opened line",
             w3_call(w3_folder("no-pages", with_second(without_pages))),
-            "carries no `pages opened:` line",
+            "no pages opened",
+        ),
+        (
+            "a stub holding only a searches line and a pages opened line",
+            w3_call(w3_folder("stub-report", with_second(stub))),
+            "no restored report of that read",
+        ),
+        (
+            "a review report whose count disagrees with its own list",
+            w3_call(w3_folder("count-and-list", with_second(reviewer_text.replace(
+                "created: 1   updated: 2", "created: 2   updated: 2",
+            )))),
+            "report created 2 and created subjects 1",
         ),
     ])
+    # The same stub with the restored report of that read beside it: the pass sums, adds nothing
+    # for that review, and counts it on `reports restored`.
+    restored_run = w3_folder("restored-report", with_second(stub))
+    (restored_run / "reports" / f"{w3_units[1]}.read-1.restored.md").write_text(
+        f"restored: {w3_units[1]}, read 1, written by the run's report script\n", encoding="utf-8",
+    )
+    code, restored_out, restored_err, restored_hand_back = summarize(w3_call(restored_run))
+    wanted_restored = (
+        f"review: pages opened {tallies[w3_units[0]][0] + tallies[w3_units[2]][0]}, "
+        f"searches {tallies[w3_units[0]][1] + tallies[w3_units[2]][1]}, reports restored 1"
+    )
+    if code != 0 or wanted_restored not in restored_out.splitlines() or wanted_restored not in (
+        restored_hand_back.splitlines()
+    ):
+        errors.append(
+            f"a review whose report was restored from the record is not summed with nothing added "
+            f"for it and counted on `reports restored`: exit {code}, "
+            f"{restored_err or [l for l in restored_out.splitlines() if l.startswith('review:')]}, "
+            f"expected {wanted_restored!r}"
+        )
 
     for what, argv, must_name in refusals:
         out_file = out_for.get(what, Path(argv[0]).parent / "reports" / "refused.md")
@@ -6853,10 +7096,19 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
         f"two and named on the hand-back, and a pass with no verified review said plainly to be "
         f"unread; a unit read again after a mismatch summing its second verified line alone, read "
         f"twice, and handed back verified where that line reads ok and as a mismatch where it does "
-        f"not; every case summed off a run folder's own ledger.md beside its read plan; a review "
-        f"whose report was renamed after its mismatch, with no later report, summed off its latest "
-        f"renamed report and named a mismatch, and one whose newer report no check read summed off "
-        f"the report of the read its latest verified line checked; a unit ending unread with a row "
+        f"not; a unit verified ok, read again and verified ok again counting its latest line, read "
+        f"twice, its trades written through the report script's writer counted once off its latest "
+        f"set, where the set changed between the two reads and where an in-place writer left part "
+        f"of it before a stop, the writer run twice changing nothing, leaving every other unit's "
+        f"lines and naming the unit and the read its latest verified line closed on `<pass id>.written`, an empty set named there too; a third verified line after a mismatch and an ok, each after its dispatch line, "
+        f"read 3 times; a unit dispatched again after its ok line with no verified line since "
+        f"named `read 2 no verified line` and left out of the totals; every case summed off a run "
+        f"folder's own ledger.md beside its read plan; a review dispatched again after its mismatch, "
+        f"its report renamed, and one whose newer report no check read, each named with that read "
+        f"and adding nothing; a review whose latest verified line reads mismatch summed with no "
+        f"report on file; a review whose report is a stub in the measured shape refused until its "
+        f"restored report is there, then summed adding nothing for it, `reports restored 1`, and "
+        f"a review whose count disagrees with its own list refused; a unit ending unread with a row "
         f"under the next unit's prefix still summed, its unread and created subjects notes carried, "
         f"and one passing verified where its second read updated those rows and created nothing new, "
         f"both rows still named on its deviations; "
@@ -10518,7 +10770,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     ledger_lines.append(f"note 1 A1 {a1_units[1]} grain one invented panel family may split by frame, note on scopeItem:{a1_units[1]}-1")
     ledger_lines.append(f"note 1 A1 {a1_units[1]} door one invented row looks retired, Question {question_id(4)}")
     ledger = folder / "ledger.md"
-    ledger.write_text("\n".join(ledger_lines) + "\n", encoding="utf-8")
+    _write_run_ledger(ledger, "\n".join(ledger_lines) + "\n")
     trades = folder / "trades"
     trades.mkdir()
     (trades / "A1.txt").write_text(
@@ -10587,7 +10839,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     # The `checkin:` line the lead appends when the user answers a check-in, so a later session
     # never shows that check-in again, is read past by every script that reads this ledger: the
     # summary sums A1 as before and the plan still reads it finished.
-    ledger.write_text(ledger.read_text(encoding="utf-8") + "checkin: 1 A1 go\n", encoding="utf-8")
+    _write_run_ledger(ledger, ledger.read_text(encoding="utf-8") + "checkin: 1 A1 go\n")
     summarize("A1")
     if (plan_blocks().get("A1") or {}).get("fields", {}).get("summed") != "yes":
         errors.append("a `checkin:` line on the ledger leaves A1 read as unsummed")
@@ -10686,7 +10938,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     # G1's summary names two of its three units, then names the third unverified.
     for unit_id, sheet, _page in blocks["G1"]["units"][:2]:
         ledger_lines += unit_lines("G1", unit_id, sheet)
-    ledger.write_text("\n".join(ledger_lines + [wanted_line]) + "\n", encoding="utf-8")
+    _write_run_ledger(ledger, "\n".join(ledger_lines + [wanted_line]) + "\n")
     summarize("G1")
     g1_counts = answer([(u, created[u]) for u in g1_units])
     refused(
@@ -10695,7 +10947,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         1, [f"without {g1_units[2]}"],
     )
     ledger_lines += unit_lines("G1", g1_units[2], blocks["G1"]["units"][2][1], verified=False)
-    ledger.write_text("\n".join(ledger_lines + [wanted_line]) + "\n", encoding="utf-8")
+    _write_run_ledger(ledger, "\n".join(ledger_lines + [wanted_line]) + "\n")
     summarize("G1")
     refused(
         "a summary with a unit it reads verified no",
@@ -10733,7 +10985,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         f"{updated[g1_units[2]]} questions {questions[g1_units[2]]} replied 0 sent 4 landed 4 "
         f"conflicts 0 result ok"
     )
-    ledger.write_text("\n".join(ledger_lines + [wanted_line]) + "\n", encoding="utf-8")
+    _write_run_ledger(ledger, "\n".join(ledger_lines + [wanted_line]) + "\n")
     summarize("G1")
     code, g1_out, err = run(lead, ["record", str(ledger), "1", "G1", "--plan", str(plan), "--counts-json", g1_counts])
     if code != 0:
@@ -10814,7 +11066,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         review_line = next(
             (l for l in summary_file.read_text(encoding="utf-8").splitlines() if l.startswith("review: ")), "",
         ) if code == 0 and summary_file.is_file() else ""
-        figures = re.match(r"^review: pages opened (\d+), searches (\d+)$", review_line)
+        figures = re.match(r"^review: pages opened (\d+), searches (\d+), reports restored (\d+)$", review_line)
         if figures is None:
             errors.append(f"the window 3 summary carries no review line: {err or review_line!r}")
         else:
@@ -10825,7 +11077,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             wanted_review = (
                 f"pass: 3 {review} units 2 created {sum(review_counts.values())} updated 4 "
                 f"questions 2 replied 2 pages-opened {figures.group(1)} searches "
-                f"{figures.group(2)} lead-verified yes"
+                f"{figures.group(2)} reports-restored {figures.group(3)} lead-verified yes"
             )
             if code != 0 or out.splitlines()[:1] != [wanted_review]:
                 errors.append(f"the window 3 record does not write {wanted_review!r}: exit {code}, {out!r}, {err!r}")
@@ -10855,7 +11107,8 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             reviewed = f"2 packages reviewed ({names[review_units[0]]}; {names[review_units[1]]}): new items "
             own = (
                 f"your own check over 1 pass line ({review}), never said to the estimator: units 2, entries "
-                f"{sum(review_counts.values())}, pages opened {figures.group(1)}, searches {figures.group(2)}"
+                f"{sum(review_counts.values())}, pages opened {figures.group(1)}, searches {figures.group(2)}, "
+                f"reports restored {figures.group(3)}"
             )
             w3_lines = out.splitlines()
             w3_head = w3_lines[:next((i for i, l in enumerate(w3_lines) if l.startswith("items by trade: ")), len(w3_lines))]
@@ -11078,7 +11331,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
         f"note 1 A1 {a1_units[i % len(a1_units)]} anomaly invented long note {i} " + "word " * 180
         for i in range(60)
     ] + [wanted_line]
-    ledger.write_text("\n".join(long_lines) + "\n", encoding="utf-8")
+    _write_run_ledger(ledger, "\n".join(long_lines) + "\n")
     summarize("A1")
     calls, _markers = walk_checkin("sixty long notes", checkin_notes())
     if calls < 2:
@@ -11087,9 +11340,8 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     # One note longer than a whole call prints: it is cut where the call's room ends, under a line
     # naming the pass, the note and its length, and the next call prints the rest of it.
     huge = f"invented note longer than one call {'word ' * 6400}".strip()
-    ledger.write_text(
-        "\n".join(ledger_lines + [f"note 1 A1 {a1_units[1]} anomaly {huge}", wanted_line]) + "\n",
-        encoding="utf-8",
+    _write_run_ledger(
+        ledger, "\n".join(ledger_lines + [f"note 1 A1 {a1_units[1]} anomaly {huge}", wanted_line]) + "\n",
     )
     summarize("A1")
     huge_notes = checkin_notes()
@@ -11127,7 +11379,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
             "the skill does not name the line a plan with no pass prints, "
             "`passes 0, finished 0; to dispatch: none`"
         )
-    ledger.write_text("\n".join(ledger_lines + [wanted_line]) + "\n", encoding="utf-8")
+    _write_run_ledger(ledger, "\n".join(ledger_lines + [wanted_line]) + "\n")
     summarize("A1")
     for mode, rest in commands:
         filled = (
@@ -11305,11 +11557,12 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
                 f"units verified {latest_block['fields'].get('units verified')} of {len(settle_units)}"
             )
 
-    # Two ok lines for the first unit: the run folder's own ledger is refused, a copy with the
-    # first of them taken out sums, and that summary, put where the lead reads it, is refused.
+    # Two ok lines for the first unit with no dispatch line between: the run folder's own ledger is
+    # refused, a copy with the first of them taken out sums, and that summary, put where the lead
+    # reads it, is refused.
     copied_at, copied_block = settle_folder(
         "summed-off-a-copy",
-        [settle_verified(settle_first, "ok", made=1), settle_dispatch, settle_verified(settle_first, "ok")],
+        [settle_verified(settle_first, "ok", made=1), settle_verified(settle_first, "ok")],
     )
     if copied_block:
         settle_cases += 1
@@ -13008,8 +13261,11 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         return {unit[0]: unit[1] for p in blocks_of(where).values() for unit in p["units"]}
 
     def append(where: Path, *lines: str) -> None:
-        with (where / "ledger.md").open("a", encoding="utf-8", newline="\n") as handle:
-            handle.write("".join(f"{line}\n" for line in lines))
+        # Both the ledger and its shadow, as the ledger script appends, so the lead's reads take
+        # these lines as the run's own.
+        for name in ("ledger.md", "ledger.shadow"):
+            with (where / name).open("a", encoding="utf-8", newline="\n") as handle:
+                handle.write("".join(f"{line}\n" for line in lines))
 
     def verified_line(window: int, pass_id: str, unit: str, result: str = "ok") -> str:
         return (
@@ -13062,8 +13318,7 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         for unit, sheet in units:
             if window == 3:
                 (where / "reports" / f"{unit}.md").write_text(
-                    "the review's own report\nsearches: 2 run, 0 returned nothing\npages opened: none\n",
-                    encoding="utf-8",
+                    _whole_review_report(unit), encoding="utf-8",
                 )
             if f"verified {window} {pass_id} {unit} " not in done:
                 append(
@@ -16150,8 +16405,23 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
     if code != 0 or "rows cited again 1, rows changed 1, rows read as removed 4, rows not found 2" not in out:
         errors.append(f"the recheck check-in reads {out[:400]!r} {err!r}")
 
-    # A unit whose check found a mismatch, its report renamed for a read that wrote none, is summed
-    # off its latest renamed report and named a mismatch, rather than refusing the pass.
+    # A unit whose check found a mismatch, its report renamed for a read that wrote none: its latest
+    # dispatch line has no verified line after it, so it is named with that read and its outcomes
+    # are not counted, and the pass still sums the other units, rather than refusing.
+    def recheck_line_of(units: list[str]) -> str:
+        counted = {o: 0 for o in ("recited", "updated", "removed", "not found")}
+        for unit in units:
+            for line in reports[unit]:
+                for outcome in counted:
+                    if f"| {outcome} |" in line:
+                        counted[outcome] += 1
+        return (
+            f"recheck: rows recited {counted['recited']}, updated {counted['updated']}, removed "
+            f"{counted['removed']}, not found {counted['not found']}; items retired 0, kept 0, refused 0"
+        )
+
+    if recheck_line_of(list(reports)) != want_line:
+        errors.append("the recheck fixture's outcome lines no longer tally to the pass's recheck line")
     renamed = main.parent / "renamed-report"
     shutil.rmtree(renamed, ignore_errors=True)
     shutil.copytree(main, renamed)
@@ -16169,15 +16439,17 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
         str(renamed / "ledger.md"), "r", "i2-RA", "--plan", str(renamed / "read-plan.md"),
         "--trades", str(renamed / "trades" / "i2-RA.txt"), "--out", str(renamed / "reports" / "i2-RA.md"),
     ])
-    if code != 0 or f"unverified: {first_unit} mismatch" not in out.splitlines() or want_line not in out.splitlines():
+    rest_line = recheck_line_of([u for u in reports if u != first_unit])
+    if code != 0 or f"unverified: {first_unit} read 2 no verified line" not in out.splitlines() or (
+        rest_line not in out.splitlines()
+    ):
         errors.append(
-            f"a window r unit whose report was renamed after its mismatch, with no later report, is "
-            f"not summed off its latest renamed report and named a mismatch: exit {code}, {err or out!r}"
+            f"a window r unit dispatched again after its mismatch, with no verified line since, is "
+            f"not named with that read and left out of the counts: exit {code}, {err or out!r}"
         )
     shutil.rmtree(renamed, ignore_errors=True)
-    # Read 2's report refused by the check, then read 3 granted and its reader writing none: the
-    # highest renamed report is read 2's, which no verified line checked, so the summary reads
-    # read 1's, the one its latest verified line checked.
+    # Read 2's report refused by the check, then read 3 granted and its reader writing none: no
+    # renamed report is read, since no verified line follows the unit's latest dispatch line.
     archived = main.parent / "archived-reports"
     shutil.rmtree(archived, ignore_errors=True)
     shutil.copytree(main, archived)
@@ -16200,10 +16472,12 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
         str(archived / "ledger.md"), "r", "i2-RA", "--plan", str(archived / "read-plan.md"),
         "--trades", str(archived / "trades" / "i2-RA.txt"), "--out", str(archived / "reports" / "i2-RA.md"),
     ])
-    if code != 0 or f"unverified: {first_unit} mismatch" not in out.splitlines() or want_line not in out.splitlines():
+    if code != 0 or f"unverified: {first_unit} read 3 no verified line" not in out.splitlines() or (
+        rest_line not in out.splitlines()
+    ):
         errors.append(
-            f"a window r unit with two renamed reports is summed off the highest, not off read 1's, "
-            f"the one its latest verified line checked: exit {code}, {err or out!r}"
+            f"a window r unit with two renamed reports and no verified line since its third dispatch "
+            f"is summed off a renamed report: exit {code}, {err or out!r}"
         )
     shutil.rmtree(archived, ignore_errors=True)
 
@@ -16495,9 +16769,9 @@ def check_recheck(plugin_path: Path, marketplace_root: Path) -> Result:
         f"under its old number, 15 sheets split 8 and 7, ids and row keys kept over the rows "
         f"reordered, a sheet whose rows changed taking a new id; a unit's outcome lines held to its "
         f"rows once each, a unit that cited nothing held to no write; window r summed, recorded and "
-        f"checked in, a unit read again summed off the report of the read its latest verified line "
-        f"checked, whether that report alone is renamed or a later refused one sits renamed above "
-        f"it; the retire step retiring the 2 items all removed, listing 2 with a row not "
+        f"checked in, a unit dispatched again after its mismatch with no verified line since named "
+        f"with that read and its outcomes left out, whether its report alone is renamed or a later "
+        f"refused one sits renamed beside it; the retire step retiring the 2 items all removed, listing 2 with a row not "
         f"found and keeping 1 on a current page, never both, keeping 1 the comparison reads on another page of the current set, "
         f"an item on 150 and on 300 sheets "
         f"retired with a reason under 2,000 characters; the report by package with an item on two "
@@ -17520,6 +17794,2051 @@ def check_citation_kind(plugin_path: Path, marketplace_root: Path) -> Result:
     )
 
 
+# --------------------------------------------------------------------------- #
+# Check: a unit that fails its check or ends without a usable report
+# --------------------------------------------------------------------------- #
+#
+# On a measured run a pass could not be totaled after a review read again passed twice, runners
+# wrote reviewers' reports from returned text and rewrote and removed ledger lines, and a second
+# read of a manual part never wrote what the first said it left out. So every ledger line goes on
+# through `scripts/ledger.py append`, under a lock, checked as a batch, with a shadow copy that
+# puts back any line changed outside the run and says so; `scripts/unit_report.py` holds every
+# report to its kind's shape (`check`), hands a read the work an earlier read left (`owed`), and
+# restores a passed window 3 unit's lost report from what the run already holds (`restore`); and
+# the runner, the four readers and the skill say so. The scripts run in-process over invented run
+# folders with real files; the text is pinned, each pin taken out and each retired phrase put back
+# refused. Honest bound: the folders are invented and the stops are simulated by running the
+# runner's own steps up to a point, so this proves the scripts and the text, not how a running
+# runner keeps to them.
+
+_FAILED_UNIT_RUNNER = "agents/scope-round-runner.md"
+_FAILED_UNIT_REVIEWER = "agents/scope-reviewer.md"
+_FAILED_UNIT_MANUAL = "agents/scope-manual-reader.md"
+_FAILED_UNIT_READER = "agents/scope-reader.md"
+_FAILED_UNIT_VOCABULARY = "agents/scope-vocabulary-reader.md"
+_FAILED_UNIT_SKILL = "skills/scope-run/SKILL.md"
+_FAILED_UNIT_READERS = (_FAILED_UNIT_REVIEWER, _FAILED_UNIT_MANUAL, _FAILED_UNIT_READER, _FAILED_UNIT_VOCABULARY)
+_FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
+    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/ledger.py' append '<run folder>/ledger.md' <<'EOF'"),
+    (_FAILED_UNIT_RUNNER, "Everything you write on the ledger when a unit's check ends goes in one append "
+     "through the ledger script"),
+    (_FAILED_UNIT_RUNNER, "a runner stopped before that append has written nothing of the read"),
+    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' check --kind <kind> --report "
+     "'<run folder>/reports/<unit id>.md'"),
+    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' check --kind <kind> --report - --owed"),
+    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' owed '<run folder>' <window> <unit id> "
+     "--read <k> <<'EOF'"),
+    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' restore '<run folder>' 3 <unit id>"),
+    (_FAILED_UNIT_RUNNER, "You never write, complete, copy into or rename over a reader's report file"),
+    (_FAILED_UNIT_RUNNER, "no editor, no in-place `sed`, no redirect into it and no rewrite through a script"),
+    (_FAILED_UNIT_RUNNER, "It also says `Owed: <run folder>/owed/<unit id>.read-<k>.md`"),
+    (_FAILED_UNIT_RUNNER, "goes on as `note <window> <pass> <unit> anomaly not written: <the entry>`"),
+    (_FAILED_UNIT_RUNNER, "are each safe to run twice"),
+    (_FAILED_UNIT_RUNNER, "No refusal is ever answered by changing a line already on the ledger or a "
+     "reader's report file."),
+    (_FAILED_UNIT_RUNNER, "a missing or stub report is never a reason to read a unit again"),
+    (_FAILED_UNIT_RUNNER, "nothing is ever renamed onto a file already there"),
+    (_FAILED_UNIT_RUNNER, "Where `<unit id>.read-<k>.md` is already there, as when a runner stopped "
+     "after the rename and before the dispatch and the pass was sent again, leave both files as they "
+     "are and go on."),
+    (_FAILED_UNIT_RUNNER, "send the call again with that line correct, as a new line"),
+    *((reader, "`Owed: <path>`, the work earlier reads of your unit left, on a read after the first, "
+       "or `Owed: none`;") for reader in _FAILED_UNIT_READERS),
+    *((reader, "On a read after your first, read your Owed file before your first write.")
+      for reader in _FAILED_UNIT_READERS),
+    *((reader, "they are an earlier read's, and a row of theirs never shows an owed line is written")
+      for reader in _FAILED_UNIT_READERS),
+    *((reader, "owed: <each `not written by read` line of your Owed file, copied whole, then ` | ` and")
+      for reader in _FAILED_UNIT_READERS),
+    *((reader, "a file that points at your returned message or holds only part of the shape is no report")
+      for reader in _FAILED_UNIT_READERS),
+    (_FAILED_UNIT_REVIEWER, "not written: <each requirement a page gives this package that you did not write"),
+    (_FAILED_UNIT_MANUAL, "not written: <each requirement your pages give this package that you did not write"),
+    (_FAILED_UNIT_MANUAL, "`not written:` and `owed:` written as the review's shape gives them"),
+    (_FAILED_UNIT_REVIEWER, "there, it goes on your `not written:` line with `no room` as its reason."),
+    (_FAILED_UNIT_REVIEWER, "`description` has no room, it goes on your `not written:` line with `no room` "
+     "as its reason."),
+    (_FAILED_UNIT_REVIEWER, "a row that stood under your prefix before you started, or a citation alone, "
+     "discharges nothing"),
+    (_FAILED_UNIT_SKILL, "python3 '<plugin root>/scripts/ledger.py' append '<run folder>/ledger.md' <<'EOF'"),
+    (_FAILED_UNIT_SKILL, "Every line reaches the ledger through one script, yours as much as a runner's"),
+    (_FAILED_UNIT_SKILL, "python3 '<plugin root>/scripts/unit_report.py' restore '<run folder>' 3 <unit id>"),
+    (_FAILED_UNIT_SKILL, "A missing or stub report of a reader or a reviewer is never a reason to read a "
+     "unit again."),
+    (_FAILED_UNIT_SKILL, "Nobody but its reader ever writes, completes or copies into a reader's report."),
+    (_FAILED_UNIT_SKILL, "Owed: <run folder>/owed/<unit id>.read-<k>.md on a read after the first, or none. "
+     "Reviewing:"),
+    (_FAILED_UNIT_SKILL, "Owed: <run folder>/owed/<unit id>.read-<k>.md on a read after the first, or none. "
+     "Reading for:"),
+    (_FAILED_UNIT_SKILL, "Nothing stops for it and nobody puts a line back by hand."),
+    (_FAILED_UNIT_SKILL, "Whole `phase:` and `checkin:` lines added at the end outside the script, each one "
+     "the script would have taken, are kept and added to the copy."),
+    (_FAILED_UNIT_SKILL, "or a line added outside the script is a runner's line, a `pass:` line, one the "
+     "script would refuse, one holding a control character or one with no line ending"),
+    ("agents/scope-package-folder.md", "python3 '<plugin root>/scripts/ledger.py' append "
+     "'<run folder>/ledger.md' <<'EOF' phase: packages folded EOF"),
+    ("skills/scope-run/recheck.md", "append it to the ledger as printed, once, before you check in, "
+     "through the ledger script as every line goes on."),
+    (_FAILED_UNIT_RUNNER, "append each line it prints to the ledger as printed, in one append through "
+     "the ledger script."),
+    # A runner heals before it reads, and a refused verified line of a closed read is not resent.
+    (_FAILED_UNIT_RUNNER, "In every mode, before your first look at the ledger, hold it to the run's own copy:"),
+    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/ledger.py' heal '<run folder>/ledger.md'"),
+    (_FAILED_UNIT_RUNNER, "that read was closed already, as by a runner before you, so send no corrected line; "
+     "look at that unit's lines again, as pass mode's step 2 looks, and go on from what they say."),
+    # A unit's trades are one set, written by the report script, and a passed unit's bookkeeping is
+    # written on a resend.
+    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' trades '<run folder>' <pass id> <unit id> <<'EOF'"),
+    (_FAILED_UNIT_RUNNER, "You never append to the trades file yourself."),
+    (_FAILED_UNIT_RUNNER, "dispatch nothing for it and append nothing for it to the ledger, then write whatever "
+     "of its trades, kinds, names and restore a runner before you stopped short of"),
+    # The trades marker names the read whose set was written, and a stale one is written over.
+    (_FAILED_UNIT_RUNNER, "does not carry the line `<unit id> read <k>`, `<k>` the read that `verified` line "
+     "closed, as a whole line, found with a local filter, since a set written for an earlier read is not "
+     "this read's: through the trades command above"),
+    (_FAILED_UNIT_RUNNER, "and writes `<unit id> read <k>` on `<run folder>/trades/<pass id>.written`, `<k>` the "
+     "read the unit's latest `verified` line closed"),
+    (_FAILED_UNIT_SKILL, "Beside it, `<pass id>.written` names each unit whose set was written and the read it "
+     "was written for, `<unit id> read <k>` one unit per line"),
+    # A unit's touched trades are the union over its verified reads, ok or mismatch.
+    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' touched '<run folder>' <window> <unit id> "
+     "--kind <kind>"),
+    (_FAILED_UNIT_RUNNER, "each catalog id that any read of the unit carrying a `verified` line, ok or mismatch, "
+     "named on its `trades touched:` line, each once, off that read's whole report or its confirmed file, "
+     "since a failed read's writes stay on the record"),
+    (_FAILED_UNIT_RUNNER, "its `touched` lines as the touched command above prints them, off every verified "
+     "read's whole report or confirmed file"),
+    # The confirmed command is the one exception to the rule that no returned message reaches a file.
+    (_FAILED_UNIT_RUNNER, "no part of a reader's returned message goes in any file but the ledger notes this "
+     "step copies and the lists the report script's `confirmed` command below keeps, which it writes itself"),
+    (_FAILED_UNIT_RUNNER, "or put a reader's returned message in any file but the ledger notes step 3 copies "
+     "and the lists the report script's `confirmed` command keeps."),
+    # A failure to replace a file or to have the lock is run again, never answered by an edit.
+    (_FAILED_UNIT_RUNNER, "Where any script of the run fails with a line saying a file could not be replaced or "
+     "the lock could not be had, run the same command again after a short wait"),
+    (_FAILED_UNIT_RUNNER, "up to three times, and never answer it by changing a line or a file; where it still "
+     "fails, your final message is what the script printed, and you end."),
+    # A reply count is held to its ids.
+    (_FAILED_UNIT_RUNNER, "`report <value>` where `created:`, `questions raised:` or `questions replied:` "
+     "disagrees with its own list"),
+    (_FAILED_UNIT_SKILL, "`questions replied:` above 0 with at least one id on its list and never fewer "
+     "replies than ids, and 0 with none"),
+    # Every not written entry of a read goes on its closing append.
+    (_FAILED_UNIT_RUNNER, "Every entry of its `not written:` line goes on, whether or not an earlier read carried "
+     "it, each entry once in the read"),
+    # A failed claim answered not needed reaches the ledger, the check-in and the close-out.
+    (_FAILED_UNIT_RUNNER, "`note <window> <pass> <unit> anomaly not needed: <that owed line, copied whole>`"),
+    *((reader, "(an update, a field update, a Question on a row, a manual update, a page citation) is an "
+       "owed line too: copy it whole on `owed:`, then ` | ` and `written <subject>` for that row, which you "
+       "name again on your report's own line for that write, the line your runner checks against the "
+       "record, or `not needed, <why>`.")
+      for reader in _FAILED_UNIT_READERS),
+    # A failed claim is answered off the read's own list for that write, created or not.
+    *((reader, "and each `check read` line of an update, a field update, a Question on a row, a manual update "
+       "or a page citation, copied whole, then ` | ` and `written <subject>` or `not needed, <why>`, one per line")
+      for reader in (*_FAILED_UNIT_READERS, _FAILED_UNIT_SKILL)),
+    # Every other failed check is put right and takes no `owed:` line.
+    *((reader, "Put every other failed check right in this read; it needs no line on `owed:`.")
+      for reader in _FAILED_UNIT_READERS),
+    # The runner's failure note names the Question of a failed link.
+    (_FAILED_UNIT_RUNNER, "for `questions linked` the subject and the Question's id"),
+    # The ledger script writes a control character inside a line as a space.
+    (_FAILED_UNIT_SKILL, "writes each control character inside a line (a tab, a form feed, a line separator and "
+     "the rest) as one space"),
+    *((reader, "names that row on your own line for the write the earlier read claimed, `updated subjects:` "
+       "for an update")
+      for reader in _FAILED_UNIT_READERS),
+    *((reader, "whether or not you created it, since your runner checks every row on those lines against the "
+       "record again")
+      for reader in _FAILED_UNIT_READERS),
+    (_FAILED_UNIT_VOCABULARY, "`page citations:` for a citation on a page with no sheet number"),
+    *((reader, "`manual updates:` for a manual citation and `field updates:` for a field")
+      for reader in (_FAILED_UNIT_REVIEWER, _FAILED_UNIT_MANUAL)),
+    (_FAILED_UNIT_SKILL, "The writes a read claimed that the next read said were not needed are the `anomaly` "
+     "notes that carry `not needed:`"),
+    (_FAILED_UNIT_SKILL, "An anomaly carrying `not needed:` names a write a read said it made that its check did "
+     "not find"),
+    # What a check confirmed off a returned message is kept, and merged by a later runner.
+    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' confirmed '<run folder>' <window> <unit id> "
+     "--read <k> <<'EOF'"),
+    (_FAILED_UNIT_RUNNER, "otherwise off `<run folder>/confirmed/<unit id>.read-<j>.md` where that read carries a "
+     "`verified` line; a confirmed file of a read with no `verified` line, its runner stopped before the "
+     "closing append, is ignored"),
+    (_FAILED_UNIT_SKILL, "- `confirmed/`: one file per read the runner verified off the reader's returned message"),
+    (_FAILED_UNIT_SKILL, "Beside it, `<pass id>.written` names each unit whose set was written"),
+)
+_FAILED_UNIT_RETIRED: tuple[tuple[str, str], ...] = (
+    (_FAILED_UNIT_RUNNER, "The new report's `anomaly`, `grain`, `door` and `not written` lines go on the ledger "
+     "before that line, only those an earlier report of the unit did not carry."),
+    (_FAILED_UNIT_RUNNER, "the summary counts a unit's last run of lines in the file"),
+    (_FAILED_UNIT_RUNNER, "is finished, so dispatch nothing for it, append nothing, and go to the next unit."),
+    (_FAILED_UNIT_RUNNER, "the trades lines where the trades file carries none for the unit"),
+    (_FAILED_UNIT_RUNNER, "open that file and verify off it"),
+    (_FAILED_UNIT_RUNNER, "fix that line and run it again"),
+    (_FAILED_UNIT_RUNNER, "open its report file, and where that is absent"),
+    (_FAILED_UNIT_REVIEWER, "no room: <the material> for <the row's name>, run only"),
+    (_FAILED_UNIT_REVIEWER, "room: <the qualification> for <the row's name>, run only"),
+    (_FAILED_UNIT_READER, "opens that file where your report does not reach it in the message"),
+    (_FAILED_UNIT_VOCABULARY, "opens that file where your report does not reach it in the message"),
+    (_FAILED_UNIT_MANUAL, "a report returned without it is read second-hand"),
+    (_FAILED_UNIT_SKILL, "open that file rather than re-running the unit"),
+    # Retired by the second repair: a failed claim written only as an owed line is written, the
+    # wider adoption, the unit id alone as the trades marker, the latest report's touched trades
+    # alone, and the blanket rule with no exemption for the confirmed command.
+    *((reader, "written in this read as any `written` answer is") for reader in _FAILED_UNIT_READERS),
+    (_FAILED_UNIT_SKILL, "Whole lines added at the end outside the script, each one the script would have "
+     "taken, are kept"),
+    (_FAILED_UNIT_RUNNER, "does not carry the unit id as a whole line"),
+    (_FAILED_UNIT_RUNNER, "Then one `touched` line for each catalog id on the reader's `trades touched:` line"),
+    (_FAILED_UNIT_RUNNER, "no part of a reader's returned message goes in any file but the ledger notes this "
+     "step copies: the check reads it on stdin."),
+    (_FAILED_UNIT_RUNNER, "or put a reader's returned message in any file. A report"),
+    (_FAILED_UNIT_SKILL, "names each unit whose set was written, one id per line"),
+    # Retired by the third repair: every failed check naming a row answered on `owed:`.
+    *((reader, "and each `check read` line naming a row") for reader in (*_FAILED_UNIT_READERS, _FAILED_UNIT_SKILL)),
+)
+# Each report shape the report script holds, and where its block stands: the agent's `## Report
+# back` block, and the skill's own copy where it carries one.
+_FAILED_UNIT_SHAPES = (
+    ("sheet", _FAILED_UNIT_READER, "## Report back"),
+    ("vocabulary", _FAILED_UNIT_VOCABULARY, "## Report back"),
+    ("review", _FAILED_UNIT_REVIEWER, "## Report back"),
+    ("manual", _FAILED_UNIT_MANUAL, "## Report back"),
+    ("sheet", _FAILED_UNIT_SKILL, "**The reader's report**"),
+    ("review", _FAILED_UNIT_SKILL, "**The reviewer's report**"),
+)
+_REPORT_LABEL_RE = re.compile(r"^([a-z][a-z -]*?):")
+
+# A real process that appends one batch through `ledger.py` and is killed at a chosen point: partway
+# through writing the shadow (`partway`), or once the shadow is written and before the ledger is
+# opened for writing (`between`). The kill is `os._exit`, so nothing the script would do after it
+# runs. Arguments: the scripts folder, the point, the ledger, then the batch's lines.
+_FAILED_UNIT_KILL_CHILD = r'''
+import builtins, io, os, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+where, ledger_path, lines = sys.argv[2], Path(sys.argv[3]), sys.argv[4:]
+real_open = io.open
+class Half:
+    def __init__(self, handle): self.handle = handle
+    def write(self, data):
+        self.handle.write(data[: max(1, len(data) // 2)]); self.handle.flush(); os._exit(9)
+    def __enter__(self): return self
+    def __exit__(self, *exc): return self.handle.__exit__(*exc)
+    def __getattr__(self, name): return getattr(self.handle, name)
+def patched(file, mode="r", *args, **kwargs):
+    name = os.path.basename(os.fspath(file)) if not isinstance(file, int) else ""
+    writing = any(flag in mode for flag in "wax+")
+    if writing and where == "partway" and "ledger.shadow" in name:
+        return Half(real_open(file, mode, *args, **kwargs))
+    if writing and where == "between" and name == "ledger.md":
+        os._exit(9)
+    return real_open(file, mode, *args, **kwargs)
+builtins.open = patched
+io.open = patched
+import ledger
+ledger.append_lines(ledger_path, lines)
+'''
+
+@contextlib.contextmanager
+def _writes_stopped_partway(fragment: str):
+    """
+    Within the block, a write opened on a file whose name holds `fragment` writes half of what it
+    is handed and then fails with an OSError, as a script stopped partway through the write would
+    leave it. A file written in place is left half written; one written beside and replaced is not.
+    """
+    import builtins
+
+    real_open, real_builtin = io.open, builtins.open
+
+    class Half:
+        def __init__(self, handle):
+            self.handle = handle
+
+        def write(self, data):
+            self.handle.write(data[: max(1, len(data) // 2)])
+            self.handle.flush()
+            raise OSError("stopped partway through the write")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return self.handle.__exit__(*exc)
+
+        def __getattr__(self, name):
+            return getattr(self.handle, name)
+
+    def patched(file, mode="r", *args, **kwargs):
+        name = Path(str(file)).name if not isinstance(file, int) else ""
+        if any(flag in mode for flag in "wax+") and fragment in name:
+            return Half(real_open(file, mode, *args, **kwargs))
+        return real_open(file, mode, *args, **kwargs)
+
+    builtins.open = patched
+    io.open = patched
+    try:
+        yield
+    finally:
+        builtins.open = real_builtin
+        io.open = real_open
+
+
+# A real process that appends twenty batches of two lines through `ledger.py` once a `go` file
+# appears, with the run folder's lock or with the lock taken out. Arguments: the scripts folder,
+# `with` or `without`, the ledger, the unit's pass id, the batch count.
+_FAILED_UNIT_LOCK_CHILD = r'''
+import contextlib, sys, time
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import ledger, plan_inventory
+if sys.argv[2] == "without":
+    @contextlib.contextmanager
+    def no_lock(*args, **kwargs):
+        yield
+    plan_inventory.hold_lock = no_lock
+ledger_path, unit, count = Path(sys.argv[3]), sys.argv[4], int(sys.argv[5])
+(ledger_path.parent / f"ready-{unit}").write_text("", encoding="utf-8")
+while not (ledger_path.parent / "go").exists():
+    time.sleep(0.001)
+failed = 0
+for i in range(1, count + 1):
+    try:
+        ledger.append_lines(ledger_path, [
+            f"dispatch 2 {unit} {unit}-{i} sheets A-{i}.01 purpose an invented sheet",
+            f"verified 2 {unit} {unit}-{i} created 1 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0 result ok",
+        ])
+    except Exception:
+        failed += 1
+sys.exit(1 if failed else 0)
+'''
+
+
+def _report_block_labels(text: str, anchor: str) -> list[str]:
+    """The first label of each line of the first `text` block after the anchor."""
+    at = text.find(anchor)
+    if at < 0:
+        return []
+    lines = text[at:].splitlines()
+    start = next((i for i, l in enumerate(lines) if l.strip() == "```text"), None)
+    if start is None:
+        return []
+    labels: list[str] = []
+    for line in lines[start + 1:]:
+        if line.strip().startswith("```"):
+            break
+        m = _REPORT_LABEL_RE.match(line)
+        if m:
+            labels.append(m.group(1))
+    return labels
+
+
+def _filled_report(kind: str, unit: str, labels: tuple[str, ...], **values: str) -> str:
+    """A whole report of the kind, every list none, with the given lines in place of their label's."""
+    lines: list[str] = []
+    for label in labels:
+        if label in values:
+            lines.append(f"{label}: {values[label]}")
+        elif label == "unit":
+            lines.append(f"unit: {unit}   pass: P1   window: 3" if kind in ("review", "manual") else
+                         f"unit: {unit}   pass: P1   window: 2")
+        elif label == "created":
+            lines.append("created: 0   updated: 0   questions raised: 0   questions replied: 0")
+        elif label == "sent":
+            lines.append("sent: 0   landed: 0   conflicts: none")
+        elif label == "searches":
+            lines.append("searches: 3 run, 1 returned nothing, 0 of them standard line")
+        else:
+            lines.append(f"{label}: none")
+    return "".join(f"{line}\n" for line in lines)
+
+
+def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "failed-unit"
+    scripts = plugin_path / "scripts"
+    for needed in ("ledger.py", "unit_report.py"):
+        if not (scripts / needed).is_file():
+            return Result(name, False, detail=f"script not found at {scripts / needed}")
+    try:
+        ledger_mod = _load_script_module(scripts / "ledger.py", "ledger")
+        report_mod = _load_script_module(scripts / "unit_report.py", "unit_report")
+        summary_mod = _load_script_module(scripts / "pass_summary.py", "pass_summary")
+        lead_mod = _load_script_module(scripts / "lead_pass.py", "lead_pass")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import the scripts: {e}")
+
+    errors: list[str] = []
+    root = Path(__file__).parent / ".test-results" / "failed-unit"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    arms = 0
+
+    def expect(label: str, ok: bool, seen: object = "") -> None:
+        nonlocal arms
+        arms += 1
+        if not ok:
+            errors.append(f"{label}: {seen}" if seen != "" else label)
+
+    def folder(case: str, ledger_lines: tuple[str, ...] = ()) -> Path:
+        at = root / case
+        at.mkdir(parents=True)
+        (at / "reports").mkdir()
+        if ledger_lines:
+            (at / "ledger.md").write_bytes("".join(f"{l}\n" for l in ledger_lines).encode("utf-8"))
+        return at
+
+    def append(at: Path, *lines: str) -> tuple[bool, str]:
+        try:
+            out = ledger_mod.append_lines(at / "ledger.md", list(lines))
+        except ledger_mod.LedgerError as e:
+            return False, str(e)
+        return True, "\n".join(out)
+
+    dispatch = "dispatch 2 P1 P1-1 sheets A-1.01 purpose an invented plan sheet"
+    verified_ok = ("verified 2 P1 P1-1 created 4 items 2 updated 0 questions 0 replied 0 sent 2 "
+                   "landed 2 conflicts 0 result ok")
+
+    # ------------------------------------------------------------------ #
+    # ledger.py append: a batch, its refusals, all or none
+    # ------------------------------------------------------------------ #
+    at = folder("append", ("phase: plan approved",))
+    quoted = "note 2 P1 P1-1 anomaly A-1.01 p3 the owner's $5 allowance reads otherwise, run only"
+    ok, said = append(at, dispatch, quoted, verified_ok)
+    data = (at / "ledger.md").read_bytes()
+    expect(
+        "a batch with an apostrophe and a dollar sign is not appended as written, its shadow alike",
+        ok and data.decode("utf-8").splitlines()[-2:] == [quoted, verified_ok]
+        and (at / "ledger.shadow").read_bytes() == data,
+        said,
+    )
+    for label, batch, must_name in (
+        ("a verified line with no dispatch line since the unit's last", [verified_ok], "no dispatch line for it since"),
+        ("a line in none of the three shapes", ["narrative 2 P1 P1-1 a sentence nobody counts"], "none of the three shapes"),
+        ("a note kind outside the closed set", ["note 2 P1 P1-1 remark an invented clause"], "not one of the note kinds"),
+        ("a note with a kind and no clause", ["note 2 P1 P1-1 anomaly"], "no clause"),
+        ("a dispatch line with no purpose", ["dispatch 2 P1 P1-2 sheets A-1.02"], "no `purpose`"),
+        ("a `repaired:` line sent by a runner", ["repaired: lines differing from the run's own copy 1, first at line 1; the ledger was written again from that copy"], "written by this script alone"),
+        ("a `pass:` line in no shape the skill gives", ["pass: 2 P1 units two created 4 lead-verified yes"], "not in the shape"),
+        ("a lead line of another keyword", ["dispatch: window 2 pass P1 units 1"], "the lead's lines start with"),
+        ("a good line before a bad one", [dispatch.replace("P1-1", "P1-2"), "note 2 P1 P1-2 remark x y"], "batch line 2"),
+    ):
+        before = (at / "ledger.md").read_bytes()
+        ok, said = append(at, *batch)
+        expect(
+            f"{label} is not refused by name with nothing written",
+            not ok and must_name in said and (at / "ledger.md").read_bytes() == before
+            and (at / "ledger.shadow").read_bytes() == before,
+            said,
+        )
+    ok, said = append(at, dispatch, verified_ok)
+    expect("a verified line after the unit's dispatch line again is not taken", ok, said)
+
+    # ------------------------------------------------------------------ #
+    # The heal, in each of its states, on real files
+    # ------------------------------------------------------------------ #
+    base = ("phase: plan approved", dispatch, verified_ok)
+    later = "note 2 P1 P1-1 deviation A-1.01 an invented note after the change, read 1"
+
+    def healed(case: str, change) -> tuple[Path, list[str], str]:
+        at = folder(f"heal-{case}")
+        ok, said = append(at, *base)
+        shadow = (at / "ledger.shadow").read_bytes()
+        change(at, shadow)
+        ok, said = append(at, later)
+        return at, (at / "ledger.md").read_bytes().decode("utf-8").splitlines(), said
+
+    repaired = ledger_mod.REPAIRED_RE
+    for case, change, wanted_repair in (
+        ("equal", lambda at, s: None, None),
+        ("prefix", lambda at, s: (at / "ledger.md").write_bytes(s[:len(s) - 30]), None),
+        ("changed", lambda at, s: (at / "ledger.md").write_bytes(s.replace(b"result ok", b"result mismatch")), ("1", "3")),
+        ("removed", lambda at, s: (at / "ledger.md").write_bytes(s.replace(dispatch.encode() + b"\n", b"")), ("1", "2")),
+        # A line added by hand that an append would refuse: a second verified line, no dispatch between.
+        ("added invalid", lambda at, s: (at / "ledger.md").write_bytes(s + verified_ok.encode() + b"\n"), ("1", "4")),
+        ("added with a valid line before an invalid one", lambda at, s: (at / "ledger.md").write_bytes(
+            s + b"phase: packages folded\n" + verified_ok.encode() + b"\n"), ("2", "4")),
+        ("tail", lambda at, s: (at / "ledger.md").write_bytes(s + b"note 2 P1 P1-1 anomaly half wr"), ("1", "4")),
+    ):
+        at, lines, said = healed(case, change)
+        found = [repaired.match(l) for l in lines if l.startswith("repaired:")]
+        wanted_lines = list(base) + ([] if wanted_repair is None else [
+            ledger_mod.REPAIRED_LINE.format(count=wanted_repair[0], first=wanted_repair[1])
+        ]) + [later]
+        expect(
+            f"the heal of a ledger {case} does not leave the run's own lines"
+            + (" with no line of its own" if wanted_repair is None else
+               f" and one `repaired:` line naming {wanted_repair[0]} line, first at line {wanted_repair[1]}"),
+            lines == wanted_lines and (at / "ledger.md").read_bytes() == (at / "ledger.shadow").read_bytes()
+            and len(found) == (0 if wanted_repair is None else 1),
+            lines,
+        )
+    # A whole `phase:` or `checkin:` line added by hand at the end, each one an append takes, is the
+    # lead's or the folder's standalone line: kept, in the shadow too, with nothing said, a Windows
+    # line ending read as a line ending. A `phase:` line written by hand is never lost.
+    by_hand = b"phase: packages folded\r\ncheckin: 2 P1 go\n"
+    at = folder("heal-added-phase")
+    append(at, *base)
+    with (at / "ledger.md").open("ab") as handle:
+        handle.write(by_hand)
+    hand_bytes = (at / "ledger.md").read_bytes()
+    healed_line = ledger_mod.heal(at / "ledger.md")
+    expect(
+        "whole `phase:` and `checkin:` lines added by hand, one with a Windows line ending, are not kept "
+        "as they stand, the ledger unchanged, the shadow equal to it and no `repaired:` line",
+        healed_line is None and (at / "ledger.md").read_bytes() == hand_bytes
+        and (at / "ledger.shadow").read_bytes() == hand_bytes,
+        healed_line or (at / "ledger.md").read_bytes().decode("utf-8").splitlines(),
+    )
+    ok, said = append(at, later)
+    lines = (at / "ledger.md").read_bytes().decode("utf-8").splitlines()
+    expect("an append after lines kept from a hand writer does not go on after them",
+           ok and lines == [*base, "phase: packages folded", "checkin: 2 P1 go", later] and "repaired:" not in said,
+           lines)
+    # A runner's line added by hand, here a `verified` line an append would take, is put back and
+    # named: a runner's closing group lands whole, and the heal cannot tell a whole group from the
+    # first part of one.
+    open_unit = ("phase: plan approved", dispatch)
+    at = folder("heal-added-verified")
+    append(at, *open_unit)
+    with (at / "ledger.md").open("ab") as handle:
+        handle.write(verified_ok.encode("utf-8") + b"\n")
+    healed_line = ledger_mod.heal(at / "ledger.md")
+    lines = (at / "ledger.md").read_bytes().decode("utf-8").splitlines()
+    expect(
+        "a `verified` line added by hand, one an append would take, is not put back and named under one "
+        "`repaired:` line",
+        healed_line == ledger_mod.REPAIRED_LINE.format(count="1", first="3")
+        and lines == [*open_unit, healed_line]
+        and (at / "ledger.md").read_bytes() == (at / "ledger.shadow").read_bytes(),
+        lines,
+    )
+    # A `phase:` line holding a carriage return with a verified line hidden after it: one line to a
+    # check that splits at newlines, two to a reader that splits at every line break. It is put back
+    # and named, and the pass totals off the lines the run wrote.
+    w2_plan = (
+        "# Read plan: window 2\n\n## Window 2\n\n### P1. Plans, discipline A\n\nwindow: 2\n"
+        "reads for: the sheet\nunits: 2\nunits verified: 0\n\n"
+        "P1-1. A-1.01, page 3: An invented plan sheet\nP1-2. A-1.02, page 4: Another invented plan sheet\n"
+    )
+    hidden = ("verified 2 P1 P1-2 created 50 items 9 updated 0 questions 0 replied 0 sent 9 landed 9 "
+              "conflicts 0 result ok")
+    at = folder("heal-hidden-line")
+    (at / "read-plan.md").write_text(w2_plan, encoding="utf-8")
+    append(at, *base)
+    with (at / "ledger.md").open("ab") as handle:
+        handle.write(f"phase: packages folded\r{hidden}\n".encode("utf-8"))
+    healed_line = ledger_mod.heal(at / "ledger.md")
+    lines = (at / "ledger.md").read_bytes().decode("utf-8").splitlines()
+    code, hand_back, err = _run_script_main(summary_mod, [
+        str(at / "ledger.md"), "2", "P1", "--plan", str(at / "read-plan.md"), "--out", str(at / "reports" / "P1.md")])
+    totals = next((l for l in (at / "reports" / "P1.md").read_text(encoding="utf-8").splitlines()
+                   if l.startswith("totals verified:")), "") if code == 0 else err
+    expect(
+        "a `phase:` line holding a carriage return with a verified line hidden after it is not put back "
+        "and named, the pass totalling off the run's own lines alone",
+        healed_line == ledger_mod.REPAIRED_LINE.format(count="1", first="4")
+        and lines == [*base, healed_line] and hidden not in (at / "ledger.md").read_text(encoding="utf-8")
+        and code == 0 and totals.startswith("totals verified: created 4 ") and "items 2" in totals,
+        f"{healed_line!r}, {lines}, {totals}",
+    )
+    # A control character inside a line is written as one space, never refused: text copied off a
+    # page can hold any of them. The line lands as one line to every way of splitting the file, and
+    # a verified line after it is no line of its own.
+    at = folder("append-control")
+    append(at, "phase: plan approved", dispatch)
+    for char in ("\t", " ", "\r", "\x0b", "\x0c", "\x1c", "\x85", " "):
+        before = (at / "ledger.md").read_bytes()
+        ok, said = append(at, f"note 2 P1 P1-1 anomaly A-1.01 an invented note{char}{verified_ok}")
+        after = (at / "ledger.md").read_bytes()
+        added = after[len(before):].decode("utf-8")
+        expect(f"a note holding U+{ord(char):04X} with a verified line after it does not append as one line "
+               f"with a space in its place",
+               ok and after.startswith(before)
+               and added == f"note 2 P1 P1-1 anomaly A-1.01 an invented note {verified_ok}\n"
+               and len(added.splitlines()) == 1 and after == (at / "ledger.shadow").read_bytes(),
+               f"{said}, {added!r}")
+    at = folder("append-control-stdin")
+    append(at, "phase: plan approved", dispatch)
+    by_stdin = subprocess.run(
+        [sys.executable, str(scripts / "ledger.py"), "append", str(at / "ledger.md")],
+        input=f"note 2 P1 P1-1 anomaly A-1.01 an invented\tnote\r{verified_ok}\n".encode("utf-8"),
+        capture_output=True, timeout=120,
+    )
+    stdin_lines = (at / "ledger.md").read_bytes().decode("utf-8").splitlines()
+    expect("a batch on stdin whose line holds a tab and a carriage return inside it does not append as one "
+           "line with a space for each, nothing refused",
+           by_stdin.returncode == 0 and not by_stdin.stderr
+           and stdin_lines[-1] == f"note 2 P1 P1-1 anomaly A-1.01 an invented note {verified_ok}"
+           and len(stdin_lines) == 3,
+           f"exit {by_stdin.returncode}, {by_stdin.stderr!r}, {stdin_lines}")
+    # Every `phase:` value the skill, the folder, recheck.md and the scripts write today is a line
+    # the check takes, so the heal never drops one written by hand.
+    phase_values = sorted({
+        value for path in sorted((plugin_path / "agents").glob("*.md")) + sorted((plugin_path / "skills").rglob("*.md"))
+        + sorted((plugin_path / "scripts").glob("*.py"))
+        for value in re.findall(r"[`\"](phase: [^`\"]+)[`\"]", path.read_text(encoding="utf-8"))
+    })
+    taken_phases: list[str] = []
+    for value in phase_values:
+        line = re.sub(r"<[^>]*>", "1", value).replace("...", "x").strip()
+        try:
+            ledger_mod.check_batch("", [line])
+            taken_phases.append(value)
+        except ledger_mod.LedgerError as e:
+            errors.append(f"the ledger script refuses the `phase:` line {line!r} the shipped text writes: {e}")
+    expect("the shipped text writes fewer `phase:` values than the eleven it carries today",
+           len(phase_values) >= 11, phase_values)
+    at = folder("heal-no-shadow", base)
+    with (at / "ledger.md").open("ab") as handle:
+        handle.write(b"note 2 P1 P1-1 anomaly half wr")
+    ok, said = append(at, later)
+    lines = (at / "ledger.md").read_bytes().decode("utf-8").splitlines()
+    expect(
+        "a ledger with no shadow yet is not adopted as its whole lines, its unterminated tail dropped",
+        ok and lines == [*base, later] and (at / "ledger.shadow").read_bytes() == (at / "ledger.md").read_bytes(),
+        lines,
+    )
+    # A shadow whose last line has no newline, which no run of the script leaves, is damage the
+    # heal cannot explain: the tail dropped, the ledger written again from the whole lines, and one
+    # `repaired:` line naming the dropped line.
+    at = folder("heal-torn-shadow")
+    append(at, *base)
+    whole_shadow = (at / "ledger.shadow").read_bytes()
+    (at / "ledger.shadow").write_bytes(whole_shadow + b"note 2 P1 P1-1 anomaly half wr")
+    ok, said = append(at, later)
+    lines = (at / "ledger.md").read_bytes().decode("utf-8").splitlines()
+    expect(
+        "a shadow with an unterminated last line is not handled as damage: its whole lines kept, "
+        "one `repaired:` line naming the dropped line, the ledger equal to it",
+        ok and lines == [*base, ledger_mod.REPAIRED_LINE.format(count="1", first="4"), later]
+        and (at / "ledger.md").read_bytes() == (at / "ledger.shadow").read_bytes(),
+        lines,
+    )
+    # A shadow that lost only its final newline, the ledger whole: the ledger completes the shadow's
+    # last line, so the shadow is rebuilt from it and no committed line is dropped.
+    at = folder("heal-shadow-lost-newline")
+    append(at, *base)
+    committed = (at / "ledger.md").read_bytes()
+    (at / "ledger.shadow").write_bytes(committed[:-1])
+    healed_line = ledger_mod.heal(at / "ledger.md")
+    expect(
+        "a shadow short of its final newline beside a whole ledger is not rebuilt from the ledger with "
+        "every committed line kept in both and nothing said",
+        healed_line is None and (at / "ledger.md").read_bytes() == committed
+        and (at / "ledger.shadow").read_bytes() == committed,
+        f"{healed_line!r}, {(at / 'ledger.md').read_bytes().decode('utf-8').splitlines()}",
+    )
+    ok, said = append(at, later)
+    lines = (at / "ledger.md").read_bytes().decode("utf-8").splitlines()
+    expect("an append after a shadow rebuilt from the ledger does not go on after every committed line",
+           ok and lines == [*base, later] and (at / "ledger.md").read_bytes() == (at / "ledger.shadow").read_bytes(),
+           lines)
+
+    # ------------------------------------------------------------------ #
+    # Real processes: a write killed partway and between its two files, and six appending at once
+    # ------------------------------------------------------------------ #
+    batch = ("note 2 P1 P1-1 anomaly A-1.01 p3 an invented note, run only", verified_ok)
+    first_two = (base[0], base[1])
+
+    def heal_cli(at: Path) -> tuple[int, str, str]:
+        done = subprocess.run([sys.executable, str(scripts / "ledger.py"), "heal", str(at / "ledger.md")],
+                              capture_output=True, text=True, timeout=120)
+        return done.returncode, done.stdout.strip(), done.stderr.strip()
+
+    for where, wanted_shadow in (("partway", list(first_two)), ("between", [*first_two, *batch])):
+        at = folder(f"kill-{where}")
+        append(at, *first_two)
+        killed = subprocess.run(
+            [sys.executable, "-c", _FAILED_UNIT_KILL_CHILD, str(scripts), where, str(at / "ledger.md"), *batch],
+            capture_output=True, text=True, timeout=120,
+        )
+        shadow_now = (at / "ledger.shadow").read_bytes()
+        expect(
+            f"a writer killed {where} through the shadow's publication does not leave the shadow "
+            f"whole, as it was or with the whole batch",
+            killed.returncode == 9 and shadow_now.endswith(b"\n")
+            and shadow_now.decode("utf-8").splitlines() == wanted_shadow,
+            f"exit {killed.returncode}, shadow {shadow_now.decode('utf-8', 'replace').splitlines()}",
+        )
+        code, out, err = heal_cli(at)
+        healed_lines = (at / "ledger.md").read_bytes().decode("utf-8", "replace").splitlines()
+        expect(
+            f"`ledger.py heal` after a writer killed {where} does not leave the ledger equal to the "
+            f"run's copy with no `repaired:` line",
+            code == 0 and healed_lines == wanted_shadow and "repaired:" not in out
+            and (at / "ledger.md").read_bytes() == (at / "ledger.shadow").read_bytes(),
+            f"exit {code}, {out!r}, {err!r}, {healed_lines}",
+        )
+        # The runner then decides off the ledger: the unit closed by the killed writer is not closed
+        # again, and one never closed takes its closing batch.
+        history = report_mod.unit_history(at / "ledger.md", "2", "P1-1")
+        with contextlib.redirect_stderr(io.StringIO()):
+            ok, said = append(at, *batch) if history["latest"] is None else (True, "closed already")
+        final = (at / "ledger.md").read_bytes().decode("utf-8").splitlines()
+        expect(f"the run after a writer killed {where} does not end with the unit closed once",
+               ok and final == [*first_two, *batch], final)
+
+    def lock_run(with_lock: bool) -> tuple[bool, str]:
+        at = folder(f"six-{'with' if with_lock else 'without'}-lock")
+        append(at, "phase: plan approved")
+        units = [f"L{n}" for n in range(1, 7)]
+        procs = [
+            subprocess.Popen(
+                [sys.executable, "-c", _FAILED_UNIT_LOCK_CHILD, str(scripts), "with" if with_lock else "without",
+                 str(at / "ledger.md"), unit, "20"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            for unit in units
+        ]
+        deadline = time.monotonic() + 120
+        while not all((at / f"ready-{unit}").exists() for unit in units) and time.monotonic() < deadline:
+            time.sleep(0.01)
+        (at / "go").write_text("", encoding="utf-8")
+        codes = [proc.wait(timeout=300) for proc in procs]
+        lines = (at / "ledger.md").read_bytes().decode("utf-8", "replace").splitlines()
+        whole = True
+        for unit in units:
+            positions = [i for i, line in enumerate(lines) if line.split()[2:3] == [unit]]
+            mine = [lines[i] for i in positions]
+            wanted = [
+                line for i in range(1, 21) for line in (
+                    f"dispatch 2 {unit} {unit}-{i} sheets A-{i}.01 purpose an invented sheet",
+                    f"verified 2 {unit} {unit}-{i} created 1 items 1 updated 0 questions 0 replied 0 sent 1 "
+                    f"landed 1 conflicts 0 result ok",
+                )
+            ]
+            whole = whole and mine == wanted and all(
+                positions[k + 1] == positions[k] + 1 for k in range(0, len(positions) - 1, 2)
+            )
+        sound = (
+            codes == [0] * 6 and len(lines) == 1 + 6 * 40 and whole
+            and not any(line.startswith("repaired:") for line in lines)
+            and (at / "ledger.md").read_bytes() == (at / "ledger.shadow").read_bytes()
+        )
+        return sound, f"exit codes {codes}, {len(lines)} lines of {1 + 6 * 40}, batches whole and in order {whole}"
+
+    sound, seen = lock_run(True)
+    expect("six processes appending twenty batches each at once under the lock do not leave every "
+           "batch whole, in order, once, and the ledger equal to its shadow", sound, seen)
+    sound, seen = lock_run(False)
+    expect("the same six processes with the lock taken out leave a sound ledger, so the arm above "
+           "would not catch a lost lock", not sound, seen)
+
+    # A replace refused because another process holds the target open is tried again within the
+    # bound and then fails with one line, the target untouched and no temporary file left.
+    at = folder("publish-held")
+    target = at / "held.txt"
+    target.write_bytes(b"old\n")
+    holder = subprocess.Popen(
+        [sys.executable, "-c", "import sys, time\nwith open(sys.argv[1], 'rb'):\n    print('held', flush=True)\n"
+         "    time.sleep(float(sys.argv[2]))\n", str(target), "0.6"],
+        stdout=subprocess.PIPE, text=True,
+    )
+    holder.stdout.readline()
+    try:
+        ledger_mod.publish(target, b"new\n")
+        published = "published"
+    except Exception as e:
+        published = repr(e)
+    holder.wait(timeout=60)
+    expect("a replace refused while a reader held the file open is not tried again until it lands",
+           published == "published" and target.read_bytes() == b"new\n"
+           and not list(at.glob(".held.txt.*.tmp")), published)
+    if sys.platform == "win32" and hasattr(ledger_mod, "PUBLISH_TRIES"):
+        tries = ledger_mod.PUBLISH_TRIES
+        ledger_mod.PUBLISH_TRIES = 3
+        holder = subprocess.Popen(
+            [sys.executable, "-c", "import sys, time\nwith open(sys.argv[1], 'rb'):\n    print('held', flush=True)\n"
+             "    time.sleep(float(sys.argv[2]))\n", str(target), "3"],
+            stdout=subprocess.PIPE, text=True,
+        )
+        holder.stdout.readline()
+        try:
+            ledger_mod.publish(target, b"newer\n")
+            published = "published"
+        except ledger_mod.LedgerError as e:
+            published = str(e)
+        finally:
+            ledger_mod.PUBLISH_TRIES = tries
+        holder.kill()
+        holder.wait(timeout=60)
+        expect("a replace refused past the bound does not fail with one line, the file as it was and "
+               "no temporary file left",
+               "another process held it open" in published and "\n" not in published
+               and target.read_bytes() == b"new\n" and not list(at.glob(".held.txt.*.tmp")), published)
+
+    # The lead's reads heal too, and the check-in says it in the estimator's words.
+    lead_at = folder("lead-heal")
+    fixture_plan = (marketplace_root / "harness" / "fixtures" / "read-plan-fixture-w3.md").read_text(encoding="utf-8")
+    # The passes listing reads a plan the plan script wrote, which carries each block's `starts after:`.
+    (lead_at / "read-plan.md").write_text(
+        fixture_plan.replace("summed: no, no summary on file\n", "summed: no, no summary on file\nstarts after: none\n"),
+        encoding="utf-8",
+    )
+    w3_dispatch = "dispatch 3 W3-1 rev-099999-1 sheets none purpose review the invented package"
+    w3_ok = ("verified 3 W3-1 rev-099999-1 created 4 items 2 updated 0 questions 0 replied 0 sent 2 "
+             "landed 2 conflicts 0 result ok")
+    append(lead_at, "phase: plan approved", w3_dispatch, w3_ok)
+    (lead_at / "ledger.md").write_bytes((lead_at / "ledger.shadow").read_bytes().replace(b"created 4", b"created 9"))
+    code, out, err = _run_script_main(lead_mod, ["checkin", str(lead_at), "3", "--passes", "W3-1"])
+    expect(
+        "the check-in does not put back a changed line and say so in the estimator's words",
+        code == 0 and "the run's log: 1 line of it was changed outside the run and was put back, "
+        "line 3" in out.splitlines()
+        and (lead_at / "ledger.md").read_bytes() == (lead_at / "ledger.shadow").read_bytes()
+        and b"created 9" not in (lead_at / "ledger.md").read_bytes(),
+        f"exit {code}, {out!r}, {err!r}",
+    )
+    (lead_at / "ledger.md").write_bytes((lead_at / "ledger.shadow").read_bytes() + w3_ok.encode() + b"\n")
+    code, out, err = _run_script_main(lead_mod, ["passes", "--plan", str(lead_at / "read-plan.md")])
+    expect(
+        "the passes listing does not put back a line added outside the run before it reads",
+        code == 0 and (lead_at / "ledger.md").read_bytes() == (lead_at / "ledger.shadow").read_bytes()
+        and (lead_at / "ledger.md").read_bytes().count(w3_ok.encode()) == 1,
+        f"exit {code}, {err!r}",
+    )
+
+    # ------------------------------------------------------------------ #
+    # The report check: each kind's labels are its agent's, stubs refused, counts held to lists
+    # ------------------------------------------------------------------ #
+    texts = {label: (plugin_path / label).read_text(encoding="utf-8")
+             for label in {label for _k, label, _a in _FAILED_UNIT_SHAPES}}
+    for kind, label, anchor in _FAILED_UNIT_SHAPES:
+        published = _report_block_labels(texts[label], anchor)
+        expect(
+            f"the report script's {kind} labels are not {label}'s report shape",
+            list(report_mod.LABELS[kind]) == published,
+            f"{list(report_mod.LABELS[kind])} against {published}",
+        )
+    expect(
+        "the summary script's reviewer labels are not the report script's",
+        list(summary_mod.REVIEWER_LABELS) == list(report_mod.REVIEW_LABELS),
+    )
+    for kind in ("sheet", "vocabulary", "review", "manual"):
+        whole = _filled_report(kind, "P1-1", report_mod.LABELS[kind])
+        broken, mismatches = report_mod.problems(whole, kind)
+        expect(f"a whole {kind} report is not held whole", not broken and not mismatches, broken + mismatches)
+    review_labels = report_mod.REVIEW_LABELS
+    stubs = (
+        ("a header and a pointer to the returned message",
+         "unit: rev-099999-1   package: An invented package\nthe report was delivered in the returned message\n"),
+        ("a header, an abbreviated note and a partial created line",
+         "unit: rev-099999-1   package: An invented package\nabbreviated, the rest not reached\ncreated: 3\n"),
+        ("a searches line and a pages opened line copied in",
+         "unit: rev-099999-1\nsearches: 9 run, 2 returned nothing\npages opened: X-1.01 file-0001 p3 read one note\n"),
+    )
+    for label, stub in stubs:
+        broken, _m = report_mod.problems(stub, "review")
+        expect(f"a stub of {label} is held whole", bool(broken) and broken[0].startswith("not whole: no "), broken)
+    for label, values, needle in (
+        ("a created count over its subjects", {"created": "2   updated: 0   questions raised: 0   questions replied: 0",
+                                                "created subjects": "scopeItem:rev-099999-1-1"}, "report created 2 and created subjects 1"),
+        ("a raised count under its ids", {"created": "0   updated: 0   questions raised: 0   questions replied: 0",
+                                          "questions raised ids": "question:proj-1:2"}, "report questions raised 0"),
+    ):
+        broken, mismatches = report_mod.problems(_filled_report("review", "rev-099999-1", review_labels, **values), "review")
+        expect(f"{label} is not a mismatch named report", not broken and any(m.startswith(needle) for m in mismatches),
+               broken + mismatches)
+    # `updated:` and `questions replied:` are held to no list: the definitions count rows a list
+    # leaves off and list rows the count leaves out, so honest reports in each of those shapes pass.
+    for label, kind, values in (
+        ("a row cited only to a Question, counted on updated and off its list", "review", {
+            "created": "0   updated: 1   questions raised: 1   questions replied: 0",
+            "questions raised ids": "question:proj-1:2", "questions linked": "question:proj-1:2 scopeItem:x-9",
+        }),
+        ("headings written on five rows earlier reads made, counted on updated with no row on its list", "review", {
+            "created": "0   updated: 5   questions raised: 0   questions replied: 0",
+            "headings written": "Framing, Board\n" + "\n".join(
+                f"scopeItem:A1-1-{n} {'Framing' if n < 3 else 'Board'}" for n in range(1, 6)),
+            "rows ordered": "Framing 2 changed\nBoard 3 changed",
+        }),
+        ("a row retired as the other row of a pair, counted on updated and named on anomalies alone", "review", {
+            "created": "0   updated: 2   questions raised: 0   questions replied: 0",
+            "updated subjects": "scopeItem:A1-1-1",
+            "anomalies": "X-1.01 p3 same work: Invented stud wall and Invented stud wall, type 1, combined, run only",
+        }),
+        ("a Question citation the door answered duplicate, listed and not counted", "review", {
+            "created": "0   updated: 0   questions raised: 0   questions replied: 1",
+            "questions replied ids": "question:proj-1:2",
+            "questions linked": "question:proj-1:2 scopeItem:A1-1-1",
+        }),
+        ("two replies to one Question, counted twice and listed once", "sheet", {
+            "created": "0   updated: 0   questions raised: 0   questions replied: 2",
+            "questions replied ids": "question:proj-1:2",
+        }),
+    ):
+        labels_of_kind = report_mod.LABELS[kind]
+        broken, mismatches = report_mod.problems(_filled_report(kind, "rev-099999-1", labels_of_kind, **values), kind)
+        expect(f"an honest report with {label} is not held agreeing", not broken and not mismatches,
+               broken + mismatches)
+    # The reply count is held to its ids as far as the definitions make them agree: above 0 with at
+    # least one id, 0 with none, and never fewer replies than ids.
+    for label, kind, count, ids in (
+        ("a reply counted with no id listed", "sheet", "1", "none"),
+        ("an id listed with no reply counted", "review", "0", "question:proj-1:2"),
+        ("one reply counted over two Questions listed", "sheet", "1", "question:proj-1:2 question:proj-1:3"),
+    ):
+        broken, mismatches = report_mod.problems(_filled_report(kind, "rev-099999-1", report_mod.LABELS[kind], **{
+            "created": f"0   updated: 0   questions raised: 0   questions replied: {count}",
+            "questions replied ids": ids,
+        }), kind)
+        expect(f"{label} is not a mismatch named report",
+               not broken and any(m.startswith(f"report questions replied {count} ") for m in mismatches),
+               broken + mismatches)
+    # One strict decoding for a report file and for a returned message on stdin: bytes that are not
+    # UTF-8 get the same refusal either way.
+    not_utf8 = _filled_report("review", "rev-099999-1", review_labels).encode("utf-8").replace(
+        b"terms too general: none", b"terms too general: \xff\xfe caf\xe9")
+    (root / "not-utf8.md").write_bytes(not_utf8)
+    by_file = subprocess.run([sys.executable, str(scripts / "unit_report.py"), "check", "--kind", "review",
+                              "--report", str(root / "not-utf8.md")], capture_output=True, timeout=120)
+    by_stdin = subprocess.run([sys.executable, str(scripts / "unit_report.py"), "check", "--kind", "review",
+                               "--report", "-"], input=not_utf8, capture_output=True, timeout=120)
+    expect("a report that is not UTF-8 is not refused alike off a file and off stdin",
+           by_file.returncode == by_stdin.returncode == 2 and by_file.stdout == by_stdin.stdout
+           and by_file.stdout.strip() == b"not whole: the report is not UTF-8 text",
+           f"file exit {by_file.returncode} {by_file.stdout!r}, stdin exit {by_stdin.returncode} {by_stdin.stdout!r}")
+
+    # ------------------------------------------------------------------ #
+    # owed: off the ledger alone, and the report's `owed:` line held to it
+    # ------------------------------------------------------------------ #
+    entry_a = "section 092216 p14 | stud gauge 20 | no row | no room"
+    entry_b = "section 092216 p15 | deflection limit L/240 | scopeItem:rev-099999-1-2 | not reached"
+    owed_at = folder("owed", (
+        "phase: plan approved",
+        "dispatch 3 W3-1 rev-099999-1 sheets none purpose review the invented framing package",
+        f"note 3 W3-1 rev-099999-1 anomaly not written: {entry_a}",
+        "verified 3 W3-1 rev-099999-1 created 4 items 2 updated 0 questions 0 replied 0 sent 2 landed 2 conflicts 0 result mismatch",
+        "note 3 W3-1 rev-099999-1 deviation An invented package rows ordered Framing, read 1",
+        "dispatch 3 W3-1 rev-099999-1 sheets none purpose review the invented framing package",
+        "note 3 W3-1 rev-099999-1 deviation An invented package no report, read 2",
+        "dispatch 3 W3-1 rev-099999-1 sheets none purpose review the invented framing package",
+        f"note 3 W3-1 rev-099999-1 anomaly not written: {entry_a}",
+        f"note 3 W3-1 rev-099999-1 anomaly not written: {entry_b}",
+        "verified 3 W3-1 rev-099999-1 created 6 items 3 updated 0 questions 0 replied 0 sent 3 landed 3 conflicts 0 result mismatch",
+        "note 3 W3-1 rev-099999-1 deviation An invented package owed not written by read 1, read 3",
+    ))
+    path = report_mod.write_owed(owed_at, "3", "rev-099999-1", 4, "scopeItem:rev-099999-1-1\nscopeItem:rev-099999-1-2\n")
+    owed_lines = path.read_text(encoding="utf-8").splitlines()
+    wanted_owed = [
+        "owed: rev-099999-1 read 4", "held: scopeItem:rev-099999-1-1", "held: scopeItem:rev-099999-1-2",
+        f"not written by read 1: {entry_a}", f"not written by read 3: {entry_b}",
+        "check read 1 failed: An invented package rows ordered Framing, read 1",
+        "no report from read 2",
+        "check read 3 failed: An invented package owed not written by read 1, read 3",
+    ]
+    expect("the owed file of read 4 after three reads that passed nothing is not every entry once, each "
+           "failed check and each lost report", owed_lines == wanted_owed, owed_lines)
+    # A read that verified ok took off everything before it and noted again what it still owed.
+    passed_at = folder("owed-after-ok", (
+        "dispatch 3 W3-1 rev-099999-1 sheets none purpose review the invented framing package",
+        f"note 3 W3-1 rev-099999-1 anomaly not written: {entry_a}",
+        "verified 3 W3-1 rev-099999-1 created 4 items 2 updated 0 questions 0 replied 0 sent 2 landed 2 conflicts 0 result mismatch",
+        "note 3 W3-1 rev-099999-1 deviation An invented package rows ordered Framing, read 1",
+        "dispatch 3 W3-1 rev-099999-1 sheets none purpose review the invented framing package",
+        f"note 3 W3-1 rev-099999-1 anomaly not written: {entry_b}",
+        "verified 3 W3-1 rev-099999-1 created 6 items 3 updated 0 questions 0 replied 0 sent 3 landed 3 conflicts 0 result ok",
+    ))
+    passed_lines = report_mod.write_owed(passed_at, "3", "rev-099999-1", 3, "none\n").read_text(encoding="utf-8").splitlines()
+    expect("a read after one that verified ok is handed an entry the ok read took off",
+           passed_lines == ["owed: rev-099999-1 read 3", "held: none", f"not written by read 2: {entry_b}"], passed_lines)
+    sheet_at = folder("owed-sheet", (
+        dispatch, "verified 2 P1 P1-1 created 4 items 2 updated 0 questions 0 replied 0 sent 2 landed 2 conflicts 0 result mismatch",
+        "note 2 P1 P1-1 deviation A-1.01 updated scopeItem:x-1, read 1",
+    ))
+    sheet_lines = report_mod.write_owed(sheet_at, "2", "P1-1", 2, "").read_text(encoding="utf-8").splitlines()
+    expect("a sheet's owed file is not its failed check alone",
+           sheet_lines == ["owed: P1-1 read 2", "held: none", "check read 1 failed: A-1.01 updated scopeItem:x-1, read 1"],
+           sheet_lines)
+    for label, window, read in (("a first read", "2", 1), ("a read two ahead", "2", 4), ("window r", "r", 2)):
+        try:
+            report_mod.write_owed(sheet_at, window, "P1-1", read, "")
+            refused_owed = False
+        except report_mod.ReportError:
+            refused_owed = True
+        expect(f"an owed file for {label} is not refused", refused_owed)
+
+    owed = report_mod.read_owed_file(path)
+    entry_line_a = f"not written by read 1: {entry_a}"
+    entry_line_b = f"not written by read 3: {entry_b}"
+
+    def owed_report(kind: str, owed_value: str, **values: str) -> str:
+        labels = report_mod.LABELS[kind]
+        return _filled_report(kind, "rev-099999-1", labels, owed=owed_value, **values)
+
+    good = owed_report(
+        "review", f"{entry_line_a} | written scopeItem:rev-099999-1-3\n{entry_line_b} | not written, the page is a scan",
+        created="1   updated: 0   questions raised: 0   questions replied: 0",
+        **{"created subjects": "scopeItem:rev-099999-1-3", "not written": entry_b},
+    )
+    for label, text, kind, wanted in (
+        ("an owed line answered with a row this read created, and one not written and on `not written:`",
+         good, "review", []),
+        ("an owed entry answered with a row an earlier read left under the prefix",
+         good.replace("written scopeItem:rev-099999-1-3", "written scopeItem:rev-099999-1-1").replace(
+             "created subjects: scopeItem:rev-099999-1-3", "created subjects: scopeItem:rev-099999-1-1"), "review", ["owed"]),
+        ("an owed entry answered with a row only cited",
+         good.replace("written scopeItem:rev-099999-1-3", "written scopeItem:x-7"), "review", ["owed"]),
+        ("an owed entry answered with a field written in this read",
+         good.replace("written scopeItem:rev-099999-1-3", "written scopeItem:x-7").replace(
+             "field updates: none", "field updates: scopeItem:x-7 description section 092216 file-0001 p14"), "review", []),
+        ("an owed entry left unnamed", good.replace(f"{entry_line_b} | not written, the page is a scan\n", ""),
+         "review", ["owed"]),
+        ("an owed entry not written and not on `not written:`", good.replace(f"not written: {entry_b}", "not written: none"),
+         "review", ["owed"]),
+        ("a review saying an owed entry gave nothing to write",
+         good.replace("| written scopeItem:rev-099999-1-3", "| read, nothing to write"), "review", ["owed"]),
+        ("a sheet saying an owed entry gave nothing to write",
+         owed_report("sheet", f"{entry_line_a} | read, nothing to write\n{entry_line_b} | not written, the page is a scan"),
+         "sheet", []),
+    ):
+        broken, mismatches = report_mod.problems(text, kind, owed, owed_given=True)
+        named = sorted({m.split(" ", 1)[0] for m in mismatches})
+        expect(f"{label} is checked as {wanted or 'agreeing'}", not broken and named == wanted, broken + mismatches)
+    broken, mismatches = report_mod.problems(good, "review", None, owed_given=True)
+    expect("a first read whose `owed:` line names entries is not a mismatch named owed",
+           not broken and any(m.startswith("owed ") for m in mismatches), mismatches)
+
+    # A bulleted `field updates:` list is read: the reviewer fixture's own bullet form, its
+    # `- scopeItem:A1-1-2 description ...` line, answers an owed entry written on that row.
+    bullet_owed = root / "owed-bullet.md"
+    bullet_entry = "section 099999 p12 | an invented description | scopeItem:A1-1-2 | no room"
+    bullet_owed.write_text(f"owed: rev-099999-1 read 2\nheld: none\nnot written by read 1: {bullet_entry}\n",
+                           encoding="utf-8")
+    bullet_report = (marketplace_root / "harness" / "fixtures" / "reviewer-report-fixture.md").read_text(
+        encoding="utf-8").replace("owed: none", f"owed: not written by read 1: {bullet_entry} | written scopeItem:A1-1-2")
+    broken, mismatches = report_mod.problems(bullet_report, "review", report_mod.read_owed_file(bullet_owed),
+                                             owed_given=True)
+    expect("an owed entry written on a row the bulleted `field updates:` list names is not held agreeing",
+           "- scopeItem:A1-1-2 description" in bullet_report and not broken and not mismatches,
+           broken + mismatches)
+    # A bulleted `owed:` list is read the same way: each entry under the label after `- ` or `* `.
+    for marker in ("- ", "* "):
+        listed = good.replace(f"owed: {entry_line_a}", f"owed:\n{marker}{entry_line_a}").replace(
+            f"\n{entry_line_b} |", f"\n{marker}{entry_line_b} |")
+        broken, mismatches = report_mod.problems(listed, "review", owed, owed_given=True)
+        expect(f"an honest `owed:` list written with `{marker.strip()}` markers is not held agreeing",
+               f"\n{marker}{entry_line_a} | " in listed and f"\n{marker}{entry_line_b} | " in listed
+               and not broken and not mismatches, broken + mismatches)
+
+    # A failed claim on a named row is answered on the next read's `owed:` line: written on that row
+    # as any owed line is written, or not needed. A failed check that held no claimed write, rows
+    # ordered here, asks no answer, and an answer to it is taken.
+    claims = (
+        "check read 1 failed: An invented package updated scopeItem:x-1, read 1",
+        "check read 1 failed: An invented package field updates scopeItem:x-2 description, read 1",
+        "check read 1 failed: An invented package questions linked scopeItem:x-3, read 1",
+        "check read 1 failed: An invented package manual updates scopeItem:x-4, read 1",
+    )
+    not_claim = "check read 1 failed: An invented package rows ordered Framing, read 1"
+    claim_owed = root / "owed-claims.md"
+    claim_owed.write_text("owed: rev-099999-1 read 2\nheld: scopeItem:rev-099999-1-1\n"
+                          + "".join(f"{line}\n" for line in (*claims, not_claim)), encoding="utf-8")
+    claim_file = report_mod.read_owed_file(claim_owed)
+    answers = {
+        claims[0]: "written scopeItem:x-1", claims[1]: "not needed, the description stands as read 1 wrote it",
+        claims[2]: "not needed, the Question was closed before this read", claims[3]: "written scopeItem:x-4",
+    }
+
+    def claim_report(kind: str, owed_lines: list[str], fields: str,
+                     manual: str = "\n- scopeItem:x-4 section 099999 file-1111 p12") -> str:
+        return _filled_report(kind, "rev-099999-1", report_mod.LABELS[kind], **{
+            "created": "0   updated: 2   questions raised: 0   questions replied: 0",
+            "updated subjects": "scopeItem:x-1 scopeItem:x-4", "owed": "\n".join(owed_lines),
+            **({"field updates": fields, "manual updates": manual} if kind in ("review", "manual") else {}),
+        })
+
+    # Each claimed write is answered written where this read names the row again on its own list for
+    # that write, which the runner holds to the record again: the update on `updated subjects:`, the
+    # manual citation on `manual updates:`, whether or not the read created the row.
+    fields = "\n- scopeItem:x-1 description X-1.01 file-0000 p3"
+    answered = [f"{line} | {answers[line]}" for line in claims]
+    for label, kind, owed_lines, field_text, manual_text, wanted in (
+        ("each failed claim answered written on its own list or not needed", "review", answered, fields, None, []),
+        ("each failed claim answered written on its own list with no field written in this read", "review",
+         answered, "none", None, []),
+        ("a failed claim left unanswered", "review", answered[:2] + answered[3:], fields, None, ["owed"]),
+        ("a failed claim answered written on another row", "review",
+         [answered[0].replace("written scopeItem:x-1", "written scopeItem:x-4"), *answered[1:]], fields, None, ["owed"]),
+        ("a failed manual citation answered written on a row its `manual updates:` line does not name, the row "
+         "on its `updated subjects:` and `field updates:`", "review", answered,
+         fields + "\n- scopeItem:x-4 name section 099999 file-1111 p12", "none", ["owed"]),
+        ("a failed claim answered not written", "review",
+         [answered[0].replace("written scopeItem:x-1", "not written, no room"), *answered[1:]], fields, None, ["owed"]),
+        ("a failed check that held no claimed write copied onto `owed:` and answered", "review",
+         [*answered, f"{not_claim} | not needed, the order was saved"], fields, None, []),
+        ("a sheet answering each failed claim not needed", "sheet",
+         [f"{line} | not needed, the row already cites this sheet" for line in claims], "", None, []),
+    ):
+        text = (claim_report(kind, owed_lines, field_text) if manual_text is None
+                else claim_report(kind, owed_lines, field_text, manual_text))
+        broken, mismatches = report_mod.problems(text, kind, claim_file, owed_given=True)
+        named = sorted({m.split(" ", 1)[0] for m in mismatches})
+        expect(f"{label} is not checked as {wanted or 'agreeing'}", not broken and named == wanted,
+               broken + mismatches)
+
+    # A sheet's second read repairing an update its first read claimed on a row another unit made,
+    # the owed file written off the ledger: the row is named on `updated subjects:` and the read
+    # created nothing, and the answer is taken; with the row off that list it is not. A failed page
+    # citation of a repeated lines unit is an owed line, and left unanswered fails.
+    honest_at = folder("owed-claim-sheet", (
+        dispatch, "verified 2 P1 P1-1 created 4 items 2 updated 1 questions 0 replied 0 sent 3 landed 3 conflicts 0 result mismatch",
+        "note 2 P1 P1-1 deviation A-1.01 updated scopeItem:A1-1-3, read 1", dispatch,
+    ))
+    sheet_owed = report_mod.read_owed_file(report_mod.write_owed(honest_at, "2", "P1-1", 2, "scopeItem:P1-1-1\nscopeItem:P1-1-2\n"))
+    sheet_claim = "check read 1 failed: A-1.01 updated scopeItem:A1-1-3, read 1"
+    repaired_sheet = _filled_report("sheet", "P1-1", report_mod.LABELS["sheet"], **{
+        "created": "0   updated: 1   questions raised: 0   questions replied: 0",
+        "updated subjects": "scopeItem:A1-1-3", "owed": f"{sheet_claim} | written scopeItem:A1-1-3",
+        "sent": "1   landed: 1   conflicts: none",
+    })
+    page_at = folder("owed-claim-page", (
+        "dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-0001",
+        "verified 1 RS1 RS1-1 created 2 items 1 updated 1 questions 0 replied 0 sent 2 landed 2 conflicts 0 result mismatch",
+        "note 1 RS1 RS1-1 deviation file-0001 page citations scopeItem:A1-1-4 file-0001 p7, read 1",
+        "dispatch 1 RS1 RS1-1 sheets none purpose repeated lines of file file-0001",
+    ))
+    page_owed = report_mod.read_owed_file(report_mod.write_owed(page_at, "1", "RS1-1", 2, "scopeItem:RS1-1-1\n"))
+    page_claim = "check read 1 failed: file-0001 page citations scopeItem:A1-1-4 file-0001 p7, read 1"
+    vocabulary_report = _filled_report("vocabulary", "RS1-1", report_mod.LABELS["vocabulary"], **{
+        "created": "0   updated: 1   questions raised: 0   questions replied: 0",
+        "updated subjects": "scopeItem:A1-1-4", "page citations": "scopeItem:A1-1-4 file-0001 7",
+        "owed": f"{page_claim} | written scopeItem:A1-1-4",
+    })
+    for label, text, kind, owed_file, wanted in (
+        ("a sheet's second read repairing an update its first read claimed on a row another unit made, the "
+         "row on its `updated subjects:`", repaired_sheet, "sheet", sheet_owed, []),
+        ("the same answer with the row off the second read's `updated subjects:`",
+         repaired_sheet.replace("updated subjects: scopeItem:A1-1-3", "updated subjects: none"), "sheet", sheet_owed,
+         ["owed"]),
+        ("a failed page citation left unanswered", vocabulary_report.replace(
+            f"owed: {page_claim} | written scopeItem:A1-1-4", "owed: none"), "vocabulary", page_owed, ["owed"]),
+        ("a failed page citation answered written on the row its `page citations:` line names",
+         vocabulary_report, "vocabulary", page_owed, []),
+    ):
+        broken, mismatches = report_mod.problems(text, kind, owed_file, owed_given=True)
+        named = sorted({m.split(" ", 1)[0] for m in mismatches})
+        expect(f"{label} is not checked as {wanted or 'agreeing'}",
+               not broken and named == wanted and any(e["claim"] for e in owed_file["entries"]),
+               f"{broken + mismatches}, entries {owed_file['entries']}")
+
+    # Only the five claimed writes require an answer. A review read after a failed `headings` check
+    # and a sheet read after a failed `created subjects` check, the owed file written off the
+    # ledger, pass with that line answered and with it left off: the runner's own check of that
+    # kind holds the read to it again.
+    def owed_after(case: str, lines: tuple[str, ...], window: str, unit: str) -> dict:
+        at = folder(case, lines)
+        return report_mod.read_owed_file(report_mod.write_owed(at, window, unit, 2, "none\n"))
+
+    w3_read = "dispatch 3 W3-1 rev-099999-1 sheets none purpose review the invented framing package"
+    w3_failed = ("verified 3 W3-1 rev-099999-1 created 4 items 2 updated 1 questions 0 replied 0 sent 3 landed 3 "
+                 "conflicts 0 result mismatch")
+    headings_owed = owed_after("owed-headings", (
+        w3_read, w3_failed, "note 3 W3-1 rev-099999-1 deviation An invented package headings scopeItem:A1-1-2, read 1",
+        w3_read), "3", "rev-099999-1")
+    headings_line = "check read 1 failed: An invented package headings scopeItem:A1-1-2, read 1"
+    created_owed = owed_after("owed-created-subjects", (
+        dispatch, verified_ok.replace("result ok", "result mismatch"),
+        "note 2 P1 P1-1 deviation A-1.01 created subjects scopeItem:Q9-1-1, read 1", dispatch), "2", "P1-1")
+    created_line = "check read 1 failed: A-1.01 created subjects scopeItem:Q9-1-1, read 1"
+    headings_report = _filled_report("review", "rev-099999-1", review_labels, **{
+        "created": "0   updated: 1   questions raised: 0   questions replied: 0",
+        "headings written": "Framing\nscopeItem:A1-1-2 Framing", "rows ordered": "Framing 1 changed",
+    })
+    for label, text, kind, owed_file, line in (
+        ("a review read after a failed `headings` check", headings_report, "review", headings_owed,
+         f"{headings_line} | written scopeItem:A1-1-2"),
+        ("a sheet read after a failed `created subjects` check", _filled_report("sheet", "P1-1", report_mod.LABELS["sheet"]),
+         "sheet", created_owed, f"{created_line} | not needed, the row stands under another unit's prefix"),
+    ):
+        answered_text = text.replace("owed: none", f"owed: {line}")
+        for how, report_text in (("with that line answered", answered_text), ("with that line left off", text)):
+            broken, mismatches = report_mod.problems(report_text, kind, owed_file, owed_given=True)
+            expect(f"{label}, {how}, is not held agreeing",
+                   not broken and not mismatches and (report_text == text or [
+                       e["line"] for e in owed_file["entries"]] == [line.split(" | ")[0]]),
+                   f"{broken + mismatches}, entries {owed_file['entries']}")
+    # Every other check the runner names on a failure note, each line answered and left off.
+    for check_name, value in (
+        ("created", "created 4 and 3"), ("questions raised", "questions raised question:proj-1:7"),
+        ("questions replied", "questions replied question:proj-1:8"), ("questions alone", "questions alone question:proj-1:9"),
+        ("trades", "trades scopeItem:P1-1-2"), ("rows ordered", "rows ordered Framing"),
+        ("report", "report created 2 and created subjects 1"),
+        ("report file", "report file missing, checked off the returned report"),
+        ("owed", "owed check read 1 failed: A-1.01 updated scopeItem:A1-1-3, read 1, written scopeItem:A1-1-3, "
+                 "which this report's `updated subjects:` line does not name"),
+    ):
+        other = f"check read 2 failed: A-1.01 {value}, read 2"
+        other_path = root / f"owed-other-{check_name.replace(' ', '-')}.md"
+        other_path.write_text(f"owed: P1-1 read 3\nheld: none\n{other}\n", encoding="utf-8")
+        other_file = report_mod.read_owed_file(other_path)
+        sheet_text = _filled_report("sheet", "P1-1", report_mod.LABELS["sheet"])
+        for how, report_text in (
+            ("answered", sheet_text.replace("owed: none", f"owed: {other} | put right, the sheet read again")),
+            ("left off", sheet_text),
+        ):
+            broken, mismatches = report_mod.problems(report_text, "sheet", other_file, owed_given=True)
+            expect(f"a sheet read after a failed `{check_name}` check, that line {how}, is not held agreeing",
+                   not broken and not mismatches, broken + mismatches)
+    # A line of the owed file that is neither kind, as `no report from read <j>` is, copied onto
+    # `owed:` with or without an answer, refuses no report; a line the file does not carry still does.
+    lost_path = root / "owed-no-report.md"
+    lost_path.write_text("owed: P1-1 read 2\nheld: none\nno report from read 1\n", encoding="utf-8")
+    lost_file = report_mod.read_owed_file(lost_path)
+    lost_text = _filled_report("sheet", "P1-1", report_mod.LABELS["sheet"])
+    for how, owed_line, agrees in (
+        ("copied with an answer", "no report from read 1 | the sheet read again", True),
+        ("copied bare", "no report from read 1", True),
+        ("left off", "none", True),
+        ("replaced by a line the file does not carry", "no report from read 7 | the sheet read again", False),
+    ):
+        broken, mismatches = report_mod.problems(lost_text.replace("owed: none", f"owed: {owed_line}"), "sheet",
+                                                 lost_file, owed_given=True)
+        expect(f"a sheet read after a read that left no report, that line {how}, is "
+               f"{'not held agreeing' if agrees else 'held agreeing'}",
+               not broken and (not mismatches) == agrees, broken + mismatches)
+
+    # A `written` answer to a failed field update or Question link is held to the same write: the
+    # predicate the failed check names on the row's `field updates:` line, the row on the
+    # `questions linked:` line of the Question it names.
+    write_claims = (
+        "check read 1 failed: An invented package field updates scopeItem:x-2 description, read 1",
+        "check read 1 failed: An invented package questions linked scopeItem:x-3 question:proj-1:5, read 1",
+    )
+    same_write_owed = root / "owed-same-write.md"
+    same_write_owed.write_text("owed: rev-099999-1 read 2\nheld: none\n" + "".join(f"{l}\n" for l in write_claims),
+                               encoding="utf-8")
+    write_file = report_mod.read_owed_file(same_write_owed)
+    for label, fields_line, linked_line, wanted, needle in (
+        ("a failed `description` write answered written with the row's `name` written", "scopeItem:x-2 name X-1.01 file-0000 p3",
+         "question:proj-1:5 scopeItem:x-3", ["owed"], "with the predicate description"),
+        ("a failed `description` write answered written with the row's `description` written",
+         "scopeItem:x-2 description X-1.01 file-0000 p3", "question:proj-1:5 scopeItem:x-3", [], ""),
+        ("a failed link to question:proj-1:5 answered written with the row linked to another Question",
+         "scopeItem:x-2 description X-1.01 file-0000 p3", "question:proj-1:6 scopeItem:x-3", ["owed"],
+         "line for question:proj-1:5 does not name"),
+        ("a failed link to question:proj-1:5 answered written with the row linked to that Question",
+         "scopeItem:x-2 description X-1.01 file-0000 p3", "question:proj-1:5 scopeItem:x-3", [], ""),
+    ):
+        text = _filled_report("review", "rev-099999-1", review_labels, **{
+            "created": "0   updated: 2   questions raised: 0   questions replied: 0",
+            "updated subjects": "scopeItem:x-2 scopeItem:x-3", "field updates": fields_line,
+            "questions linked": linked_line,
+            "owed": "\n".join(f"{l} | written {'scopeItem:x-2' if 'x-2' in l else 'scopeItem:x-3'}" for l in write_claims),
+        })
+        broken, mismatches = report_mod.problems(text, "review", write_file, owed_given=True)
+        named = sorted({m.split(" ", 1)[0] for m in mismatches})
+        expect(f"{label} is not checked as {wanted or 'agreeing'}",
+               not broken and named == wanted and all(needle in m for m in mismatches),
+               f"{broken + mismatches}, entries {write_file['entries']}")
+
+    # A predicate that carries a trade code is compared whole: two package roles on one row are two
+    # writes, one role written does not answer the other, and a package whose name holds the word
+    # owed keeps its failed claim a claim.
+    role_claims = (
+        "check read 1 failed: Work owed by an invented owner field updates scopeItem:x-2 packageRole:09 21 16, read 1",
+        "check read 1 failed: Work owed by an invented owner field updates scopeItem:x-2 packageRole:09 29 00, read 1",
+    )
+    role_owed = root / "owed-roles.md"
+    role_owed.write_text("owed: rev-099999-1 read 2\nheld: none\n" + "".join(f"{l}\n" for l in role_claims), encoding="utf-8")
+    role_file = report_mod.read_owed_file(role_owed)
+    expect("a failed claim on a package whose name holds the word owed is not read as two required claims, each with its whole predicate",
+           [(e["required"], e.get("predicate")) for e in role_file["entries"]]
+           == [(True, "packageRole:09 21 16"), (True, "packageRole:09 29 00")], f"{role_file['entries']}")
+    for label, fields_line, answered, wanted in (
+        ("two failed package roles on one row answered written with one of them written",
+         "scopeItem:x-2 packageRole:09 29 00 no page", role_claims, 1),
+        ("two failed package roles on one row answered written with both written",
+         "- scopeItem:x-2 packageRole:09 21 16 no page\n- scopeItem:x-2 packageRole:09 29 00 no page", role_claims, 0),
+        ("two failed package roles on one row with one left unanswered",
+         "- scopeItem:x-2 packageRole:09 21 16 no page\n- scopeItem:x-2 packageRole:09 29 00 no page", role_claims[:1], 1),
+    ):
+        text = _filled_report("review", "rev-099999-1", review_labels, **{
+            "created": "0   updated: 1   questions raised: 0   questions replied: 0",
+            "updated subjects": "scopeItem:x-2", "field updates": fields_line,
+            "owed": "\n".join(f"{l} | written scopeItem:x-2" for l in answered),
+        })
+        broken, mismatches = report_mod.problems(text, "review", role_file, owed_given=True)
+        expect(f"{label} is not checked as {wanted} mismatch{'' if wanted == 1 else 'es'} named owed",
+               not broken and len(mismatches) == wanted and all(m.startswith("owed ") for m in mismatches),
+               f"{broken + mismatches}")
+
+    # A `not written:` entry holding a tab reaches the ledger with a space, so the owed file holds
+    # that form, and the next read's `owed:` line copying it, its own `not written:` line holding the
+    # tab as the page gave it, is held agreeing.
+    try:
+        tab_entry = "section 092216 p15 | deflection\tlimit L/240 | no row | not reached"
+        tab_at = folder("owed-tab")
+        append(tab_at, w3_read)
+        ok, said = append(tab_at, f"note 3 W3-1 rev-099999-1 anomaly not written: {tab_entry}", w3_failed)
+        append(tab_at, w3_read)
+        tab_file = report_mod.read_owed_file(report_mod.write_owed(tab_at, "3", "rev-099999-1", 2, "none\n"))
+        tab_owed_line = next(e["line"] for e in tab_file["entries"] if e["line"].startswith("not written by read 1: "))
+        tab_report = _filled_report("review", "rev-099999-1", review_labels, **{
+            "not written": tab_entry, "owed": f"{tab_owed_line} | not written, the page is still not reached",
+        })
+        broken, mismatches = report_mod.problems(tab_report, "review", tab_file, owed_given=True)
+        expect("a `not written:` entry holding a tab does not reach the owed file with a space and is not answered "
+               "on the next read's `owed:` line",
+               ok and tab_owed_line == "not written by read 1: section 092216 p15 | deflection limit L/240 | no row | "
+               "not reached" and not broken and not mismatches,
+               f"{said}, {tab_file['entries']}, {broken + mismatches}")
+    except Exception as e:
+        errors.append(f"a `not written:` entry holding a tab is not carried to the next read's owed line: {e!r}")
+
+    # ------------------------------------------------------------------ #
+    # restore: a passed window 3 unit's lost report, from the record, never the reader's file
+    # ------------------------------------------------------------------ #
+    # The fixture's plan with a manual part after the first review.
+    w3_plan = fixture_plan.replace("units: 3", "units: 4").replace(
+        "3. rev-099997-1: A third invented package, trade 09 99 97, package pkg-0003\n",
+        "3. rev-099997-1: A third invented package, trade 09 99 97, package pkg-0003\n"
+        "4. rev-099999-1c-1: An invented package, trade 09 99 99, package pkg-0001, manual part after "
+        "rev-099999-1, reads 099999 p13-p20 of file-0001\n",
+    )
+    rest_at = folder("restore")
+    (rest_at / "read-plan.md").write_text(w3_plan, encoding="utf-8")
+    append(rest_at,
+           "dispatch 3 W3-1 rev-099999-1 sheets none purpose review the invented framing package",
+           "note 3 W3-1 rev-099999-1 anomaly section 099999 p11 an invented note, run only",
+           "note 3 W3-1 rev-099999-1 deviation An invented package report file missing, checked off the returned report, read 1",
+           "verified 3 W3-1 rev-099999-1 created 6 items 2 updated 1 questions 0 replied 0 sent 3 landed 3 conflicts 0 result ok",
+           "dispatch 3 W3-1 rev-099999-1c-1 sheets none purpose read the invented framing manual pages",
+           "verified 3 W3-1 rev-099999-1c-1 created 2 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0 result mismatch")
+    (rest_at / "names").mkdir()
+    (rest_at / "names" / "W3-1.txt").write_text(
+        "rev-099999-1\tscopeItem:rev-099999-1-1\tInvented stud wall\nrev-099999-1\tscopeItem:rev-099999-1-2\tInvented track\n", encoding="utf-8")
+    (rest_at / "trades").mkdir()
+    (rest_at / "trades" / "W3-1.txt").write_text("rev-099999-1 trade 09 99 99 2\n", encoding="utf-8")
+    stub_bytes = b"unit: rev-099999-1   package: An invented package\nsee the returned message\n"
+    (rest_at / "reports" / "rev-099999-1.md").write_bytes(stub_bytes)
+    try:
+        first_out = report_mod.restore(rest_at, "3", "rev-099999-1")
+        restored = rest_at / "reports" / "rev-099999-1.read-1.restored.md"
+        first_bytes = restored.read_bytes()
+        second_out = report_mod.restore(rest_at, "3", "rev-099999-1")
+        ledger_text = (rest_at / "ledger.md").read_text(encoding="utf-8")
+        body = first_bytes.decode("utf-8")
+        expect(
+            "restore does not write the restored report once, the same on a second run, naming its source, "
+            "with no line saying a page was read",
+            restored.read_bytes() == first_bytes
+            and body.startswith("restored: rev-099999-1, read 1, written by the run's report script from the record")
+            and "no line below says a page was read or a search was run" in body
+            and "scopeItem:rev-099999-1-2\tInvented track" in body and "09 99 99 x2" in body
+            and "pages opened:" not in body and "searches:" not in body,
+            body[:300],
+        )
+        expect("restore changes the reader's own file", (rest_at / "reports" / "rev-099999-1.md").read_bytes() == stub_bytes)
+        expect("restore does not append its note once", ledger_text.count("report written from the record to reports/rev-099999-1.read-1.restored.md, read 1") == 1,
+               first_out + second_out)
+        expect("restore does not write through the ledger script",
+               (rest_at / "ledger.md").read_bytes() == (rest_at / "ledger.shadow").read_bytes())
+    except report_mod.ReportError as e:
+        errors.append(f"restore refused a passed unit with a stub report: {e}")
+    for label, window, unit, needle in (
+        ("a unit whose latest verified line reads mismatch", "3", "rev-099999-1c-1", "read again, never restored"),
+        ("a unit the read plan does not carry", "3", "rev-9", "carries no unit rev-9"),
+        ("a sheet unit of window 2", "2", "rev-099999-1", "window 3 alone"),
+    ):
+        try:
+            report_mod.restore(rest_at, window, unit)
+            said = "nothing refused"
+        except report_mod.ReportError as e:
+            said = str(e)
+        expect(f"restore does not refuse {label}", needle in said, said)
+    whole_at = folder("restore-whole")
+    (whole_at / "read-plan.md").write_text(w3_plan, encoding="utf-8")
+    append(whole_at, "dispatch 3 W3-1 rev-099999-1 sheets none purpose review the invented framing package",
+           "verified 3 W3-1 rev-099999-1 created 0 items 0 updated 0 questions 0 replied 0 sent 0 landed 0 conflicts 0 result ok")
+    (whole_at / "reports" / "rev-099999-1.md").write_text(_filled_report("review", "rev-099999-1", review_labels), encoding="utf-8")
+    out = report_mod.restore(whole_at, "3", "rev-099999-1")
+    expect("restore writes a report beside a whole one",
+           not (whole_at / "reports" / "rev-099999-1.read-1.restored.md").exists() and "nothing restored" in " ".join(out), out)
+
+    # ------------------------------------------------------------------ #
+    # One append closes a unit, and every step after it runs twice safely
+    # ------------------------------------------------------------------ #
+    #
+    # One window 3 review whose reader left a stub file and returned a whole report. The first
+    # runner holds the file and then the returned message to the report check, keeps the lists it
+    # confirmed, makes the closing append built off the report, writes the names and the trades and
+    # restores the report, and is stopped before one of those steps. A second runner is handed
+    # nothing but the run folder: it heals the ledger, reads the unit's lines and files, and
+    # decides from them alone what the unit still needs, as the runner's text says. A record the
+    # harness stands in for answers every verify_unit call the same way.
+    unit = "rev-099999-1"
+    record_subjects = ("scopeItem:rev-099999-1-1", "scopeItem:rev-099999-1-2")
+    # The verified line a single read closing ok writes, which the summary of every stop below has to
+    # equal in its totals; the runners themselves build theirs off the report and the record answer.
+    record_verified = ("verified 3 W3-1 rev-099999-1 created 6 items 2 updated 0 questions 0 replied 0 "
+                       "sent 3 landed 3 conflicts 0 result ok")
+    record_trades = f"{unit} trade 09 99 99 2\n"
+    unit_dispatch = f"dispatch 3 W3-1 {unit} sheets none purpose review the invented framing package"
+
+    def record_answer(read: int) -> dict:
+        """
+        The `verify_unit` answer the record gives for a read of the unit, as the arm builds it: the
+        first read created two rows on 09 99 99, six entries under the prefix, and a later read
+        finds them on the record and creates none, so the prefix holds the same.
+        """
+        return {"read": read, "entryCount": 6, "subjects": [
+            {"subject": "scopeItem:rev-099999-1-1", "name": "Invented stud wall", "belongsToTrade": "09 99 99"},
+            {"subject": "scopeItem:rev-099999-1-2", "name": "Invented track", "belongsToTrade": "09 99 99"},
+        ]}
+
+    first_report = _filled_report("review", unit, review_labels, **{
+        "created": "2   updated: 0   questions raised: 0   questions replied: 0",
+        "created subjects": " ".join(record_subjects),
+        "anomalies": "section 099999 p11 an invented note, run only",
+        "pages opened": "X-1.01 file-0000 p3 (invented term) read one note",
+        "sent": "3   landed: 3   conflicts: none",
+    })
+    # The returned message of a read whose runner stops before its closing append: it names rows
+    # updated and a Question raised, which its confirmed file keeps. The read never closed, so a
+    # later runner merges none of it, and the totals stay those of the read that did close.
+    orphan_report = _filled_report("review", unit, review_labels, **{
+        "created": "2   updated: 2   questions raised: 1   questions replied: 0",
+        "created subjects": " ".join(record_subjects),
+        "updated subjects": "scopeItem:x-1 scopeItem:x-4",
+        "questions raised ids": "question:proj-1:2", "questions alone": "question:proj-1:2 an invented reason",
+        "anomalies": "section 099999 p11 an invented note, run only",
+        "pages opened": "X-1.01 file-0000 p3 (invented term) read one note",
+        "sent": "5   landed: 5   conflicts: none",
+    })
+    # A second read finds the first read's rows on the record and creates nothing.
+    later_report = _filled_report("review", unit, review_labels, **{
+        "pages opened": "X-1.01 file-0000 p3 (invented term) read one note",
+        "sent": "0   landed: 0   conflicts: none",
+    })
+
+    def report_lists(text: str, labels: tuple[str, ...]) -> dict[str, set[str]]:
+        """The updated subjects and Question ids a report or a confirmed file names."""
+        found = report_mod.sections(text, labels)
+
+        def listed(label: str, pattern: re.Pattern) -> set[str]:
+            lines = found.get(label, [])
+            return set() if report_mod._is_none(lines) else set(report_mod._distinct(pattern, lines))
+
+        return {"updated": listed("updated subjects", report_mod._SUBJECT_RE),
+                "questions": listed("questions raised ids", report_mod._QUESTION_RE),
+                "replied": listed("questions replied ids", report_mod._REPLY_RE)}
+
+    def sent_figures(text: str) -> tuple[int, int]:
+        sent = re.search(r"^sent: (\d+)\s+landed: (\d+)", text, re.M)
+        return (int(sent.group(1)), int(sent.group(2))) if sent else (0, 0)
+
+    def verified_from(at: Path, read: int, text: str, answer: dict) -> str:
+        """
+        The verified line the runner's text builds for read `read` off its report and the record's
+        answer for that read: `created` the entry count; on a first read `items` and the Question
+        figures the report's own, and on a later read `items` the subject count and each list merged
+        over the reads before it that carry a verified line, off each one's whole report or else its
+        confirmed file, a confirmed file of a read with no verified line ignored; `sent` and `landed`
+        added up over the reports.
+        """
+        history = report_mod.unit_history(at / "ledger.md", "3", unit)
+        lists = report_lists(text, review_labels)
+        sent, landed = sent_figures(text)
+        earlier = [j for j in sorted(history["reads"]) if 1 <= j < read and history["reads"][j].get("verified")]
+        for j in earlier:
+            path = summary_mod.unit_report(at / "reports", unit, j, history["dispatches"])
+            whole = path.is_file() and not report_mod.problems(path.read_text(encoding="utf-8"), "review")[0]
+            kept = at / "confirmed" / report_mod.confirmed_name(unit, j)
+            if whole:
+                more = report_lists(path.read_text(encoding="utf-8"), review_labels)
+                s, l = sent_figures(path.read_text(encoding="utf-8"))
+                sent, landed = sent + s, landed + l
+            elif kept.is_file():
+                more = report_lists(kept.read_text(encoding="utf-8"), report_mod.CONFIRMED_LABELS)
+            else:
+                continue
+            for key in lists:
+                lists[key] |= more[key]
+        counts = report_mod._CREATED_LINE_RE.match(next(l for l in text.splitlines() if l.startswith("created: ")))
+        if earlier or history["dispatches"] > 1:
+            items, questions, replied = len(answer["subjects"]), len(lists["questions"]), len(lists["replied"])
+            updated = len(lists["updated"])
+        else:
+            items, updated, questions, replied = (int(counts.group(n)) for n in (1, 2, 3, 4))
+        return (f"verified 3 W3-1 {unit} created {answer['entryCount']} items {items} updated {updated} "
+                f"questions {questions} replied {replied} sent {sent} landed {landed} conflicts 0 result ok")
+
+    def closing_batch(report_text: str, kind: str, read: int, verified_line: str, *extra: str) -> list[str]:
+        """The closing append the runner's text builds off a report: its notes, then the verified line."""
+        found = report_mod.sections(report_text, report_mod.LABELS[kind])
+        notes: list[str] = []
+        prefix = f"note 3 W3-1 {unit}"
+        for label, note_kind in (("anomalies", "anomaly"), ("grain questions", "grain"), ("door-owned suggestions", "door")):
+            if not report_mod._is_none(found.get(label, [])):
+                notes += [f"{prefix} {note_kind} {line}" for line in found[label]]
+        if kind in ("review", "manual") and not report_mod._is_none(found["not written"]):
+            for entry in found["not written"]:
+                line = f"{prefix} anomaly not written: {entry}"
+                if line not in notes:
+                    notes.append(line)
+        if not report_mod._is_none(found["owed"]):
+            notes += [f"{prefix} anomaly not needed: {line}" for line in found["owed"]
+                      if re.search(r" \| not needed, .+$", line)]
+        return [*notes, *extra, verified_line]
+
+    def trades_call(at: Path, window: str, who: str, kind: str, answer: dict) -> bool:
+        """
+        The runner's trades step as its text says: the set is written unless the pass's marker
+        already carries `<unit id> read <k>` for the read the unit's latest verified line closed;
+        its trade lines off the record's answer, its touched lines as the report script's `touched`
+        command prints them. Returns whether the call was made.
+        """
+        read, verified = report_mod.unit_history(at / "ledger.md", window, who)["latest"]
+        marker = at / "trades" / f"{verified['pass']}.written"
+        if f"{who} read {read}" in (marker.read_text(encoding="utf-8").splitlines() if marker.is_file() else []):
+            return False
+        counts: dict[str, int] = {}
+        for subject in answer["subjects"]:
+            counts[subject["belongsToTrade"]] = counts.get(subject["belongsToTrade"], 0) + 1
+        lines = [f"{who} trade {code} {n}" for code, n in counts.items()]
+        lines += [f"{who} touched {code}" for code in report_mod.touched_of_reads(at, window, who, kind)[0]]
+        report_mod.write_trades(at, verified["pass"], who, "".join(f"{l}\n" for l in lines) or "none\n")
+        return True
+
+    def bookkeeping(at: Path, upto: int = 99) -> None:
+        """The steps after a passed unit's closing append, each written only where it is missing."""
+        read, _line = report_mod.unit_history(at / "ledger.md", "3", unit)["latest"]
+        answer = record_answer(read)
+        names_file = at / "names" / "W3-1.txt"
+        if upto > 0 and f"{unit}\t" not in (names_file.read_text(encoding="utf-8") if names_file.is_file() else ""):
+            with names_file.open("a", encoding="utf-8") as handle:
+                handle.write("".join(f"{unit}\t{s['subject']}\t{s['name']}\n" for s in answer["subjects"]))
+        if upto > 1:
+            trades_call(at, "3", unit, "review", answer)
+        if upto > 2:
+            history = report_mod.unit_history(at / "ledger.md", "3", unit)
+            _path, restored, problems = summary_mod.report_of_read(
+                at / "reports", unit, read, history["dispatches"], "review")
+            if problems and not restored:
+                report_mod.restore(at, "3", unit)
+
+    def first_runner(at: Path, stop: str) -> None:
+        own = at / "reports" / f"{unit}.md"
+        message = orphan_report if stop == "closing append" else first_report
+        file_problems = report_mod.problems_of_file(own, "review")
+        broken, _m = report_mod.problems(message, "review", None, owed_given=True)
+        if not file_problems or broken:
+            raise AssertionError("the first runner's report checks did not read the stub off the file "
+                                 "and the returned report whole")
+        lists = report_lists(message, review_labels)
+        report_mod.write_confirmed(at, "3", unit, 1, "".join(
+            f"{label}: {' '.join(sorted(lists[key])) or 'none'}\n"
+            for label, key in (("updated subjects", "updated"), ("questions raised ids", "questions"),
+                               ("questions replied ids", "replied"))) + "trades touched: none\n")
+        if stop == "closing append":
+            return
+        append(at, *closing_batch(message, "review", 1, verified_from(at, 1, message, record_answer(1)),
+                                  f"note 3 W3-1 {unit} deviation An invented package report file "
+                                  f"{file_problems[0]}, checked off the returned report, read 1"))
+        upto = {"names": 0, "trades": 1, "trades file and its written line": 2, "restore": 2}.get(stop, 3)
+        bookkeeping(at, upto)
+        if stop == "trades file and its written line":
+            # The trades file replaced, and the runner stopped before the unit's line went beside it.
+            report_mod.write_trades(at, "W3-1", unit, record_trades)
+            (at / "trades" / "W3-1.written").write_text("", encoding="utf-8")
+
+    def second_runner(at: Path) -> None:
+        """Handed the run folder alone, as a runner dispatched again for the pass."""
+        ledger_mod.heal(at / "ledger.md")
+        history = report_mod.unit_history(at / "ledger.md", "3", unit)
+        if history["latest"] is None:
+            k = history["dispatches"]
+            own = at / "reports" / f"{unit}.md"
+            if not report_mod.problems_of_file(own, "review"):
+                raise AssertionError("no whole report was on file, so the unit was not verified off one")
+            if (at / "reports" / f"{unit}.read-{k}.started").is_file():
+                append(at, f"note 3 W3-1 {unit} deviation An invented package no report, read {k}")
+            renamed = at / "reports" / f"{unit}.read-{k}.md"
+            if own.is_file() and not renamed.exists():
+                own.rename(renamed)
+            report_mod.write_owed(at, "3", unit, k + 1, "".join(f"{s}\n" for s in record_subjects))
+            append(at, unit_dispatch)
+            # The reader of read k + 1 starts, writes its whole report and returns it.
+            (at / "reports" / f"{unit}.read-{k + 1}.started").write_text("", encoding="utf-8")
+            own.write_text(later_report, encoding="utf-8")
+            owed_file = report_mod.read_owed_file(at / "owed" / f"{unit}.read-{k + 1}.md")
+            if report_mod.problems_of_file(own, "review"):
+                raise AssertionError("the second read's report is not whole")
+            # The closing data off what is on disk, the report this runner checked, and the record's
+            # answer for this read.
+            on_disk = own.read_text(encoding="utf-8")
+            broken, mismatches = report_mod.problems(on_disk, "review", owed_file, owed_given=True)
+            if broken or mismatches:
+                raise AssertionError(f"the second read's report does not pass its check: {broken + mismatches}")
+            append(at, *closing_batch(on_disk, "review", k + 1, verified_from(at, k + 1, on_disk, record_answer(k + 1))))
+        bookkeeping(at)
+
+    sums: dict[str, str] = {}
+    stops = ("closing append", "names", "trades", "trades file and its written line", "restore", "nothing")
+    for stop in stops:
+        at = folder(f"stop-{stops.index(stop)}")
+        (at / "read-plan.md").write_text(fixture_plan, encoding="utf-8")
+        (at / "names").mkdir()
+        (at / "trades").mkdir()
+        (at / "trades" / "W3-1.txt").write_text("", encoding="utf-8")
+        append(at, unit_dispatch)
+        (at / "reports" / f"{unit}.read-1.started").write_text("", encoding="utf-8")
+        (at / "reports" / f"{unit}.md").write_bytes(stub_bytes)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                first_runner(at, stop)
+                trades_before = (at / "trades" / "W3-1.txt").read_bytes()
+                second_runner(at)
+        except Exception as e:
+            errors.append(f"a runner stopped before {stop} and dispatched again could not go on from the run folder: {e!r}")
+            continue
+        code, hand_back, err = _run_script_main(summary_mod, [
+            str(at / "ledger.md"), "3", "W3-1", "--plan", str(at / "read-plan.md"),
+            "--trades", str(at / "trades" / "W3-1.txt"), "--out", str(at / "reports" / "W3-1.md"),
+        ])
+        summary = (at / "reports" / "W3-1.md").read_text(encoding="utf-8") if code == 0 else err
+        ledger_lines = (at / "ledger.md").read_text(encoding="utf-8").splitlines()
+        sums[stop] = "\n".join(l for l in summary.splitlines() if l.startswith(("totals verified:", "trades:")))
+        read_again = stop == "closing append"
+        repeated = [l for l in set(ledger_lines) if ledger_lines.count(l) > 1 and not l.startswith("dispatch ")]
+        expect(
+            f"a runner stopped before {stop} and dispatched again does not go on from the run folder to "
+            f"one verified line, no line but a dispatch written twice, the trades once and "
+            f"{'the unit read again with its whole report counted' if read_again else 'the lost report restored'}",
+            code == 0 and not repeated and sum(l.startswith("verified ") for l in ledger_lines) == 1
+            and "trades: 09 99 99 x2" in summary
+            and (at / "trades" / "W3-1.txt").read_text(encoding="utf-8") == record_trades
+            and (at / "trades" / "W3-1.written").read_text(encoding="utf-8").splitlines()
+            == [f"{unit} read {2 if read_again else 1}"]
+            and (f"reports restored {0 if read_again else 1}" in summary)
+            and (sum(l == unit_dispatch for l in ledger_lines) == (2 if read_again else 1)),
+            f"exit {code}, {err or hand_back}, repeated {repeated}",
+        )
+        # The verified line is the one the report that closed the read and the record's answer for it
+        # give: the first read's own figures, or on a read again the second report's figures on disk
+        # and the record's subject count, never the first read's.
+        closing = [l for l in ledger_lines if l.startswith("verified ")]
+        wanted_closing = (f"verified 3 W3-1 {unit} created 6 items 2 updated 0 questions 0 replied 0 sent 0 "
+                          f"landed 0 conflicts 0 result ok") if read_again else record_verified
+        expect(f"the runner after a stop before {stop} does not close the unit off the report on disk and the "
+               f"record's answer for that read", closing == [wanted_closing], closing)
+        if stop == "trades file and its written line":
+            expect("a runner stopped between the trades file and its written line, sent again, changes "
+                   "the trades file", (at / "trades" / "W3-1.txt").read_bytes() == trades_before)
+        if read_again:
+            orphan = at / "confirmed" / f"{unit}.read-1.md"
+            kept_lists = report_lists(orphan.read_text(encoding="utf-8"), report_mod.CONFIRMED_LABELS) if orphan.is_file() else {}
+            expect("a confirmed file of a read with no verified line, holding rows updated and a Question "
+                   "raised that would change the totals if merged, is merged into them",
+                   orphan.is_file() and kept_lists.get("updated") and kept_lists.get("questions")
+                   and report_mod.unit_history(at / "ledger.md", "3", unit)["reads"].get(1, {}).get("verified") is None
+                   and "updated 0, questions 0 replied 0" in sums[stop],
+                   f"{kept_lists}, {sums[stop]}")
+    expect("the stops do not all sum to one total", len(sums) == len(stops) and len(set(sums.values())) == 1, sums)
+
+    # ------------------------------------------------------------------ #
+    # What a check confirmed off a returned message is kept, in a file of the run's own
+    # ------------------------------------------------------------------ #
+    # A window 2 sheet unit verified off its returned message, the reader's file a stub: the
+    # confirmed file keeps its lists and its `trades touched:` ids, and a runner stopped after the
+    # closing append and before the trades, then sent again, writes the unit's whole set, its
+    # `touched` lines off the confirmed file, which the window 3 plan of an addendum then reads.
+    kept_at = folder("confirmed")
+    (kept_at / "reports" / "P1-1.md").write_bytes(stub_bytes)
+    append(kept_at, dispatch)
+    try:
+        kept = report_mod.write_confirmed(kept_at, "2", "P1-1", 1, (
+            "updated subjects: scopeItem:x-1 scopeItem:x-4, scopeItem:x-1\n"
+            "questions raised ids: question:proj-1:2\nquestions replied ids: none\n"
+            "trades touched:\n- 22 00 00\n26 00 00, 22 00 00\n"))
+        kept_lines = kept.read_text(encoding="utf-8").splitlines()
+        expect(
+            "the confirmed lists are not written to confirmed/<unit id>.read-<k>.md, each subject and "
+            "catalog id once, its first line saying it is the runner's check and no line saying a page was read",
+            kept == kept_at / "confirmed" / "P1-1.read-1.md" and kept_lines == [
+                "confirmed: P1-1 read 1, the lists the runner's check confirmed off the reader's "
+                "returned message; no line below says a page was read or a search was run",
+                "updated subjects: scopeItem:x-1 scopeItem:x-4", "questions raised ids: question:proj-1:2",
+                "questions replied ids: none", "trades touched: 22 00 00, 26 00 00",
+            ],
+            kept_lines,
+        )
+        append(kept_at, verified_ok)
+        # Sent again: the unit passed and its trades set was never written, and no whole report of
+        # the read is on file, so its touched ids come off the confirmed file.
+        missing = trades_call(kept_at, "2", "P1-1", "sheet", {"subjects": [
+            {"belongsToTrade": "09 21 16"}, {"belongsToTrade": "09 21 16"}]})
+        plan_mod = _load_script_module(scripts / "plan_inventory.py", "plan_inventory")
+        written_on, touched_units = plan_mod._read_pass_trades(kept_at)
+        expect(
+            "a pass sent again after a stop before the trades does not write the unit's whole set, its "
+            "touched lines off the confirmed file, read by the window 3 plan of an addendum",
+            missing and (kept_at / "trades" / "P1.txt").read_text(encoding="utf-8").splitlines() == [
+                "P1-1 trade 09 21 16 2", "P1-1 touched 22 00 00", "P1-1 touched 26 00 00"]
+            and touched_units == {"P1-1"} and {plan_mod._fold("22 00 00"), plan_mod._fold("26 00 00")} <= written_on,
+            f"{(kept_at / 'trades' / 'P1.txt').read_text(encoding='utf-8') if (kept_at / 'trades' / 'P1.txt').is_file() else 'no file'}, {touched_units}",
+        )
+    except Exception as e:
+        errors.append(f"the report script does not keep a check's confirmed lists and touched trades: {e!r}")
+
+    # ------------------------------------------------------------------ #
+    # The trades marker names the read whose set was written
+    # ------------------------------------------------------------------ #
+    # Read 1 verified ok with trades A, written; read 2 verified ok with trades B, the runner stopped
+    # after its closing append and before its trades. The runner's own decision off the marker skips
+    # the call where the marker names the latest read and makes it where it names an earlier one.
+    sheet_report = _filled_report("sheet", "P1-1", report_mod.LABELS["sheet"])
+    mark_at = folder("trades-marker")
+    (mark_at / "read-plan.md").write_text(w2_plan, encoding="utf-8")
+    (mark_at / "trades").mkdir()
+    (mark_at / "reports" / "P1-1.md").write_text(sheet_report, encoding="utf-8")
+    trades_a = {"subjects": [{"belongsToTrade": "09 21 16"}, {"belongsToTrade": "09 21 16"}]}
+    trades_b = {"subjects": [{"belongsToTrade": "09 22 16"}] * 3}
+    try:
+        append(mark_at, dispatch, verified_ok)
+        made_1 = trades_call(mark_at, "2", "P1-1", "sheet", trades_a)
+        marker_1 = (mark_at / "trades" / "P1.written").read_text(encoding="utf-8").splitlines()
+        skipped = not trades_call(mark_at, "2", "P1-1", "sheet", trades_a)
+        (mark_at / "reports" / "P1-1.md").rename(mark_at / "reports" / "P1-1.read-1.md")
+        (mark_at / "reports" / "P1-1.md").write_text(sheet_report, encoding="utf-8")
+        append(mark_at, dispatch, verified_ok.replace("created 4 items 2", "created 6 items 3"))
+        # Stopped here, before read 2's trades; the pass is sent again.
+        ledger_mod.heal(mark_at / "ledger.md")
+        made_2 = trades_call(mark_at, "2", "P1-1", "sheet", trades_b)
+        code, _hand, err = _run_script_main(summary_mod, [
+            str(mark_at / "ledger.md"), "2", "P1", "--plan", str(mark_at / "read-plan.md"),
+            "--trades", str(mark_at / "trades" / "P1.txt"), "--out", str(mark_at / "reports" / "P1.md")])
+        summed = (mark_at / "reports" / "P1.md").read_text(encoding="utf-8") if code == 0 else err
+        expect(
+            "a trades marker of read 1 does not name read 1, skip a second call for it, and leave read 2's "
+            "set to be written on a resend, the summary counting read 2's set once",
+            made_1 and marker_1 == ["P1-1 read 1"] and skipped and made_2
+            and (mark_at / "trades" / "P1.written").read_text(encoding="utf-8").splitlines() == ["P1-1 read 2"]
+            and "trades: 09 22 16 x3" in summed.splitlines()
+            and (mark_at / "trades" / "P1.txt").read_text(encoding="utf-8") == "P1-1 trade 09 22 16 3\n",
+            f"calls {made_1} {skipped} {made_2}, marker {marker_1}, {[l for l in summed.splitlines() if 'trades' in l]}",
+        )
+    except Exception as e:
+        errors.append(f"the trades marker does not name the read whose set was written: {e!r}")
+
+    # ------------------------------------------------------------------ #
+    # A unit's touched trades are the union over its verified reads, ok or mismatch
+    # ------------------------------------------------------------------ #
+    # Read 1 failed its check, its whole report touching 08 50 00; read 2 passed off its returned
+    # message, its confirmed file touching 32 90 00; the runner stopped before the trades and the pass
+    # is sent again. The set names both, and the window 3 plan of an addendum reviews both packages.
+    union_at = folder("touched-union")
+    (union_at / "read-plan.md").write_text(w2_plan, encoding="utf-8")
+    (union_at / "trades").mkdir()
+    try:
+        append(union_at, dispatch)
+        (union_at / "reports" / "P1-1.md").write_text(_filled_report("sheet", "P1-1", report_mod.LABELS["sheet"], **{
+            "created": "0   updated: 1   questions raised: 0   questions replied: 0",
+            "updated subjects": "scopeItem:A1-1-3", "trades touched": "08 50 00",
+            "sent": "1   landed: 1   conflicts: none",
+        }), encoding="utf-8")
+        append(union_at, verified_ok.replace("updated 0", "updated 1").replace("result ok", "result mismatch"),
+               "note 2 P1 P1-1 deviation A-1.01 questions linked question:proj-1:9, read 1")
+        (union_at / "reports" / "P1-1.md").rename(union_at / "reports" / "P1-1.read-1.md")
+        append(union_at, dispatch)
+        (union_at / "reports" / "P1-1.md").write_bytes(stub_bytes)
+        report_mod.write_confirmed(union_at, "2", "P1-1", 2, "updated subjects: scopeItem:A1-1-5\n"
+                                   "questions raised ids: none\nquestions replied ids: none\ntrades touched: 32 90 00\n")
+        append(union_at, "note 2 P1 P1-1 deviation A-1.01 report file not whole: no pages read, checked off the "
+                         "returned report, read 2", verified_ok.replace("updated 0", "updated 1"))
+        # Stopped before the trades; sent again.
+        ledger_mod.heal(union_at / "ledger.md")
+        made = trades_call(union_at, "2", "P1-1", "sheet", trades_a)
+        by_cli = subprocess.run([sys.executable, str(scripts / "unit_report.py"), "touched", str(union_at), "2",
+                                 "P1-1", "--kind", "sheet"], capture_output=True, text=True, timeout=120)
+        plan_mod = _load_script_module(scripts / "plan_inventory.py", "plan_inventory")
+        written_on, touched_units = plan_mod._read_pass_trades(union_at)
+        unnamed = plan_mod._units_touching_unnamed_trades(union_at / "ledger.md", touched_units)
+        packages = plan_mod._read_packages(marketplace_root / "harness" / "fixtures" / "packages-fixture.json")
+        planned = plan_mod._window_3(packages, {p["id"]: f"i3-rev-{n}" for n, p in enumerate(packages, 1)},
+                                     None, None if unnamed else written_on, [])
+        reviewed = sorted(u["name"] for plan_pass in planned["passes"] for u in plan_pass["units"])
+        expect(
+            "a unit whose failed read touched one trade and whose passed read touched another does not write "
+            "both as touched on a resend, and the window 3 plan of an addendum does not review both packages",
+            made and (union_at / "trades" / "P1.txt").read_text(encoding="utf-8").splitlines() == [
+                "P1-1 trade 09 21 16 2", "P1-1 touched 08 50 00", "P1-1 touched 32 90 00"]
+            and by_cli.returncode == 0 and by_cli.stdout.splitlines() == ["P1-1 touched 08 50 00", "P1-1 touched 32 90 00"]
+            and not unnamed and reviewed == ["Drywall and framing", "Landscaping", "Windows"],
+            f"{(union_at / 'trades' / 'P1.txt').read_text(encoding='utf-8') if (union_at / 'trades' / 'P1.txt').is_file() else 'no file'}, "
+            f"cli {by_cli.stdout!r} {by_cli.stderr!r}, unnamed {unnamed}, reviewed {reviewed}",
+        )
+    except Exception as e:
+        errors.append(f"a unit's touched trades are not the union over its verified reads: {e!r}")
+    # A verified read with neither a whole report nor a confirmed file on file: read 1 failed its
+    # check off its returned message and the runner stopped before it kept the lists; read 2 passed
+    # off its whole report. The touched command still prints read 2's trades and exits 0, and puts
+    # one anomaly note on the ledger saying read 1's trades are not known, once however often it runs.
+    lost_at = folder("touched-unknown")
+    try:
+        append(lost_at, dispatch)
+        append(lost_at, "note 2 P1 P1-1 deviation A-1.01 report file missing, checked off the returned report, read 1",
+               verified_ok.replace("updated 0", "updated 1").replace("result ok", "result mismatch"),
+               "note 2 P1 P1-1 deviation A-1.01 questions linked question:proj-1:9, read 1")
+        append(lost_at, dispatch)
+        (lost_at / "reports" / "P1-1.md").write_text(_filled_report("sheet", "P1-1", report_mod.LABELS["sheet"], **{
+            "created": "0   updated: 1   questions raised: 0   questions replied: 0",
+            "updated subjects": "scopeItem:A1-1-3", "trades touched": "08 50 00",
+            "sent": "1   landed: 1   conflicts: none",
+        }), encoding="utf-8")
+        append(lost_at, verified_ok.replace("updated 0", "updated 1"))
+        runs = []
+        for _ in range(2):
+            done = subprocess.run([sys.executable, str(scripts / "unit_report.py"), "touched", str(lost_at), "2",
+                                   "P1-1", "--kind", "sheet"], capture_output=True, text=True, timeout=120)
+            runs.append((done.returncode, done.stdout.splitlines(), (lost_at / "ledger.md").read_bytes()))
+        lost_lines = runs[1][2].decode("utf-8").splitlines()
+        noted = [l for l in lost_lines if l.startswith("note 2 P1 P1-1 anomaly the trades read 1 of P1-1 ")]
+        expect(
+            "a verified read with neither a whole report nor a confirmed file does not leave one anomaly note "
+            "on the ledger saying its trades are not known, the touched lines printed and exit 0, and a second "
+            "run adding nothing",
+            all(code == 0 and out == ["P1-1 touched 08 50 00"] for code, out, _l in runs)
+            and len(noted) == 1 and runs[0][2] == runs[1][2] and lost_lines[-1] == noted[0]
+            and (lost_at / "ledger.md").read_bytes() == (lost_at / "ledger.shadow").read_bytes(),
+            f"{[(code, out) for code, out, _l in runs]}, {lost_lines[-2:]}",
+        )
+    except Exception as e:
+        errors.append(f"a read whose touched trades are not known is not noted on the ledger: {e!r}")
+    for label, window, text in (
+        ("window r", "r", "updated subjects: none\nquestions raised ids: none\nquestions replied ids: none\n"
+                          "trades touched: none\n"),
+        ("a list missing", "3", "updated subjects: none\nquestions raised ids: none\nquestions replied ids: none\n"),
+        ("a list naming nothing in its shape", "3", "updated subjects: the stud wall\nquestions raised ids: none\n"
+                                                    "questions replied ids: none\ntrades touched: none\n"),
+    ):
+        try:
+            report_mod.write_confirmed(kept_at, window, unit, 3, text)
+            refused_kept = False
+        except Exception:
+            refused_kept = True
+        expect(f"the confirmed lists of {label} are not refused", refused_kept
+               and not (kept_at / "confirmed" / f"{unit}.read-3.md").exists())
+
+    # ------------------------------------------------------------------ #
+    # Every `not written:` entry of a read reaches its closing append, whatever an earlier read carried
+    # ------------------------------------------------------------------ #
+    entry_x = "section 099999 p14 | an invented stud gauge | no row | the page is a scan"
+    claim_x = f"check read 1 failed: An invented package updated scopeItem:x-1, read 1"
+    nw_at = folder("not-written-twice")
+    (nw_at / "read-plan.md").write_text(fixture_plan, encoding="utf-8")
+    (nw_at / "trades").mkdir()
+    append(nw_at, unit_dispatch, f"note 3 W3-1 {unit} anomaly not written: {entry_x}",
+           record_verified.replace("result ok", "result mismatch"),
+           f"note 3 W3-1 {unit} deviation An invented package updated scopeItem:x-1, read 1")
+    owed_2 = report_mod.write_owed(nw_at, "3", unit, 2, "none\n")
+    append(nw_at, unit_dispatch)
+    report_2 = _filled_report("review", unit, review_labels, **{
+        "not written": entry_x,
+        "owed": f"not written by read 1: {entry_x} | not written, the page is a scan\n"
+                f"{claim_x} | not needed, the row already cites the page",
+        "pages opened": "X-1.01 file-0000 p3 (invented term) read one note",
+    })
+    (nw_at / "reports" / f"{unit}.md").write_text(report_2, encoding="utf-8")
+    broken, mismatches = report_mod.problems(report_2, "review", report_mod.read_owed_file(owed_2), owed_given=True)
+    expect("a second read answering an entry not written and a failed claim not needed is not held agreeing",
+           not broken and not mismatches, broken + mismatches)
+    append(nw_at, *closing_batch(report_2, "review", 2, record_verified))
+    (nw_at / "trades" / "W3-1.txt").write_text(record_trades, encoding="utf-8")
+    read_2_notes = [n["text"] for n in report_mod.unit_history(nw_at / "ledger.md", "3", unit)["reads"][2]["notes"]]
+    owed_3 = report_mod.write_owed(nw_at, "3", unit, 3, "none\n").read_text(encoding="utf-8").splitlines()
+    code, _hand, err = _run_script_main(summary_mod, [
+        str(nw_at / "ledger.md"), "3", "W3-1", "--plan", str(nw_at / "read-plan.md"),
+        "--trades", str(nw_at / "trades" / "W3-1.txt"), "--out", str(nw_at / "reports" / "W3-1.md")])
+    checkin_code, checkin_out, checkin_err = _run_script_main(lead_mod, ["checkin", str(nw_at), "3", "--passes", "W3-1"])
+    # The close-out's filter: the unit's notes between its last dispatch line and its last ok line.
+    ledger_now = (nw_at / "ledger.md").read_text(encoding="utf-8").splitlines()
+    last_dispatch = max(i for i, l in enumerate(ledger_now) if l == unit_dispatch)
+    closeout = [l for l in ledger_now[last_dispatch:] if l.startswith(f"note 3 W3-1 {unit} anomaly ")]
+    expect(
+        "an entry an earlier read carried and the second read still did not write is not on the "
+        "ledger under the second read, in the owed file a third read gets, in the check-in and in "
+        "the close-out",
+        f"note 3 W3-1 {unit} anomaly not written: {entry_x}" in read_2_notes
+        and f"not written by read 2: {entry_x}" in owed_3
+        and code == 0 and checkin_code == 0 and "an invented stud gauge" in checkin_out
+        and f"note 3 W3-1 {unit} anomaly not written: {entry_x}" in closeout,
+        f"read 2 notes {read_2_notes}, owed {owed_3}, summary {code} {err}, check-in {checkin_code} {checkin_err}",
+    )
+    expect(
+        "a failed claim answered not needed is not on the ledger as a `not needed:` note, in the "
+        "check-in and in the close-out",
+        any(l.startswith(f"note 3 W3-1 {unit} anomaly not needed: {claim_x} | not needed,") for l in read_2_notes)
+        and "the row already cites the page" in checkin_out
+        and any(" anomaly not needed: " in l for l in closeout),
+        f"{read_2_notes}, {checkin_out!r}",
+    )
+
+    # ------------------------------------------------------------------ #
+    # No file a script writes under the run folder is written in place: a write stopped partway
+    # leaves the file before it whole, and the next run writes the new one
+    # ------------------------------------------------------------------ #
+    entry_c = "section 092216 p16 | an invented head of wall | no row | not reached"
+    stopped_cases = (
+        ("the owed file", owed_at / "owed" / "rev-099999-1.read-4.md", "rev-099999-1.read-4",
+         lambda: append(owed_at, f"note 3 W3-1 rev-099999-1 anomaly not written: {entry_c}"),
+         lambda: report_mod.write_owed(owed_at, "3", "rev-099999-1", 4,
+                                       "scopeItem:rev-099999-1-1\nscopeItem:rev-099999-1-2\n"),
+         entry_c),
+        ("the restored report", rest_at / "reports" / "rev-099999-1.read-1.restored.md", "rev-099999-1.read-1.restored",
+         lambda: append(rest_at, "note 3 W3-1 rev-099999-1 anomaly section 099999 p12 another invented note, run only"),
+         lambda: report_mod.restore(rest_at, "3", "rev-099999-1"),
+         "another invented note"),
+        ("the pass summary", nw_at / "reports" / "W3-1.md", "W3-1.md",
+         lambda: append(nw_at, f"note 3 W3-1 {unit} anomaly X-1.01 p3 an invented later note, run only"),
+         lambda: _run_script_main(summary_mod, [
+             str(nw_at / "ledger.md"), "3", "W3-1", "--plan", str(nw_at / "read-plan.md"),
+             "--trades", str(nw_at / "trades" / "W3-1.txt"), "--out", str(nw_at / "reports" / "W3-1.md")]),
+         "an invented later note"),
+    )
+    for label, target, fragment, change, write, new_text in stopped_cases:
+        before_bytes = target.read_bytes() if target.is_file() else b""
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                change()
+                with _writes_stopped_partway(fragment):
+                    try:
+                        write()
+                    except Exception:
+                        pass
+                stopped_bytes = target.read_bytes()
+                write()
+            after_text = target.read_text(encoding="utf-8")
+        except Exception as e:
+            errors.append(f"{label} could not be written again after a stopped write: {e!r}")
+            continue
+        expect(f"{label} written by a script stopped partway is not left as it was, whole, and the next "
+               f"run's write does not land whole",
+               before_bytes != b"" and stopped_bytes == before_bytes and new_text in after_text
+               and after_text.endswith("\n") and not list(target.parent.glob(f".{target.name}.*.tmp")),
+               f"before {len(before_bytes)} bytes, after the stopped write {len(stopped_bytes)} bytes")
+
+    # ------------------------------------------------------------------ #
+    # The check-in names a manual part restored by the summary's own selection of its latest read
+    # ------------------------------------------------------------------ #
+    part = "rev-099999-1c-1"
+    for label, reads, wanted in (
+        ("whose first report was restored and whose later read left a whole report", 2, "manual pages read ("),
+        ("whose latest read's report was restored", 1, "manual pages whose report was written from the record ("),
+    ):
+        part_at = folder(f"part-{reads}")
+        (part_at / "read-plan.md").write_text(w3_plan, encoding="utf-8")
+        part_dispatch = f"dispatch 3 W3-1 {part} sheets none purpose read the invented framing manual pages"
+        part_ok = (f"verified 3 W3-1 {part} created 2 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 "
+                   f"conflicts 0 result ok")
+        append(part_at, part_dispatch, part_ok)
+        (part_at / "reports" / f"{part}.read-1.restored.md").write_text("restored: an invented restored report\n",
+                                                                        encoding="utf-8")
+        if reads == 2:
+            (part_at / "reports" / f"{part}.read-1.md").write_bytes(stub_bytes)
+            append(part_at, part_dispatch, part_ok)
+            (part_at / "reports" / f"{part}.md").write_text(
+                _filled_report("manual", part, report_mod.LABELS["manual"]), encoding="utf-8")
+        else:
+            (part_at / "reports" / f"{part}.md").write_bytes(stub_bytes)
+        said = lead_mod._plan_reads(part_at / "read-plan.md", 3, {part})[0].get("W3-1", "")
+        other = ("manual pages whose report was written from the record (" if reads == 2
+                 else "manual pages read (")
+        expect(f"the check-in does not name a manual part {label} under {wanted[:-2]!r}",
+               wanted in said and other not in said, said)
+
+    # ------------------------------------------------------------------ #
+    # The text: the runner, the four readers and the skill
+    # ------------------------------------------------------------------ #
+    runner_text = (plugin_path / _FAILED_UNIT_RUNNER).read_text(encoding="utf-8")
+    tools_line = next((l for l in runner_text.splitlines() if l.startswith("tools: ")), "")
+    expect("the runner's tools line holds Edit, the tool that rewrote a report and the ledger",
+           tools_line and "Edit" not in [t.strip() for t in re.split(r",(?![^()]*\))", tools_line[len("tools: "):])],
+           tools_line)
+    text_result = _pinned_text_check(
+        name, plugin_path, _FAILED_UNIT_PINS, _FAILED_UNIT_RETIRED,
+        "the runner's ledger script, one closing append, report check, owed file and restore, and its "
+        "ban on writing a report or the ledger any other way; each reader's Owed line and paragraph, "
+        "its `owed:` line and the file as its report; the reviewer's and manual part's `not written:`; "
+        "the skill's ledger rule, restore command and Owed lines",
+    )
+    if not text_result.passed:
+        errors.append(text_result.detail.split(" | ", 1)[-1])
+
+    detail = (
+        f"{arms} script arms over invented run folders with real files: ledger.py appending a batch "
+        f"with an apostrophe and a dollar sign as written, its shadow alike, and refusing nine "
+        f"batches by name with nothing written, a verified line with no dispatch since among them; "
+        f"the heal equal, a strict prefix completed silently, whole `phase:` and `checkin:` lines "
+        f"added by hand, one with a Windows line ending, kept as they stand with nothing said, a "
+        f"line changed or removed, an added line an append refuses (alone and after a valid one), "
+        f"a `verified` line added by hand that an append would take, a `phase:` line hiding a "
+        f"verified line after a carriage return, the pass then totalling off the run's own lines, "
+        f"and an unterminated tail each put back under one `repaired:` line naming the count and "
+        f"the first line, a line holding any of eight control characters appended as one line with a "
+        f"space for each, a tab and a carriage return on stdin alike, a ledger with no shadow adopted as its whole lines, a shadow with an unterminated "
+        f"last line the ledger does not complete put back as damage, and a shadow short only of "
+        f"its final newline rebuilt from the whole ledger with nothing dropped; real processes: a writer killed partway through the shadow's publication "
+        f"leaving it whole and one killed between shadow and ledger, each healed by `ledger.py "
+        f"heal` with nothing said and the unit closed once after, six processes appending twenty "
+        f"batches each at once leaving every batch whole, in order and once under the lock and not "
+        f"without it, and a replace refused while a reader holds the file tried again until it "
+        f"lands and failing in one line past its bound; each of the {len(phase_values)} `phase:` values the "
+        f"shipped text writes taken by the check; the lead's check-in and "
+        f"passes listing healing before they read, the check-in saying it in the estimator's words; "
+        f"the report script's labels equal to each agent's report shape and the skill's copies, "
+        f"stubs in three measured shapes held not whole, a count disagreeing with its list a "
+        f"mismatch named report for `created` and `questions raised`, and for `questions replied` "
+        f"three ways (a reply with no id, an id with no reply, fewer replies than ids), five honest reports "
+        f"whose `updated` or `questions replied` no list equals held agreeing (a row cited only to "
+        f"a Question, headings on five earlier rows, a retired row, a duplicate citation, two "
+        f"replies to one Question), and bytes that are not UTF-8 refused alike off a file and off "
+        f"stdin; the owed file of read 4 after three failed reads holding every "
+        f"entry once with each failed check and lost report, an ok read taking off what came before "
+        f"it, a sheet's file its failed check alone, and three refusals; the `owed:` line held to "
+        f"the file eight ways, the reviewer fixture's bulleted `field updates:` answering an entry, "
+        f"an `owed:` list written with `-` and with `*` markers read, "
+        f"and each failed claim on a named row answered written on this read's own list for that "
+        f"write or not needed, eight ways, a sheet's second read repairing an update on a row "
+        f"another unit made taken with the row on its `updated subjects:` and refused off it, and a "
+        f"failed page citation an owed line, refused unanswered and taken on `page citations:`; "
+        f"a failed `headings` check before a review and a failed `created subjects` check before a "
+        f"sheet taken answered and left off, and so a line of every other check the runner names; a "
+        f"failed field update answered written refused where the row's `field updates:` line names "
+        f"another predicate and taken where it names the same, and a failed Question link refused "
+        f"where the row is linked to another Question and taken where linked to that one; a "
+        f"`not written:` entry holding a tab reaching the owed file with a space and answered on the "
+        f"next read's `owed:` line; "
+        f"restore writing the same file twice, the reader's file untouched, its "
+        f"note once through the ledger script, refusing three units and writing nothing beside a "
+        f"whole report; a runner stopped before each of six points and a second runner handed the "
+        f"run folder alone deciding from its files, reading the unit again where the closing append "
+        f"never landed and otherwise writing only what is missing, each summing one total with no "
+        f"line but a dispatch written twice and the trades once, each read closed off the report on "
+        f"disk and the record's answer for that read, and a confirmed file of a read that never "
+        f"closed, naming rows and a Question, merged into nothing; the confirmed lists and touched "
+        f"trades kept in a file of the run's own, a sheet unit's whole set with its touched lines "
+        f"written off it on a resend and read by the window 3 plan, and three refusals; the trades "
+        f"marker naming the read, a second call for that read skipped and a later read's set "
+        f"written on a resend and summed once; a unit's touched trades the union over a failed read's "
+        f"whole report and a passed read's confirmed file, through the `touched` command, the window "
+        f"3 plan of an addendum reviewing both packages, and a verified read with neither a whole "
+        f"report nor a confirmed file noted once on the ledger as an anomaly however often the "
+        f"command runs; the owed "
+        f"file, the restored report and the pass summary each left whole by a write stopped "
+        f"partway and written whole by the next run; an entry not written by two reads on the ledger under "
+        f"the second, in the third read's owed file, the check-in and the close-out, and a failed "
+        f"claim answered not needed reaching the same three; a manual part named restored only where "
+        f"its latest read counts off the restored report; {text_result.detail.split(' | ', 1)[0]}; "
+        f"bound: invented run folders, real processes for the ledger's writes and simulated runners "
+        f"for the rest, not a running runner"
+    )
+    if errors:
+        detail += " | " + "; ".join(str(e) for e in errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -17568,6 +19887,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_grain_test(plugin_path, marketplace_root),
         check_note_rule(plugin_path, marketplace_root),
         check_citation_kind(plugin_path, marketplace_root),
+        check_failed_unit(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

@@ -10,6 +10,7 @@ pages opened:
 - section 099999 file-1111 p12 (invented term) read Part 2, one row updated
 pages opened: X-3.01 file-0000 p9 (invented term, the label written again) read one callout, nothing new
 created: 1   updated: 2   questions raised: 0   questions replied: 0
+created subjects: scopeItem:rev-099999-1-1
 updated subjects: scopeItem:A1-1-1 scopeItem:A1-1-2
 manual updates: scopeItem:A1-1-1 specSection:099999 p12
 field updates:
@@ -37,3 +38,5 @@ Invented written half, written scopeItem:A1-1-1, X-1.01 file-0000 p3, paper give
 headings written: none
 rows ordered: none
 door-owned suggestions: none
+not written: none
+owed: none

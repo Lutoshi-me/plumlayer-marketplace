@@ -2,7 +2,7 @@
 name: scope-round-runner
 description: Runs one pass of a Plumlayer scope run, over sheets or over up to eight package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, one scope-reviewer per package and one scope-manual-reader per manual part after it, or in the recheck of a new delivery one scope-rechecker per sheet or batch of items to retire, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 model: sonnet
-tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-rechecker), Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
+tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-rechecker), Read, Write, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
 
 You own one pass of a scope run, from its first dispatch line to its last, and then you end. Your
@@ -49,6 +49,18 @@ twelve read units, or more than ten in window 3, stop before dispatching anythin
 pass is too long to supervise and the plan is wrong. Nothing is lost by stopping there, because
 nothing has run.
 
+In every mode, before your first look at the ledger, hold it to the run's own copy:
+
+```bash
+python3 '<scripts path>/ledger.py' heal '<run folder>/ledger.md'
+```
+
+A runner stopped between the ledger script's two writes left a unit's closing lines in the run's
+copy and not yet in the ledger. Run the command first, so those lines are in the ledger before
+you decide what each unit needs. It prints one line: a `repaired:` line where lines were put back,
+which the lead reads and you never answer, or a line saying the ledger holds every line of its
+copy.
+
 ## Pass mode
 
 1. **Write your pass brief** at `<run folder>/briefs/<pass-id>.md` if it is not already there: what
@@ -71,8 +83,10 @@ nothing has run.
    name, and that unit's `anomaly`, `grain`, `door`, `deviation` and `unread` notes, with a local
    filter on the ledger (the one read of it you ever make): a replan
    can put a unit in another pass, and its unit id is what stays. A unit read again carries one
-   `verified` line per check, and its latest line is the one that counts. A unit whose latest line carries `result ok`, with no `dispatch` line after it, is finished, so dispatch
-   nothing for it, append nothing, and go to the next unit. Its counts still reach your summary:
+   `verified` line per check, and its latest line is the one that counts. A unit whose latest line carries `result ok`, with no `dispatch` line after it, is finished: dispatch
+   nothing for it and append nothing for it to the ledger, then write whatever of its trades,
+   kinds, names and restore a runner before you stopped short of, as step 3's last paragraph says,
+   and go to the next unit. Its counts still reach your summary:
    the script sums the latest `verified` line of every unit your pass carries, matched the same way on
    window and unit id whatever pass it names, each unit once.
 
@@ -84,8 +98,10 @@ nothing has run.
    anything else, `<k>` the read its dispatch's `Read:` line names. A read that ended any way but a
    check confirming it carries one `deviation` note or more ending `, read <k>`, `<k>` the number of
    that read. Where a unit's latest `dispatch` line has no `verified` line and no such note after
-   it, its runner stopped before its check: where its report is on file, verify off that report as
-   step 3 says, which is that read's end and no new read; where only that read's `.started` file
+   it, its runner stopped before its check: where its report is on file and the report check of
+   step 3 holds it whole, verify off that report as step 3 says, which is that read's end and no
+   new read, and a report on file the check holds not whole is no report here, since the reader's
+   returned message went with the runner that stopped; where only that read's `.started` file
    is there, append `note <window> <pass> <unit> deviation <sheet> no report, read <k>` first; and
    where neither is there, no reader started after that line, so it is no read: count the unit's
    reads without it, and dispatch that read's reader under that same line, appending no second
@@ -102,8 +118,24 @@ nothing has run.
    one runner would. Before every read after
    a unit's first, rename `<run folder>/reports/<unit id>.md`, where it is there, to
    `<run folder>/reports/<unit id>.read-<k>.md`, `<k>` the reads so far, so the next report does
-   not overwrite it; a report already renamed is left as it is. Append the unit's
-   `dispatch` line first, in one append, then dispatch the reader. Never the other way round and
+   not overwrite it; a report already renamed is left as it is, and nothing is ever renamed onto a
+   file already there. Where `<unit id>.read-<k>.md` is already there, as when a runner stopped
+   after the rename and before the dispatch and the pass was sent again, leave both files as they
+   are and go on. In windows 1, 2 and 3, also write the work the new read owes, with the
+   subjects that stand under the unit's prefix now, the ones step 2's held count counted, taken off
+   that same `verify_unit` answer (the `subjects` of its last check where you made one in this run),
+   one per line, or `none`:
+
+   ```bash
+   python3 '<scripts path>/unit_report.py' owed '<run folder>' <window> <unit id> --read <k> <<'EOF'
+   <each subject, one per line, or none>
+   EOF
+   ```
+
+   `<k>` the number of the read about to start. It writes `<run folder>/owed/<unit id>.read-<k>.md`
+   off the ledger alone: what earlier reads noted they did not write, the checks they failed and
+   the reads that ended with no report. A runner run again writes it again the same way. Append
+   the unit's `dispatch` line first, in one append, then dispatch the reader. Never the other way round and
    never in a batch at the end: the line is what a resume reads to know the unit was started, and a
    run that batched them reported six units as nothing-landed when their work was on the record.
    Dispatching a reader is one Agent tool call. Where the Agent tool takes `run_in_background`, as
@@ -120,9 +152,9 @@ nothing has run.
    verify against it, never carry its counts onto a `verified` line, and end the turn again. A
    completion notice for a reader whose report you already took changes nothing. If a client
    setting appears to force a tool call every turn, name that in your deviations
-   line rather than inventing a call to satisfy it. A reader that has ended and whose report did not
-   arrive in the message wrote it first to `<run folder>/reports/<unit-id>.md`: open that file and
-   verify off it. A unit whose report file is also absent ends that read: append
+   line rather than inventing a call to satisfy it. Step 3's report check says which report you
+   verify off: the reader's file where the check holds it whole, otherwise the returned message
+   where the check holds that whole, and otherwise the read ended with no report: append
    `note <window> <pass> <unit> deviation <sheet> no report, read <k>` and read the unit again as
    the count above allows. Whatever it already recorded is on the record, and the next read
    creates or updates against the live list, so nothing is created twice.
@@ -132,8 +164,8 @@ nothing has run.
    stopped. A stopped reader's call comes back as an error whose whole text is
    `[Request interrupted by user for tool use]`. While you are still running, that text never means
    the user interrupted, since a user's interrupt stops you too: it means the reader stopped
-   answering. Treat it as a reader with no report: open its report file, and where that is absent,
-   append `note <window> <pass> <unit> deviation <sheet> reader stopped answering, read <k>` and
+   answering. Hold its report file to step 3's report check, and where the check does not hold it
+   whole, append `note <window> <pass> <unit> deviation <sheet> reader stopped answering, read <k>` and
    read the unit again as the count above allows, its `dispatch` line appended again first. Where
    its reads are spent, the `unread` note above goes on, no `verified` line is written for that
    read, and the pass stops there. The unit stays dispatched with no `verified` line, so the next
@@ -146,6 +178,8 @@ nothing has run.
    prefix every scope item its reader creates takes, numbered 1, 2, 3 after it.
    It also says `Read: <k>`, the number of this read, its own `dispatch` line counted, which names
    the `.started` file its reader writes first.
+   It also says `Owed: <run folder>/owed/<unit id>.read-<k>.md`, the file the owed command above
+   wrote, on a read after the first in windows 1, 2 and 3, and `Owed: none` on a first read.
    Before you dispatch a unit that already carries a `dispatch` line, hold the subjects an earlier
    read left under its prefix, which step 3's created check takes off: the `subjectCount` of its
    last check where you made one in this run, and otherwise the `subjectCount` of one `verify_unit`
@@ -170,7 +204,8 @@ nothing has run.
    `Left out: none`. Its `dispatch` line reads
    `dispatch <window> <pass> <unit> sheets none purpose repeated lines of file <fileId>`, exactly,
    since the plan script binds the unit id to its file off that line. After its `verified` line,
-   append `note <window> <pass> <unit> set <setVersion> file <fileId>` with the version on the
+   in the same closing append step 3 gives, and so with every note this file puts beside a
+   `verified` line, append `note <window> <pass> <unit> set <setVersion> file <fileId>` with the version on the
    reader's `set version:` line: the window 2 plan marks that file's sheets only off this line.
    Where the reader names the file on `pages unread:` because the file's repeated lines could not
    be read, append `note <window> <pass> <unit> unread file <fileId> repeated lines not read, <the reason>`
@@ -180,8 +215,38 @@ nothing has run.
    beside the `verified` line as well: those blocks were read by nobody, so the window 2 plan reads
    that file's sheets whole too. Blocks the reader names as printed only on sheets left out are
    the user's own cut and take no note.
-3. **Verify per unit, in one turn, before the next unit starts.** Take the reader's report and
-   make one call: `verify_unit(projectId, subjectPrefix: "scopeItem:<unit-id>-", sheets: [<each
+3. **Verify per unit, in one turn, before the next unit starts.** First hold the report to its
+   shape, the reader's file first:
+
+   ```bash
+   python3 '<scripts path>/unit_report.py' check --kind <kind> --report '<run folder>/reports/<unit id>.md' --owed '<the Owed path of the dispatch, or none>'
+   ```
+
+   `<kind>` is `vocabulary` in window 1, `sheet` in window 2, and in window 3 `review` for a review
+   and `manual` for a manual part; recheck mode keeps its own check. Exit 0 prints `report whole`.
+   Exit 3 prints one line per mismatch, `report <value>` where `created:`, `questions raised:` or
+   `questions replied:` disagrees with its own list
+   and `owed <value>` where the `owed:` line does not answer the Owed file as its rule says: the
+   report is whole, so verify off it, and each of those lines is a mismatch of this read, named
+   `report` or `owed`. Exit 2 prints why the file is no report (`missing`, or `not whole: no
+   <labels>`): then hold the reader's returned message to the same check, on stdin, in place of
+   the file, through a quoted heredoc so nothing in it is read by the shell:
+
+   ```bash
+   python3 '<scripts path>/unit_report.py' check --kind <kind> --report - --owed '<the Owed path, or none>' <<'EOF'
+   <the reader's returned message, whole>
+   EOF
+   ```
+
+   Where that check exits 0 or 3, verify off the returned message, and the closing append below
+   carries `note <window> <pass> <unit> deviation <sheet> report file <what the file check printed>,
+   checked off the returned report, read <k>`. Where it exits 2 too, the read ended with no report,
+   as step 2 says. You never write, complete, copy into or rename over a reader's report file, and
+   no part of a reader's returned message goes in any file but the ledger notes this step copies
+   and the lists the report script's `confirmed` command below keeps, which it writes itself: the
+   check reads the message on stdin.
+
+   Then take that report and make one call: `verify_unit(projectId, subjectPrefix: "scopeItem:<unit-id>-", sheets: [<each
    of the unit's sheets>])`, at most 20 sheets in one call. For a sheet unit, give each sheet as
    `{ "sheet": "<sheet number>", "fileId": "<fileId>", "pageInPdf": <page> }`, with the file and the
    page its unit line names, the ones your dispatch carried to the reader: a subject then counts on
@@ -270,7 +335,10 @@ nothing has run.
      names that `fileId` and `pageInPdf`. One it does not carry is a mismatch. A subject on that
      line is not looked for among the sheets' subjects. Every other check here is the same.
 
-   Append the unit's `anomaly` notes first: one `note <window> <pass> <unit> anomaly <the line>`
+   Everything you write on the ledger when a unit's check ends goes in one append through the
+   ledger script, as the ledger lines section shows, in this order, so a runner stopped before
+   that append has written nothing of the read, which step 2 then reads as a read to settle, and
+   one stopped after it has written all of it. Append the unit's `anomaly` notes first: one `note <window> <pass> <unit> anomaly <the line>`
    per line on the report's `anomalies:` line, each copied whole, and nothing where it reads "none";
    review mode copies the reviewer's line the same way. Its `grain questions:` and
    `door-owned suggestions:` lines go on the ledger the same way, as
@@ -279,26 +347,52 @@ nothing has run.
    report's `standard lines:`, on its label's line or under it, that ends `row not yet written`
    goes on the ledger the same way, as `note <window> <pass> <unit> anomaly <the entry>`, so the
    check-in carries to the estimator each half the paper gives to the reviewed package's trade
-   while the row it would cite was not yet written. On a unit run again after a stop, append
-   only the lines step 2's look did not already find among that unit's notes. Then
-   append the unit's `verified` line, last, so a `verified` line still means its unit is complete.
+   while the row it would cite was not yet written. Each entry of a review's or a manual part's
+   `not written:` line goes on as `note <window> <pass> <unit> anomaly not written: <the entry>`,
+   copied whole, whether the report came from its file or its returned message: the owed command
+   hands these to the unit's next read, and the check-in names them to the estimator. Each answer
+   on the report's `owed:` line that ends `not needed, <why>` goes on as
+   `note <window> <pass> <unit> anomaly not needed: <that owed line, copied whole>`, so the check-in
+   and the close-out name it to the estimator. Where step 3
+   verified off the returned message, its `report file ..., checked off the returned report` note
+   goes in the same append, and before that append keep the lists your check confirmed, the
+   returned message's `updated subjects:`, `questions raised ids:` and `questions replied ids:`
+   less each claim your check failed, with its `trades touched:` line as reported (`none` on a
+   review or a manual part, whose shape has no such line), in a file of the run's own:
+
+   ```bash
+   python3 '<scripts path>/unit_report.py' confirmed '<run folder>' <window> <unit id> --read <k> <<'EOF'
+   updated subjects: <the subjects, or none>
+   questions raised ids: <the ids, or none>
+   questions replied ids: <the ids, or none>
+   trades touched: <the catalog ids, one per line, or none>
+   EOF
+   ```
+
+   It writes `<run folder>/confirmed/<unit id>.read-<k>.md`, your record of your own check and no
+   report, so a runner after you merges this read's lists, and writes the unit's `touched` lines,
+   where no whole report of it is on file.
+   Then append the unit's `verified` line, last, so a `verified` line still means its unit is complete.
    The reader's own verification and yours are two separate boundaries and neither replaces the
    other. Start the next unit only when this unit's counts confirm.
 
    A mismatch ends its read, and the unit is read again as step 2 counts its reads, in one settle
-   path. Where a check finds a mismatch, append its `verified` line reading `result mismatch`, then
-   one `note <window> <pass> <unit> deviation <sheet> <check> <value>, read <k>` per thing the
+   path. Where a check finds a mismatch, the closing append's `verified` line reads
+   `result mismatch`, and after it, in that same append, goes one
+   `note <window> <pass> <unit> deviation <sheet> <check> <value>, read <k>` per thing the
    check could not find back: `<sheet>` the unit's sheet, or its package's name on a review;
    `<check>` the check's name as the bullets above give it (`created`, `created subjects`,
    `updated`, `questions raised`, `questions replied`, `questions linked`, `trades`,
-   `page citations`, `manual updates`, `field updates`, `headings`, `rows ordered`); and `<value>` the subject or id it named, for
-   `field updates` the subject and the predicate, or for `created` the subject count and the
-   reader's figure. A `verified`
+   `page citations`, `manual updates`, `field updates`, `headings`, `rows ordered`), or `report`
+   or `owed` where the report check printed it; and `<value>` the subject or id it named, for
+   `field updates` the subject and the predicate, for `questions linked` the subject and the
+   Question's id, for `created` the subject count and the
+   reader's figure, and for `report` or `owed` the rest of the line the report check printed. A `verified`
    line reading mismatch takes no kinds, trades or names lines. Then, where step 2's count allows
-   another read, rename the report as step 2 says, append the unit's `dispatch` line again,
-   dispatch its reader again as step 2 says, against the live list, and verify the new report with
-   the same calls. Where the count allows none, the `unread` note of step 2 goes on and the pass
-   stops there.
+   another read, rename the report and write its owed file as step 2 says, append the unit's
+   `dispatch` line again, dispatch its reader again as step 2 says, against the live list, and
+   verify the new report with the same calls. Where the count allows none, the `unread` note of
+   step 2 goes on and the pass stops there.
 
    The check of any read after a unit's first, whatever ended the reads before it, makes the same
    calls as a first read's and holds the new report to the same checks, its `created subjects:`
@@ -313,12 +407,19 @@ nothing has run.
      off that report's `updated subjects:`, an id its `questions raised` note names off its
      `questions raised ids:`, and an id its `questions replied` note names off its
      `questions replied ids:`. A note of another check takes nothing off these lists, so a heading
-     that did not land leaves the row's other update counted;
+     that did not land leaves the row's other update counted. An earlier read's lists come off its
+     report where the report check holds that report whole, and otherwise off
+     `<run folder>/confirmed/<unit id>.read-<j>.md` where that read carries a `verified` line; a
+     confirmed file of a read with no `verified` line, its runner stopped before the closing
+     append, is ignored;
    - `sent`, `landed` and `conflicts`, the reports' figures added up;
    - `result`, that check's.
 
    The new report's `anomaly`, `grain` and `door` lines go on the ledger before that line, only
-   those an earlier report of the unit did not carry. Where that check reads ok, the unit is
+   those an earlier report of the unit did not carry. Every entry of its `not written:` line goes
+   on, whether or not an earlier read carried it, each entry once in the read: the next read's owed
+   file, the check-in and the close-out take what is still not written off the latest read alone.
+   Where that check reads ok, the unit is
    finished: its kinds, trades and names lines go on as for any unit, off that check and
    every report of the unit, each kind and catalog id once, and you go on to the next unit. Where
    it finds a mismatch again, step 2's count says whether the unit is read again. A mismatch is
@@ -330,16 +431,54 @@ nothing has run.
    line reads "none", write nothing. This is what lets the window boundary find every kind a reader
    named without holding any of them itself.
 
-   Also append this unit's trades to `<run folder>/trades/<pass-id>.txt`, one line per trade as
-   `<unit id> trade <catalog id> <count>`, the count being the created subjects whose
-   `belongsToTrade` is that trade. Read those counts off the `verify_unit` result you already
-   have. This is what lets the pass summary script sum the trades without you
-   adding them. Then append one line `<unit id> touched <catalog id>` to the same file for each
-   catalog id on the reader's `trades touched:` line, carried as the reader reported it, as its
-   `sent:` and `landed:` figures are, since no call you make reads a pre-existing row's trade or a
-   Question's trades. Where the line reads "none", write nothing. Window 3 of a pass on an addendum
-   reviews those packages too, so an addendum that only changed rows that already existed still has
-   their packages reviewed.
+   Also write this unit's trades as one set through the report script, `<pass id>` the pass the
+   unit's latest `verified` line names, which is yours unless a runner verified it under another:
+
+   ```bash
+   python3 '<scripts path>/unit_report.py' trades '<run folder>' <pass id> <unit id> <<'EOF'
+   <unit id> trade <catalog id> <count>
+   <unit id> touched <catalog id>
+   EOF
+   ```
+
+   One `trade` line per trade, the count being the created subjects whose `belongsToTrade` is that
+   trade, read off the `verify_unit` result of the unit's latest check, which you already have;
+   this is what lets the pass summary script sum the trades without you adding them. Then the
+   unit's `touched` lines, as the report script prints them:
+
+   ```bash
+   python3 '<scripts path>/unit_report.py' touched '<run folder>' <window> <unit id> --kind <kind>
+   ```
+
+   `<kind>` as the report check takes it. It prints one `<unit id> touched <catalog id>` line for
+   each catalog id that any read of the unit carrying a `verified` line, ok or mismatch, named on
+   its `trades touched:` line, each once, off that read's whole report or its confirmed file,
+   since a failed read's writes stay on the record. Copy each line into the trades call as
+   printed: the ids are carried as the readers reported them, as their `sent:` and `landed:`
+   figures are, since no call you make reads a pre-existing row's trade or a Question's trades.
+   Where the unit has no `trade` line and the command prints no line, send `none` alone. Window 3
+   of a pass on an addendum reviews those packages too, so an addendum that only changed rows that
+   already existed still has their packages reviewed. The script takes the unit's earlier lines
+   out of `<run folder>/trades/<pass id>.txt` and puts this set in their place, so the file holds
+   the unit's latest set once, and writes `<unit id> read <k>` on
+   `<run folder>/trades/<pass id>.written`, `<k>` the read the unit's latest `verified` line
+   closed, which tells a unit with no trades from a unit whose trades were never written, and the
+   latest read's set from an earlier read's. You never append to the trades file yourself.
+
+   The kinds, the trades, the names of step 4 and the restore of step 4 come after the closing
+   append and are each safe to run twice. A runner dispatched again for the pass finds a unit
+   whose latest `verified` line reads ok with no `dispatch` line after it, so it reads nothing
+   for it, and writes again whichever of these it may have stopped before: the trades where
+   `<run folder>/trades/<pass id>.written`, of the pass that `verified` line names, does not carry
+   the line `<unit id> read <k>`, `<k>` the read that `verified` line closed, as a whole line,
+   found with a local filter, since a set written for an earlier read is not this read's: through
+   the trades command above, its `trade` lines off one
+   `verify_unit(projectId, subjectPrefix: "scopeItem:<unit id>-", sheets: [])` call and its
+   `touched` lines as the touched command above prints them, off every verified read's whole
+   report or confirmed file, which an addendum's pass chooses its reviews from; the kinds, off the unit's report on file where it names any, since the
+   boundary takes their union; the names, which step 5's scan asks for by name; and in window 3
+   the restore, which step 5's summary asks for by name. A kinds or names line written twice
+   counts once, and the trades command run twice with one set changes nothing.
 4. **Write the unit's names off the record, then match them by script.** Right after a unit's
    `verified` line reading `result ok`, append one line per subject in that unit's `verify_unit`
    answer, every page of it, to `<run folder>/names/<pass-id>.txt`, creating the folder the first
@@ -355,9 +494,23 @@ nothing has run.
    "scopeItem:<unit id>-", sheets: [])` call, paged as step 3 pages it, and run it again; a line
    written twice counts once. Where it passes, it prints one `note` line per unit of your pass
    holding a name alike with another that no overlap note on the ledger joins it to yet: append each line it prints to the
-   ledger as printed. You never read the names files and never match names in your context: a
+   ledger as printed, in one append through the ledger script. You never read the names files and never match names in your context: a
    twelve-unit pass at a hundred items a unit is twelve hundred names, and none of them belongs in
    a model context. Merging is a person's call at the review surface, never yours.
+
+   In window 3, after the names and the trades of a unit that step 3 verified ok off its returned
+   message, the reader's file being missing or not whole, restore its report from the record:
+
+   ```bash
+   python3 '<scripts path>/unit_report.py' restore '<run folder>' 3 <unit id>
+   ```
+
+   It writes `<run folder>/reports/<unit id>.read-<k>.restored.md` from the read plan, the
+   `verified` line, the names and trades files and the unit's notes, never opening the reader's
+   file for writing, and appends its own `deviation ... report written from the record ...` note
+   to the ledger, once however often it runs. It reads no page and makes no call, and a missing or
+   stub report is never a reason to read a unit again. In windows 1 and 2 nothing is restored:
+   the summary reads no sheet reader's report.
 5. **Sum the pass with the script; add no number of your own.** In windows 1, 2 and 3, first
    run step 4's `names_scan.py pass` command once more, whether or not this run verified a unit,
    and handle a
@@ -377,8 +530,11 @@ nothing has run.
    figure you work out beside it is a second answer to a settled question. It reads
    `<run folder>/ledger.md` and nothing else: never copy the ledger, filter it into a file, or edit
    a line of it to get a summary through. The lead's record script refuses a summary summed off any
-   other file. A refusal names one thing wrong with a line you wrote: fix that line and run it
-   again, never hand-assemble the summary or the hand-back instead.
+   other file. No refusal is ever answered by changing a line already on the ledger or a reader's
+   report file. A window 3 refusal naming a unit with no whole report and no restored report of
+   that read is answered by step 4's restore command for that unit, then the summary again. Any
+   other refusal you return as printed, as your final message, and end; never hand-assemble the
+   summary or the hand-back instead.
 
 ## The ledger lines
 
@@ -418,6 +574,33 @@ note 1 RS1 RS1-1 set 9f2c41d07ab3e815 file file-1a2b3c
 dispatch 3 W3-2 rev-075000-1 sheets none purpose review the roofing package
 dispatch 3 W3-2 rev-075000-1c-1 sheets none purpose read the roofing manual pages
 ```
+
+Every line reaches the ledger through the ledger script, several lines in one call, from a quoted
+heredoc so an apostrophe or a dollar sign in a copied report line arrives as written:
+
+```bash
+python3 '<scripts path>/ledger.py' append '<run folder>/ledger.md' <<'EOF'
+<one line>
+<one line>
+EOF
+```
+
+It takes the run folder's lock, checks every line of the call against the three shapes and the
+rule that a unit carries another `verified` line only after its `dispatch` line, and writes them
+all or none. A refusal names the line and what is wrong with it: send the call again with that
+line correct, as a new line. The one exception is a refused `verified` line of a unit that already
+carries a `verified` line with no `dispatch` line since: that read was closed already, as by a
+runner before you, so send no corrected line; look at that unit's lines again, as pass mode's
+step 2 looks, and go on from what they say. Nothing already on the ledger is ever changed, and no command of
+yours writes the file any other way: no editor, no in-place `sed`, no redirect into it and no
+rewrite through a script. Where the script finds lines of the ledger changed outside the run, it
+puts them back from the run's own copy and appends one `repaired:` line saying so, which the lead
+reads; that is never yours to answer.
+
+Where any script of the run fails with a line saying a file could not be replaced or the lock
+could not be had, run the same command again after a short wait, with `sleep 20` before it in the
+same Bash call, up to three times, and never answer it by changing a line or a file; where it
+still fails, your final message is what the script printed, and you end.
 
 ## Boundary mode
 
@@ -490,7 +673,8 @@ over up to eight reviews, or one trade's reviews where that trade has more, with
   `dispatch` line first, in one append, then dispatch, exactly as pass mode's step 2 says. That
   line's `sheets` field reads `none`, because a review is planned off the record and opens a page
   only where a hit sends it, and its `purpose` names the package. The dispatch carries the project
-  id, the window, the pass id, the unit id, `Read: <k>` as pass mode's step 2 gives it, the
+  id, the window, the pass id, the unit id, `Read: <k>` as pass mode's step 2 gives it, `Owed:`
+  as it gives it, the
   catalog trade id and the package id its unit line names, `Reads:` with the spans after
   `reads` on its unit line copied as written, the run folder path, the pass brief
   path, and the reader definition path,
@@ -730,7 +914,14 @@ file, `recheck/retire/<unit id>.json`. Run it as recheck mode runs a sheet, with
   your dispatch's `Read again:` line names it with the read that comes next, and then once. A reader that stopped answering, a recheck report the
   check refused, a check that found a mismatch and a runner that stopped before its check each end
   one read, and the read after the first that ends any of those ways ends the pass.
-- Copy the ledger, filter it into another file, or edit or take off a line already on it.
+- Copy the ledger, filter it into another file, or edit or take off a line already on it, or
+  write it by any command but the ledger script's append: no editor, no in-place `sed`, no
+  redirect and no rewrite through a script.
+- Write, complete, copy into or rename over a reader's or a reviewer's report file, or put a
+  reader's returned message in any file but the ledger notes step 3 copies and the lists the
+  report script's `confirmed` command keeps. A report the check holds not whole is verified off the
+  returned message or ends its read with no report, and in window 3 a passed unit's lost report
+  is restored by the report script.
 - Dispatch an agent with nothing real to give it. A reader is dispatched only with a unit and its
   pages, a reviewer only with a package; a turn with nothing left to dispatch ends by returning to
   your summary or moving to the next step, never by a placeholder call carrying a "do nothing",
@@ -758,7 +949,7 @@ grain questions: <one line each, as the report wrote it, or "none">
 door-owned suggestions: <one line each, as the report wrote it, or "none">
 definitions kinds added: <kinds, or "none">
 deviations and repairs: <one line each, or "none">
-review: pages opened <n>, searches <n>
+review: pages opened <n>, searches <n>, reports restored <n>
 ledger: <path>, appended through <last line written>
 ledger lines: <whole lines read> sha256 <the hash of those lines>
 ```
@@ -769,9 +960,9 @@ Your final message is the hand-back the script prints, this shape and nothing el
 ```text
 window: <n>   pass: <pass id>
 units: <n>, verified <k>
-unverified: <unit id + mismatch | no verified line, one per line, or "none">
+unverified: <unit id + mismatch | read <k> no verified line, one per line, or "none">
 unread: <each unread note verbatim, or "none">
 notes: anomalies <n>, overlaps <n>, deviations <n>, kinds <n>
-review: pages opened <n>, searches <n>
+review: pages opened <n>, searches <n>, reports restored <n>
 report: <run folder>/reports/<pass id>.md
 ```
