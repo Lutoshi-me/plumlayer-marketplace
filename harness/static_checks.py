@@ -6324,7 +6324,7 @@ def check_pass_summary(plugin_path: Path, marketplace_root: Path) -> Result:
     runner = plugin_path / "agents" / "scope-round-runner.md"
     calls = (
         re.findall(
-            r"`python3 '<scripts path>/pass_summary\.py' ([^`]*)`",
+            r"`sh '<scripts path>/run\.sh' pass_summary\.py ([^`]*)`",
             runner.read_text(encoding="utf-8"),
         )
         if runner.is_file() else []
@@ -9405,9 +9405,9 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
 
     # The lead's own command, fed to the script's arguments.
     # Both fences sit inside a list item, so they may be indented.
-    command = re.search(r"python3 '<plugin root>/scripts/plan_inventory\.py' issue\b([^`]*?)\n *```", skill)
+    command = re.search(r"sh '<plugin root>/scripts/run\.sh' plan_inventory\.py issue\b([^`]*?)\n *```", skill)
     if command is None:
-        errors.append("the skill carries no fenced `plan_inventory.py' issue` command")
+        errors.append("the skill carries no fenced `plan_inventory.py issue` command")
     else:
         # Its own runs root, since every folder under `choose` holds another fixture's passes.
         lead_root = root / "lead-command-root"
@@ -11407,7 +11407,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     # ------------------------------------------------------------------ #
     skill = plugin_path / "skills" / "scope-run" / "SKILL.md"
     skill_text = skill.read_text(encoding="utf-8").replace("\\\n", " ") if skill.is_file() else ""
-    commands = re.findall(r"python3 '<plugin root>/scripts/lead_pass\.py' (\w+)([^\n]*)", skill_text)
+    commands = re.findall(r"sh '<plugin root>/scripts/run\.sh' lead_pass\.py (\w+)([^\n]*)", skill_text)
     modes = sorted(mode for mode, _rest in commands)
     if modes != ["passes", "passes", "record", "wait"]:
         errors.append(
@@ -11906,7 +11906,7 @@ def _fold_text_errors(skill_text: str, definition_text: str) -> list[str]:
             errors.append(f"stage 6 step 5 names `{verb}`, so the lead folds in its own session")
     if "plumlayer:scope-package-folder" not in step:
         errors.append("stage 6 step 5 does not dispatch `plumlayer:scope-package-folder`")
-    if "fold_report.py' print" not in step:
+    if "fold_report.py print" not in step:
         errors.append("stage 6 step 5 does not read the fold report with `fold_report.py print`")
     if "`deleted:`" not in step or "recheck" not in step:
         errors.append("stage 6 step 5 does not dispatch the recheck where the report carries a `deleted:` line")
@@ -12205,7 +12205,7 @@ def check_fold_one_level_down(plugin_path: Path, marketplace_root: Path) -> Resu
             if len(out) >= BASH_OUTPUT_LIMIT:
                 errors.append(f"{label}: a print call printed {len(out)} characters, past Bash's {BASH_OUTPUT_LIMIT}")
             lines = out.splitlines()
-            rest = re.match(r"^not printed: .*; the rest: python3 '[^']*' (print .*)$", lines[-1])
+            rest = re.match(r"^not printed: .*; the rest: sh '[^']*/run\.sh' fold_report\.py (print .*)$", lines[-1])
             body = lines[:-1]
             at = 0
             while at < len(body):
@@ -12245,7 +12245,7 @@ def check_fold_one_level_down(plugin_path: Path, marketplace_root: Path) -> Resu
 
     # The skill's print command and the definition's hand-back command, filled in, run.
     commands = re.findall(
-        r"python3 '<plugin root>/scripts/fold_report\.py' (print|hand-back)([^\n]*)",
+        r"sh '<plugin root>/scripts/run\.sh' fold_report\.py (print|hand-back)([^\n]*)",
         skill_text + "\n" + definition_text,
     )
     if sorted(mode for mode, _rest in commands) != ["hand-back", "print"]:
@@ -12554,7 +12554,7 @@ def check_project_folder_by_id(plugin_path: Path, marketplace_root: Path) -> Res
         "never say a folder path" not in flat_skill
     ):
         errors.append("the skill does not tell the user in plain words that this project's earlier run files are mixed with another project's, with no folder path")
-    command = re.search(r"python3 '<plugin root>/scripts/plan_inventory\.py' issue\b([^`]*?)\n *```", skill)
+    command = re.search(r"sh '<plugin root>/scripts/run\.sh' plan_inventory\.py issue\b([^`]*?)\n *```", skill)
     if command is None or "--runs-root '<runs root>'" not in command.group(1):
         errors.append("the skill's issue command does not pass `--runs-root '<runs root>'`")
     else:
@@ -12605,13 +12605,13 @@ _RETIRED_SECTION_READS = (
     "Part 2 read in part", "Part 2 not found", "at most twelve pages", "for its first twelve",
     "QUALITY ASSURANCE", 'query: "PART 2"', "at most eight calls", "Where its articles start",
     "## Continuation mode", "pages left p<a>", "continued: pages left", "page cap", "Continues:",
-    "plan_inventory.py' continue", "--pending",
+    "plan_inventory.py continue", "--pending",
 )
 
 # The review reads no manual page through: it reads what the parts found off the notes script.
 _REVIEWER_MANUAL_PHRASES = (
     "12. THE MANUAL, THROUGH ITS PARTS.",
-    "scripts/manual_notes.py' --run '<run folder>' --review '<your unit id>'",
+    "scripts/run.sh' manual_notes.py --run '<run folder>' --review '<your unit id>'",
     "Where its last line says it was cut, run the command it gives for the rest, every time",
     "A line it prints is a pointer: open the page before you rely on it",
     "run one `kind: document` search for the row's product, inside mandate 3's fifty, and open the page it finds",
@@ -13199,7 +13199,7 @@ _HAND_BACK_ORDER = (
     "--reported '<pass id>' --running '<pass id>,<pass id>'",
     "A pass on `--reported` counts as out until it is recorded",
     "count_entries(projectId, subjectPrefixes: [<those prefixes>])",
-    "lead_pass.py' record '<run folder>/ledger.md'",
+    "lead_pass.py record '<run folder>/ledger.md'",
     "make the `--reported` call again",
 )
 # What that call reads, what the lead holds of it, and how a `go` and a continuation use it.
@@ -14669,11 +14669,10 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("standard lines", "Never a Question. A line is the estimator's own practice, never the design team's"),
     ("standard lines", '`evidence: { basis: "trade-convention", source: "<the line as printed>" }`'),
     ("standard lines", "the `instrument:` the script prints as their `sourceInstrument`"),
-    ("standard lines", "scripts/standard_lines.py' --package '<this package's tradeCode>' --all '<each "
+    ("standard lines", "scripts/run.sh' standard_lines.py --package '<this package's tradeCode>' --all '<each "
                  "package on that list as its name as the list shows it, =, then its tradeCode and its "
                  "codes comma separated, the packages separated by ;>'"),
-    ("standard lines", "with the Bash tool (`python` in place of `python3` on a seat that has only that "
-                 "name), `--all` naming this package too"),
+    ("standard lines", "with the Bash tool, `--all` naming this package too"),
     ("standard lines", "Before anything else this mandate does, take "
                  "`solicitation_list_packages(projectId, brief: true)` once"),
     ("standard lines", "A row a line writes is named exactly as the script's `name:` prints it"),
@@ -16027,7 +16026,7 @@ _RECHECK_PINS: tuple[tuple[str, str], ...] = (
     ("agents/scope-round-runner.md", "make no `verify_unit` call, which needs a sheet"),
     ("agents/scope-round-runner.md", "Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-standard-lines, scope-rechecker)"),
     ("agents/scope-round-runner.md", "subagent_type: plumlayer:scope-rechecker"),
-    ("agents/scope-round-runner.md", "recheck.py' check --report"),
+    ("agents/scope-round-runner.md", "recheck.py check --report"),
     ("agents/scope-round-runner.md", 'search(projectId, subject: "<subject>", predicate: "scopeItemRetraction")'),
     ("skills/scope-run/SKILL.md", "Its last `status:` line reads `approved`, and a `carried:` line follows it or its `carry:` line reads `left out`: go on"),
     ("skills/scope-run/SKILL.md", "reads `shown` or `stopped`"),
@@ -16035,9 +16034,9 @@ _RECHECK_PINS: tuple[tuple[str, str], ...] = (
     ("skills/scope-run/SKILL.md", "pass its plan file as `--delivery-plan`, on every window 1 plan run of the pass"),
     ("skills/scope-run/SKILL.md", "An approved recheck plan, which retires the rows the new delivery removed, is that ask"),
     ("skills/scope-run/SKILL.md", "phase: recheck complete"),
-    (RECHECK_SKILL_FILE, "recheck.py' plan --run"),
-    (RECHECK_SKILL_FILE, "recheck.py' retire --run"),
-    (RECHECK_SKILL_FILE, "recheck.py' report --run"),
+    (RECHECK_SKILL_FILE, "recheck.py plan --run"),
+    (RECHECK_SKILL_FILE, "recheck.py retire --run"),
+    (RECHECK_SKILL_FILE, "recheck.py report --run"),
     (RECHECK_SKILL_FILE, 'compare_delivery_status(projectId: "<projectId>", deliveryId: "<deliveryId>", kind: "scopeItem", limit: 200, offset: 0)'),
     (RECHECK_SKILL_FILE, "Nothing else goes in the ledger"),
     # The resume reads the ledger's phase and pass lines, and a sheet whose two reads both failed
@@ -17925,16 +17924,16 @@ _FAILED_UNIT_VOCABULARY = "agents/scope-vocabulary-reader.md"
 _FAILED_UNIT_SKILL = "skills/scope-run/SKILL.md"
 _FAILED_UNIT_READERS = (_FAILED_UNIT_REVIEWER, _FAILED_UNIT_MANUAL, _FAILED_UNIT_READER, _FAILED_UNIT_VOCABULARY)
 _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
-    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/ledger.py' append '<run folder>/ledger.md' <<'EOF'"),
+    (_FAILED_UNIT_RUNNER, "sh '<scripts path>/run.sh' ledger.py append '<run folder>/ledger.md' <<'EOF'"),
     (_FAILED_UNIT_RUNNER, "Everything you write on the ledger when a unit's check ends goes in one append "
      "through the ledger script"),
     (_FAILED_UNIT_RUNNER, "a runner stopped before that append has written nothing of the read"),
-    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' check --kind <kind> --report "
+    (_FAILED_UNIT_RUNNER, "sh '<scripts path>/run.sh' unit_report.py check --kind <kind> --report "
      "'<run folder>/reports/<unit id>.md'"),
-    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' check --kind <kind> --report - --owed"),
-    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' owed '<run folder>' <window> <unit id> "
+    (_FAILED_UNIT_RUNNER, "sh '<scripts path>/run.sh' unit_report.py check --kind <kind> --report - --owed"),
+    (_FAILED_UNIT_RUNNER, "sh '<scripts path>/run.sh' unit_report.py owed '<run folder>' <window> <unit id> "
      "--read <k> <<'EOF'"),
-    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' restore '<run folder>' 3 <unit id>"),
+    (_FAILED_UNIT_RUNNER, "sh '<scripts path>/run.sh' unit_report.py restore '<run folder>' 3 <unit id>"),
     (_FAILED_UNIT_RUNNER, "You never write, complete, copy into or rename over a reader's report file"),
     (_FAILED_UNIT_RUNNER, "no editor, no in-place `sed`, no redirect into it and no rewrite through a script"),
     (_FAILED_UNIT_RUNNER, "It also says `Owed: <run folder>/owed/<unit id>.read-<k>.md`"),
@@ -17966,9 +17965,9 @@ _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
      "as its reason."),
     (_FAILED_UNIT_REVIEWER, "a row that stood under your prefix before you started, or a citation alone, "
      "discharges nothing"),
-    (_FAILED_UNIT_SKILL, "python3 '<plugin root>/scripts/ledger.py' append '<run folder>/ledger.md' <<'EOF'"),
+    (_FAILED_UNIT_SKILL, "sh '<plugin root>/scripts/run.sh' ledger.py append '<run folder>/ledger.md' <<'EOF'"),
     (_FAILED_UNIT_SKILL, "Every line reaches the ledger through one script, yours as much as a runner's"),
-    (_FAILED_UNIT_SKILL, "python3 '<plugin root>/scripts/unit_report.py' restore '<run folder>' 3 <unit id>"),
+    (_FAILED_UNIT_SKILL, "sh '<plugin root>/scripts/run.sh' unit_report.py restore '<run folder>' 3 <unit id>"),
     (_FAILED_UNIT_SKILL, "A missing or stub report of a reader or a reviewer is never a reason to read a "
      "unit again."),
     (_FAILED_UNIT_SKILL, "Nobody but its reader ever writes, completes or copies into a reader's report."),
@@ -17981,7 +17980,7 @@ _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
      "would have taken, are kept and added to the copy."),
     (_FAILED_UNIT_SKILL, "or a line added outside the script is a runner's line, a `pass:` line, one the "
      "script would refuse, one holding a control character or one with no line ending"),
-    ("agents/scope-package-folder.md", "python3 '<plugin root>/scripts/ledger.py' append "
+    ("agents/scope-package-folder.md", "sh '<plugin root>/scripts/run.sh' ledger.py append "
      "'<run folder>/ledger.md' <<'EOF' phase: packages folded EOF"),
     ("skills/scope-run/recheck.md", "append it to the ledger as printed, once, through the ledger "
      "script as every line goes on."),
@@ -17989,12 +17988,12 @@ _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
      "the ledger script."),
     # A runner heals before it reads, and a refused verified line of a closed read is not resent.
     (_FAILED_UNIT_RUNNER, "In every mode, before your first look at the ledger, hold it to the run's own copy:"),
-    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/ledger.py' heal '<run folder>/ledger.md'"),
+    (_FAILED_UNIT_RUNNER, "sh '<scripts path>/run.sh' ledger.py heal '<run folder>/ledger.md'"),
     (_FAILED_UNIT_RUNNER, "that read was closed already, as by a runner before you, so send no corrected line; "
      "look at that unit's lines again, as pass mode's step 2 looks, and go on from what they say."),
     # A unit's trades are one set, written by the report script, and a passed unit's bookkeeping is
     # written on a resend.
-    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' trades '<run folder>' <pass id> <unit id> <<'EOF'"),
+    (_FAILED_UNIT_RUNNER, "sh '<scripts path>/run.sh' unit_report.py trades '<run folder>' <pass id> <unit id> <<'EOF'"),
     (_FAILED_UNIT_RUNNER, "You never append to the trades file yourself."),
     (_FAILED_UNIT_RUNNER, "dispatch nothing for it and append nothing for it to the ledger, then write whatever "
      "of its trades, kinds, names and restore a runner before you stopped short of"),
@@ -18007,7 +18006,7 @@ _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
     (_FAILED_UNIT_SKILL, "Beside it, `<pass id>.written` names each unit whose set was written and the read it "
      "was written for, `<unit id> read <k>` one unit per line"),
     # A unit's touched trades are the union over its verified reads, ok or mismatch.
-    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' touched '<run folder>' <window> <unit id> "
+    (_FAILED_UNIT_RUNNER, "sh '<scripts path>/run.sh' unit_report.py touched '<run folder>' <window> <unit id> "
      "--kind <kind>"),
     (_FAILED_UNIT_RUNNER, "each catalog id that any read of the unit carrying a `verified` line, ok or mismatch, "
      "named on its `trades touched:` line, each once, off that read's whole report or its confirmed file, "
@@ -18065,7 +18064,7 @@ _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
     ("scripts/close_report.py", "Writes a read said it made that its check did not find, which the next read "
      "said were not needed"),
     # What a check confirmed off a returned message is kept, and merged by a later runner.
-    (_FAILED_UNIT_RUNNER, "python3 '<scripts path>/unit_report.py' confirmed '<run folder>' <window> <unit id> "
+    (_FAILED_UNIT_RUNNER, "sh '<scripts path>/run.sh' unit_report.py confirmed '<run folder>' <window> <unit id> "
      "--read <k> <<'EOF'"),
     (_FAILED_UNIT_RUNNER, "otherwise off `<run folder>/confirmed/<unit id>.read-<j>.md` where that read carries a "
      "`verified` line; a confirmed file of a read with no `verified` line, its runner stopped before the "
@@ -20055,8 +20054,8 @@ _CLOSE_PINS: tuple[tuple[str, str], ...] = (
     (_CLOSE_SKILL, "The close-out is three facts, in this order, and a session that stops between two of them "
      "resumes at the next: the report file is written; you have said its short version with the link; "
      "`phase: closed out` is appended."),
-    (_CLOSE_SKILL, "python3 '<plugin root>/scripts/close_report.py' ids '<run folder>' --project <projectId>"),
-    (_CLOSE_SKILL, "python3 '<plugin root>/scripts/close_report.py' write '<run folder>' [--delivery-plan '<plan file>']"),
+    (_CLOSE_SKILL, "sh '<plugin root>/scripts/run.sh' close_report.py ids '<run folder>' --project <projectId>"),
+    (_CLOSE_SKILL, "sh '<plugin root>/scripts/run.sh' close_report.py write '<run folder>' [--delivery-plan '<plan file>']"),
     (_CLOSE_SKILL, "You never write the report yourself, and never read the run's notes to retell them"),
     (_CLOSE_SKILL, "Copy it. Never retype it."),
     (_CLOSE_SKILL, "| `closing-report.md` finished, no `closed out` | stage 9 step 2: say the short version again, then append |"),
@@ -20077,7 +20076,7 @@ _CLOSE_PINS: tuple[tuple[str, str], ...] = (
      "starting Claude in auto mode, or always allowing Plumlayer's tools and scripts the first time each "
      "asks, means the run rarely has to ask. Keep this computer on and awake until the run finishes, since "
      "a sleeping computer stops it.\""),
-    (_CLOSE_SKILL, "make one `whoami`, the Python probe of precondition 2 if this session has not made it, and one "
+    (_CLOSE_SKILL, "make one `whoami`, the readiness check of precondition 2 if this session has not made it, and one "
      "`search(projectId, subjectPrefix: \"scopeItem:\", limit: 1)`"),
     # The runner's probe after a read with no report: a search that errors twice is a block.
     (_CLOSE_RUNNER, "first make one `search(projectId, subjectPrefix: \"scopeItem:<unit id>-\", limit: 1)`: one "
@@ -20568,7 +20567,7 @@ _REPAIR_PINS: tuple[tuple[str, str, str], ...] = (
     ("U4", _REPAIR_SKILL, "as the third read in a row, whatever ended the last: stop at once"),
     ("U4", _REPAIR_SKILL, "for a blocked unit exactly as for one cut off, which lets its runner read it once more, "
      "then dispatch the pass again."),
-    ("U6", _REPAIR_SKILL, "python3 '<plugin root>/scripts/lead_pass.py' wait 280"),
+    ("U6", _REPAIR_SKILL, "sh '<plugin root>/scripts/run.sh' lead_pass.py wait 280"),
     ("U6", _REPAIR_SKILL, "before each try running the wait mode as a foreground Bash command with a timeout of "
      "300000 milliseconds, single quoted; it returns by itself, and nothing else wakes you"),
     # The two bounds, counted by the seen mode (V6 rewrote U6's two paragraphs to use it).
@@ -20583,7 +20582,7 @@ _REPAIR_PINS: tuple[tuple[str, str, str], ...] = (
     ("U6", _REPAIR_RECHECK, "stop and return exactly one line instead: `blocked: <tool> <sign-in, refused by the "
      "client or server>`."),
     ("U6", _REPAIR_RECHECK, "with the wait mode between polls, bounded as the skill's stops section says"),
-    ("U6", _REPAIR_RUNNER, "`python3 '<scripts path>/lead_pass.py' wait 20` as a call of its own"),
+    ("U6", _REPAIR_RUNNER, "`sh '<scripts path>/run.sh' lead_pass.py wait 20` as a call of its own"),
     ("U7", _REPAIR_SKILL, "| every pass of a slice finished, no `window 2 paused` | stage 6 step 4: boundary, the "
      "paused line, then the index |"),
     ("U7", _REPAIR_SKILL, "| `window 2 paused` and no `index built` after it | stage 5, then stage 6 step 1 |"),
@@ -21751,7 +21750,7 @@ _SLIM_STANDARD_LINES_PINS = (
     "`blocked: <the tool's name> <sign-in, refused by the client or server>`",
     "`Read` mandate 2 to the line before mandate 5, mandate 6 to the line before mandate 7, and mandate 8 to the line before mandate 9.",
     "Each page this mandate has you cite on a row that already exists, say which kind, as reader mandate 1 says.",
-    "manual_notes.py' --run '<run folder>' --review '<the Review: unit id>'",
+    "manual_notes.py --run '<run folder>' --review '<the Review: unit id>'",
     "You raise no Question and reply to none",
     "you save no heading order and order no rows, since the review settles both",
 )
@@ -24004,6 +24003,163 @@ def check_slim_review_repair_3(plugin_path: Path, marketplace_root: Path) -> Res
     return Result(name, not errors, detail=detail + ("" if not errors else " | " + "; ".join(errors)))
 
 
+# --------------------------------------------------------------------------- #
+# Check: nothing to install on the user's computer
+# --------------------------------------------------------------------------- #
+#
+# The plugin's helper programs run only through scripts/run.sh, which fetches the plugin's own
+# pinned copy of Python the first time and checks it against a fixed fingerprint. Shipped text may
+# not run a script any other way, may not lean on a command a fresh Windows, Mac or Linux computer
+# lacks, and may not tell the user to install anything. run.sh keeps LF endings on a Windows
+# checkout, where a CRLF copy would not run at all.
+
+_INSTALL_BANS = (
+    ("a Python command or the word Python", re.compile(r"\bpython[0-9.]*\b", re.IGNORECASE)),
+    ("the jq command", re.compile(r"(?<![\w-])jq\s+-")),
+    ("a GNU-only command", re.compile(r"\bsha256sum\b|\buniq\s+-c\s+-w|\bsed\s+-i\b|\breadlink\s+-f\b|\bdate\s+-d\b")),
+    ("an install instruction", re.compile(
+        r"\b(?:pip3?|brew|winget|choco|apt(?:-get)?|npm)\s+install\b|install (?:python|jq|node)\b",
+        re.IGNORECASE)),
+    ("a script run without run.sh", re.compile(r"[/\\][\w-]+\.py\b")),
+)
+# A helper program never names Python before a word: what it prints for the agent to run next, and
+# its own usage notes, go through run.sh too.
+_PRINTED_PYTHON = re.compile(r"\bpython[0-9.]*(?:\.exe)?\s+\S", re.IGNORECASE)
+# Each platform's fingerprint, copied from the release's own SHA256SUMS a second time, so a value
+# changed or moved to another platform in run.sh fails here before a computer refuses the download.
+_PINNED_FINGERPRINTS = {
+    "x86_64-pc-windows-msvc": "1f2ab53880fc67ea323398c6388e05af28addc99a8e389209f08a51fdff4b149",
+    "x86_64-apple-darwin": "37c38fda76fec1fbf310adcbafb7f0d96af13b5511bf8ea954c3aa8eec185734",
+    "aarch64-apple-darwin": "353d5f1b4fd2715e7053f12f068435d5bbad16b91e057006b5d01e0925709a7e",
+    "x86_64-unknown-linux-gnu": "ce4f6d0a6cfdb3bed6e44c2f9affd85943c76a42e25ad3a259002f31d6fb8a20",
+    "aarch64-unknown-linux-gnu": "bb4b6392670c5d3f93876996fcaa19858a4a413a0c7720144c18b0d6f1f0db2d",
+}
+_RUN_SH_FINGERPRINT = re.compile(r"^\s*([\w-]+)\) sha=([0-9a-f]+) ;;$", re.MULTILINE)
+_RUN_SH_PHRASES = (
+    '"$python" -E -s -B -X utf8', 'mkdir "$lock"', '[ "$got" = "$sha" ] ||', '-mmin +10',
+    'curl -fsSL --connect-timeout 30 --max-time 540', 'until [ -e "$dest" ] || mv "$work/python" "$dest"',
+)
+
+
+def _run_sh_errors(text: str) -> list[str]:
+    errors = []
+    pinned = _RUN_SH_FINGERPRINT.findall(text)
+    if len(pinned) != len(_PINNED_FINGERPRINTS) or dict(pinned) != _PINNED_FINGERPRINTS:
+        errors.append("scripts/run.sh does not pin each platform's fingerprint from the release's own list")
+    for phrase in _RUN_SH_PHRASES:
+        if phrase not in text:
+            errors.append(f"scripts/run.sh does not read {phrase!r}")
+    for banned, why in (('rm -rf "$dest"', "removes a copy that is in place"), ("--retry", "lets a retry restart the download's clock")):
+        if banned in text:
+            errors.append(f"scripts/run.sh {why}")
+    return errors
+_RUN_SH_CALL = re.compile(r"/run\.sh'\s+([a-z_]+\.py)\b")
+
+
+def _install_ban_hits(texts: dict[str, str]) -> list[str]:
+    hits = []
+    for rel, text in texts.items():
+        for i, line in enumerate(text.splitlines(), 1):
+            for label, pattern in _INSTALL_BANS:
+                m = pattern.search(line)
+                if m:
+                    hits.append(f"{rel}:{i} carries {label}: {m.group(0)!r}")
+    return hits
+
+
+def check_nothing_to_install(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "nothing-to-install"
+    errors: list[str] = []
+    files = sorted((plugin_path / "skills").rglob("*.md")) + sorted((plugin_path / "agents").rglob("*.md"))
+    texts = {str(f.relative_to(plugin_path)).replace("\\", "/"): f.read_text(encoding="utf-8") for f in files}
+    errors.extend(_install_ban_hits(texts))
+
+    scripts = plugin_path / "scripts"
+    called = sorted({m.group(1) for t in texts.values() for m in _RUN_SH_CALL.finditer(t)})
+    for program in called:
+        if not (scripts / program).is_file():
+            errors.append(f"shipped text runs {program}, which scripts/ lacks")
+    if not called:
+        errors.append("no shipped text runs a script through run.sh")
+
+    run_sh = scripts / "run.sh"
+    run_text = ""
+    if not run_sh.is_file():
+        errors.append("scripts/run.sh is missing")
+    else:
+        body = run_sh.read_bytes()
+        if b"\r\n" in body:
+            errors.append("scripts/run.sh has Windows line endings and would not run")
+        run_text = body.decode("utf-8")
+        errors.extend(_run_sh_errors(run_text))
+    attributes = marketplace_root / ".gitattributes"
+    if not attributes.is_file() or "*.sh text eol=lf" not in attributes.read_text(encoding="utf-8"):
+        errors.append(".gitattributes does not keep *.sh at LF endings")
+
+    for f in sorted(scripts.glob("*.py")):
+        for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            if _PRINTED_PYTHON.search(line):
+                errors.append(f"scripts/{f.name}:{i} prints a command that runs Python directly")
+
+    for rel in ("skills/scope-run/SKILL.md", "skills/drawing-upload/SKILL.md", "skills/bid-intake/SKILL.md"):
+        if "timeout of ten minutes" not in " ".join(texts.get(rel, "").split()):
+            errors.append(f"{rel} does not give the call that may fetch first a timeout of ten minutes")
+
+    mutations = [
+        ("a bare script command", "python3 '<plugin root>/scripts/ledger.py' append"),
+        ("a script path with no run.sh", "sh '<scripts path>/ledger.py' heal"),
+        ("the data-file command", "jq -c '.uploads[]' uploads.json"),
+        ("a Python probe", "Probe for one, `python3 --version` first."),
+        ("an install line", "Ask the user to brew install jq."),
+        ("a GNU-only hash", 'for f in "$@"; do sha256sum "$f"; done'),
+        ("an unquoted script command", "python3 scripts/upload_files.py duplicates proposal.pdf"),
+        ("a script by path through sh", "sh '<plugin root>/scripts/ledger.py' heal"),
+    ]
+    refused = 0
+    for label, line in mutations:
+        if _install_ban_hits({"skills/scope-run/SKILL.md": texts.get("skills/scope-run/SKILL.md", "") + "\n" + line}):
+            refused += 1
+        else:
+            errors.append(f"the mutation adding {label} was not refused")
+    printed = [
+        ("an unquoted continuation", 'f"cut at line {n}; the rest: python3 manual_notes.py --run x"'),
+        ("a continuation with a flag first", 'f"the rest: python3 -B {path} print x"'),
+        ("a usage note", "    python ledger.py append '<run folder>/ledger.md'"),
+    ]
+    for label, line in printed:
+        if _PRINTED_PYTHON.search(line):
+            refused += 1
+        else:
+            errors.append(f"the mutation printing {label} was not refused")
+    if run_text:
+        win, mac = _PINNED_FINGERPRINTS["x86_64-pc-windows-msvc"], _PINNED_FINGERPRINTS["aarch64-apple-darwin"]
+        broken = [
+            ("two platforms' fingerprints swapped", run_text.replace(win, "SWAP").replace(mac, win).replace("SWAP", mac)),
+            ("a fingerprint zeroed", run_text.replace(win, "0" * 64)),
+            ("a zeroed entry ahead of the right one", run_text.replace(
+                f"  x86_64-pc-windows-msvc) sha={win} ;;",
+                f"  x86_64-pc-windows-msvc) sha={'0' * 64} ;;\n  x86_64-pc-windows-msvc) sha={win} ;;")),
+            ("a retry on the download", run_text.replace("curl -fsSL", "curl -fsSL --retry 3")),
+            ("a copy in place removed", run_text.replace("tries=0\n", 'tries=0\n  rm -rf "$dest"\n')),
+        ]
+        for label, text in broken:
+            if _run_sh_errors(text):
+                refused += 1
+            else:
+                errors.append(f"the run.sh mutation with {label} was not refused")
+    total = len(mutations) + len(printed) + 5
+
+    detail = (
+        f"{len(texts)} skill and agent files carry no Python command or name, no data-file command, no "
+        f"GNU-only command and no install instruction; no helper program names Python before a word; "
+        f"{len(called)} programs run through run.sh, each in scripts/; run.sh at LF endings with each "
+        f"platform's fingerprint pinned twice, one bounded download attempt and no copy in place removed, "
+        f"held at LF by .gitattributes; {refused} of {total} mutations refused; bound: text only, not a run "
+        f"on a fresh computer"
+    )
+    return Result(name, not errors, detail=detail + ("" if not errors else " | " + "; ".join(errors)))
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -24060,6 +24216,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_review_size_cuts(plugin_path, marketplace_root),
         check_slim_review_repair_2(plugin_path, marketplace_root),
         check_slim_review_repair_3(plugin_path, marketplace_root),
+        check_nothing_to_install(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

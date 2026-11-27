@@ -18,7 +18,7 @@ trades that carry its work after `by` or `with` and the trades it keeps the work
 each `by` or `with` starts one half of the work, and its row name carries one name per half, in
 the line's order, separated by `; `. This script reads those files and nothing else.
 
-    python standard_lines.py --package '<tradeCode>' \
+    sh run.sh standard_lines.py --package '<tradeCode>' \
         --all '<name>=<tradeCode>,<code>,<code>; <name>=<tradeCode>; ...'
 
         `--all` names every live package on the project, this one among them, by its name as the

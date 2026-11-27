@@ -341,16 +341,16 @@ calls of at most 250:
    bucket, token, signedUrl}` per file, in the order you sent the filenames. All or nothing: a
    failed call returns nothing and nothing was uploaded, so send it again. The server creates every
    `fileId` and storage path; you never supply either.
-2. Write the returned `uploads` list to a local JSON file once, then PUT every file's bytes in a
-   single shell loop that reads `filename` and `signedUrl` back out of that file with `jq` or a
-   small node one-liner, so no signed URL is ever retyped by hand per file:
+2. Write the returned answer to a local JSON file once, then PUT every file's bytes with one run
+   of the plugin's upload script, which reads each `filename` and `signedUrl` back out of that
+   file, so no signed URL is ever retyped by hand per file. Run it with the Bash tool, single
+   quoted, with a timeout of ten minutes, `<plugin root>` the plugin directory `${CLAUDE_PLUGIN_ROOT}` names, written out:
    ```bash
-   jq -c '.uploads[]' uploads.json | while read -r row; do
-     filename=$(echo "$row" | jq -r '.filename')
-     url=$(echo "$row" | jq -r '.signedUrl')
-     curl -X PUT "$url" -H "Content-Type: application/pdf" --data-binary @"$LOCAL_DIR/$filename"
-   done
+   sh '<plugin root>/scripts/run.sh' upload_files.py put '<uploads file>' '<local folder>'
    ```
+   It prints `sent <filename>` or `not sent <filename>: <reason>` per file, then `sent <n> of <m>`.
+   Send the files it names as not sent again in one more run, then stop and report any still not
+   sent. Where it prints anything else, give the user its last line as it stands and stop.
 3. `register_files(projectId, files, deliveryId)`: pass every file's `{fileId, filename,
    contentType?, folder?}` and the same `deliveryId` from step 3, so chronology comes from the delivery, not
    upload order, and leave `kind` out, so the server sorts each file by its page sizes (see "Wait

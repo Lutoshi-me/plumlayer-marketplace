@@ -145,10 +145,17 @@ additional items → report. Each stage has gates; they are non-negotiable and c
    guessed at.
 6. **Check for byte-identical duplicates.** The corpus has produced the same proposal saved under two
    filenames (a re-send, a renamed copy). Hash each surviving path and intake one copy per distinct
-   hash: never upload and read the same content twice under different filenames:
+   hash: never upload and read the same content twice under different filenames. Run the
+   plugin's upload script with the Bash tool, single quoted, with a timeout of ten minutes,
+   `<plugin root>` the plugin
+   directory `${CLAUDE_PLUGIN_ROOT}` names, written out:
    ```bash
-   for f in "$@"; do sha256sum "$f"; done | sort | uniq -c -w64
+   sh '<plugin root>/scripts/run.sh' upload_files.py duplicates '<path>' '<path>' ...
    ```
+   It prints `same file: <first> = <second>` for each group of identical files, then how many
+   are distinct, and last `could not read:` naming each file it could not open: leave those out
+   and tell the user which they are. Where it prints anything else, give the user its last line
+   as it stands and stop.
    Report which filenames collapsed to the same file and which one you kept.
 
 ## 2. Upload and register each proposal (cloud-first)

@@ -53,7 +53,7 @@ pass is too long to supervise and the plan is wrong.
 In every mode, before your first look at the ledger, hold it to the run's own copy:
 
 ```bash
-python3 '<scripts path>/ledger.py' heal '<run folder>/ledger.md'
+sh '<scripts path>/run.sh' ledger.py heal '<run folder>/ledger.md'
 ```
 
 A runner stopped between the ledger script's two writes left a unit's closing lines in the run's
@@ -139,7 +139,7 @@ copy.
    one per line, or `none`:
 
    ```bash
-   python3 '<scripts path>/unit_report.py' owed '<run folder>' <window> <unit id> --read <k> <<'EOF'
+   sh '<scripts path>/run.sh' unit_report.py owed '<run folder>' <window> <unit id> --read <k> <<'EOF'
    <each subject, one per line, or none>
    EOF
    ```
@@ -228,7 +228,7 @@ copy.
    shape, the reader's file first:
 
    ```bash
-   python3 '<scripts path>/unit_report.py' check --kind <kind> --report '<run folder>/reports/<unit id>.md' --owed '<the Owed path of the dispatch, or none>'
+   sh '<scripts path>/run.sh' unit_report.py check --kind <kind> --report '<run folder>/reports/<unit id>.md' --owed '<the Owed path of the dispatch, or none>'
    ```
 
    `<kind>` is `vocabulary` in window 1, `sheet` in window 2, and in window 3 `review`, `manual`
@@ -245,7 +245,7 @@ copy.
    the file, through a quoted heredoc so nothing in it is read by the shell:
 
    ```bash
-   python3 '<scripts path>/unit_report.py' check --kind <kind> --report - --owed '<the Owed path, or none>' <<'EOF'
+   sh '<scripts path>/run.sh' unit_report.py check --kind <kind> --report - --owed '<the Owed path, or none>' <<'EOF'
    <the reader's returned message, whole>
    EOF
    ```
@@ -373,7 +373,7 @@ copy.
    review or a manual part, whose shape has no such line), in a file of the run's own:
 
    ```bash
-   python3 '<scripts path>/unit_report.py' confirmed '<run folder>' <window> <unit id> --read <k> <<'EOF'
+   sh '<scripts path>/run.sh' unit_report.py confirmed '<run folder>' <window> <unit id> --read <k> <<'EOF'
    updated subjects: <the subjects, or none>
    questions raised ids: <the ids, or none>
    questions replied ids: <the ids, or none>
@@ -447,7 +447,7 @@ copy.
    unit's latest `verified` line names, which is yours unless a runner verified it under another:
 
    ```bash
-   python3 '<scripts path>/unit_report.py' trades '<run folder>' <pass id> <unit id> <<'EOF'
+   sh '<scripts path>/run.sh' unit_report.py trades '<run folder>' <pass id> <unit id> <<'EOF'
    <unit id> trade <catalog id> <count>
    <unit id> touched <catalog id>
    EOF
@@ -459,7 +459,7 @@ copy.
    unit's `touched` lines, as the report script prints them:
 
    ```bash
-   python3 '<scripts path>/unit_report.py' touched '<run folder>' <window> <unit id> --kind <kind>
+   sh '<scripts path>/run.sh' unit_report.py touched '<run folder>' <window> <unit id> --kind <kind>
    ```
 
    `<kind>` as the report check takes it. It prints one `<unit id> touched <catalog id>` line for
@@ -500,7 +500,7 @@ copy.
    `<unit id>` a tab `none`. These names are the record's, never a reader's report's, and the
    line count is checked against the `items` on the `verified` line, so a unit you skip here
    holds up the whole window. Then run
-   `python3 '<scripts path>/names_scan.py' pass '<run folder>/ledger.md' <window> <pass id> --plan '<run folder>/read-plan.md' --names-dir '<run folder>/names'`
+   `sh '<scripts path>/run.sh' names_scan.py pass '<run folder>/ledger.md' <window> <pass id> --plan '<run folder>/read-plan.md' --names-dir '<run folder>/names'`
    with the Bash tool, single quoted. Where it refuses, it names each unit whose lines do not
    match its `items`: write that unit's lines again off one `verify_unit(projectId, subjectPrefix:
    "scopeItem:<unit id>-", sheets: [])` call, paged as step 3 pages it, and run it again; a line
@@ -514,7 +514,7 @@ copy.
    message, the reader's file being missing or not whole, restore its report from the record:
 
    ```bash
-   python3 '<scripts path>/unit_report.py' restore '<run folder>' 3 <unit id>
+   sh '<scripts path>/run.sh' unit_report.py restore '<run folder>' 3 <unit id>
    ```
 
    It writes `<run folder>/reports/<unit id>.read-<k>.restored.md` from the read plan, the
@@ -529,10 +529,9 @@ copy.
    refusal and its printed lines as step 4 does: a runner resumed after a unit's `verified` line
    and before its names finds that unit's lines missing here, and writes them before the summary.
    Then run
-   `python3 '<scripts path>/pass_summary.py' '<run folder>/ledger.md' <window> <pass id>
+   `sh '<scripts path>/run.sh' pass_summary.py '<run folder>/ledger.md' <window> <pass id>
    --plan '<run folder>/read-plan.md' --trades '<run folder>/trades/<pass-id>.txt' --out '<run folder>/reports/<pass-id>.md'`
-   with the Bash tool, single quoted (`python` in place of `python3` on a seat that has only that
-   name), taking the scripts path off your dispatch. It reads the `dispatch` and
+   with the Bash tool, single quoted, taking the scripts path off your dispatch. It reads the `dispatch` and
    `verified` lines of every unit your pass's block in the read plan carries, whatever pass they
    name, and writes the full summary to the `--out` file: the units in reading order, each unit's
    counts, the totals, and every note line placed on the summary line it belongs to. What it
@@ -591,7 +590,7 @@ Every line reaches the ledger through the ledger script, several lines in one ca
 heredoc so an apostrophe or a dollar sign in a copied report line arrives as written:
 
 ```bash
-python3 '<scripts path>/ledger.py' append '<run folder>/ledger.md' <<'EOF'
+sh '<scripts path>/run.sh' ledger.py append '<run folder>/ledger.md' <<'EOF'
 <one line>
 <one line>
 EOF
@@ -611,7 +610,7 @@ reads; that is never yours to answer.
 
 Where any script of the run fails with a line saying a file could not be replaced or the lock
 could not be had, run the same command again after a short wait, by
-`python3 '<scripts path>/lead_pass.py' wait 20` as a call of its own, up to three times, and never
+`sh '<scripts path>/run.sh' lead_pass.py wait 20` as a call of its own, up to three times, and never
 answer it by changing a line or a file; where it
 still fails, your final message is what the script printed, and you end.
 
@@ -625,7 +624,7 @@ Where a call of yours is blocked, as pass mode's step 2 says, your final message
    other. A reader sees everything written before its own read and nothing written after it, so
    two passes running together can each create the same work, which is the whole reason this scan
    sits at the boundary and not inside a pass. Run
-   `python3 '<scripts path>/names_scan.py' boundary '<run folder>/ledger.md' <window> --names-dir '<run folder>/names'`
+   `sh '<scripts path>/run.sh' names_scan.py boundary '<run folder>/ledger.md' <window> --names-dir '<run folder>/names'`
    with the Bash tool, single quoted. It reads the names every pass runner wrote off the record
    and refuses while any unit of the window lacks them: a unit verified ok whose lines do not
    match its `items`, and a unit dispatched whose latest read did not verify ok, whose rows stay
@@ -845,7 +844,7 @@ delivery, `Delivery: <deliveryId>, label <label>.`, and `Plan file: <path>.`, th
   In sheet mode the `Sheet:` and `Rows file:` lines are filled; in retire mode `Sheet: none` and
   `Items file:`. Paste nothing from those files into it.
 - **Hold the report to its rows first.** Run
-  `python3 '<scripts path>/recheck.py' check --report '<run folder>/reports/<unit id>.md'` with the
+  `sh '<scripts path>/run.sh' recheck.py check --report '<run folder>/reports/<unit id>.md'` with the
   Bash tool, single quoted. It holds every outcome line to the unit's rows exactly once and prints
   the counts, the sheets to verify on and a `find back:` line for each item cited again or changed,
   with the page it was cited on. A refusal is the rechecker's report missing a row or carrying one

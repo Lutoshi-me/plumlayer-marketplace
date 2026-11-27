@@ -9,7 +9,7 @@ by copy, never by a model's retelling.
 
 Two modes:
 
-    python close_report.py ids '<run folder>' --project <projectId>
+    sh run.sh close_report.py ids '<run folder>' --project <projectId>
 
         Reads the ledger and the run folder and writes `<run folder>/reports/close-ids.txt`
         (Audience: agent), the calls one fresh copy agent makes, one per line:
@@ -25,7 +25,7 @@ Two modes:
         cannot name. At most MAX_IDS ids are looked up in all, and a Question is never looked up
         one by one. It prints one line counting the calls.
 
-    python close_report.py write '<run folder>' [--delivery-plan '<plan file>'] [--stopped '<why>']
+    sh run.sh close_report.py write '<run folder>' [--delivery-plan '<plan file>'] [--stopped '<why>']
 
         Writes `<run folder>/closing-report.md` whole and prints the short version, under
         SHORT_CAP characters, ending with the file's path. `--stopped` heads the file as a run

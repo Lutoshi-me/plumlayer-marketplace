@@ -16,8 +16,8 @@ replan can move a unit to another pass after it was verified.
 
 Usage:
 
-    python names_scan.py pass <ledger> <window> <pass id> --plan <read-plan> --names-dir <dir>
-    python names_scan.py boundary <ledger> <window> --names-dir <dir>
+    sh run.sh names_scan.py pass <ledger> <window> <pass id> --plan <read-plan> --names-dir <dir>
+    sh run.sh names_scan.py boundary <ledger> <window> --names-dir <dir>
 
 pass: every unit of the pass's plan block whose latest `verified` line in the window reads
 `result ok` must have as many distinct subjects on the names files as that line's `items`. Where

@@ -9,7 +9,7 @@ report and the folder adds no number of its own. `close_report.py` reads it with
 
 Two modes:
 
-    python fold_report.py print <run folder> [--start <lines>[:<characters>]]
+    sh run.sh fold_report.py print <run folder> [--start <lines>[:<characters>]]
 
         Every line of the report, as written, for the lead to read where a step needs a line of it,
         such as the `deleted:` lines the general requirements package leaves off. Output stops before PRINT_CAP characters,
@@ -21,7 +21,7 @@ Two modes:
         A run folder that holds no report and whose ledger says its packages were folded folded
         before the folder kept a report: it prints NO_REPORT_LINE alone, which names no delete.
 
-    python fold_report.py hand-back <run folder> --before <n> --after <n>
+    sh run.sh fold_report.py hand-back <run folder> --before <n> --after <n>
 
         The folder's final message, five lines:
 
@@ -164,7 +164,7 @@ def print_lines(run_folder: Path, start: tuple[int, int]) -> list[str]:
         start_at = f"{line_no - 1}:{at}" if at else str(line_no - 1)
         return (
             f"not printed: line {line_no}" + (f" from character {at + 1}" if at else "")
-            + f" on; the rest: python3 '{Path(__file__).resolve()}' print '{run_folder}' "
+            + f" on; the rest: sh '{(Path(__file__).resolve().parent / 'run.sh').as_posix()}' fold_report.py print '{run_folder}' "
             f"--start {start_at}"
         )
 

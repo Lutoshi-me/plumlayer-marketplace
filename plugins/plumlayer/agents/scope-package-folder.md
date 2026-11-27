@@ -39,7 +39,7 @@ path and the plugin root, the plugin's own directory. Under the run folder:
   beyond one local filter for its `phase: packages folded` line.
 
 Under the plugin root, `agents/orientation.md` step 8 draws what a package is and carries the
-default carries named below, and `scripts/fold_report.py` prints your hand-back.
+default carries named below, and the plugin's fold report script, `fold_report.py`, prints your hand-back.
 
 A re-home, wherever this definition names one, is the one the scope-run skill's stage 8 makes: one
 `record_batch` of `belongsToTrade` records, each naming the trade record it replaces in
@@ -246,7 +246,7 @@ why we need the answer.
    ledger goes on through:
 
    ```sh
-   python3 '<plugin root>/scripts/ledger.py' append '<run folder>/ledger.md' <<'EOF'
+   sh '<plugin root>/scripts/run.sh' ledger.py append '<run folder>/ledger.md' <<'EOF'
    phase: packages folded
    EOF
    ```
@@ -306,11 +306,10 @@ id a report line carries, outside its reason, and the lead never says it to the 
 Your final message is what this command prints, with nothing before it and nothing after it:
 
 ```sh
-python3 '<plugin root>/scripts/fold_report.py' hand-back '<run folder>' --before <n> --after <n>
+sh '<plugin root>/scripts/run.sh' fold_report.py hand-back '<run folder>' --before <n> --after <n>
 ```
 
-Run it with the Bash tool, single quoted, `python` in place of `python3` on a seat that has only
-that name. `--before` and `--after` are the package counts of your first and last package list
+Run it with the Bash tool, single quoted. `--before` and `--after` are the package counts of your first and last package list
 reads. It prints five lines: the packages before and after, the acts by kind, the rows re-homed
 and the Questions, that `phase: packages folded` is on the
 ledger, and the report's path. A refusal names one thing wrong with a line you wrote: fix that

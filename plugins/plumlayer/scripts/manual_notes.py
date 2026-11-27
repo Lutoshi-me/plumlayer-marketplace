@@ -2,7 +2,7 @@
 manual_notes.py: print one package's manual as its manual parts read it, for the package's review
 and its standard lines unit in window 3 of a scope run.
 
-    python manual_notes.py --run '<run folder>' --review <review unit id> [--start <n>]
+    sh run.sh manual_notes.py --run '<run folder>' --review <review unit id> [--start <n>]
 
 Every page of a package's manual sections is read by the package's manual parts before its
 review, and its standard lines are written by its standard lines unit, the last unit of the
@@ -264,7 +264,7 @@ def main(argv: list[str] | None = None) -> int:
         line = lines[number - 1]
         if size + len(line) + 1 > CAP and number > start:
             print(
-                f"cut at line {number} of {len(lines)}; the rest: python3 '{Path(__file__).resolve()}' "
+                f"cut at line {number} of {len(lines)}; the rest: sh '{(Path(__file__).resolve().parent / 'run.sh').as_posix()}' manual_notes.py "
                 f"--run '{args.run}' --review {args.review} --start {number}"
             )
             return 0

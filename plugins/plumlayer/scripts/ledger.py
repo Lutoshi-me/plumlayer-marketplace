@@ -8,12 +8,12 @@ already on it is ever changed.
 
 Usage:
 
-    python ledger.py append '<run folder>/ledger.md' <<'EOF'
+    sh run.sh ledger.py append '<run folder>/ledger.md' <<'EOF'
     <one line>
     <one line>
     EOF
 
-    python ledger.py heal '<run folder>/ledger.md'
+    sh run.sh ledger.py heal '<run folder>/ledger.md'
 
 The lines come on stdin, one per line, through a quoted heredoc so an apostrophe or a dollar sign
 in a copied report line arrives as written. Blank lines are skipped. `heal` holds the ledger to its

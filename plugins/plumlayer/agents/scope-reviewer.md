@@ -684,8 +684,8 @@ them is ever trimmed.
     you, by the package's manual parts, each recording what its pages put in scope under the
     manual reader's own mandates 12 and 13. You read what they found off one script, and read no
     section through:
-    `python3 '<the folder holding the reader definition>/../scripts/manual_notes.py' --run '<run folder>' --review '<your unit id>'`,
-    with the Bash tool (`python` in place of `python3` on a seat that has only that name), once,
+    `sh '<the folder holding the reader definition>/../scripts/run.sh' manual_notes.py --run '<run folder>' --review '<your unit id>'`,
+    with the Bash tool, once,
     before your first search. It prints first what no part read or what is not known, with the
     reason, then each section's title and pages, and for each part its section lines (what
     those pages put in scope, the rows written off them, the items left and the silence items

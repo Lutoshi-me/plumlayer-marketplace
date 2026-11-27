@@ -66,7 +66,7 @@ Rows to: <rows-before or rows-after>.
 ## 3. Plan the recheck
 
 ```sh
-python3 '<plugin root>/scripts/recheck.py' plan --run '<run folder>' \
+sh '<plugin root>/scripts/run.sh' recheck.py plan --run '<run folder>' \
   --delivery-plan '<plan file>' --deliveries '<project folder>/deliveries.json'
 ```
 
@@ -127,7 +127,7 @@ new sheets, 2 read as removed, 1 I could not find."
 When every sheet pass is finished, send the copy of step 2 again with `Rows to: rows-after`, then:
 
 ```sh
-python3 '<plugin root>/scripts/recheck.py' retire --run '<run folder>' --delivery-plan '<plan file>'
+sh '<plugin root>/scripts/run.sh' recheck.py retire --run '<run folder>' --delivery-plan '<plan file>'
 ```
 
 Read back only its bounds line: the items to retire, the items theirs to settle, and the items kept on
@@ -147,7 +147,7 @@ List the passes again and run the retire passes as step 4 runs the sheet passes,
 When every pass is finished:
 
 ```sh
-python3 '<plugin root>/scripts/recheck.py' report --run '<run folder>' --delivery-plan '<plan file>'
+sh '<plugin root>/scripts/run.sh' recheck.py report --run '<run folder>' --delivery-plan '<plan file>'
 ```
 
 Its first line is `phase: recheck complete` with the recheck's figures: append it to the ledger as

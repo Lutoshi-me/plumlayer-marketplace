@@ -89,8 +89,8 @@ difference:
    of which you run: your searches are the two the condition bullet allows a line, and your
    `searches:` line counts them all as `standard line`.
 3. "The sections you read whole" are the package's manual as its parts read it. Run
-   `python3 '<scripts path>/manual_notes.py' --run '<run folder>' --review '<the Review: unit id>'`
-   with the Bash tool (`python` in place of `python3` on a seat that has only that name) once,
+   `sh '<scripts path>/run.sh' manual_notes.py --run '<run folder>' --review '<the Review: unit id>'`
+   with the Bash tool once,
    before your first search. It prints each section's title and pages and, for each manual part,
    what those pages put in scope and the rows it wrote; a line it prints is a pointer, and a page
    you rely on is opened as the review's mandate 2 says. Where its last line says it was cut, run
@@ -129,8 +129,8 @@ in its place.
       without its notes, and the script
       reads every package off that one list.
     - Your lines. Run
-      `python3 '<the folder holding the reader definition>/../scripts/standard_lines.py' --package '<this package's tradeCode>' --all '<each package on that list as its name as the list shows it, =, then its tradeCode and its codes comma separated, the packages separated by ;>'`
-      with the Bash tool (`python` in place of `python3` on a seat that has only that name),
+      `sh '<the folder holding the reader definition>/../scripts/run.sh' standard_lines.py --package '<this package's tradeCode>' --all '<each package on that list as its name as the list shows it, =, then its tradeCode and its codes comma separated, the packages separated by ;>'`
+      with the Bash tool,
       `--all` naming this package too
       (`--all 'Plumbing=22 00 00,22 05 00; Electrical=26 00 00; Drywall=09 21 16,09 29 00'`). The
       script gives each trade's file of lines to one live package, the same way in every review of

@@ -583,7 +583,7 @@ record files, never recorded as project entries:
   `amended:`, `unplaced:` and `note` line this skill tells you to append goes on with
 
   ```bash
-  python3 '<plugin root>/scripts/ledger.py' append '<run folder>/ledger.md' <<'EOF'
+  sh '<plugin root>/scripts/run.sh' ledger.py append '<run folder>/ledger.md' <<'EOF'
   <the line>
   EOF
   ```
@@ -815,7 +815,7 @@ restore one yourself the same way, for a window 3 unit whose latest `verified` l
 no page read:
 
 ```bash
-python3 '<plugin root>/scripts/unit_report.py' restore '<run folder>' 3 <unit id>
+sh '<plugin root>/scripts/run.sh' unit_report.py restore '<run folder>' 3 <unit id>
 ```
 
 A unit is read again only where its check found a mismatch or no check could be made, against the
@@ -902,8 +902,8 @@ never offered to the user as a way to manage cost.
 ## When the run stops
 
 The run stops only where it cannot go on without the estimator. Before reading starts, the
-preconditions below can stop it or ask him something: an old client, which project, no Python, run
-folders mixed with another project's, whether a project manual exists, the plan for a new delivery
+preconditions below can stop it or ask him something: an old client, which project, the plugin's
+helper programs not getting ready, run folders mixed with another project's, whether a project manual exists, the plan for a new delivery
 not approved, and drawings whose text is not read. Once reading has started, these are the only
 stops, and nothing else waits on him:
 
@@ -914,7 +914,7 @@ stops, and nothing else waits on him:
    milliseconds, single quoted; it returns by itself, and nothing else wakes you:
 
    ```sh
-   python3 '<plugin root>/scripts/lead_pass.py' wait 280
+   sh '<plugin root>/scripts/run.sh' lead_pass.py wait 280
    ```
 
    A pass is tried again by dispatching it again, and its runner skips every unit settled. A `whoami` that
@@ -995,10 +995,14 @@ before going on.
 
 1. **Project exists and is the user's intent.** `list_projects`, confirm which project with the
    user, get its `projectId`. No project → hand off to `project-setup`.
-2. **A Python interpreter on the seat.** Probe for one, `python3 --version` falling back
-   to `python --version`: which pass runs, and the read plan of every window, are written by a
-   script. Neither name present is a stop for this run: say so plainly and
-   hand over, since a plan written by hand has been the measured failure every time.
+2. **The plugin's helper programs ready.** Which pass runs, and the read plan of every window,
+   are written by the plugin's scripts, and every script runs through `run.sh`, which keeps the
+   plugin's own copy of what runs them and fetches it the first time on a computer. Run
+   `sh '<plugin root>/scripts/run.sh' --ready` with the Bash tool, single quoted, once, with a
+   timeout of ten minutes, since the first fetch on a slow connection takes a few. It prints
+   `ready`. Anything else is a stop for this run: give the user its last line as it stands, and
+   hand over, since a plan written by hand has been the measured failure every time. Never tell
+   the user to install anything, and never name what the scripts run on.
 3. **Resume the pass in flight, or choose the drawing issue to start one on.** With the
    `projectId` in hand and before anything else, send one fresh agent to copy
    `list_drawing_deliveries(projectId)` to `<project folder>/deliveries.json` byte for byte, by the
@@ -1006,7 +1010,7 @@ before going on.
    mode the way stage 3 runs its other modes, and read its one line and nothing else:
 
    ```sh
-   python3 '<plugin root>/scripts/plan_inventory.py' issue \
+   sh '<plugin root>/scripts/run.sh' plan_inventory.py issue \
      --runs '<project folder>' --deliveries '<project folder>/deliveries.json' \
      --runs-root '<runs root>'
    ```
@@ -1068,7 +1072,7 @@ before going on.
    project (no spec sections, no anchor), and stage 8 below derives the whole split from the
    finished scope list instead.
 6. **The start-up calls, while the user is there.** Before the first message (stage 3), make one
-   `whoami`, the Python probe of precondition 2 if this session has not made it, and one
+   `whoami`, the readiness check of precondition 2 if this session has not made it, and one
    `search(projectId, subjectPrefix: "scopeItem:", limit: 1)`, so a permission prompt for any of
    them comes up while the user is at the keyboard. A `whoami` that errors naming signing in is the
    sign-in stop before any reading.
@@ -1203,10 +1207,10 @@ lines.
    you read in step 1 as `--expect-count`. Run it with the Bash tool, single quoted. Resolve
    `${CLAUDE_PLUGIN_ROOT}` here and pass the plugin directory itself: that variable is interpolated
    in this skill but is not set inside a shell call, so the script is handed the directory and
-   never the variable. Use `python3`, or `python` on a seat that has only that name.
+   never the variable.
 
    ```sh
-   python3 '<plugin root>/scripts/plan_inventory.py' inventory \
+   sh '<plugin root>/scripts/run.sh' plan_inventory.py inventory \
      --grid '<run folder>/grid' --expect-count <count> --out-dir '<run folder>'
    ```
 
@@ -1236,7 +1240,7 @@ lines.
    one line rather than accepting and ignoring it.
 
    ```sh
-   python3 '<plugin root>/scripts/plan_inventory.py' plan --window 1 \
+   sh '<plugin root>/scripts/run.sh' plan_inventory.py plan --window 1 \
      --inventory '<run folder>/inventory.json' \
      [--delivery-plan '<plan file>'] \
      --out '<run folder>/read-plan.md'
@@ -1337,7 +1341,7 @@ nothing else:
    single quoted as every script call is:
 
    ```sh
-   python3 '<plugin root>/scripts/lead_pass.py' passes --plan '<run folder>/read-plan.md'
+   sh '<plugin root>/scripts/run.sh' lead_pass.py passes --plan '<run folder>/read-plan.md'
    ```
 
    It prints two lines per pass: its id with its `units`, `units verified`
@@ -1388,7 +1392,7 @@ nothing else:
    which you leave off where there is none:
 
    ```sh
-   python3 '<plugin root>/scripts/lead_pass.py' passes --plan '<run folder>/read-plan.md' --reported '<pass id>' --running '<pass id>,<pass id>'
+   sh '<plugin root>/scripts/run.sh' lead_pass.py passes --plan '<run folder>/read-plan.md' --reported '<pass id>' --running '<pass id>,<pass id>'
    ```
 
    It prints that pass's `<pass id> prefixes:` line, read off the plan as it stands now, and the three
@@ -1402,7 +1406,7 @@ nothing else:
    quoted:
 
    ```sh
-   python3 '<plugin root>/scripts/lead_pass.py' record '<run folder>/ledger.md' <window> <pass id> \
+   sh '<plugin root>/scripts/run.sh' lead_pass.py record '<run folder>/ledger.md' <window> <pass id> \
      --plan '<run folder>/read-plan.md' --counts-json '<the counts array of the answer>'
    ```
 
@@ -1517,7 +1521,7 @@ that was skipped has none, and a window 3 that planned no review has none:
    window 1 and not read there is one whose sheets are all read whole.
 
    ```sh
-   python3 '<plugin root>/scripts/plan_inventory.py' plan --window 2 \
+   sh '<plugin root>/scripts/run.sh' plan_inventory.py plan --window 2 \
      --inventory '<run folder>/inventory.json' \
      --window-1 '<run folder>/plan/window-1.json' \
      [--only '<pattern>:<reason>']... \
@@ -1570,7 +1574,7 @@ that was skipped has none, and a window 3 that planned no review has none:
    the fold's `deleted:` lines, read them with one call, single quoted:
 
    ```sh
-   python3 '<plugin root>/scripts/fold_report.py' print '<run folder>'
+   sh '<plugin root>/scripts/run.sh' fold_report.py print '<run folder>'
    ```
 
    It prints every line of `reports/fold.md`, one act each under its label, and stops before
@@ -1660,7 +1664,7 @@ that was skipped has none, and a window 3 that planned no review has none:
    what the readers missed on the addendum's own pages without finding the whole set again.
 
    ```sh
-   python3 '<plugin root>/scripts/plan_inventory.py' plan --window 3 \
+   sh '<plugin root>/scripts/run.sh' plan_inventory.py plan --window 3 \
      --packages '<run folder>/plan/packages.json' \
      --sections '<run folder>/plan/spec-sections.json' \
      --out '<run folder>/read-plan.md'
@@ -1782,7 +1786,7 @@ says the short version again, which is accepted.
 1. **Write the closing report.** Run, single quoted:
 
    ```sh
-   python3 '<plugin root>/scripts/close_report.py' ids '<run folder>' --project <projectId>
+   sh '<plugin root>/scripts/run.sh' close_report.py ids '<run folder>' --project <projectId>
    ```
 
    It writes `<run folder>/reports/close-ids.txt`, one call a line, `<file name> <verb>
@@ -1791,7 +1795,7 @@ says the short version again, which is accepted.
    a pass whose delivery was sized:
 
    ```sh
-   python3 '<plugin root>/scripts/close_report.py' write '<run folder>' [--delivery-plan '<plan file>']
+   sh '<plugin root>/scripts/run.sh' close_report.py write '<run folder>' [--delivery-plan '<plan file>']
    ```
 
    It writes `<run folder>/closing-report.md` whole and prints its short version. It never refuses

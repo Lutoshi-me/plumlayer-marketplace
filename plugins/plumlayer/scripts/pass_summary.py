@@ -44,7 +44,7 @@ lead's record script can show the summary was summed off this ledger and not off
 
 Usage:
 
-    python pass_summary.py <run folder>/ledger.md <window> <pass id> --plan <run folder>/read-plan.md
+    sh run.sh pass_summary.py <run folder>/ledger.md <window> <pass id> --plan <run folder>/read-plan.md
         --out <run folder>/reports/<pass id>.md [--trades <path>]
 
 The full summary goes to the `--out` file, where the lead's record script and the plan script read

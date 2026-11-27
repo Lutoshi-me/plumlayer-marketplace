@@ -36,7 +36,7 @@ Files, all under `<run folder>/recheck/` except the read plan and the reports:
 
 Four modes:
 
-    python recheck.py plan --run <run folder> --delivery-plan <plan.md> --deliveries <deliveries.json>
+    sh run.sh recheck.py plan --run <run folder> --delivery-plan <plan.md> --deliveries <deliveries.json>
 
         Reads every page of rows-before, refuses a page of another delivery than `run.json` names,
         one measured under another rule version than the plan file names, one whose comparison is
@@ -58,7 +58,7 @@ Four modes:
         over the old rows counts for nothing. The retire passes plan.json already binds are written
         again beside them.
 
-    python recheck.py retire --run <run folder> --delivery-plan <plan.md>
+    sh run.sh recheck.py retire --run <run folder> --delivery-plan <plan.md>
 
         Once every sheet unit carries a `verified r` line reading ok, reads rows-after and each
         sheet unit's report. An item each of whose open rows reads removed, none not found, and
@@ -76,7 +76,7 @@ Four modes:
         REASON_MAX, is his to settle and is never retired.
         Writes the read plan with the sheet passes and the retire passes.
 
-    python recheck.py check --report <run folder>/reports/<unit id>.md
+    sh run.sh recheck.py check --report <run folder>/reports/<unit id>.md
 
         One unit's report against its rows file or items file: every row or item carries exactly
         one outcome line, none carries two, none names a row or an item the unit does not carry,
@@ -91,7 +91,7 @@ Four modes:
         updated, 0 Questions raised and replied, 0 sent and 0 landed, since the runner then makes
         no verify_unit call.
 
-    python recheck.py report --run <run folder> --delivery-plan <plan.md> [--start <lines>]
+    sh run.sh recheck.py report --run <run folder> --delivery-plan <plan.md> [--start <lines>]
 
         The recheck by package, off rows-before, rows-after, the unit reports and plan.md: the
         references carried forward, counted only where the plan's `carried:` line records a carry
@@ -1123,7 +1123,7 @@ def main(argv: list[str] | None = None) -> int:
             lines = check(args.report)
         else:
             command = (
-                f"python3 '{Path(__file__).resolve()}' report --run '{args.run}' "
+                f"sh '{(Path(__file__).resolve().parent / 'run.sh').as_posix()}' recheck.py report --run '{args.run}' "
                 f"--delivery-plan '{args.delivery_plan}'"
             )
             lines = _print_capped(report_lines(args.run, args.delivery_plan), args.start, command)

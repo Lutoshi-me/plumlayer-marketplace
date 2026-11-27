@@ -14,7 +14,7 @@ that summary.
 
 Four modes:
 
-    python lead_pass.py passes --plan <run folder>/read-plan.md [--running <pass id>,<pass id>]
+    sh run.sh lead_pass.py passes --plan <run folder>/read-plan.md [--running <pass id>,<pass id>]
         [--reported <pass id>]
 
         Every pass the read plan carries, in its order, two lines each:
@@ -49,7 +49,7 @@ Four modes:
         A plan with no pass, as window 2's is where window 1 selected or left out every sheet, prints
         `passes 0, finished 0; to dispatch: none` and those two lines, each reading none.
 
-    python lead_pass.py record <run folder>/ledger.md <window> <pass id>
+    sh run.sh lead_pass.py record <run folder>/ledger.md <window> <pass id>
         --plan <run folder>/read-plan.md --counts-json '<the counts array>'
 
         `--counts-json` is the `counts` array of the lead's `count_entries` answer, as it came back:
@@ -94,14 +94,14 @@ Four modes:
         last, `breaker: <s> of <n> units skipped; stop the run` and one `skipped:` line per skipped
         unit with its note: a guard against a failure the reads did not name, which the lead stops on.
 
-    python lead_pass.py wait <seconds>
+    sh run.sh lead_pass.py wait <seconds>
 
         Waits that many seconds, at most WAIT_CAP, and prints one line saying how long it waited.
         It is the lead's wait between two tries of an operation that could not be made and between
         two polls of a job: a foreground command that returns by itself, under the 300,000
         milliseconds a Bash call allows, so no wait hangs on a notice that may never come.
 
-    python lead_pass.py seen '<run folder>' <key> '<signature>'
+    sh run.sh lead_pass.py seen '<run folder>' <key> '<signature>'
 
         Remembers how long one answer has stood, across polls and sessions, so a bound the skill
         sets is counted by a script and not by the lead. It keeps `<run folder>/plan/seen.json`

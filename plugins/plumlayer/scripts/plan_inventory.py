@@ -407,18 +407,18 @@ refused.
 
 Usage:
 
-    python plan_inventory.py issue --runs <project folder> --deliveries <path> [--runs-root <dir>]
+    sh run.sh plan_inventory.py issue --runs <project folder> --deliveries <path> [--runs-root <dir>]
 
-    python plan_inventory.py inventory --grid <dir or file> --expect-count 209 --out-dir <dir>
+    sh run.sh plan_inventory.py inventory --grid <dir or file> --expect-count 209 --out-dir <dir>
 
-    python plan_inventory.py plan --window 1 --inventory <path>
+    sh run.sh plan_inventory.py plan --window 1 --inventory <path>
         [--include <pattern>:<reason>] [--exclude <pattern>:<reason>]
         [--delivery-plan <upload folder>/plan.md] --out <path>
 
-    python plan_inventory.py plan --window 2 --inventory <path> --window-1 <path>
+    sh run.sh plan_inventory.py plan --window 2 --inventory <path> --window-1 <path>
         [--only <pattern>:<reason>] --out <path>
 
-    python plan_inventory.py plan --window 3 --packages <path> --sections <path> --out <path>
+    sh run.sh plan_inventory.py plan --window 3 --packages <path> --sections <path> --out <path>
 
 Input shapes, named here so a change on the record's side surfaces as a named field rather than as
 an empty plan:

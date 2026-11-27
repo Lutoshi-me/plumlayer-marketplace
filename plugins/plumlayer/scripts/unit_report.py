@@ -12,7 +12,7 @@ the owed file, the restored report, the trades file and its `.written` file, and
 
 Six modes:
 
-    python unit_report.py check --kind <sheet|vocabulary|review|manual|standard> --report <path or -> [--owed <path or none>] [--spans '<Reads: line>']
+    sh run.sh unit_report.py check --kind <sheet|vocabulary|review|manual|standard> --report <path or -> [--owed <path or none>] [--spans '<Reads: line>']
 
         Holds one report to its kind's shape: a file, or with `-` the reader's returned message on
         stdin through a quoted heredoc. The kinds are the five readers of windows 1, 2 and 3: a
@@ -74,7 +74,7 @@ Six modes:
         whole: <what>`, ready for the runner's note. Exit 3: the report is whole and some of it
         disagrees; it prints one line per mismatch, `<check> <value>`, ready for a `deviation` note.
 
-    python unit_report.py owed '<run folder>' <window> <unit id> --read <k>
+    sh run.sh unit_report.py owed '<run folder>' <window> <unit id> --read <k>
 
         Writes `<run folder>/owed/<unit id>.read-<k>.md`, the work read k of a unit owes, off the
         ledger alone, with the subjects that stand under the unit's prefix before read k on stdin,
@@ -94,7 +94,7 @@ Six modes:
         reads after it that did not verify ok. An entry two reads noted is written once, under the
         earlier.
 
-    python unit_report.py restore '<run folder>' 3 <unit id>
+    sh run.sh unit_report.py restore '<run folder>' 3 <unit id>
 
         For a window 3 unit, a package review, a manual part or a standard lines unit, whose latest `verified` line reads ok, with no
         `dispatch` line after it, and whose own report of that read is not whole, writes
@@ -110,7 +110,7 @@ Six modes:
         line after it: a read that failed is read again, never restored. Where the reader's report
         of that read is whole, it says so and writes nothing.
 
-    python unit_report.py trades '<run folder>' <pass id> <unit id> <<'EOF'
+    sh run.sh unit_report.py trades '<run folder>' <pass id> <unit id> <<'EOF'
     <unit id> trade <catalog id> <count>
     <unit id> touched <catalog id>
     EOF
@@ -128,7 +128,7 @@ Six modes:
         it changes nothing. It refuses a line of another unit, a line in neither shape, a catalog
         id given two counts, and a unit with no `verified` line naming the pass.
 
-    python unit_report.py touched '<run folder>' <window> <unit id> --kind <sheet|vocabulary|review|manual>
+    sh run.sh unit_report.py touched '<run folder>' <window> <unit id> --kind <sheet|vocabulary|review|manual>
 
         Prints one `<unit id> touched <catalog id>` line per catalog id that any read of the unit
         carrying a `verified` line, ok or mismatch, named on its `trades touched:` line, each once:
@@ -141,7 +141,7 @@ Six modes:
         the check-in and the close-out name it and a second run appends nothing. The runner copies
         the lines on stdout into the unit's trades call.
 
-    python unit_report.py confirmed '<run folder>' <window> <unit id> --read <k> <<'EOF'
+    sh run.sh unit_report.py confirmed '<run folder>' <window> <unit id> --read <k> <<'EOF'
     updated subjects: <subjects, or none>
     questions raised ids: <ids, or none>
     questions replied ids: <ids, or none>
