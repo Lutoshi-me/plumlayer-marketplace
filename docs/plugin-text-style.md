@@ -286,10 +286,11 @@ Each of these is a harness check.
     three windows' unit lines and page references, its pinned reading order, its balanced pass
     split and its window 3 unit ids and passes are compared against a tally the check computes
     itself off the same fixtures. Window 3 plans every package's review exactly once across its
-    passes, at most eight to a pass and ten units to a pass with its manual parts, both numbers
-    pinned, in package order with every package of one trade kept whole in one pass, so no trade
-    sits on two passes; a trade over eight is kept whole, one over ten is refused by name, the pass ids read `W3-<n>` and are never a unit id, and a
-    second run writes the same plan. Window 2 has to come out an exact partition of the inventory minus the window 1
+    passes of reviews, the general requirements package's review alone in the first, at most eight
+    to a pass, in package order with every package of one trade kept whole in one pass; a trade over
+    eight is kept whole, one over ten is refused by name, every pass of reviews starts after every
+    pass of manual parts and standard lines, the pass ids read `W3-M<n>` and `W3-<n>` and are never
+    a unit id, and a second run writes the same plan. Window 2 has to come out an exact partition of the inventory minus the window 1
     file the script itself wrote, and every window 3 unit id has to be a legal `verify_unit`
     subject prefix stem with none a prefix of another, which is the join the plan and the reviewer
     would otherwise first meet on mid-run. Broken inputs must each be
@@ -538,28 +539,34 @@ Each of these is a harness check.
     or split folder refusal the skill has the lead say what is wrong in plain words and never a
     folder path. `learn-project` and `drawing-upload` name their local folder for the project id
     too. This cannot judge a seat's real run history: the folders are invented.
-31. Every page of a package's manual is planned before window 3 and read exactly once. A review
-    once named the pages its page cap left on a report line the plan script then parsed to bind a
-    follow-up review, and an abbreviated line stopped the run. The shipped `plan_inventory.py`
-    now reads the manual's sections with their pages (`list_spec_sections`, copied to
-    `plan/spec-sections.json`) and `manual_parts.py` divides each package's sections between its
-    review, whole sections up to twenty pages, and manual parts of up to forty pages each, a
-    section that fits a unit never split and a unit starting partway into a section keeping room
-    for its opening pages. Each unit line names its pages, `agents/scope-manual-reader.md` reads a
-    part's, the runner holds each report's `spans read:` lines to its dispatch, and no report
-    decides what is read next. The check divides eight invented shapes and holds every page to
-    exactly one unit and every unit to its pages; plans an invented project and reads back the
-    review's and parts' spans, the chain, the sections not read with their reasons and the bounds
-    figures; replans with nothing changed and with a section moved, a dispatched review keeping
-    its pages, a dispatched part on a moved section retired and its pages planned again under new
-    numbers, and a dispatched part on a section that stayed keeping its pages; carries a long
-    manual's last parts into `i1-W3-1b` after `i1-W3-1`; and refuses a truncated section list, a
-    plan with no section list, a plan file holding a continuation a report bound, one page planned
-    for two parts and a deleted package with pages owed, each in one line writing nothing. Text
-    arms pin the reviewer's share of the manual and its carry file, the manual reader's reads of
-    the reviewer's mandates by number, the runner's check of a unit's spans and the skill's
-    section list copy and dispatch, with eight mutations refused. This cannot judge how much a
-    manual part holds in context on a real manual; that is the measured re-run's.
+31. Every page of a package's manual is planned before window 3 and read exactly once, by manual
+    parts before the package's review. A review once named the pages its page cap left on a report
+    line the plan script then parsed to bind a follow-up review, and an abbreviated line stopped
+    the run; later the review that read the first pages and wrote the standard lines grew past
+    what one agent holds. The shipped `plan_inventory.py` reads the manual's sections with their
+    pages (`list_spec_sections`, copied to `plan/spec-sections.json`) and `manual_parts.py` divides
+    each package's sections into manual parts of up to ten pages each, a section that fits a part
+    never split and a part starting partway into a section keeping room for its opening pages.
+    Each package's chain is its parts in order and its standard lines unit last, in passes of
+    manual parts and standard lines before every pass of reviews, and the manual plan is made once,
+    frozen from the window's first dispatch. Each unit line names its pages,
+    `agents/scope-manual-reader.md` reads a part's, the report check holds each part's `spans
+    read:` and `section lines:` to its dispatch, and no report decides what is read next. The check
+    divides eleven invented shapes and holds every page to exactly one part and every part to its
+    pages; plans an invented project and reads back the chains, the first part after `none`, the
+    standard lines unit last, the sections not read with their reasons and the bounds figures;
+    replans with nothing changed to the same bytes, and after a dispatch with a section moved and
+    added, a package deleted and added and a part skipped, each listed as not read and nothing
+    planned again; plans three packages of one trade, every unit verified and a section added to
+    each, to the same bytes twice; puts a long trade's chain first in lettered passes, each waiting
+    for the one before it; and refuses a truncated section list, a plan with no section list, one
+    page planned for two parts, a chain whose standard lines unit is not last and a part off its
+    review's numbering, each in one line writing nothing. Text arms pin the review's reading of
+    the manual through `manual_notes.py`, its six-page bound on a row the sheets and the manual
+    both define, the manual reader's mandates 12 and 13 and its reads of the reviewer's mandates
+    by number, the runner's spans check and the skill's dispatches, with nine mutations refused.
+    This cannot judge how much a manual part holds in context on a real manual; that is the
+    measured re-run's.
 32. Passes of one discipline run alongside each other, and the script says which. A lead once
     guessed which passes could start together, off a mark the plan never wrote, and one set started
     ten at once and another four and stopped. The shipped `plan_inventory.py` pins six passes at
@@ -763,3 +770,73 @@ Each of these is a harness check.
 A check that cannot be made mechanical belongs in review, not in this list. Adding a rule here
 without adding its check is how the last drift started, and a check added without its line here is
 invisible.
+42. The package review comes after its manual parts and its standard lines and stays under what one
+    agent holds. On a measured run the median review held 218k and the largest 392k, the largest
+    leaving a stub report, because one review read the manual's first pages, wrote the standard
+    lines and settled the headings in one context. The review now reads what the parts found
+    through `scripts/manual_notes.py`, which uses a part's report only where its latest read
+    verified ok and the report check holds it whole, names a restored report as not known and a
+    part read mismatch or skipped as not read, and prints those first; the standard lines are the
+    work of `agents/scope-standard-lines.md`, one unit per package last in its chain; a part's
+    section lines are held to its dispatched spans by `unit_report.py check --spans`; and the
+    closing report names a skipped standard lines unit's lines as not written, a skipped review's
+    headings and order as not settled, a bound a review reached, and each package that took an
+    item after its own review. The check runs the notes script over a part verified, restored,
+    read mismatch and skipped, the report check over section lines exact, one missing, one twice
+    and one malformed, and the closing report over an invented folder, and pins the new agent with
+    no Question tool and the review's bounds. This cannot judge a live review's size; that is the
+    measured re-run's.
+43. What the package review could not check reaches the estimator, and nothing says more was read
+    than was. The notes script prints a line for every section the package lists, a part's or not,
+    a section with no pages and one the section list lacks saying so, and names each planned span
+    a verified part's report did not read as not read with the reason the part named, holding the
+    report to its planned spans as the runner does; the lead's record names only the pages that
+    report says were read; the closing report puts every entry of a verified review's or manual
+    part's `sections not checked:` and `families not checked:` lines, by the shapes beside each
+    producer's name or in its own words, a review's copy of a skipped or restored part's section once, as
+    the part's gap, and every standard line a review found later, in the one
+    collection, and names a package that took an item after its own review by the note's own place
+    on the ledger, however the writing review ended; and the manual reader's read of the
+    reviewer's both-sources bullet ends at a pinned line. Each is held over invented run folders the
+    shipped scripts build, with every report written as its agent's definition says, the whole of
+    window 3 run once from the plan to the closing report, and a replan after stage A was dispatched
+    driven to the window's end. This cannot judge a live run's reviews; that is the live run's.
+44. A review, a manual part and a standard lines unit spend context only on what a check needs. Each
+    writes its `.started` file and its report with the Write tool, the report once, lists no folder of
+    the run, and creates at most three rows a batch, each whole, sending again only the batch refused;
+    the review's write bound counts rows created and citations written, and a review that reaches it
+    passes the report check and is named by its bound in the closing report. The reviewer holds once
+    the reader's text it reads whole, each passage it no longer holds found whole in that reading. The
+    standard lines unit reads the reader's mandates 1 to 7 and 9 whole, as the review does, and the
+    manual reader reads neither the review's reads of the Questions nor its second silence: each bound
+    matches once, each passage left out on purpose is pinned by its words, and every heading of the
+    reader's mandates is read or left out on purpose. The closing report names a skipped or restored part's section a review copies once.
+    Each break is refused. This cannot judge a live agent's size; that is the measured re-run's.
+45. The closing report names every gap a review or a part wrote, and each one once. Two standard
+    lines found later at one line and place, two bounds of one read and two reasons for one section
+    are each named where their words differ; a review's copy of a section a verified part left
+    unread with its anomaly, of a plan omission, or of the owner's work the parts named, is named
+    once, and the short version counts the same. A bound reached is said as its limit, then what the
+    review left in its report's words, which the reviewer writes in plain words. The manual reader
+    holds no tool it never calls, its read of the row's name bullet ends at a pinned line, and it and
+    the standard lines unit read the review's rules for its report between lines that each match
+    once, the manual reader carrying the `anomalies:` ending in the reviewer's words. Each is held
+    over invented run folders the shipped scripts build, with every report written as its agent's
+    definition says, and each break is refused. This cannot judge a live run's reviews; that is the
+    live run's.
+46. A manual section a part left unread is named with its current reason and its pages, once, and
+    every rule an agent applies is read where it runs. Where a part's latest read verified ok and its
+    own report of that read is on file and whole, the closing report names the section off that
+    report; otherwise it names it off the part's latest anomaly for the section, with the pages the
+    plan gave the part, so two parts of one section are told apart by their pages and one sentence
+    is never printed twice. The standard lines unit reads the reader's mandates 1 to 7 and 9 whole,
+    mandate 1 among them, and keeps its sentence that it raises no Question and writes nothing for
+    one. The review's bound on citations is at least twice the measured run's 90th percentile and
+    above a small honest review of seven rows cited from nine pages each, and its other write bounds
+    sit above the measured run. No Grep pattern a shipped agent or skill tells an agent to run uses
+    `$`: every pattern the text gives after `Grep` is held to a table of its files both ways, and
+    each of its branches matches the same lines of each file it runs on with LF endings and with a
+    carriage return before each line's end, as a Windows checkout writes them. Each is held over
+    invented run folders the shipped scripts build, with every report written as its agent's
+    definition says, or over the definitions' text, and each break is refused. This cannot judge a
+    live run's reviews; that is the live run's.

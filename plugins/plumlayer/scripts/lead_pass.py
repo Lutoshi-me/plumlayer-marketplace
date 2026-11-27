@@ -187,16 +187,21 @@ BREAKER_FLOOR = 3
 # 300,000 milliseconds allows, so the call always returns before its timeout.
 WAIT_CAP = 280
 
-# A window 3 review's unit line as the plan script writes it, its manual pages after `reads`, and
-# ` verified` added once its review verified, or ` skipped` once its reads were spent.
+# A window 3 review's unit line as the plan script writes it, and ` verified` added once its review
+# verified, or ` skipped` once its reads were spent. A plan written before the reviews came after
+# the manual parts names the review's manual pages after `reads`.
 _REVIEW_LINE_RE = re.compile(
     r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?)(?:, reads .+)?, package \S+( verified| skipped)?$"
 )
 
-# A manual part's unit line: the review's package and trade, the unit it reads on after, and each
-# span it reads, `; ` between them.
+# A manual part's unit line: the package and its trade, the unit it reads on after (`none` for its
+# chain's first), and each span it reads, `; ` between them.
 _PART_LINE_RE = re.compile(
     r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?), package \S+, manual part after (\S+), reads (.+?)( verified| skipped)?$"
+)
+# A package's standard lines unit: the package and its trade, and the unit it comes after.
+_STANDARD_LINE_RE = re.compile(
+    r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?), package \S+, standard lines after (\S+)( verified| skipped)?$"
 )
 # One span as the plan script writes it: `<code> p<first>-p<last> of <fileId>`, and where it is not
 # the whole section, the section's own pages after it.
@@ -686,6 +691,44 @@ def _counts_off_restored(run_folder: Path, unit: str) -> bool:
     return restored
 
 
+def _part_pages(run_folder: Path, unit: str, spans: list[str]) -> tuple[str, list[str], list[tuple[str, str]]]:
+    """
+    What a verified manual part's latest read says it read, by the summary script's own selection
+    of its report: `reader` with the planned spans its report's `spans read:` lines name and the
+    planned spans they leave off, each with the reason the part named for its section on `sections
+    not checked:`; `restored` where its report was written from the record; `none` where no whole
+    report of that read is on file. Only a reader's own report says which pages were read.
+    """
+    if _counts_off_restored(run_folder, unit):
+        return "restored", [], []
+    report_script = pass_summary.unit_report_script
+    try:
+        history = report_script.unit_history(run_folder / pass_summary.LEDGER_NAME, "3", unit)
+        if history["latest"] is None:
+            return "none", [], []
+        read, _verified = history["latest"]
+        path, _restored, problems = pass_summary.report_of_read(
+            run_folder / REPORTS_FOLDER, unit, read, history["dispatches"], "manual",
+        )
+        if problems:
+            return "none", [], []
+        found = report_script.sections(report_script.report_text(path.read_bytes()) or "", report_script.LABELS["manual"])
+    except (OSError, report_script.ReportError):
+        return "none", [], []
+    said = report_script._report_items(found.get("spans read", []))
+    reasons: dict[str, str] = {}
+    for entry in report_script._report_items(found.get("sections not checked", [])):
+        words = entry.split(None, 1)
+        if len(words) == 2:
+            reasons.setdefault(words[0], words[1].strip())
+    read_spans = [span for span in spans if span in said]
+    unread = [
+        (span, reasons.get(span.split()[0], "its report does not name these pages as read"))
+        for span in spans if span not in said
+    ]
+    return "reader", read_spans, unread
+
+
 def _plan_reads(
     plan_path: Path, window: int, verified: set[str] | frozenset[str] = frozenset(),
 ) -> tuple[dict[str, str], dict[str, str]]:
@@ -694,7 +737,10 @@ def _plan_reads(
     pass is recorded, and what each unit id names: a sheet's number, the file a repeated lines unit
     reads, or a review's package. Both are empty where the plan is not this window's or is not
     there, and the pass is then named by id alone. A window 3 pass names the manual pages each of its manual
-    parts read, once the part is in `verified`, this window's units verified ok on the ledger.
+    parts read, once the part is in `verified`, this window's units verified ok on the ledger, off the
+    part's own report held to its planned spans, each planned span that report leaves off named as
+    not read with the part's reason, and the
+    packages whose standard lines it wrote, once that unit is in `verified`.
     """
     try:
         lines = plan_path.read_text(encoding="utf-8").splitlines()
@@ -709,6 +755,9 @@ def _plan_reads(
     packages: dict[str, list[str]] = {}
     read_on: dict[str, list[str]] = {}
     restored_on: dict[str, list[str]] = {}
+    unread_on: dict[str, list[str]] = {}
+    unknown_on: dict[str, list[str]] = {}
+    lines_for: dict[str, list[str]] = {}
     named: dict[str, str] = {}
     current = None
     for raw in lines:
@@ -720,6 +769,9 @@ def _plan_reads(
             current = heading.group(1)
             sheets[current], files[current], packages[current], read_on[current] = [], 0, [], []
             restored_on[current] = []
+            unread_on[current] = []
+            unknown_on[current] = []
+            lines_for[current] = []
             retire_items[current] = 0
             continue
         if current is None:
@@ -729,14 +781,29 @@ def _plan_reads(
         part = _PART_LINE_RE.match(line) if window == 3 else None
         if part:
             if part.group(1) in verified:
-                # A part whose latest verified read counts off a report the run restored from the
-                # record is named apart: no reader's report says which of its pages were read.
-                restored = _counts_off_restored(plan_path.parent, part.group(1))
-                (restored_on if restored else read_on)[current].extend(
-                    f"{span.group(1)} pages {span.group(2)} to {span.group(3)} for {part.group(2)}"
-                    for span in map(_SPAN_RE.match, part.group(5).split("; ")) if span
-                )
+                # A part names only the pages its own verified report says it read, and each
+                # planned span that report leaves off as not read, with the part's reason. A part
+                # whose latest verified read counts off a report the run restored from the record,
+                # or off no whole report, is named apart: no reader's report says which pages.
+                planned = [span for span in part.group(5).split("; ") if _SPAN_RE.match(span)]
+                state, read_spans, unread = _part_pages(plan_path.parent, part.group(1), planned)
+
+                def pages(span: str) -> str:
+                    found = _SPAN_RE.match(span)
+                    return f"{found.group(1)} pages {found.group(2)} to {found.group(3)} for {part.group(2)}"
+
+                if state == "reader":
+                    read_on[current].extend(pages(span) for span in read_spans)
+                    unread_on[current].extend(f"{pages(span)}, {why}" for span, why in unread)
+                else:
+                    (restored_on if state == "restored" else unknown_on)[current].extend(pages(span) for span in planned)
             named[part.group(1)] = part.group(2)
+            continue
+        standard = _STANDARD_LINE_RE.match(line) if window == 3 else None
+        if standard:
+            if standard.group(1) in verified:
+                lines_for[current].append(standard.group(2))
+            named[standard.group(1)] = standard.group(2)
             continue
         review = _REVIEW_LINE_RE.match(line) if window == 3 else None
         if review:
@@ -767,10 +834,16 @@ def _plan_reads(
             )
         if read_on[pass_id]:
             parts.append(f"manual pages read ({'; '.join(read_on[pass_id])})")
+        if unread_on[pass_id]:
+            parts.append(f"manual pages not read ({'; '.join(unread_on[pass_id])})")
         if restored_on[pass_id]:
             parts.append(
                 f"manual pages whose report was written from the record ({'; '.join(restored_on[pass_id])})"
             )
+        if unknown_on[pass_id]:
+            parts.append(f"manual pages whose report is not on file, so what was read is not known ({'; '.join(unknown_on[pass_id])})")
+        if lines_for[pass_id]:
+            parts.append(f"standard lines written for {'; '.join(lines_for[pass_id])}")
         if sheets[pass_id]:
             parts.append(
                 f"{len(sheets[pass_id])} sheet{'' if len(sheets[pass_id]) == 1 else 's'} "

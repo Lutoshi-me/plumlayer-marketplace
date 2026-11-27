@@ -1,8 +1,8 @@
 ---
 name: scope-round-runner
-description: Runs one pass of a Plumlayer scope run, over sheets or over up to eight package reviews (one trade's packages together where that trade has more), or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, one scope-reviewer per package and one scope-manual-reader per manual part after it, or in the recheck of a new delivery one scope-rechecker per sheet or batch of items to retire, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
+description: Runs one pass of a Plumlayer scope run, over sheets, over a window 3 stage's units, or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, one scope-manual-reader per manual part and one scope-standard-lines per package, then one scope-reviewer per package, or in the recheck of a new delivery one scope-rechecker per sheet or batch of items to retire, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 model: sonnet
-tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-rechecker), Read, Write, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
+tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-standard-lines, scope-rechecker), Read, Write, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
 
 You own one pass of a scope run, from its first dispatch line to its last, and then you end. Your
@@ -34,13 +34,15 @@ number prints on more than one page of the drawing issue, each page after its fi
 page and a unit of its own, and its line also names the key it opens as
 (`L2-6. L-4.30, file <fileId>, page 108, opens as <fileId>-p108: <title>`). A pass that reads for
 the repeated lines is the exception: its units each name one drawing file and a page of it
-(`RS1-2. file <fileId>, from page <n>: repeated lines`). In window 3 a pass carries up to eight
-review units, or every package of one trade where that trade has more, and up to ten units with the
-manual parts the plan puts after them. A review's line names its unit id, the package's name, its
-catalog trade, the manual pages it reads after `reads` and its package id
-(`2. i2-rev-092116-1: Drywall and framing, trade 09 21 16, reads 092116 p402-p415 of file-1a2b, package pkg-4c1e`).
-A manual part's line names the same, then the unit it reads on after and its pages
-(`3. i2-rev-092116-1c-1: Drywall and framing, trade 09 21 16, package pkg-4c1e, manual part after i2-rev-092116-1, reads 092900 p416-p425 of file-1a2b`). A unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
+(`RS1-2. file <fileId>, from page <n>: repeated lines`). In window 3 a pass reads for `manual
+parts and standard lines`, up to ten units, or for `package reviews`, up to eight reviews or every
+package of one trade where that trade has more. A review's line names its unit id, the package's
+name, its catalog trade and its package id
+(`2. i2-rev-092116-1: Drywall and framing, trade 09 21 16, package pkg-4c1e`). A manual part's line
+names the same, then the unit it reads on after, `none` for the first, and its pages
+(`3. i2-rev-092116-1c-2: Drywall and framing, trade 09 21 16, package pkg-4c1e, manual part after i2-rev-092116-1c-1, reads 092900 p416-p425 of file-1a2b`),
+and a standard lines unit's line the unit it comes after
+(`4. i2-rev-092116-1s-1: Drywall and framing, trade 09 21 16, package pkg-4c1e, standard lines after i2-rev-092116-1c-2`). A unit line names its unit id first, and that id is the one you put in the dispatch, on the ledger
 line and in the `verify_unit` prefix; never rebuild it from the pass id and the line's position. A
 pass the plan folded carries units of more than one discipline, each under the id its own
 discipline gave it, and its `folded in:` line names the parts it took in. If a path is missing,
@@ -229,13 +231,16 @@ copy.
    python3 '<scripts path>/unit_report.py' check --kind <kind> --report '<run folder>/reports/<unit id>.md' --owed '<the Owed path of the dispatch, or none>'
    ```
 
-   `<kind>` is `vocabulary` in window 1, `sheet` in window 2, and in window 3 `review` for a review
-   and `manual` for a manual part; recheck mode keeps its own check. Exit 0 prints `report whole`.
+   `<kind>` is `vocabulary` in window 1, `sheet` in window 2, and in window 3 `review`, `manual`
+   or `standard` by the unit's line, a manual part's check adding `--spans '<its Reads: line>'`,
+   which holds its pages to the plan;
+   recheck mode keeps its own check. Exit 0 prints `report whole`.
    Exit 3 prints one line per mismatch, `report <value>` where `created:`, `questions raised:` or
    `questions replied:` disagrees with its own list
-   and `owed <value>` where the `owed:` line does not answer the Owed file as its rule says: the
-   report is whole, so verify off it, and each of those lines is a mismatch of this read, named
-   `report` or `owed`. Exit 2 prints why the file is no report (`missing`, or `not whole: no
+   and `owed <value>` where the `owed:` line does not answer the Owed file as its rule says, and
+   `spans <value>` or `section lines <value>` where a part's spans or section lines are not its
+   dispatch's: the report is whole, so verify off it, and each of those lines is a mismatch of
+   this read, named by its first word or words. Exit 2 prints why the file is no report (`missing`, or `not whole: no
    <labels>`): then hold the reader's returned message to the same check, on stdin, in place of
    the file, through a quoted heredoc so nothing in it is read by the shell:
 
@@ -349,11 +354,12 @@ copy.
    review mode copies the reviewer's line the same way. Its `grain questions:` and
    `door-owned suggestions:` lines go on the ledger the same way, as
    `note <window> <pass> <unit> grain <the line>` and `note <window> <pass> <unit> door <the line>`,
-   so the closing report carries them to the estimator. In review mode, each entry of the
-   report's `standard lines:`, on its label's line or under it, that ends `row not yet written`
-   goes on the ledger the same way, as `note <window> <pass> <unit> anomaly <the entry>`, so the
-   closing report carries each half the paper gives to the reviewed package's trade
-   while the row it would cite was not yet written. Each entry of a review's or a manual part's
+   so the closing report carries them to the estimator. In review mode, each entry of a
+   standard lines unit's `standard lines:` that ends `row not yet written` goes on as
+   `note <window> <pass> <unit> anomaly <the entry>`, and each entry of a review's `standard lines
+   found later:`, `rows on other packages:` and `bounds reached:` as `note <window> <pass> <unit>
+   anomaly standard line found later: <the entry>`, `... anomaly row on another package: <the
+   entry>` and `... anomaly bound reached: <the entry>`. Each entry of a window 3 unit's
    `not written:` line goes on as `note <window> <pass> <unit> anomaly not written: <the entry>`,
    copied whole, whether the report came from its file or its returned message: the owed command
    hands these to the unit's next read, and the closing report names them. Each answer
@@ -389,8 +395,8 @@ copy.
    check could not find back: `<sheet>` the unit's sheet, or its package's name on a review;
    `<check>` the check's name as the bullets above give it (`created`, `created subjects`,
    `updated`, `questions raised`, `questions replied`, `questions linked`, `trades`,
-   `page citations`, `manual updates`, `field updates`, `headings`, `rows ordered`), or `report`
-   or `owed` where the report check printed it; and `<value>` the subject or id it named, for
+   `page citations`, `manual updates`, `field updates`, `headings`, `rows ordered`), or the
+   check the report check printed; and `<value>` the subject or id it named, for
    `field updates` the subject and the predicate, for `questions linked` the subject and the
    Question's id, for `created` the subject count and the
    reader's figure, and for `report` or `owed` the rest of the line the report check printed. A `verified`
@@ -667,47 +673,38 @@ ledger: <path>, appended through <last line written>
 When your dispatch names `review-<pass id>`, you are a pass runner over a window 3 pass: pass mode,
 over up to eight reviews, or one trade's reviews where that trade has more, with four differences.
 
-- **Each unit is a review, not a sheet.** Your pass block carries those reviews: `reads for:`
-  reads `package reviews`, and each unit line names its unit id, the package's name, its catalog
-  trade and its package id. The `review-` your dispatch puts in front is how it names the
+- **Each unit is a manual part, a standard lines unit or a review, not a sheet.** Your pass block
+  reads for `manual parts and standard lines` or for `package reviews`. The `review-` your dispatch puts in front is how it names the
   mode; your pass id on every ledger line and every path is the bare id the plan gives, without it.
   Write the pass brief as pass mode's step 1 says, with each unit's trade and package as what the
   pass reads for and the subject prefix scheme as step 1 writes it. Run the
-  reviews in the order the block lists them, one at a time, as pass mode runs its units: two
-  packages on one trade sit in one pass, so they run one after the other. The summary script reads
-  each verified review's own report for the pages it opened and the searches it ran.
-- **You dispatch two agent types here, `plumlayer:scope-reviewer` for a review's line and
-  `plumlayer:scope-manual-reader` for a manual part's line**, the one carrying
-  `, manual part after `, one per unit in turn, and never a reader. For each unit, look for its own `verified` line, then append its
+  units in the order the block lists them, one at a time, as pass mode runs its units, so a
+  package's parts and its standard lines unit run in order. The summary script reads
+  each verified unit's own report for the pages it opened and the searches it ran.
+- **You dispatch three agent types here: `plumlayer:scope-manual-reader` for a line carrying
+  `, manual part after `, `plumlayer:scope-standard-lines` for one carrying `, standard lines
+  after `, and `plumlayer:scope-reviewer` for a review's line**, one per unit in turn, and never a reader. For each unit, look for its own `verified` line, then append its
   `dispatch` line first, in one append, then dispatch, exactly as pass mode's step 2 says. That
   line's `sheets` field reads `none`, because a review is planned off the record and opens a page
   only where a hit sends it, and its `purpose` names the package. The dispatch carries the project
   id, the window, the pass id, the unit id, `Read: <k>` as pass mode's step 2 gives it, `Owed:`
   as it gives it, the
-  catalog trade id and the package id its unit line names, `Reads:` with the spans after
-  `reads` on its unit line copied as written, the run folder path, the pass brief
+  catalog trade id and the package id its unit line names, the run folder path, the pass brief
   path, and the reader definition path,
   `<scripts path>/../agents/scope-reader.md` written out in full with the scripts path off your
-  dispatch, since the reviewer works under the reader's mandates and has no other way to find
-  them. Paste nothing from those files into it, and never the package's `codes` or `manualSections`: the reviewer reads
-  those off the record, so the sections it checks have one source. A manual part's dispatch also
-  carries `After:` with the unit id after `manual part after` on its line, and the reviewer
-  definition path, `<scripts path>/../agents/scope-reviewer.md` written out in full, as the skill's
-  manual part dispatch shows; its `dispatch` line's `purpose` reads `read the <package name>
-  manual pages`.
+  dispatch, since each of them works under the reader's mandates. Paste nothing from those files
+  into it, and never the package's `codes` or `manualSections`, which each reads off the record,
+  so the sections it checks have one source. A manual part's dispatch also
+  carries `After:` with the unit id after `manual part after` on its line, `Reads:` with the spans
+  after `reads` copied as written, and the reviewer definition path,
+  `<scripts path>/../agents/scope-reviewer.md` in full; its `dispatch` line's `purpose` reads
+  `read the <package name> manual pages`. A standard lines unit's dispatch carries the reviewer
+  definition path, the scripts path and `Review: <its unit id less s-1>`; its `purpose` reads
+  `write the <package name> standard lines`. The skill's dispatch blocks show each.
   Right before each dispatch, after its `dispatch` line, note the time you dispatch it: run
   `date -u +%Y-%m-%dT%H:%M:%SZ > '<run folder>/reports/<unit id>.read-<k>.dispatched'` with the
-  Bash tool, single quoted, `<k>` the dispatch's `Read:` number. It writes over any file already
-  there, so a review dispatched again under the same `dispatch` line carries the time of its own
-  dispatch. That file is where the check below reads the time this read was dispatched, a resume
-  included.
-- **Hold its pages to the plan first.** A review's or a manual part's `spans read:` lines must be
-  exactly the spans its `Reads:` line named, in that order, one per line, or the one word `none`
-  where it named `no manual pages`. A span of a section its `sections not checked:` line names as
-  `manual removed` or `not on the package` is the one it leaves off, and its runner copies that
-  section's `not read:` note to the ledger. Any other span left out, one added or one changed is a mismatch,
-  named `spans`, and its pages are read again on that unit's next read. No unit's report decides
-  what is read next: the plan placed every page before the window started.
+  Bash tool, single quoted, `<k>` the dispatch's `Read:` number. It writes over an earlier file,
+  so each dispatch carries its own time, which the check below reads, a resume included.
 - **Verify against the pages the review opened.** The reviewer names every page it opened on its
   `pages opened:` line, and those sheets are what you check: every line of `pages opened:`, under
   the label or on the label written again, whatever it says the review did there. None is left
@@ -732,7 +729,9 @@ over up to eight reviews, or one trade's reviews where that trade has more, with
   `manual updates:` line, or on its `field updates:` line; one found in none of the three is a
   mismatch. The lines of `manual updates:`, each a new citation of a manual page, the lines of
   `field updates:`, each a write that carries no new citation, the rows of `headings written:` and
-  the review's Questions are checked by the record itself, in one call made after the sheet calls:
+  the review's Questions are checked by the record itself, in one call made after the sheet calls,
+  and the same for a manual part and a standard lines unit, whose reports carry no headings, so
+  no headings, saved order or rows' order check runs on them:
 
   ```text
   verify_unit(projectId,

@@ -138,9 +138,10 @@ that relaxes any one of them reproduces a measured, named failure.
    ones included: `list_questions` with `status: "all"` and no trade filter, paged until it comes
    back whole. A trade filter drops the Questions that name other trades and the ones still at not
    known yet, and the reader's own page read carries only the open ones on its own trades. A
-   manual part alone reads them another way, since the whole list is more than a part can hold:
-   by its package's trade, by each section it reads and by a sheet its ask cites, and by a search
-   of the Questions for what its ask turns on, as its definition says. Where an
+   manual part, and a review on a project of more than 40 Questions, read them another way, since
+   the whole list is more than they can hold: by the package's trades, by each section read and
+   by a sheet the ask cites, and by a search of the Questions for what the ask turns on, as their
+   definitions say. Where an
    open one already covers the same ask, reply to it instead of
    asking it a second time; a closed one is never asked again. A Question is about the project,
    never about a Plumlayer failure; a read or write that fails is reported and handled in the run's
@@ -644,8 +645,8 @@ record files, never recorded as project entries:
   script's window 3 input, copied again at the start of window 3, and `spec-sections.json`
   (`list_spec_sections`) its other window 3 input, the manual's sections with their pages, copied
   at the start of window 3. `window-3.json` is what the last window 3 plan run wrote, each
-  review's id and pages and each manual part, so a replan never changes the pages of a unit
-  already dispatched. `window-1.json` is what the window 1 plan run wrote, the unit keys it
+  review's id and each package's chain of manual parts and standard lines unit, made once and
+  kept from the window's first dispatch, so a replan never adds, moves or divides a manual page. `window-1.json` is what the window 1 plan run wrote, the unit keys it
   selected and the unit keys it left out with its `--include` and `--exclude` patterns and their
   reasons, and its repeated lines units in `repeatedSets`, and it is the window 2 plan run's
   input, so that window subtracts window 1 rather than recomputing it. `window-2.json` is what the last window 2 plan run wrote, the unit ids it
@@ -659,10 +660,9 @@ record files, never recorded as project entries:
   Nothing else is copied here: the definitions are on the record and no window plans off them.
   Audience: machine.
 - `read-plan.md`: the read plan, one per window, written by the plan script, never by hand: the
-  passes, the units within each with their sheets, files and pages in windows 1 and 2 and the
-  package each review reads for in window 3 with the manual pages it reads, and each manual part
-  the plan gives the rest of a package's manual pages, after its review or in a pass of manual
-  parts after its pass, and what is deliberately excluded. Audience: agent; a
+  passes, the units within each with their sheets, files and pages in windows 1 and 2, and in
+  window 3 each package's manual parts with their pages and its standard lines unit, in passes
+  before the passes of reviews, and each review, and what is deliberately excluded. Audience: agent; a
   runner opens its own pass only.
 - `briefs/`: one small file per pass, written by that pass's runner, carrying the pass's filled
   slot values (what the pass reads for, its content families, the subject prefix scheme). It is the
@@ -744,8 +744,8 @@ The run executes at three levels. Each level is a separate agent context, bounde
   grows with the size of the window. Two further
   instances run in their own modes: one closes each window at its boundary (the cross-pass overlap
   scan and the declaration of any kind a reader named and did not declare), and in window 3 each
-  pass runner runs up to eight review units, or every package of one trade where that trade has
-  more, one at a time, with the manual parts the plan puts after them, ten units at most.
+  pass runner runs up to ten manual parts and standard lines units, or up to eight review units,
+  or every package of one trade where that trade has more, one at a time.
 - **The readers**, one fresh instance per read unit, each read over the corpus and record, as the
   window's stage and the pass brief define: in window 1 the plugin's `scope-vocabulary-reader`
   agent reads one sheet for the vocabulary, or one drawing file's repeated lines, and in window 2
@@ -757,13 +757,16 @@ The run executes at three levels. Each level is a separate agent context, bounde
   deletes a package for the owner's own work that a later write made again.
 - **The reviewer** (the plugin's `scope-reviewer` agent, one fresh instance per package) reviews
   one package in window 3: it harvests that package's own words off the record, searches the set's
-  text for them, opens only the pages a hit sends it to, reads the first pages of the package's
-  manual sections the plan gives it, and records what no row carries. Each writes its report to
-  `reports/` and ends.
+  text for them, opens only the pages a hit sends it to, takes what the package's manual parts
+  left through a script, records what no row carries, and settles the package's headings and row
+  order. Each writes its report to `reports/` and ends.
 - **The manual reader** (the plugin's `scope-manual-reader` agent, one fresh instance per manual
-  part) reads the pages of a package's manual sections the plan gives one manual part, after the
+  part) reads the pages of a package's manual sections the plan gives one manual part, before the
   package's review, and records what they put in the package's scope. Each writes its report to
   `reports/` and ends.
+- **The standard lines writer** (the plugin's `scope-standard-lines` agent, one fresh instance per
+  package) writes the package's standard lines after its manual parts and before its review. Each
+  writes its report to `reports/` and ends.
 
 Handoff is by file and record, never by inlined text. A dispatch at any level carries only
 pointers: the project id, the window, the pass or unit id, the run folder path, and the page or
@@ -866,7 +869,7 @@ finished stand:
 | `index built` after window 2, no `packages folded` | stage 6 step 5: the folder in mode fold, mid-fold included |
 | `packages folded` on a sized delivery, no `recheck complete` | `recheck.md` step 7 |
 | `packages folded` on an unsized delivery, or `recheck complete` | stage 7 step 1, the folder's recheck mode first where the fold deleted a package on a rechecked pass |
-| a window 3 `dispatch` line, no `window 3 complete` | window 3: its plan again with the same files, then the listing; step 1's start steps are not run again |
+| a window 3 `dispatch` line, no `window 3 complete` | window 3: its plan again with the same files, then the listing, which holds the passes of reviews until every pass of manual parts and standard lines is finished; step 1's start steps are not run again |
 | every window 3 pass finished, no `index built` after them | stage 7 step 4: boundary, then the index |
 | `index built` after window 3's passes, no `window 3 complete` | append `window 3 complete` |
 | `window 3 complete`, no `packages amended` | stage 8 from its start; each `amending:` line no `amended:` line follows is finished against the live packages, its `amended:` appended |
@@ -933,7 +936,7 @@ stops, and nothing else waits on him:
    nothing: stop with the breaker message. The report so far names each skipped unit with the
    reason off its last read; say the reasons it gives, in a few words each.
 4. **A window that cannot be planned**: the window 3 plan refusing because the section list reads
-   truncated or because no letter is left for a pass of manual parts, the inventory refusing the
+   truncated or because window 3 was started under an earlier plugin, the inventory refusing the
    grid after a second fetch, the recheck's plan refusing after its rows are copied again, and the
    recheck's comparison not finishing (`recheck.md` step 1). Say in plain words what is wrong and
    what he would do about it.
@@ -1625,26 +1628,24 @@ that was skipped has none, and a window 3 that planned no review has none:
    `solicitation_list_packages` response over `<run folder>/plan/packages.json`, byte for byte,
    returning one line, and one more to copy a fresh `list_spec_sections(projectId)` response, with
    no `sections` filter, over `<run folder>/plan/spec-sections.json` the same way. Then run the
-   plan script for window 3. It plans one review unit per package
-   in `plan/packages.json`, in package order, and puts up to eight reviews in each pass, every
-   package of one catalog trade in the same pass, one after the other, so no two passes share a
-   trade; a trade of more than eight packages is a pass of its own, and one of more than ten is
-   refused, since a window 3 pass holds at most ten units. It reads no sheets and takes
-   no inventory. It divides each package's manual sections, in its `manualSections` order, between
-   its review, whole sections up to twenty pages, and manual parts of up to ten pages each after
-   it, so every page of every section is planned before any review runs. Read back only its bounds
-   line: packages, reviews, manual parts, manual pages, sections not read, passes, reviews per
-   pass, units per pass, trades, and the packages sharing a trade. Where it refuses because the
-   list no longer carries a package with manual section pages no unit has read, append each
-   `note 3` line the refusal gives to the ledger as written and run it again; the closing report
-   names each section so recorded. Where it refuses because no letter is left to name a pass of
-   manual parts, append its `note 3` lines the same way and stop, naming those sections, since that
-   trade's packages need folding into fewer before it plans. Where it refuses because the section
-   list reads truncated, stop, saying the manual has more sections than one read returns, so no
-   manual reading can be planned. Each is a window that cannot be planned. Where it refuses a plan file holding a continuation a review's
-   report bound, from a plugin before manual parts were planned, move `plan/window-3.json` to
-   `plan/window-3-before.json` with a local command and run it again: the reviews already verified
-   stay verified, and the manual pages are planned afresh.
+   plan script for window 3. It reads no sheets and takes no inventory, and plans the window in
+   two stages. Stage A is each package's chain: its manual sections, in its `manualSections`
+   order, divided into manual parts of up to ten pages each, then its standard lines unit last,
+   in passes `W3-M<n>` of up to ten units, the trade with the most units first and one trade's
+   chains together, a trade longer than one pass running on in lettered passes (`W3-M1b`), each
+   waiting for the one before it. Stage B is one review per package in passes `W3-<n>`: the
+   general requirements package's review alone in the first, then up to eight reviews a pass,
+   every package of one catalog trade in the same pass, a trade of more than eight packages a pass
+   of its own and one of more than ten refused. Every pass of stage B starts after every pass of
+   stage A, and every pass after the first after the first too. The manual plan is made once: from
+   the window's first `dispatch 3` line on, a replan adds, moves and divides no manual page, and
+   lists what changed since under `Manual sections not read` with its reason, a section added to a
+   package, a package deleted with pages still owed, a part read twice and not confirmed. Read
+   back only its bounds line. Where it refuses because the section list reads truncated, stop,
+   saying the manual has more sections than one read returns, so no manual reading can be planned;
+   where it refuses because window 3 of this run folder was started under an earlier plugin, stop
+   and say so. Each is a window that cannot be planned. Never run the window 3 plan while a pass
+   of the window is out: every replan waits until no pass is running.
 
    In a pass on an addendum, the script reads the pass's own `trades/` files beside the plan and
    plans a review only for a package covering a trade this pass wrote on (its `tradeCode`, a
@@ -1665,28 +1666,23 @@ that was skipped has none, and a window 3 that planned no review has none:
      --out '<run folder>/read-plan.md'
    ```
 
-2. **Run the reviews** as stage 4 runs its passes, with `review-<pass id>` in place of the pass id,
-   so the runner dispatches one `plumlayer:scope-reviewer` per unit in turn rather than a reader.
-   The runner's `verify_unit` against the pages each review opened, your one count call over the
-   pass's prefixes, one `pass:` line each. No two passes of reviews share a trade, so none waits on another, and
-   you start what `start now:` names, up to six at once, as stage 4 step 1 says. A review reads
-   the pages of its package's manual sections its unit line names after `reads`. The plan gives
-   every page after those to manual parts, units of their own that the runner dispatches to the
-   plugin's `scope-manual-reader` after the review, each reading exactly the pages its unit line
-   names, so every page of a section is read inside the window without your asking; you start
-   nothing for them, and no unit's report decides what is read next. A manual part is a unit of
-   its pass like any review, so the prefixes it prints for the pass carry them, and the record
-   script refuses a count that leaves one out. Where a trade's reviews and
-   their manual parts come to more than ten units, the parts planned last go into a pass of
-   manual parts of their own, the pass's id with a letter after it (`i1-W3-3b`), whose
-   `starts after:` line names the pass they came out of and every earlier pass of a trade it
-   holds, so no two units of one trade run at once; the listing offers it once that pass is
-   recorded, and you start it as any pass. You never read a manual section yourself, and never
-   send an agent to read one outside the plan. Each review also writes the standard lines whose
-   condition it finds on this job's own drawings or manual, each cited to where it found it,
-   settles its package's headings in the order the work is built, or on the general requirements
-   package in the order of its seven headings, and puts the rows under every heading in the order
-   the estimator reads the work.
+2. **Run the passes** as stage 4 runs its passes, with `review-<pass id>` in place of the pass
+   id, so the runner dispatches a `plumlayer:scope-manual-reader` for each manual part, a
+   `plumlayer:scope-standard-lines` for each standard lines unit and a `plumlayer:scope-reviewer`
+   for each review, in turn, rather than a reader. The runner's `verify_unit` against the pages
+   each unit opened, your one count call over the pass's prefixes, one `pass:` line each. You
+   start what `start now:` names, up to six at once, as stage 4 step 1 says: the listing holds
+   each pass of reviews until every pass it starts after is finished, a unit read twice and not
+   confirmed counting as finished, so no review starts before its package's manual parts and
+   standard lines are settled. A manual part and a standard lines unit are units of their pass
+   like any review, so the prefixes it prints for the pass carry them, and the record script
+   refuses a count that leaves one out. You never read a manual section yourself, and never send an agent
+   to read one outside the plan. Each manual part records what its pages put in scope and says
+   what it left on its section lines; each standard lines unit writes the lines whose condition it
+   finds on this job's own drawings or manual, each cited to where it found it; each review takes
+   what the parts left through a script, settles its package's headings in the order the work is
+   built, or on the general requirements package in the order of its seven headings, and puts the
+   rows under every heading in the order the estimator reads the work.
 3. **Keep the rest for the closing report.** Between passes you say only each pass's one line.
    The manual pages each manual part read, each pair of rows a review found carrying the same
    work, combined or left, and each section the read plan lists under Manual sections not read go
@@ -1855,7 +1851,7 @@ What I could not read
 - The <package> review, or manual pages for <package> (section <code>, pages <a> to <b>): the same.
 - <sheet>, <part>: it is a scan, and I could not read that part from its picture.
 - Left out of the read plan at the start: <sheets> (<the reason given>).
-- Section <code> for <package>: no review read it, because <reason>.
+- Section <code>, or its pages <a> to <b>, for <package>: no unit read it, because <reason>.
 - <package>: I could not search for <words>. Search them in the drawings on plumlayer.com.
 
 Questions, by trade
@@ -1892,8 +1888,11 @@ defined, and the items added by trade.
 The report's figures each come off the run folder, as the table in `close_report.py` names: items
 added off the trades files, each unit once, never off a `pass:` line's `created`, which counts
 entries; the time off `phase: reading started`; the Questions by trade off the copy of
-`list_questions` with `limit: 0`; the manual sections no review could read off the window 3 read
-plan's `## Manual sections not read`, and the scanned sheets off the `anomaly` notes that carry
+`list_questions` with `limit: 0`; the manual sections and pages no unit read off the window 3 read
+plan's `## Manual sections not read`, each package's standard lines not written where its standard
+lines unit was skipped, its headings and row order not settled where its review was skipped, and
+each package that took a row from another package's review after its own review finished, off the
+ledger, and the scanned sheets off the `anomaly` notes that carry
 `not read from the picture:`, each sheet and part once. Every item a reader was not sure how finely
 to split goes under its own heading, all of them, and the short version gives their count. On a
 pass on an addendum it names the packages it did not review and why, off the window 3 read plan.
@@ -2000,7 +1999,6 @@ Project: <projectId>. Window: 3. Pass: <pass id>. Unit: <unit id>.
 Read: <the number of this read of the unit, its own dispatch line counted>.
 Owed: <run folder>/owed/<unit id>.read-<k>.md on a read after the first, or none.
 Reviewing: <the package's catalog trade id>. Package: <the package id>.
-Reads: <the spans after "reads" on the unit line, as written there>.
 Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>.
 Reader definition: <scripts path>/../agents/scope-reader.md, written out in full.
 Review your package as your definition says, write your report to
@@ -2012,9 +2010,8 @@ them off the record with `solicitation_get_package`, so the manual sections it c
 the notes put on the package have one source and are the ones the record holds when the review
 runs.
 
-**Manual part dispatch** (the runner writes this for a manual part unit, the one the read plan
-puts after a review or the manual part before it, with its `After:` and `Reads:` lines copied off
-the unit line):
+**Manual part dispatch** (the runner writes this for a manual part unit, with its `After:` and
+`Reads:` lines copied off the unit line, `After: none` for a package's first part):
 
 ```text
 subagent_type: plumlayer:scope-manual-reader
@@ -2033,8 +2030,26 @@ Read your pages as your definition says, write your report to
 ```
 
 A manual part reads exactly the pages its `Reads:` line names, and the opening pages of a section
-it starts partway into, for what that section's Part 1 says, and it reads what the unit before it
+it starts partway into, for what that section's Part 1 says, and it reads what the part before it
 carried over in `<run folder>/carry/<the unit after After>.md`.
+
+**Standard lines dispatch** (the runner writes this for a standard lines unit, the one whose line
+carries `, standard lines after `):
+
+```text
+subagent_type: plumlayer:scope-standard-lines
+run_in_background: false
+Project: <projectId>. Window: 3. Pass: <pass id>. Unit: <standard lines unit id>.
+Read: <the number of this read of the unit, its own dispatch line counted>.
+Owed: <run folder>/owed/<unit id>.read-<k>.md on a read after the first, or none.
+Reviewing: <the package's catalog trade id>. Package: <the package id>.
+Review: <the unit id less its s-1>.
+Run folder: <path>. Pass brief: <path to briefs/<pass-id>.md>. Scripts: <scripts path>.
+Reader definition: <scripts path>/../agents/scope-reader.md, written out in full.
+Reviewer definition: <scripts path>/../agents/scope-reviewer.md, written out in full.
+Write your package's standard lines as your definition says, write your report to
+<run folder>/reports/<unit id>.md, then return it.
+```
 
 **The reader's report** comes back in this shape, counts and named anomalies only:
 
@@ -2134,7 +2149,7 @@ report: <run folder>/reports/<pass id>.md
 unit: <unit id>   package: <package name>   trade: <catalog id>   window: 3
 harvested: rows <n>, definition codes <n>, spec sections <n>, aliases <n>
 notes read: <each item the package notes name + the row that carries it, created or found, or `shown nowhere`, one per line, or "none">
-searches: <n> run, <n> returned nothing, <n> of them standard line
+searches: <n> run, <n> returned nothing
 terms too general: <term + its page count, one per line, or "none">
 pages opened: <sheet number + fileId + page + the term that sent it + what it did, one per line, or "none">
 created: <n>   updated: <n>   questions raised: <n>   questions replied: <n>
@@ -2154,12 +2169,14 @@ grain questions: <one line each, naming the grain and the rows, or "none">
 silent sections: <section code + the Question id, or `left open` + its reason, `the sheets select none of it` or `closed Question <id>`, + the words searched, one per line, or "none">
 unspecified work: <row family + the Question id, or `left open, closed Question <id>`, + the words searched, one per line, or "none">
 compared: <subject + the sources compared + what you found + how it ended: Question <id>, `agree`, `closed Question <id>`, `not settled`, or `not reached`, one per line, or "none">
-spans read: <each span the `Reads:` line names, as written there, one per line, or "none">
-sections not checked: <one per line, the section code + the reason: "manual removed", "the owner's work", "no manual sections on this package", "the manual was not read in"; or "none">
-families not checked: <row family, one per line, or "none">
-standard lines: <each line the script printed + how it ended, one per line, or "none">
+left by the parts: <each `left` item the notes script printed, + `written <subject>` or `not written, <why>`, one per line, or "none">
+sections not checked: <one per line, the section code + the reason: "not read" or "not known" with the reason the notes script printed, "searches spent", "notes not read", "the owner's work", "no manual sections on this package", "the manual was not read in"; or "none">
+families not checked: <row family + the reason, one per line, or "none">
+standard lines found later: <each line as `<the line's row name> | <sheet and page, or section and page> | <what you found>`, one per line, or "none">
 headings written: <the headings in their order on the first line, then each row whose heading was written + its subject + the heading, one per line, or "none">
 rows ordered: <each heading on the first line of `headings written:`, in that order + its count of home rows + `changed`, `as it stood`, `one row`, `over 500 rows` or `refused`, one per line, or "none">
+rows on other packages: <the full subject of every row on another package's trade created or written onto + that trade's catalog id, as `<subject> | <catalog id>`, one per line, or "none">
+bounds reached: <each read whose limit was reached, as `<the read> <its limit>: <what it left>`, one per line, or "none">
 door-owned suggestions: <one line each, or "none">
 not written: <each requirement a page gives the package that was not written, as `<section code + page, or sheet + page> | <what the page gives> | <the subject of the row it belongs on, or no row> | <why>`, one per line, or "none">
 owed: <each `not written by read` line of the Owed file, copied whole, then ` | ` and `written <subject>` or `not written, <why>`, and each `check read` line of an update, a field update, a Question on a row, a manual update or a page citation, copied whole, then ` | ` and `written <subject>` or `not needed, <why>`, one per line, or "none">

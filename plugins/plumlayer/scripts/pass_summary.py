@@ -89,10 +89,11 @@ in a row, whatever ended the last, so the lead stops for the estimator and never
 
   --plan    the read plan the pass runs off, `<run folder>/read-plan.md`. The pass's block there
             lists the units it carries, under a heading `### <pass id>. <name>`, one unit line each:
-            `<unit id>. <sheet number>, ...` in windows 1 and 2, `<n>. <unit id>: <name>, trade
-            <trade>, reads <spans>, package <package id>` in window 3, one line per review, and
-            one per manual part, `<n>. <unit id>: <name>, trade <trade>, package <package id>,
-            manual part after <unit id>, reads <spans>`.
+            `<unit id>. <sheet number>, ...` in windows 1 and 2, and in window 3 one line per
+            manual part, `<n>. <unit id>: <name>, trade <trade>, package <package id>, manual part
+            after <unit id or none>, reads <spans>`, one per standard lines unit, `<n>. <unit id>:
+            <name>, trade <trade>, package <package id>, standard lines after <unit id or none>`,
+            and one per review, `<n>. <unit id>: <name>, trade <trade>, package <package id>`.
 
   --trades  the pass's own trades file, `<run folder>/trades/<pass id>.txt`, which the runner
             writes a unit at a time off its `verify_unit` results, through `unit_report.py
@@ -120,7 +121,7 @@ Window 3:
   one page for each line under its `pages opened:` label up to the next label of the reviewer's
   report shape (the label's own line counts where it names a page, and a line reading `none`
   counts nothing). A report counts only where `unit_report.py check` holds it whole for its kind,
-  a review or a manual part; where it does not, the restored report of that read,
+  a review, a manual part or a standard lines unit; where it does not, the restored report of that read,
   `<unit id>.read-<k>.restored.md`, stands in for it, adds nothing to either figure, and is
   counted on the line's `reports restored`. A unit whose latest `verified` line reads mismatch adds
   nothing and needs no report. A review with no `verified` line has no report to read and adds
@@ -133,10 +134,10 @@ Window 3:
   the runner renamed it and stopped before the next `dispatch` line. A newer report no check read,
   and the report of any other read, are never read, in this window and in window r.
 
-  A manual part, the unit that reads the pages of a package's manual sections after its review's
-  share, is a unit of the pass its block sits in like any review, its review's pass or, where that
-  pass was full, a pass of manual parts after it: it is counted in `units:`, its `verified` line is
-  summed, and its pages opened and searches are read off its own report.
+  A manual part, a unit that reads pages of a package's manual sections before its review, and a
+  standard lines unit, the unit that writes a package's standard lines after its manual parts, are
+  units of the pass their block sits in like any review: each is counted in `units:`, its
+  `verified` line is summed, and its pages opened and searches are read off its own report.
 
 The recheck, window r:
 
@@ -342,9 +343,26 @@ LEDGER_NAME = "ledger.md"
 # review opened are the lines under `pages opened:` up to the next of these. The report script
 # holds a report to the same list.
 REVIEWER_LABELS = unit_report_script.REVIEW_LABELS
+# Every label of the three window 3 report shapes, longest first, so the pages a report opened end
+# at its next label whichever kind of unit wrote it.
+WINDOW_3_LABELS = tuple(sorted(
+    {label for kind in unit_report_script.WINDOW_3_KINDS for label in unit_report_script.LABELS[kind]},
+    key=len, reverse=True,
+))
 
 # What a window 3 unit line carries where the unit is a manual part, not a review.
 MANUAL_PART_MARK = ", manual part after "
+# What a window 3 unit line carries where the unit is a package's standard lines unit.
+STANDARD_LINES_MARK = ", standard lines after "
+
+
+def kind_of_line(line: str) -> str:
+    """The kind of report a window 3 unit line's unit writes, as `unit_report.py check` takes it."""
+    if MANUAL_PART_MARK in line:
+        return "manual"
+    if STANDARD_LINES_MARK in line:
+        return "standard"
+    return "review"
 
 
 class SummaryError(Exception):
@@ -452,7 +470,7 @@ def read_plan(path: Path, window: int, pass_id: str) -> dict:
                 raise SummaryError(f"{path}: pass {pass_id}'s block lists unit {unit.group(1)} twice")
             units.append(unit.group(1))
             if window == 3:
-                kinds[unit.group(1)] = "manual" if MANUAL_PART_MARK in line else "review"
+                kinds[unit.group(1)] = kind_of_line(line)
             continue
         field = _PLAN_FIELD_RE.match(line)
         if field:
@@ -925,8 +943,11 @@ def _note_lines(notes: list[dict], kind: str) -> list[str]:
 # --------------------------------------------------------------------------- #
 
 def _reviewer_label(line: str) -> str | None:
-    """The reviewer report label a line opens with, or None where it opens with none of them."""
-    for label in REVIEWER_LABELS:
+    """
+    The window 3 report label a line opens with, or None where it opens with none of them: a
+    review's, a manual part's or a standard lines unit's, longest first.
+    """
+    for label in WINDOW_3_LABELS:
         if line == f"{label}:" or line.startswith(f"{label}: "):
             return label
     return None

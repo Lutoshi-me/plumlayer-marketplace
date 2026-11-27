@@ -363,6 +363,7 @@ EXPECTED_AGENTS = {
     "scope-rechecker",
     "scope-manual-reader",
     "scope-reviewer",
+    "scope-standard-lines",
     "scope-round-runner",
     "scope-vocabulary-reader",
     "sheet-checker",
@@ -2497,6 +2498,26 @@ _PLAN_REVIEW_RE = re.compile(
 _REVIEWS_PER_PASS = 8
 _REVIEW_PASS_UNITS = 10
 _W3_PASS_RE = re.compile(r"^W3-[1-9][0-9]*$")
+# A window 3 stage A unit line: a package's manual part, the unit it reads on after (`none` for its
+# chain's first) and its spans, or its standard lines unit and the unit it comes after. A stage A
+# pass is `W3-M<n>`, and a trade's passes past its first carry letters after it.
+_PLAN_STAGE_A_RE = re.compile(
+    r"^(\d+)\. ((?:i[1-9][0-9]*-)?rev-\S+): (.*), trade (.+?), package (\S+), "
+    r"(manual part|standard lines) after (\S+)(?:, reads (.+?))?( verified| skipped)?$"
+)
+_W3_STAGE_A_PASS_RE = re.compile(r"^W3-M[1-9][0-9]*(?:[b-z]+)?$")
+_STAGE_A_READS_FOR = "manual parts and standard lines"
+_STAGE_B_READS_FOR = "package reviews"
+
+
+def _stage_b(passes: list[dict]) -> list[dict]:
+    """The window 3 passes of reviews, in plan order."""
+    return [p for p in passes if p["fields"].get("reads for") == _STAGE_B_READS_FOR]
+
+
+def _stage_a(passes: list[dict]) -> list[dict]:
+    """The window 3 passes of manual parts and standard lines, in plan order."""
+    return [p for p in passes if p["fields"].get("reads for") == _STAGE_A_READS_FOR]
 _PLAN_FIELD_RE = re.compile(r"^([a-z][a-z ]*): (.*)$")
 # A repeated lines unit reads a file from one of its pages, in its own pass, `RS1` or a part of it.
 _REPEATED_PASS_RE = re.compile(r"^RS1[a-z]?$")
@@ -2565,30 +2586,49 @@ def _write_run_ledger(ledger: Path, text: str) -> None:
 
 def _whole_review_report(unit_id: str) -> str:
     """
-    A review's or a manual part's report whole in the shape the report script holds, every list
+    A window 3 unit's report whole in the shape the report script holds for its kind, every list
     reading none, two searches run and no page opened, for the checks that need a window 3 pass to
-    sum and judge nothing in the report itself.
+    sum and judge nothing in the report itself. The kind is the unit id's: `c-<n>` a manual part,
+    `s-1` a standard lines unit, any other a review.
     """
+    counts = (
+        "created: 0   updated: 0   questions raised: 0   questions replied: 0",
+    )
+    head = f"unit: {unit_id}   package: An invented package   trade: 09 99 99   window: 3"
+    if re.search(r"s-1$", unit_id):
+        return "".join(f"{line}\n" for line in (
+            head, "searches: 2 run, 0 returned nothing, 2 of them standard line", "pages opened: none",
+            *counts, "created subjects: none", "updated subjects: none", "manual updates: none",
+            "field updates: none", "questions raised ids: none", "questions replied ids: none",
+            "sent: 0   landed: 0   conflicts: none", "trades: none", "anomalies: none",
+            "standard lines: none", "door-owned suggestions: none", "not written: none", "owed: none",
+        ))
+    manual = re.search(r"c-[1-9][0-9]*$", unit_id) is not None
+    tail = (
+        ("sheet readings written", "anomalies", "grain questions", "silent sections",
+         "unspecified work", "compared", "spans read", "section lines", "context pages", "carried",
+         "sections not checked", "families not checked", "door-owned suggestions", "not written", "owed")
+        if manual else
+        ("sheet readings written", "anomalies", "grain questions", "silent sections",
+         "unspecified work", "compared", "left by the parts", "sections not checked",
+         "families not checked", "standard lines found later", "headings written", "rows ordered",
+         "rows on other packages", "bounds reached", "door-owned suggestions", "not written", "owed")
+    )
     return "".join(f"{line}\n" for line in (
-        f"unit: {unit_id}   package: An invented package   trade: 09 99 99   window: 3",
+        head,
         "harvested: rows 0, definition codes 0, spec sections 0, aliases 0",
         "notes read: none",
-        "searches: 2 run, 0 returned nothing, 0 of them standard line",
+        "searches: 2 run, 0 returned nothing",
         "terms too general: none",
         "pages opened: none",
-        "created: 0   updated: 0   questions raised: 0   questions replied: 0",
+        *counts,
         *(f"{label}: none" for label in (
             "created subjects", "updated subjects", "manual updates", "field updates",
             "questions raised ids", "questions replied ids", "questions linked", "questions alone",
         )),
         "sent: 0   landed: 0   conflicts: none",
         "trades: none",
-        *(f"{label}: none" for label in (
-            "sheet readings written", "anomalies", "grain questions", "silent sections",
-            "unspecified work", "compared", "spans read", "context pages", "carried",
-            "sections not checked", "families not checked", "standard lines", "headings written",
-            "rows ordered", "door-owned suggestions", "not written", "owed",
-        )),
+        *(f"{label}: none" for label in tail),
     ))
 
 
@@ -2650,7 +2690,7 @@ def _plan_passes(read_plan: str, repeated: bool = False) -> list[dict]:
             skipping = bool(_REPEATED_PASS_RE.match(heading.group(1))) != repeated
             if not skipping:
                 passes.append(
-                    {"id": heading.group(1), "heading": line[4:], "fields": {}, "units": [], "reviews": []}
+                    {"id": heading.group(1), "heading": line[4:], "fields": {}, "units": [], "reviews": [], "stageA": []}
                 )
             continue
         if not passes or skipping:
@@ -2670,6 +2710,14 @@ def _plan_passes(read_plan: str, repeated: bool = False) -> list[dict]:
         unit = _PLAN_UNIT_RE.match(line)
         if unit:
             passes[-1]["units"].append((unit.group(1), unit.group(2), int(unit.group(3))))
+            continue
+        staged = _PLAN_STAGE_A_RE.match(line)
+        if staged:
+            passes[-1]["stageA"].append({
+                "id": staged.group(2), "name": staged.group(3), "trade": staged.group(4),
+                "package": staged.group(5), "kind": staged.group(6), "after": staged.group(7),
+                "reads": staged.group(8), "mark": (staged.group(9) or "").strip(),
+            })
             continue
         review = _PLAN_REVIEW_RE.match(line)
         if review:
@@ -3379,15 +3427,24 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         return expected
 
     def expected_grouping(expected: list[dict]) -> list[list[str]]:
-        """The passes as this check groups them: trades in first-seen order, eight to a pass."""
+        """
+        The passes of reviews as this check groups them: the general requirements package's review
+        alone first, then trades in first-seen order, eight to a pass.
+        """
         first_seen: list[str] = []
         for review in expected:
             if review["key"] not in first_seen:
                 first_seen.append(review["key"])
         grouping: list[list[str]] = []
+        general = [r["id"] for r in expected if r["key"] == "011113"]
+        if general:
+            grouping.append(general)
+        opened = len(grouping)
         for key in first_seen:
+            if key == "011113":
+                continue
             group = [r["id"] for r in expected if r["key"] == key]
-            if grouping and len(grouping[-1]) + len(group) <= _REVIEWS_PER_PASS:
+            if len(grouping) > opened and len(grouping[-1]) + len(group) <= _REVIEWS_PER_PASS:
                 grouping[-1] += group
             else:
                 grouping.append(group)
@@ -3415,7 +3472,24 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             per_trade[review["key"]] = per_trade.get(review["key"], 0) + 1
         shared = [r for r in expected if per_trade[r["key"]] > 1]
 
-        passes = _plan_passes(path.read_text(encoding="utf-8"))
+        every_pass = _plan_passes(path.read_text(encoding="utf-8"))
+        stage_a = _stage_a(every_pass)
+        passes = _stage_b(every_pass)
+        if [p["id"] for p in every_pass] != [p["id"] for p in stage_a + passes]:
+            errors.append(f"{label}: window 3 does not plan its passes of manual parts and standard lines first, then its reviews")
+        # Each package's stage A chain ends with its standard lines unit, the review's id with
+        # `s-1` after it, and every stage B pass waits for every stage A pass.
+        standard = [unit["id"] for p in stage_a for unit in p["stageA"] if unit["kind"] == "standard lines"]
+        planned_reviews = [review[0] for p in passes for review in p["reviews"]]
+        if sorted(standard) != sorted(f"{unit_id}s-1" for unit_id in planned_reviews):
+            errors.append(f"{label}: the standard lines units {sorted(standard)} are not one per review")
+        for p in stage_a:
+            if not _W3_STAGE_A_PASS_RE.match(p["id"]) or p["fields"].get("units") != str(len(p["stageA"])):
+                errors.append(f"{label}: stage A pass {p['id']} is misnamed or its units line is not its unit count")
+        for p in passes:
+            waits = {w.strip() for w in p["fields"].get("starts after", "").split(",")}
+            if not {a["id"] for a in stage_a} <= waits:
+                errors.append(f"{label}: review pass {p['id']} does not wait for every stage A pass: {sorted(waits)}")
         planned_ids = [review[0] for p in passes for review in p["reviews"]]
         # A partition: every package's review planned once, across all passes.
         if sorted(planned_ids) != sorted(by_id) or len(set(planned_ids)) != len(planned_ids):
@@ -3475,7 +3549,8 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         for fragment in (
             f"packages {len(rows)}",
             f"reviews {len(expected)}",
-            f"passes {len(wanted_grouping)}",
+            f"passes {len(wanted_grouping) + len(stage_a)} (manual parts and standard lines {len(stage_a)}, "
+            f"reviews {len(wanted_grouping)})",
             f"reviews per pass at most {_REVIEWS_PER_PASS} or one trade's packages together where "
             f"that trade has more, units per pass at most {_REVIEW_PASS_UNITS},",
             f"trades {len(per_trade)}",
@@ -3536,6 +3611,22 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         "packages-w3-nine.json", ["09 21 16", "22 11 16"] + ["13 34 19"] * 9 + ["32 90 00"]
     )
     nine_passes, _nine_bounds = window_3_over("window 3 with nine packages on one trade", nine, "read-plan-w3-nine.md")
+    # The general requirements package's review runs alone in the first pass of reviews, ahead of
+    # every other, wherever it sits in the packages list.
+    with_general = packages_file(
+        "packages-w3-general.json", ["09 21 16", "01 11 13", "22 11 16", "09 21 16"]
+    )
+    general_passes, _general_bounds = window_3_over(
+        "window 3 with the general requirements package", with_general, "read-plan-w3-general.md"
+    )
+    if general_passes and (
+        [len(p["reviews"]) for p in general_passes] != [1, 3]
+        or general_passes[0]["reviews"][0][2] != "01 11 13"
+    ):
+        errors.append(
+            f"window 3 does not plan the general requirements review alone first: "
+            f"{[[r[0] for r in p['reviews']] for p in general_passes]}"
+        )
     if nine_passes and [len(p["reviews"]) for p in nine_passes] != [2, 9, 1]:
         errors.append(
             f"window 3 with nine packages on one trade plans passes of "
@@ -4672,7 +4763,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         ])
         if run_code != 0:
             return run_code, run_err, {}, {}
-        plan_passes = _plan_passes((review_dir / "read-plan.md").read_text(encoding="utf-8"))
+        plan_passes = _stage_b(_plan_passes((review_dir / "read-plan.md").read_text(encoding="utf-8")))
         members = {p["id"]: [review[0] for review in p["reviews"]] for p in plan_passes}
         return run_code, run_err, members, summed_of(plan_passes)
 
@@ -4732,9 +4823,9 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     f"{wanted}, yes only where a pass's reviews did not change, with both kinds present"
                 )
 
-        # A run folder from before passes carried several reviews: each review was its own pass,
-        # its summary at `<unit id>-pass.md`. Its reviews read verified, so no review is read again,
-        # and every pass of the new plan reads no, so each is summed again.
+        # A run folder whose window 3 an earlier plugin started, with no plan file of this
+        # plugin's format, is refused in one line and nothing is written: its manual plan cannot be
+        # resumed, and planning it afresh would send a unit for pages another already read.
         old_dir = review_dir.parent / "summed-window-3-old"
         shutil.rmtree(old_dir, ignore_errors=True)
         (old_dir / "reports").mkdir(parents=True)
@@ -4756,20 +4847,42 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
                     encoding="utf-8",
                 )
         write_ledger(old_dir, old_ledger)
+        for marker, plan_file in (
+            ("no plan file", None),
+            ("a plan file with no format marker", {"window": 3, "units": [], "retired": [], "continuations": []}),
+            ("a plan file of format 1", {"window": 3, "format": 1, "units": [], "retired": []}),
+        ):
+            target = old_dir / "plan" / "window-3.json"
+            target.unlink(missing_ok=True)
+            if plan_file is not None:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(json.dumps(plan_file), encoding="utf-8")
+            before = target.read_bytes() if target.is_file() else None
+            (old_dir / "read-plan.md").unlink(missing_ok=True)
+            code, out, err = _run_script_main(module, [
+                "plan", "--window", "3", "--packages", str(summed_packages), *_no_sections(),
+                "--out", str(old_dir / "read-plan.md"),
+            ])
+            after = target.read_bytes() if target.is_file() else None
+            if (
+                code != 1 or out or len(err.strip().splitlines()) != 1 or "started under an earlier plugin" not in err
+                or (old_dir / "read-plan.md").exists() or after != before
+            ):
+                errors.append(
+                    f"{summed_label}: a run folder whose window 3 an earlier plugin started, with {marker}, "
+                    f"is not refused in one line writing nothing: exit {code}, {err!r}"
+                )
+        # The same folders with no window 3 dispatch on the ledger are planned afresh.
+        write_ledger(old_dir, [line for line in old_ledger if not line.startswith(("dispatch 3", "verified 3"))])
         code, _bounds, err = _run_script_main(module, [
             "plan", "--window", "3", "--packages", str(summed_packages), *_no_sections(),
             "--out", str(old_dir / "read-plan.md"),
         ])
-        old_passes = _plan_passes((old_dir / "read-plan.md").read_text(encoding="utf-8")) if code == 0 else []
-        if not old_passes or any(
-            p["fields"].get("units verified") != p["fields"].get("units")
-            or p["fields"].get("summed") != "no, no summary on file"
-            for p in old_passes
-        ):
+        fresh = json.loads((old_dir / "plan" / "window-3.json").read_text(encoding="utf-8")) if code == 0 else {}
+        if code != 0 or fresh.get("format") != 2 or not fresh.get("chains"):
             errors.append(
-                f"{summed_label}: a window 3 run folder from one review per pass does not read every "
-                f"review verified and every pass unsummed: "
-                f"{[(p['id'], p['fields'].get('units verified'), p['fields'].get('summed')) for p in old_passes]} {err}"
+                f"{summed_label}: a run folder with an older plan file and no window 3 dispatch is not "
+                f"planned afresh in the format of this plugin: exit {code}, {err!r}"
             )
 
     # A review's id belongs to its package, so the estimator deleting, adding or replacing a package
@@ -4798,7 +4911,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             match = _PLAN_REVIEW_RE.match(line)
             if match:
                 reviews[match.group(2)] = (match.group(5), match.group(6) is not None)
-        return reviews, summed_of(_plan_passes(text))
+        return reviews, summed_of(_stage_b(_plan_passes(text)))
 
     def bound_start(case: str, verify_all: bool) -> Path | None:
         folder = replan_root / "window-3-bound" / case
@@ -4869,9 +4982,10 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
 
     # A run folder planned before `plan/window-3.json` existed holds its bindings in its read plan
     # alone: in one review per pass, each block's `package:` line, and after that, each unit line's
-    # `package <id>`. Its first replan on this script keeps a package's id off that read plan, so a
-    # verified drywall review deleted never hands its id and verified mark to its sibling, and one
-    # added ahead never takes the verified one's id.
+    # `package <id>`. Where its window 3 never started, its first plan on this script keeps a
+    # package's id off that read plan, so a drywall review deleted never hands its id to its
+    # sibling, and one added ahead never takes another's id. Where its window 3 started, the plan
+    # is refused, as the format marker above says.
     def old_block(unit_id: str, package: dict, verified: bool) -> list[str]:
         return [
             f"### {unit_id}. {package['name']}", "", "window: 3", f"reads for: {package['tradeCode']}",
@@ -4898,7 +5012,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         _LEFT_OUT_HEADING, "", "Nothing. Every package on the project plans a review.", "",
     ])
 
-    def old_folder(case: str, read_plan: str, pass_id: str) -> Path:
+    def old_folder(case: str, read_plan: str, pass_id: str, started: bool = False) -> Path:
         folder = replan_root / "window-3-bound" / case
         shutil.rmtree(folder, ignore_errors=True)
         folder.mkdir(parents=True)
@@ -4907,7 +5021,7 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
             f"dispatch 3 {pass_id} rev-092116-1 sheets none purpose review the package",
             f"verified 3 {pass_id} rev-092116-1 created 4 items 4 updated 0 questions 0 replied 0 "
             f"sent 4 landed 4 conflicts 0 result ok",
-        ])
+        ] if started else ["phase: reading started 2026-01-31T22:10:00Z"])
         return folder
 
     for shape, read_plan, pass_id in (
@@ -4915,6 +5029,17 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         ("package on each unit line", unit_line_plan, "W3-1"),
     ):
         slug = "per-pass" if pass_id != "W3-1" else "unit-line"
+        folder = old_folder(f"old-{slug}-started", read_plan, pass_id, started=True)
+        (folder / "packages.json").write_text(json.dumps({"packages": [drywall_two, plumbing]}), encoding="utf-8")
+        code, out, err = _run_script_main(module, [
+            "plan", "--window", "3", "--packages", str(folder / "packages.json"), *_no_sections(),
+            "--out", str(folder / "read-plan.md"),
+        ])
+        if code != 1 or "started under an earlier plugin" not in err or (folder / "plan" / "window-3.json").exists():
+            errors.append(
+                f"{bound_label}: a folder planned with the {shape}, no window 3 plan file and a window 3 "
+                f"dispatch is not refused: exit {code}, {err!r}"
+            )
         folder = old_folder(f"old-{slug}-delete", read_plan, pass_id)
         reviews, _summed_now = bound_plan(folder, [drywall_two, plumbing])
         window_3_file = folder / "plan" / "window-3.json"
@@ -4934,14 +5059,13 @@ def check_plan_inventory(plugin_path: Path, marketplace_root: Path) -> Result:
         folder = old_folder(f"old-{slug}-insert", read_plan, pass_id)
         reviews, _summed_now = bound_plan(folder, [drywall_new, drywall, drywall_two, plumbing])
         new_ids = [unit_id for unit_id, (package, _v) in reviews.items() if package == "pkg-bound-4"]
-        if reviews.get("rev-092116-1") != ("pkg-bound-1", True) or new_ids != ["rev-092116-3"] or reviews.get(
+        if reviews.get("rev-092116-1") != ("pkg-bound-1", False) or new_ids != ["rev-092116-3"] or reviews.get(
             "rev-092116-3", ("", True)
         )[1]:
             errors.append(
                 f"{bound_label}: in a folder planned with the {shape} and no window 3 plan file, after "
-                f"a drywall package is added ahead of the verified one the plan reads {reviews}, "
-                f"expected rev-092116-1 still on pkg-bound-1 and verified, and the new package on "
-                f"rev-092116-3 unverified"
+                f"a drywall package is added ahead of the first one the plan reads {reviews}, "
+                f"expected rev-092116-1 still on pkg-bound-1, and the new package on rev-092116-3"
             )
 
     # The lead decides a pass is finished off this line, so the skill has to name it.
@@ -8573,16 +8697,25 @@ def _issue_run(delivery_id: str, read_from: list[str], tag: str, count: int | No
     return run
 
 
-def _issue_ids(read_plan: str) -> tuple[list[str], list[str]]:
-    """The pass ids and the unit ids a read plan carries, stopping at its left-out section."""
+def _issue_ids(read_plan: str, stage_a: bool = False) -> tuple[list[str], list[str]]:
+    """
+    The pass ids and the unit ids a read plan carries, stopping at its left-out section. In window
+    3 these are the passes of reviews and their reviews, or with `stage_a` the passes of manual
+    parts and standard lines and their units.
+    """
     passes: list[str] = []
     units: list[str] = []
+    skipping = False
     for line in read_plan.splitlines():
         if line.strip() == _LEFT_OUT_HEADING:
             break
         heading = _ISSUE_PASS_RE.match(line)
         if heading:
-            passes.append(heading.group(1))
+            skipping = bool(re.search(r"(?:^|-)W3-M[1-9]", heading.group(1))) != stage_a
+            if not skipping:
+                passes.append(heading.group(1))
+            continue
+        if skipping:
             continue
         unit = _ISSUE_UNIT_RE.match(line)
         if unit:
@@ -8699,6 +8832,9 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
     for label, texts, tag in (("the first set", first_plans, "i1"), ("the second set", second_plans, "i2"), ("the old layout", legacy_plans, None)):
         for window, text in texts.items():
             pass_ids, unit_ids = _issue_ids(text)
+            # Window 3's manual parts and standard lines units carry the tag as its reviews do.
+            staged_passes, staged_units = _issue_ids(text, stage_a=True)
+            pass_ids, unit_ids = staged_passes + pass_ids, staged_units + unit_ids
             if not unit_ids:
                 errors.append(f"{label} window {window} planned no units")
             for pass_id in pass_ids:
@@ -9114,6 +9250,19 @@ def check_drawing_issue_passes(plugin_path: Path, marketplace_root: Path) -> Res
         name in text.split(_LEFT_OUT_HEADING)[-1] for name in ("Painting", "Windows", "Glazing", "Landscaping", "Window treatments", "Pre-engineered structures")
     ):
         errors.append(f"window 3 of an addendum's pass does not name the six packages it leaves out: {bounds!r}")
+    # The chains planned are the kept packages' alone, under the pass's tag, and the pass of
+    # reviews waits for the passes holding them and for no other: an addendum that leaves a
+    # package out never waits on that package's manual parts or standard lines.
+    staged_passes, staged = _issue_ids(text, stage_a=True)
+    if code == 0 and (
+        sorted(staged) != [f"{review}s-1" for review in reviewed]
+        or not all(p.startswith("i3-W3-M") for p in staged_passes)
+        or f"starts after: {', '.join(staged_passes)}" not in text
+    ):
+        errors.append(
+            f"window 3 of an addendum's pass plans stage A units {staged} in passes {staged_passes}, "
+            f"not the kept packages' standard lines alone, or its pass of reviews waits on others"
+        )
     # The reviews kept are grouped after the filter, so the two kept share the first pass, named
     # under the pass's tag, while each keeps the id it takes over the whole list.
     if code == 0 and _issue_ids(text)[0] != ["i3-W3-1"]:
@@ -11176,7 +11325,7 @@ def check_lead_pass(plugin_path: Path, marketplace_root: Path) -> Result:
     review_plan = review_folder / "read-plan.md"
     review_args = ["plan", "--window", "3", "--packages", str(review_packages), *_no_sections(), "--out", str(review_plan)]
     code, _bounds, err = run(plan_module, review_args)
-    review_blocks = {p["id"]: p for p in _plan_passes(review_plan.read_text(encoding="utf-8"))} if code == 0 else {}
+    review_blocks = {p["id"]: p for p in _stage_b(_plan_passes(review_plan.read_text(encoding="utf-8")))} if code == 0 else {}
     review = "i1-W3-1"
     review_units = ["i1-rev-092116-1", "i1-rev-221116-1"]
     if list(review_blocks) != [review] or [r[0] for r in review_blocks[review]["reviews"]] != review_units:
@@ -12459,49 +12608,74 @@ _RETIRED_SECTION_READS = (
     "plan_inventory.py' continue", "--pending",
 )
 
-# The reviewer's share of the manual and the carry file, in its own words, whitespace collapsed.
+# The review reads no manual page through: it reads what the parts found off the notes script.
 _REVIEWER_MANUAL_PHRASES = (
-    "Every page of every section on this package is read, from its first page to its last, in the "
-    "order the package's `manualSections` lists them, across your review and the manual parts the "
-    "read plan puts after it",
-    "A section several packages share is read whole for each of them, and each records only its "
-    "own package's share",
-    "Read no other page of a section through: the pages after your spans are a manual part's",
-    "Name each span you read on your `spans read:` line, exactly as the `Reads:` line names it",
-    "`<run folder>/carry/<unit id>.md`",
+    "12. THE MANUAL, THROUGH ITS PARTS.",
+    "scripts/manual_notes.py' --run '<run folder>' --review '<your unit id>'",
+    "Where its last line says it was cut, run the command it gives for the rest, every time",
+    "A line it prints is a pointer: open the page before you rely on it",
+    "run one `kind: document` search for the row's product, inside mandate 3's fifty, and open the page it finds",
+    "A part's items left are never proof that nothing applies.",
+    "A section a part left unchecked for want of searches is named on its section line as a `silence:` item",
+    "two pages at most, before you judge",
+    "never a Question that the manual lacks the specification",
+    "six pages at most",
+    "with `not reached: <n> pages past six` after it where the row cites more; the manual citation is still written",
+    "A row a manual part named on its `compared:` line, with `agree` or a Question as how it ended, is spared this one comparison",
+    "Where the script says the unit was read twice and not confirmed, the package's standard lines are not written, and you write none of them.",
+    "standard lines found later: <",
+    "rows on other packages: <",
+    "left by the parts: <",
+    "bounds reached: <",
+)
+# What left the review: its spans, its carry file, its manual reading and its standard lines.
+_REVIEWER_RETIRED_MANUAL = (
+    "spans read: <", "Reads:", "`<run folder>/carry/<unit id>.md`", "Name each span you read",
+    "12. EACH SECTION READ WHOLE.", "scripts/standard_lines.py", "standard lines: <",
+)
+# The manual reader holds the moved mandates and settles nothing.
+_MANUAL_READER_PHRASES = (
+    "`Read` mandate 2 to the line before mandate 5 and mandate 6 to the line before mandate 7.",
+    "Of its mandate 10, read the one bullet that opens `- A row the sheets and the manual both define.`",
+    "Mandates 12 and 13 are this file's own, below.",
+    "they mean mandate 12 or 13 below for those two numbers, the standard lines definition's for 14, and the review's own mandate of that number for every other",
+    "12. EACH SECTION READ WHOLE.",
+    "13. THE GENERAL REQUIREMENTS.",
     "Mandate 9's first case for a section runs in the unit that reads its last page, never before it.",
     "A special warranty", "Extra materials",
     "A field test or inspection Part 3 has the contractor perform or engage",
-)
-_MANUAL_READER_PHRASES = (
-    "`Read` mandate 2 to the line before mandate 5, mandate 6 to the line before mandate 10, "
-    "mandate 12 to the line before mandate 14, and mandate 15 to the line before `## The reader "
-    "mandates you work under`",
     "Read no page past your spans and no page of a section your line does not name",
     "up to the page where its Part 2 begins, at most two pages",
     "**Judge each section whose last page you read**",
     "Run at most four `search_set_text` calls in all",
     "`<run folder>/carry/<the unit after After>.md`",
-    "A manual part that created no row runs none of it.",
+    "`After: none` carries nothing",
+    "as `manual changed`",
+    "You settle no heading: you save no heading order and order no rows, since the review settles both.",
+    "section lines: <one line per span on `spans read:`",
 )
 _RUNNER_MANUAL_PHRASES = (
-    "`plumlayer:scope-manual-reader` for a manual part's line",
-    "**Hold its pages to the plan first.**",
-    "No unit's report decides what is read next: the plan placed every page before the window started.",
+    "`plumlayer:scope-manual-reader` for a line carrying `, manual part after `",
+    "`plumlayer:scope-standard-lines` for one carrying `, standard lines after `",
+    "a manual part's check adding `--spans '<its Reads: line>'`, which holds its pages to the plan",
 )
 _SKILL_MANUAL_PHRASES = (
     "--sections '<run folder>/plan/spec-sections.json'",
     "`list_spec_sections(projectId)` response, with no `sections` filter",
     "subagent_type: plumlayer:scope-manual-reader",
+    "subagent_type: plumlayer:scope-standard-lines",
     "Reviewer definition: <scripts path>/../agents/scope-reviewer.md, written out in full.",
     "`## Manual sections not read`",
-    "no unit's report decides what is read next",
+    "Never run the window 3 plan while a pass of the window is out",
+    "the general requirements package's review alone in the first",
+    "The manual plan is made once",
 )
-# The review's mandates the manual reader reads off the reviewer definition, by number.
+# The review's mandates the manual reader and the standard lines unit read off the reviewer
+# definition by number, each heading the line a read ends before or starts at.
 _REVIEWER_MANDATES_READ = {
     2: "A SEARCH HIT IS A POINTER", 5: "ONE ROW PER PRODUCT", 6: "EVERY PAGE YOU OPEN",
+    7: "QUESTIONS, AT THE SAME BAR", 8: "YOUR ROWS SIT UNDER YOUR UNIT'S PREFIX",
     9: "THE MANUAL AND THE DRAWINGS", 10: "THE SAME THING, READ FROM TWO SOURCES",
-    12: "EACH SECTION READ WHOLE", 13: "THE GENERAL REQUIREMENTS", 14: "THE STANDARD LINES",
     15: "THE PACKAGE'S HEADINGS",
 }
 
@@ -12512,6 +12686,7 @@ def _manual_part_text_errors(texts: dict[str, str]) -> list[str]:
     flat = {label: _collapsed(text) for label, text in texts.items()}
     for label in ("reviewer", "runner", "skill"):
         errors += [f"the {label} still carries `{p}`" for p in _RETIRED_SECTION_READS if p in flat[label]]
+    errors += [f"the reviewer still carries `{p}`" for p in _REVIEWER_RETIRED_MANUAL if p in flat["reviewer"]]
     for label, phrases in (
         ("reviewer", _REVIEWER_MANUAL_PHRASES), ("manual reader", _MANUAL_READER_PHRASES),
         ("runner", _RUNNER_MANUAL_PHRASES), ("skill", _SKILL_MANUAL_PHRASES),
@@ -12519,9 +12694,17 @@ def _manual_part_text_errors(texts: dict[str, str]) -> list[str]:
         errors += [f"the {label} does not carry `{p}`" for p in phrases if p not in flat[label]]
     for number, heading in _REVIEWER_MANDATES_READ.items():
         if not re.search(rf"^{number}\. {re.escape(heading)}", texts["reviewer"], re.M):
-            errors.append(f"the reviewer's mandate {number} is not `{heading}`, which the manual reader reads it as")
-    # The report lines the runner holds a unit to, one in each shape, the same in both.
-    for prefix in ("sections not checked: <", "spans read: <"):
+            errors.append(f"the reviewer's mandate {number} is not `{heading}`, which another agent reads it as")
+    for label, pattern in (("reviewer", r"^    - A row the sheets and the manual both define\."),
+                           ("standard lines", r"^    - The row's name\."),
+                           ("manual reader", r"^12\. EACH SECTION READ WHOLE\.")):
+        if len(re.findall(pattern, texts[label], re.M)) != 1:
+            errors.append(f"the {label} does not hold `{pattern}` once, which a read by path finds")
+    # The review dispatch carries no pages; the reviewer's and the skill's report lines agree.
+    review_block = texts["skill"].split("subagent_type: plumlayer:scope-reviewer", 1)[-1].split("```", 1)[0]
+    if "Reads:" in review_block:
+        errors.append("the skill's review dispatch still carries `Reads:`")
+    for prefix in ("sections not checked: <", "left by the parts: <"):
         lines = {
             label: [line for line in texts[label].splitlines() if line.startswith(prefix)]
             for label in ("reviewer", "skill")
@@ -12531,8 +12714,9 @@ def _manual_part_text_errors(texts: dict[str, str]) -> list[str]:
                 f"the reviewer's and the skill's `{prefix.rstrip(' <')}` lines differ: {lines['reviewer']} "
                 f"against {lines['skill']}"
             )
-    if not any(line.startswith("spans read: <") for line in texts["manual reader"].splitlines()):
-        errors.append("the manual reader's report names no `spans read:` line")
+    for needed in ("spans read: <", "section lines: <"):
+        if not any(line.startswith(needed) for line in texts["manual reader"].splitlines()):
+            errors.append(f"the manual reader's report names no `{needed.rstrip(' <')}` line")
     return errors
 
 
@@ -12588,6 +12772,7 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
         "manual reader": plugin_path / "agents" / "scope-manual-reader.md",
         "runner": plugin_path / "agents" / "scope-round-runner.md",
         "skill": plugin_path / "skills" / "scope-run" / "SKILL.md",
+        "standard lines": plugin_path / "agents" / "scope-standard-lines.md",
     }
     for path in paths.values():
         if not path.is_file():
@@ -12596,20 +12781,23 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
     errors = _manual_part_text_errors(texts)
 
     mutations = {
-        "the reviewer reading past its spans": dict(texts, reviewer=texts["reviewer"].replace(
-            "Read no other page of a section through", "Read on past your spans where you have room")),
-        "the reviewer's silence judged before the last page": dict(texts, reviewer=texts["reviewer"].replace(
-            "never before it.", "in any unit.")),
+        "the review reading a span again": dict(texts, reviewer=texts["reviewer"] + "\nspans read: <each span>\n"),
+        "the part's silence judged before the last page": dict(texts, **{"manual reader": texts["manual reader"].replace(
+            "never before it.", "in any unit.")}),
         "a continuation mode written back": dict(texts, reviewer=texts["reviewer"] + "\n## Continuation mode\n"),
         "the manual reader reading the whole reviewer definition": dict(texts, **{"manual reader": texts["manual reader"].replace(
             "mandate 2 to the line before mandate 5", "the whole file")}),
-        "the runner not holding a unit to its spans": dict(texts, runner=texts["runner"].replace(
-            "**Hold its pages to the plan first.**", "**Read its report.**")),
-        "the runner binding continuations again": dict(texts, runner=texts["runner"] + "\nplan_inventory.py' continue --window 3\n"),
+        "the runner not holding a part to its spans": dict(texts, runner=texts["runner"].replace(
+            "a manual part's check adding `--spans '<its Reads: line>'`", "a manual part's check")),
+        "the six-page bound taken off the both-sources comparison": dict(texts, reviewer=texts["reviewer"].replace(
+            "six pages at most", "every page it cites")),
+        "the review dispatch carrying pages again": dict(texts, skill=texts["skill"].replace(
+            "Reviewing: <the package's catalog trade id>. Package: <the package id>.\nRun folder:",
+            "Reviewing: <the package's catalog trade id>. Package: <the package id>.\nReads: <spans>.\nRun folder:", 1)),
         "the skill planning without the section list": dict(texts, skill=texts["skill"].replace(
             "--sections '<run folder>/plan/spec-sections.json'", "")),
-        "the skill's spans line in another shape": dict(texts, skill=texts["skill"].replace(
-            "spans read: <each span the `Reads:` line names", "spans read: <the spans")),
+        "the part settling headings again": dict(texts, **{"manual reader": texts["manual reader"].replace(
+            "heading: you save no heading order and order no rows", "heading but your own rows' order")}),
     }
     text_refused = 0
     for label, mutated in mutations.items():
@@ -12625,29 +12813,30 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
     except Exception as e:
         return Result(name, False, detail=f"cannot import the scripts: {e}")
 
-    # The division alone: every page once, each unit at most its pages, a section that fits a unit
-    # never split, and a unit starting partway into a section keeping room for its opening pages.
+    # The division alone: every page once, each part at most its pages, a section that fits a part
+    # never split, and a part starting partway into a section keeping room for its opening pages.
     divided = 0
-    for sizes in ([12, 79], [5, 5, 5, 5, 5], [20], [21], [30], [41], [3, 400, 2], [40, 40, 1], [19, 2, 39]):
+    for sizes in ([12, 79], [5, 5, 5, 5, 5], [20], [21], [30], [41], [3, 400, 2], [40, 40, 1], [19, 2, 39], [10], [11]):
         sections, start = [], 1
         for index, size in enumerate(sizes):
             sections.append({"code": f"9{index:05d}", "fileId": "file-m1", "pageStart": start, "pageEnd": start + size - 1})
             start += size
-        review, extra = parts.divide(sections, None, [])
-        units = [review, *extra]
+        units = parts.divide(sections)
         errors += [f"sizes {sizes}: {e}" for e in _manual_spans_cover(sections, units)]
         for number, unit in enumerate(units):
-            room = parts.REVIEW_PAGES if number == 0 else parts.PART_PAGES
+            room = parts.PART_PAGES
             if unit and unit[0]["fromPage"] > unit[0]["pageStart"]:
                 room -= parts.CONTEXT_RESERVE
-            if parts.pages_of(unit) > room:
-                errors.append(f"sizes {sizes}: unit {number} reads {parts.pages_of(unit)} pages, past its {room}")
+            if not unit or parts.pages_of(unit) > room:
+                errors.append(f"sizes {sizes}: part {number} reads {parts.pages_of(unit)} pages, past its {room}")
         for section in sections:
             size = section["pageEnd"] - section["pageStart"] + 1
             holders = [n for n, unit in enumerate(units) if any(s["code"] == section["code"] for s in unit)]
             if size <= parts.PART_PAGES and len(holders) > 1:
-                errors.append(f"sizes {sizes}: section {section['code']} of {size} pages is split over units {holders}")
+                errors.append(f"sizes {sizes}: section {section['code']} of {size} pages is split over parts {holders}")
         divided += 1
+    if getattr(parts, "REVIEW_PAGES", None) is not None:
+        errors.append("manual_parts still gives a review pages of the manual to read")
 
     def run(module, argv: list[str]) -> tuple[int, str, str]:
         try:
@@ -12667,6 +12856,7 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
         {"csi": "233113", "title": "Invented ductwork", "division": "23", "fileId": "file-m1", "pageStart": 112, "pageEnd": 190},
         {"csi": "230999", "title": "Invented controls", "division": "23", "fileId": None, "pageStart": None, "pageEnd": None},
         {"csi": "075000", "title": "Invented membrane roofing", "division": "07", "fileId": "file-m1", "pageStart": 300, "pageEnd": 309},
+        {"csi": "076200", "title": "Invented flashing", "division": "07", "fileId": "file-m1", "pageStart": 310, "pageEnd": 314},
     ]
 
     def folder_of(label: str, rows: list[dict], sections: list[dict], truncated: bool = False) -> Path:
@@ -12694,13 +12884,32 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
     def plan_file(where: Path) -> dict:
         return json.loads((where / "plan" / "window-3.json").read_text(encoding="utf-8"))
 
-    def dispatch(where: Path, pass_id: str, unit: str, ok: bool = False) -> None:
+    def chain_of(where: Path, review: str) -> list[dict]:
+        return next((c["units"] for c in plan_file(where).get("chains", []) if c.get("review") == review), [])
+
+    def staged_lines(where: Path) -> dict[str, dict]:
+        """Each stage A unit line of the read plan, by unit id, with its pass, kind, unit before and spans."""
+        out: dict[str, dict] = {}
+        for p in _plan_passes((where / "read-plan.md").read_text(encoding="utf-8")):
+            for unit in p["stageA"]:
+                out[unit["id"]] = dict(unit, passId=p["id"], waits=p["fields"].get("starts after"))
+        return out
+
+    def dispatch(where: Path, pass_id: str, unit: str, ok: bool = False, skipped: bool = False) -> None:
         with (where / "ledger.md").open("a", encoding="utf-8") as ledger:
             ledger.write(f"dispatch 3 {pass_id} {unit} sheets none purpose read the package\n")
             if ok:
                 ledger.write(
                     f"verified 3 {pass_id} {unit} created 1 items 1 updated 0 questions 0 replied 0 sent 1 "
                     f"landed 1 conflicts 0 result ok\n"
+                )
+            if skipped:
+                ledger.write(
+                    f"verified 3 {pass_id} {unit} created 1 items 1 updated 0 questions 0 replied 0 sent 1 "
+                    f"landed 1 conflicts 0 result mismatch\n"
+                    f"dispatch 3 {pass_id} {unit} sheets none purpose read the package\n"
+                    f"note 3 {pass_id} {unit} deviation the package no report, read 2\n"
+                    f"note 3 {pass_id} {unit} unread the package read 2 times, not read again\n"
                 )
 
     script_refused = 0
@@ -12718,226 +12927,195 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
             script_refused += 1
 
     review = "i1-rev-230000-1"
+    roof_review = "i1-rev-075000-1"
     folder = folder_of("plain", packages, listed_sections)
     code, bounds, err = run(plan_module, plan_argv(folder))
     if code != 0:
         return Result(name, False, detail=f"the window 3 plan refused the fixture: {err}")
     data = plan_file(folder)
-    entries = data.get("continuations") or []
-    spans_of = data.get("reviewSpans") or {}
     hvac = [s for s in (parts.package_sections(packages[0], plan_module.manual_parts.read_inventory(
         json.loads((folder / "plan" / "spec-sections.json").read_text(encoding="utf-8")), "fixture"))[0])]
-    hvac_units = [spans_of.get(review) or [], *(e["sections"] for e in entries if e["review"] == review)]
-    errors += [f"the planned HVAC manual: {e}" for e in _manual_spans_cover(hvac, hvac_units)]
-    if [e["id"] for e in entries if e["review"] == review] != [f"{review}c-{n}" for n in range(1, 10)]:
-        errors.append(f"the HVAC manual parts are not {review}c-1 to c-9: {[e['id'] for e in entries]}")
-    chain = [review, *(e["id"] for e in entries if e["review"] == review)]
-    if [e["continues"] for e in entries if e["review"] == review] != chain[:-1]:
-        errors.append("a manual part does not read on after the unit before it")
-    if not all(e.get("planned") is True for e in entries):
-        errors.append("a manual part the plan wrote carries no `planned: true`")
-    omitted = {(o["code"], o["reason"]) for o in data.get("omissions", [])}
+    hvac_chain = chain_of(folder, review)
+    hvac_parts = [u for u in hvac_chain if u.get("kind") == "manual"]
+    errors += [f"the planned HVAC manual: {e}" for e in _manual_spans_cover(hvac, [u["sections"] for u in hvac_parts])]
+    if [u["id"] for u in hvac_parts] != [f"{review}c-{n}" for n in range(1, len(hvac_parts) + 1)] or not hvac_parts:
+        errors.append(f"the HVAC manual parts are not numbered from {review}c-1: {[u['id'] for u in hvac_chain]}")
+    if not hvac_chain or hvac_chain[-1] != {"id": f"{review}s-1", "kind": "standard lines"}:
+        errors.append(f"the HVAC chain does not end with its standard lines unit: {hvac_chain[-1:]}")
+    if data.get("format") != 2:
+        errors.append(f"the plan file carries no format marker 2: {data.get('format')!r}")
+    lines = staged_lines(folder)
+    before = None
+    for unit in hvac_chain:
+        line = lines.get(unit["id"])
+        if line is None or line["after"] != (before or "none"):
+            errors.append(f"{unit['id']} does not read on after {before or 'none'} on its unit line: {line}")
+        before = unit["id"]
+    if lines.get(f"{review}s-1", {}).get("kind") != "standard lines":
+        errors.append("the HVAC standard lines unit's line is not a standard lines line")
+    omitted = {(o["code"], o["reason"]) for o in data.get("notRead", [])}
     if omitted != {("230999", "no page range"), ("239999", "not on the record")}:
-        errors.append(f"the plan file's omissions are {sorted(omitted)}")
+        errors.append(f"the plan file's sections not read are {sorted(omitted)}")
     plan_text = (folder / "read-plan.md").read_text(encoding="utf-8")
     wanted_lines = (
-        f"1. {review}: Invented HVAC, trade 23 00 00, reads 230000 p100-p111 of file-m1; 233113 p112-p119 "
-        f"of file-m1 (section p112-p190), package pkg-hvac",
-        f"2. {review}c-1: Invented HVAC, trade 23 00 00, package pkg-hvac, manual part after {review}, reads "
-        f"233113 p120-p127 of file-m1 (section p112-p190)",
+        f"{review}s-1: Invented HVAC, trade 23 00 00, package pkg-hvac, standard lines after {hvac_parts[-1]['id'] if hvac_parts else ''}",
+        f"1. {roof_review}c-1: Invented roofing, trade 07 50 00, package pkg-roof, manual part after none, reads 075000 p300-p309 of file-m1",
+        f"{roof_review}: Invented roofing, trade 07 50 00, package pkg-roof",
         "## Manual sections not read",
         f"1. 230999 on {review}, package pkg-hvac: no page range",
     )
     errors += [f"the read plan does not carry `{line}`" for line in wanted_lines if line not in plan_text]
-    for figure in ("manual parts 9", "manual pages 101", "sections not read 2"):
+    for line in plan_text.splitlines():
+        if line.startswith(("1. i1-rev-", "2. i1-rev-")) and ", reads " in line and "manual part after" not in line:
+            errors.append(f"a review reads manual pages: {line}")
+    for figure in (f"manual parts {len(hvac_parts) + 1}", "standard lines units 2", "manual pages 101", "sections not read 2"):
         if figure not in bounds:
             errors.append(f"the bounds line does not name `{figure}`: {bounds.strip()[:300]}")
+    every = _plan_passes(plan_text)
+    stage_a_ids = [p["id"] for p in _stage_a(every)]
+    for p in _stage_b(every):
+        if p["stageA"]:
+            errors.append(f"pass of reviews {p['id']} holds a manual part or a standard lines unit")
+        waits = {w.strip() for w in p["fields"].get("starts after", "").split(",")}
+        if not set(stage_a_ids) <= waits:
+            errors.append(f"pass of reviews {p['id']} does not wait for every stage A pass: {waits}")
+    for p in _stage_a(every):
+        if p["reviews"]:
+            errors.append(f"stage A pass {p['id']} holds a review")
 
     # A replan with nothing changed writes the same bytes.
-    before = files_of(folder)
+    first_files = files_of(folder)
     run(plan_module, plan_argv(folder))
-    if files_of(folder) != before:
+    if files_of(folder) != first_files:
         errors.append("a replan with nothing changed rewrote the plan")
 
-    # The lead names a manual part's pages once it verified, and not before.
+    # The lead names a manual part's pages, and a package's standard lines, once each verified.
     reads, _named = lead._plan_reads(folder / "read-plan.md", 3, set())
-    if "manual pages read" in reads.get("i1-W3-1", ""):
-        errors.append(f"the pass names manual pages no part verified: {reads}")
-    reads, _named = lead._plan_reads(folder / "read-plan.md", 3, {f"{review}c-1"})
-    if "manual pages read (233113 pages 120 to 127 for Invented HVAC)" not in reads.get("i1-W3-1", ""):
-        errors.append(f"the pass does not name the pages its verified part read: {reads}")
+    if any("manual pages read" in said or "standard lines written" in said for said in reads.values()):
+        errors.append(f"the pass names manual pages or standard lines no unit verified: {reads}")
+    first_part = hvac_parts[0] if hvac_parts else {"id": "", "sections": []}
+    # The part verified ok on a copy of the plan's folder, its report as the part's definition
+    # writes it: every span its `Reads:` line names on `spans read:`, one section line each.
+    told = root / "plain-lead" / "run"
+    (told / "reports").mkdir(parents=True)
+    shutil.copyfile(folder / "read-plan.md", told / "read-plan.md")
+    dispatch(told, "i1-W3-M1", first_part["id"], ok=True)
+    part_spans = [parts.span_text(s) for s in first_part["sections"]]
+    (told / "reports" / f"{first_part['id']}.md").write_text(_filled_report(
+        "manual", first_part["id"], lead.pass_summary.unit_report_script.LABELS["manual"], **{
+            "spans read": "\n".join(part_spans),
+            "section lines": "\n".join(f"{s} | puts: invented ductwork | rows: none | left: none | silence: none" for s in part_spans),
+        }), encoding="utf-8")
+    reads, _named = lead._plan_reads(told / "read-plan.md", 3, {first_part["id"], f"{review}s-1"})
+    said = "; ".join(reads.values())
+    span = first_part["sections"][0] if first_part["sections"] else {}
+    if f"manual pages read ({span.get('code')} pages {span.get('fromPage')} to {span.get('toPage')} for Invented HVAC" not in said \
+            or "standard lines written for Invented HVAC" not in said:
+        errors.append(f"the pass does not name the pages its verified part read and its standard lines: {reads}")
 
-    # A unit already dispatched keeps its pages; a dispatched part whose section moved is retired,
-    # and the pages are planned again under numbers no unit carried.
+    # The manual plan is made once: from the first window 3 dispatch on, a replan adds, moves and
+    # divides no manual page. A section moved, a section added, a package deleted with pages owed,
+    # a package added, and a part read twice and not confirmed: nothing is planned again, each is
+    # listed as not read with its reason, nothing is refused, and a second plan writes the same
+    # bytes with verified, dispatched, skipped and undispatched units all present.
     frozen = folder_of("frozen", packages, listed_sections)
     run(plan_module, plan_argv(frozen))
-    dispatch(frozen, "i1-W3-1", review, ok=True)
-    dispatch(frozen, "i1-W3-1", f"{review}c-1")
-    first = plan_file(frozen)
+    frozen_lines = staged_lines(frozen)
+    chain_before = chain_of(frozen, review)
+    parts_before = [u["id"] for u in chain_before if u["kind"] == "manual"]
+    dispatch(frozen, frozen_lines[parts_before[0]]["passId"], parts_before[0], ok=True)
+    dispatch(frozen, frozen_lines[parts_before[1]]["passId"], parts_before[1], skipped=True)
+    dispatch(frozen, frozen_lines[parts_before[2]]["passId"], parts_before[2])
     moved = [dict(row, pageStart=130, pageEnd=208) if row["csi"] == "233113" else row for row in listed_sections]
-    write_inputs(frozen, packages, moved)
+    new_package = {"id": "pkg-new", "tradeCode": "09 91 00", "name": "Invented painting", "manualSections": ["099100"]}
+    rows_after = [dict(packages[0], manualSections=packages[0]["manualSections"] + ["230700"]), new_package]
+    write_inputs(frozen, rows_after, moved + [
+        {"csi": "230700", "title": "Invented insulation", "division": "23", "fileId": "file-m1", "pageStart": 400, "pageEnd": 410},
+        {"csi": "099100", "title": "Invented painting", "division": "09", "fileId": "file-m1", "pageStart": 500, "pageEnd": 505},
+    ])
     code, _out, err = run(plan_module, plan_argv(frozen))
     if code != 0:
-        errors.append(f"a replan after a section moved refused: {err}")
+        errors.append(f"a frozen replan after the manual and the packages changed refused: {err}")
     else:
-        second = plan_file(frozen)
-        kept = second["reviewSpans"]
-        if kept.get(review) != first["reviewSpans"].get(review):
-            errors.append("a dispatched review's pages changed on a replan")
-        if [e["id"] for e in second.get("retiredParts", [])] != [f"{review}c-1"]:
-            errors.append(f"the moved section's dispatched part is not retired: {second.get('retiredParts')}")
-        new_ids = [e["id"] for e in second["continuations"] if e["review"] == review]
-        if {f"{review}c-1", f"{review}c-2"} & set(new_ids):
-            errors.append(f"a replan handed out a part id a part already carried: {new_ids}")
-        moved_section = [dict(s, pageStart=130, pageEnd=208) if s["code"] == "233113" else s for s in hvac]
-        review_cover = [s for s in kept[review] if parts.span_valid(s, plan_module.manual_parts.read_inventory(
-            json.loads((frozen / "plan" / "spec-sections.json").read_text(encoding="utf-8")), "fixture"))]
-        errors += [f"the replanned HVAC manual: {e}" for e in _manual_spans_cover(
-            moved_section, [review_cover, *(e["sections"] for e in second["continuations"] if e["review"] == review)])]
+        if chain_of(frozen, review) != chain_before:
+            errors.append("a frozen replan changed the HVAC chain")
+        frozen_text = (frozen / "read-plan.md").read_text(encoding="utf-8")
+        skipped_span = chain_before[1]["sections"][0]
+        for wanted in (
+            f"230700 on {review}, package pkg-hvac: added to the package after the manual reading was planned",
+            f"075000 pages 300 to 309 on {roof_review}c-1, package pkg-roof: its package was deleted",
+            f"{skipped_span['code']} pages {skipped_span['fromPage']} to {skipped_span['toPage']} on {parts_before[1]}, package pkg-hvac: its manual part was read twice and not confirmed",
+            "099100 on i1-rev-099100-1, package pkg-new: added to the package after the manual reading was planned",
+            "i1-rev-099100-1s-1: Invented painting, trade 09 91 00, package pkg-new, standard lines after none",
+            f"{parts_before[1]}: Invented HVAC, trade 23 00 00, package pkg-hvac, manual part after {parts_before[0]}",
+            "manual plan frozen at the first window 3 dispatch",
+        ):
+            if wanted not in frozen_text:
+                errors.append(f"the frozen replan does not carry `{wanted}`")
+        if f"{roof_review}" in frozen_text.split("## Deliberately left out")[0]:
+            errors.append("the frozen replan still plans a unit of the deleted roofing package")
+        if any(u["id"].startswith("i1-rev-099100-1c-") for u in staged_lines(frozen).values()):
+            errors.append("a package added after the manual plan was frozen took manual parts")
+        frozen_files = files_of(frozen)
+        run(plan_module, plan_argv(frozen))
+        if files_of(frozen) != frozen_files:
+            errors.append("a second frozen replan with nothing changed rewrote the plan")
+    # Before any dispatch the plan divides afresh, so the same changes plan the new pages.
+    afresh = folder_of("afresh", packages, listed_sections)
+    run(plan_module, plan_argv(afresh))
+    write_inputs(afresh, rows_after, moved + [
+        {"csi": "230700", "title": "Invented insulation", "division": "23", "fileId": "file-m1", "pageStart": 400, "pageEnd": 410},
+    ])
+    run(plan_module, plan_argv(afresh))
+    if not any(s["code"] == "230700" for u in chain_of(afresh, review) for s in u.get("sections", [])):
+        errors.append("a replan before any dispatch does not plan a section added to a package")
 
-    # A dispatched part whose section stays put keeps its id and pages while the rest replans.
-    steady = folder_of("steady", packages, listed_sections)
-    run(plan_module, plan_argv(steady))
-    dispatch(steady, "i1-W3-1", review, ok=True)
-    dispatch(steady, "i1-W3-1", f"{review}c-1", ok=True)
-    held = [e for e in plan_file(steady)["continuations"] if e["id"] == f"{review}c-1"]
-    write_inputs(steady, packages, [dict(r, pageEnd=320) if r["csi"] == "075000" else r for r in listed_sections])
-    run(plan_module, plan_argv(steady))
-    if [{k: e[k] for k in ("id", "sections")} for e in plan_file(steady)["continuations"] if e["id"] == f"{review}c-1"] != \
-            [{k: e[k] for k in ("id", "sections")} for e in held]:
-        errors.append("a dispatched part whose section did not move changed on a replan")
-
-    # A section whose range is corrected at its end keeps the pages a dispatched review read, and
-    # no page goes to two units.
-    extended = folder_of("extended", packages, listed_sections)
-    run(plan_module, plan_argv(extended))
-    dispatch(extended, "i1-W3-1", review, ok=True)
-    longer = [dict(r, pageEnd=200) if r["csi"] == "233113" else r for r in listed_sections]
-    write_inputs(extended, packages, longer)
-    code, _out, err = run(plan_module, plan_argv(extended))
-    if code != 0:
-        errors.append(f"a replan after a section's end moved refused: {err}")
-    else:
-        grown = plan_file(extended)
-        longer_hvac = [dict(s, pageEnd=200) if s["code"] == "233113" else s for s in hvac]
-        errors += [f"the HVAC manual after its end moved: {e}" for e in _manual_spans_cover(longer_hvac, [
-            grown["reviewSpans"][review], *(e["sections"] for e in grown["continuations"] if e["review"] == review)])]
-
-    # Two packages sharing a section each plan its pages, and a replan with nothing changed
-    # refuses neither.
-    shared_packages = [dict(packages[0]), dict(packages[1], manualSections=["075000", "233113"])]
-    shared = folder_of("shared", shared_packages, listed_sections)
-    run(plan_module, plan_argv(shared))
-    code, _out, err = run(plan_module, plan_argv(shared))
-    if code != 0:
-        errors.append(f"a replan of two packages sharing a section refused: {err}")
-
-    # A package an addendum's pass leaves out, or one deleted and listed again, keeps the pages its
-    # dispatched review was sent with.
-    kept_spans = folder_of("kept-spans", packages, listed_sections)
-    run(plan_module, plan_argv(kept_spans))
-    roof_review = "i1-rev-075000-1"
-    dispatch(kept_spans, "i1-W3-1", roof_review, ok=True)
-    sent_with = plan_file(kept_spans)["reviewSpans"][roof_review]
-    write_inputs(kept_spans, packages[:1], listed_sections)
-    with (kept_spans / "ledger.md").open("a", encoding="utf-8") as ledger:
-        ledger.write("note 3 i1-W3-1 i1-rev-075000-1 unread section 075000 pages 300 to 309 left, its package was deleted\n")
-    run(plan_module, plan_argv(kept_spans))
-    write_inputs(kept_spans, packages, [dict(r, pageStart=290, pageEnd=320) if r["csi"] == "075000" else r for r in listed_sections])
-    code, _out, err = run(plan_module, plan_argv(kept_spans))
-    if code != 0:
-        errors.append(f"a package listed again refused: {err}")
-    elif plan_file(kept_spans)["reviewSpans"].get(roof_review) != sent_with:
-        errors.append("a package deleted and listed again lost the pages its review was sent with")
-
-    # A part planned after one carried into a pass of manual parts is carried after it, never into
-    # the review's pass, which runs first.
-    chained = [
-        {"csi": "230000", "title": "A", "division": "23", "fileId": "file-m1", "pageStart": 1, "pageEnd": 20},
-        {"csi": "233000", "title": "D", "division": "23", "fileId": "file-m1", "pageStart": 21, "pageEnd": 60},
-        {"csi": "233113", "title": "B", "division": "23", "fileId": "file-m1", "pageStart": 61, "pageEnd": 440},
-        {"csi": "233400", "title": "C", "division": "23", "fileId": "file-m1", "pageStart": 441, "pageEnd": 450},
+    # The case behind the planner bug of a replan moving a part into another pass: three packages
+    # on one trade, every unit verified, a section added to each. Two replans write the same bytes.
+    trio_rows = [
+        {"id": f"pkg-trio-{n}", "tradeCode": "09 21 16", "name": f"Invented drywall {n}", "manualSections": [f"0921{n}0"]}
+        for n in (1, 2, 3)
     ]
-    chain_packages = [dict(packages[0], manualSections=["230000", "233000", "233113"])]
-    chain_folder = folder_of("chain", chain_packages, chained)
-    run(plan_module, plan_argv(chain_folder))
-    dispatch(chain_folder, "i1-W3-1", review)
-    write_inputs(chain_folder, [dict(packages[0], manualSections=["230000", "233113", "233400"])], chained)
-    code, _out, err = run(plan_module, plan_argv(chain_folder))
-    if code != 0:
-        errors.append(f"a replan after a section left the package refused: {err}")
-    else:
-        errors += _chain_order_errors((chain_folder / "read-plan.md").read_text(encoding="utf-8"),
-                                      plan_file(chain_folder)["continuations"])
-
-    # A section listed between parts already carried out of the trade's pass: the parts not yet
-    # dispatched take their passes afresh, so no two passes wait on each other.
-    many = [{"csi": "230000", "title": "A", "division": "23", "fileId": "file-m1", "pageStart": 1, "pageEnd": 20}] + [
-        {"csi": f"2331{n:02d}", "title": f"S{n}", "division": "23", "fileId": "file-m1",
-         "pageStart": 21 + 40 * n, "pageEnd": 60 + 40 * n} for n in range(12)
+    trio_sections = [
+        {"csi": f"0921{n}0", "title": f"S{n}", "division": "09", "fileId": "file-m1", "pageStart": 40 * n, "pageEnd": 40 * n + 31}
+        for n in (1, 2, 3)
     ]
-    many_codes = [row["csi"] for row in many]
-    inserted = folder_of("inserted", [dict(packages[0], manualSections=many_codes)], many)
-    run(plan_module, plan_argv(inserted))
-    dispatch(inserted, "i1-W3-1", review)
-    extra = {"csi": "233199", "title": "New", "division": "23", "fileId": "file-m1", "pageStart": 900, "pageEnd": 939}
-    write_inputs(inserted, [dict(packages[0], manualSections=many_codes[:11] + ["233199"] + many_codes[11:])], many + [extra])
-    code, _out, err = run(plan_module, plan_argv(inserted))
+    trio = folder_of("trio", trio_rows, trio_sections)
+    run(plan_module, plan_argv(trio))
+    for p in _plan_passes((trio / "read-plan.md").read_text(encoding="utf-8")):
+        for unit in [u["id"] for u in p["stageA"]] + [r[0] for r in p["reviews"]]:
+            dispatch(trio, p["id"], unit, ok=True)
+    write_inputs(trio, [dict(row, manualSections=row["manualSections"] + [f"0922{n}0"]) for n, row in enumerate(trio_rows, 1)],
+                 trio_sections + [
+                     {"csi": f"0922{n}0", "title": f"T{n}", "division": "09", "fileId": "file-m1", "pageStart": 300 + 20 * n, "pageEnd": 300 + 20 * n + 5}
+                     for n in (1, 2, 3)
+                 ])
+    code, _out, err = run(plan_module, plan_argv(trio))
+    once = files_of(trio) if code == 0 else None
+    code, _out, err = run(plan_module, plan_argv(trio))
+    if code != 0 or files_of(trio) != once:
+        errors.append(f"three packages of one trade, every unit verified and a section added to each, plan other bytes on a second replan: {err}")
+
+    # Longest trade first: a trade's chains of more than ten units take passes of their own,
+    # lettered after the first, each waiting for the one before it, and plan first.
+    long_manual = [dict(r, pageEnd=600) if r["csi"] == "233113" else r for r in listed_sections]
+    carried = folder_of("carried", packages, long_manual)
+    code, _out, err = run(plan_module, plan_argv(carried))
     if code != 0:
-        errors.append(f"a section listed between carried parts refused: {err}")
+        errors.append(f"a long manual refused: {err}")
     else:
-        errors += _chain_order_errors((inserted / "read-plan.md").read_text(encoding="utf-8"),
-                                      plan_file(inserted)["continuations"])
-        before = files_of(inserted)
-        run(plan_module, plan_argv(inserted))
-        if files_of(inserted) != before:
-            errors.append("a replan of carried parts with nothing changed rewrote the plan")
-
-    # A section a verified part could not read, as no longer on its package, is planned again once
-    # the package lists it again.
-    skipped = folder_of("skipped", packages, listed_sections)
-    run(plan_module, plan_argv(skipped))
-    dispatch(skipped, "i1-W3-1", f"{review}c-2", ok=True)
-    with (skipped / "ledger.md").open("a", encoding="utf-8") as ledger:
-        ledger.write(f"note 3 i1-W3-1 {review}c-2 anomaly section 233113 not read: no longer on the package, run only\n")
-    run(plan_module, plan_argv(skipped))
-    covered = plan_file(skipped)["continuations"]
-    readers = [e["id"] for e in covered if any(s["code"] == "233113" and s["fromPage"] <= 160 <= s["toPage"] for s in e["sections"])]
-    if readers == [f"{review}c-2"] or not readers:
-        errors.append(f"pages a verified part could not read are planned for no new unit: {readers}")
-    code, _out, err = run(plan_module, plan_argv(skipped))
-    if code != 0:
-        errors.append(f"a replan after pages were planned again for a part that could not read them refused: {err}")
-
-    # Parts not yet dispatched stay in a pass of manual parts a runner has started, where nothing
-    # before them changed.
-    started = folder_of("started", [dict(packages[0], manualSections=many_codes)], many)
-    run(plan_module, plan_argv(started))
-    in_b = [e["id"] for e in plan_file(started)["continuations"] if e.get("pass") == "i1-W3-1b"]
-    if in_b:
-        # The first pass runs to its end before the pass it carried parts into starts.
-        for unit in [review] + [e["id"] for e in plan_file(started)["continuations"] if not e.get("pass")]:
-            dispatch(started, "i1-W3-1", unit, ok=True)
-        dispatch(started, "i1-W3-1b", in_b[0])
-        run(plan_module, plan_argv(started))
-        still = [e["id"] for e in plan_file(started)["continuations"] if e.get("pass") == "i1-W3-1b"]
-        if still != in_b:
-            errors.append(f"a started pass of manual parts lost parts on an unchanged replan: {in_b} became {still}")
-    else:
-        errors.append("the started-pass fixture carried no part into i1-W3-1b")
-
-    # A part number once handed out is never handed out again, after its part was planned away.
-    numbered = folder_of("numbered", packages, listed_sections)
-    run(plan_module, plan_argv(numbered))
-    dispatch(numbered, "i1-W3-1", review)
-    handed = {e["id"] for e in plan_file(numbered)["continuations"]}
-    write_inputs(numbered, packages, [dict(r, pageEnd=119) if r["csi"] == "233113" else r for r in listed_sections])
-    run(plan_module, plan_argv(numbered))
-    write_inputs(numbered, packages, [dict(r, pageStart=500, pageEnd=530) if r["csi"] == "233113" else r for r in listed_sections])
-    run(plan_module, plan_argv(numbered))
-    again = {e["id"] for e in plan_file(numbered)["continuations"]} & handed
-    if again:
-        errors.append(f"a part number handed out before was handed out again: {sorted(again)}")
+        stage_a = _stage_a(_plan_passes((carried / "read-plan.md").read_text(encoding="utf-8")))
+        ids = [p["id"] for p in stage_a]
+        hvac_passes = [p["id"] for p in stage_a if any(u["trade"] == "23 00 00" for u in p["stageA"])]
+        if hvac_passes[:3] != ["i1-W3-M1", "i1-W3-M1b", "i1-W3-M1c"] or ids[:len(hvac_passes)] != hvac_passes:
+            errors.append(f"the longest trade's chain is not first in passes lettered from i1-W3-M1: {ids}")
+        for at, p in enumerate(stage_a[1:len(hvac_passes)], 1):
+            if p["fields"].get("starts after") != stage_a[at - 1]["id"]:
+                errors.append(f"{p['id']} does not wait for {stage_a[at - 1]['id']}: {p['fields'].get('starts after')}")
+        if any(len(p["stageA"]) > 10 for p in stage_a):
+            errors.append("a stage A pass holds more than ten units")
+        if any(u["trade"] == "07 50 00" for p in stage_a if p["id"] in hvac_passes for u in p["stageA"]):
+            errors.append("a pass of the long trade's chain holds another trade's units")
 
     # Refusals, each one line, writing nothing.
     refused("a section list read truncated", folder_of("truncated", packages, listed_sections, truncated=True),
@@ -12946,48 +13124,18 @@ def check_manual_parts(plugin_path: Path, marketplace_root: Path) -> Result:
     refused("a plan with no section list", no_list, "--sections",
             ["plan", "--window", "3", "--packages", str(no_list / "plan" / "packages.json"), "--out",
              str(no_list / "read-plan.md")])
-    legacy = folder_of("legacy", packages, listed_sections)
-    run(plan_module, plan_argv(legacy))
-    old = plan_file(legacy)
-    old["continuations"] = [{k: v for k, v in e.items() if k != "planned"} for e in old["continuations"]]
-    (legacy / "plan" / "window-3.json").write_text(json.dumps(old, indent=2) + "\n", encoding="utf-8")
-    refused("a plan file holding a continuation a report bound", legacy, "before manual parts")
-    overlap = folder_of("overlap", packages, listed_sections)
-    run(plan_module, plan_argv(overlap))
-    twice = plan_file(overlap)
-    twice["continuations"][1]["sections"] = list(twice["continuations"][0]["sections"])
-    (overlap / "plan" / "window-3.json").write_text(json.dumps(twice, indent=2) + "\n", encoding="utf-8")
-    refused("one page planned for two parts", overlap, "are planned for")
-    gone = folder_of("gone", packages, listed_sections)
-    run(plan_module, plan_argv(gone))
-    write_inputs(gone, packages[:1], listed_sections)
-    refused("a deleted package with pages owed", gone, "its package was deleted")
-    with (gone / "ledger.md").open("a", encoding="utf-8") as ledger:
-        ledger.write("note 3 i1-W3-1 i1-rev-075000-1 unread section 075000 pages 300 to 309 left, its package was deleted\n")
-    code, _out, err = run(plan_module, plan_argv(gone))
-    if code != 0:
-        errors.append(f"a deleted package's pages recorded unread still refuse: {err}")
-
-    # A trade whose manual runs past ten units carries its last parts into a pass of manual parts
-    # after the trade's pass, which waits for it.
-    long_manual = [dict(r, pageEnd=600) if r["csi"] == "233113" else r for r in listed_sections]
-    carried = folder_of("carried", packages, long_manual)
-    code, _out, err = run(plan_module, plan_argv(carried))
-    if code != 0:
-        errors.append(f"a long manual refused: {err}")
-    else:
-        carried_text = (carried / "read-plan.md").read_text(encoding="utf-8")
-        passes = {e.get("pass") for e in plan_file(carried)["continuations"] if e.get("pass")}
-        block = carried_text.split("### i1-W3-1b.", 1)[1].split("###", 1)[0] if "### i1-W3-1b." in carried_text else ""
-        lettered = [f"i1-W3-1{letter}" for letter in "bcdefghijklmnopqrstuvwxyz"[:len(passes)]]
-        if len(passes) < 2 or sorted(passes) != lettered or "starts after: i1-W3-1" not in block:
-            errors.append(
-                f"a long manual's parts are not carried into passes lettered from i1-W3-1b, the first "
-                f"after i1-W3-1: {sorted(passes)}"
-            )
-        totals = [len(_plan_passes(carried_text))]
-        if totals[0] < 2:
-            errors.append("a long manual planned into one pass")
+    for label, change, wanted in (
+        ("one page planned for two parts", lambda units: units[1].update(sections=list(units[0]["sections"])), "are planned for"),
+        ("a chain whose standard lines unit is not last", lambda units: units.append(dict(units[0], id=f"{review}c-99")), "is a standard lines unit that is not"),
+        ("a manual part off its review's numbering", lambda units: units[0].update(id="i1-rev-999999-1c-1"), "no manual part id"),
+    ):
+        broken = folder_of(f"broken-{len(label)}", packages, listed_sections)
+        run(plan_module, plan_argv(broken))
+        held = plan_file(broken)
+        change(next(c for c in held["chains"] if c["review"] == review)["units"])
+        (broken / "plan" / "window-3.json").write_text(json.dumps(held, indent=2) + "\n", encoding="utf-8")
+        dispatch(broken, "i1-W3-M1", f"{review}c-1")
+        refused(label, broken, wanted)
 
     detail = (
         f"text arm: {text_refused}/{len(mutations)} mutations refused; division: {divided} shapes read "
@@ -13040,7 +13188,7 @@ _PASSES_AT_ONCE_SKILL_PHRASES = (
     "about 3 minutes a sheet",
     "six passes running at once",
     "divide the sheet minutes by six",
-    "No two passes of reviews share a trade, so none waits on another, and you start what `start now:` names, up to six at once",
+    "the listing holds each pass of reviews until every pass it starts after is finished",
     "listing holds you to six at once in every window, because Claude Code stops agents past 20 running together",
     "Wait on an agent by ending the turn and nothing else",
 )
@@ -13525,28 +13673,67 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
 
     def finish_window_3(where: Path, pass_id: str) -> None:
         runner_reports(where, 3, pass_id)
-        record_pass(where, 3, pass_id, [f"scopeItem:{review[0]}-" for review in blocks_of(where)[pass_id]["reviews"]])
+        record_pass(where, 3, pass_id, [
+            f"scopeItem:{unit}-" for unit in summary.read_plan(where / "read-plan.md", 3, pass_id)["units"]
+        ])
 
     def arm_window_3() -> None:
         where = window_3_folder("w3")
-        expect("window 3's waits", set(starts_of(where).values()), {"none"})
-        expect("window 3's passes", len(starts_of(where)), 7)
+        stage_a = [f"W3-M{n}" for n in range(1, 8)]
+        stage_b = [f"W3-{n}" for n in range(1, 8)]
+        # Seven trades of eight packages: each trade's eight standard lines units are one pass of
+        # stage A, and each trade's eight reviews one pass of stage B, which waits for all seven.
+        expect("window 3's stage A waits", {starts_of(where)[p] for p in stage_a}, {"none"})
+        expect("window 3's stage B waits", {starts_of(where)[p] for p in stage_b}, {", ".join(stage_a)})
+        expect("window 3's passes", list(starts_of(where)), stage_a + stage_b)
         expect("the summary script's window 3 read", len(summary.read_plan(where / "read-plan.md", 3, "W3-1")["units"]), 8)
-        everything = [f"W3-{n}" for n in range(1, 8)]
-        expect("window 3 is cut at the limit", names(listed(where)["start now"]), everything[:_PASSES_AT_ONCE])
-        expect("window 3 past the limit waits", names(listed(where)["waiting"]), everything[_PASSES_AT_ONCE:])
-        expect("window 3 with six of them out", names(listed(where, everything[:_PASSES_AT_ONCE])["start now"]), [])
-        expect("window 3 with all of them out", listed(where, everything)["start now"], "none")
-        append(where, *[pass_line(3, f"W3-{n}") for n in range(1, 5)])
-        listing = listed(where, ["W3-5", "W3-6"])
+        expect("the summary script's stage A read", len(summary.read_plan(where / "read-plan.md", 3, "W3-M1")["units"]), 8)
+        expect("window 3 is cut at the limit", names(listed(where)["start now"]), stage_a[:_PASSES_AT_ONCE])
+        expect("window 3 past the limit waits", names(listed(where)["waiting"]), stage_a[_PASSES_AT_ONCE:] + stage_b)
+        expect("window 3 with six of them out", names(listed(where, stage_a[:_PASSES_AT_ONCE])["start now"]), [])
+        expect("window 3 with all of stage A out", listed(where, stage_a)["start now"], "none")
+        append(where, *[pass_line(3, p) for p in stage_a[:4]])
+        listing = listed(where, stage_a[4:6])
         # Four `pass:` lines whose passes the ledger does not finish hold nothing: the four start
         # again beside the two out, with no check-in between.
-        expect("window 3 after four `pass:` lines, nothing held", names(listing["start now"]), ["W3-1", "W3-2", "W3-3", "W3-4"])
+        expect("window 3 after four `pass:` lines, nothing held", names(listing["start now"]), stage_a[:4])
 
-        # A resume with four of seven recorded: what is left starts at once.
+        # The barrier: stage B starts once every stage A pass is finished, and a stage A unit read
+        # twice and not confirmed is finished as a verified one is.
+        barrier = window_3_folder("w3-barrier")
+        for pass_id in stage_a[:6]:
+            finish_window_3(barrier, pass_id)
+        expect("stage B held while one stage A pass is unfinished", names(listed(barrier)["start now"]), ["W3-M7"])
+        last = summary.read_plan(barrier / "read-plan.md", 3, "W3-M7")["units"]
+        runner_reports(barrier, 3, "W3-M7")
+        held = [line for line in (barrier / "ledger.md").read_text(encoding="utf-8").splitlines()
+                if not line.startswith(f"verified 3 W3-M7 {last[0]} ")]
+        for name in ("ledger.md", "ledger.shadow"):
+            (barrier / name).write_text("".join(f"{line}\n" for line in held), encoding="utf-8")
+        expect("stage B held by an unsettled stage A unit", names(listed(barrier)["start now"]), ["W3-M7"])
+        append(
+            barrier, verified_line(3, "W3-M7", last[0], "mismatch"),
+            f"dispatch 3 W3-M7 {last[0]} sheets none purpose the sheet",
+            verified_line(3, "W3-M7", last[0], "mismatch"),
+            f"note 3 W3-M7 {last[0]} unread {last[0]} read 2 times, not read again",
+        )
+        code, _hand_back, err = run(summary, [
+            str(barrier / "ledger.md"), "3", "W3-M7", "--plan", str(barrier / "read-plan.md"),
+            "--trades", str(barrier / "trades" / "W3-M7.txt"), "--out", str(barrier / "reports" / "W3-M7.md"),
+        ])
+        if code != 0:
+            raise ValueError(f"the summary of a stage A pass with a skipped unit refused: {err}")
+        record_pass(barrier, 3, "W3-M7", [f"scopeItem:{unit}-" for unit in last])
+        expect("stage B released by a skipped stage A unit", names(listed(barrier)["start now"]), stage_b[:_PASSES_AT_ONCE])
+        verified_barrier = window_3_folder("w3-barrier-verified")
+        for pass_id in stage_a:
+            finish_window_3(verified_barrier, pass_id)
+        expect("stage B released by verified stage A units", names(listed(verified_barrier)["start now"]), stage_b[:_PASSES_AT_ONCE])
+
+        # A resume with stage A and four of seven reviews recorded: what is left starts at once.
         resumed = window_3_folder("w3-resume")
-        for n in range(1, 5):
-            finish_window_3(resumed, f"W3-{n}")
+        for pass_id in stage_a + stage_b[:4]:
+            finish_window_3(resumed, pass_id)
         expect("a window 3 resume, what is left starts", names(listed(resumed)["start now"]), ["W3-5", "W3-6", "W3-7"])
 
     arm("window 3", arm_window_3)
@@ -13726,10 +13913,10 @@ def check_passes_at_once(plugin_path: Path, marketplace_root: Path) -> Result:
         ])
         if code != 0:
             raise ValueError(f"the window 3 plan refused: {err}")
-        pass_id = "i1-W3-1"
+        pass_id = "i1-W3-M1"
         units = summary.read_plan(joined / "read-plan.md", 3, pass_id)["units"]
-        # The review reads twenty pages of the section and a planned manual part the sixteen after.
-        expect("a manual part planned after the review", [unit for unit in units if unit.endswith("c-1")] != [], True)
+        # The section's pages go to manual parts in stage A, before the review.
+        expect("a manual part planned before the review", [unit for unit in units if unit.endswith("c-1")] != [], True)
         wanted = [f"scopeItem:{unit}-" for unit in units]
         expect("the prefixes with a manual part", listed(joined, reported=pass_id)["prefixes"], wanted)
         runner_reports(joined, 3, pass_id)
@@ -14475,50 +14662,50 @@ STANDARD_LINES_NAME_MAX = 80
 STANDARD_LINES_SUPPLIED_MATERIAL = "The package includes material the sub supplies"
 
 _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
-    ("reviewer", "A line lands on this package only where you find its condition in this job's own "
+    ("standard lines", "A line lands on this package only where you find its condition in this job's own "
                  "drawings or manual, cited to the page or section where you found it."),
-    ("reviewer", "A condition holds only where every part of it holds on this job, and a part you "
+    ("standard lines", "A condition holds only where every part of it holds on this job, and a part you "
                  "cannot find writes nothing."),
-    ("reviewer", "Never a Question. A line is the estimator's own practice, never the design team's"),
-    ("reviewer", '`evidence: { basis: "trade-convention", source: "<the line as printed>" }`'),
-    ("reviewer", "the `instrument:` the script prints as their `sourceInstrument`"),
-    ("reviewer", "scripts/standard_lines.py' --package '<this package's tradeCode>' --all '<each "
+    ("standard lines", "Never a Question. A line is the estimator's own practice, never the design team's"),
+    ("standard lines", '`evidence: { basis: "trade-convention", source: "<the line as printed>" }`'),
+    ("standard lines", "the `instrument:` the script prints as their `sourceInstrument`"),
+    ("standard lines", "scripts/standard_lines.py' --package '<this package's tradeCode>' --all '<each "
                  "package on that list as its name as the list shows it, =, then its tradeCode and its "
                  "codes comma separated, the packages separated by ;>'"),
-    ("reviewer", "with the Bash tool (`python` in place of `python3` on a seat that has only that "
+    ("standard lines", "with the Bash tool (`python` in place of `python3` on a seat that has only that "
                  "name), `--all` naming this package too"),
-    ("reviewer", "Before anything else this mandate does, take "
+    ("standard lines", "Before anything else this mandate does, take "
                  "`solicitation_list_packages(projectId, brief: true)` once"),
-    ("reviewer", "A row a line writes is named exactly as the script's `name:` prints it"),
-    ("reviewer", "A role for a standard line is written only on the row's own trade, never onto a row "
+    ("standard lines", "A row a line writes is named exactly as the script's `name:` prints it"),
+    ("standard lines", "A role for a standard line is written only on the row's own trade, never onto a row "
                  "already on another package, and a citation only onto the writer's row of a Which Trade "
                  "half the paper gives to this package's trade"),
-    ("reviewer", "You write what it prints and nothing else: never open the lines files, never read "
+    ("standard lines", "You write what it prints and nothing else: never open the lines files, never read "
                  "another trade's lines, and never decide from a trade's or a package's name which "
                  "package a line or a half goes to."),
-    ("reviewer", "Check that part against the `places:` line"),
-    ("reviewer", "so the script settles who writes it, the same way for each"),
-    ("reviewer", "You write this half, always, as printed, whatever this package's own paper says."),
-    ("reviewer", "write it all the same, cite that place on the row too"),
-    ("reviewer", "You never write this half, whatever this package's own paper says: no row, no role "
+    ("standard lines", "Check that part against the `places:` line"),
+    ("standard lines", "so the script settles who writes it, the same way for each"),
+    ("standard lines", "You write this half, always, as printed, whatever this package's own paper says."),
+    ("standard lines", "write it all the same, cite that place on the row too"),
+    ("standard lines", "You never write this half, whatever this package's own paper says: no row, no role "
                  "and no exclusion row for it."),
-    ("reviewer", "Each other package the line involves leaves the half out and takes an exclusion row "
+    ("standard lines", "Each other package the line involves leaves the half out and takes an exclusion row "
                  "for it, and one review writes all of a half's exclusion rows, in the batch that writes "
                  "the half's own row."),
-    ("reviewer", "`you write it: yes, exclusion rows only`: the half is the owner's or a utility's, or "
+    ("standard lines", "`you write it: yes, exclusion rows only`: the half is the owner's or a utility's, or "
                  "no trade it names has a package on this job"),
-    ("reviewer", "named exactly as that line prints it, the half's row name, ` - by ` and who carries "
+    ("standard lines", "named exactly as that line prints it, the half's row name, ` - by ` and who carries "
                  "the work"),
-    ("reviewer", "no `description`, and the citation or the instrument the half's own row takes"),
-    ("reviewer", "Where a printed name passes the door's 80 characters, shorten the work's words before "
+    ("standard lines", "no `description`, and the citation or the instrument the half's own row takes"),
+    ("standard lines", "Where a printed name passes the door's 80 characters, shorten the work's words before "
                  "` - by `, never the ending."),
-    ("reviewer", "the first exclusion row of its name goes with none, since the half's own row has "
+    ("standard lines", "the first exclusion row of its name goes with none, since the half's own row has "
                  "another name and the record refuses that pointer"),
-    ("reviewer", "each later one of that name in the batch names the first, created before it"),
-    ("reviewer", "where the record refuses one because that package already carries the name, that "
+    ("standard lines", "each later one of that name in the batch names the first, created before it"),
+    ("standard lines", "where the record refuses one because that package already carries the name, that "
                  "package has the row already: take that create out, cite your page on the row it names, "
                  "and point at that row only a `repeatsScopeItem` that named the create you took out."),
-    ("reviewer", "Before you create one, look for an exclusion row already on that package, under any "
+    ("standard lines", "Before you create one, look for an exclusion row already on that package, under any "
                  "heading, that leaves out the same work to the same party, judged by the work and "
                  "never by the name: on this package, among the rows you harvested, with no search; on "
                  "another package, by reader mandate 4's one `search` for the words that name the work"),
@@ -14531,8 +14718,8 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "the row created first is kept, each page the other cites is cited on it as the pair "
                  "rule above copies pages, and the other is retired, with the same cases that retire "
                  "nothing as any pair below, so a row that holds a note is never retired."),
-    ("reviewer", "An exclusion row never carries the line, so it is never named `already on`"),
-    ("reviewer", "point at that row each `repeatsScopeItem` that named the create you took out, and no "
+    ("standard lines", "An exclusion row never carries the line, so it is never named `already on`"),
+    ("standard lines", "point at that row each `repeatsScopeItem` that named the create you took out, and no "
                  "other pointer: an exclusion row's pointer only ever names another exclusion row of "
                  "its own name."),
     ("reviewer", "An exclusion row's ending can go stale when a fold moves or renames a package, and the "
@@ -14540,40 +14727,40 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("reviewer", "write the exclusion row's `name` over with `supersedesId`, the work's words and that new "
                  "ending within 80 characters"),
     ("reviewer", "so a name that matches before its ending is a hint and never a condition"),
-    ("reviewer", "with one `packageRole:<tradeCode>` record valued `{ \"role\": \"exclusion\" }` in "
+    ("standard lines", "with one `packageRole:<tradeCode>` record valued `{ \"role\": \"exclusion\" }` in "
                  "the same batch, so it sits in this package's Exclusions section"),
     ("reviewer", "A fold can put an exclusion row on this package beside a row outside its Exclusions "
                  "section"),
-    ("reviewer", "Where the half goes to either of two or more trades, the script gives it to this "
+    ("standard lines", "Where the half goes to either of two or more trades, the script gives it to this "
                  "package alone: the row sits on this package and carries nothing about the others."),
-    ("reviewer", "Its `name:` is the name of the row that package writes"),
-    ("reviewer", "cite the place on that row with `cite_source`, a citation and never a role"),
-    ("reviewer", "Name the half `paper gives it to <this package's tradeCode>, <sheet and page or "
+    ("standard lines", "Its `name:` is the name of the row that package writes"),
+    ("standard lines", "cite the place on that row with `cite_source`, a citation and never a role"),
+    ("standard lines", "Name the half `paper gives it to <this package's tradeCode>, <sheet and page or "
                  "section>`"),
-    ("reviewer", "cite nothing and name it `paper gives it to <this package's tradeCode>, <sheet and "
+    ("standard lines", "cite nothing and name it `paper gives it to <this package's tradeCode>, <sheet and "
                  "page or section>, row not yet written`; the runner carries that line to the closing report."),
-    ("runner", "that ends `row not yet written` goes on the ledger the same way, as `note <window> "
-               "<pass> <unit> anomaly <the entry>`"),
-    ("fixture", "paper gives it to 09 99 99, X-1.01 file-0000 p3"),
-    ("fixture", "paper gives it to 09 99 99, X-2.01 file-0000 p4, row not yet written"),
-    ("fixture", "written scopeItem:A1-1-1, X-1.01 file-0000 p3, paper gives it to 26 00 00, section "
+    ("runner", "standard lines unit's `standard lines:` that ends `row not yet written` goes on as "
+               "`note <window> <pass> <unit> anomaly <the entry>`"),
+    ("standard lines fixture", "paper gives it to 09 99 99, X-1.01 file-0000 p3"),
+    ("standard lines fixture", "paper gives it to 09 99 99, X-2.01 file-0000 p4, row not yet written"),
+    ("standard lines fixture", "written scopeItem:A1-1-1, X-1.01 file-0000 p3, paper gives it to 26 00 00, section "
                 "099999 file-1111 p12"),
-    ("reviewer", "A row a line writes carries no note, in either field: never that it is a standard "
+    ("standard lines", "A row a line writes carries no note, in either field: never that it is a standard "
                  "line, that bids for the trade carry it, what its citation shows, or which other trade "
                  "could carry it."),
-    ("reviewer", "A line the script prints an `instrument:` for carries no page: a line with no "
+    ("standard lines", "A line the script prints an `instrument:` for carries no page: a line with no "
                  "condition, and a line whose condition says only that the sub supplies material"),
-    ("reviewer", "and no citation is written for it, on a new row or on a row that already carries "
+    ("standard lines", "and no citation is written for it, on a new row or on a row that already carries "
                  "the line"),
-    ("reviewer", "These are the only rows you write with no page, and they carry no note."),
-    ("reviewer", "Each is named for its kind, `Special warranties`, `Extra "
+    ("standard lines", "These are the only rows you write with no page, and they carry no note."),
+    ("manual reader", "Each is named for its kind, `Special warranties`, `Extra "
                  "materials`, `Mockups` or `Field tests`, and nothing more"),
-    ("reviewer", "A qualification is never a row of its own."),
-    ("reviewer", "Where it governs every row the section covers, write it once, on the row that "
+    ("manual reader", "A qualification is never a row of its own."),
+    ("manual reader", "Where it governs every row the section covers, write it once, on the row that "
                  "carries the section's main product."),
     ("reviewer", "carries in its `description` each code with what tells it apart, and the maker "
                  "and model where the set names one"),
-    ("reviewer", "add to the same batch one entry `{ \"subject\": <the new row's subject>, "
+    ("standard lines", "add to the same batch one entry `{ \"subject\": <the new row's subject>, "
                  "\"predicate\": \"repeatsScopeItem\""),
     ("reviewer", "The furnishing row that covers both stays so both bidders price the install, and "
                  "the estimator awards it to one."),
@@ -14595,8 +14782,10 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
               "a home row goes under it."),
     *((label, "No heading, package name or row says General Conditions.")
       for label in ("reviewer", "skill")),
+    # The reviewer holds these three once, in the reader's mandate 4 it reads whole, where the size
+    # cuts check's X3 arm finds them.
     *((label, phrase)
-      for label in ("reviewer", SHEET_READER, VOCABULARY_READER, "skill")
+      for label in (SHEET_READER, VOCABULARY_READER, "skill")
       for phrase in (
         "On `01 11 13`, there is no `General Items` row and no `general-requirement` role; a general "
         "cost the contractor carries there is a home row under one of the seven headings.",
@@ -14639,13 +14828,13 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     ("runner", "must carry the headings on the review's `headings written:` first line, each trimmed "
                "the same way, in that order"),
     ("runner", "a listed heading the review did not write is not one"),
-    ("manual reader", "**Settle the headings of the rows you created**, last, and only those"),
+    ("manual reader", "You settle no heading: you save no heading order and order no rows"),
     (SHEET_READER, "A phase or building heading only where the drawings or the manual separate the "
                    "work by phase or by building"),
     (VOCABULARY_READER, "A phase or building heading only where the drawings or the manual separate "
                         "the work by phase or by building"),
     ("reviewer", "A row whose only write in your review is its heading goes on `headings written:`, "
-                 "never on `updated subjects:`."),
+                 "and is counted as the report's counts say."),
     (VOCABULARY_READER, '`category` `General Items`, with one `packageRole:<that trade>` record valued '
                         '`{"role": "general-requirement"}` in the same batch'),
     *((label, phrase) for label in (SHEET_READER, VOCABULARY_READER) for phrase in (
@@ -14686,7 +14875,7 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
     (SHEET_READER, '`category` `General Items`, with one `packageRole:<that trade>` record valued '
                    '`{"role": "general-requirement"}` in the same batch'),
     ("runner", "`headings` takes one entry per row on the review's `headings written:` line after its first"),
-    ("skill", "Each review also writes the standard lines whose condition it finds on this job's own "
+    ("skill", "each standard lines unit writes the lines whose condition it finds on this job's own "
               "drawings or manual"),
     # A person's own agent writes an exclusion row by the same whole procedure.
     *(("project-record", phrase) for phrase in (
@@ -14753,7 +14942,7 @@ def _standard_lines_text_errors(texts: dict[str, str]) -> list[str]:
     for label, phrase in _STANDARD_LINES_PINS:
         if phrase not in " ".join(texts[label].split()):
             errors.append(f"{label} does not read {phrase!r}")
-    reviewer = " ".join(texts["reviewer"].split())
+    reviewer = " ".join(texts["standard lines"].split())
     for what, patterns, _ in _STANDARD_LINES_REFUSED:
         for pattern in patterns:
             found = re.search(pattern, reviewer)
@@ -15233,6 +15422,8 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         VOCABULARY_READER: plugin_path / "agents" / VOCABULARY_READER,
         SHEET_READER: plugin_path / "agents" / SHEET_READER,
         "fixture": marketplace_root / "harness" / "fixtures" / "reviewer-report-fixture.md",
+        "standard lines": plugin_path / "agents" / "scope-standard-lines.md",
+        "standard lines fixture": marketplace_root / "harness" / "fixtures" / "standard-lines-report-fixture.md",
     }
     script_path = plugin_path / "scripts" / "standard_lines.py"
     folder = plugin_path / "skills" / "scope-run" / "standard-lines"
@@ -15282,8 +15473,8 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         at = "- Which Trade, a line that says which trade carries a piece of work."
         for what, _, samples in _STANDARD_LINES_REFUSED:
             for sample in samples:
-                broken = {**texts, "reviewer": texts["reviewer"].replace(at, f"{at} {sample}", 1)}
-                if at in texts["reviewer"] and _standard_lines_text_errors(broken):
+                broken = {**texts, "standard lines": texts["standard lines"].replace(at, f"{at} {sample}", 1)}
+                if at in texts["standard lines"] and _standard_lines_text_errors(broken):
                     refused += 1
                 else:
                     errors.append(f"the check passed the reviewer with {sample!r}, which lets {what}")
@@ -15834,7 +16025,7 @@ _RECHECK_PINS: tuple[tuple[str, str], ...] = (
     (RECHECKER, "That is a current page whether or not the answer names a `sheetNumber`"),
     (RECHECKER, "A null `sheetNumber` never makes a page not current"),
     ("agents/scope-round-runner.md", "make no `verify_unit` call, which needs a sheet"),
-    ("agents/scope-round-runner.md", "Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-rechecker)"),
+    ("agents/scope-round-runner.md", "Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-standard-lines, scope-rechecker)"),
     ("agents/scope-round-runner.md", "subagent_type: plumlayer:scope-rechecker"),
     ("agents/scope-round-runner.md", "recheck.py' check --report"),
     ("agents/scope-round-runner.md", 'search(projectId, subject: "<subject>", predicate: "scopeItemRetraction")'),
@@ -17124,10 +17315,12 @@ _ROWS_PINS: tuple[tuple[str, str], ...] = (
     (_ROWS_REVIEWER, "a heading that holds more stays as it stands and is named `over 500 rows`."),
     (_ROWS_REVIEWER, "A heading with one home row is named `one row`."),
     (_ROWS_REVIEWER, _ROWS_SHAPE),
-    (_ROWS_MANUAL, _ROWS_SHAPE),
-    (_ROWS_MANUAL, "`headings written:` and `rows ordered:` as step 8 writes them where it ran"),
-    (_ROWS_MANUAL, "order the home rows under each that holds two or more, one `order_scope_items` "
-     "call a heading"),
+    # A manual part settles nothing: it gives each row its heading at the create, and the review
+    # settles every heading and the rows' order once, at its end, off a fresh read.
+    (_ROWS_MANUAL, "You settle no heading: you save no heading order and order no rows, since the "
+     "review settles both."),
+    (_ROWS_REVIEWER, "Read the package's rows whole again at this step, as mandate 1 does, whatever "
+     "you read before"),
     (_ROWS_SKILL, _ROWS_SHAPE),
     (_ROWS_SKILL, "puts the rows under every heading in the order the estimator reads the work"),
     (_ROWS_SKILL, "and puts the rows under every heading in the order the estimator reads the work."),
@@ -17150,12 +17343,17 @@ _ROWS_PINS: tuple[tuple[str, str], ...] = (
     (_ROWS_FIXTURE, "rows ordered: none"),
 )
 _ROWS_RETIRED: tuple[tuple[str, str], ...] = (
+    (_ROWS_MANUAL, _ROWS_SHAPE),
+    (_ROWS_MANUAL, "`headings written:` and `rows ordered:` as step 8 writes them where it ran"),
+    (_ROWS_MANUAL, "order the home rows under each that holds two or more, one `order_scope_items` "
+     "call a heading"),
+    (_ROWS_MANUAL, "headings written: <"),
     (_ROWS_REVIEWER, "where no better order is plain"),
     (_ROWS_REVIEWER, "For each heading whose order you change"),
     (_ROWS_SKILL, "writesnames"),
 )
 # Each shape carries `rows ordered:` on the line right after `headings written:`.
-_ROWS_SHAPES = (_ROWS_REVIEWER, _ROWS_MANUAL, _ROWS_SKILL, _ROWS_FIXTURE)
+_ROWS_SHAPES = (_ROWS_REVIEWER, _ROWS_SKILL, _ROWS_FIXTURE)
 
 
 def _rows_order_errors(texts: dict[str, str]) -> list[str]:
@@ -17417,18 +17615,18 @@ _GRAIN_PINS: tuple[tuple[str, str], ...] = (
          "under its own heading, all of them, and the short version gives their count."),
         ("agents/scope-reviewer.md", "A row reader mandate 6's five reasons make a row of its own is "
          "never one of these, and two rows those reasons separate are never a pair."),
-        ("agents/scope-reviewer.md", "a product whose count and specification a bid is checked on "
+        ("agents/scope-manual-reader.md", "a product whose count and specification a bid is checked on "
          "by itself, or one made of another material or built another way than the rest, is a row "
          "by reader mandate 6's first reason, never \"its material\"."),
-        ("agents/scope-reviewer.md", "The broad row is not split, retired or renamed: it stands for "
+        ("agents/scope-manual-reader.md", "The broad row is not split, retired or renamed: it stands for "
          "the work less its rows of their own"),
-        ("agents/scope-reviewer.md", "Where it governs part of one row's work only, it goes on that "
+        ("agents/scope-manual-reader.md", "Where it governs part of one row's work only, it goes on that "
          "part's row"),
-        ("agents/scope-reviewer.md", "One row per kind for the package, settled for every run "
+        ("agents/scope-manual-reader.md", "One row per kind for the package, settled for every run "
          "whatever reader mandate 6's tests would give."),
-        ("agents/scope-reviewer.md", "You never write a standard line's work into another row's "
+        ("agents/scope-standard-lines.md", "You never write a standard line's work into another row's "
          "`description`."),
-        ("agents/scope-reviewer.md", "Each kind's line is a row, never one of the parts reader "
+        ("agents/scope-standard-lines.md", "Each kind's line is a row, never one of the parts reader "
          "mandate 6's NO ROW paragraph gives no row"),
         ("agents/scope-reviewer.md", "it is also a row on this package for each piece of work the "
          "section requires, by reader mandate 6's test"),
@@ -17763,8 +17961,8 @@ _FAILED_UNIT_PINS: tuple[tuple[str, str], ...] = (
     (_FAILED_UNIT_REVIEWER, "not written: <each requirement a page gives this package that you did not write"),
     (_FAILED_UNIT_MANUAL, "not written: <each requirement your pages give this package that you did not write"),
     (_FAILED_UNIT_MANUAL, "`not written:` and `owed:` written as the review's shape gives them"),
-    (_FAILED_UNIT_REVIEWER, "there, it goes on your `not written:` line with `no room` as its reason."),
-    (_FAILED_UNIT_REVIEWER, "`description` has no room, it goes on your `not written:` line with `no room` "
+    (_FAILED_UNIT_MANUAL, "there, it goes on your `not written:` line with `no room` as its reason."),
+    (_FAILED_UNIT_MANUAL, "`description` has no room, it goes on your `not written:` line with `no room` "
      "as its reason."),
     (_FAILED_UNIT_REVIEWER, "a row that stood under your prefix before you started, or a citation alone, "
      "discharges nothing"),
@@ -18048,7 +18246,7 @@ def _filled_report(kind: str, unit: str, labels: tuple[str, ...], **values: str)
         if label in values:
             lines.append(f"{label}: {values[label]}")
         elif label == "unit":
-            lines.append(f"unit: {unit}   pass: P1   window: 3" if kind in ("review", "manual") else
+            lines.append(f"unit: {unit}   pass: P1   window: 3" if kind in ("review", "manual", "standard") else
                          f"unit: {unit}   pass: P1   window: 2")
         elif label == "created":
             lines.append("created: 0   updated: 0   questions raised: 0   questions replied: 0")
@@ -19722,8 +19920,13 @@ def check_failed_unit(plugin_path: Path, marketplace_root: Path) -> Result:
         if reads == 2:
             (part_at / "reports" / f"{part}.read-1.md").write_bytes(stub_bytes)
             append(part_at, part_dispatch, part_ok)
-            (part_at / "reports" / f"{part}.md").write_text(
-                _filled_report("manual", part, report_mod.LABELS["manual"]), encoding="utf-8")
+            # The later read's report as the part's definition writes it: the span its `Reads:` line
+            # names on `spans read:`, and one section line for it.
+            (part_at / "reports" / f"{part}.md").write_text(_filled_report(
+                "manual", part, report_mod.LABELS["manual"], **{
+                    "spans read": "099999 p13-p20 of file-0001",
+                    "section lines": "099999 p13-p20 of file-0001 | puts: invented framing | rows: none | left: none | silence: none",
+                }), encoding="utf-8")
         else:
             (part_at / "reports" / f"{part}.md").write_bytes(stub_bytes)
         said = lead_mod._plan_reads(part_at / "read-plan.md", 3, {part})[0].get("W3-1", "")
@@ -20074,7 +20277,7 @@ _CLOSE_ITEMS: tuple[tuple[str, str], ...] = (
     ("What I could not read", "A-1.01 p3 not read from the picture: the east half, a faint scan. It is a scan"),
     ("What I could not read", "Left out of the read plan at the start: A-9.01 (A-9.*: the invented landscape sheets)."),
     ("What I could not read", "Left unread by the plan you approved for this delivery: A-8.01."),
-    ("What I could not read", "Section 092900 for Invented drywall: no review read it, because the section list gives it no page range."),
+    ("What I could not read", "Section 092900 for Invented drywall: no unit read it, because the section list gives it no page range."),
     ("What I could not read", "Invented drywall: section 092216 not read: manual removed."),
     ("What I could not read", "Invented drywall: I could not search for invented soffit"),
     # The copy counts every Question on the project, open and closed, and the heading says so.
@@ -20626,8 +20829,14 @@ def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
             (at / "plan" / "packages.json").write_text(json.dumps({"packages": rows["packages"][:count]}), encoding="utf-8")
             code, _bounds, err = run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"),
                                                 *_no_sections(), "--out", str(at / "read-plan.md")])
-            pass_id = passes_of(at)[0] if code == 0 else ""
-            units = summary_mod.read_plan(at / "read-plan.md", 3, pass_id)["units"] if code == 0 else []
+            # Stage A, then stage B: each pass's units all skipped, each pass recorded.
+            for pass_id in (passes_of(at) if code == 0 else []):
+                skip_window_3_pass(at, case, count, breaker, pass_id)
+            expect("U3", f"the passes of {count} skipped units are not finished, so the run would send them again",
+                   code == 0 and "to dispatch: none" in listing(at), listing(at))
+
+    def skip_window_3_pass(at: Path, case: str, count: int, breaker: bool, pass_id: str) -> None:
+            units = summary_mod.read_plan(at / "read-plan.md", 3, pass_id)["units"]
             for unit in units:
                 package = re.search(rf"{re.escape(unit)}: (.+?), trade", (at / "read-plan.md").read_text(encoding="utf-8")).group(1)
                 append(at, f"dispatch 3 {pass_id} {unit} sheets none purpose review {package}",
@@ -20651,8 +20860,6 @@ def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
                    code == 0 and out.splitlines()[:1] == [wanted], f"exit {code}, {out!r}, {err!r}")
             expect("U3", f"record over {count} skipped units {'does not trip' if breaker else 'trips'} the breaker",
                    code == 0 and (f"breaker: {count} of {count} units skipped; stop the run" in out) == breaker, out)
-            expect("U3", f"the pass of {count} skipped units is not finished, so the run would send it again",
-                   code == 0 and "to dispatch: none" in listing(at), listing(at))
             if case == "u3-two-skipped":
                 seen["u3"] = (out, err)
 
@@ -21085,12 +21292,12 @@ def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
         code, _b, err = run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"),
                                        "--sections", str(at / "plan" / "spec-sections.json"), "--out", str(at / "read-plan.md")])
         expect("U1", "the window 3 plan of the coverage folder is refused", code == 0, err)
-        w3_pass = passes_of(at)[0] if code == 0 else "W3-1"
+        w3_pass = passes_of(at)[0] if code == 0 else "W3-M1"
         plan_units = summary_mod.read_plan(at / "read-plan.md", 3, w3_pass)["units"] if code == 0 else []
-        named = {re.search(r"rev-(\d+)", u).group(1): u for u in plan_units if re.search(r"rev-(\d+)", u)}
+        named = {re.search(r"rev-(\d+)", u).group(1): u for u in plan_units if re.search(r"rev-(\d+)-1c-1$", u)}
         drywall, plumbing, electrical, insulation = (named.get(c, "") for c in ("092116", "221116", "260000", "072100"))
-        expect("U1", "the coverage folder's plan does not carry the four reviews", all((drywall, plumbing, electrical, insulation)),
-               plan_units)
+        expect("U1", "the coverage folder's plan does not carry the four packages' manual parts in its first pass",
+               all((drywall, plumbing, electrical, insulation)), plan_units)
         entry_a = "section 092116 p11 | an invented stud gauge | no row | the page is a scan"
         entry_b = "section 092116 p12 | an invented track | no row | not reached"
         # The drywall review: read 1 names two entries and fails, read 2 writes one and notes the other
@@ -21105,9 +21312,9 @@ def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
         # the planned span, as the runner's check holds it.
         owed_2 = report_mod.write_owed(at, "3", drywall, 2, "none\n")
         append(at, f"dispatch 3 {w3_pass} {drywall} sheets none purpose review Invented drywall")
-        planned_span = re.search(rf"{re.escape(drywall)}: .*?, reads (.+?), package ",
-                                 (at / "read-plan.md").read_text(encoding="utf-8")).group(1)
-        report_2 = _filled_report("review", drywall, report_mod.LABELS["review"], **{
+        planned_span = re.search(rf"^[0-9]+\. {re.escape(drywall)}: .*?, reads (.+?)$",
+                                 (at / "read-plan.md").read_text(encoding="utf-8"), re.M).group(1)
+        report_2 = _filled_report("manual", drywall, report_mod.LABELS["manual"], **{
             "created": "1   updated: 0   questions raised: 0   questions replied: 0",
             "created subjects": f"scopeItem:{drywall}-1",
             "sent": "1   landed: 1   conflicts: none",
@@ -21116,7 +21323,7 @@ def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
             "owed": f"not written by read 1: {entry_a} | not written, the page is a scan\n"
                     f"not written by read 1: {entry_b} | written scopeItem:{drywall}-1",
         })
-        broken, mismatches = report_mod.problems(report_2, "review", report_mod.read_owed_file(owed_2), owed_given=True)
+        broken, mismatches = report_mod.problems(report_2, "manual", report_mod.read_owed_file(owed_2), owed_given=True)
         expect("V7", "the later read's report, answering the owed file the runner's command wrote, is not held agreeing",
                not broken and not mismatches and f"not written by read 1: {entry_b}" in owed_2.read_text(encoding="utf-8"),
                broken + mismatches)
@@ -21169,9 +21376,9 @@ def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
             ("U1", "4 matches on pages that are not drawing sheets"),
             ("U1", "2 matches that could not be placed on their sheet"),
             ("U1", "5 matches past the most one index run cites"),
-            ("U1", "The Invented plumbing review: its reader's report was lost, so I wrote it from the record"),
-            ("U2", "The Invented electrical review: it was checked, but no report of its last read is on file, so which pages it read is not known."),
-            ("U1", "The Invented electrical review, read 1: the trades it wrote to are not known"),
+            ("U1", "Manual pages for Invented plumbing (section 221116, pages 20 to 24): its reader's report was lost, so I wrote it from the record"),
+            ("U2", "Manual pages for Invented electrical (section 260000, pages 30 to 31): it was checked, but no report of its last read is on file, so which pages it read is not known."),
+            ("U1", "Manual pages for Invented electrical (section 260000, pages 30 to 31), read 1: the trades it wrote to are not known"),
             ("U1", "Invented electrical: I could not search for invented busway"),
         ):
             expect(item, f"the collection does not hold {words[:80]!r} once", sum(words in entry for entry in could) == 1, could)
@@ -21311,8 +21518,12 @@ def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
         code, bounds, err = run(plan_mod, ["plan", "--window", "3", "--packages", str(at / "plan" / "packages.json"),
                                            "--sections", str(at / "plan" / "spec-sections.json"), "--out", str(at / "read-plan.md")])
         plan_text = (at / "read-plan.md").read_text(encoding="utf-8") if code == 0 else ""
-        part = re.search(r"^[1-9][0-9]*\. (\S+): Invented drywall, trade 09 21 16, package \S+, manual part after \S+, reads (.+)$",
-                         plan_text, re.M)
+        part = next((
+            found for found in re.finditer(
+                r"^[1-9][0-9]*\. (\S+): Invented drywall, trade 09 21 16, package \S+, manual part after \S+, reads (.+)$",
+                plan_text, re.M,
+            ) if len(found.group(2).split("; ")) == 2
+        ), None)
         expect("V3", "the plan does not give one manual part two sections", code == 0 and part and len(part.group(2).split("; ")) == 2,
                err or plan_text[-900:])
         if not part:
@@ -21347,8 +21558,10 @@ def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
         expect("V3", "the package detail names the pages of a section the part left unread, or not the ones it read",
                f"{kept.split()[0]} pages {first} to {last}" in detail and f"{omitted_code} pages {o_first} to {o_last}" not in detail,
                detail)
+        # The part's verified report stands, so its entry, with the pages it left, names the section.
         expect("V3", "the section the part left unread is not in the collection",
-               f"Invented drywall: section {omitted_code} not read: manual removed." in text)
+               f"Manual pages for Invented drywall (section {omitted_code}, pages {o_first} to {o_last}): not read, "
+               f"because its manual file is no longer on the project." in text)
 
     arms.append(("V3", arm_v3))
 
@@ -21518,6 +21731,2279 @@ def check_no_stops_repair(plugin_path: Path, marketplace_root: Path) -> Result:
     return result
 
 
+
+# --------------------------------------------------------------------------- #
+# Check: the package review after the manual parts and the standard lines
+# --------------------------------------------------------------------------- #
+#
+# Window 3 runs each package's manual parts and its standard lines unit before its review, so no
+# review reads a manual page through or writes a standard line, and every review stays under the
+# context one agent holds. The review reads what the parts found off `manual_notes.py`, which uses
+# a part's report only where its latest read verified ok and the report check holds it whole; the
+# runner holds each part's section lines to its dispatched spans through the report check; and the
+# closing report names a skipped standard lines unit's lines as not written, a skipped review's
+# headings and order as not settled, and each package that took an item after its own review. The
+# scripts run in-process over invented run folders, and the new agent's text is pinned.
+
+_SLIM_STANDARD_LINES_PINS = (
+    "model: sonnet",
+    "Before anything else, write the one word `started` to",
+    "`blocked: <the tool's name> <sign-in, refused by the client or server>`",
+    "`Read` mandate 2 to the line before mandate 5, mandate 6 to the line before mandate 7, and mandate 8 to the line before mandate 9.",
+    "Each page this mandate has you cite on a row that already exists, say which kind, as reader mandate 1 says.",
+    "manual_notes.py' --run '<run folder>' --review '<the Review: unit id>'",
+    "You raise no Question and reply to none",
+    "you save no heading order and order no rows, since the review settles both",
+)
+_SLIM_QUESTION_TOOLS = ("ask_question", "reply_question", "list_questions")
+_SLIM_REVIEWER_PINS = (
+    "## The bounds of one review",
+    "set so the median review never reaches it",
+    "Where every line of your Owed file is a `check read <j> failed:` line naming the check `headings` or `rows ordered`, run mandate 15 alone",
+    "no page, no drawing or manual search and no create",
+    "`updated:` is the number of rows on your `updated subjects:` line",
+    "Every create batch creates at most three rows and holds at most 40 entries",
+)
+
+
+def _slim_manual_report(unit: str, spans: list[str], section_lines: list[str] | None = None, **values: str) -> str:
+    """A manual part's report whole for the report check, its spans and section lines given."""
+    labels = (
+        "unit", "harvested", "notes read", "searches", "terms too general", "pages opened", "created",
+        "created subjects", "updated subjects", "manual updates", "field updates", "questions raised ids",
+        "questions replied ids", "questions linked", "questions alone", "sent", "trades",
+        "sheet readings written", "anomalies", "grain questions", "silent sections", "unspecified work",
+        "compared", "spans read", "section lines", "context pages", "carried", "sections not checked",
+        "families not checked", "door-owned suggestions", "not written", "owed",
+    )
+    lines = section_lines if section_lines is not None else [
+        f"{span} | puts: invented board and its finish | rows: none | left: none | silence: none" for span in spans
+    ]
+    out = []
+    for label in labels:
+        if label in values:
+            out.append(f"{label}: {values[label]}")
+        elif label == "unit":
+            out.append(f"unit: {unit}   package: Invented drywall   trade: 09 21 16   window: 3")
+        elif label == "harvested":
+            out.append("harvested: rows 0, definition codes 0, spec sections 0, aliases 0")
+        elif label == "searches":
+            out.append("searches: 1 run, 0 returned nothing, 0 of them standard line")
+        elif label == "created":
+            out.append("created: 0   updated: 0   questions raised: 0   questions replied: 0")
+        elif label == "sent":
+            out.append("sent: 0   landed: 0   conflicts: none")
+        elif label == "spans read":
+            out.append("spans read:")
+            out.extend(spans)
+        elif label == "section lines":
+            out.append("section lines:")
+            out.extend(lines)
+        else:
+            out.append(f"{label}: none")
+    return "".join(f"{line}\n" for line in out)
+
+
+def _slim_folder(root: Path, label: str, packages: list[dict], sections: list[dict]) -> Path:
+    where = root / label / "run"
+    shutil.rmtree(where.parent, ignore_errors=True)
+    for sub in ("plan", "reports", "trades", "names"):
+        (where / sub).mkdir(parents=True, exist_ok=True)
+    (where / "run.json").write_text(json.dumps(_issue_run("deliv-s1", ["deliv-s1"], "i1")), encoding="utf-8")
+    (where / "plan" / "packages.json").write_text(json.dumps({"packages": packages}), encoding="utf-8")
+    (where / "plan" / "spec-sections.json").write_text(json.dumps({
+        "count": len(sections), "sections": sections, "unparsedDivisions": 0, "residueSections": 0, "truncated": False,
+    }), encoding="utf-8")
+    return where
+
+
+def _slim_append(where: Path, *lines: str) -> None:
+    for name in ("ledger.md", "ledger.shadow"):
+        with (where / name).open("a", encoding="utf-8", newline="\n") as handle:
+            handle.write("".join(f"{line}\n" for line in lines))
+
+
+_SLIM_OK = "created 0 items 0 updated 0 questions 0 replied 0 sent 0 landed 0 conflicts 0"
+
+
+def slim_manual_notes_case(plugin_path: Path, root: Path) -> tuple[str, dict]:
+    """
+    One package of four sections, one manual part each: the first verified ok with a whole report,
+    the second verified ok with its report restored from the record, the third read mismatch, the
+    fourth skipped; then its standard lines unit verified ok. Returns the notes printed and the
+    parts' ids by what happened to them.
+    """
+    scripts = plugin_path / "scripts"
+    plan_mod = _load_script_module(scripts / "plan_inventory.py", "plan_inventory")
+    report_mod = _load_script_module(scripts / "unit_report.py", "unit_report")
+    notes_mod = _load_script_module(scripts / "manual_notes.py", "manual_notes")
+    codes = ("092116", "092216", "092400", "092900")
+    sections = [{"csi": code, "title": f"Invented section {n}", "division": "09", "fileId": "file-m1",
+                 "pageStart": 10 * n + 1, "pageEnd": 10 * n + 10} for n, code in enumerate(codes, 1)]
+    where = _slim_folder(root, "notes", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall",
+                                          "manualSections": list(codes)}], sections)
+    code, _out, err = _run_script_main(plan_mod, ["plan", "--window", "3", "--packages", str(where / "plan" / "packages.json"),
+                                                  "--sections", str(where / "plan" / "spec-sections.json"),
+                                                  "--out", str(where / "read-plan.md")])
+    if code != 0:
+        raise ValueError(f"the plan refused: {err}")
+    chain = json.loads((where / "plan" / "window-3.json").read_text(encoding="utf-8"))["chains"][0]
+    parts = [u for u in chain["units"] if u["kind"] == "manual"]
+    pass_id = "i1-W3-M1"
+    said = lambda span: f"{span['code']} p{span['fromPage']}-p{span['toPage']} of {span['fileId']}"
+    ok, restored, mismatch, skipped = (u["id"] for u in parts)
+    spans = {u["id"]: [said(s) for s in u["sections"]] for u in parts}
+    _slim_append(where, f"dispatch 3 {pass_id} {ok} sheets none purpose read the Invented drywall manual pages",
+                 f"verified 3 {pass_id} {ok} {_SLIM_OK} result ok")
+    (where / "reports" / f"{ok}.md").write_text(_slim_manual_report(ok, spans[ok], [
+        f"{spans[ok][0]} | puts: invented board types | rows: none | left: invented deflection limit for scopeItem:i1-A2-1-1 because the row was not yet written | silence: none"]),
+        encoding="utf-8")
+    _slim_append(where, f"dispatch 3 {pass_id} {restored} sheets none purpose read the Invented drywall manual pages",
+                 f"verified 3 {pass_id} {restored} {_SLIM_OK} result ok")
+    report_mod.restore(where, "3", restored)
+    _slim_append(where, f"dispatch 3 {pass_id} {mismatch} sheets none purpose read the Invented drywall manual pages",
+                 f"verified 3 {pass_id} {mismatch} {_SLIM_OK} result mismatch",
+                 f"note 3 {pass_id} {mismatch} deviation Invented drywall created 1 under the prefix, reader created 0, read 1")
+    for read in (1, 2):
+        _slim_append(where, f"dispatch 3 {pass_id} {skipped} sheets none purpose read the Invented drywall manual pages",
+                     f"verified 3 {pass_id} {skipped} {_SLIM_OK} result mismatch")
+    _slim_append(where, f"note 3 {pass_id} {skipped} unread Invented drywall read 2 times, not read again")
+    standard = chain["units"][-1]["id"]
+    _slim_append(where, f"dispatch 3 {pass_id} {standard} sheets none purpose write the Invented drywall standard lines",
+                 f"verified 3 {pass_id} {standard} {_SLIM_OK} result ok")
+    (where / "reports" / f"{standard}.md").write_text(_whole_review_report(standard).replace(
+        "standard lines: none", "standard lines: Invented line, condition not found, invented words"), encoding="utf-8")
+    code, out, err = _run_script_main(notes_mod, ["--run", str(where), "--review", chain["review"]])
+    if code != 0:
+        raise ValueError(f"manual_notes refused: {err}")
+    return out, {"ok": ok, "restored": restored, "mismatch": mismatch, "skipped": skipped,
+                 "spans": spans, "standard": standard}
+
+
+def slim_section_line_cases(plugin_path: Path) -> dict[str, list[str]]:
+    """The report check over a part's section lines: exact, one missing, one twice, one malformed."""
+    report_mod = _load_script_module(plugin_path / "scripts" / "unit_report.py", "unit_report")
+    spans = ["092116 p11-p20 of file-m1", "092216 p21-p25 of file-m1 (section p21-p30)"]
+    line = lambda span: f"{span} | puts: invented work | rows: none | left: none | silence: none"
+    cases = {
+        "exact": [line(s) for s in spans],
+        "one missing": [line(spans[0])],
+        "one twice": [line(spans[0]), line(spans[0]), line(spans[1])],
+        "one malformed": [line(spans[0]), f"{spans[1]} | invented work and nothing else"],
+    }
+    out = {}
+    for label, lines in cases.items():
+        broken, mismatches = report_mod.problems(_slim_manual_report("i1-rev-092116-1c-1", spans, lines), "manual",
+                                                 spans=report_mod.dispatched_spans("; ".join(spans)))
+        out[label] = broken + mismatches
+    removed = _slim_manual_report("i1-rev-092116-1c-1", [spans[0]], [line(spans[0])],
+                                  **{"sections not checked": "092216 manual changed"})
+    out["a changed section left off"] = sum(report_mod.problems(removed, "manual", spans=spans), [])
+    return out
+
+
+def slim_closing_case(plugin_path: Path, root: Path) -> str:
+    """
+    Three packages: the general requirements package's review verified first; the drywall
+    package's standard lines unit skipped and its review verified after, writing one item onto the
+    general requirements trade; the painting package's review skipped. Returns the closing report.
+    """
+    scripts = plugin_path / "scripts"
+    plan_mod = _load_script_module(scripts / "plan_inventory.py", "plan_inventory")
+    close_mod = _load_script_module(scripts / "close_report.py", "close_report")
+    where = _slim_folder(root, "closing", [
+        {"id": "pkg-gr", "tradeCode": "01 11 13", "name": "General Requirements"},
+        {"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall"},
+        {"id": "pkg-pt", "tradeCode": "09 91 00", "name": "Invented painting"},
+    ], [])
+    code, _out, err = _run_script_main(plan_mod, ["plan", "--window", "3", "--packages", str(where / "plan" / "packages.json"),
+                                                  "--sections", str(where / "plan" / "spec-sections.json"),
+                                                  "--out", str(where / "read-plan.md")])
+    if code != 0:
+        raise ValueError(f"the plan refused: {err}")
+    _slim_append(where, "phase: reading started 2026-01-31T22:10:00Z")
+    for review, pass_a in (("i1-rev-011113-1", "i1-W3-M1"), ("i1-rev-092116-1", "i1-W3-M1"), ("i1-rev-099100-1", "i1-W3-M1")):
+        unit = f"{review}s-1"
+        if review == "i1-rev-092116-1":
+            for read in (1, 2):
+                _slim_append(where, f"dispatch 3 {pass_a} {unit} sheets none purpose write the Invented drywall standard lines",
+                             f"verified 3 {pass_a} {unit} {_SLIM_OK} result mismatch")
+            _slim_append(where, f"note 3 {pass_a} {unit} unread Invented drywall read 2 times, not read again")
+        else:
+            _slim_append(where, f"dispatch 3 {pass_a} {unit} sheets none purpose write the standard lines",
+                         f"verified 3 {pass_a} {unit} {_SLIM_OK} result ok")
+    _slim_append(where, "dispatch 3 i1-W3-1 i1-rev-011113-1 sheets none purpose review General Requirements",
+                 f"verified 3 i1-W3-1 i1-rev-011113-1 {_SLIM_OK} result ok",
+                 "dispatch 3 i1-W3-2 i1-rev-092116-1 sheets none purpose review Invented drywall",
+                 "note 3 i1-W3-2 i1-rev-092116-1 anomaly row on another package: scopeItem:i1-rev-092116-1-3 | 01 11 13",
+                 "note 3 i1-W3-2 i1-rev-092116-1 anomaly bound reached: drawing pages opened 15: the comparison of invented door types",
+                 f"verified 3 i1-W3-2 i1-rev-092116-1 {_SLIM_OK} result ok")
+    for read in (1, 2):
+        _slim_append(where, "dispatch 3 i1-W3-2 i1-rev-099100-1 sheets none purpose review Invented painting",
+                     f"verified 3 i1-W3-2 i1-rev-099100-1 {_SLIM_OK} result mismatch")
+    _slim_append(where, "note 3 i1-W3-2 i1-rev-099100-1 unread Invented painting read 2 times, not read again",
+                 "phase: window 3 complete")
+    code, _short, err = _run_script_main(close_mod, ["write", str(where)])
+    return (where / "closing-report.md").read_text(encoding="utf-8") if (where / "closing-report.md").is_file() else f"exit {code} {err}"
+
+
+def check_slim_review(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "slim-review"
+    errors: list[str] = []
+    agents = plugin_path / "agents"
+    standard = agents / "scope-standard-lines.md"
+    if not standard.is_file() or not (plugin_path / "scripts" / "manual_notes.py").is_file():
+        return Result(name, False, detail="no standard lines agent or no manual_notes.py")
+    sl_text = _collapsed(standard.read_text(encoding="utf-8"))
+    errors += [f"the standard lines agent does not carry `{p}`" for p in _SLIM_STANDARD_LINES_PINS if p not in sl_text]
+    tools = _parse_frontmatter(standard).get("tools", "")
+    errors += [f"the standard lines agent declares `{verb}`" for verb in _SLIM_QUESTION_TOOLS if verb in tools]
+    reviewer = _collapsed((agents / "scope-reviewer.md").read_text(encoding="utf-8"))
+    errors += [f"the reviewer does not carry `{p}`" for p in _SLIM_REVIEWER_PINS if p not in reviewer]
+    root = Path(__file__).parent / ".test-results" / "slim-review"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    try:
+        notes, ids = slim_manual_notes_case(plugin_path, root)
+        lines = notes.splitlines()
+        first_body = next((i for i, l in enumerate(lines) if l.startswith(("section ", "part "))), len(lines))
+        head = lines[:first_body]
+        want_head = [
+            *(f"not read: {s.split(' of ')[0].replace(' p', ' pages ', 1).replace('-p', ' to ')}, its manual part has no verified read"
+              for s in ids["spans"][ids["mismatch"]]),
+            *(f"not read: {s.split(' of ')[0].replace(' p', ' pages ', 1).replace('-p', ' to ')}, its manual part was read twice and not confirmed"
+              for s in ids["spans"][ids["skipped"]]),
+            *(f"not known: {s.split(' of ')[0].replace(' p', ' pages ', 1).replace('-p', ' to ')}, not known, report written from the record"
+              for s in ids["spans"][ids["restored"]]),
+        ]
+        for want in want_head:
+            if want not in head:
+                errors.append(f"manual_notes does not print `{want}` before the sections: {head}")
+        if not any(l.startswith(f"left: {ids['ok']} | ") and "invented deflection limit" in l for l in head):
+            errors.append(f"manual_notes does not print the verified part's left item first: {head}")
+        if f"part {ids['ok']}: ok" not in lines or not any(l.startswith("  section line: ") for l in lines):
+            errors.append("manual_notes does not print the verified part's section line")
+        if any("section line" in l and ids["restored"] in l for l in lines):
+            errors.append("manual_notes reads a restored report's lines")
+        if f"standard lines: written by {ids['standard']}" not in lines or "  Invented line, condition not found, invented words" not in lines:
+            errors.append(f"manual_notes does not print the standard lines unit's outcomes: {lines[-4:]}")
+    except Exception as e:
+        errors.append(f"the notes arm raised: {type(e).__name__}: {e}")
+    try:
+        cases = slim_section_line_cases(plugin_path)
+        if cases["exact"] or cases["a changed section left off"]:
+            errors.append(f"an honest part's section lines are refused: {cases['exact'] + cases['a changed section left off']}")
+        for label in ("one missing", "one twice", "one malformed"):
+            if not any(m.startswith("section lines") for m in cases[label]):
+                errors.append(f"section lines {label}: not a mismatch: {cases[label]}")
+    except Exception as e:
+        errors.append(f"the section lines arm raised: {type(e).__name__}: {e}")
+    try:
+        report = slim_closing_case(plugin_path, root)
+        for want in (
+            "standard lines may be missing, and its review added none.",
+            "The headings and the order of the items on Invented painting were not settled.",
+            "Packages that took an item after their own review",
+            "General Requirements: an item from the Invented drywall review, written after its own review",
+            "Invented drywall: the review stopped at its limit of 15 drawing pages opened. What the review left, "
+            "in its report's words: “the comparison of invented door types”.",
+        ):
+            if want not in report:
+                errors.append(f"the closing report does not say `{want}`")
+    except Exception as e:
+        errors.append(f"the closing arm raised: {type(e).__name__}: {e}")
+    detail = (
+        "the standard lines agent pinned with no Question tool; the reviewer's bounds, its mandate 15 "
+        "read alone, its one `updated:` rule; manual_notes over a part verified, restored, read mismatch "
+        "and skipped, and a standard lines unit; a part's section lines exact, one missing, one twice "
+        "and one malformed; the closing report over a skipped standard lines unit, a skipped review, a "
+        "package that took an item after its own review and a bound reached; bound: invented folders"
+    )
+    return Result(name, not errors, detail=detail + ("" if not errors else " | " + "; ".join(errors)))
+
+
+# --------------------------------------------------------------------------- #
+# Check: the package review build, repaired
+# --------------------------------------------------------------------------- #
+#
+# A review of the package review build found what it said but did not do. The notes script printed
+# no title for a section no part reads, and called a part ok whose verified report left a span
+# unread; the lead's record said those pages were read; the closing report dropped every section and
+# family a review or a part did not check, kept a standard line found later out of the collection,
+# and named no package that took an item from a review later skipped; and the manual reader's read
+# of the both-sources bullet ran past it. Each arm runs the shipped scripts over invented run folders
+# with every report written as its agent's definition says and every ledger line through
+# `ledger.py`, and the whole of window 3 runs once from the plan to the closing report.
+
+_REPAIR_OK = "created 0 items 0 updated 0 questions 0 replied 0 sent 0 landed 0 conflicts 0"
+_REPAIR_BULLET_END = "Name each subject you compared"
+_REPAIR_READER_BOUND = (
+    "manual both define.`, to the line before the one that opens `Name each subject you compared`, "
+    "both found with one more `Grep` for "
+    "`^    - A row the sheets and the manual both define\\.|^    Name each subject you compared`."
+)
+
+
+class _RepairRun:
+    """One invented run folder, the shipped scripts loaded once, and the producers' own steps."""
+
+    def __init__(self, plugin_path: Path, root: Path, label: str, packages: list[dict], sections: list[dict]):
+        scripts = plugin_path / "scripts"
+        self.plan_mod = _load_script_module(scripts / "plan_inventory.py", "plan_inventory")
+        self.summary_mod = _load_script_module(scripts / "pass_summary.py", "pass_summary")
+        self.lead_mod = _load_script_module(scripts / "lead_pass.py", "lead_pass")
+        self.close_mod = _load_script_module(scripts / "close_report.py", "close_report")
+        self.notes_mod = _load_script_module(scripts / "manual_notes.py", "manual_notes")
+        self.ledger_mod = _load_script_module(scripts / "ledger.py", "ledger")
+        self.report_mod = _load_script_module(scripts / "unit_report.py", "unit_report")
+        self.where = _slim_folder(root, label, packages, sections)
+        self.append("phase: reading started 2026-01-31T22:10:00Z")
+
+    def append(self, *lines: str) -> None:
+        self.ledger_mod.append_lines(self.where / "ledger.md", list(lines))
+
+    def plan(self, packages: list[dict] | None = None) -> tuple[int, str, str]:
+        if packages is not None:
+            (self.where / "plan" / "packages.json").write_text(json.dumps({"packages": packages}), encoding="utf-8")
+        return _run_script_main(self.plan_mod, [
+            "plan", "--window", "3", "--packages", str(self.where / "plan" / "packages.json"),
+            "--sections", str(self.where / "plan" / "spec-sections.json"), "--out", str(self.where / "read-plan.md")])
+
+    def chains(self) -> dict[str, list[dict]]:
+        data = json.loads((self.where / "plan" / "window-3.json").read_text(encoding="utf-8"))
+        return {chain["review"]: chain["units"] for chain in data["chains"]}
+
+    def unit_of(self, unit: str) -> dict:
+        for units in self.chains().values():
+            for found in units:
+                if found["id"] == unit:
+                    return found
+        return {"id": unit, "kind": "review"}
+
+    def reads(self, unit: str) -> str:
+        """A manual part's `Reads:` line, as the runner copies it off the unit line."""
+        return "; ".join(self.plan_mod.manual_parts.span_text(s) for s in self.unit_of(unit).get("sections", []))
+
+    def passes(self) -> list[str]:
+        return self.summary_mod.plan_passes(self.where / "read-plan.md")[1]
+
+    def units(self, pass_id: str) -> list[str]:
+        return self.summary_mod.read_plan(self.where / "read-plan.md", 3, pass_id)["units"]
+
+    def listing(self) -> str:
+        return _run_script_main(self.lead_mod, ["passes", "--plan", str(self.where / "read-plan.md")])[1]
+
+    def start_now(self) -> list[str]:
+        line = next((l for l in self.listing().splitlines() if l.startswith("start now: ")), "start now: none")
+        return [] if line == "start now: none" else [p.strip() for p in line[len("start now: "):].split(",")]
+
+    def settle(self, pass_id: str, unit: str, report: str, purpose: str, notes: tuple[str, ...] = (),
+               result: str = "ok", fields: str = _REPAIR_OK, owed: str = "none", trades: str = "none\n") -> tuple[int, str]:
+        """
+        One read as the runner makes it: the dispatch line, the reader's report on disk, the report
+        check the runner runs (a manual part's with its `Reads:` line), then the unit's notes and its
+        `verified` line in one closing append, and its trades set.
+        """
+        kind = {"manual": "manual", "standard lines": "standard"}.get(self.unit_of(unit)["kind"], "review")
+        self.append(f"dispatch 3 {pass_id} {unit} sheets none purpose {purpose}")
+        path = self.where / "reports" / f"{unit}.md"
+        path.write_text(report, encoding="utf-8")
+        argv = ["check", "--kind", kind, "--report", str(path), "--owed", owed]
+        if kind == "manual":
+            argv += ["--spans", self.reads(unit)]
+        code, out, _err = _run_script_main(self.report_mod, argv)
+        self.append(*notes, f"verified 3 {pass_id} {unit} {fields} result {result}")
+        if result == "ok":
+            self.report_mod.write_trades(self.where, pass_id, unit, trades)
+        return code, out
+
+    def record(self, pass_id: str, counts: dict[str, int] | None = None) -> tuple[int, str, str]:
+        """The pass summed by the summary script and recorded by the lead's record script."""
+        code, _hand, err = _run_script_main(self.summary_mod, [
+            str(self.where / "ledger.md"), "3", pass_id, "--plan", str(self.where / "read-plan.md"),
+            "--trades", str(self.where / "trades" / f"{pass_id}.txt"), "--out", str(self.where / "reports" / f"{pass_id}.md")])
+        if code != 0:
+            return code, "", err
+        answer = json.dumps([{"subjectPrefix": f"scopeItem:{u}-", "entryCount": (counts or {}).get(u, 0)}
+                             for u in self.units(pass_id)])
+        return _run_script_main(self.lead_mod, ["record", str(self.where / "ledger.md"), "3", pass_id, "--plan",
+                                                str(self.where / "read-plan.md"), "--counts-json", answer])
+
+    def notes(self, review: str) -> list[str]:
+        code, out, err = _run_script_main(self.notes_mod, ["--run", str(self.where), "--review", review])
+        if code != 0:
+            raise ValueError(f"manual_notes refused: {err}")
+        return out.splitlines()
+
+    def close(self) -> tuple[str, str]:
+        _code, short, _err = _run_script_main(self.close_mod, ["write", str(self.where)])
+        path = self.where / "closing-report.md"
+        return (path.read_text(encoding="utf-8") if path.is_file() else ""), short
+
+
+def _repair_part_report(run: _RepairRun, unit: str, read: list[str] | None = None, lines: list[str] | None = None,
+                        **values: str) -> str:
+    """A manual part's report as its definition writes it: the spans it read and one section line each."""
+    planned = run.reads(unit).split("; ") if run.reads(unit) else []
+    spans = planned if read is None else read
+    text = _slim_manual_report(unit, spans, lines if lines is not None else [
+        f"{span} | puts: invented board and its finish | rows: none | left: none | silence: none" for span in spans
+    ], **values)
+    if not spans:
+        text = text.replace("spans read:\n", "spans read: none\n").replace("section lines:\n", "section lines: none\n")
+    return text
+
+
+def _repair_review_report(report_mod, unit: str, package: str, trade: str, **values: str) -> str:
+    """A review's report as its definition writes it, every list `none` but the lines given."""
+    out = []
+    for label in report_mod.LABELS["review"]:
+        if label in values:
+            text = values[label]
+            out.append(f"{label}:" + (f" {text}" if "\n" not in text else "\n" + text))
+        elif label == "unit":
+            out.append(f"unit: {unit}   package: {package}   trade: {trade}   window: 3")
+        elif label == "harvested":
+            out.append("harvested: rows 4, definition codes 0, spec sections 2, aliases 1")
+        elif label == "searches":
+            out.append("searches: 12 run, 2 returned nothing")
+        elif label == "created":
+            out.append("created: 0   updated: 0   questions raised: 0   questions replied: 0")
+        elif label == "sent":
+            out.append("sent: 0   landed: 0   conflicts: none")
+        else:
+            out.append(f"{label}: none")
+    return "".join(f"{line}\n" for line in out)
+
+
+def _repair_section(code: str, start: int | None, size: int, title: str | None = None) -> dict:
+    return {"csi": code, "title": title or f"Invented section {code}", "division": code[:2],
+            "fileId": "file-m1" if start else None, "pageStart": start, "pageEnd": start + size - 1 if start else None}
+
+
+def _repair_collection(report: str) -> list[str]:
+    body = report.split("## What I could not read", 1)[-1].split("\n## ", 1)[0]
+    return [line[2:] for line in body.splitlines() if line.startswith("- ")]
+
+
+def _repair_short_count(short: str) -> int | None:
+    found = re.search(r"Could not read: ([0-9]+) \(", short)
+    return int(found.group(1)) if found else (0 if "Could not read: none." in short else None)
+
+
+def _repair_w1(plugin_path: Path, root: Path) -> list[str]:
+    """A section in a part, one with a title and no pages, and one the section list lacks."""
+    errors: list[str] = []
+    run = _RepairRun(plugin_path, root, "w1", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall",
+                                                "manualSections": ["092116", "092216", "099999"]}],
+                     [_repair_section("092116", 11, 10, "Invented board"), _repair_section("092216", None, 0, "Invented sheathing")])
+    code, _out, err = run.plan()
+    if code != 0:
+        return [f"W1: the plan refused: {err}"]
+    lines = run.notes("i1-rev-092116-1")
+    head = lines[: next((i for i, l in enumerate(lines) if l.startswith(("section ", "part "))), len(lines))]
+    for want in ("section 092116: Invented board, pages 11 to 20 of file-m1",
+                 "section 092216: Invented sheathing, its pages are not known",
+                 "section 099999: not on the section list, so its title and pages are not known"):
+        if want not in lines:
+            errors.append(f"W1: manual_notes does not print `{want}`: {lines}")
+    for want in ("not read: 092216, no page range", "not read: 099999, not on the record"):
+        if want not in head:
+            errors.append(f"W1: manual_notes does not print `{want}` first: {head}")
+    return errors
+
+
+def _repair_w4(plugin_path: Path, root: Path) -> list[str]:
+    """A part that, as its definition says, reads none of a span whose section's manual changed."""
+    errors: list[str] = []
+    packages = [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall", "manualSections": ["092116", "092216"]}]
+    sections = [_repair_section("092116", 11, 5), _repair_section("092216", 16, 4)]
+    for label, honest in (("w4", True), ("w4-unheld", False)):
+        run = _RepairRun(plugin_path, root, label, packages, sections)
+        code, _out, err = run.plan()
+        if code != 0:
+            return errors + [f"W4: the plan refused: {err}"]
+        review = "i1-rev-092116-1"
+        part, standard = (u["id"] for u in run.chains()[review])
+        kept, changed = run.reads(part).split("; ")
+        pass_id = run.passes()[0]
+        if honest:
+            report = _repair_part_report(run, part, [kept], **{
+                "sections not checked": "092216 manual changed",
+                "anomalies": "section 092216 not read: manual changed, run only"})
+            notes = ("note 3 {p} {u} anomaly section 092216 not read: manual changed, run only".format(p=pass_id, u=part),)
+        else:
+            # A report that leaves a span off and names no reason, which the runner's check refuses;
+            # the notes script, holding it to the plan the same way, never calls the part ok.
+            report = _repair_part_report(run, part, [kept])
+            notes = ()
+        code, out = run.settle(pass_id, part, report, "read the Invented drywall manual pages", notes)
+        if honest and (code != 0 or out != "report whole"):
+            errors.append(f"W4: the runner's check refuses a part that left a changed section unread as its definition says: {out}")
+        if not honest and code == 0:
+            errors.append("W4: the runner's check takes a part that left a span off naming no reason")
+        run.settle(pass_id, standard, _whole_review_report(standard), "write the Invented drywall standard lines")
+        lines = run.notes(review)
+        head = lines[: next((i for i, l in enumerate(lines) if l.startswith(("section ", "part "))), len(lines))]
+        if honest:
+            if "not read: 092216 pages 16 to 19, manual changed" not in head:
+                errors.append(f"W4: manual_notes does not print the changed section's pages as not read first: {head}")
+            code, out, err = run.record(pass_id)
+            if code != 0 or "manual pages read (092116 pages 11 to 15 for Invented drywall)" not in out \
+                    or "manual pages not read (092216 pages 16 to 19 for Invented drywall, manual changed)" not in out:
+                errors.append(f"W4: the lead's record does not name only the pages the part's report says it read: {code} {out} {err}")
+            report_text, _short = run.close()
+            if "Manual pages for Invented drywall (section 092216, pages 16 to 19): not read, because its file or pages on " \
+                    "the record changed after the manual reading was planned." not in _repair_collection(report_text) \
+                    or "and 5 pages of the project manual" not in report_text:
+                errors.append(f"W4: the closing report does not name the changed section with its reason or counts its pages: "
+                              f"{_repair_collection(report_text)}")
+        else:
+            if f"part {part}: ok" in lines or "not read: 092116 pages 11 to 15, its manual part's report does not hold its pages to the plan" not in head:
+                errors.append(f"W4: manual_notes takes a part's report its runner's check would refuse: {lines}")
+    return errors
+
+
+def _repair_w2(plugin_path: Path, root: Path) -> list[str]:
+    """Every reason a review or a part names on `sections not checked:` and `families not checked:`."""
+    errors: list[str] = []
+    packages = [
+        {"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall",
+         "manualSections": ["092116", "092216", "014500", "092400", "092900"]},
+        {"id": "pkg-cl", "tradeCode": "09 51 00", "name": "Invented ceilings", "manualSections": ["095100", "095113"]},
+        {"id": "pkg-sg", "tradeCode": "10 14 00", "name": "Invented signage"},
+    ]
+    sections = [_repair_section("092116", 1, 3), _repair_section("092216", 4, 3), _repair_section("014500", 7, 2),
+                _repair_section("092400", 11, 10), _repair_section("092900", 21, 10),
+                _repair_section("095100", 31, 4), _repair_section("095113", 35, 4)]
+    run = _RepairRun(plugin_path, root, "w2", packages, sections)
+    code, _out, err = run.plan()
+    if code != 0:
+        return [f"W2: the plan refused: {err}"]
+    chains = run.chains()
+    dw, cl, sg = "i1-rev-092116-1", "i1-rev-095100-1", "i1-rev-101400-1"
+    if set(chains) != {dw, cl, sg}:
+        return [f"W2: the plan's chains are {sorted(chains)}"]
+    dw_1, dw_2, dw_3, dw_s = (u["id"] for u in chains[dw])
+    cl_1, cl_s = (u["id"] for u in chains[cl])
+    sg_s = chains[sg][0]["id"]
+    stage_a = [p for p in run.passes() if "-M" in p]
+    pass_of = {u: p for p in stage_a for u in run.units(p)}
+    purpose = "read the invented manual pages"
+    run.settle(pass_of[dw_1], dw_1, _repair_part_report(run, dw_1, **{"sections not checked": "014500 the owner's work"}), purpose)
+    for read in (1, 2):
+        run.settle(pass_of[dw_2], dw_2, _repair_part_report(run, dw_2), purpose,
+                   (f"note 3 {pass_of[dw_2]} {dw_2} deviation Invented drywall created 1 under the prefix, reader created 0, read {read}",),
+                   result="mismatch", fields="created 1 items 0 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0")
+    run.append(f"note 3 {pass_of[dw_2]} {dw_2} unread Invented drywall read 2 times, not read again")
+    run.append(f"dispatch 3 {pass_of[dw_3]} {dw_3} sheets none purpose {purpose}",
+               f"verified 3 {pass_of[dw_3]} {dw_3} {_REPAIR_OK} result ok")
+    (run.where / "reports" / f"{dw_3}.md").write_text("searches: 1\npages opened: 1\n", encoding="utf-8")
+    run.report_mod.restore(run.where, "3", dw_3)
+    run.report_mod.write_trades(run.where, pass_of[dw_3], dw_3, "none\n")
+    code, out = run.settle(pass_of[cl_1], cl_1, _repair_part_report(run, cl_1, [], **{
+        "sections not checked": "095100 manual removed\n095113 not on the package",
+        "anomalies": "section 095100 not read: manual removed, run only\nsection 095113 not read: no longer on the package, run only"}),
+        purpose, (f"note 3 {pass_of[cl_1]} {cl_1} anomaly section 095100 not read: manual removed, run only",
+                  f"note 3 {pass_of[cl_1]} {cl_1} anomaly section 095113 not read: no longer on the package, run only"))
+    if code != 0:
+        errors.append(f"W2: the runner's check refuses a part that read none of its spans as its definition says: {out}")
+    for unit in (dw_s, cl_s, sg_s):
+        run.settle(pass_of[unit], unit, _whole_review_report(unit), "write the invented standard lines")
+    for pass_id in stage_a:
+        run.record(pass_id)
+    # The review copies onto `sections not checked:` each section the notes script names not read or
+    # not known, with the reason it prints.
+    printed = {line.split()[2]: line.split(", ", 1)[1] for line in run.notes(dw)
+               if line.startswith(("not read: ", "not known: ")) and ", " in line and len(line.split()) > 2}
+    entries = {
+        dw: ("Invented drywall", "09 21 16", {
+            "sections not checked": "\n".join((
+                f"092400 not read, {printed.get('092400', 'the notes script named no reason')}",
+                f"092900 not known, {printed.get('092900', 'the notes script named no reason')}",
+                "092116 searches spent", "092216 notes not read",
+                "092116 the section's Part 2 gave no product words")),
+            "families not checked": "invented acoustic panels, see Section 098400, two pages read\n"
+                                    "invented corner guards, the budget did not reach it",
+            "standard lines found later": "Invented bracing | A-501 p3 | invented bracing drawn at the partition heads"}),
+        cl: ("Invented ceilings", "09 51 00", {"sections not checked": "095100 not read, manual removed\n095113 not read, not on the package"}),
+        sg: ("Invented signage", "10 14 00", {"sections not checked": "no manual sections on this package"}),
+    }
+    for pass_id in [p for p in run.passes() if "-M" not in p]:
+        for unit in run.units(pass_id):
+            package, trade, values = entries[unit]
+            notes = (f"note 3 {pass_id} {unit} anomaly standard line found later: Invented bracing | A-501 p3 | "
+                     f"invented bracing drawn at the partition heads",) if unit == dw else ()
+            code, out = run.settle(pass_id, unit, _repair_review_report(run.report_mod, unit, package, trade, **values),
+                                   f"review {package}", notes)
+            if code != 0:
+                errors.append(f"W2: the runner's check refuses an honest review of {package}: {out}")
+        run.record(pass_id)
+    run.append("phase: window 3 complete")
+    report, short = run.close()
+    collection = _repair_collection(report)
+    said = "\n".join(collection)
+    # A section of a skipped or restored part, or one a verified part left unread with its anomaly,
+    # which the review copies, is named once, as the part's gap or anomaly.
+    for unwanted in ("Invented drywall: section 092400 was not checked", "Invented drywall: section 092900 was not checked",
+                     "Invented ceilings: section 095100 was not checked", "Invented ceilings: section 095113 was not checked"):
+        if unwanted in said:
+            errors.append(f"W2: `{unwanted}` names a part's gap a second time")
+    for code in ("092400", "092900", "095100", "095113", "014500"):
+        if sum(f"section {code}" in line for line in collection) != 1:
+            errors.append(f"W2: section {code} is named {sum(f'section {code}' in line for line in collection)} times, not once")
+    for want in (
+        "Manual pages for Invented drywall (section 092400, pages 11 to 20): I read it 2 times",
+        "Manual pages for Invented drywall (section 092900, pages 21 to 30): its reader's report was lost",
+        "Invented drywall: section 092116 was not checked for work no sheet shows, because the review's searches ran out first.",
+        "Invented drywall: section 092216 was not checked, because the review did not read the part of the manual notes that holds it.",
+        "Invented drywall: section 014500 is work the owner contracts for, so it was not checked as this package's work.",
+        "Invented drywall: a section was not checked: 092116 the section's Part 2 gave no product words.",
+        "Invented drywall: invented acoustic panels was not checked against the manual. Section 098400 was named for it",
+        "Invented drywall: a family of items was not checked against the manual: invented corner guards, the budget did not reach it.",
+        "Invented drywall: the review found the condition of the standard line Invented bracing at A-501 p3",
+        "Manual pages for Invented ceilings (section 095100, pages 31 to 34): not read, because its manual file is "
+        "no longer on the project.",
+        "Manual pages for Invented ceilings (section 095113, pages 35 to 38): not read, because the package no longer lists it.",
+        "No manual section is on Invented signage, so no section was checked for it.",
+    ):
+        if want not in said:
+            errors.append(f"W2: `{want}` is not in What I could not read")
+    if _repair_short_count(short) != len(collection):
+        errors.append(f"W2: the short version counts {_repair_short_count(short)} things not read and the report names {len(collection)}")
+    if "Standard lines whose condition a review found" in report:
+        errors.append("W2: a standard line found later is still named outside the collection")
+    # A project with no manual read in: the review's one line for it, named once.
+    none = _RepairRun(plugin_path, root, "w2-no-manual",
+                      [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall", "manualSections": ["092116"]}], [])
+    code, _out, err = none.plan()
+    if code != 0:
+        return errors + [f"W2: the plan of a project with no manual refused: {err}"]
+    for pass_id in none.passes():
+        for unit in none.units(pass_id):
+            report = (_whole_review_report(unit) if unit.endswith("s-1") else
+                      _repair_review_report(none.report_mod, unit, "Invented drywall", "09 21 16",
+                                            **{"sections not checked": "the manual was not read in"}))
+            none.settle(pass_id, unit, report, "review Invented drywall")
+        none.record(pass_id)
+    report, short = none.close()
+    if "No project manual was read in, so no review checked the drawings against one." not in _repair_collection(report):
+        errors.append(f"W2: a review's line that no manual was read in is not in What I could not read: {_repair_collection(report)}")
+    return errors
+
+
+def _repair_w3(plugin_path: Path, root: Path) -> list[str]:
+    """A review writes on two other packages, one reviewed before it and one after, and is skipped."""
+    errors: list[str] = []
+    run = _RepairRun(plugin_path, root, "w3", [
+        {"id": "pkg-gr", "tradeCode": "01 11 13", "name": "General Requirements"},
+        {"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall"},
+        {"id": "pkg-pt", "tradeCode": "09 91 00", "name": "Invented painting"},
+    ], [])
+    code, _out, err = run.plan()
+    if code != 0:
+        return [f"W3: the plan refused: {err}"]
+    for pass_id in run.passes():
+        if "-M" not in pass_id:
+            continue
+        for unit in run.units(pass_id):
+            run.settle(pass_id, unit, _whole_review_report(unit), "write the invented standard lines")
+        run.record(pass_id)
+    gr, dw, pt = "i1-rev-011113-1", "i1-rev-092116-1", "i1-rev-099100-1"
+    run.settle("i1-W3-1", gr, _repair_review_report(run.report_mod, gr, "General Requirements", "01 11 13"), "review General Requirements")
+    run.record("i1-W3-1")
+    if run.units("i1-W3-2") != [dw, pt]:
+        return [f"W3: the second pass of reviews is {run.units('i1-W3-2')}"]
+    for read in (1, 2):
+        notes = (f"note 3 i1-W3-2 {dw} anomaly row on another package: scopeItem:{dw}-1 | 01 11 13",
+                 f"note 3 i1-W3-2 {dw} anomaly row on another package: scopeItem:{dw}-2 | 09 91 00") if read == 1 else ()
+        run.settle("i1-W3-2", dw, _repair_review_report(run.report_mod, dw, "Invented drywall", "09 21 16", **{
+            "rows on other packages": f"scopeItem:{dw}-1 | 01 11 13\nscopeItem:{dw}-2 | 09 91 00"}), "review Invented drywall",
+            (*notes, f"note 3 i1-W3-2 {dw} deviation Invented drywall created 2 under the prefix, reader created 0, read {read}"),
+            result="mismatch", fields="created 2 items 0 updated 0 questions 0 replied 0 sent 2 landed 2 conflicts 0")
+    run.append(f"note 3 i1-W3-2 {dw} unread Invented drywall read 2 times, not read again")
+    run.settle("i1-W3-2", pt, _repair_review_report(run.report_mod, pt, "Invented painting", "09 91 00"), "review Invented painting")
+    run.record("i1-W3-2")
+    report, _short = run.close()
+    if "General Requirements: an item from the Invented drywall review, written after its own review" not in report:
+        errors.append("W3: the closing report does not name the package that took an item from a review later skipped")
+    if "Invented painting: an item from" in report:
+        errors.append("W3: the closing report names a package whose own review came after the item")
+    return errors
+
+
+def _repair_w5_whole_path(plugin_path: Path, root: Path) -> list[str]:
+    """Amendment F40: one fixture from the plan to the closing report, every step the producer's own."""
+    errors: list[str] = []
+    run = _RepairRun(plugin_path, root, "f40", [
+        {"id": "pkg-gr", "tradeCode": "01 11 13", "name": "General Requirements"},
+        {"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall", "manualSections": ["092116", "092216"]},
+    ], [_repair_section("092116", 1, 6, "Invented board"), _repair_section("092216", 7, 8, "Invented sheathing")])
+    code, _out, err = run.plan()
+    if code != 0:
+        return [f"F40: the plan refused: {err}"]
+    gr, dw = "i1-rev-011113-1", "i1-rev-092116-1"
+    dw_1, dw_2, dw_s = (u["id"] for u in run.chains()[dw])
+    left = "invented deflection limit for no row because the row was not yet written"
+    seen_passes: list[str] = []
+    for _turn in range(8):
+        starting = run.start_now()
+        if not starting:
+            break
+        for pass_id in starting:
+            seen_passes.append(pass_id)
+            for unit in run.units(pass_id):
+                kind = run.unit_of(unit)["kind"]
+                if kind == "manual":
+                    lines = None
+                    if unit == dw_1:
+                        span = run.reads(unit)
+                        lines = [f"{span} | puts: invented board types | rows: none | left: {left} | silence: none"]
+                    code, out = run.settle(pass_id, unit, _repair_part_report(run, unit, lines=lines), "read the Invented drywall manual pages")
+                elif kind == "standard lines":
+                    code, out = run.settle(pass_id, unit, _whole_review_report(unit).replace(
+                        "standard lines: none", "standard lines: Invented bracing, condition not found, invented bracing"),
+                        "write the standard lines")
+                elif unit == dw:
+                    notes = run.notes(dw)
+                    for want in (f"left: {dw_1} | {run.reads(dw_1)} | {left}", "section 092116: Invented board, pages 1 to 6 of file-m1",
+                                 "section 092216: Invented sheathing, pages 7 to 14 of file-m1", f"standard lines: written by {dw_s}",
+                                 "  Invented bracing, condition not found, invented bracing", "not read: none"):
+                        if want not in notes:
+                            errors.append(f"F40: the review's notes do not print `{want}`: {notes}")
+                    code, out = run.settle(pass_id, unit, _repair_review_report(run.report_mod, unit, "Invented drywall", "09 21 16", **{
+                        "created": "1   updated: 0   questions raised: 0   questions replied: 0",
+                        "created subjects": f"scopeItem:{dw}-1", "trades": "09 21 16 1",
+                        "left by the parts": f"{left} | written scopeItem:{dw}-1"}), "review Invented drywall",
+                        fields="created 1 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0",
+                        trades=f"{dw} trade 09 21 16 1\n")
+                else:
+                    if run.notes(unit)[:1] != ["sections on the project: 2"]:
+                        errors.append(f"F40: the general requirements review's notes do not open with the project's sections: {run.notes(unit)[:3]}")
+                    code, out = run.settle(pass_id, unit, _repair_review_report(run.report_mod, unit, "General Requirements", "01 11 13", **{
+                        "sections not checked": "no manual sections on this package"}), "review General Requirements")
+                if code != 0:
+                    errors.append(f"F40: the runner's check refuses {unit}'s honest report: {out}")
+            code, out, err = run.record(pass_id, {dw: 1})
+            if code != 0 or "lead-verified yes" not in out:
+                errors.append(f"F40: the lead's record of {pass_id} did not land: {code} {out} {err}")
+    stage_a = [p for p in run.passes() if "-M" in p]
+    if seen_passes[: len(stage_a)] != stage_a or seen_passes[len(stage_a):] != ["i1-W3-1", "i1-W3-2"]:
+        errors.append(f"F40: the barrier did not start stage A, then the general requirements review, then the rest: {seen_passes}")
+    if "to dispatch: none" not in run.listing():
+        errors.append(f"F40: the window is not finished: {run.listing()[-300:]}")
+    run.append("phase: window 3 complete")
+    report, short = run.close()
+    for want in ("and 14 pages of the project manual", "I added 1 items",
+                 "- Invented drywall: 092116 pages 1 to 6, 092216 pages 7 to 14",
+                 "- No manual section is on General Requirements, so no section was checked for it."):
+        if want not in report:
+            errors.append(f"F40: the closing report does not say `{want}`")
+    if _repair_short_count(short) != len(_repair_collection(report)):
+        errors.append(f"F40: the short version's count {_repair_short_count(short)} is not the report's {len(_repair_collection(report))}")
+    return errors
+
+
+def _repair_w5_read_again(plugin_path: Path, root: Path) -> list[str]:
+    """Check 39 for the standard lines unit's owed second read, and C22's read of mandate 15 alone."""
+    errors: list[str] = []
+    skill = (plugin_path / "skills" / "scope-run" / "SKILL.md").read_text(encoding="utf-8")
+    for agent in ("scope-standard-lines", "scope-reviewer"):
+        block = skill.split(f"subagent_type: plumlayer:{agent}", 1)[-1].split("```", 1)[0]
+        if "Owed: <run folder>/owed/<unit id>.read-<k>.md on a read after the first, or none." not in block \
+                or "Read: <the number of this read of the unit" not in block:
+            errors.append(f"C39: the {agent} dispatch does not carry its read and its Owed file")
+    run = _RepairRun(plugin_path, root, "c39", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall"}], [])
+    code, _out, err = run.plan()
+    if code != 0:
+        return errors + [f"C39: the plan refused: {err}"]
+    stage_a, review_pass = run.passes()[0], run.passes()[1]
+    unit = run.units(stage_a)[0]
+    entry = "A-501 p3 | Invented bracing | no row | the row it belongs on was not yet written"
+    first = _whole_review_report(unit).replace("not written: none", f"not written: {entry}").replace(
+        "created: 0", "created: 1").replace("created subjects: none", f"created subjects: scopeItem:{unit}-1")
+    run.settle(stage_a, unit, first, "write the Invented drywall standard lines",
+               (f"note 3 {stage_a} {unit} anomaly not written: {entry}",
+                f"note 3 {stage_a} {unit} deviation Invented drywall created 2 under the prefix, reader created 1, read 1"),
+               result="mismatch", fields="created 2 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0")
+    owed = run.report_mod.write_owed(run.where, "3", unit, 2, f"scopeItem:{unit}-1\nscopeItem:{unit}-2\n")
+    if owed != run.where / "owed" / f"{unit}.read-2.md" or f"not written by read 1: {entry}" not in owed.read_text(encoding="utf-8"):
+        errors.append(f"C39: the owed file of the standard lines unit's second read is not the dispatch's or lacks the entry: {owed}")
+    second = _whole_review_report(unit).replace("created: 0", "created: 1").replace(
+        "created subjects: none", f"created subjects: scopeItem:{unit}-3").replace(
+        "owed: none", f"owed: not written by read 1: {entry} | written scopeItem:{unit}-3")
+    code, out = run.settle(stage_a, unit, second, "write the Invented drywall standard lines", owed=str(owed),
+                           fields="created 3 items 1 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0")
+    if code != 0:
+        errors.append(f"C39: the standard lines unit's honest second read is refused: {out}")
+    unanswered = run.where / "reports" / "unanswered.md"
+    unanswered.write_text(second.replace(f"owed: not written by read 1: {entry} | written scopeItem:{unit}-3", "owed: none"), encoding="utf-8")
+    code, out, _err = _run_script_main(run.report_mod, ["check", "--kind", "standard", "--report", str(unanswered), "--owed", str(owed)])
+    if code != 3 or not out.startswith("owed "):
+        errors.append(f"C39: a second read that leaves its owed entry unanswered is taken: {code} {out}")
+    run.record(stage_a, {unit: 3})
+    # C22: the review's first read fails only its headings check.
+    review = run.units(review_pass)[0]
+    row = "scopeItem:i1-A2-1-1"
+    run.settle(review_pass, review, _repair_review_report(run.report_mod, review, "Invented drywall", "09 21 16", **{
+        "headings written": f"Framing, Board\n{row} Board", "rows ordered": "Framing one row\nBoard one row"}),
+        "review Invented drywall", (f"note 3 {review_pass} {review} deviation Invented drywall headings {row}, read 1",),
+        result="mismatch")
+    owed = run.report_mod.write_owed(run.where, "3", review, 2, "none\n")
+    lines = [l for l in owed.read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith(("owed: ", "held: "))]
+    if not lines or not all(l.startswith("check read ") and re.search(r" (?:headings|rows ordered) ", l) for l in lines):
+        errors.append(f"C22: the owed file of a read failed only on its headings is not every line a headings check: {lines}")
+    alone = _repair_review_report(run.report_mod, review, "Invented drywall", "09 21 16", **{
+        "searches": "0 run, 0 returned nothing", "harvested": "rows 3, definition codes 0, spec sections 0, aliases 0",
+        "headings written": f"Framing, Board\n{row} Board", "rows ordered": "Framing one row\nBoard one row"})
+    code, out = run.settle(review_pass, review, alone, "review Invented drywall", owed=str(owed))
+    if code != 0:
+        errors.append(f"C22: a read of mandate 15 alone, written as the reviewer's definition says, is refused: {out}")
+    reviewer = _collapsed((plugin_path / "agents" / "scope-reviewer.md").read_text(encoding="utf-8"))
+    if "no page, no drawing or manual search and no create" not in reviewer:
+        errors.append("C22: the reviewer does not hold its read of mandate 15 alone to no page, search or create")
+    return errors
+
+
+def _repair_w5_dispatch_counted(plugin_path: Path, root: Path) -> list[str]:
+    """Check 22 counts the standard lines dispatch block: taking its wait line out is refused."""
+    skill = plugin_path / "skills" / "scope-run" / "SKILL.md"
+    templates, _unclosed = _dispatch_templates(skill)
+    mine = [(at, body) for at, body in templates if "subagent_type: plumlayer:scope-standard-lines" in body]
+    if len(mine) != 1:
+        return [f"C22 check: the skill carries {len(mine)} standard lines dispatch blocks the check counts"]
+    lines = skill.read_text(encoding="utf-8").split("\n")
+    start = next(i for i, l in enumerate(lines) if l == "subagent_type: plumlayer:scope-standard-lines")
+    if lines[start + 1] != "run_in_background: false":
+        return ["C22 check: the standard lines dispatch block does not name `run_in_background: false` next"]
+    mutated = root / "dispatch-mutated" / "SKILL.md"
+    mutated.parent.mkdir(parents=True, exist_ok=True)
+    mutated.write_text("\n".join(lines[: start + 1] + lines[start + 2:]), encoding="utf-8")
+    got = _dispatch_foreground_errors(mutated, "SKILL.md")
+    if len(got) != 1 or "run_in_background: false" not in got[0]:
+        return [f"C22 check: the block taken out of the wait is not refused once: {got}"]
+    return []
+
+
+def _repair_w6(plugin_path: Path, root: Path) -> list[str]:
+    """A replan after stage A was dispatched, a package deleted so the packing shifts."""
+    errors: list[str] = []
+    packages = [
+        {"id": "pkg-x", "tradeCode": "08 10 00", "name": "Invented doors", "manualSections": ["081000"]},
+        {"id": "pkg-y", "tradeCode": "09 29 00", "name": "Invented gypsum board", "manualSections": ["092900"]},
+        {"id": "pkg-z", "tradeCode": "09 65 00", "name": "Invented resilient flooring", "manualSections": ["096500"]},
+    ]
+    sections = [_repair_section("081000", 1, 50), _repair_section("092900", 101, 40), _repair_section("096500", 201, 30)]
+
+    def finish_pass(run: _RepairRun, pass_id: str, upto: int | None = None) -> None:
+        """The runner over a pass: each unit not settled on the ledger dispatched and settled, up to `upto`."""
+        done, _skipped = run.plan_mod.settled_units(run.where / "ledger.md", 3)
+        for number, unit in enumerate(run.units(pass_id)):
+            if upto is not None and number >= upto:
+                if number == upto:
+                    run.append(f"dispatch 3 {pass_id} {unit} sheets none purpose read the invented manual pages")
+                return
+            if unit in done:
+                continue
+            kind = run.unit_of(unit)["kind"]
+            report = (_repair_part_report(run, unit) if kind == "manual" else
+                      _whole_review_report(unit) if kind == "standard lines" else
+                      _repair_review_report(run.report_mod, unit, "An invented package", "09 99 99"))
+            code, out = run.settle(pass_id, unit, report, "read the invented manual pages")
+            if code != 0:
+                errors.append(f"W6: the runner's check refuses {unit}: {out}")
+
+    for scenario in ("partway", "one pass recorded"):
+        run = _RepairRun(plugin_path, root, f"w6-{scenario.replace(' ', '-')}", packages, sections)
+        code, _out, err = run.plan()
+        if code != 0:
+            return errors + [f"W6: the plan refused: {err}"]
+        before = {p: run.units(p) for p in run.passes()}
+        doors = [u["id"] for u in run.chains()["i1-rev-081000-1"] if u["kind"] == "manual"]
+        stage_a = [p for p in before if "-M" in p]
+        for pass_id in run.start_now():
+            if scenario == "one pass recorded" and before[pass_id][0].startswith("i1-rev-092900"):
+                finish_pass(run, pass_id)
+                run.record(pass_id)
+            else:
+                finish_pass(run, pass_id, upto=len(before[pass_id]) // 2)
+        # The session ends; the doors package is deleted; the lead plans again off what is on disk.
+        code, _out, err = run.plan(packages[1:])
+        if code != 0:
+            errors.append(f"W6 {scenario}: the replan refused: {err}")
+            continue
+        after = {p: run.units(p) for p in run.passes()}
+        moved = [u for p in after for u in after[p] for q in stage_a if u in before[q] and q != p]
+        if not moved:
+            errors.append(f"W6 {scenario}: the fixture shifted no unit, so it proves nothing: {after}")
+        plan_text = (run.where / "read-plan.md").read_text(encoding="utf-8")
+        planned_part, not_read = plan_text.split("## Manual sections not read", 1) if "## Manual sections not read" in plan_text else (plan_text, "")
+        done, _skipped = run.plan_mod.settled_units(run.where / "ledger.md", 3)
+        for part in doors:
+            listed = re.search(rf"^[0-9]+\. 081000 pages [0-9]+ to [0-9]+ on {re.escape(part)}, package pkg-x: its package was deleted$",
+                               not_read, re.M) is not None
+            if part in planned_part or listed == (part in done):
+                errors.append(f"W6 {scenario}: the deleted package's part {part} is {'listed' if listed else 'not listed'} "
+                              f"as not read, {'verified' if part in done else 'not verified'}")
+        recorded: list[str] = []
+        for _turn in range(8):
+            starting = run.start_now()
+            if not starting:
+                break
+            for pass_id in starting:
+                finish_pass(run, pass_id)
+                code, out, err = run.record(pass_id)
+                recorded.append(pass_id)
+                if code != 0 or "lead-verified yes" not in out or "breaker:" in out:
+                    errors.append(f"W6 {scenario}: the record of {pass_id} after the replan did not land: {code} {out} {err}")
+        if "to dispatch: none" not in run.listing():
+            errors.append(f"W6 {scenario}: the window does not finish after the replan: {run.listing()[-400:]}")
+        ledger = (run.where / "ledger.md").read_text(encoding="utf-8").splitlines()
+        for units in after.values():
+            for unit in units:
+                oks = [l for l in ledger if l.startswith("verified 3 ") and l.split()[3] == unit and l.endswith("result ok")]
+                if len(oks) != 1:
+                    errors.append(f"W6 {scenario}: {unit} verified ok {len(oks)} times, not once")
+        report, _short = run.close()
+        if "and 70 pages of the project manual" not in report:
+            errors.append(f"W6 {scenario}: the closing report does not count the two packages' 70 pages once: "
+                          f"{report.split('## What', 1)[0][-400:]}")
+    return errors
+
+
+def _repair_w7(plugin_path: Path) -> list[str]:
+    """The manual reader's read of the both-sources bullet ends at a pinned line right after it."""
+    errors: list[str] = []
+    reader = _collapsed((plugin_path / "agents" / "scope-manual-reader.md").read_text(encoding="utf-8"))
+    reviewer = (plugin_path / "agents" / "scope-reviewer.md").read_text(encoding="utf-8")
+
+    def bounded(text: str) -> list[str]:
+        lines = text.splitlines()
+        starts = [i for i, l in enumerate(lines) if re.match(r"^    - A row the sheets and the manual both define\.", l)]
+        ends = [i for i, l in enumerate(lines) if re.match(rf"^    {re.escape(_REPAIR_BULLET_END)}", l)]
+        if len(starts) != 1 or len(ends) != 1 or ends[0] < starts[0]:
+            return [f"W7: the reviewer holds the bullet {len(starts)} times and its end line {len(ends)} times"]
+        between = lines[starts[0] + 1: ends[0]]
+        if any(re.match(r"^(?:    - |[0-9]+\. )", l) for l in between):
+            return ["W7: another bullet or mandate sits between the both-sources bullet and its end line"]
+        return []
+
+    if _collapsed(_REPAIR_READER_BOUND) not in reader:
+        errors.append("W7: the manual reader does not end its read of the both-sources bullet at a pinned line")
+    errors += bounded(reviewer)
+    lines = reviewer.splitlines()
+    at = next((i for i, l in enumerate(lines) if l.startswith("    Name each subject you compared")), None)
+    if at is not None and not bounded("\n".join(lines[:at] + ["    - An invented bullet."] + lines[at:])) \
+            and not bounded("\n".join(lines[:at] + lines[at + 1:])):
+        errors.append("W7: the end line check passes with a bullet put after the both-sources bullet or the end line gone")
+    return errors
+
+
+def check_slim_review_repair(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "slim-review-repair"
+    errors: list[str] = []
+    root = Path(__file__).parent / ".test-results" / "slim-review-repair"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    arms = (
+        ("W1", lambda: _repair_w1(plugin_path, root)),
+        ("W2", lambda: _repair_w2(plugin_path, root)),
+        ("W3", lambda: _repair_w3(plugin_path, root)),
+        ("W4", lambda: _repair_w4(plugin_path, root)),
+        ("W5 F40", lambda: _repair_w5_whole_path(plugin_path, root)),
+        ("W5 check 39 and C22", lambda: _repair_w5_read_again(plugin_path, root)),
+        ("W5 check 22", lambda: _repair_w5_dispatch_counted(plugin_path, root)),
+        ("W6", lambda: _repair_w6(plugin_path, root)),
+        ("W7", lambda: _repair_w7(plugin_path)),
+    )
+    for label, arm in arms:
+        try:
+            errors += arm()
+        except Exception as e:
+            errors.append(f"{label}: the arm raised {type(e).__name__}: {e}")
+    detail = (
+        "W1 a section with a title and no pages and one the section list lacks each printed by the notes script and "
+        "named not read; W2 every reason a review and a manual part name on `sections not checked:` and `families "
+        "not checked:`, an entry in no known shape, a standard line found later and a project with no manual each in "
+        "What I could not read and counted in the short version; W3 a package that took an item from a review later "
+        "skipped named, and one reviewed after the item not; W4 a part that left a changed section unread as its "
+        "definition says, its pages not read in the notes, the lead's record and the closing report, and a report its "
+        "runner's check would refuse never read as ok; W5 the whole of window 3 once from the plan to the closing "
+        "report, the standard lines unit's owed second read, a read of mandate 15 alone, and the standard lines "
+        "dispatch counted by check 22; W6 a replan after stage A was dispatched with a package deleted, partway and "
+        "with one pass recorded, every pass named and finished and every unit verified once; W7 the manual reader's "
+        "read of the both-sources bullet ending at a pinned line; bound: invented run folders, the runner's and "
+        "readers' steps simulated, not a live run"
+    )
+    return Result(name, not errors, detail=detail + ("" if not errors else " | " + "; ".join(errors)))
+
+
+# --------------------------------------------------------------------------- #
+# Check: the package review's size cuts
+# --------------------------------------------------------------------------- #
+#
+# A measured run's reviews, manual parts and standard lines units spent context on work no check
+# needs: a second read listed the run's folders, a report was written twice, a refused batch was
+# sent again whole, and the reviewer and the standard lines unit held reader text they hold once
+# or never apply. Each cut here takes out only that, and each arm holds what makes the cut
+# lossless: the sentence that forbids the waste, the copy found whole where the agent reads it,
+# and each passage an agent reads by path bounded by start and end lines that each match once.
+
+_CUT_AGENTS = {
+    "reviewer": "scope-reviewer.md",
+    "manual reader": "scope-manual-reader.md",
+    "standard lines unit": "scope-standard-lines.md",
+}
+_CUT_STARTED = (
+    "Write that file with the Write tool. List no folder of the run, and read no file of it that your "
+    "mandates do not name: what an earlier read of your unit left is on your Owed file."
+)
+_CUT_REPORT_ONCE = "Write it once, with the Write tool, and never through a shell command."
+
+
+def _cut_section(text: str, heading: str) -> str:
+    """The body of one `## ` section of a definition, to the next `## ` heading."""
+    found = re.search(rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    return found.group(1) if found else ""
+
+
+def _cut_x1_x2(texts: dict[str, str]) -> list[str]:
+    """Each of the three definitions says once, where its dispatch is given, that the `.started`
+    file is written with the Write tool and no folder of the run is listed, and once, where it
+    reports, that the report is written once with the Write tool."""
+    errors: list[str] = []
+    for label, text in texts.items():
+        flat = _collapsed(text)
+        dispatch = _collapsed(_cut_section(text, "What your dispatch gives you"))
+        report = _collapsed(_cut_section(text, "Report back"))
+        if flat.count(_CUT_STARTED) != 1 or _CUT_STARTED not in dispatch:
+            errors.append(f"X1: the {label} does not say once, where its dispatch is given, `{_CUT_STARTED}`")
+        if flat.count(_CUT_REPORT_ONCE) != 1 or _CUT_REPORT_ONCE not in report:
+            errors.append(f"X2: the {label} does not say once, where it reports, `{_CUT_REPORT_ONCE}`")
+    return errors
+
+
+def _cut_passage(text: str, start: str, end: str, label: str) -> tuple[str, list[str]]:
+    """
+    The lines of `text` from the one line `start` matches to the line before the one `end` matches
+    after it, as an agent reads a passage by path with one `Grep` and one `Read`. Each pattern has
+    to match exactly once, or a later edit could move the read onto other text unseen.
+    """
+    lines = text.splitlines()
+    starts = [i for i, line in enumerate(lines) if re.match(start, line)]
+    ends = [i for i, line in enumerate(lines) if re.match(end, line)]
+    if len(starts) != 1 or len(ends) != 1 or ends[0] <= starts[0]:
+        return "", [f"{label}: `{start}` matches {len(starts)} lines and `{end}` {len(ends)}, not once each in order"]
+    return "\n".join(lines[starts[0]:ends[0]]), []
+
+
+# The reader's mandates as the reviewer reads them, its own sentence for the read, and the passages
+# the reviewer held a second copy of and no longer does: each found whole in that reading.
+_CUT_REVIEWER_READS = (("^## The mandates", r"^8\. [A-Z]"), (r"^9\. [A-Z]", r"^10\. [A-Z]"))
+_CUT_REVIEWER_READ_SENTENCE = (
+    "then `Read` it from the `## The mandates` heading to the line before mandate 8, and mandate 9 to "
+    "the line before mandate 10."
+)
+_CUT_X3_REMOVED = (
+    "Every `ask_question` you send also carries `discipline` and `kind`, read off what the Question cites "
+    "as the verb describes them, and `answeredBy`, the `companyId` of the firm on the project's contacts "
+    "(its entry with no contact in `designTeam` on `get_project`, read once per unit) whose title block is "
+    "on the cited sheets of that discipline or who wrote the cited section. Leave `answeredBy` off where no "
+    "firm on the contacts drew or wrote what it cites, and never put a firm on the contacts yourself.",
+    "Never write an assumption, a value or a basis to price to for an open Question",
+    "How finely our own scope sheet splits is ours to settle, and nobody on the design team answers it.",
+    "A box is never measured off a render: no pixel, tile, `clipPt` or `pxPerPt` is turned into points "
+    "for a citation",
+    "On `01 11 13`, there is no `General Items` row and no `general-requirement` role; a general cost the "
+    "contractor carries there is a home row under one of the seven headings.",
+    "Exclusion rows keep their Exclusions section on this package as on every package.",
+    "A row shared with another package keeps its category there; the seven apply to rows whose home is "
+    "`01 11 13`.",
+    "A phase or building heading only where the drawings or the manual separate the work by phase or by "
+    "building; a product used in two buildings is otherwise one row under one heading.",
+)
+# The few words left in the reviewer that point at the reader's passage.
+_CUT_X3_POINTERS = (
+    "Reader mandate 1 governs the bar and its three shapes, and the fields every `ask_question` carries, "
+    "whole and unrestated here",
+    "On `01 11 13`, reader mandate 4's rule for general costs and shared rows holds.",
+    "What a heading names: reader mandate 5's category rules, in Title Case.",
+    "in the shape reader mandate 2 gives;",
+)
+
+
+def _cut_reviewer_reading(reader: str) -> tuple[str, list[str]]:
+    parts, errors = [], []
+    for start, end in _CUT_REVIEWER_READS:
+        text, bad = _cut_passage(reader, start, end, "the reviewer's read of the reader's mandates")
+        parts.append(text)
+        errors += bad
+    return "\n".join(parts), errors
+
+
+def _cut_x3_errors(reviewer: str, reader: str) -> list[str]:
+    reading, errors = _cut_reviewer_reading(reader)
+    flat_reading, flat_reviewer = _collapsed(reading), _collapsed(reviewer)
+    if _CUT_REVIEWER_READ_SENTENCE not in flat_reviewer:
+        errors.append("X3: the reviewer no longer bounds its read of the reader's mandates as the arm reads them")
+    for passage in _CUT_X3_REMOVED:
+        if passage not in flat_reading:
+            errors.append(f"X3: `{passage[:60]}...` is not whole in the reader's mandates the reviewer reads")
+        if passage in flat_reviewer:
+            errors.append(f"X3: the reviewer holds `{passage[:60]}...` a second time")
+    errors += [f"X3: the reviewer does not carry the pointer `{p}`" for p in _CUT_X3_POINTERS if p not in flat_reviewer]
+    return errors
+
+
+def _cut_mutated(text: str, passage: str) -> str:
+    """`text` with one word added inside `passage`, wherever its lines wrap."""
+    words = passage.split(" ")
+    pattern = r"\s+".join(re.escape(w) for w in words[: len(words) // 2])
+    return re.sub(pattern, lambda m: m.group(0) + " invented", text, count=1)
+
+
+def _cut_x3(texts: dict[str, str], reader: str) -> list[str]:
+    """Every passage the reviewer no longer holds twice is found whole in the reader's mandates it
+    reads, and an edit to the reader that changes one, or moves it past the read's end, fails."""
+    errors = _cut_x3_errors(texts["reviewer"], reader)
+    for passage in _CUT_X3_REMOVED:
+        mutated = _cut_mutated(reader, passage)
+        if mutated == reader or not _cut_x3_errors(texts["reviewer"], mutated):
+            errors.append(f"X3: a change to the reader's `{passage[:40]}...` passes")
+    # The lines that hold one passage moved past the read's end, to the foot of the file.
+    lines = reader.splitlines()
+    at = next((i for i, line in enumerate(lines) if "How finely" in line and re.match(r"^\s", line)), None)
+    if at is None:
+        return errors + ["X3: the reader holds no line of `How finely our own scope sheet splits`"]
+    moved = "\n".join(lines[:at] + lines[at + 2:] + lines[at:at + 2])
+    if not _cut_x3_errors(texts["reviewer"], moved):
+        errors.append("X3: a passage moved past the end of the reviewer's read passes")
+    return errors
+
+
+# A create batch is a few rows, each whole, and a refusal sends again only the batch refused; the
+# review's write bound counts rows and citations, which smaller batches do not inflate.
+_CUT_BATCH = (
+    "Every create batch creates at most three rows and holds at most 40 entries, so a refusal resends "
+    "little. Each row's entries and its citations go in the batch that creates it, never split across two "
+    "batches, and rows a mandate sends in one batch, as an exclusion row goes with the row that carries its "
+    "work, count as one row. After a refusal, send again only the batch the door refused, fixed as reader "
+    "mandates 1 and 7 say."
+)
+_CUT_BATCH_PLACES = {
+    "reviewer": ("How you review", None),
+    "manual reader": ("How you read", r"^5\. \*\*Record\*\*"),
+    "standard lines unit": ("How you write", r"^4\. \*\*Check each line's condition and write it\*\*"),
+}
+_CUT_WRITE_BOUND = (
+    "- Writes, each counted as it lands: rows created, 30; citations written onto rows that already stood, "
+    "in a batch or with `cite_source`, 80; `cite_source` calls, 40."
+)
+_CUT_RETIRED_BOUND = ("15 batches", "Write calls, `record_batch`, `cite_source`")
+
+
+def _cut_x4(plugin_path: Path, texts: dict[str, str], root: Path) -> list[str]:
+    """The batch rule in each of the three definitions, where it writes, and the review's write bound
+    counted in rows and citations; a review that reaches it, writing its report as its definition
+    says, passes the report check and is named in the closing report by the bound it reached."""
+    errors: list[str] = []
+    for label, (heading, step) in _CUT_BATCH_PLACES.items():
+        flat = _collapsed(texts[label])
+        body = _cut_section(texts[label], heading)
+        if step:
+            found = re.search(rf"{step}.*?(?=^[0-9]+\. \*\*|\Z)", body, re.M | re.S)
+            body = found.group(0) if found else ""
+        if flat.count(_CUT_BATCH) != 1 or _CUT_BATCH not in _collapsed(body):
+            errors.append(f"X4: the {label} does not give the batch rule once, under `{heading}`" + (f" at `{step}`" if step else ""))
+    bounds = _collapsed(_cut_section(texts["reviewer"], "The bounds of one review"))
+    if _CUT_WRITE_BOUND not in bounds:
+        errors.append("X4: the review's write bound is not counted in rows created and citations written")
+    errors += [f"X4: the reviewer still carries `{p}`" for p in _CUT_RETIRED_BOUND if p in _collapsed(texts["reviewer"])]
+    if "as `<the read> <its limit>: <what it left>`" not in bounds:
+        errors.append("X4: the review no longer names a bound reached as `<the read> <its limit>: <what it left>`")
+    # The entries a review writes on reaching the bound, in its own words: the read as the bound line
+    # names it, its limit, and what it left, with each requirement left on `not written:`.
+    entries = ("rows created 30: the rows for the invented door hardware",
+               "citations written 80: the citations of the invented frame anchor pages")
+    run = _RepairRun(plugin_path, root, "x4", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall"}], [])
+    code, _out, err = run.plan()
+    if code != 0:
+        return errors + [f"X4: the plan refused: {err}"]
+    for pass_id in run.passes():
+        for unit in run.units(pass_id):
+            if run.unit_of(unit)["kind"] != "review":
+                run.settle(pass_id, unit, _whole_review_report(unit), "write the Invented drywall standard lines")
+                continue
+            report = _repair_review_report(run.report_mod, unit, "Invented drywall", "09 21 16", **{
+                "bounds reached": "\n".join(entries),
+                "not written": "A-501 p3 | invented door hardware | no row | bound reached\n"
+                               "A-502 p1 | invented frame anchors | no row | bound reached",
+                "sections not checked": "no manual sections on this package"})
+            code, out = run.settle(pass_id, unit, report, "review Invented drywall",
+                                   tuple(f"note 3 {pass_id} {unit} anomaly bound reached: {e}" for e in entries))
+            if code != 0 or out != "report whole":
+                errors.append(f"X4: the report check refuses a review that reached its write bound: {out}")
+        run.record(pass_id)
+    run.append("phase: window 3 complete")
+    report, short = run.close()
+    collection = "\n".join(_repair_collection(report))
+    for limit, read in (("30", "rows created"), ("80", "citations written")):
+        if f"Invented drywall: the review stopped at its limit of {limit} {read}. What the review left" not in collection:
+            errors.append(f"X4: the closing report does not name the bound of {limit} {read}: {collection[-600:]}")
+    if _repair_short_count(short) != len(_repair_collection(report)):
+        errors.append("X4: the short version's count is not the collection's")
+    return errors
+
+
+# What an agent reads of another definition by path: each passage from its start line to the line
+# before its end line, each pattern matching exactly once; the passages it leaves out on purpose,
+# each pinned by a digest of its words, so a rule moved into one, or one edited, fails until someone
+# checks the agent applies nothing in it; and, for the reader, every heading of the mandates either
+# read or on the list left out.
+# Repair 3 (Z2) put back the whole of reader mandates 1 to 7 and 9: mandate 1 applies the Question
+# bar's cases when it compares a row's sources before a citation, and mandates 1, 4, 5 and 6 point
+# into NOTES, mandate 6's tests and lists, and mandate 9, so no part of them is left out.
+_CUT_SL_READS = _CUT_REVIEWER_READS
+_CUT_SL_LEFT = {
+    "reader mandate 8": (r"^8\. [A-Z]", r"^9\. [A-Z]", "a79460971071c687"),
+    "reader mandate 10": (r"^10\. [A-Z]", r"^## How you read", "62c7507958efa65c"),
+}
+# The headings of the reader's mandates the standard lines unit leaves out on purpose, by the words
+# each opens with; mandates 8 and 10 are the sheet readers' alone.
+_CUT_SL_LEFT_HEADINGS = ("VOCABULARY SHEETS", "YOUR NEW ROWS SIT UNDER")
+_CUT_SL_READ_SENTENCE = _CUT_REVIEWER_READ_SENTENCE
+_CUT_SL_GREP = "`Grep` on that file for `^## The mandates|^[0-9]+\\. [A-Z]`, then `Read` it"
+_CUT_MR_READS = (
+    (r"^2\. [A-Z]", r"^5\. [A-Z]"),
+    (r"^6\. [A-Z]", r"^7\. [A-Z]"),
+    (r"^   What is yours is the trade", r"^   - WORK THE MANUAL NEVER NAMES\."),
+    (r"^   - NEVER A GC MATTER", r"^10\. [A-Z]"),
+    (r"^    - A row the sheets and the manual both define\.", r"^    Name each subject you compared"),
+)
+_CUT_MR_LEFT = {
+    "the review's mandate 7 reads of the Questions": (r"^7\. [A-Z]", r"^   What is yours is the trade", "7548d02233392c4e"),
+    "the review's mandate 9 second case": (r"^   - WORK THE MANUAL NEVER NAMES\.", r"^   - NEVER A GC MATTER", "56ac1af25403a87b"),
+}
+_CUT_MR_READ_SENTENCE = (
+    "`Read` mandate 2 to the line before mandate 5 and mandate 6 to the line before mandate 7. Of its mandates 7 "
+    "to 9, read from the line that opens `What is yours is the trade` to the line before the one that opens `- "
+    "WORK THE MANUAL NEVER NAMES.`, and from the one that opens `- NEVER A GC MATTER` to the line before mandate "
+    "10, all three found with one more `Grep` for `^   (What is yours is the trade|- WORK THE MANUAL NEVER "
+    "NAMES\\.|- NEVER A GC MATTER)`"
+)
+_CUT_HEADING_RE = re.compile(r"^(?:[0-9]+\. |\s+(?:- )?)((?:An? )?[A-Z]{2,}(?:[ -][A-Z]{2,})*)(?=[ .,:;(]|$)")
+
+
+def _cut_digest(text: str) -> str:
+    return hashlib.sha256(_collapsed(text).encode("utf-8")).hexdigest()[:16]
+
+
+def _cut_reading_errors(source: str, reads: tuple, left: dict, label: str) -> tuple[str, list[str]]:
+    """The text an agent reads by path, and what is wrong with the passages that bound it."""
+    parts, errors = [], []
+    for start, end in reads:
+        text, bad = _cut_passage(source, start, end, f"{label}'s read")
+        parts.append(text)
+        errors += bad
+    for what, (start, end, digest) in left.items():
+        text, bad = _cut_passage(source, start, end, f"{label}'s left out {what}")
+        errors += bad
+        if not bad and _cut_digest(text) != digest:
+            errors.append(f"{label}: {what}, which it leaves out on purpose, changed ({_cut_digest(text)}): check it "
+                          f"applies nothing there, then pin the new words")
+    return "\n".join(parts), errors
+
+
+def _cut_sl_heading_errors(reader: str, reading: str) -> list[str]:
+    """Every heading of the reader's mandates is read by the standard lines unit or on the list it
+    leaves out on purpose."""
+    lines = reader.splitlines()
+    s = next((i for i, l in enumerate(lines) if l.startswith("## The mandates")), 0)
+    e = next((i for i, l in enumerate(lines) if l.startswith("## How you read")), len(lines))
+    read_lines = set(reading.splitlines())
+    errors = []
+    for line in lines[s:e]:
+        found = _CUT_HEADING_RE.match(line)
+        if not found or line in read_lines:
+            continue
+        words = re.sub(r"^(?:[0-9]+\. |\s+(?:- )?)", "", line)
+        if not any(words.startswith(h) for h in _CUT_SL_LEFT_HEADINGS):
+            errors.append(f"X5: the reader's heading `{words[:40]}` is neither read by the standard lines unit nor left out on purpose")
+    return errors
+
+
+def _cut_x5_errors(sl: str, reader: str) -> list[str]:
+    reading, errors = _cut_reading_errors(reader, _CUT_SL_READS, _CUT_SL_LEFT, "the standard lines unit")
+    errors = [f"X5: {e}" for e in errors]
+    flat = _collapsed(sl)
+    for pinned in (_CUT_SL_READ_SENTENCE, _CUT_SL_GREP):
+        if _collapsed(pinned) not in flat:
+            errors.append(f"X5: the standard lines unit does not read the reader as the arm does: `{pinned[:60]}...`")
+    if "and mandate 9 to the line before mandate 10" not in flat:
+        errors.append("X5: the standard lines unit no longer reads reader mandate 9")
+    errors += _cut_sl_heading_errors(reader, reading)
+    tools = re.search(r"^tools: (.*)$", sl, re.M)
+    errors += [f"X5: the standard lines unit declares `{v}`" for v in _SLIM_QUESTION_TOOLS if tools and v in tools.group(1)]
+    # What the unit applies is still read: mandate 1 whole, the comparison before a citation and the
+    # bar's cases it sends a difference to, NOTES, mandate 6's tests and lists, and mandate 9.
+    for needed in ("ONE ROW where things differ only in size", "NO ROW for the parts every bid",
+                   "Never a parallel list; never re-create; never silently skip.",
+                   "(d) Where it says the exclusion row's own package already carries the name",
+                   "A citation on a row that already exists is one of two kinds, and you say which.",
+                   "Before you cite your sheet on a row that already exists, compare what your sheet says",
+                   "A Question is a draft RFI", "- DOCUMENTS THAT DISAGREE.", "- REQUIREMENTS THAT STACK.",
+                   "NOTES. A row's note", "A ROW OF ITS OWN where", "ONE ROW too for the hardware",
+                   "4. CAPTURE EVERYTHING, AND NAME THE TRADE AS YOU WRITE", "7. RECORD directly and VERIFY",
+                   "3. STORE-RESOLUTION IS MANDATORY", "2. CITATION SHAPE", "9. THE SHEET'S OWN READING"):
+        if needed not in _collapsed(reading):
+            errors.append(f"X5: the standard lines unit's read of the reader does not hold `{needed}`")
+    for absent in ("8. VOCABULARY SHEETS", "10. YOUR NEW ROWS SIT UNDER"):
+        if absent in _collapsed(reading):
+            errors.append(f"X5: the standard lines unit's read of the reader still holds `{absent}`")
+    return errors
+
+
+def _cut_x6_errors(mr: str, reviewer: str) -> list[str]:
+    reading, errors = _cut_reading_errors(reviewer, _CUT_MR_READS, _CUT_MR_LEFT, "the manual reader")
+    errors = [f"X6: {e}" for e in errors]
+    if _collapsed(_CUT_MR_READ_SENTENCE) not in _collapsed(mr):
+        errors.append("X6: the manual reader does not read the review's mandates 7 to 9 as the arm does")
+    flat = _collapsed(reading)
+    for needed in ("What is yours is the trade", "One subject is one Question across your review",
+                   "A Question never waits for a row", "9. THE MANUAL AND THE DRAWINGS, EACH SILENT ON THE OTHER",
+                   "- WORK THE DRAWINGS NEVER SHOW.", "THE WHOLE SECTION IS SILENT", "ONE PRODUCT OF A SECTION THE SHEETS SHOW",
+                   "- NEVER A GC MATTER, NEVER OUR OWN ROW.", "Both are the \"this is what you meant, right?\" Question",
+                   "8. YOUR ROWS SIT UNDER YOUR UNIT'S PREFIX", "6. EVERY PAGE YOU OPEN IS NAMED WITH ITS REASON",
+                   "2. A SEARCH HIT IS A POINTER", "4. WHAT COUNTS AS WORK NO ROW CARRIES",
+                   "- A row the sheets and the manual both define."):
+        if needed not in flat:
+            errors.append(f"X6: the manual reader's read of the review's mandates does not hold `{needed}`")
+    for absent in ("First one `list_questions(projectId, status: \"all\", limit: 0)`", "- WORK THE MANUAL NEVER NAMES."):
+        if absent in flat:
+            errors.append(f"X6: the manual reader's read of the review's mandates still holds `{absent}`")
+    # Its own step 3 replaces mandate 7's reads, and reads `get_project` as reader mandate 1 says.
+    for own in ("That is the whole of your difference from the review's mandate 7",
+                "Read `get_project` once, as reader mandate 1 says"):
+        if own not in _collapsed(mr):
+            errors.append(f"X6: the manual reader does not carry `{own}`")
+    return errors
+
+
+def _cut_x5_x6(texts: dict[str, str], reader: str) -> list[str]:
+    """The standard lines unit reads only the reader's rules it applies, and the manual reader
+    neither mandate 7's reads of the Questions nor mandate 9's second case, each read bounded and
+    held; each break below is refused."""
+    sl, mr, reviewer = texts["standard lines unit"], texts["manual reader"], texts["reviewer"]
+    errors = _cut_x5_errors(sl, reader) + _cut_x6_errors(mr, reviewer)
+    rl = reader.splitlines()
+    vl = reviewer.splitlines()
+
+    def at(lines: list[str], pattern: str) -> int:
+        return next(i for i, l in enumerate(lines) if re.match(pattern, l))
+
+    eight, nine = at(rl, r"^8\. [A-Z]"), at(rl, r"^9\. [A-Z]")
+    second = at(vl, r"^   - WORK THE MANUAL NEVER NAMES\.")
+    breaks = {
+        "X5 a rule of mandate 7 moved past the read's end, into mandate 8": (
+            "\n".join(rl[:eight - 1] + rl[eight:nine] + rl[eight - 1:eight] + rl[nine:]), sl, reviewer, mr),
+        "X5 a second line opening mandate 8": (reader.replace("\n8. VOCABULARY", "\n8. VOCABULARY invented.\n8. VOCABULARY", 1), sl, reviewer, mr),
+        "X5 the unit no longer reading reader mandate 9": (reader, _cut_replaced(
+            sl, "heading to the line before mandate 8, and mandate 9 to the line before mandate 10.",
+            "heading to the line before mandate 8."), reviewer, mr),
+        "X5 a Question verb on the unit's tools line": (reader, sl.replace("tools: Read,", "tools: Read, mcp__plugin_plumlayer_plumlayer__ask_question,", 1), reviewer, mr),
+        "X6 a rule of mandate 9's first case moved into its second": (
+            reader, sl, "\n".join(vl[:second - 1] + vl[second:second + 1] + vl[second - 1:second] + vl[second + 1:]), mr),
+        "X6 the bullet that ends the second case gone": (reader, sl, reviewer.replace("\n   - NEVER A GC MATTER", "\n   NEVER A GC MATTER", 1), mr),
+    }
+    for label, (r, s, v, m) in breaks.items():
+        if (r, s, v, m) == (reader, sl, reviewer, mr):
+            errors.append(f"{label}: the break changed nothing")
+        elif not (_cut_x5_errors(s, r) + _cut_x6_errors(m, v)):
+            errors.append(f"{label} passes")
+    # A heading the reader gains in its mandates, read by the unit nowhere and on no list, is named
+    # whatever its digest.
+    added = reader.replace("\n9. THE SHEET'S", "\n   EVERY ROW INVENTED. A new rule.\n9. THE SHEET'S", 1)
+    reading, _bad = _cut_reading_errors(added, _CUT_SL_READS, {}, "the standard lines unit")
+    if added == reader or not _cut_sl_heading_errors(added, reading):
+        errors.append("X5 a new heading in the reader's mandate 8, neither read nor left out on purpose, passes")
+    return errors
+
+
+def _cut_x8(plugin_path: Path, root: Path) -> list[str]:
+    """A review that copies a skipped, or a restored, manual part's section onto its `sections not
+    checked:` line with the notes script's reason: the closing report names that section once, as
+    the part's gap, and the short version counts one."""
+    errors: list[str] = []
+    for case in ("skipped", "restored"):
+        run = _RepairRun(plugin_path, root, f"x8-{case}", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall",
+                                                             "manualSections": ["092116"]}], [_repair_section("092116", 11, 6)])
+        code, _out, err = run.plan()
+        if code != 0:
+            return errors + [f"X8 {case}: the plan refused: {err}"]
+        review = "i1-rev-092116-1"
+        part, standard = (u["id"] for u in run.chains()[review])
+        stage_a = [p for p in run.passes() if "-M" in p]
+        pass_of = {u: p for p in stage_a for u in run.units(p)}
+        purpose = "read the Invented drywall manual pages"
+        if case == "skipped":
+            for read in (1, 2):
+                run.settle(pass_of[part], part, _repair_part_report(run, part), purpose,
+                           (f"note 3 {pass_of[part]} {part} deviation Invented drywall created 1 under the prefix, reader created 0, read {read}",),
+                           result="mismatch", fields="created 1 items 0 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0")
+            run.append(f"note 3 {pass_of[part]} {part} unread Invented drywall read 2 times, not read again")
+        else:
+            run.append(f"dispatch 3 {pass_of[part]} {part} sheets none purpose {purpose}",
+                       f"verified 3 {pass_of[part]} {part} {_REPAIR_OK} result ok")
+            (run.where / "reports" / f"{part}.md").write_text("searches: 1\npages opened: 1\n", encoding="utf-8")
+            run.report_mod.restore(run.where, "3", part)
+            run.report_mod.write_trades(run.where, pass_of[part], part, "none\n")
+        run.settle(pass_of[standard], standard, _whole_review_report(standard), "write the Invented drywall standard lines")
+        for pass_id in stage_a:
+            run.record(pass_id)
+        # The review copies the section with the reason the notes script printed, as its definition says.
+        printed = next((l for l in run.notes(review) if l.startswith(("not read: 092116", "not known: 092116"))), None)
+        if printed is None:
+            return errors + [f"X8 {case}: the notes script names no gap for the part's section"]
+        state, reason = printed.split(":", 1)[0], printed.split(", ", 1)[1]
+        entry = f"092116 {state}, {reason}" if state == "not read" else f"092116 {reason}"
+        for pass_id in [p for p in run.passes() if "-M" not in p]:
+            code, out = run.settle(pass_id, review, _repair_review_report(
+                run.report_mod, review, "Invented drywall", "09 21 16", **{"sections not checked": entry}), "review Invented drywall")
+            if code != 0:
+                errors.append(f"X8 {case}: the report check refuses the review's honest report: {out}")
+            run.record(pass_id)
+        run.append("phase: window 3 complete")
+        report, short = run.close()
+        collection = _repair_collection(report)
+        named = [line for line in collection if "092116" in line]
+        if len(named) != 1 or not named[0].startswith("Manual pages for Invented drywall (section 092116, pages 11 to 16)"):
+            errors.append(f"X8 {case}: the section is named {len(named)} times, not once as the part's gap: {named}")
+        if _repair_short_count(short) != 1 or len(collection) != 1:
+            errors.append(f"X8 {case}: the short version counts {_repair_short_count(short)} and the report names {len(collection)}, not one")
+    return errors
+
+
+def _cut_replaced(text: str, old: str, new: str) -> str:
+    """`text` with `old` replaced once by `new`, wherever its lines wrap."""
+    return re.sub(r"\s+".join(re.escape(w) for w in old.split()), lambda _m: new, text, count=1)
+
+
+def check_review_size_cuts(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "review-size-cuts"
+    errors: list[str] = []
+    agents = plugin_path / "agents"
+    texts = {label: (agents / file).read_text(encoding="utf-8") for label, file in _CUT_AGENTS.items()}
+    reader = (agents / "scope-reader.md").read_text(encoding="utf-8")
+    root = Path(__file__).parent / ".test-results" / "review-size-cuts"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    arms = (
+        ("X1 X2", lambda: _cut_x1_x2(texts)),
+        ("X3", lambda: _cut_x3(texts, reader)),
+        ("X4", lambda: _cut_x4(plugin_path, texts, root)),
+        ("X5 X6", lambda: _cut_x5_x6(texts, reader)),
+        ("X8", lambda: _cut_x8(plugin_path, root)),
+    )
+    for label, arm in arms:
+        try:
+            errors += arm()
+        except Exception as e:
+            errors.append(f"{label}: the arm raised {type(e).__name__}: {e}")
+    detail = (
+        "X1 the reviewer, the manual reader and the standard lines unit each write the `.started` file with the "
+        "Write tool and list no folder of the run, said once where the dispatch is given; X2 each writes its report "
+        f"once with the Write tool; X3 {len(_CUT_X3_REMOVED)} passages the reviewer no longer holds twice each found "
+        "whole in the reader's mandates it reads, a change to one and one moved past the read's end refused; X4 a "
+        "create batch of three rows at most, each whole, only the refused batch sent again, in all three, and the "
+        "review's write bound in rows created and citations written, a review reaching it passing the report check "
+        "and named by its bound in the closing report; X5 the standard lines unit's read of the reader's mandates "
+        "1 to 7 and 9 whole (repair 3, Z2) and "
+        f"X6 the manual reader's of the review's mandates 7 to 9, each bound matched once, the {len(_CUT_SL_LEFT) + len(_CUT_MR_LEFT)} "
+        "passages left out on purpose pinned by their words, every heading of the reader's mandates read or left out "
+        "on purpose, no Question verb on the unit's tools line, 7 breaks and a new heading refused; X8 a section of a "
+        "skipped and of a restored manual part that the review copies named once in the closing report, as the "
+        "part's gap, the short version counting one; bound: the definitions' text and invented run folders, not a "
+        "live run"
+    )
+    return Result(name, not errors, detail=detail + ("" if not errors else " | " + "; ".join(errors)))
+
+
+# --------------------------------------------------------------------------- #
+# Check: the package review's second repair
+# --------------------------------------------------------------------------- #
+#
+# A review of the closing report's one collection of what the run could not do found three ways it
+# named a gap wrongly: two standard lines found later at one place, or two bounds of one read, kept
+# one entry; two reasons a review gave for one section kept one; and a section a verified part left
+# unread, a plan omission, or the owner's work several parts named was printed again for each copy.
+# Beside them, the manual part reader held two tools it no longer calls, one of its reads by path
+# had no pinned end, the closing report's sentence for a limit reached read badly, and the manual
+# reader and the standard lines unit were told to count as the review's report says with no read
+# of it. Each arm runs the shipped scripts over invented run folders with every report written as
+# its agent's definition says, or holds the definitions' text.
+
+_TWO_ROW_NAME_BOUND = (
+    "read the one bullet that opens `- The row's name.`, to the line before the one that opens `- No note.`, "
+    "both found with one `Grep` for `^    - The row's name\\.|^    - No note\\.`"
+)
+_TWO_REPORT_READ = (
+    "- The review's rules for its report, at the reviewer definition path: `Read` from the line that opens "
+    "`` `not written:` names every requirement `` to the line before the one that opens ``The `updated "
+    "subjects:`, `questions raised ids:` ``, both found with one `Grep` for ``^`not written:` names every "
+    "requirement|^The `updated subjects:`, `questions raised ids:` ``. Your counts, your `not written:` line "
+    "and your `owed:` answers follow them."
+)
+_TWO_REPORT_BOUNDS = (r"^`not written:` names every requirement", r"^The `updated subjects:`, `questions raised ids:`")
+# The reviewer's rules the two agents are told their counts and `owed:` answers follow, each inside
+# the passage they read.
+_TWO_REPORT_RULES = (
+    "`not written, <why>` puts the entry on your own `not written:` line too.",
+    "`owed:` answers every `not written by read` line of your Owed file and every `check read` line of the five "
+    "writes it names.",
+    "`created:` is your own item count",
+    "`updated:` is the number of rows on your `updated subjects:` line",
+    "A row you retired is named on `anomalies:` alone and counted nowhere.",
+    "`sent:` and `landed:` count every write you made",
+)
+# The ending of an `anomalies:` line the manual reader carries in the reviewer's words.
+_TWO_ANOMALY_ENDING = (
+    "ending with a comma and where it landed, one of Question <id>, reply <id>, sheet reading, or run only, the "
+    "Question named by the full id `ask_question` returned (its `question:` subject) and a reply by the id "
+    "`reply_question` returned, never shortened"
+)
+_TWO_LEFT_SENTENCE = (
+    "`<what it left>` names that work in plain words, the rows, sections or searches the read did not reach, "
+    "since the estimator reads it in the closing report."
+)
+
+
+def _two_close(run: "_RepairRun", review_values: dict, review_notes: tuple = (), reads: int = 1
+               ) -> tuple[list[str], int | None, list[str]]:
+    """
+    Window 3 run whole over one package: each manual part settled reading its planned spans, the
+    standard lines unit, the review settled `reads` times (each read but the last a mismatch), then
+    the closing report: its collection, the short version's count, and any report the runner's
+    check refused.
+    """
+    refused: list[str] = []
+    review = next(iter(run.chains()))
+    stage_a = [p for p in run.passes() if "-M" in p]
+    for pass_id in stage_a:
+        for unit in run.units(pass_id):
+            kind = run.unit_of(unit)["kind"]
+            if kind == "manual":
+                code, out = run.settle(pass_id, unit, _repair_part_report(run, unit), "read the invented manual pages")
+            else:
+                code, out = run.settle(pass_id, unit, _whole_review_report(unit), "write the invented standard lines")
+            if code != 0:
+                refused.append(f"{unit}: {out}")
+        run.record(pass_id)
+    for pass_id in [p for p in run.passes() if "-M" not in p]:
+        for read in range(1, reads + 1):
+            values, notes = review_values[read], review_notes[read - 1] if review_notes else ()
+            last = read == reads
+            code, out = run.settle(pass_id, review, _repair_review_report(
+                run.report_mod, review, "Invented drywall", "09 21 16", **values), "review Invented drywall",
+                tuple(f"note 3 {pass_id} {review} anomaly {n}" for n in notes)
+                + (() if last else (f"note 3 {pass_id} {review} deviation Invented drywall created 1 under the prefix, "
+                                    f"reader created 0, read {read}",)),
+                result="ok" if last else "mismatch",
+                fields=_REPAIR_OK if last else "created 1 items 0 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0")
+            if code != 0:
+                refused.append(f"{review} read {read}: {out}")
+        run.record(pass_id)
+    run.append("phase: window 3 complete")
+    report, short = run.close()
+    return _repair_collection(report), _repair_short_count(short), refused
+
+
+def _two_y1(plugin_path: Path, root: Path) -> list[str]:
+    """Two standard lines found later at one line and place with different findings, and two bounds
+    of one read with different work left: each named."""
+    errors: list[str] = []
+    run = _RepairRun(plugin_path, root, "y1", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall"}], [])
+    code, _out, err = run.plan()
+    if code != 0:
+        return [f"Y1: the plan refused: {err}"]
+    later = ("Invented bracing | A-501 p3 | the condition of the line drawn at the partition heads",
+             "Invented bracing | A-501 p3 | the general notes give the bracing to the framing trade")
+    bounds = ("drawing pages opened 15: the comparison of the invented door types",
+              "drawing pages opened 15: the invented frame anchors on the second floor")
+    none_here = "no manual sections on this package"
+    values = {
+        1: {"sections not checked": none_here, "bounds reached": bounds[0]},
+        2: {"sections not checked": none_here, "standard lines found later": "\n".join(later), "bounds reached": bounds[1]},
+    }
+    notes = ((f"bound reached: {bounds[0]}",),
+             (*(f"standard line found later: {entry}" for entry in later), f"bound reached: {bounds[1]}"))
+    collection, short, refused = _two_close(run, values, notes, reads=2)
+    errors += [f"Y1: the report check refuses an honest review: {r}" for r in refused]
+    found = [line for line in collection if "the standard line Invented bracing at A-501 p3" in line]
+    stopped = [line for line in collection if "at its limit of 15 drawing pages opened" in line]
+    if len(found) != 2 or not any("framing trade" in line for line in found):
+        errors.append(f"Y1: two findings at one line and place are named {len(found)} times, not twice: {found}")
+    if len(stopped) != 2 or not any("second floor" in line for line in stopped):
+        errors.append(f"Y1: two bounds of one read with different work left are named {len(stopped)} times, not twice: {stopped}")
+    if short != len(collection):
+        errors.append(f"Y1: the short version counts {short} and the report names {len(collection)}")
+    return errors
+
+
+def _two_y2(plugin_path: Path, root: Path) -> list[str]:
+    """One section a review names twice, its notes not read and its searches spent: both named."""
+    errors: list[str] = []
+    run = _RepairRun(plugin_path, root, "y2", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall",
+                                                "manualSections": ["092116"]}], [_repair_section("092116", 11, 6)])
+    code, _out, err = run.plan()
+    if code != 0:
+        return [f"Y2: the plan refused: {err}"]
+    collection, short, refused = _two_close(run, {1: {"sections not checked": "092116 notes not read\n092116 searches spent"}})
+    errors += [f"Y2: the report check refuses an honest report: {r}" for r in refused]
+    for want in ("Invented drywall: section 092116 was not checked, because the review did not read the part of the "
+                 "manual notes that holds it.",
+                 "Invented drywall: section 092116 was not checked for work no sheet shows, because the review's "
+                 "searches ran out first."):
+        if want not in collection:
+            errors.append(f"Y2: `{want}` is not in What I could not read: {collection}")
+    if short != len(collection) or len(collection) != 2:
+        errors.append(f"Y2: the short version counts {short} and the report names {len(collection)}, not two")
+    return errors
+
+
+def _two_y3(plugin_path: Path, root: Path) -> list[str]:
+    """A section a verified part left unread with its anomaly, a section with no pages, and the
+    owner's work two parts and the review each name: the review copies each gap the notes script
+    printed, as its definition says, and each section is named once, the short version counting
+    the same."""
+    errors: list[str] = []
+    run = _RepairRun(plugin_path, root, "y3", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall",
+                                                "manualSections": ["014500", "092216", "092400"]}],
+                     [_repair_section("014500", 1, 14), _repair_section("092216", 15, 4), _repair_section("092400", None, 0)])
+    code, _out, err = run.plan()
+    if code != 0:
+        return [f"Y3: the plan refused: {err}"]
+    review = next(iter(run.chains()))
+    parts: dict[str, tuple[str, tuple[str, ...]]] = {}
+    owners = 0
+    for unit in (u["id"] for u in run.chains()[review] if u["kind"] == "manual"):
+        spans = run.reads(unit).split("; ")
+        kept = [s for s in spans if not s.startswith("092216 ")]
+        unread = ["092216 manual changed"] if len(kept) < len(spans) else []
+        if any(s.startswith("014500 ") for s in spans):
+            unread.append("014500 the owner's work")
+            owners += 1
+        anomalies = ("section 092216 not read: manual changed, run only",) if len(kept) < len(spans) else ()
+        parts[unit] = (_repair_part_report(run, unit, kept, **{
+            "sections not checked": "\n".join(unread) or "none", "anomalies": "\n".join(anomalies) or "none"}), anomalies)
+    if owners < 2:
+        return [f"Y3: the fixture gives section 014500 to {owners} parts, so it proves nothing"]
+    for pass_id in [p for p in run.passes() if "-M" in p]:
+        for unit in run.units(pass_id):
+            if run.unit_of(unit)["kind"] == "manual":
+                report, notes = parts[unit]
+                code, out = run.settle(pass_id, unit, report, "read the invented manual pages",
+                                       tuple(f"note 3 {pass_id} {unit} anomaly {n}" for n in notes))
+            else:
+                code, out = run.settle(pass_id, unit, _whole_review_report(unit), "write the invented standard lines")
+            if code != 0:
+                errors.append(f"Y3: the runner's check refuses an honest report of {unit}: {out}")
+        run.record(pass_id)
+    # The notes script's lines, read before the review: what the review copies onto its own line.
+    printed = [l for l in run.notes(review) if l.startswith(("not read: 0", "not known: 0"))]
+    entries = []
+    for line in printed:
+        state, rest = line.split(": ", 1)
+        code_, reason = rest.split(" ", 1)[0].rstrip(","), rest.split(", ", 1)[1]
+        entries.append(f"{code_} {state}, {reason}")
+    if sorted(e.split()[0] for e in entries) != ["092216", "092400"]:
+        return errors + [f"Y3: the notes script names {printed}, not the changed section and the one with no pages"]
+    entries.append("014500 the owner's work")
+    for pass_id in [p for p in run.passes() if "-M" not in p]:
+        code, out = run.settle(pass_id, review, _repair_review_report(
+            run.report_mod, review, "Invented drywall", "09 21 16", **{"sections not checked": "\n".join(entries)}),
+            "review Invented drywall")
+        if code != 0:
+            errors.append(f"Y3: the runner's check refuses the review's honest report: {out}")
+        run.record(pass_id)
+    run.append("phase: window 3 complete")
+    report, short = run.close()
+    collection = _repair_collection(report)
+    for code_, want in (("092216", "Manual pages for Invented drywall (section 092216, pages 15 to 18): not read, because "
+                                   "its file or pages on the record changed"),
+                        ("092400", "Section 092400 for Invented drywall: no unit read it, because no page range."),
+                        ("014500", "Invented drywall: section 014500 is work the owner contracts for")):
+        named = [line for line in collection if f"section {code_}" in line.lower()]
+        if len(named) != 1 or not named[0].startswith(want):
+            errors.append(f"Y3: section {code_} is named {len(named)} times, not once as `{want}`: {named}")
+    if _repair_short_count(short) != len(collection) or len(collection) != 3:
+        errors.append(f"Y3: the short version counts {_repair_short_count(short)} and the report names {len(collection)}, not three")
+    return errors
+
+
+def _two_mr_reading(plugin_path: Path) -> str:
+    """Everything the manual reader reads by path: the reader's mandates, the review's passages,
+    the standard lines bullet and the review's report rules, as its definition bounds them."""
+    agents = plugin_path / "agents"
+    reader = (agents / "scope-reader.md").read_text(encoding="utf-8")
+    reviewer = (agents / "scope-reviewer.md").read_text(encoding="utf-8")
+    standard = (agents / "scope-standard-lines.md").read_text(encoding="utf-8")
+    parts = [_cut_reviewer_reading(reader)[0], _cut_reading_errors(reviewer, _CUT_MR_READS, {}, "the manual reader")[0],
+             _cut_passage(standard, r"^    - The row's name\.", r"^    - No note\.", "the row's name")[0],
+             _cut_passage(reviewer, *_TWO_REPORT_BOUNDS, "the review's report rules")[0]]
+    return "\n".join(parts)
+
+
+def _two_y4(plugin_path: Path) -> list[str]:
+    """The manual reader holds neither `order_scope_items` nor `solicitation_update_package`, and
+    neither its definition nor any passage it reads by path names either."""
+    errors: list[str] = []
+    text = (plugin_path / "agents" / "scope-manual-reader.md").read_text(encoding="utf-8")
+    tools = re.search(r"^tools: (.*)$", text, re.M)
+    reading = _two_mr_reading(plugin_path)
+    for verb in ("order_scope_items", "solicitation_update_package"):
+        if tools is None or verb in tools.group(1):
+            errors.append(f"Y4: the manual reader's tools line holds `{verb}`")
+        if verb in text.split("---", 2)[-1]:
+            errors.append(f"Y4: the manual reader's definition names `{verb}`")
+        if verb in reading:
+            errors.append(f"Y4: a passage the manual reader reads by path names `{verb}`")
+    return errors
+
+
+def _two_y5(plugin_path: Path, root: Path) -> list[str]:
+    """A bound reached, its work left named in plain words as the reviewer now says: the closing
+    report prints the limit, then the review's words set off as a quotation."""
+    errors: list[str] = []
+    bounds = _collapsed(_cut_section((plugin_path / "agents" / "scope-reviewer.md").read_text(encoding="utf-8"),
+                                     "The bounds of one review"))
+    if _TWO_LEFT_SENTENCE not in bounds:
+        errors.append("Y5: the reviewer's bounds do not say `<what it left>` names the work in plain words")
+    run = _RepairRun(plugin_path, root, "y5", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall"}], [])
+    code, _out, err = run.plan()
+    if code != 0:
+        return errors + [f"Y5: the plan refused: {err}"]
+    entry = "rows created 30: the rows for the invented door hardware and the invented frame anchors"
+    collection, short, refused = _two_close(run, {1: {"sections not checked": "no manual sections on this package",
+                                                      "bounds reached": entry}}, ((f"bound reached: {entry}",),))
+    errors += [f"Y5: the report check refuses an honest review: {r}" for r in refused]
+    want = ("Invented drywall: the review stopped at its limit of 30 rows created. What the review left, in its "
+            "report's words: “the rows for the invented door hardware and the invented frame anchors”.")
+    if want not in collection:
+        errors.append(f"Y5: the closing report does not print `{want}`: {collection}")
+    if short != len(collection):
+        errors.append(f"Y5: the short version counts {short} and the report names {len(collection)}")
+    return errors
+
+
+def _two_y6_errors(mr: str, standard: str) -> list[str]:
+    errors: list[str] = []
+    if _collapsed(_TWO_ROW_NAME_BOUND) not in _collapsed(mr):
+        errors.append("Y6: the manual reader does not end its read of the row's name bullet at a pinned line")
+    lines = standard.splitlines()
+    starts = [i for i, l in enumerate(lines) if re.match(r"^    - The row's name\.", l)]
+    ends = [i for i, l in enumerate(lines) if re.match(r"^    - No note\.", l)]
+    if len(starts) != 1 or len(ends) != 1 or ends[0] <= starts[0]:
+        return errors + [f"Y6: the standard lines definition holds the bullet {len(starts)} times and its end line {len(ends)} times"]
+    if any(re.match(r"^(?:    - |[0-9]+\. )", l) for l in lines[starts[0] + 1: ends[0]]):
+        errors.append("Y6: another bullet or mandate sits between the row's name bullet and its end line")
+    return errors
+
+
+def _two_y6(plugin_path: Path) -> list[str]:
+    """The manual reader's read of the standard lines unit's row's name bullet ends at a pinned
+    line right after it; a bullet put between, or the end line gone, is refused."""
+    mr = (plugin_path / "agents" / "scope-manual-reader.md").read_text(encoding="utf-8")
+    standard = (plugin_path / "agents" / "scope-standard-lines.md").read_text(encoding="utf-8")
+    errors = _two_y6_errors(mr, standard)
+    for label, broken in (("a bullet put before the end line", standard.replace("\n    - No note.", "\n    - An invented bullet.\n    - No note.", 1)),
+                          ("the end line gone", standard.replace("\n    - No note.", "\n    No note.", 1))):
+        if broken == standard or not _two_y6_errors(mr, broken):
+            errors.append(f"Y6: {label} passes")
+    return errors
+
+
+def _two_y7_errors(texts: dict[str, str], reviewer: str) -> list[str]:
+    errors: list[str] = []
+    passage, bad = _cut_passage(reviewer, *_TWO_REPORT_BOUNDS, "Y7: the review's report rules")
+    errors += bad
+    flat = _collapsed(passage)
+    errors += [f"Y7: the review's report rules read by path do not hold `{rule[:50]}...`" for rule in _TWO_REPORT_RULES
+               if rule not in flat]
+    for label, text in texts.items():
+        if _collapsed(text).count(_collapsed(_TWO_REPORT_READ)) != 1:
+            errors.append(f"Y7: the {label} does not read the review's report rules once, bounded as the arm reads them")
+    shape = re.search(r"^anomalies: .*$", reviewer, re.M)
+    if shape is None or _TWO_ANOMALY_ENDING not in shape.group(0):
+        errors.append("Y7: the reviewer's `anomalies:` shape no longer gives its ending as the manual reader carries it")
+    mine = re.search(r"^anomalies: .*$", texts["manual reader"], re.M)
+    if mine is None or _TWO_ANOMALY_ENDING not in mine.group(0):
+        errors.append("Y7: the manual reader's `anomalies:` shape does not give the reviewer's ending in its words")
+    return errors
+
+
+def _two_y7(plugin_path: Path) -> list[str]:
+    """The manual reader and the standard lines unit each read the review's rules for its report,
+    the passage bounded by lines each matching once, and the manual reader carries the `anomalies:`
+    ending in the reviewer's words. A rule moved past the read's end, a second end line, and the
+    reviewer's ending changed alone are each refused."""
+    agents = plugin_path / "agents"
+    texts = {"manual reader": (agents / "scope-manual-reader.md").read_text(encoding="utf-8"),
+             "standard lines unit": (agents / "scope-standard-lines.md").read_text(encoding="utf-8")}
+    reviewer = (agents / "scope-reviewer.md").read_text(encoding="utf-8")
+    errors = _two_y7_errors(texts, reviewer)
+    lines = reviewer.splitlines()
+    at = next((i for i, l in enumerate(lines) if l.startswith("`created:` is your own item count")), None)
+    end = next((i for i, l in enumerate(lines) if re.match(_TWO_REPORT_BOUNDS[1], l)), None)
+    if at is None or end is None:
+        return errors + ["Y7: the reviewer holds no line opening `created:` is your own item count, or no end line"]
+    breaks = {
+        "the counting rule moved past the read's end": "\n".join(lines[:at] + lines[end:] + lines[at:end]),
+        "a second line opening the end line": reviewer.replace("\nThe `updated subjects:`, `questions raised ids:`",
+                                                               "\nThe `updated subjects:`, `questions raised ids:` invented.\n"
+                                                               "The `updated subjects:`, `questions raised ids:`", 1),
+        "the reviewer's ending changed alone": reviewer.replace("returned, never shortened; or", "returned, never cut; or", 1),
+    }
+    for label, broken in breaks.items():
+        if broken == reviewer or not _two_y7_errors(texts, broken):
+            errors.append(f"Y7: {label} passes")
+    return errors
+
+
+def check_slim_review_repair_2(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "slim-review-repair-2"
+    errors: list[str] = []
+    root = Path(__file__).parent / ".test-results" / "slim-review-repair-2"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    arms = (
+        ("Y1", lambda: _two_y1(plugin_path, root)),
+        ("Y2", lambda: _two_y2(plugin_path, root)),
+        ("Y3", lambda: _two_y3(plugin_path, root)),
+        ("Y4", lambda: _two_y4(plugin_path)),
+        ("Y5", lambda: _two_y5(plugin_path, root)),
+        ("Y6", lambda: _two_y6(plugin_path)),
+        ("Y7", lambda: _two_y7(plugin_path)),
+    )
+    for label, arm in arms:
+        try:
+            errors += arm()
+        except Exception as e:
+            errors.append(f"{label}: the arm raised {type(e).__name__}: {e}")
+    detail = (
+        "Y1 two standard lines found later at one line and place, and two bounds of one read, each with its own "
+        "words, both named; Y2 one section's notes not read and searches spent both named; Y3 a section a verified "
+        "part left unread with its anomaly, one with no pages and the owner's work two parts and the review name, "
+        "each copied by the review off the notes script, each named once and the short version counting three; Y4 "
+        "the manual reader holding and naming neither `order_scope_items` nor `solicitation_update_package`, nor any "
+        "passage it reads by path; Y5 a bound reached printed as its limit and then the review's words quoted, the "
+        "reviewer saying those words name the work plainly; Y6 the manual reader's read of the row's name bullet "
+        "ending at a pinned line, two breaks refused; Y7 the manual reader and the standard lines unit each reading "
+        "the review's report rules between lines that match once, the manual reader carrying the `anomalies:` "
+        "ending in the reviewer's words, three breaks refused; bound: invented run folders and the definitions' "
+        "text, not a live run"
+    )
+    return Result(name, not errors, detail=detail + ("" if not errors else " | " + "; ".join(errors)))
+
+
+# --------------------------------------------------------------------------- #
+# Check: the package review's third repair
+# --------------------------------------------------------------------------- #
+#
+# A review of the size cuts and the second repair found four things. The closing report printed a
+# manual part's first reason for a section it left unread where a later read gave another, and one
+# sentence twice for two parts of one removed section. The standard lines unit no longer read the
+# rules of reader mandate 1 that the comparison it still reads sends a difference to. The review's
+# bound on citations was set below a small honest review. And one Grep pattern an agent is told to
+# run ended an alternative with `$`, which matches no line of a file checked out with CRLF endings.
+
+_THREE_CHANGED = ("Manual pages for Invented drywall (section 092216, pages 15 to 18): not read, because its file or "
+                  "pages on the record changed after the manual reading was planned.")
+
+
+def _three_settle_parts(run: "_RepairRun", reports: dict[str, list[tuple[str, tuple[str, ...], bool]]]) -> list[str]:
+    """
+    Window 3's stage A as the runner runs it: each manual part read once for each (report, anomalies,
+    ok) the fixture gives it, the runner copying the report's anomalies onto the ledger and a read
+    that fails its check noted, a part whose two reads failed skipped; then each standard lines unit,
+    and each pass recorded.
+    """
+    refused: list[str] = []
+    stage_a = [p for p in run.passes() if "-M" in p]
+    for pass_id in stage_a:
+        for unit in run.units(pass_id):
+            if run.unit_of(unit)["kind"] != "manual":
+                run.settle(pass_id, unit, _whole_review_report(unit), "write the invented standard lines")
+                continue
+            reads = reports[unit]
+            for k, (report, anomalies, ok) in enumerate(reads, 1):
+                notes = tuple(f"note 3 {pass_id} {unit} anomaly {a}" for a in anomalies)
+                if not ok:
+                    notes += (f"note 3 {pass_id} {unit} deviation the invented manual pages created 1 under the prefix, "
+                              f"reader created 0, read {k}",)
+                code, out = run.settle(pass_id, unit, report, "read the invented manual pages", notes,
+                                       result="ok" if ok else "mismatch",
+                                       fields=_REPAIR_OK if ok else "created 1 items 0 updated 0 questions 0 replied 0 sent 1 landed 1 conflicts 0")
+                if code != 0:
+                    refused.append(f"{unit} read {k}: {out}")
+            if not reads[-1][2]:
+                run.append(f"note 3 {pass_id} {unit} unread the invented manual pages read {len(reads)} times, not read again")
+        run.record(pass_id)
+    return refused
+
+
+def _three_review(run: "_RepairRun", package: str, trade: str) -> tuple[list[str], int | None, list[str]]:
+    """The review copies each section the notes script names not read or not known, with the reason
+    it prints, as its definition says; then the closing report's collection and short count."""
+    review = next(iter(run.chains()))
+    entries = []
+    for line in run.notes(review):
+        if line.startswith(("not read: 0", "not known: 0")):
+            state, rest = line.split(": ", 1)
+            entries.append(f"{rest.split(' ', 1)[0].rstrip(',')} {state}, {rest.split(', ', 1)[1]}")
+    refused = []
+    for pass_id in [p for p in run.passes() if "-M" not in p]:
+        code, out = run.settle(pass_id, review, _repair_review_report(
+            run.report_mod, review, package, trade, **{"sections not checked": "\n".join(entries) or "none"}),
+            f"review {package}")
+        if code != 0:
+            refused.append(f"{review}: {out}")
+        run.record(pass_id)
+    run.append("phase: window 3 complete")
+    report, short = run.close()
+    return _repair_collection(report), _repair_short_count(short), refused + ([] if entries else ["the notes script named no gap"])
+
+
+def _three_z1a(plugin_path: Path, root: Path) -> list[str]:
+    """One part read twice: the first read names a section `not on the package`, the second, which
+    verifies, `manual changed`. The closing report names the section once, as changed, with its
+    pages, and never the first read's reason."""
+    run = _RepairRun(plugin_path, root, "z1a", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall",
+                                                 "manualSections": ["092116", "092216"]}],
+                     [_repair_section("092116", 11, 4), _repair_section("092216", 15, 4)])
+    code, _out, err = run.plan()
+    if code != 0:
+        return [f"Z1a: the plan refused: {err}"]
+    review = next(iter(run.chains()))
+    part = next(u["id"] for u in run.chains()[review] if u["kind"] == "manual")
+    spans = run.reads(part).split("; ")
+    if len(spans) != 2:
+        return [f"Z1a: the fixture gives the part {spans}, not both sections"]
+    kept = [s for s in spans if s.startswith("092116 ")]
+    first = _repair_part_report(run, part, kept, **{"sections not checked": "092216 not on the package",
+                                                   "anomalies": "section 092216 not read: no longer on the package, run only"})
+    second = _repair_part_report(run, part, kept, **{"sections not checked": "092216 manual changed",
+                                                    "anomalies": "section 092216 not read: manual changed, run only"})
+    errors = [f"Z1a: the runner's check refuses an honest report: {r}" for r in _three_settle_parts(run, {part: [
+        (first, ("section 092216 not read: no longer on the package, run only",), False),
+        (second, ("section 092216 not read: manual changed, run only",), True)]})]
+    collection, short, refused = _three_review(run, "Invented drywall", "09 21 16")
+    errors += [f"Z1a: {r}" for r in refused]
+    named = [line for line in collection if "092216" in line]
+    if named != [_THREE_CHANGED]:
+        errors.append(f"Z1a: section 092216 is named {named}, not once as `{_THREE_CHANGED}`")
+    if any("no longer" in line for line in collection):
+        errors.append(f"Z1a: the first read's reason is still printed: {collection}")
+    if short != len(collection):
+        errors.append(f"Z1a: the short version counts {short} and the report names {len(collection)}")
+    return errors
+
+
+def _three_z1b(plugin_path: Path, root: Path) -> list[str]:
+    """Two parts of one removed section, each naming it with its own anomaly: each part's line names
+    its own pages, whether the parts' reports stand or both parts were skipped, and no sentence is
+    printed twice."""
+    errors: list[str] = []
+    for case in ("standing", "skipped"):
+        run = _RepairRun(plugin_path, root, f"z1b-{case}", [{"id": "pkg-cl", "tradeCode": "09 51 00", "name": "Invented ceilings",
+                                                              "manualSections": ["095100"]}], [_repair_section("095100", 31, 14)])
+        code, _out, err = run.plan()
+        if code != 0:
+            return errors + [f"Z1b {case}: the plan refused: {err}"]
+        review = next(iter(run.chains()))
+        parts = [u["id"] for u in run.chains()[review] if u["kind"] == "manual"]
+        if len(parts) != 2:
+            return errors + [f"Z1b {case}: the fixture plans {len(parts)} parts of the section, not two"]
+        anomaly = "section 095100 not read: manual removed, run only"
+        report = {p: _repair_part_report(run, p, [], **{"sections not checked": "095100 manual removed", "anomalies": anomaly})
+                  for p in parts}
+        reads = {p: ([(report[p], (anomaly,), True)] if case == "standing" else [(report[p], (anomaly,), False)] * 2)
+                 for p in parts}
+        errors += [f"Z1b {case}: the runner's check refuses an honest report: {r}" for r in _three_settle_parts(run, reads)]
+        collection, short, refused = _three_review(run, "Invented ceilings", "09 51 00")
+        errors += [f"Z1b {case}: {r}" for r in refused]
+        if len(set(collection)) != len(collection):
+            errors.append(f"Z1b {case}: a sentence is printed twice: {collection}")
+        pages = [tuple(int(n) for n in re.match(r"^\S+ p([0-9]+)-p([0-9]+) ", run.reads(p)).groups()) for p in parts]
+        for first, last in pages:
+            want = (f"Manual pages for Invented ceilings (section 095100, pages {first} to {last}): not read, because its "
+                    f"manual file is no longer on the project." if case == "standing" else
+                    f"Invented ceilings: section 095100 (pages {first} to {last}) not read: manual removed.")
+            if collection.count(want) != 1:
+                errors.append(f"Z1b {case}: `{want}` is not named once: {collection}")
+        if any("was not checked" in line for line in collection):
+            errors.append(f"Z1b {case}: the review's copy of the section is named again: {collection}")
+        if short != len(collection):
+            errors.append(f"Z1b {case}: the short version counts {short} and the report names {len(collection)}")
+    return errors
+
+
+def _three_z1c(plugin_path: Path, root: Path) -> list[str]:
+    """A part skipped, its reads each naming a changed section with its anomaly: the section is still
+    named, with the pages the plan gave the part, beside the skipped part, and the review's copy is
+    not named again."""
+    run = _RepairRun(plugin_path, root, "z1c", [{"id": "pkg-dw", "tradeCode": "09 21 16", "name": "Invented drywall",
+                                                 "manualSections": ["092216"]}], [_repair_section("092216", 15, 4)])
+    code, _out, err = run.plan()
+    if code != 0:
+        return [f"Z1c: the plan refused: {err}"]
+    review = next(iter(run.chains()))
+    part = next(u["id"] for u in run.chains()[review] if u["kind"] == "manual")
+    anomaly = "section 092216 not read: manual changed, run only"
+    report = _repair_part_report(run, part, [], **{"sections not checked": "092216 manual changed", "anomalies": anomaly})
+    errors = [f"Z1c: the runner's check refuses an honest report: {r}"
+              for r in _three_settle_parts(run, {part: [(report, (anomaly,), False)] * 2})]
+    collection, short, refused = _three_review(run, "Invented drywall", "09 21 16")
+    errors += [f"Z1c: {r}" for r in refused]
+    want = "Invented drywall: section 092216 (pages 15 to 18) not read: manual changed."
+    if collection.count(want) != 1:
+        errors.append(f"Z1c: the skipped part's section is not named once as `{want}`: {collection}")
+    if not any(line.startswith("Manual pages for Invented drywall (section 092216, pages 15 to 18): I read it 2 times")
+               for line in collection):
+        errors.append(f"Z1c: the skipped part is not named: {collection}")
+    if any("was not checked" in line for line in collection) or len(collection) != 2:
+        errors.append(f"Z1c: the review's copy is named again, or the report names other than the part and its section: {collection}")
+    if short != len(collection):
+        errors.append(f"Z1c: the short version counts {short} and the report names {len(collection)}")
+    return errors
+
+
+# Z2: the standard lines unit reads reader mandates 1 to 7 and 9 whole, as the reviewer does, and
+# keeps its own sentence that it raises no Question and writes nothing where a mandate would.
+_THREE_SL_READ = (
+    "find where they sit with one `Grep` on that file for `^## The mandates|^[0-9]+\\. [A-Z]`, then `Read` it from "
+    "the `## The mandates` heading to the line before mandate 8, and mandate 9 to the line before mandate 10."
+)
+_THREE_SL_OWN = (
+    "1. You raise no Question and reply to none: the mandate below says why. Where the review's mandates 2 and 4 or "
+    "the reader's mandates name a Question, you write nothing for it."
+)
+# The bounds X5 had, any of which back in the text is a passage of the reader left unread again.
+_THREE_SL_RETIRED = ("`A Question is a draft RFI`", "`answer. Never a`", "opens `NOTES.`", "`ONE ROW where`",
+                     "`NO ROW for the parts`", "but for mandate 1's Question bar")
+
+
+def _three_z2_errors(sl: str, reader: str) -> list[str]:
+    errors: list[str] = []
+    flat = _collapsed(sl)
+    if flat.count(_THREE_SL_READ) != 1:
+        errors.append("Z2: the standard lines unit does not read reader mandates 1 to 7 and 9 whole, once")
+    if _THREE_SL_OWN not in flat:
+        errors.append("Z2: the standard lines unit no longer says it raises no Question and writes nothing for one")
+    errors += [f"Z2: the standard lines unit still bounds its read at {r}" for r in _THREE_SL_RETIRED if r in flat]
+    reading, bad = _cut_reading_errors(reader, _CUT_SL_READS, {}, "the standard lines unit")
+    errors += [f"Z2: {b}" for b in bad]
+    mandate_1, bad = _cut_passage(reader, r"^1\. [A-Z]", r"^2\. [A-Z]", "reader mandate 1")
+    if bad or mandate_1 not in reading:
+        errors.append("Z2: reader mandate 1 is not whole in what the standard lines unit reads")
+    return errors
+
+
+def _three_z2(plugin_path: Path) -> list[str]:
+    agents = plugin_path / "agents"
+    sl = (agents / "scope-standard-lines.md").read_text(encoding="utf-8")
+    reader = (agents / "scope-reader.md").read_text(encoding="utf-8")
+    errors = _three_z2_errors(sl, reader)
+    broken = _cut_replaced(sl, "heading to the line before mandate 8, and mandate 9 to the line before mandate 10.",
+                           "heading to the line before the one that opens `A Question is a draft RFI`.")
+    if broken == sl or not _three_z2_errors(broken, reader):
+        errors.append("Z2: a read of reader mandate 1 cut at the Question bar passes")
+    return errors
+
+
+# Z3: the review's write bound, held to the measured run. The figures are counts taken off the
+# measured run's 61 review transcripts (citations: items of `record_batch` `citations` plus
+# `cite_source` calls; rows created: new subjects named in an accepted batch), and the bound must
+# sit at twice the p90 at least and above the small honest review Codex gave, seven rows that already
+# stood cited from nine pages each.
+_THREE_MEASURED = {"citations landed": (7, 17, 29), "citations sent": (8, 34, 53), "rows created": (4, 10, 25),
+                   "cite_source calls": (0, 0, 3)}
+_THREE_HONEST_CITATIONS = 7 * 9
+_THREE_BOUND_RE = re.compile(
+    r"rows created, ([0-9]+); citations written onto rows that already stood, in a batch or with `cite_source`, "
+    r"([0-9]+); `cite_source` calls, ([0-9]+)\.")
+
+
+def _three_z3_errors(reviewer: str) -> list[str]:
+    found = _THREE_BOUND_RE.search(_collapsed(_cut_section(reviewer, "The bounds of one review")))
+    if not found:
+        return ["Z3: the reviewer's write bound is not counted in rows created, citations written and `cite_source` calls"]
+    rows, cites, calls = (int(n) for n in found.groups())
+    errors = []
+    p90 = max(_THREE_MEASURED["citations landed"][1], _THREE_MEASURED["citations sent"][1])
+    if cites < 2 * p90 or cites <= _THREE_HONEST_CITATIONS:
+        errors.append(f"Z3: the citation bound {cites} is under twice the measured p90 ({2 * p90}) or not above an "
+                      f"honest review of {_THREE_HONEST_CITATIONS}")
+    if rows < 2 * _THREE_MEASURED["rows created"][1] or rows <= _THREE_MEASURED["rows created"][0]:
+        errors.append(f"Z3: the rows created bound {rows} is under twice the measured p90 or not above the median")
+    if calls <= _THREE_MEASURED["cite_source calls"][2]:
+        errors.append(f"Z3: the `cite_source` bound {calls} is not above the measured largest review")
+    return errors
+
+
+def _three_z3(plugin_path: Path) -> list[str]:
+    reviewer = (plugin_path / "agents" / "scope-reviewer.md").read_text(encoding="utf-8")
+    errors = _three_z3_errors(reviewer)
+    for label, old, new in (("a citation bound of 60", "with `cite_source`, 80;", "with `cite_source`, 60;"),
+                            ("a citation bound at the honest review", "with `cite_source`, 80;", "with `cite_source`, 63;")):
+        broken = _cut_replaced(reviewer, old, new)
+        if broken == reviewer or not _three_z3_errors(broken):
+            errors.append(f"Z3: {label} passes")
+    return errors
+
+
+# Z4: every Grep pattern a shipped agent or skill tells an agent to run, found where the text says
+# `Grep` ... for `<pattern>`, held to this table (both ways) and to the files the agent runs it on.
+# A pattern that uses `$` is refused by name, and every branch of every pattern must match the same
+# lines of its target file with LF endings and with a carriage return before each line's end, as a
+# Windows checkout writes them and ripgrep reads them.
+_THREE_MANDATES_GREP = r"^## The mandates|^[0-9]+\. [A-Z]"
+_THREE_GREPS: dict[str, dict[str, tuple[str, ...]]] = {
+    "scope-reviewer.md": {_THREE_MANDATES_GREP: ("scope-reader.md",)},
+    "scope-manual-reader.md": {
+        _THREE_MANDATES_GREP: ("scope-reader.md", "scope-reviewer.md"),
+        r"^   (What is yours is the trade|- WORK THE MANUAL NEVER NAMES\.|- NEVER A GC MATTER)": ("scope-reviewer.md",),
+        r"^    - A row the sheets and the manual both define\.|^    Name each subject you compared": ("scope-reviewer.md",),
+        r"^    - The row's name\.|^    - No note\.": ("scope-standard-lines.md",),
+        r"^`not written:` names every requirement|^The `updated subjects:`, `questions raised ids:`": ("scope-reviewer.md",),
+    },
+    "scope-standard-lines.md": {
+        _THREE_MANDATES_GREP: ("scope-reader.md", "scope-reviewer.md"),
+        r"^`not written:` names every requirement|^The `updated subjects:`, `questions raised ids:`": ("scope-reviewer.md",),
+    },
+}
+_THREE_GREP_RE = re.compile(r"`Grep`[^.]*?\bfor\s+(``.+?``|`[^`\n]+`)", re.S)
+
+
+def _three_greps_in(text: str) -> list[str]:
+    """Each pattern a text tells an agent to give the Grep tool, as the agent passes it."""
+    out = []
+    for found in _THREE_GREP_RE.finditer(text):
+        span = found.group(1)
+        out.append(span[2:-2].strip(" ") if span.startswith("``") else span[1:-1])
+    return out
+
+
+def _three_branches(pattern: str) -> list[str]:
+    """A pattern's branches: its top-level alternatives, each group of alternatives in it expanded."""
+    def split(text: str) -> list[str]:
+        parts, depth, start, i = [], 0, 0, 0
+        while i < len(text):
+            if text[i] == "\\":
+                i += 2
+                continue
+            depth += {"(": 1, ")": -1}.get(text[i], 0)
+            if text[i] == "|" and depth == 0:
+                parts.append(text[start:i])
+                start = i + 1
+            i += 1
+        return parts + [text[start:]]
+    out = []
+    for branch in split(pattern):
+        group = re.search(r"(?<!\\)\((.*)(?<!\\)\)", branch)
+        if group and "|" in group.group(1):
+            out += [branch[:group.start()] + alt + branch[group.end():] for alt in split(group.group(1))]
+        else:
+            out.append(branch)
+    return out
+
+
+def _three_z4_errors(texts: dict[str, str], shipped: dict[str, str]) -> list[str]:
+    errors: list[str] = []
+    for name, text in shipped.items():
+        found = _three_greps_in(text)
+        table = _THREE_GREPS.get(name, {})
+        errors += [f"Z4: {name} gives the Grep pattern `{p}`, which uses `$`" for p in found if re.search(r"(?<!\\)\$", p)]
+        errors += [f"Z4: {name} tells an agent to run the Grep pattern `{p}`, which the table does not hold"
+                   for p in found if p not in table]
+        errors += [f"Z4: {name} no longer gives the Grep pattern `{p}` the table holds" for p in table if p not in found]
+    for name, table in _THREE_GREPS.items():
+        for pattern, targets in table.items():
+            for target in targets:
+                lines = texts[target].split("\n")
+                for branch in _three_branches(pattern):
+                    lf = [i for i, line in enumerate(lines) if re.search(branch, line)]
+                    crlf = [i for i, line in enumerate(lines) if re.search(branch, line + "\r")]
+                    if not lf or lf != crlf:
+                        errors.append(f"Z4: `{branch}` of {name}'s pattern matches {len(lf)} lines of {target} with LF "
+                                      f"endings and {len(crlf)} with CRLF")
+    return errors
+
+
+def _three_shipped(plugin_path: Path) -> dict[str, str]:
+    """Every shipped agent definition and skill text, by file name (a skill's by its path)."""
+    out = {p.name: p.read_text(encoding="utf-8") for p in sorted((plugin_path / "agents").glob("*.md"))}
+    for p in sorted((plugin_path / "skills").rglob("*.md")):
+        out[p.relative_to(plugin_path / "skills").as_posix()] = p.read_text(encoding="utf-8")
+    return out
+
+
+def _three_z4(plugin_path: Path) -> list[str]:
+    shipped = _three_shipped(plugin_path)
+    errors = _three_z4_errors(shipped, shipped)
+    sl = shipped["scope-standard-lines.md"]
+    breaks = {
+        "a pattern ending an alternative with `$`": dict(shipped, **{"scope-standard-lines.md": sl.replace(
+            "for `^## The mandates|^[0-9]+\\. [A-Z]`", "for `^## The mandates|^[0-9]+\\. [A-Z]$`", 1)}),
+        "a pattern the table does not hold": dict(shipped, **{"scope-standard-lines.md": sl.replace(
+            "for `^## The mandates|^[0-9]+\\. [A-Z]`", "for `^## The mandates|^[0-9]+\\. [A-Z]|^   NOTES\\. `", 1)}),
+        "a bound line its pattern no longer finds": dict(shipped, **{"scope-reviewer.md": shipped["scope-reviewer.md"].replace(
+            "\n    - A row the sheets and the manual both define.", "\n    - A row the sheets and the manual both define", 1)}),
+    }
+    for label, broken in breaks.items():
+        if broken == shipped or not _three_z4_errors(broken, broken):
+            errors.append(f"Z4: {label} passes")
+    # The old pattern, which ended an alternative with `$`, matched its line with LF endings and none with CRLF.
+    old = r"^   answer\. Never a$"
+    lines = shipped["scope-reader.md"].split("\n")
+    if sum(bool(re.search(old, l)) for l in lines) != 1 or any(re.search(old, l + "\r") for l in lines):
+        errors.append("Z4: the arm's CRLF reading does not show the old pattern's failure")
+    return errors
+
+
+def check_slim_review_repair_3(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "slim-review-repair-3"
+    errors: list[str] = []
+    root = Path(__file__).parent / ".test-results" / "slim-review-repair-3"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    arms = (
+        ("Z1a", lambda: _three_z1a(plugin_path, root)),
+        ("Z1b", lambda: _three_z1b(plugin_path, root)),
+        ("Z1c", lambda: _three_z1c(plugin_path, root)),
+        ("Z2", lambda: _three_z2(plugin_path)),
+        ("Z3", lambda: _three_z3(plugin_path)),
+        ("Z4", lambda: _three_z4(plugin_path)),
+    )
+    for label, arm in arms:
+        try:
+            errors += arm()
+        except Exception as e:
+            errors.append(f"{label}: the arm raised {type(e).__name__}: {e}")
+    detail = (
+        "Z1a a part read twice, `not on the package` then `manual changed` on the read that verified, named once as "
+        "changed with its pages and the review's copy not again; Z1b two parts of one removed section, their reports "
+        "standing and both skipped, each named with its own pages and no sentence twice; Z1c a skipped part's section "
+        "named off its anomaly with the plan's pages; Z2 the standard lines unit reading reader mandates 1 to 7 and 9 "
+        "whole, mandate 1 among them, and keeping its sentence that it raises no Question, a read cut at the Question "
+        "bar refused; Z3 the review's citation bound at twice the measured p90 or more and above an honest review of "
+        f"{_THREE_HONEST_CITATIONS}, its rows and `cite_source` bounds above the measured run, two lower bounds refused; Z4 "
+        f"{sum(len(t) for t in _THREE_GREPS.values())} Grep patterns the shipped texts give, found in the text and held "
+        "to the table both ways, none using `$`, every branch matching the same lines of its file with LF and CRLF "
+        "endings, three breaks refused; bound: invented run folders and the definitions' text, not a live run"
+    )
+    return Result(name, not errors, detail=detail + ("" if not errors else " | " + "; ".join(errors)))
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -21569,6 +24055,11 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_failed_unit(plugin_path, marketplace_root),
         check_closing_report(plugin_path, marketplace_root),
         check_no_stops_repair(plugin_path, marketplace_root),
+        check_slim_review(plugin_path, marketplace_root),
+        check_slim_review_repair(plugin_path, marketplace_root),
+        check_review_size_cuts(plugin_path, marketplace_root),
+        check_slim_review_repair_2(plugin_path, marketplace_root),
+        check_slim_review_repair_3(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

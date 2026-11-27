@@ -127,11 +127,13 @@ The three windows, and what each selects:
      `plan/window-2.json` beside window 1's file: the unit ids it assigned, each `--only` pattern
      with its reason and the unit keys it selected, the read-earlier keys in `readEarlierKeys`,
      and the deferred unit keys with their count.
-  3  one review per package, in package order, with the packages of one trade kept together, and
-     up to REVIEWS_PER_PASS reviews to a pass, or one trade's reviews together where that trade
-     has more, and at most REVIEW_PASS_UNITS units to a pass, continuations included (below). It
-     reads no sheets, so it takes no inventory, and it writes `plan/window-3.json`, each review's
-     unit id with the package it is bound to. In a pass on an addendum, whose `run.json` reads
+  3  two stages. Stage A is each package's manual parts in order, then its standard lines unit,
+     in passes of at most REVIEW_PASS_UNITS units. Stage B is one review per package, in package
+     order, the packages of one trade kept together, up to REVIEWS_PER_PASS reviews to a pass or
+     one trade's reviews together where that trade has more, with the general requirements
+     package's review alone in the first pass (below). It reads no sheets, so it takes no
+     inventory, and it writes `plan/window-3.json`, each review's unit id with the package it is
+     bound to, and each package's chain of stage A units. In a pass on an addendum, whose `run.json` reads
      `issue: "addendum"`, it reads the pass's own
      `trades/` files beside the plan and plans only the packages covering a trade the pass wrote on, a
      row it created, updated or cited or a Question it raised, naming every other package as left
@@ -298,10 +300,11 @@ Which passes wait, in every window:
   discipline, so a folded pass carrying several applies it for each, and the parts in plan order
   say which pass is earlier. A settled unit, verified or skipped, holds nothing back, so a resumed
   plan waits on no work already read and a skipped sheet never holds its discipline back. A sheet a slice deferred is in no pass, so it holds nothing back either. A repeated
-  lines pass waits for nothing and nothing waits for it. A window 3 pass of reviews reads
-  `starts after: none`, since no two of them share a trade; a pass of manual parts carried out of
-  a full pass waits for each earlier pass holding a unit its parts read on after or a unit of a
-  trade it holds, so no two passes of one trade run at once (below).
+  lines pass waits for nothing and nothing waits for it. In window 3 a stage A pass waits for
+  nothing, or, where one trade's chains take more than one pass, for the pass of that trade before
+  it; every stage B pass waits for every stage A pass, and every stage B pass after the first
+  waits for the first too, so the general requirements review is settled before any other review
+  starts (below).
 
   A pass waits only on passes before it in plan order, so the waits cannot cycle: the first pass
   not finished always has every pass it waits on finished, and the lead's listing can always start
@@ -327,82 +330,80 @@ Reviews to a pass, in window 3:
   gone is retired, and a package it does not name is numbered past every number its trade carried
   there or on the ledger. Only a folder with no read plan at all, a first plan, numbers each
   trade's packages from 1 in package order. Ids are bound over the whole packages list
-  before an addendum's filter. The reviews kept are walked in package order, every review of one
-  folded trade code together, and put into passes of up to REVIEWS_PER_PASS: a trade's reviews go
-  into the pass being built where they fit beside what it holds, and start the next pass where
-  they do not. A trade's reviews are never split, so no two passes of reviews share a trade and
-  none waits on another; a trade with more reviews than REVIEWS_PER_PASS is a pass of its own, and
-  one with more packages than REVIEW_PASS_UNITS is refused by name, since no runner supervises more
-  in window 3.
-  The passes are numbered `W3-<n>` under the unit tag in plan order. Nothing about the grouping is
-  stored but the pass each carried manual part went to (below), so a package added or deleted
-  can move reviews between passes, and `summed:` reads no on each pass whose reviews changed.
+  before an addendum's filter.
 
-Manual parts, in window 3:
+  The general requirements package, trade GENERAL_REQUIREMENTS_CODE, has its review alone in pass
+  `W3-1`. The other reviews kept are walked in package order, every review of one folded trade
+  code together, and put into passes of up to REVIEWS_PER_PASS: a trade's reviews go into the
+  pass being built where they fit beside what it holds, and start the next pass where they do
+  not. A trade's reviews are never split; a trade with more reviews than REVIEWS_PER_PASS is a
+  pass of its own, and one with more packages than REVIEW_PASS_UNITS is refused by name, since no
+  runner supervises more in window 3. The passes are numbered `W3-<n>` under the unit tag in plan
+  order. A review's unit line names its package and its trade and no manual page:
+
+      1. rev-092116-1: Drywall, trade 09 21 16, package pkg-4c1e
+
+Manual parts and standard lines, in window 3 stage A:
 
   Window 3 plans every page of each package's manual sections before any review runs. The lead
   copies a `list_spec_sections` answer, with no section filter, to `plan/spec-sections.json`, and
   the plan reads it through `--sections`: each section's file and first and last page, as the
   record stands. An answer reading `truncated: true` is refused, since a section missing from it
   may be on the record. `manual_parts.py` divides each package's sections, in its `manualSections`
-  order: the review reads whole sections up to manual_parts.REVIEW_PAGES pages, and the pages
-  after go to manual parts of up to manual_parts.PART_PAGES pages each. A section that fits a unit
-  is never split; one longer than a unit is split at a page, and a unit that starts partway into a
-  section keeps room for the section's opening pages, which its reader reads first. A section the
-  package lists that has no page range, or that the record does not carry, is read by no unit and
-  is named under `## Manual sections not read` with its reason, and in `omissions` in the plan file.
+  order, into manual parts of up to manual_parts.PART_PAGES pages each. A section that fits a part
+  is never split; one longer than a part is split at a page, and a part that starts partway into a
+  section keeps room for the section's opening pages, which its reader reads first.
 
-  A manual part is a unit of its own, `<review id>c-<n>`, so `rev-230000-1` is followed by
-  `rev-230000-1c-1`, then `rev-230000-1c-2`. No such id is a subject prefix of another review's or
-  another part's. The plan file keeps each review's spans on its `units` entry and each part under
-  `continuations`, with its package, its review, the unit it reads on after and each span: the
-  section's code, its file, the first and last page the part reads and the section's own first and
-  last page. Each unit line names its spans, so the runner copies them into the dispatch:
+  A manual part is a unit of its own, `<review id>c-<n>`, numbered from 1 in the package's order,
+  and each package then has one standard lines unit, `<review id>s-1`, which writes the package's
+  standard lines once its parts are settled. No such id is a subject prefix of another unit's.
+  A package's chain is its parts in order and its standard lines unit last; a package with no
+  manual page has a chain of its standard lines unit alone. Each unit line names the unit it
+  reads on after, `none` for a chain's first, and a part's line names its spans, so the runner
+  copies them into the dispatch:
 
-      1. rev-230000-1: HVAC, trade 23 00 00, reads 230000 p880-p899 of file-1a2b (section p880-p907), package pkg-4c1e
-      2. rev-230000-1c-1: HVAC, trade 23 00 00, package pkg-4c1e, manual part after rev-230000-1, reads 230000 p900-p907 of file-1a2b (section p880-p907)
+      1. rev-230000-1c-1: HVAC, trade 23 00 00, package pkg-4c1e, manual part after none, reads 230000 p880-p889 of file-1a2b (section p880-p907)
+      2. rev-230000-1c-2: HVAC, trade 23 00 00, package pkg-4c1e, manual part after rev-230000-1c-1, reads 230000 p890-p899 of file-1a2b (section p880-p907)
+      ...
+      4. rev-230000-1s-1: HVAC, trade 23 00 00, package pkg-4c1e, standard lines after rev-230000-1c-3
 
-  A part's unit line follows the unit it reads on after, in the same pass, and counts against the
-  REVIEW_PASS_UNITS units a pass holds, so a pass carrying parts takes in another trade's reviews
-  only while it stays at REVIEW_PASS_UNITS.
+  The plan file keeps each chain under `chains`, with its review, its package and each unit: its
+  id, its kind and, for a part, each span, the section's code, its file, the first and last page
+  the part reads and the section's own first and last page. The file carries `format` 2.
 
-  A unit the ledger dispatched keeps the spans it was dispatched with on every later plan run, so
-  no reader is sent for pages that change under it. Its pages count as read where its section
-  still sits on the same file and range, and the planner divides only the pages left. A
-  dispatched part whose section moved since is retired to `retiredParts` and its pages planned
-  again under a new number. A part planned and not yet dispatched keeps its id where its spans
-  come out the same, and every new part takes the next number past every number its review's
-  parts carry in the plan file or on the ledger, so no id is handed out twice. A plan file holding
-  a continuation a review's report bound, from a plugin before parts were planned, is refused:
-  that folder's window 3 finishes on that plugin, or is planned again from a fresh plan file.
+  Chains are packed into passes by trade: each trade's chains together, the trade with the most
+  units first and ties in package order, each trade into the first pass with room for it, at most
+  REVIEW_PASS_UNITS units to a pass. A trade with more units than one pass holds takes passes of
+  its own, `W3-M<n>`, then `W3-M<n>b`, `W3-M<n>c` and on, each waiting for the one before it, so a
+  chain read across them stays in order. The passes are numbered `W3-M<n>` under the unit tag.
 
-  A trade's reviews and their parts that come to more than REVIEW_PASS_UNITS units go to a pass
-  of manual parts instead: the pass's own id with a letter after it, `i1-W3-3b`, then `i1-W3-3c`
-  once that one holds REVIEW_PASS_UNITS, the part planned last first. Its block goes after the
-  pass the part's review sits in, with `starts after:` naming each earlier pass holding a unit its
-  parts read on after or a unit of a trade it holds, so the lead starts it once those passes are
-  finished. The plan file writes the pass as the entry's `pass`, and every later plan run puts the
-  entry there. Only where every letter is taken is a part refused, with the runner's note for each
-  section left, `note 3 <pass id> <unit id> unread section <code> pages <a> to <b> left, no pass
-  can take its manual part`, for the lead to append.
+  The manual plan is made once. Until the ledger holds a window 3 `dispatch` line, every plan run
+  divides the manual afresh. From the first such line on, the chains come off the plan file and a
+  replan adds, moves and divides no manual page, so a second plan with nothing changed writes the
+  same bytes. What changed since is named under `## Manual sections not read` with its reason,
+  and in `notRead` in the plan file:
 
-  A replan plans no unit of a package its packages list no longer carries, its parts included. So
-  a replan whose list dropped a package with manual pages still owed a read, its review's or a
-  part's, planned and not verified, is refused in one line naming each section, its pages and the
-  package, and giving the note that records it unread, which the close-out names:
+      no page range, not on the record          a section a package lists with nothing to read
+      added to the package after the manual reading was planned
+                                                a section a package took after the freeze, and
+                                                every section of a package added after it, whose
+                                                chain is its standard lines unit alone
+      its package was deleted                   the pages of a deleted package's parts not
+                                                verified, listed by part
+      its manual part was read twice and not confirmed
+                                                the pages of a skipped part, listed by part
 
-      note 3 <pass id> <unit id> unread section <code> pages <a> to <b> left, its package was deleted
+  A deleted package's units are planned no more, and nothing is refused for them. A folder
+  whose ledger holds a window 3 `dispatch` line and whose plan file carries no `format` 2 was
+  started under an earlier plugin, and its plan is refused in one line.
 
-  The lead lists the package again, or appends that note to the ledger and plans again; a section
-  the ledger carries an `unread section` note for, under the unit that owed it, refuses nothing.
-
-  Every window 3 plan run holds `plan/window-3.lock` in the run folder from its first read of the
-  plan file to its last write, reads everything and makes every check before it writes anything,
-  and writes each file through a temporary file of its own name. The operating system holds the
-  lock for the process and lets it go when that process ends, however it ends, so a session
-  stopped while holding it stops no later run: the next run takes it over at once and says so in
-  one line on stderr, naming the process that held it. A lock a live run holds past the wait is
-  refused.
+Every window 3 plan run holds `plan/window-3.lock` in the run folder from its first read of the
+plan file to its last write, reads everything and makes every check before it writes anything,
+and writes each file through a temporary file of its own name. The operating system holds the
+lock for the process and lets it go when that process ends, however it ends, so a session
+stopped while holding it stops no later run: the next run takes it over at once and says so in
+one line on stderr, naming the process that held it. A lock a live run holds past the wait is
+refused.
 
 Usage:
 
@@ -483,14 +484,12 @@ Exit codes:
      grid row with no `pageOccurrences` list, a list naming no page or more than one as the row's
      own, an own page that is not the row's file and page, a page with no `deliveryId` field or one
      that is neither null nor a delivery id, a further page with no file, key or page, one file and
-     page listed twice, and a further page that is already another row's page. Seven are about the
+     page listed twice, and a further page that is already another row's page. Six are about the
      manual: no `--sections`, a section list that is truncated or not one `list_spec_sections`
      wrote, one listing a section twice, a package whose `manualSections` is not a list of section
-     numbers, a `continuations` entry that is malformed, binds one id twice or was bound by a
-     review's report before parts were planned, a pass holding REVIEW_PASS_UNITS units with no
-     letter left for a pass of manual parts after it, and a replan whose packages list dropped a
-     package with manual pages still owed a read and no `unread section` note for them. The last
-     is the run folder's lock a live run holds past the wait.
+     numbers, a `chains` entry that is malformed, binds one id twice or plans one page for two
+     parts, and a window 3 started under an earlier plugin, whose plan file carries no format 2.
+     The last is the run folder's lock a live run holds past the wait.
   2  argparse rejected the invocation.
 
 Grounding role: reads files and copies byte values. A file that does not parse whole is a refusal,
@@ -502,6 +501,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import fnmatch
+import itertools
 import json
 import math
 import os
@@ -647,6 +647,27 @@ REVIEW_PASS_UNITS = 10
 
 # A manual part's unit line names the unit it reads on after, then its spans.
 CONTINUES_MARK = ", manual part after "
+# What a window 3 unit line carries where the unit is its package's standard lines unit.
+STANDARD_LINES_MARK = ", standard lines after "
+# The unit a chain's first unit reads on after: none, since the review comes after the chain.
+AFTER_NONE = "none"
+# The kinds of window 3 unit, as the plan file and the plan's unit lines name them.
+MANUAL_KIND = "manual"
+STANDARD_LINES_KIND = "standard lines"
+REVIEW_KIND = "review"
+# A package's standard lines unit, after its review's id.
+STANDARD_LINES_SUFFIX = "s-1"
+# What each stage's passes read for, on their `reads for:` line.
+STAGE_A_READS_FOR = "manual parts and standard lines"
+STAGE_B_READS_FOR = "package reviews"
+# The general requirements package's trade, whose review runs alone in the first pass of stage B.
+GENERAL_REQUIREMENTS_CODE = "01 11 13"
+# The plan file format this plugin writes; a window 3 started under another is not resumed.
+WINDOW_3_FORMAT = 2
+# Why a section, or a run of its pages, is read by no unit, beyond what manual_parts names.
+NOT_READ_ADDED = "added to the package after the manual reading was planned"
+NOT_READ_DELETED = "its package was deleted"
+NOT_READ_SKIPPED = "its manual part was read twice and not confirmed"
 # The letters a pass of manual parts takes after the id of the pass that had no room for them:
 # `i1-W3-3` full carries into `i1-W3-3b`, that one full into `i1-W3-3c`. A plain window 3 pass id
 # ends in its number, so no letter here makes the id of another plain pass.
@@ -2406,18 +2427,15 @@ def _starts_after(
     Per discipline, a pass waits for an earlier pass holding a unit not yet verified of a lower
     class than the highest class among its own units not yet verified. A repeated lines pass, and
     every pass of window 3, is left out of the rule on both sides. A window 3 pass waits instead
-    by `_window_3_waits`, which only a pass of continuations does.
+    on the passes `_window_3` gave it: a stage A pass on the pass of its trade before it, and a
+    stage B pass on every stage A pass and on the general requirements review's pass.
     """
     waits: dict[str, list[str]] = {_host(runner_pass)["id"]: [] for runner_pass in runner_passes}
     if window == 3:
-        found = _window_3_waits([
-            (
-                _host(runner_pass)["id"],
-                [(unit["id"], unit.get("continues"), unit["tradeKey"]) for part in runner_pass for unit in part["units"]],
-            )
+        return {
+            _host(runner_pass)["id"]: ", ".join(_host(runner_pass)["pass"]["waits"]) or "none"
             for runner_pass in runner_passes
-        ])
-        return {pass_id: ", ".join(found[pass_id]) or "none" for pass_id in waits}
+        }
     # Each discipline's earlier passes, each with the lowest class it still holds.
     earlier: dict[str, list[tuple[str, int]]] = {}
     for runner_pass in runner_passes:
@@ -2439,26 +2457,6 @@ def _starts_after(
         for discipline, classes in held.items():
             earlier.setdefault(discipline, []).append((pass_id, min(classes)))
     return {pass_id: ", ".join(gates) or "none" for pass_id, gates in waits.items()}
-
-
-def _window_3_waits(passes: list[tuple[str, list[tuple[str, str | None, str]]]]) -> dict[str, list[str]]:
-    """
-    The passes each window 3 pass waits for, in plan order, off `passes` in plan order, each its
-    pass id and its units as (unit id, the unit it continues or None, folded trade code). A pass
-    waits for each earlier pass holding a unit one of its units continues, and for each earlier
-    pass holding a unit of a trade it holds, so no two passes of one trade run at once: passes of
-    reviews never share a trade, and each pass of continuations comes after the pass of reviews of
-    every trade it holds. Only an earlier pass is ever waited on, so the waits cannot cycle.
-    """
-    waits: dict[str, list[str]] = {}
-    for index, (pass_id, units) in enumerate(passes):
-        continued = {continues for _unit, continues, _trade in units if continues}
-        trades = {trade for _unit, _continues, trade in units}
-        waits[pass_id] = [
-            other for other, others in passes[:index]
-            if any(unit in continued or trade in trades for unit, _continues, trade in others)
-        ]
-    return waits
 
 
 def _unit_line(label: str, row: dict, show_file: bool) -> str:
@@ -2485,18 +2483,20 @@ def _unit_line(label: str, row: dict, show_file: bool) -> str:
     return f"{label}. {row['sheetNumber']}, {where}: {title}"
 
 
-def _review_line(number: int, review: dict, review_spans: dict[str, list[dict]]) -> str:
+def _review_line(number: int, unit: dict) -> str:
     """
-    A window 3 unit is a review of a package or a manual part after it, not a sheet. It names the
-    trade, the package and the manual pages the runner puts in that unit's dispatch: a review's
-    `reads` clause before its package, so a read plan's package binding still ends its line, and a
-    manual part's after the unit it reads on after.
+    A window 3 unit is a package's manual part, its standard lines unit or its review, not a sheet.
+    Each names the package's trade and the package. A manual part names the unit it reads on after,
+    `none` for its chain's first, and the manual pages the runner puts in its dispatch; a standard
+    lines unit the unit it comes after; a review nothing more, since it reads no manual page.
     """
-    package_id = _text(review["package"].get("id")) or "(no id)"
-    line = f"{number}. {review['id']}: {review['name']}, trade {review['tradeCode']}"
-    if review.get("continues"):
-        return line + f", package {package_id}" + _continues_clause(review["continues"], review["sections"])
-    return line + _reads_clause(review_spans.get(review["id"], [])) + f", package {package_id}"
+    package_id = _text(unit["package"].get("id")) or "(no id)"
+    line = f"{number}. {unit['id']}: {unit['name']}, trade {unit['tradeCode']}, package {package_id}"
+    if unit.get("kind") == MANUAL_KIND:
+        return line + _continues_clause(unit["continues"] or AFTER_NONE, unit["sections"])
+    if unit.get("kind") == STANDARD_LINES_KIND:
+        return line + STANDARD_LINES_MARK + (unit["continues"] or AFTER_NONE)
+    return line
 
 
 READS_MARK = ", reads "
@@ -2834,76 +2834,88 @@ def _read_window_3_file(path: Path) -> list[tuple[str, str]] | None:
     return pairs
 
 
-def _read_window_3_continuations(path: Path) -> list[dict]:
+def _read_window_3_plan_file(path: Path) -> dict | None:
     """
-    The manual parts the last window 3 plan run planned, in chain order, or none where the file is
-    absent or names none. Each entry names its unit id, its package, the review it belongs to, the
-    unit it reads on after (`continues`), each span it reads (`sections`, the section's code, file,
-    first and last page read, and the section's own first page), and, where its review's pass had no
-    room for it, the pass of manual parts it was carried into as `pass`. One id twice, an id a review
-    holds, or one page of a section planned for two parts of one review is a refusal: each would
-    point a record prefix, or a section's pages, at two units. Two packages that share a section
-    each plan its pages for their own share, so their parts may read the same page. An entry a review's report bound after the review
-    ran, as plugins before manual parts did, carries no `planned` and is refused: that folder's
-    window 3 resumes on the plugin that planned it, or is planned again from a fresh plan file.
+    The window 3 plan file as this plugin writes it, or None where it is absent. A file that is not
+    a window 3 file is refused. Its `format` says which plugin wrote it: a file of WINDOW_3_FORMAT
+    carries the manual plan the first window 3 dispatch froze, its `chains`; any other file carries
+    the review ids alone that this plugin still reads, and no manual plan it can resume.
     """
     if not path.is_file():
-        return []
+        return None
     data = _read_json(path, "the window 3 plan file")
     if not isinstance(data, dict) or data.get("window") != 3:
         raise PlanError(f"{path} is not a window 3 file written by this script")
-    entries = data.get("continuations", [])
-    if not isinstance(entries, list):
-        raise PlanError(f"{path}: `continuations` is not a list")
+    return data
+
+
+def _read_window_3_chains(path: Path, data: dict) -> list[dict]:
+    """
+    Each package's stage A chain the plan file holds, in its order: the review it belongs to, its
+    package, and its units, each manual part with the spans it reads and last the standard lines
+    unit. A chain is refused where it is malformed, holds an id twice or a review's own id, names a
+    unit off its review's numbering, puts the standard lines unit anywhere but last, or plans one
+    page of a section for two of its parts.
+    """
+    chains = data.get("chains")
+    if not isinstance(chains, list):
+        raise PlanError(f"{path}: `chains` is not a list of stage A chains")
     review_ids = {
         entry.get("id") for field in ("units", "retired") for entry in data.get(field) or []
         if isinstance(entry, dict)
     }
+    seen: set[str] = set()
     out: list[dict] = []
-    for index, entry in enumerate(entries, 1):
-        where = f"{path}: `continuations` entry {index}"
-        if not isinstance(entry, dict):
+    for index, chain in enumerate(chains, 1):
+        where = f"{path}: `chains` entry {index}"
+        if not isinstance(chain, dict):
             raise PlanError(f"{where} is not an object")
-        if entry.get("planned") is not True:
-            raise PlanError(
-                f"{where} is a continuation a review's report bound, from a plugin before manual parts "
-                f"were planned; finish this run's window 3 on that plugin, or move {path} aside and "
-                f"plan window 3 again, which plans every package's manual pages afresh"
-            )
-        for field in ("id", "review", "continues"):
-            if not isinstance(entry.get(field), str) or _parse_unit_id(entry[field]) is None:
-                raise PlanError(f"{where} carries no `{field}` of the shape <pass>-<number>")
-        if not isinstance(entry.get("packageId"), str) or not entry["packageId"]:
+        review = chain.get("review")
+        if not isinstance(review, str) or _parse_unit_id(review) is None:
+            raise PlanError(f"{where} carries no `review` of the shape <pass>-<number>")
+        if not isinstance(chain.get("packageId"), str) or not chain["packageId"]:
             raise PlanError(f"{where} carries no `packageId`")
-        sections = entry.get("sections")
-        unread = entry.get("unread", [])
-        if not isinstance(sections, list) or not isinstance(unread, list) or not (sections or unread):
-            raise PlanError(f"{where} carries no `sections`")
-        for section in [*sections, *unread]:
-            if not _is_span(section):
-                raise PlanError(
-                    f"{where} carries a span that is not a section's code, its file, the first and last "
-                    f"page read and the section's own first and last page"
-                )
-        carried = entry.get("pass")
-        if carried is not None and (not isinstance(carried, str) or not re.fullmatch(r"\S+", carried)):
-            raise PlanError(f"{where} carries a `pass` that is not a pass id")
-        if entry["id"] in review_ids:
-            raise PlanError(f"{where}: {entry['id']} is a review's own unit id")
-        for other in out:
-            if other["id"] == entry["id"]:
-                raise PlanError(f"{where}: {entry['id']} is bound twice")
-            if other["review"] != entry["review"]:
-                # Two packages sharing a section each read it for their own share.
-                continue
-            for mine in entry["sections"]:
-                clash = next((theirs for theirs in other["sections"] if _spans_overlap(mine, theirs)), None)
-                if clash is not None:
+        units = chain.get("units")
+        if not isinstance(units, list) or not units:
+            raise PlanError(f"{where} carries no `units`")
+        for position, unit in enumerate(units):
+            if not isinstance(unit, dict) or unit.get("kind") not in (MANUAL_KIND, STANDARD_LINES_KIND):
+                raise PlanError(f"{where}: unit {position + 1} is no manual part and no standard lines unit")
+            unit_id = unit.get("id")
+            last = position == len(units) - 1
+            if unit["kind"] == STANDARD_LINES_KIND:
+                if unit_id != f"{review}{STANDARD_LINES_SUFFIX}" or not last:
                     raise PlanError(
-                        f"{where}: section {mine['code']} pages {max(mine['fromPage'], clash['fromPage'])} "
-                        f"to {min(mine['toPage'], clash['toPage'])} are planned for {other['id']} and {entry['id']}"
+                        f"{where}: unit {position + 1} is a standard lines unit that is not "
+                        f"{review}{STANDARD_LINES_SUFFIX} last in its chain"
                     )
-        out.append(entry)
+            else:
+                if not isinstance(unit_id, str) or re.fullmatch(re.escape(review) + r"c-[1-9][0-9]*", unit_id) is None:
+                    raise PlanError(f"{where}: unit {position + 1} carries no manual part id of {review}")
+                sections = unit.get("sections")
+                if not isinstance(sections, list) or not sections or not all(_is_span(span) for span in sections):
+                    raise PlanError(
+                        f"{where}: part {unit_id} carries a span that is not a section's code, its file, "
+                        f"the first and last page read and the section's own first and last page"
+                    )
+            if last and unit["kind"] != STANDARD_LINES_KIND:
+                raise PlanError(f"{where} ends with no standard lines unit")
+            if unit_id in seen or unit_id in review_ids:
+                raise PlanError(f"{where}: {unit_id} is bound twice")
+            seen.add(unit_id)
+        parts = [unit for unit in units if unit["kind"] == MANUAL_KIND]
+        for at, part in enumerate(parts):
+            for other in parts[:at]:
+                for mine in part["sections"]:
+                    clash = next((theirs for theirs in other["sections"] if _spans_overlap(mine, theirs)), None)
+                    if clash is not None:
+                        raise PlanError(
+                            f"{where}: section {mine['code']} pages {max(mine['fromPage'], clash['fromPage'])} "
+                            f"to {min(mine['toPage'], clash['toPage'])} are planned for {other['id']} and {part['id']}"
+                        )
+        out.append(chain)
+    if len({chain["packageId"] for chain in out}) != len(out):
+        raise PlanError(f"{path}: `chains` holds two chains of one package")
     return out
 
 
@@ -2970,7 +2982,7 @@ def _read_plan_window_3_bindings(path: Path) -> list[tuple[str, str]] | None:
         # A continuation reads for its review's package and is bound in the plan file alone.
         units = [
             m for m in (_READ_PLAN_REVIEW_RE.match(line) for line in lines)
-            if m is not None and CONTINUES_MARK not in m.group(0)
+            if m is not None and CONTINUES_MARK not in m.group(0) and STANDARD_LINES_MARK not in m.group(0)
         ]
         for match in units:
             package_id = match.group("package") or (block_package if len(units) == 1 else None)
@@ -3032,43 +3044,6 @@ def _bind_review_ids(
     return ids, retired
 
 
-def _read_window_3_manual(path: Path) -> dict:
-    """
-    What the window 3 plan runs planned for the manual: each review's spans (`reviewSpans`, by
-    review id, every review any plan run planned, so a package left out of one run or deleted and
-    listed again keeps the pages its review was dispatched with), and the manual parts retired
-    (`retiredParts`) and the highest part number each review has carried (`partNumbers`), so no
-    part id is handed out twice. None of it where the file is absent or was written before manual
-    parts were planned.
-    """
-    empty: dict = {"reviewSpans": {}, "retiredParts": [], "partNumbers": {}}
-    if not path.is_file():
-        return empty
-    data = _read_json(path, "the window 3 plan file")
-    if not isinstance(data, dict) or data.get("window") != 3:
-        raise PlanError(f"{path} is not a window 3 file written by this script")
-    spans: dict[str, list[dict]] = {}
-    kept = data.get("reviewSpans") or {}
-    if not isinstance(kept, dict):
-        raise PlanError(f"{path}: `reviewSpans` is not an object of review ids")
-    for review_id, review_spans in kept.items():
-        if not isinstance(review_spans, list) or not all(_is_span(span) for span in review_spans):
-            raise PlanError(f"{path}: the spans of review {review_id} are not a list of spans")
-        spans[review_id] = review_spans
-    for entry in data.get("units") or []:
-        if isinstance(entry, dict) and "spans" in entry:
-            if not isinstance(entry["spans"], list) or not all(_is_span(span) for span in entry["spans"]):
-                raise PlanError(f"{path}: the spans of review {entry.get('id')} are not a list of spans")
-            spans[entry["id"]] = entry["spans"]
-    retired = data.get("retiredParts") or []
-    if not isinstance(retired, list) or not all(isinstance(e, dict) and isinstance(e.get("id"), str) for e in retired):
-        raise PlanError(f"{path}: `retiredParts` is not a list of retired manual parts")
-    numbers = data.get("partNumbers") or {}
-    if not isinstance(numbers, dict) or not all(type(n) is int and n >= 0 for n in numbers.values()):
-        raise PlanError(f"{path}: `partNumbers` is not the highest part number each review has carried")
-    return {"reviewSpans": spans, "retiredParts": retired, "partNumbers": numbers}
-
-
 def _read_sections_file(path: Path | None) -> dict[str, dict]:
     """The `list_spec_sections` answer on disk, as manual_parts reads it."""
     if path is None:
@@ -3082,161 +3057,20 @@ def _read_sections_file(path: Path | None) -> dict[str, dict]:
         raise PlanError(str(e)) from e
 
 
-def _ledger_window_3_passes(path: Path) -> dict[str, str]:
-    """Each window 3 unit id the ledger dispatched, with the pass its last `dispatch` line names."""
-    if not path.is_file():
-        return {}
-    try:
-        text = path.read_text(encoding="utf-8")
-    except Exception as e:
-        raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
-    passes: dict[str, str] = {}
-    for raw in text.splitlines():
-        parts = raw.strip().split()
-        if len(parts) >= 4 and parts[0] in ("dispatch", "verified") and parts[1] == "3":
-            passes[parts[3]] = parts[2]
-    return passes
+def _read_not_read(path: Path, data: dict) -> list[dict]:
+    """The sections the frozen manual plan found no unit could read, as the plan file keeps them."""
+    entries = data.get("notRead")
+    if not isinstance(entries, list) or not all(
+        isinstance(entry, dict) and isinstance(entry.get("code"), str) and isinstance(entry.get("review"), str)
+        and isinstance(entry.get("packageId"), str) and isinstance(entry.get("reason"), str)
+        for entry in entries
+    ):
+        raise PlanError(f"{path}: `notRead` is not a list of sections, each with its review, package and reason")
+    return entries
 
 
-def _read_plan_unit_passes(path: Path) -> dict[str, str]:
-    """Each window 3 unit id the read plan on file lists, with the pass whose block holds it."""
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return {}
-    passes: dict[str, str] = {}
-    current = None
-    for line in lines:
-        heading = re.match(r"^### (\S+?)\.\s", line)
-        if heading:
-            current = heading.group(1)
-            continue
-        unit = re.match(r"^[1-9][0-9]*\. (\S+): ", line)
-        if unit and current:
-            passes[unit.group(1)] = current
-    return passes
-
-
-_PART_NUMBER_RE = re.compile(r"^(?P<review>\S+)c-(?P<number>[1-9][0-9]*)$")
-
-
-def _plan_manual(
-    packages: list[dict],
-    review_ids: dict[str, str],
-    inventory: dict[str, dict],
-    plan_file: Path,
-    ledger: Path,
-) -> dict:
-    """
-    Each review's spans and every manual part, in chain order, for the packages planned now, with
-    the parts this run retires and every section no unit can read. A review or part the ledger
-    dispatched keeps the spans it was sent with, and the pass it was carried into; its pages count
-    as read where they still fall on their section, less a section the ledger's `not read:` note
-    for that unit names, and the rest of the package's pages are divided again. A dispatched part
-    whose spans no longer fall on their section is retired and its pages planned again. A part
-    planned and never dispatched keeps its id where its spans come out the same, and is placed in
-    its pass afresh; every new part takes a number past every number its review's parts have ever
-    carried (`partNumbers` in the plan file), so no id is handed out twice.
-    """
-    previous_entries = _read_window_3_continuations(plan_file)
-    previous = _read_window_3_manual(plan_file)
-    dispatched = _ledger_window_3_passes(ledger)
-    not_read = _ledger_not_read_sections(ledger)
-    review_spans: dict[str, list[dict]] = dict(previous["reviewSpans"])
-    part_numbers: dict[str, int] = dict(previous["partNumbers"])
-    entries: list[dict] = []
-    retired: list[dict] = list(previous["retiredParts"])
-    omissions: list[dict] = []
-    planned_now = {review_ids[package["id"]] for package in packages}
-
-    def cover(unit_id: str, spans: list[dict]) -> list[dict]:
-        return [
-            span for span in spans
-            if manual_parts.span_valid(span, inventory) and (unit_id, span["code"]) not in not_read
-        ]
-
-    for package in packages:
-        review_id = review_ids[package["id"]]
-        try:
-            sections, omitted = manual_parts.package_sections(package, inventory)
-        except manual_parts.SectionError as e:
-            raise PlanError(str(e)) from e
-        omissions += [{"packageId": package["id"], "review": review_id, **item} for item in omitted]
-
-        frozen_review = previous["reviewSpans"].get(review_id) if review_id in dispatched else None
-        review_cover = None if frozen_review is None else cover(review_id, frozen_review)
-        own = [entry for entry in previous_entries if entry["review"] == review_id]
-        frozen_parts: list[dict] = []
-        for entry in own:
-            if entry["id"] not in dispatched:
-                continue
-            if all(manual_parts.span_valid(span, inventory) for span in entry["sections"]):
-                skipped = [span for span in entry["sections"] if (entry["id"], span["code"]) in not_read]
-                if skipped:
-                    # What the part was sent for and could not read, kept apart from what it read.
-                    entry = {
-                        **entry,
-                        "sections": [span for span in entry["sections"] if span not in skipped],
-                        "unread": [*entry.get("unread", []), *skipped],
-                    }
-                frozen_parts.append(entry)
-            else:
-                retired.append({k: entry[k] for k in ("id", "review", "packageId", "sections")})
-        planned_review, new_parts = manual_parts.divide(
-            sections, review_cover, [cover(entry["id"], entry["sections"]) for entry in frozen_parts]
-        )
-        review_spans[review_id] = frozen_review if frozen_review is not None else planned_review
-
-        numbers = [
-            int(m.group("number"))
-            for unit_id in [*(e["id"] for e in own), *(e["id"] for e in retired), *dispatched]
-            if (m := _PART_NUMBER_RE.match(unit_id)) and m.group("review") == review_id
-        ]
-        high = max([*numbers, part_numbers.get(review_id, 0)], default=0)
-        spare = [entry for entry in own if entry["id"] not in dispatched]
-        chain: list[dict] = [
-            {k: v for k, v in entry.items() if k not in ("continues", "planned")} for entry in frozen_parts
-        ]
-        for spans in new_parts:
-            same = next((entry for entry in spare if entry["sections"] == spans), None)
-            if same is not None:
-                spare.remove(same)
-                part_id = same["id"]
-            else:
-                high += 1
-                part_id = f"{review_id}c-{high}"
-            # A part not yet dispatched takes its pass afresh each run, so a part planned among
-            # parts already carried never sits in a pass they wait for.
-            chain.append({"id": part_id, "review": review_id, "packageId": package["id"], "sections": spans})
-        if high:
-            part_numbers[review_id] = high
-        started = set(dispatched.values())
-        was = {entry["id"]: entry for entry in own}
-        before, before_pass = review_id, None
-        for entry in chain:
-            old = was.get(entry["id"], {})
-            if (
-                entry["id"] not in dispatched and old.get("pass") in started
-                and old.get("continues") == before and before_pass == old.get("pass")
-            ):
-                entry = {**entry, "pass": old["pass"]}
-            entries.append({**entry, "continues": before, "planned": True})
-            before, before_pass = entry["id"], entry.get("pass")
-    # The parts of a review this run plans no unit for stay as they stand, for the run that lists
-    # its package again.
-    entries += [entry for entry in previous_entries if entry["review"] not in planned_now]
-    return {
-        "reviewSpans": review_spans, "entries": entries, "retiredParts": retired,
-        "omissions": omissions, "partNumbers": part_numbers,
-    }
-
-
-_NOT_READ_NOTE_RE = re.compile(r"^note 3 \S+ (\S+) anomaly section (\S+) not read: ")
-
-
-def _ledger_not_read_sections(path: Path) -> set[tuple[str, str]]:
-    """Each (unit, section code) a window 3 `not read:` note on the ledger names: a section the unit
-    was sent for and could not read, whose pages a later plan run gives another unit."""
+def _ledger_window_3_dispatched(path: Path) -> set[str]:
+    """The window 3 unit ids the ledger carries a `dispatch` line for. A missing ledger is none."""
     if not path.is_file():
         return set()
     try:
@@ -3244,54 +3078,131 @@ def _ledger_not_read_sections(path: Path) -> set[tuple[str, str]]:
     except Exception as e:
         raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
     return {
-        (m.group(1), m.group(2).rstrip(","))
-        for raw in text.splitlines() if (m := _NOT_READ_NOTE_RE.match(raw.strip()))
+        parts[3] for parts in (raw.strip().split() for raw in text.splitlines())
+        if len(parts) >= 4 and parts[0] == "dispatch" and parts[1] == "3"
     }
 
 
-def _refuse_deleted_package_pages(folder: Path, packages: list[dict], plan_file: Path) -> None:
-    """
-    Refuse a window 3 replan whose packages list no longer carries a package with manual pages
-    still owed a read: its review's spans or a manual part's, planned and not verified. A replan
-    plans no unit of a package it does not list, so those pages would go unread with nothing said.
-    A section the ledger carries an `unread section` note for, under the unit that owed it, is
-    recorded and refuses nothing; the close-out names it.
-    """
-    live = {package["id"] for package in packages}
-    ledger = folder / LEDGER_FILE
-    recorded = _read_ledger_unread_sections(ledger)
-    verified = _read_ledger_verified(ledger, 3)
-    passes = {**_read_plan_unit_passes(folder / "read-plan.md"), **_ledger_window_3_passes(ledger)}
-    pairs = _read_window_3_file(plan_file) or []
-    package_of = {unit_id: package_id for unit_id, package_id in pairs}
-    owed: list[tuple[str, str, dict]] = []
-    for unit_id, spans in _read_window_3_manual(plan_file)["reviewSpans"].items():
-        package_id = package_of.get(unit_id)
-        if package_id and package_id not in live and unit_id not in verified:
-            owed += [(unit_id, package_id, span) for span in spans]
-    for entry in _read_window_3_continuations(plan_file):
-        if entry["packageId"] not in live and entry["id"] not in verified:
-            owed += [(entry["id"], entry["packageId"], span) for span in entry["sections"]]
-    owed = [(unit, package, span) for unit, package, span in owed if (unit, span["code"]) not in recorded]
-    if not owed:
-        return
-    named = [
-        f"section {span['code']} pages {span['fromPage']} to {span['toPage']} of package {package_id}"
-        for _unit, package_id, span in owed
+def _chain_of(review_id: str, package_id: str, parts: list[list[dict]]) -> dict:
+    """A package's stage A chain: its manual parts in order, numbered from 1, then its standard lines unit."""
+    units = [
+        {"id": f"{review_id}c-{number}", "kind": MANUAL_KIND, "sections": spans}
+        for number, spans in enumerate(parts, 1)
     ]
-    notes = [
-        f"`note 3 {passes.get(unit_id, 'W3')} {unit_id} unread section {span['code']} pages "
-        f"{span['fromPage']} to {span['toPage']} left, its package was deleted`"
-        for unit_id, _package, span in owed
-    ]
-    one_package = len({package for _unit, package, _span in owed}) == 1
-    raise PlanError(
-        "; ".join(named) + f": not read, and the packages list no longer carries "
-        f"{'that package' if one_package else 'those packages'}; list {'it' if one_package else 'them'} "
-        f"again, or record what is left as unread, which the close-out names, by appending "
-        f"{'this line' if len(owed) == 1 else 'these lines'} to {ledger} and planning again: "
-        + ", ".join(notes)
-    )
+    units.append({"id": f"{review_id}{STANDARD_LINES_SUFFIX}", "kind": STANDARD_LINES_KIND})
+    return {"review": review_id, "packageId": package_id, "units": units}
+
+
+def _plan_manual(
+    packages: list[dict], review_ids: dict[str, str], inventory: dict[str, dict], plan_file: Path, ledger: Path,
+) -> dict:
+    """
+    Every package's stage A chain and the sections no unit can read, made once. Until the ledger
+    carries a window 3 `dispatch` line, every plan run divides each package's manual pages afresh,
+    since no unit has been sent. From the first dispatch on, the manual plan is frozen: the chains
+    and the sections found unreadable come off the plan file as written, and a replan adds, moves and
+    divides no manual page. A package the frozen plan does not hold takes a chain of its standard
+    lines unit alone, kept in the file from then on, and its sections are listed as not read. A
+    folder whose window 3 started under a plan file of another format is refused, since its manual
+    plan cannot be resumed and planning it afresh would send a unit for pages another already read.
+    """
+    data = _read_window_3_plan_file(plan_file)
+    started = bool(_ledger_window_3_dispatched(ledger))
+    if started and (data is None or data.get("format") != WINDOW_3_FORMAT):
+        raise PlanError(
+            f"window 3 of this run folder started under an earlier plugin, and {plan_file} "
+            f"{'is not there' if data is None else 'carries no manual plan this plugin can resume'}; "
+            f"window 3 cannot be planned again here; nothing written"
+        )
+    if not started:
+        chains: list[dict] = []
+        not_read: list[dict] = []
+        for package in packages:
+            review_id = review_ids[package["id"]]
+            try:
+                sections, omitted = manual_parts.package_sections(package, inventory)
+            except manual_parts.SectionError as e:
+                raise PlanError(str(e)) from e
+            not_read += [{"code": item["code"], "review": review_id, "packageId": package["id"], "reason": item["reason"]} for item in omitted]
+            chains.append(_chain_of(review_id, package["id"], manual_parts.divide(sections)))
+        return {"chains": chains, "notRead": not_read, "frozen": False}
+    chains = _read_window_3_chains(plan_file, data)
+    not_read = _read_not_read(plan_file, data)
+    held = {chain["packageId"]: chain for chain in chains}
+    for package in packages:
+        chain = held.get(package["id"])
+        review_id = review_ids[package["id"]]
+        if chain is None:
+            late = _chain_of(review_id, package["id"], [])
+            late["late"] = True
+            chains.append(late)
+        elif chain["review"] != review_id:
+            raise PlanError(
+                f"{plan_file}: package {package['id']}'s chain belongs to {chain['review']}, and its "
+                f"review is {review_id}"
+            )
+    return {"chains": chains, "notRead": not_read, "frozen": True}
+
+
+def _sections_not_read(
+    manual: dict, packages: list[dict], reviewed: set[str], partial: bool, ledger: Path,
+    verified: set[str], skipped: dict[str, str],
+) -> list[dict]:
+    """
+    Every section, or run of a section's pages, of this plan that no unit reads, with its reason:
+    each section the manual plan found unreadable, each section a package names that the frozen
+    plan does not (added after the manual reading was planned), the pages of a skipped manual part,
+    and the pages still owed of a package the list no longer carries, its parts not verified. A
+    package an addendum's pass does not review is planned nothing and listed nothing.
+    """
+    live = {package["id"]: package for package in packages}
+    out: list[dict] = []
+    for item in manual["notRead"]:
+        if item["packageId"] in reviewed:
+            out.append(dict(item))
+    dispatched = _ledger_window_3_dispatched(ledger)
+    for chain in manual["chains"]:
+        package = live.get(chain["packageId"])
+        parts = [unit for unit in chain["units"] if unit["kind"] == MANUAL_KIND]
+        if package is None:
+            # A deleted package: its pages owed where this pass planned them.
+            sent = any(unit["id"] in dispatched for unit in chain["units"]) or chain["review"] in dispatched
+            if partial and not sent:
+                continue
+            for part in parts:
+                if part["id"] in verified:
+                    continue
+                reason = NOT_READ_SKIPPED if part["id"] in skipped else NOT_READ_DELETED
+                out += [_pages_not_read(span, part["id"], chain["packageId"], reason) for span in part["sections"]]
+            continue
+        if chain["packageId"] not in reviewed:
+            continue
+        for part in parts:
+            if part["id"] in skipped:
+                out += [_pages_not_read(span, part["id"], chain["packageId"], NOT_READ_SKIPPED) for span in part["sections"]]
+        if manual["frozen"]:
+            planned = {span["code"] for part in parts for span in part["sections"]}
+            planned |= {item["code"] for item in manual["notRead"] if item["packageId"] == chain["packageId"]}
+            for code in manual_parts.section_codes(package):
+                if code not in planned:
+                    out.append({"code": code, "review": chain["review"], "packageId": chain["packageId"], "reason": NOT_READ_ADDED})
+    return out
+
+
+def _pages_not_read(span: dict, unit_id: str, package_id: str, reason: str) -> dict:
+    return {
+        "code": span["code"], "review": unit_id, "packageId": package_id, "reason": reason,
+        "fromPage": span["fromPage"], "toPage": span["toPage"],
+    }
+
+
+def _spill_letters():
+    """The letters a trade's passes of stage A take after its first: `b` to `z`, then `bb` and on, never ending."""
+    length = 1
+    while True:
+        for letters in itertools.product(CARRY_LETTERS, repeat=length):
+            yield "".join(letters)
+        length += 1
 
 
 def _window_3(
@@ -3299,65 +3210,44 @@ def _window_3(
     ids: dict[str, str],
     tag: str | None = None,
     written_on: set[str] | None = None,
-    continuations: list[dict] | None = None,
+    chains: list[dict] | None = None,
 ) -> dict:
     """
-    One review per package, in package order, with the packages of one trade kept together, and
-    up to REVIEWS_PER_PASS reviews to a pass. The order is the order the packages were bought in:
-    the first package of each trade holds that trade's place, and any later package on the same
-    trade follows it there rather than where it sat in the file.
+    Window 3 in two stages. Stage A reads every package's manual parts and then writes its standard
+    lines, one chain per package in order; stage B reviews each package once every stage A pass
+    of the plan is finished.
 
-    Two packages carrying one trade both plan, one after the other in one pass, each under the unit
-    id bound to its own package id (`ids`, from `_bind_review_ids`). One runner reviews them in turn, so they never run at once,
-    and its overlap scan sees them side by side, which is how two reviews of the same work are
-    kept from doubling it. A trade's reviews are never split across passes, so no two passes share
-    a trade and no pass waits on another.
+    Stage A: each trade's chains, every package of the trade in package order, are one group, and
+    the groups are placed longest first, ties in the order the packages were bought in. A group of
+    REVIEW_PASS_UNITS units or fewer goes whole into the first pass already holding groups that
+    still has room for it, or a new pass; a longer group takes passes of its own, REVIEW_PASS_UNITS
+    units each, the first `W3-M<n>` and the rest lettered after it (`W3-M<n>b`), each waiting for
+    the one before it. So a trade's chains run in one pass at a time, in order, and the passes are
+    a function of the chains alone.
 
-    `written_on`, the folded trades an addendum's pass wrote on, keeps only the reviews of
-    the packages covering those trades (as their own trade or one of their `codes`), and every
-    other package is named as left out. Ids are bound over the
-    whole list first, so a package's review id is the same whichever packages plan beside it.
+    Stage B: the general requirements package's review alone in `W3-1`, then the other reviews in
+    package order with the packages of one trade kept together, up to REVIEWS_PER_PASS to a pass, or
+    one trade's reviews together where that trade has more, at most REVIEW_PASS_UNITS; a trade with
+    more is refused. Every stage B pass waits for every stage A pass this plan schedules, and every
+    pass after `W3-1` for `W3-1` too.
 
-    `continuations`, the manual parts the plan made, each follow their own review in its pass, in
-    chain order, and count against the REVIEW_PASS_UNITS units a pass holds. One an earlier run
-    carried into a pass of manual parts, the entry's `pass`, plans in that pass instead (below,
-    `_carried_passes`), and a part after it in its chain is carried too, since it reads on after it. Where a trade's reviews and the continuations in their pass come to
-    more than REVIEW_PASS_UNITS, as a package added to the trade can make them, its continuations go
-    to a pass of continuations of their own, the one bound last first, until the trade's pass holds
-    REVIEW_PASS_UNITS, and each entry carried this way takes its `pass` here, so the plan file keeps
-    it. A trade with more than REVIEW_PASS_UNITS packages is refused, since its reviews share one
-    pass.
+    `written_on`, the folded trades an addendum's pass wrote on, keeps only the reviews of the
+    packages covering those trades, and their chains, and every other package is named as left out.
     """
-    order_of = {entry["id"]: index for index, entry in enumerate(continuations or [])}
-    following: dict[str, list[dict]] = {}
-    for entry in continuations or []:
-        if not entry.get("pass"):
-            following.setdefault(entry["review"], []).append(entry)
+    chain_of = {chain["packageId"]: chain for chain in chains or []}
     reviews: list[dict] = []
     for package in packages:
         code = _text(package.get("tradeCode")).strip()
-        review = {
+        reviews.append({
             "id": ids[package["id"]],
             "tradeCode": code,
             "tradeKey": _fold(code),
             "name": _text(package.get("name")) or code,
             "package": package,
             "codes": list(package.get("codes") or []),
-        }
-        review["continuations"] = [
-            {
-                **review, "id": entry["id"], "continues": entry["continues"], "sections": entry["sections"],
-                "entry": entry,
-            }
-            # Chain order, which a replan can make differ from the order of the parts' numbers.
-            for entry in sorted(following.get(review["id"], []), key=lambda entry: order_of[entry["id"]])
-        ]
-        reviews.append(review)
+        })
     left_out: list[dict] = []
     if written_on is not None:
-        # A package covers its own trade, every trade folded into its `codes`, and every trade
-        # under a broad code of either, so a pass that wrote only on one of those still reviews the
-        # package that bids it.
         def covers(review: dict) -> bool:
             own = [review["tradeCode"], *(_text(code) for code in review["codes"])]
             return any(_code_covers(code, written) for code in own for written in written_on)
@@ -3365,8 +3255,6 @@ def _window_3(
         left_out = [review for review in reviews if not covers(review)]
         reviews = [review for review in reviews if covers(review)]
 
-    # Grouped by folded trade code in first-seen order, so two packages on one trade review one
-    # after the other and everything else keeps the order the packages were bought in.
     order: list[str] = []
     members: dict[str, list[dict]] = {}
     for review in reviews:
@@ -3375,16 +3263,6 @@ def _window_3(
             members[key] = []
             order.append(key)
         members[key].append(review)
-
-    # A trade's reviews join the pass being built where they fit beside what it holds, and start the
-    # next pass where they do not, so a trade is never split and a pass over the cap is one trade. A
-    # review's continuations go in its pass, so they count against the cap with it.
-    def units_of(group: list[dict]) -> int:
-        return sum(1 + len(review["continuations"]) for review in group)
-
-    groups: list[list[dict]] = []
-    # The continuations a full trade's pass gives up here, by the group they leave.
-    carried_here: dict[int, list[dict]] = {}
     for key in order:
         if len(members[key]) > REVIEW_PASS_UNITS:
             raise PlanError(
@@ -3392,79 +3270,81 @@ def _window_3(
                 f"reviews share one pass, which holds at most {REVIEW_PASS_UNITS} units; fold that "
                 f"trade's packages into fewer before its reviews are planned"
             )
-        leaving: list[dict] = []
-        for review in members[key]:
-            # A part after one carried out of the trade's pass reads on after it, so it is carried
-            # too, into a pass that waits for that one.
-            carried_at = min(
-                (order_of[entry["id"]] for entry in continuations or []
-                 if entry.get("pass") and entry["review"] == review["id"]), default=None,
+
+    # Stage A.
+    def chain_units(review: dict) -> list[dict]:
+        chain = chain_of.get(review["package"]["id"])
+        units: list[dict] = []
+        before = None
+        for unit in (chain["units"] if chain else []):
+            units.append({
+                **review, "id": unit["id"], "kind": unit["kind"], "continues": before,
+                "sections": unit.get("sections", []), "review": review["id"],
+            })
+            before = unit["id"]
+        return units
+
+    group_units = {key: [unit for review in members[key] for unit in chain_units(review)] for key in order}
+    stage_a: list[dict] = []
+    number = 0
+    for key in sorted((key for key in order if group_units[key]), key=lambda key: (-len(group_units[key]), order.index(key))):
+        units = group_units[key]
+        if len(units) <= REVIEW_PASS_UNITS:
+            target = next(
+                (plan_pass for plan_pass in stage_a
+                 if plan_pass["open"] and len(plan_pass["units"]) + len(units) <= REVIEW_PASS_UNITS),
+                None,
             )
-            if carried_at is not None:
-                after = [unit for unit in review["continuations"] if order_of[unit["id"]] > carried_at]
-                review["continuations"] = [unit for unit in review["continuations"] if unit not in after]
-                leaving += after
-        if units_of(members[key]) > REVIEW_PASS_UNITS:
-            latest_first = sorted(
-                (unit for review in members[key] for unit in review["continuations"]),
-                key=lambda unit: order_of[unit["id"]], reverse=True,
-            )
-            while units_of(members[key]) > REVIEW_PASS_UNITS:
-                unit = latest_first.pop(0)
-                owner = next(review for review in members[key] if unit in review["continuations"])
-                owner["continuations"].remove(unit)
-                leaving.append(unit)
+            if target is not None:
+                target["units"].extend(units)
+                continue
+            number += 1
+            stage_a.append({"id": _tagged(f"W3-M{number}", tag), "units": list(units), "open": True, "waits": []})
+            continue
+        number += 1
+        base = _tagged(f"W3-M{number}", tag)
+        letters = _spill_letters()
+        before = None
+        for start in range(0, len(units), REVIEW_PASS_UNITS):
+            pass_id = base if before is None else base + next(letters)
+            stage_a.append({
+                "id": pass_id, "units": units[start:start + REVIEW_PASS_UNITS], "open": False,
+                "waits": [before] if before else [],
+            })
+            before = pass_id
+
+    # Stage B.
+    general = [review for review in reviews if review["tradeKey"] == _fold(GENERAL_REQUIREMENTS_CODE)]
+    groups: list[list[dict]] = [general] if general else []
+    first_open = len(groups)
+    for key in order:
+        if key == _fold(GENERAL_REQUIREMENTS_CODE):
+            continue
         if (
-            groups and len(groups[-1]) + len(members[key]) <= REVIEWS_PER_PASS
-            and units_of(groups[-1]) + units_of(members[key]) <= REVIEW_PASS_UNITS
+            len(groups) > first_open and len(groups[-1]) + len(members[key]) <= REVIEWS_PER_PASS
+            and len(groups[-1]) + len(members[key]) <= REVIEW_PASS_UNITS
         ):
             groups[-1].extend(members[key])
         else:
             groups.append(list(members[key]))
-        if leaving:
-            carried_here.setdefault(len(groups) - 1, []).extend(leaving)
-
+    stage_a_ids = [plan_pass["id"] for plan_pass in stage_a]
     passes: list[dict] = []
+    for plan_pass in stage_a:
+        names = list(dict.fromkeys(unit["name"] for unit in plan_pass["units"]))
+        passes.append({
+            "id": plan_pass["id"], "name": "Manual parts and standard lines: " + ", ".join(names),
+            "readsFor": STAGE_A_READS_FOR, "units": plan_pass["units"], "waits": plan_pass["waits"],
+        })
     for number, group in enumerate(groups, 1):
-        passes.append(
-            {
-                "id": _tagged(f"W3-{number}", tag),
-                "name": "Package reviews: " + ", ".join(review["name"] for review in group),
-                "readsFor": "package reviews",
-                "units": [unit for review in group for unit in [review, *review["continuations"]]],
-            }
-        )
-    # Each continuation a full trade's pass gave up takes a pass of continuations after that pass,
-    # in the order they were bound, REVIEW_PASS_UNITS to a pass, under a letter no pass of the plan
-    # file uses.
-    # Each such pass is new, and its units continue units of the trade's pass or of the passes
-    # opened before it here, so it waits only for passes before it and the waits stay without a
-    # cycle; a pass of continuations already planned that continues one of them waits for it and
-    # is put after it (`_carried_passes`).
-    taken = {entry["pass"] for entry in continuations or [] if entry.get("pass")}
-    for index, leaving in carried_here.items():
-        leaving.sort(key=lambda unit: order_of[unit["id"]])
-        letters = iter(letter for letter in CARRY_LETTERS if passes[index]["id"] + letter not in taken)
-        for start in range(0, len(leaving), REVIEW_PASS_UNITS):
-            letter = next(letters, None)
-            if letter is None:
-                unplaced = leaving[start:]
-                notes = [
-                    note for unit in unplaced
-                    for note in _unread_notes(passes[index]["id"], unit["id"], unit["sections"])
-                ]
-                raise PlanError(
-                    f"pass {passes[index]['id']} gives up {len(leaving)} continuations, and no letter is "
-                    f"left to name a pass of continuations for {len(unplaced)} of them, so their pages "
-                    f"stay unread; append {'this line' if len(notes) == 1 else 'these lines'} to the "
-                    f"ledger, which the close-out names, and fold that trade's packages into fewer "
-                    f"before you plan again: "
-                    + ", ".join(f"`{note}`" for note in notes)
-                )
-            for unit in leaving[start:start + REVIEW_PASS_UNITS]:
-                unit["entry"]["pass"] = passes[index]["id"] + letter
-            taken.add(passes[index]["id"] + letter)
-    passes = _carried_passes(passes, reviews, continuations or [])
+        pass_id = _tagged(f"W3-{number}", tag)
+        waits = list(stage_a_ids)
+        if general and number > 1:
+            waits.append(_tagged("W3-1", tag))
+        passes.append({
+            "id": pass_id, "name": "Package reviews: " + ", ".join(review["name"] for review in group),
+            "readsFor": STAGE_B_READS_FOR, "units": [dict(review, kind=REVIEW_KIND) for review in group],
+            "waits": waits,
+        })
 
     shared = [r for r in reviews if len(members[r["tradeKey"]]) > 1]
 
@@ -3475,6 +3355,7 @@ def _window_3(
                 seen.append(row["tradeCode"])
         return seen
 
+    stage_a_units = [unit for plan_pass in stage_a for unit in plan_pass["units"]]
     return {
         "passes": passes,
         "includes": [],
@@ -3482,92 +3363,19 @@ def _window_3(
         "excludedCount": 0,
         "unassigned": [],
         "reviews": len(reviews),
-        "continuations": sum(len(plan_pass["units"]) for plan_pass in passes) - len(reviews),
+        "continuations": sum(1 for unit in stage_a_units if unit["kind"] == MANUAL_KIND),
+        "standardLines": sum(1 for unit in stage_a_units if unit["kind"] == STANDARD_LINES_KIND),
+        "stageA": len(stage_a),
+        "stageB": len(groups),
+        "generalFirst": bool(general),
         "trades": len(order),
         "sharedCount": len(shared),
         "sharedCodes": distinct_codes(shared),
         "leftOut": [{"name": review["name"], "tradeCode": review["tradeCode"]} for review in left_out],
+        "reviewed": {review["package"]["id"] for review in reviews},
         "partial": written_on is not None,
         "notes": [],
     }
-
-
-def _carried_passes(passes: list[dict], reviews: list[dict], continuations: list[dict]) -> list[dict]:
-    """
-    The window 3 passes with each pass of manual parts put in: every part carried into one, an
-    entry whose `pass` names it, whose review this plan reviews. Its units are its entries in chain
-    order, each right after the unit it reads on after where that unit is in the same pass and last
-    otherwise. It takes its name off its units'
-    packages, and it sits after the last pass holding a unit one of its units continues, past any
-    pass of continuations already sitting there, so it never waits on a pass after it. One named
-    for a pass of reviews, one over REVIEW_PASS_UNITS units, and passes waiting on each other are
-    refused.
-    """
-    by_id = {review["id"]: review for review in reviews}
-    carried: dict[str, list[dict]] = {}
-    for entry in continuations:
-        if entry.get("pass") and entry["review"] in by_id:
-            carried.setdefault(entry["pass"], []).append(entry)
-    plain = {plan_pass["id"] for plan_pass in passes}
-    clash = [pass_id for pass_id in carried if pass_id in plain]
-    if clash:
-        raise PlanError(
-            f"the window 3 plan file carries continuations into {_named(clash)}, the id of a pass of reviews"
-        )
-    built: list[dict] = []
-    for pass_id, entries in carried.items():
-        units: list[dict] = []
-        for entry in entries:
-            unit = {
-                **by_id[entry["review"]], "id": entry["id"], "continues": entry["continues"],
-                "sections": entry["sections"], "entry": entry,
-            }
-            at = next((index for index, other in enumerate(units) if other["id"] == entry["continues"]), None)
-            units.insert(len(units) if at is None else at + 1, unit)
-        # A plan file written before window 3 passes held ten units may carry up to the old
-        # twelve; it resumes as written, and only passes carried from now on are held to ten.
-        if len(units) > UNITS_PER_PASS:
-            raise PlanError(
-                f"the window 3 plan file carries {len(units)} continuations into pass {pass_id}, which "
-                f"holds at most {UNITS_PER_PASS} units"
-            )
-        built.append(
-            {
-                "id": pass_id,
-                "name": "Package reviews: " + ", ".join(dict.fromkeys(unit["name"] for unit in units)),
-                "readsFor": "package reviews",
-                "units": units,
-                "carried": True,
-            }
-        )
-
-    ordered = list(passes)
-    pending = list(built)
-    while pending:
-        for plan_pass in pending:
-            own = {unit["id"] for unit in plan_pass["units"]}
-            continued = {unit["continues"] for unit in plan_pass["units"]} - own
-            if any(
-                other is not plan_pass and continued & {unit["id"] for unit in other["units"]}
-                for other in pending
-            ):
-                continue
-            holders = [
-                index for index, other in enumerate(ordered)
-                if continued & {unit["id"] for unit in other["units"]}
-            ]
-            at = max(holders) + 1 if holders else len(ordered)
-            while at < len(ordered) and ordered[at].get("carried"):
-                at += 1
-            ordered.insert(at, plan_pass)
-            pending.remove(plan_pass)
-            break
-        else:
-            raise PlanError(
-                f"the window 3 plan file carries continuations into passes that wait on each other: "
-                f"{_named([plan_pass['id'] for plan_pass in pending])}"
-            )
-    return ordered
 
 
 _WHOLE_NUMBER_RE = re.compile(r"^[0-9]+$")
@@ -3841,7 +3649,7 @@ def _marked_clause(plan: dict) -> str:
 
 
 def _continuations_clause(plan: dict) -> str:
-    """Window 3's count of the manual parts it plans after the reviews."""
+    """Window 3's count of the manual parts it plans before the reviews."""
     return f", manual parts {plan.get('continuations', 0)}"
 
 
@@ -3896,7 +3704,7 @@ def _render(
         lines.append("")
         for number, (unit, unit_id) in enumerate(zip(pass_units, unit_ids), 1):
             line = (
-                _review_line(number, unit, plan.get("reviewSpans", {}))
+                _review_line(number, unit)
                 if window == 3
                 else _unit_line(unit_id, unit, show_file)
             )
@@ -3965,10 +3773,13 @@ def _render(
         lines.append("## Manual sections not read")
         lines.append("")
         if plan.get("omissions"):
-            lines.append("A package lists these sections, and no unit reads them, for the reason each names:")
+            lines.append("A package lists these sections, and no unit reads them or these pages of them, for the reason each names:")
             lines.append("")
             for number, item in enumerate(plan["omissions"], 1):
-                lines.append(f"{number}. {item['code']} on {item['review']}, package {item['packageId']}: {item['reason']}")
+                pages = f" pages {item['fromPage']} to {item['toPage']}" if "fromPage" in item else ""
+                lines.append(
+                    f"{number}. {item['code']}{pages} on {item['review']}, package {item['packageId']}: {item['reason']}"
+                )
         else:
             lines.append("Nothing. Every section a package lists has its pages planned.")
         lines.append("")
@@ -4020,7 +3831,15 @@ def _render(
                 + ", ".join(plan["unorderedTypes"])
             )
     if window == 3:
-        lines.append(f"reviews {plan['reviews']}, trades {plan['trades']}{_continuations_clause(plan)}")
+        lines.append(
+            f"reviews {plan['reviews']}, trades {plan['trades']}{_continuations_clause(plan)}, "
+            f"standard lines units {plan['standardLines']}"
+        )
+        lines.append(
+            f"passes of manual parts and standard lines {plan['stageA']}, passes of reviews {plan['stageB']}, "
+            f"the general requirements review alone first: {'yes' if plan['generalFirst'] else 'no'}, "
+            f"manual plan {'frozen at the first window 3 dispatch' if plan['frozen'] else 'made afresh'}"
+        )
         lines.append(
             f"packages sharing a trade: {plan['sharedCount']} "
             f"({_named(plan['sharedCodes']) if plan['sharedCodes'] else 'none'})"
@@ -4232,21 +4051,21 @@ def plan(args) -> str:
         )
         inventory = _read_sections_file(args.sections)
         plan_file = _window_file(args.out.parent, 3)
-        _refuse_deleted_package_pages(args.out.parent, packages, plan_file)
-        manual = _plan_manual(packages, review_ids, inventory, plan_file, args.out.parent / LEDGER_FILE)
-        continuations = manual["entries"]
-        result = _window_3(packages, review_ids, tag, None if unnamed else written_on, continuations)
-        # A package an addendum's pass leaves out has no review here: its manual is planned and
-        # kept in the plan file, and counted nowhere this run.
-        reviewed = {unit["id"] for plan_pass in result["passes"] for unit in plan_pass["units"]}
-        result["reviewSpans"] = {
-            review_id: spans for review_id, spans in manual["reviewSpans"].items() if review_id in reviewed
-        }
-        result["omissions"] = [item for item in manual["omissions"] if item["review"] in reviewed]
+        ledger_3 = args.out.parent / LEDGER_FILE
+        manual = _plan_manual(packages, review_ids, inventory, plan_file, ledger_3)
+        result = _window_3(packages, review_ids, tag, None if unnamed else written_on, manual["chains"])
+        # A package an addendum's pass leaves out has no unit here: its chain is kept in the plan
+        # file, and counted nowhere this run.
+        verified_3 = _read_ledger_verified(ledger_3, 3)
+        result["omissions"] = _sections_not_read(
+            manual, packages, result["reviewed"], result["partial"], ledger_3, verified_3,
+            settled_units(ledger_3, 3)[1],
+        )
         result["manualPages"] = sum(
-            manual_parts.pages_of(spans) for spans in result["reviewSpans"].values()
-        ) + sum(manual_parts.pages_of(entry["sections"]) for entry in continuations if entry["review"] in reviewed)
-        result["continuations"] = sum(1 for entry in continuations if entry["review"] in reviewed)
+            manual_parts.pages_of(unit["sections"])
+            for plan_pass in result["passes"] for unit in plan_pass["units"] if unit.get("kind") == MANUAL_KIND
+        )
+        result["frozen"] = manual["frozen"]
         result["packages"] = len(packages)
         result["unnamed"] = unnamed
 
@@ -4441,21 +4260,21 @@ def plan(args) -> str:
             {"id": review_ids[p["id"]], "packageId": p["id"]} for p in packages
         ],
         retired_reviews,
-        continuations,
-        manual["retiredParts"],
-        result["omissions"],
-        manual["reviewSpans"],
-        manual["partNumbers"],
+        manual["chains"],
+        manual["notRead"],
     )
     _write_atomically(window_3_path, window_3_payload)
     written += len(window_3_payload)
     return (
         f"wrote {args.out} and {window_3_path}: window 3{tag_clause}, packages {result['packages']}, "
-        f"reviews {result['reviews']}{_continuations_clause(result)}, manual pages {result['manualPages']} "
-        f"(a review reads at most {manual_parts.REVIEW_PAGES}, a manual part at most "
-        f"{manual_parts.PART_PAGES}), sections not read {len(result['omissions'])}, passes {total_passes}, reviews per pass at most "
+        f"reviews {result['reviews']}{_continuations_clause(result)}, standard lines units "
+        f"{result['standardLines']}, manual pages {result['manualPages']} (a manual part reads at most "
+        f"{manual_parts.PART_PAGES}), sections not read {len(result['omissions'])}, passes {total_passes} "
+        f"(manual parts and standard lines {result['stageA']}, reviews {result['stageB']}), the general "
+        f"requirements review alone first: {'yes' if result['generalFirst'] else 'no'}, reviews per pass at most "
         f"{REVIEWS_PER_PASS} or one trade's packages together where that trade has more, units per pass "
-        f"at most {REVIEW_PASS_UNITS}, "
+        f"at most {REVIEW_PASS_UNITS}, manual plan "
+        f"{'frozen at the first window 3 dispatch' if result['frozen'] else 'made afresh'}, "
         f"trades {result['trades']}, "
         f"packages sharing a trade: {result['sharedCount']} "
         f"({_named(result['sharedCodes']) if result['sharedCodes'] else 'none'})"
@@ -4467,30 +4286,33 @@ def plan(args) -> str:
     )
 
 
-_PART_KEYS = ("id", "review", "packageId", "continues", "sections", "unread", "pass", "planned")
-
-
 def _window_3_payload(
-    units: list[dict], retired: list[dict], continuations: list[dict], retired_parts: list[dict],
-    omissions: list[dict], review_spans: dict[str, list[dict]], part_numbers: dict[str, int],
+    units: list[dict], retired: list[dict], chains: list[dict], not_read: list[dict],
 ) -> bytes:
-    """The window 3 plan file: each review, the spans every review reads (`reviewSpans`), each
-    manual part (`continuations`), the parts retired, and every section no unit can read
-    (`omissions`), which the check-in and close-out name, with the page sizes it was planned at."""
+    """The window 3 plan file: its format, each review, each package's stage A chain (`chains`),
+    and the sections the manual plan found no unit can read (`notRead`), with the page size it was
+    planned at. One key order for every entry, however the run came by it, so a replan with nothing
+    changed writes the same bytes."""
     data: dict = {
         "window": 3,
-        "pages": {"review": manual_parts.REVIEW_PAGES, "part": manual_parts.PART_PAGES},
+        "format": WINDOW_3_FORMAT,
+        "pages": {"part": manual_parts.PART_PAGES},
         "units": units,
-        "reviewSpans": review_spans,
-        "partNumbers": part_numbers,
         "retired": retired,
-        # One key order for every entry, however the run came by it, so a replan with nothing
-        # changed writes the same bytes.
-        "continuations": [
-            {key: entry[key] for key in _PART_KEYS if key in entry} for entry in continuations
+        "chains": [
+            {
+                "review": chain["review"], "packageId": chain["packageId"],
+                **({"late": True} if chain.get("late") else {}),
+                "units": [
+                    {"id": unit["id"], "kind": unit["kind"], **({"sections": unit["sections"]} if unit["kind"] == MANUAL_KIND else {})}
+                    for unit in chain["units"]
+                ],
+            }
+            for chain in chains
         ],
-        "retiredParts": retired_parts,
-        "omissions": omissions,
+        "notRead": [
+            {key: item[key] for key in ("code", "review", "packageId", "reason") if key in item} for item in not_read
+        ],
     }
     return (json.dumps(data, indent=2) + "\n").encode("utf-8")
 
@@ -4607,31 +4429,6 @@ def _window_3_lock(folder: Path):
     """
     with hold_lock(_window_file(folder, 3).with_suffix(".lock"), "plan_inventory", PlanError):
         yield
-
-
-def _unread_notes(pass_id: str, unit_id: str, sections: list[dict]) -> list[str]:
-    """The runner's `unread section` note for each section of `unit_id` no pass can take."""
-    return [
-        f"note 3 {pass_id} {unit_id} unread section {s['code']} pages {s['fromPage']} to "
-        f"{s['toPage']} left, no pass can take its manual part"
-        for s in sections
-    ]
-
-
-def _read_ledger_unread_sections(path: Path) -> set[tuple[str, str]]:
-    """Each (unit, section code) a window 3 `unread section` note names. A missing ledger is none."""
-    if not path.is_file():
-        return set()
-    try:
-        text = path.read_text(encoding="utf-8")
-    except Exception as e:
-        raise PlanError(f"cannot read the run ledger at {path}: {e}") from e
-    named: set[tuple[str, str]] = set()
-    for raw in text.splitlines():
-        parts = raw.strip().split()
-        if len(parts) >= 7 and parts[:2] == ["note", "3"] and parts[4:6] == ["unread", "section"]:
-            named.add((parts[3], parts[6]))
-    return named
 
 
 # --------------------------------------------------------------------------- #

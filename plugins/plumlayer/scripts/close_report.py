@@ -40,13 +40,16 @@ every skipped unit with the reason off its last read, a schedule sheet skipped i
 sentence that later sheets may be less complete for it, every `unread` note of every window
 whatever its clause, every scanned sheet or part not read from its picture, every kind of index
 leftover, the sheets left out at the start or by the delivery's plan, every manual section no
-review could read, every word a review could not search, every window 3 unit whose pages read are
+review could read, every entry of a verified review's or manual part's `sections not checked:` and
+`families not checked:` lines, every standard line whose condition a review found after the line
+was written or left, every word a review could not search, every window 3 unit whose pages read are
 not known (its report written from the record, or no report of its last read on file), every read
 whose trades are not known, every deviation note of a window boundary, and every other deviation
 note with no `, read <k>` ending except the runner's three that report no failure (a check split
 over several calls, a read again granted, a go on given) and a boundary's names taken off the record
 so its scan could run, which the detail part names. Each entry is told apart by what it is about,
-its unit, read, file, section and pages, never by the sentence it prints.
+its unit, read, file, section and pages, never by the sentence it prints, except that a manual
+section's sentence, which names its pages, is printed once however many entries read it.
 
 A note is classified only by the whole shape its producer writes, the patterns beside each
 producer's name below the imports, never by a few words inside it. A note of a kind the report
@@ -86,10 +89,31 @@ Where each figure and sentence comes from (each unit counted once, off its lates
     | other unread pages, files, sections | `unread` notes of any clause                                    |
     | left out of the read plan           | `plan/window-1.json` `excluded` keys and `exclude` reasons      |
     | left by the delivery's plan         | `plan/window-1.json` `leftByPlan` keys                          |
-    | manual sections not read            | window 3 `read-plan.md` `## Manual sections not read`, window 3 |
+    | manual sections and pages not read  | window 3 `read-plan.md` `## Manual sections not read`, window 3 |
     |                                     | `anomaly` notes in SECTION_NOT_READ_RE's shape, window 3        |
-    |                                     | `unread section` notes                                          |
+    |                                     | `unread section` notes; a manual part's section off the report  |
+    |                                     | of its latest read verified ok where that report is on file and |
+    |                                     | whole, and otherwise off the part's latest anomaly for it, with |
+    |                                     | the plan's pages; one sentence for one section printed once     |
     | words not searched                  | window 3 `anomaly` notes in UNSEARCHED_RE's shape               |
+    | a review's bounds reached           | window 3 `anomaly` notes in BOUND_REACHED_RE's shape            |
+    | standard lines not written,         | a skipped window 3 unit, by its read plan line: a standard      |
+    | headings and order not settled      | lines unit, or a review                                         |
+    | standard lines found later, in the  | window 3 `anomaly` notes in FOUND_LATER_RE's shape              |
+    | collection                          |                                                                 |
+    | sections and families a review or a | the `sections not checked:` and `families not checked:` lines   |
+    | manual part did not check, in the   | of the reader-written report of each window 3 review's and      |
+    | collection                          | manual part's latest read verified ok, where the report check   |
+    |                                     | holds it whole, each entry by the shapes beside the reviewer's  |
+    |                                     | and the manual reader's names, an entry in none in its own words|
+    |                                     | and two reasons for one section both; a review's `not read` or  |
+    |                                     | `not known` entry for a section of its package already named as |
+    |                                     | a part's gap, a part's anomaly or a plan omission is that gap,  |
+    |                                     | named once, there; the owner's work once a package's section    |
+    | packages that took an item after    | window 3 `anomaly` notes in OTHER_PACKAGE_RE's shape, the item's|
+    | their own review                    | trade through `plan/packages.json`, the note's own place on the |
+    |                                     | ledger after that package's review's latest `verified` line     |
+    |                                     | reading ok, however the writing review ended                    |
     | pages not known, trades not known   | `deviation` notes in RESTORED_RE's shape, the report check over |
     |                                     | each verified window 3 unit's report, and `anomaly` notes in    |
     |                                     | TRADES_NOT_KNOWN_RE's shape, by unit and read                   |
@@ -214,6 +238,31 @@ RESTORED_RE = re.compile(
     rf"^.+ report written from the record to {unit_report.REPORTS_FOLDER}/(\S+)\.read-([1-9][0-9]*)\.restored\.md, "
     r"read ([1-9][0-9]*)$"
 )
+#   the runner, each entry of a review's `bounds reached:` line, copied whole:
+BOUND_REACHED_RE = re.compile(r"^bound reached: (.+?) ([0-9]+): (.+)$")
+#   the runner, each entry of a review's `standard lines found later:` line, copied whole:
+FOUND_LATER_RE = re.compile(r"^standard line found later: ([^|]+?) \| ([^|]+?) \| (.+)$")
+#   the runner, each entry of a review's `rows on other packages:` line, copied whole:
+OTHER_PACKAGE_RE = re.compile(r"^row on another package: (scopeItem:\S+) \| ([0-9]{2}(?: [0-9]{2}){2}(?:\.[0-9]+)?)$")
+#   scope-reviewer, each entry of its `sections not checked:` line, by the reasons its report shape
+#   names: a section the notes script named not read or not known, with the reason it printed; its
+#   searches spent; the notes not read; the owner's work; no section on the package; no manual:
+REVIEW_UNREAD_RE = re.compile(r"^(\S+) (not read|not known)[,:]? (.+)$")
+REVIEW_SPENT_RE = re.compile(r"^(\S+) searches spent$")
+REVIEW_NOTES_UNREAD_RE = re.compile(r"^(\S+) notes not read$")
+OWNERS_WORK_RE = re.compile(r"^(\S+) the owner['’]s work$")
+NO_SECTIONS_RE = re.compile(r"^no manual sections on this package$")
+NO_MANUAL_RE = re.compile(r"^(?:the )?manual was not read in$")
+#   scope-reviewer, its `families not checked:` entry for a referral its two pages did not settle:
+FAMILY_REFERRAL_RE = re.compile(r"^(.+?),? see Section (\S+), two pages read$")
+#   scope-manual-reader, each entry of its `sections not checked:` line, by the reasons its report
+#   shape names (the owner's work is OWNERS_WORK_RE, above):
+PART_UNREAD_RE = re.compile(r"^(\S+) (manual removed|manual changed|not on the package)$")
+PART_UNREAD_SAID = {
+    "manual removed": "its manual file is no longer on the project",
+    "manual changed": "its file or pages on the record changed after the manual reading was planned",
+    "not on the package": "the package no longer lists it",
+}
 #   the runner, a read verified off the reader's returned message:
 CHECKED_OFF_RE = re.compile(r"^.+ report file .+, checked off the returned report, read [1-9][0-9]*$")
 #   the runner, a review that opened no page and a sheet unit that cited no sheet:
@@ -225,6 +274,12 @@ REVIEW_LINE_RE = re.compile(
 PART_LINE_RE = re.compile(
     r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?), package (\S+), manual part after (\S+), reads (.+?)( verified| skipped)?$"
 )
+STANDARD_LINE_RE = re.compile(
+    r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?), package (\S+), standard lines after (\S+)( verified| skipped)?$"
+)
+#   plan_inventory.py, a section or a run of its pages no unit of the window 3 plan reads, under
+#   the read plan's `## Manual sections not read`, with its reason:
+NOT_READ_LINE_RE = re.compile(r"^[1-9][0-9]*\. (\S+)(?: pages ([1-9][0-9]*) to ([1-9][0-9]*))? on (\S+), package \S+: (.+)$")
 
 # What a failed check means, in plain words, longest name first so `created subjects` is never read
 # as `created`. A read of the recheck is a sheet's rows; a read of window 3 a package or its manual.
@@ -334,9 +389,9 @@ def read_ledger(folder: Path) -> dict:
     led: dict = {
         "present": bool(data), "lines": lines, "phases": [], "repaired": [], "short": [],
         "amended": [], "unplaced": [], "notes": [], "dispatch": {}, "latest": {}, "results": {},
-        "sheets_of": {}, "purpose_of": {},
+        "sheets_of": {}, "purpose_of": {}, "verified_lines": [],
     }
-    for raw in lines:
+    for position, raw in enumerate(lines):
         line = raw.strip()
         parts = line.split()
         if not parts:
@@ -370,11 +425,13 @@ def read_ledger(folder: Path) -> dict:
                 result = parts[parts.index("result") + 1] if "result" in parts[:-1] else ""
                 attempt = led["dispatch"].get((window, unit), 0)
                 led["latest"][(window, unit)] = {"pass": parts[2], "fields": fields, "result": result, "attempt": attempt}
+                led["verified_lines"].append((position, {"window": window, "unit": unit, "result": result}))
                 led["results"].setdefault((window, unit), {})[attempt] = result
             elif len(parts) >= 5:
                 note = {
                     "window": window, "pass": parts[2], "unit": unit, "kind": parts[4],
                     "clause": " ".join(parts[5:]), "attempt": led["dispatch"].get((window, unit), 0),
+                    "at": position,
                 }
                 led["notes"].append(note)
     return led
@@ -397,9 +454,12 @@ def read_plan_3(folder: Path) -> dict:
             section = line[3:]
             continue
         if section == "Manual sections not read":
-            m = re.match(r"^[1-9][0-9]*\. (\S+) on (\S+), package \S+: (.+)$", line)
+            m = NOT_READ_LINE_RE.match(line)
             if m:
-                out["omissions"].append({"code": m.group(1), "unit": m.group(2), "reason": m.group(3)})
+                out["omissions"].append({
+                    "code": m.group(1), "unit": m.group(4), "reason": m.group(5),
+                    "pages": (int(m.group(2)), int(m.group(3))) if m.group(2) else None,
+                })
             continue
         if section == "Nothing read for":
             m = re.match(r"^[1-9][0-9]*\. (.+), trade (.+)$", line)
@@ -415,6 +475,12 @@ def read_plan_3(folder: Path) -> dict:
                 "spans": _spans(part.group(6)),
             }
             continue
+        standard = STANDARD_LINE_RE.match(line)
+        if standard:
+            out["units"][standard.group(1)] = {
+                "kind": "standard", "package": standard.group(2), "trade": standard.group(3), "spans": [],
+            }
+            continue
         review = REVIEW_LINE_RE.match(line)
         if review:
             out["units"][review.group(1)] = {
@@ -422,6 +488,11 @@ def read_plan_3(folder: Path) -> dict:
                 "spans": _spans(review.group(4) or ""),
             }
     return out
+
+
+def _review_of(unit: str) -> str:
+    """The review unit of a window 3 unit's package: a manual part or standard lines unit id less its ending."""
+    return re.sub(r"(?:c-[1-9][0-9]*|s-1)$", "", unit)
 
 
 def _spans(text: str) -> list[tuple[str, int, int]]:
@@ -492,6 +563,7 @@ class Facts:
             }
         self.run = self._shaped("run.json", _json(folder / "run.json"), dict, {})
         self.inventory = self._shaped("inventory.json", _json(folder / "inventory.json"), dict, None)
+        self.packages = _json(folder / "plan" / "packages.json")
         self.window_1 = self._shaped("plan/window-1.json", _json(folder / "plan" / "window-1.json"), dict, None)
         self.window_2 = self._shaped("plan/window-2.json", _json(folder / "plan" / "window-2.json"), dict, None)
         empty3 = {"present": False, "units": {}, "omissions": [], "left_out": [], "unnamed": False}
@@ -526,14 +598,61 @@ class Facts:
         if window == "3":
             planned = self.plan3["units"].get(unit)
             if planned:
-                return f"the {planned['package']} review" if planned["kind"] == "review" else (
-                    f"the {planned['package']} manual pages"
-                )
+                return {
+                    "review": f"the {planned['package']} review",
+                    "standard": f"the {planned['package']} standard lines",
+                }.get(planned["kind"], f"the {planned['package']} manual pages")
             return "a package review"
         if plan_inventory._is_repeated_unit(unit):
             return "the notes one drawing file repeats"
         sheets = self.led["sheets_of"].get((window, unit))
         return ", ".join(sheets) if sheets else "a sheet"
+
+    def reviewed_then_written(self) -> list[str]:
+        """
+        Each package that took an item from another package's review after its own review was
+        verified, off the `row on another package` notes: the item's trade names the package,
+        through the package list's `tradeCode` and `codes`, and the note's own place on the ledger
+        says which came first, after the receiving package's review's latest `verified` line
+        reading ok. How the writing review itself ended does not matter: a review skipped after it
+        wrote the item leaves the item on the record all the same. A package whose review was never
+        verified took nothing after it.
+        """
+        verified_at: dict[str, int] = {}
+        review_of: dict[str, str] = {}
+        for unit, planned in self.plan3["units"].items():
+            if planned["kind"] == "review":
+                review_of[unit] = planned["package"]
+        for line_no, line in self.led.get("verified_lines", []):
+            if line["window"] == "3" and line["unit"] in review_of and line["result"] == "ok":
+                verified_at[line["unit"]] = line_no
+        rows = self.packages.get("packages") if isinstance(self.packages, dict) else None
+        by_trade: dict[str, str] = {}
+        for row in rows or []:
+            if isinstance(row, dict):
+                for code in [row.get("tradeCode"), *(row.get("codes") or [])]:
+                    if isinstance(code, str):
+                        by_trade.setdefault(code, str(row.get("name") or row.get("id")))
+        unit_of_package = {name: unit for unit, name in review_of.items()}
+        out: list[str] = []
+        for note in self.led["notes"]:
+            other = OTHER_PACKAGE_RE.match(note["clause"]) if note["window"] == "3" and note["kind"] == "anomaly" else None
+            if not other:
+                continue
+            package = by_trade.get(other.group(2))
+            review = unit_of_package.get(package or "")
+            written_at = note.get("at")
+            if review and review != note["unit"] and review in verified_at and written_at is not None \
+                    and verified_at[review] < written_at:
+                said = f"{package}: an item from the {review_of.get(note['unit'], 'another')} review, written after its own review"
+                if said not in out:
+                    out.append(said)
+        return out
+
+    def package_of_unit(self, unit: str) -> str:
+        """The package a window 3 unit id belongs to, by its review's unit, where the plan names it."""
+        planned = self.plan3["units"].get(_review_of(unit))
+        return planned["package"] if planned else "its package"
 
     def manual_name(self, unit: str) -> str:
         """A window 3 unit as a gap names it: a manual part by its package, sections and page range."""
@@ -678,6 +797,34 @@ class Facts:
                 f"{code} pages {first} to {last}" for code, first, last in read
             )
         return pages, not_known, by_package
+
+    def not_checked(self) -> list[dict]:
+        """
+        Each entry of the `sections not checked:` and `families not checked:` lines of the report
+        each window 3 review's and manual part's latest read verified ok counts off, where the
+        reader's own report is on file and whole, with the unit, its kind, its label and, for a
+        manual part, the planned spans its `spans read:` lines leave off. A restored report, or
+        none on file, is named elsewhere as pages not known.
+        """
+        out: list[dict] = []
+        for unit, planned in self.plan3["units"].items():
+            if planned["kind"] not in ("review", "manual") or unit not in self.ok["3"]:
+                continue
+            state, path = self.report_state(unit, planned["kind"])
+            if state != "reader" or path is None:
+                continue
+            try:
+                text = unit_report.report_text(path.read_bytes()) or ""
+                found = unit_report.sections(text, unit_report.LABELS[planned["kind"]])
+                read = self.spans_read(path, planned["kind"], planned["spans"]) if planned["spans"] else []
+            except (OSError, unit_report.ReportError):
+                continue
+            unread = [span for span in planned["spans"] if span not in read]
+            for label in ("sections not checked", "families not checked"):
+                for entry in unit_report._report_items(found.get(label, [])):
+                    out.append({"unit": unit, "kind": planned["kind"], "label": label, "entry": entry,
+                                "unread": unread, "package": planned["package"]})
+        return out
 
     def note_sheet(self, window: str, unit: str) -> str | None:
         """The sheet, or on a review its package's name, that the runner writes first in a unit's notes."""
@@ -856,7 +1003,10 @@ def _claim_said(facts: "Facts", note: dict, failed: str) -> str:
 def anomaly_gap(note: dict) -> bool:
     """Whether an anomaly note is one the collection of what could not be done prints, by its shape."""
     clause = note["clause"]
-    if note["window"] == "3" and (SECTION_NOT_READ_RE.match(clause) or UNSEARCHED_RE.match(clause)):
+    if note["window"] == "3" and (SECTION_NOT_READ_RE.match(clause) or UNSEARCHED_RE.match(clause)
+                                  or BOUND_REACHED_RE.match(clause)):
+        return True
+    if note["window"] == "3" and (FOUND_LATER_RE.match(clause) or OTHER_PACKAGE_RE.match(clause)):
         return True
     trades = TRADES_NOT_KNOWN_RE.match(clause)
     return bool(PICTURE_RE.match(clause) or (trades and trades.group(2) == note["unit"]))
@@ -871,8 +1021,11 @@ def gaps(facts: Facts) -> list[dict]:
     Everything the run could not read, match, search or check, each once, with the few words the
     short version names it by. The report's `What I could not read` and the short version's
     `Could not read` both print this list. Each entry is told apart from another by what it is
-    about, its unit, read, file, section and pages, never by the sentence it prints, so two gaps
-    whose sentences read alike are both named.
+    about, its unit, read, file, section and pages, and by what was found, left or given as the
+    reason, never by the sentence it prints, so two gaps whose sentences read alike are both named.
+    The one exception is a manual section not read: each such sentence names the pages the part's
+    report or the plan gives, and one that reads word for word as one already printed is not
+    printed again.
     """
     out: list[dict] = []
     seen: set[tuple] = set()
@@ -899,6 +1052,11 @@ def gaps(facts: Facts) -> list[dict]:
                     " It was read first for the marks and terms the later sheets use, and it was not "
                     "read again with them, so those sheets may be less complete for it."
                 )
+            planned = facts.plan3["units"].get(unit) if window == "3" else None
+            if planned and planned["kind"] == "standard":
+                line += f" Some of {planned['package']}'s standard lines may be missing, and its review added none."
+            elif planned and planned["kind"] == "review":
+                line += f" The headings and the order of the items on {planned['package']} were not settled."
             add(("skipped", window, unit), name, line)
     # The recheck skips no unit: a sheet whose reads were spent stops it, and is named until read again.
     for note in led["notes"]:
@@ -967,16 +1125,157 @@ def gaps(facts: Facts) -> list[dict]:
     if left_sheets:
         add(("left by plan",), "sheets the delivery's plan left",
             f"Left unread by the plan you approved for this delivery: {', '.join(dict.fromkeys(left_sheets))}.")
-    # Manual sections no review could read.
+    # Manual sections, or runs of their pages, no unit of the plan reads. A skipped manual part's
+    # pages are named with the part, by its sections and pages, above.
     for item in facts.plan3["omissions"]:
-        package = facts.plan3["units"].get(item["unit"], {}).get("package", "its package")
-        add(("omitted", item["unit"], item["code"]), f"section {item['code']}",
-            f"Section {item['code']} for {package}: no review read it, because {item['reason']}.")
+        if item["reason"] == plan_inventory.NOT_READ_SKIPPED:
+            continue
+        package = facts.plan3["units"].get(item["unit"], {}).get("package") or facts.package_of_unit(item["unit"])
+        pages = f" pages {item['pages'][0]} to {item['pages'][1]}" if item.get("pages") else ""
+        add(("omitted", item["unit"], item["code"], item.get("pages")), f"section {item['code']}{pages}",
+            f"Section {item['code']}{pages} for {package}: no unit read it, because {item['reason']}.")
+    # A manual part's section not read is named once for that part. Where the part's latest read
+    # verified ok and its own report of that read is on file and whole, the entry built from that
+    # report, below, is the one: it holds the current reason and the pages left. Otherwise (the part
+    # skipped, never verified ok, or its report lost or not on file) the part's latest `section ...
+    # not read` anomaly is, with the pages the plan gave the part, so two parts of one section are
+    # told apart by their pages; an earlier anomaly of that part and section is history.
+    _read, part_known, _by_package = facts.manual_pages()
+    standing = {
+        unit for unit, planned in facts.plan3["units"].items()
+        if planned["kind"] == "manual" and unit in facts.ok["3"] and unit not in part_known
+        and facts.report_state(unit, "manual")[0] == "reader"
+    }
+    section_notes: dict[tuple[str, str], re.Match] = {}
     for note in led["notes"]:
         section = SECTION_NOT_READ_RE.match(note["clause"]) if note["kind"] == "anomaly" and note["window"] == "3" else None
         if section:
-            add(("not read", note["unit"], section.group(1)), f"section {section.group(1)}",
-                f"{facts.group_name('3', note['unit'])}: {note_body(note)}.")
+            section_notes.pop((note["unit"], section.group(1)), None)
+            section_notes[(note["unit"], section.group(1))] = section
+    section_said: set[str] = set()
+
+    def add_section(key: tuple, name: str, line: str) -> None:
+        """A manual section's gap, where no gap already printed reads the same sentence."""
+        if line not in section_said:
+            section_said.add(line)
+            add(key, name, line)
+
+    used_notes: set[tuple[str, str]] = set()
+    for (unit, code), section in section_notes.items():
+        if unit in standing:
+            continue
+        planned = facts.plan3["units"].get(unit, {})
+        used_notes.add((unit, code))
+        pages = "; ".join(f"pages {a} to {b}" for c, a, b in planned.get("spans", []) if c == code) \
+            if planned.get("kind") == "manual" else ""
+        group = facts.group_name("3", unit)
+        add_section(("not read", unit, code), f"section {code}",
+                    f"{group}: section {code}{f' ({pages})' if pages else ''} not read: "
+                    f"{facts.say(section.group(2), group)}.")
+    # Each section and family a verified review or manual part did not check, off its own report, by
+    # the shapes its producer writes, and an entry in none in its own words. A manual part's section
+    # left unread is named here, with its pages, and its anomaly above adds nothing. Each entry's key
+    # holds its reason, so two reasons for one section are both named.
+    no_sections: list[str] = []
+    no_manual = False
+    checked = facts.not_checked()
+    # A review's `not read` or `not known` entry copies the notes script's line for a gap of its
+    # package's section: where the collection already names that section of that package as a part's
+    # gap (a skipped part, or one whose report was lost or is not on file), a part's anomaly or a
+    # plan omission, it is the same gap, named once, there.
+    named_sections = {
+        (_review_of(part), code)
+        for part, planned in facts.plan3["units"].items()
+        if planned["kind"] == "manual" and (part in facts.skipped["3"] or part in part_known)
+        for code, _first, _last in planned["spans"]
+    }
+    named_sections |= {(_review_of(item["unit"]), item["code"]) for item in facts.plan3["omissions"]}
+    named_sections |= {
+        (_review_of(unit), code) for unit, code in used_notes
+        if facts.plan3["units"].get(unit, {}).get("kind") == "manual"
+    }
+    named_sections |= {
+        (_review_of(item["unit"]), part.group(1)) for item in checked
+        if item["kind"] == "manual" and (part := PART_UNREAD_RE.match(item["entry"]))
+    }
+    for item in checked:
+        unit, package, entry = item["unit"], item["package"], item["entry"]
+        said = facts.say(entry, package)
+        if item["label"] == "families not checked":
+            referral = FAMILY_REFERRAL_RE.match(entry)
+            if referral:
+                add(("family", unit, entry), f"{referral.group(1)} for {package}",
+                    f"{package}: {facts.say(referral.group(1), package)} was not checked against the manual. Section "
+                    f"{referral.group(2)} was named for it, and the first two pages read there did not settle it.")
+            else:
+                add(("family", unit, entry), f"a family of items for {package}",
+                    f"{package}: a family of items was not checked against the manual: {said}.")
+            continue
+        unread = REVIEW_UNREAD_RE.match(entry) if item["kind"] == "review" else None
+        spent = REVIEW_SPENT_RE.match(entry) if item["kind"] == "review" else None
+        notes_unread = REVIEW_NOTES_UNREAD_RE.match(entry) if item["kind"] == "review" else None
+        part = PART_UNREAD_RE.match(entry) if item["kind"] == "manual" else None
+        owners = OWNERS_WORK_RE.match(entry)
+        if part:
+            code = part.group(1)
+            pages = "; ".join(f"pages {a} to {b}" for c, a, b in item["unread"] if c == code)
+            add_section(("not read", unit, code), f"section {code} for {package}",
+                        f"Manual pages for {package} (section {code}{', ' + pages if pages else ''}): not read, because "
+                        f"{PART_UNREAD_SAID[part.group(2)]}.")
+        elif unread and (_review_of(unit), unread.group(1)) in named_sections:
+            continue
+        elif unread:
+            why = facts.say(re.sub(r"^not known, ", "", unread.group(3)), package)
+            add(("checked", unit, unread.group(1), unread.group(2), unread.group(3)), f"section {unread.group(1)} for {package}",
+                f"{package}: section {unread.group(1)} was not checked against the drawings, since "
+                + (f"its manual pages were not read ({why})." if unread.group(2) == "not read" else
+                   f"which of its manual pages were read is not known ({why})."))
+        elif spent:
+            add(("checked", unit, spent.group(1), "searches spent"), f"section {spent.group(1)} for {package}",
+                f"{package}: section {spent.group(1)} was not checked for work no sheet shows, because the "
+                f"review's searches ran out first.")
+        elif notes_unread:
+            add(("checked", unit, notes_unread.group(1), "notes not read"), f"section {notes_unread.group(1)} for {package}",
+                f"{package}: section {notes_unread.group(1)} was not checked, because the review did not read "
+                f"the part of the manual notes that holds it.")
+        elif owners:
+            # Each part of the section, and its review, names the owner's work: one entry a package's section.
+            add(("owner's work", _review_of(unit), owners.group(1)), f"section {owners.group(1)} for {package}",
+                f"{package}: section {owners.group(1)} is work the owner contracts for, so it was not checked "
+                f"as this package's work.")
+        elif NO_SECTIONS_RE.match(entry):
+            no_sections.append(package)
+        elif NO_MANUAL_RE.match(entry):
+            no_manual = True
+        else:
+            add(("checked", unit, entry), f"a section for {package}",
+                f"{package}: a section was not checked: {said}.")
+    if no_sections:
+        add(("no sections",), "packages with no manual section",
+            f"No manual section is on {', '.join(dict.fromkeys(no_sections))}, so no section was checked for "
+            f"{'it' if len(set(no_sections)) == 1 else 'them'}.")
+    if no_manual:
+        add(("no manual",), "the project manual",
+            "No project manual was read in, so no review checked the drawings against one.")
+    # Each standard line whose condition a review found after the line was written or left: the
+    # review writes nothing for it, so the estimator decides.
+    for note in led["notes"]:
+        later = FOUND_LATER_RE.match(note["clause"]) if note["kind"] == "anomaly" and note["window"] == "3" else None
+        if later:
+            group = facts.group_name("3", note["unit"])
+            line, where, what = (facts.say(part.strip(), group) for part in later.groups())
+            add(("found later", note["unit"], *(part.strip() for part in later.groups())),
+                f"the standard line {line} for {group}",
+                f"{group}: the review found the condition of the standard line {line} at {where} after the "
+                f"line was written or left ({what}), and wrote nothing for it. Check the line yourself.")
+    # A review that reached one of its bounds: the limit, then what it left, in the review's words.
+    for note in led["notes"]:
+        bound = BOUND_REACHED_RE.match(note["clause"]) if note["kind"] == "anomaly" and note["window"] == "3" else None
+        if bound:
+            group = facts.group_name("3", note["unit"])
+            add(("bound", note["unit"], bound.group(1), bound.group(3)), f"{group}: {bound.group(1)}",
+                f"{_cap(group)}: the review stopped at its limit of {bound.group(2)} {bound.group(1)}. What the "
+                f"review left, in its report's words: “{facts.say(bound.group(3), group)}”.")
     # Words a review could not search.
     unsearched: dict[str, list[str]] = {}
     for note in led["notes"]:
@@ -1294,6 +1593,8 @@ def build(facts: Facts, stopped: str | None, finished: str) -> tuple[list[str], 
             ("Items that carry the same work", pairs),
             ("Requirements read and not written", not_written),
             ("Writes a read said it made that its check did not find, which the next read said were not needed", not_needed),
+            ("Packages that took an item after their own review, so their headings and order may need a look",
+             facts.reviewed_then_written()),
         ):
             unique = list(dict.fromkeys(entries))
             if unique:

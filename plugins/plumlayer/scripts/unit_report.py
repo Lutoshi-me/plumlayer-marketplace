@@ -12,17 +12,18 @@ the owed file, the restored report, the trades file and its `.written` file, and
 
 Six modes:
 
-    python unit_report.py check --kind <sheet|vocabulary|review|manual> --report <path or -> [--owed <path or none>]
+    python unit_report.py check --kind <sheet|vocabulary|review|manual|standard> --report <path or -> [--owed <path or none>] [--spans '<Reads: line>']
 
         Holds one report to its kind's shape: a file, or with `-` the reader's returned message on
-        stdin through a quoted heredoc. The kinds are the four readers of windows 1, 2 and 3: a
+        stdin through a quoted heredoc. The kinds are the five readers of windows 1, 2 and 3: a
         window 2 sheet (`scope-reader`), a window 1 unit (`scope-vocabulary-reader`), a package
-        review and a manual part. Window r is not held here.
+        review, a manual part and a standard lines unit (`scope-standard-lines`). Window r is
+        not held here.
 
         - Every label of the kind's shape opens a line (SHEET_LABELS, VOCABULARY_LABELS,
-          REVIEW_LABELS, MANUAL_LABELS, each the agent's own report shape), with a whole number on
-          `created:`, `updated:`, `questions raised:`, `questions replied:`, `sent:` and `landed:`,
-          and on a review or a manual part a whole number on `searches:`. A report short of any of
+          REVIEW_LABELS, MANUAL_LABELS, STANDARD_LABELS, each the agent's own report shape), with a
+          whole number on `created:`, `updated:`, `questions raised:`, `questions replied:`,
+          `sent:` and `landed:`, and on a window 3 unit a whole number on `searches:`. A report short of any of
           this is not whole, and so is one whose bytes are not UTF-8, read the same strict way off
           a file and off stdin.
         - The two counts every report shape makes equal to a list are held to it: `created` to
@@ -61,6 +62,13 @@ Six modes:
           the ledger and so the owed file hold an entry. With `--owed none`, a first read, `owed:`
           reads `none`. A failure, an entry left unnamed among them, is a mismatch named `owed`.
 
+        - With `--spans`, a manual part's `Reads:` line as its dispatch named it, `spans read:` is
+          held to those spans in that order, each once, a span left off only where its section
+          is on `sections not checked:` as `manual removed`, `manual changed` or `not on the
+          package`, and `section lines:` to one line per span read, in that order, each
+          `<span> | puts: ... | rows: ... | left: ... | silence: ...`. A failure is a mismatch
+          named `spans` or `section lines`.
+
         Exit 0: the report is whole and agrees with itself; it prints `report whole`. Exit 2: the
         report is not whole; it prints one line, `missing` or `not whole: no <labels>` or `not
         whole: <what>`, ready for the runner's note. Exit 3: the report is whole and some of it
@@ -88,7 +96,7 @@ Six modes:
 
     python unit_report.py restore '<run folder>' 3 <unit id>
 
-        For a package review or a manual part whose latest `verified` line reads ok, with no
+        For a window 3 unit, a package review, a manual part or a standard lines unit, whose latest `verified` line reads ok, with no
         `dispatch` line after it, and whose own report of that read is not whole, writes
         `<run folder>/reports/<unit id>.read-<k>.restored.md`, `<k>` the read that line checked,
         from the read plan, that `verified` line, the names and trades files and the unit's notes
@@ -179,19 +187,37 @@ REVIEW_LABELS = (
     "created subjects", "updated subjects", "manual updates", "field updates", "questions raised ids",
     "questions replied ids", "questions linked", "questions alone", "sent", "trades",
     "sheet readings written", "anomalies", "grain questions", "silent sections", "unspecified work",
-    "compared", "spans read", "sections not checked", "families not checked", "standard lines",
-    "headings written", "rows ordered", "door-owned suggestions", "not written", "owed",
+    "compared", "left by the parts", "sections not checked", "families not checked",
+    "standard lines found later", "headings written", "rows ordered", "rows on other packages",
+    "bounds reached", "door-owned suggestions", "not written", "owed",
 )
+# A manual part (`scope-manual-reader`): it reads its spans and says what each left on its section
+# line, and settles no heading.
 MANUAL_LABELS = (
-    *REVIEW_LABELS[: REVIEW_LABELS.index("spans read") + 1],
-    "context pages", "carried",
-    *REVIEW_LABELS[REVIEW_LABELS.index("spans read") + 1:],
+    "unit", "harvested", "notes read", "searches", "terms too general", "pages opened", "created",
+    "created subjects", "updated subjects", "manual updates", "field updates", "questions raised ids",
+    "questions replied ids", "questions linked", "questions alone", "sent", "trades",
+    "sheet readings written", "anomalies", "grain questions", "silent sections", "unspecified work",
+    "compared", "spans read", "section lines", "context pages", "carried", "sections not checked",
+    "families not checked", "door-owned suggestions", "not written", "owed",
+)
+# The reasons a manual part leaves one of its spans off `spans read:`, named for its section on
+# `sections not checked:`.
+UNREAD_SPAN_REASONS = ("manual removed", "manual changed", "not on the package")
+_SPAN_TEXT_RE = re.compile(r"^(\S+) p([1-9][0-9]*)-p([1-9][0-9]*) of (\S+)(?: \(section p([1-9][0-9]*)-p([1-9][0-9]*)\))?$")
+_SECTION_LINE_RE = re.compile(r"^(.+?) \| puts: (.+?) \| rows: (.+?) \| left: (.+?) \| silence: (.+)$")
+# A package's standard lines unit (`scope-standard-lines`): it reads no manual page and settles no
+# heading, raises no Question, and names each line the script printed on `standard lines:`.
+STANDARD_LABELS = (
+    "unit", "searches", "pages opened", "created", "created subjects", "updated subjects",
+    "manual updates", "field updates", "questions raised ids", "questions replied ids", "sent",
+    "trades", "anomalies", "standard lines", "door-owned suggestions", "not written", "owed",
 )
 LABELS = {
     "sheet": SHEET_LABELS, "vocabulary": VOCABULARY_LABELS, "review": REVIEW_LABELS,
-    "manual": MANUAL_LABELS,
+    "manual": MANUAL_LABELS, "standard": STANDARD_LABELS,
 }
-WINDOW_3_KINDS = ("review", "manual")
+WINDOW_3_KINDS = ("review", "manual", "standard")
 
 _CREATED_LINE_RE = re.compile(
     r"^created: (\S+)\s+updated: (\S+)\s+questions raised: (\S+)\s+questions replied: (\S+)\s*$"
@@ -250,6 +276,10 @@ REPORTS_FOLDER = "reports"
 
 class ReportError(Exception):
     """A named failure with a one-line reason, reported on stderr and exiting 1."""
+
+
+# How a restored report names the kind of window 3 unit it stands in for.
+UNIT_KIND_SAID = {"manual": "manual part", "standard": "standard lines unit", "review": "package review"}
 
 
 def restored_name(unit: str, read: int) -> str:
@@ -461,10 +491,69 @@ def read_owed_file(path: Path) -> dict:
     return {"entries": entries, "held": held, "others": others}
 
 
-def problems(text: str, kind: str, owed: dict | None = None, owed_given: bool = False) -> tuple[list[str], list[str]]:
+def dispatched_spans(reads: str) -> list[str]:
+    """The spans a manual part's `Reads:` line names, `; ` between them, each as written there."""
+    spans = [span.strip() for span in reads.split("; ") if span.strip()]
+    for span in spans:
+        if _SPAN_TEXT_RE.match(span) is None:
+            raise ReportError(f"the dispatched span {span!r} is not `<code> p<a>-p<b> of <fileId>`")
+    return spans
+
+
+def _report_items(lines: list[str]) -> list[str]:
+    """A list label's entries, one per line, a list marker read past and `none` reading nothing."""
+    items = [_LIST_MARKER_RE.sub("", line.strip(), count=1).strip() for line in lines]
+    items = [item for item in items if item]
+    return [] if items in ([], ["none"]) else items
+
+
+def span_mismatches(found: dict[str, list[str]], spans: list[str]) -> list[str]:
+    """
+    A manual part's `spans read:` and `section lines:` held to the spans its dispatch named: every
+    span read in the dispatch's order, each once, a span left off only where its section is on
+    `sections not checked:` with one of UNREAD_SPAN_REASONS, and one section line per span read,
+    in the same order, opening with that span and carrying its four fields. A failure is a mismatch
+    named `spans` or `section lines`.
+    """
+    out: list[str] = []
+    unread = set()
+    for line in _report_items(found.get("sections not checked", [])):
+        code = line.split()[0] if line.split() else ""
+        if any(reason in line for reason in UNREAD_SPAN_REASONS):
+            unread.add(code)
+    read = _report_items(found.get("spans read", []))
+    wanted = [span for span in spans if span.split()[0] not in unread]
+    if read != wanted:
+        missing = [span for span in wanted if span not in read]
+        extra = [span for span in read if span not in wanted]
+        said = (f"without {'; '.join(missing)}" if missing else "") + (
+            f"{'; ' if missing and extra else ''}beyond {'; '.join(extra)}" if extra else "")
+        out.append(f"spans {said or 'read out of the dispatched order'}")
+    lines = _report_items(found.get("section lines", []))
+    parsed = [_SECTION_LINE_RE.match(line) for line in lines]
+    for line, match in zip(lines, parsed):
+        if match is None:
+            out.append(f"section lines {line[:120]}, which is not `<span> | puts: | rows: | left: | silence:`")
+    named = [match.group(1).strip() for match in parsed if match is not None]
+    for span in wanted:
+        if named.count(span) == 0:
+            out.append(f"section lines {span}, with no section line")
+        elif named.count(span) > 1:
+            out.append(f"section lines {span}, named twice")
+    for span in named:
+        if span not in wanted:
+            out.append(f"section lines {span}, which is no span this read read")
+    if not [m for m in out if m.startswith("section lines")] and named != [s for s in wanted if s in named]:
+        out.append("section lines out of the order of `spans read:`")
+    return out
+
+
+def problems(text: str, kind: str, owed: dict | None = None, owed_given: bool = False,
+             spans: list[str] | None = None) -> tuple[list[str], list[str]]:
     """
     What keeps a report from being whole, and the mismatches of a whole one, `<check> <value>`
-    each. `owed` is the owed file read, or None with `owed_given` for `--owed none`.
+    each. `owed` is the owed file read, or None with `owed_given` for `--owed none`. `spans` are
+    a manual part's dispatched spans, which its `spans read:` and `section lines:` are held to.
     """
     labels = LABELS[kind]
     found = sections(text, labels)
@@ -507,6 +596,8 @@ def problems(text: str, kind: str, owed: dict | None = None, owed_given: bool = 
 
     if owed is not None or owed_given:
         mismatches.extend(_owed_mismatches(found, kind, owed, created_subjects))
+    if spans is not None and kind == "manual":
+        mismatches.extend(span_mismatches(found, spans))
     return [], mismatches
 
 
@@ -999,7 +1090,8 @@ def write_confirmed(run_folder: Path, window: str, unit: str, read: int, text: s
 # --------------------------------------------------------------------------- #
 
 _PLAN_UNIT_RE = re.compile(r"^[1-9][0-9]*\. (\S+): (.+?), trade (.+?), (?:reads (.+?), )?package (\S+)(.*)$")
-_PART_RE = re.compile(r"^, manual part after (\S+), reads (.+?)(?: verified)?$")
+_PART_RE = re.compile(r"^, manual part after (\S+), reads (.+?)(?: verified| skipped)?$")
+_STANDARD_RE = re.compile(r"^, standard lines after (\S+)(?: verified| skipped)?$")
 
 
 def _plan_unit(plan: Path, unit: str) -> dict:
@@ -1022,11 +1114,14 @@ def _plan_unit(plan: Path, unit: str) -> dict:
         match = _PLAN_UNIT_RE.match(raw.strip())
         if match and match.group(1) == unit and current is not None:
             part = _PART_RE.match(match.group(6))
+            standard = _STANDARD_RE.match(match.group(6))
             spans = part.group(2) if part else (match.group(4) or "no manual pages")
+            after = part.group(1) if part else standard.group(1) if standard else None
             return {
                 "pass": current, "name": match.group(2), "trade": match.group(3),
-                "package": match.group(5), "kind": "manual" if part else "review",
-                "spans": spans.removesuffix(" verified"), "after": part.group(1) if part else None,
+                "package": match.group(5), "kind": "manual" if part else "standard" if standard else "review",
+                "spans": spans.removesuffix(" verified").removesuffix(" skipped"),
+                "after": None if after == "none" else after,
             }
     raise ReportError(f"{plan} carries no unit {unit}; a unit the read plan does not carry is not restored")
 
@@ -1108,7 +1203,7 @@ def restore(run_folder: Path, window: str, unit: str) -> list[str]:
         f"restored: {unit}, read {read}, written by the run's report script from the record and the "
         f"run folder; the reader's report {own} is {state}",
         "no line below says a page was read or a search was run",
-        f"unit kind: {'manual part' if planned['kind'] == 'manual' else 'package review'}"
+        f"unit kind: {UNIT_KIND_SAID[planned['kind']]}"
         + (f", read after {planned['after']}" if planned["after"] else ""),
         f"package: {planned['name']}, trade {planned['trade']}, package id {planned['package']}",
         f"manual pages the read plan gave it: {planned['spans']}",
@@ -1165,6 +1260,7 @@ def main(argv: list[str] | None = None) -> int:
     one.add_argument("--kind", required=True, choices=tuple(LABELS))
     one.add_argument("--report", required=True, help="the report file, or - for the returned message on stdin")
     one.add_argument("--owed", help="the owed file this read was handed, or none on a first read")
+    one.add_argument("--spans", help="a manual part's `Reads:` line as its dispatch named it")
     owe = modes.add_parser("owed", help="write the owed file for a unit's next read")
     owe.add_argument("run_folder", type=Path)
     owe.add_argument("window")
@@ -1211,7 +1307,8 @@ def main(argv: list[str] | None = None) -> int:
             if text is None:
                 print(NOT_UTF8)
                 return 2
-            broken, mismatches = problems(text, args.kind, owed, owed_given=args.owed is not None)
+            spans = dispatched_spans(args.spans) if args.spans is not None else None
+            broken, mismatches = problems(text, args.kind, owed, owed_given=args.owed is not None, spans=spans)
             if broken:
                 print(broken[0])
                 return 2

@@ -1,7 +1,7 @@
 unit: rev-099999-1   package: An invented package   trade: 09 99 99   window: 3
 harvested: rows 4, definition codes 2, spec sections 1, aliases 1
 notes read: none
-searches: 7 run, 3 returned nothing, 0 of them standard line
+searches: 7 run, 3 returned nothing
 terms too general: invented term (40 pages, printed in every title block)
 pages opened:
 - X-1.01 file-0000 p3 (invented term) read one note, one row created
@@ -29,14 +29,14 @@ grain questions: none
 silent sections: none
 unspecified work: none
 compared: none
-spans read: none
+left by the parts: none
 sections not checked: none
 families not checked: none
-standard lines: Invented half, paper gives it to 09 99 99, X-1.01 file-0000 p3
-Invented later half, paper gives it to 09 99 99, X-2.01 file-0000 p4, row not yet written
-Invented written half, written scopeItem:A1-1-1, X-1.01 file-0000 p3, paper gives it to 26 00 00, section 099999 file-1111 p12
+standard lines found later: none
 headings written: none
 rows ordered: none
+rows on other packages: none
+bounds reached: none
 door-owned suggestions: none
 not written: none
 owed: none
