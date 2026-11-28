@@ -5,8 +5,8 @@ Home: 08 50
 
 | Kind | Line | Condition | Where to Look | Row Name |
 |---|---|---|---|---|
-| Pricing | Sales Tax on Materials | The package includes material the sub supplies (a product spec section in the package) | the package's spec sections | Sales tax on materials |
-| Pricing | Shipping and Delivery to Site | The package includes material the sub supplies (a product spec section in the package) | the package's spec sections | Shipping and delivery to site |
+| Pricing | Sales Tax on Materials | The package includes material the sub supplies (a product spec section in the package) and the project manual does not say the job is tax exempt | the package's spec sections; Division 00 and Division 01 for a tax exemption | Sales tax on materials |
+| Pricing | Delivery and Freight | The package includes material the sub supplies (a product spec section in the package) | the package's spec sections | Delivery and freight |
 | Pricing | Tariffs and Import Duty |  |  | Tariffs and import duty |
 | Which Trade | Window Install by Windows, Framing, Finish Carpentry or Siding | The window schedule or window section shows punched units (vinyl, fiberglass or wood) a supplier furnishes, not a window wall the window sub installs, and two or more of windows, rough carpentry, finish carpentry and siding are separate packages on this job | window schedule; window details; Division 08 50 00 or 08 52 00 Part 3; Division 06 10 00 and 07 46 00 | Window install |
 | Convention | Mulling at Grouped and Stacked Windows | The window elevations or schedule show windows grouped side by side or stacked in one opening | exterior elevations; window elevations; window schedule | Mulling at grouped windows |

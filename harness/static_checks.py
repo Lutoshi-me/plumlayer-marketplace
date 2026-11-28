@@ -15251,6 +15251,44 @@ def _row_name_errors(files: list[dict]) -> list[str]:
     return errors
 
 
+# The wordings a standard line carried in some files before every file gave it one, as a line and
+# as a row name. A package that took two trades' files wrote one line twice under two names.
+_STANDARD_LINES_RETIRED_WORDINGS: tuple[str, ...] = (
+    "Sales Tax on Supplied Material",
+    "Sales Tax on Supplied Materials",
+    "Install Priced Separately from Supply",
+    "Furnish and Install Priced Separately",
+    "Shipping and Delivery to Site",
+    "Sales tax on supplied material",
+    "Sales tax on supplied materials",
+    "Install priced apart from supply",
+    "Supply and install priced apart",
+    "Shipping and delivery to site",
+)
+
+
+def _standard_line_wording_errors(files: list[dict]) -> list[str]:
+    """
+    One wording per standard line: a line two files carry has the same title, kind, condition,
+    place to look and row name in each, so every package writes it under one name and the record's
+    one row of a name per package turns a second write into a citation; and no file carries a
+    retired wording as a line or as a row name.
+    """
+    errors: list[str] = []
+    first: dict[str, tuple[str, list[str]]] = {}
+    retired = {w.lower() for w in _STANDARD_LINES_RETIRED_WORDINGS}
+    for item in files:
+        for row in item["rows"]:
+            if len(row) != 5:
+                continue
+            if row[1].lower() in retired or any(n.strip().lower() in retired for n in row[4].split(";")):
+                errors.append(f"{item['slug']}.md carries the retired wording {row[1]!r} / {row[4]!r}")
+            seen = first.setdefault(row[1].lower(), (item["slug"], row))
+            if seen[1] != row:
+                errors.append(f"{row[1]!r} reads {row!r} in {item['slug']}.md and {seen[1]!r} in {seen[0]}.md")
+    return errors
+
+
 def _standard_lines_blocks(out: str) -> list[dict]:
     """The script's printed lines, each with the fields printed under it and its halves."""
     blocks: list[dict] = []
@@ -15536,6 +15574,48 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
     row_name_errors = _row_name_errors(files)
     errors.extend(row_name_errors)
     row_names = sum(len(row[4].split(";")) for row in rows if len(row) == 5)
+
+    # One wording per line across files; each break of that, made on a copy of the files, is refused.
+    wording_errors = _standard_line_wording_errors(files)
+    errors.extend(wording_errors)
+    files_by_line: dict[str, int] = {}
+    for item in files:
+        for title in {r[1] for r in item["rows"] if len(r) == 5}:
+            files_by_line[title] = files_by_line.get(title, 0) + 1
+    shared_lines = sum(1 for count in files_by_line.values() if count > 1)
+    wording_refused = 0
+    if not wording_errors:
+        def _shared_row(copied: list[dict], title: str) -> list[str]:
+            return next(row for item in copied[1:] for row in item["rows"] if row[1] == title)
+
+        def _second_name(copied: list[dict]) -> None:
+            _shared_row(copied, "Sales Tax on Materials")[4] = "Sales tax on material supplied"
+
+        def _second_condition(copied: list[dict]) -> None:
+            row = _shared_row(copied, "Sales Tax on Materials")
+            row[2] = row[2].replace(" and the project manual does not say the job is tax exempt", "")
+
+        def _second_look(copied: list[dict]) -> None:
+            _shared_row(copied, "Sales Tax on Materials")[3] = "the package's spec sections"
+
+        def _second_kind(copied: list[dict]) -> None:
+            _shared_row(copied, "Supply and Install Priced Separately")[0] = "Incidental"
+
+        def _title_in_other_case(copied: list[dict]) -> None:
+            _shared_row(copied, "Supply and Install Priced Separately")[1] = "Supply and install priced separately"
+
+        def _retired_wording_back(copied: list[dict]) -> None:
+            row = _shared_row(copied, "Sales Tax on Materials")
+            row[1], row[4] = "Sales Tax on Supplied Materials", "Sales tax on supplied materials"
+
+        for change in (_second_name, _second_condition, _second_look, _second_kind, _title_in_other_case,
+                       _retired_wording_back):
+            copied = [{**item, "rows": [list(r) for r in item["rows"]]} for item in files]
+            change(copied)
+            if _standard_line_wording_errors(copied):
+                wording_refused += 1
+            else:
+                errors.append(f"the one wording check passed the files with {change.__name__} applied")
 
     # One piece of work, one Which Trade line, worded the same in every file whose trade it names;
     # each break of that, made on a copy of the files, is refused.
@@ -15872,6 +15952,7 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         "an Else line naming no other file": ("paving.md", lambda t: t.replace("Else: Earthwork and Sitework", "Else: Sitework Lines", 1)),
         "one row name for two halves": ("plumbing.md", lambda t: t.replace("| Heat trace cable; Heat trace power |", "| Heat trace cable |", 1)),
         "a Which Trade line naming an unknown trade": ("plumbing.md", lambda t: t.replace("Heat Trace Cable by Plumbing,", "Heat Trace Cable by Pipefitters,", 1)),
+        "one line under a second row name": ("flooring.md", lambda t: t.replace("| Sales tax on materials |", "| Sales tax on flooring materials |", 1)),
     }
     refusals = 0
     for label, (file_name, change) in breaks.items():
@@ -15913,7 +15994,11 @@ def check_standard_lines(plugin_path: Path, marketplace_root: Path) -> Result:
         f"numbers starts, and each Else line another file's title; {row_names} row names, one per "
         f"half of a Which Trade line and one for any other, each at most "
         f"{STANDARD_LINES_ROW_NAME_MAX} characters with no comma, none twice in a file and none "
-        f"shared by two lines; {which_lines} Which Trade lines, each naming only trades the check "
+        f"shared by two lines; {shared_lines} lines carried by more than one file, each with one "
+        f"title, kind, condition, place to look and row name in every file, none of the "
+        f"{len(_STANDARD_LINES_RETIRED_WORDINGS)} retired wordings carried, {wording_refused} breaks "
+        f"refused (a second row name, a condition, a place to look or a kind in one file, the title "
+        f"in another case, a retired wording put back); {which_lines} Which Trade lines, each naming only trades the check "
         f"knows (a trade named before `Install` among them), worded the same in every file whose "
         f"trade its line or its condition names, and sharing its condition with no other line, "
         f"{which_refused} breaks of those rules refused (a line dropped from one file it names, one "
@@ -24565,6 +24650,98 @@ def check_nothing_to_install(plugin_path: Path, marketplace_root: Path) -> Resul
     return Result(name, not errors, detail=detail + ("" if not errors else " | " + "; ".join(errors)))
 
 
+# --------------------------------------------------------------------------- #
+# Check — Each agent calls a Plumlayer verb by its full tool name
+# --------------------------------------------------------------------------- #
+#
+# An agent's text writes a verb as a call, `search(...)`, and its tools list names the tool with the
+# client's prefix. A setup's manual readers called the bare verb and were answered that no such tool
+# exists, 163 times. The same agent
+# files ship to Codex, whose prefix differs, so the text names no prefix and says once, after its
+# opening paragraph, how to find the full name. Each agent file below carries that sentence; add a
+# file to the list as its text takes the sentence.
+
+FULL_TOOL_NAMES_SENTENCE = (
+    "Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools "
+    "list whose name ends in that verb: call it by that full name, never by the verb alone."
+)
+FULL_TOOL_NAMES_AGENTS: tuple[str, ...] = (
+    "scope-standard-lines.md",
+    "scope-package-folder.md",
+    "scope-rechecker.md",
+)
+FULL_TOOL_NAMES_PREFIX = "mcp__"
+
+
+def _full_tool_names_errors(label: str, text: str) -> list[str]:
+    """The sentence as the body's second paragraph, once, and no client prefix in the body."""
+    front, closed, body = text.replace("\r\n", "\n").partition("\n---\n")
+    if not front.startswith("---\n") or not closed:
+        return [f"{label} has no frontmatter"]
+    tools = next((l for l in front.splitlines() if l.startswith("tools:")), "")
+    if "plumlayer" not in tools:
+        return [f"{label} lists no Plumlayer tool, so it takes no sentence and leaves the list"]
+    paragraphs = [" ".join(p.split()) for p in re.split(r"\n\s*\n", body) if p.strip()]
+    errors: list[str] = []
+    if len(paragraphs) < 2 or paragraphs[1] != FULL_TOOL_NAMES_SENTENCE:
+        errors.append(f"{label} does not carry the full tool name sentence as its own paragraph after the opening one")
+    if " ".join(body.split()).count(FULL_TOOL_NAMES_SENTENCE) != 1:
+        errors.append(f"{label} carries the full tool name sentence other than once")
+    if FULL_TOOL_NAMES_PREFIX in body:
+        errors.append(f"{label} writes a client's tool name prefix in its body")
+    return errors
+
+
+def check_full_tool_names(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "full-tool-names"
+    texts: dict[str, str] = {}
+    for file_name in FULL_TOOL_NAMES_AGENTS:
+        path = plugin_path / "agents" / file_name
+        if not path.exists():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[file_name] = path.read_text(encoding="utf-8")
+    errors = [e for label, text in texts.items() for e in _full_tool_names_errors(label, text)]
+
+    refused = 0
+    if not errors:
+        def _paragraphs(text: str, change) -> str:
+            """The text with its body's paragraphs, the sentence's second among them, changed."""
+            head, _, body = text.replace("\r\n", "\n").partition("\n---\n")
+            paragraphs = body.split("\n\n")
+            at = next(i for i, p in enumerate(paragraphs) if " ".join(p.split()) == FULL_TOOL_NAMES_SENTENCE)
+            return head + "\n---\n" + "\n\n".join(change(paragraphs, at))
+
+        def _without(paragraphs: list[str], at: int) -> list[str]:
+            return paragraphs[:at] + paragraphs[at + 1:]
+
+        def _moved_to_end(paragraphs: list[str], at: int) -> list[str]:
+            return _without(paragraphs, at) + [paragraphs[at]]
+
+        def _reworded(paragraphs: list[str], at: int) -> list[str]:
+            return paragraphs[:at] + [FULL_TOOL_NAMES_SENTENCE.replace("never by the verb alone", "or by the verb")] + paragraphs[at + 1:]
+
+        def _prefix_written(paragraphs: list[str], at: int) -> list[str]:
+            return paragraphs + ["Call `mcp__plugin_plumlayer_plumlayer__search(...)` before any other verb.\n"]
+
+        for change in (_without, _moved_to_end, _reworded, _prefix_written):
+            for label, text in texts.items():
+                broken = _paragraphs(text, change)
+                if broken != text and _full_tool_names_errors(label, broken):
+                    refused += 1
+                else:
+                    errors.append(f"the check passed {label} with {change.__name__} applied")
+
+    detail = (
+        f"{len(texts)} agent files ({', '.join(texts)}) each carrying the full tool name sentence once, "
+        f"as its own paragraph after the opening one, and no client tool name prefix in the body; "
+        f"{refused} mutations refused (the sentence taken out, moved to the end, reworded, a prefix "
+        f"written in the body); bound: text only, not which name a running agent calls"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -24623,6 +24800,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_slim_review_repair_3(plugin_path, marketplace_root),
         check_code_lists(plugin_path, marketplace_root),
         check_nothing_to_install(plugin_path, marketplace_root),
+        check_full_tool_names(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

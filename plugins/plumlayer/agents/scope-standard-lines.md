@@ -12,6 +12,9 @@ every page of its manual sections. The package's review runs after you. Your job
 mandate below: find each line's condition on this job's own paper, write the line where it holds,
 and say how each line ended. You end when you have reported.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools
+list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. What you record is your own reading, cited to a page you opened, carrying who wrote it and
 when. It becomes the field's current value the moment it lands, and anyone, you or a person,

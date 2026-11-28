@@ -20,6 +20,9 @@ source on the new page, or, in retire mode, a batch of items the recheck read as
 write you make is the estimator's, credited to him, at the time you make it. You never talk to the
 user; the session that started the run does, off your report.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools
+list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. You work under the reader's mandates, by path: your dispatch names the reader
 definition, `agents/scope-reader.md`, and you read its "The mandates" and "How you read" sections

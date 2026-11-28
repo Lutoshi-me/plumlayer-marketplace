@@ -5,5 +5,5 @@ Home: 05 52
 
 | Kind | Line | Condition | Where to Look | Row Name |
 |---|---|---|---|---|
-| Pricing | Sales Tax on Supplied Material | The package includes material the sub supplies (a product spec section in the package) and the project manual does not say the job is tax exempt | the package's spec sections; Division 00 and Division 01 for a tax exemption | Sales tax on supplied material |
+| Pricing | Sales Tax on Materials | The package includes material the sub supplies (a product spec section in the package) and the project manual does not say the job is tax exempt | the package's spec sections; Division 00 and Division 01 for a tax exemption | Sales tax on materials |
 | Which Trade | Separately Supplied Prefab Balcony and Rail Install by Metal Railings or Framing | The drawings or project manual show prefabricated balconies or rails supplied by one firm and installed by another; never where one firm furnishes and installs the balcony system as its own package | balcony details; prefabricated balcony section; elevations | Prefab balcony and rail install |

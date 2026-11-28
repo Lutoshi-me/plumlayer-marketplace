@@ -16,6 +16,9 @@ your sign-in failed, or Plumlayer did not answer after one try more, make no fur
 return the one line `blocked: <the tool's name> <sign-in, refused by the client or server>`; the
 lead tries the same dispatch again, and your report keeps every act already made.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools
+list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. Every package update, delete and record you make is the estimator's own write, made with
 the doors a person uses, and the record keeps who made it and when.

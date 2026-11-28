@@ -607,7 +607,11 @@ Each of these is a harness check.
     one for any other line, never twice in a file and never shared by two lines. Each Which Trade
     line names only trades the check knows, a trade named before `Install` among them, reads the
     same in every file whose trade its line or its condition names, and shares its condition with
-    no other line, so one piece of work has one line. The shipped `standard_lines.py` is run over production
+    no other line, so one piece of work has one line. A line two files carry has one title, kind,
+    condition, place to look and row name in every file, and no file carries a wording the files
+    retired, such as "Sales Tax on Supplied Materials": a package that takes two trades' files then
+    writes the line once, and the record's one row of a name on a package turns any second write
+    into a citation. The shipped `standard_lines.py` is run over production
     package patterns whose files are assigned in the check apart from the script: each file goes to
     the one package the case names, and the script prints exactly the distinct lines of that
     package's files, each once with its kind, row name, condition and place to look, a line with no
@@ -625,8 +629,8 @@ Each of these is a harness check.
     package is called. A bad kind, an empty line, a short row, a number
     two files claim, a number not written as pairs of digits, a table with no header, no Home line,
     a Home number outside the file's numbers, an `Else:` line naming no other file, a long row
-    name, a row name with a comma, one row name for two halves, an unknown trade, a code spaced
-    another way, a package not on the list or given twice, no name and a missing folder are each
+    name, a row name with a comma, one row name for two halves, an unknown trade, one line under a
+    second row name in another file, a code spaced another way, a package not on the list or given twice, no name and a missing folder are each
     refused in one line. The reviewer, the runner, the skill and both readers keep the rules that
     hold a line to its condition, keep it from ever being a Question, take the package list before
     the script, write what the script prints, let the paper give this package's own half to it or
@@ -857,3 +861,13 @@ invisible.
     shape and six out of it, and pins the reader's and the runner's text, each phrase taken out
     and each retired sentence put back refused. This cannot judge whether a running reader records
     every list it sees; that is the measured run's.
+48. Each agent calls a Plumlayer verb by its full tool name. A setup's manual readers once called a
+    bare verb such as `search` and were answered that no such tool exists, 163 times. The same agent
+    files ship to Claude Code and to Codex, whose tool name prefixes differ, so an agent's body
+    never writes a prefix. Each agent file on the check's list carries, as its own paragraph after
+    its opening one, the one sentence that says each verb it writes as a call is the tool on its
+    tools list whose name ends in that verb, to be called by that full name. The check holds the
+    sentence there once in each listed file and no prefix in the body, and refuses the sentence
+    taken out, moved to the end or reworded and a prefix written into the body. A file joins the
+    list as its text takes the sentence. This cannot judge which name a running agent calls; that is
+    the measured run's.

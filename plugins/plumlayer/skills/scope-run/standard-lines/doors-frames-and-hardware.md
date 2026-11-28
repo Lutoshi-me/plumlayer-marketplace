@@ -5,7 +5,7 @@ Home: 08 10
 
 | Kind | Line | Condition | Where to Look | Row Name |
 |---|---|---|---|---|
-| Pricing | Sales Tax on Materials | The package includes material the sub supplies (a product spec section in the package) | the package's spec sections | Sales tax on materials |
+| Pricing | Sales Tax on Materials | The package includes material the sub supplies (a product spec section in the package) and the project manual does not say the job is tax exempt | the package's spec sections; Division 00 and Division 01 for a tax exemption | Sales tax on materials |
 | Convention | Unit Doors Prehung, Precased, Split Jamb | The door schedule lists wood doors at residential units | door schedule; enlarged unit plans | Unit doors prehung and precased |
 | Which Trade | Wood Casing at Door Frames by Finish Carpentry | The door details, door schedule or finish schedule show wood casing or trim at door frames | door frame details; door schedule; finish schedule; Division 06 20 00 | Wood casing at door frames |
 | Which Trade | Glass in Hollow Metal Doors, Sidelites and Transoms by Glazing | Doors and storefront and glazing are separate packages on this job, and the door schedule or door and frame elevations show hollow metal doors, sidelites or transoms with glass lites | door schedule; door and frame elevations; Division 08 80 00 | Glass in hollow metal doors |

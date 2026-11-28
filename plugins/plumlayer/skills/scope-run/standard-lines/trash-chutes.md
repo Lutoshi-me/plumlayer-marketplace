@@ -5,4 +5,4 @@ Home: 14 91 82
 
 | Kind | Line | Condition | Where to Look | Row Name |
 |---|---|---|---|---|
-| Pricing | Sales Tax on Materials | The package includes material the sub supplies (a product spec section in the package) | the package's spec sections | Sales tax on materials |
+| Pricing | Sales Tax on Materials | The package includes material the sub supplies (a product spec section in the package) and the project manual does not say the job is tax exempt | the package's spec sections; Division 00 and Division 01 for a tax exemption | Sales tax on materials |
