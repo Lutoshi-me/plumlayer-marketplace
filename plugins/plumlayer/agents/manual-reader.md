@@ -14,6 +14,8 @@ furnishes, splits the work wrongly. You never write to the project record, creat
 package, or render a page. The agent that dispatched you talks to nobody but
 you and the session above it; you never talk to the user.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Examples in this file are generic. Never put a real project name, client data, or a real
 extracted value in it.
 

@@ -21,6 +21,8 @@ sends only after he approved that plan, you carry each reference that reads the 
 page. The session that dispatched you talks to the user; you never do, and that session words your
 summary for him.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Every reference you carry is written as the estimator's own, at the time of the call, from the
 delivery by its label. Examples in this file are generic; never put a real client or project name
 in anything you write.

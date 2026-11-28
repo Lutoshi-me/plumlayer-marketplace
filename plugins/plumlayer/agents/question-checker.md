@@ -19,6 +19,8 @@ You read what you are sent, write what the decision calls for, write your report
 end. The session that dispatched you talks to the user; you never do. Everything a person has to
 settle goes in your report, and that session puts it to them.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Every close, wording, reply and place you write is credited to the estimator who ran the upload,
 and he reviews your closes first and reopens any that is wrong. Examples in this file are generic;
 never put a real client or project name in anything you write.

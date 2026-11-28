@@ -10,7 +10,7 @@ Checks:
      skill set matches EXPECTED_SKILLS exactly, in both directions.
   4. Agents: every agents/*.md has frontmatter that actually parses as YAML
      and a non-empty `name` and `description`; the shipped agent set matches
-     EXPECTED_AGENTS exactly, in both directions (`manual-reader`, `orientation`, `question-checker`,
+     EXPECTED_AGENTS exactly, in both directions (`manual-reader`, `orientation`, `package-split`, `question-checker`,
      `scope-manual-reader`, `scope-package-folder`, `scope-reader`, `scope-reviewer`, `scope-round-runner`,
      `scope-vocabulary-reader`, `sheet-checker`); and no agent declares a
      frontmatter field the runtime ignores for plugin-shipped agents
@@ -287,6 +287,22 @@ Checks:
       fold report, a missing ledger or an early stop. The skill carries stage 9's three facts in
       order, the stops and their messages, the one permission sentence, no settings file and no
       rule string, and none of the attended run's words; each broken and refused.
+  47. Full tool names: each agent file on FULL_TOOL_NAMES_AGENTS carries the fixed sentence that
+      has it call a Plumlayer verb by the full name on its tools list, word for word, before its
+      first heading, and writes the client's tool name prefix nowhere in its body, since the same
+      files ship to Codex. The tool surface check reads the sentence's `search(...)` as an example,
+      not a call. Four fixtures and four breaks of the shipped text, each refused.
+  48. Package split: agents/package-split.md holds step 8 with its pinned tools and under its size
+      bound; orientation dispatches it from one template as the draft and then the create, points
+      the old citations of its step 8 at it, and carries none of the moved rules; learn-project
+      names it. Each moved default and placement rule is pinned by its sentences, with the
+      draft's fields, the retry handling and `created.txt`, every package list paged, and
+      orientation's gate exception for running the split itself. Twenty-six breaks of the shipped
+      text and every pin taken out, each refused.
+  49. Overview fields: orientation's search of the set's text for the unit count, new construction
+      after a demolition, Phase left blank with no Question, Total Area never added up, and
+      `search_set_text` on its tools line; project-setup's phase from the user's words with its
+      `source.asked`. Each phrase taken out, refused.
 
 Grounding role: reads files and shells out to the claude CLI. No inference.
 """
@@ -338,8 +354,9 @@ EXPECTED_SKILLS = {
 # for every page read an upload makes, the question checker by drawing-upload's
 # step 9b for the re-read of the open Questions after a later delivery, the delivery
 # sizer by drawing-upload's step 9a for the plan and the carry of a new delivery on a project
-# that already holds scope, the orientation agent by learn-project for the orientation pass, and
-# the manual reader by orientation for each group of the manual's sections it places.
+# that already holds scope, the orientation agent by learn-project for the orientation pass, the
+# package split by orientation, once to draft the split and once to create the packages, and the
+# manual reader by the package split for each group of the manual's sections it places.
 
 def _no_sections() -> list[str]:
     """
@@ -358,6 +375,7 @@ EXPECTED_AGENTS = {
     "delivery-sizer",
     "manual-reader",
     "orientation",
+    "package-split",
     "question-checker",
     "scope-package-folder",
     "scope-reader",
@@ -7626,6 +7644,9 @@ def _agent_tool_surface(path: Path) -> tuple[set[str], set[str], bool]:
     body = _agent_body_lines(path)
     fence_mask = _fenced_code_line_mask(body)
     prose = " ".join(l for l, fenced in zip(body, fence_mask) if not fenced)
+    # The full tool name sentence names `search(...)` as its example, not as a call the file makes,
+    # so an agent with no search on its tools line can carry it.
+    prose = " ".join(prose.split()).replace(FULL_TOOL_NAMES_SENTENCE, " ")
 
     named: set[str] = set()
     for span in _INLINE_SPAN_RE.findall(prose):
@@ -24882,95 +24903,761 @@ def check_nothing_to_install(plugin_path: Path, marketplace_root: Path) -> Resul
 
 
 # --------------------------------------------------------------------------- #
-# Check — Each agent calls a Plumlayer verb by its full tool name
+# Check: each agent calls a Plumlayer verb by its full tool name
 # --------------------------------------------------------------------------- #
 #
-# An agent's text writes a verb as a call, `search(...)`, and its tools list names the tool with the
-# client's prefix. A setup's manual readers called the bare verb and were answered that no such tool
-# exists, 163 times. The same agent
-# files ship to Codex, whose prefix differs, so the text names no prefix and says once, after its
-# opening paragraph, how to find the full name. Each agent file below carries that sentence; add a
-# file to the list as its text takes the sentence.
+# A measured setup's manual readers made 163 calls the client answered "No such tool available",
+# every one a bare `search` sent after the instruction `search(projectId, ...)`, and a measured
+# scope run 164 more: the verb was on the agent's tools line under the name the client gives it,
+# and the agent called it by the verb alone. The same agent files ship to Codex, whose tool names
+# differ, so no file writes the client's prefix into its text. Each agent file on the list below
+# carries one fixed sentence telling it how to find the full name, before its first heading so it
+# is read before any call, and writes the prefix nowhere in its body.
+#
+# The list is meant to end as every agent: a batch adds the files it owns once they carry the
+# sentence.
+#
+# Bound: text only. Whether a running agent calls the full name is counted from a run's transcript,
+# as the "No such tool available" results it holds.
 
 FULL_TOOL_NAMES_SENTENCE = (
-    "Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools "
-    "list whose name ends in that verb: call it by that full name, never by the verb alone."
+    "Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your "
+    "tools list whose name ends in that verb: call it by that full name, never by the verb alone."
 )
-FULL_TOOL_NAMES_AGENTS: tuple[str, ...] = (
-    "scope-standard-lines.md",
-    "scope-package-folder.md",
-    "scope-rechecker.md",
-    "scope-reader.md",
-    "scope-vocabulary-reader.md",
-    "scope-reviewer.md",
-    "scope-round-runner.md",
+
+FULL_TOOL_NAMES_AGENTS = (
+    "delivery-sizer",
+    "manual-reader",
+    "orientation",
+    "package-split",
+    "question-checker",
+    "scope-package-folder",
+    "scope-rechecker",
+    "scope-standard-lines",
+    "scope-reader",
+    "scope-round-runner",
+    "scope-reviewer",
+    "scope-vocabulary-reader",
+    "sheet-checker",
 )
-FULL_TOOL_NAMES_PREFIX = "mcp__"
 
 
-def _full_tool_names_errors(label: str, text: str) -> list[str]:
-    """The sentence as the body's second paragraph, once, and no client prefix in the body."""
-    front, closed, body = text.replace("\r\n", "\n").partition("\n---\n")
-    if not front.startswith("---\n") or not closed:
-        return [f"{label} has no frontmatter"]
-    tools = next((l for l in front.splitlines() if l.startswith("tools:")), "")
-    if "plumlayer" not in tools:
-        return [f"{label} lists no Plumlayer tool, so it takes no sentence and leaves the list"]
-    paragraphs = [" ".join(p.split()) for p in re.split(r"\n\s*\n", body) if p.strip()]
+def _split_frontmatter(text: str) -> tuple[str, list[str]]:
+    """(the frontmatter block, the body's lines) of one definition's text; a text with no closed
+    block is all body."""
+    lines = text.splitlines()
+    if lines and lines[0].strip() == "---":
+        for i, line in enumerate(lines[1:], start=1):
+            if line.strip() == "---":
+                return "\n".join(lines[1:i]), lines[i + 1:]
+    return "", lines
+
+
+def _full_tool_names_errors(text: str, label: str) -> list[str]:
+    block, body = _split_frontmatter(text)
+    tools_line = next((l for l in block.splitlines() if l.startswith("tools:")), "")
     errors: list[str] = []
-    if len(paragraphs) < 2 or paragraphs[1] != FULL_TOOL_NAMES_SENTENCE:
-        errors.append(f"{label} does not carry the full tool name sentence as its own paragraph after the opening one")
-    if " ".join(body.split()).count(FULL_TOOL_NAMES_SENTENCE) != 1:
-        errors.append(f"{label} carries the full tool name sentence other than once")
-    if FULL_TOOL_NAMES_PREFIX in body:
-        errors.append(f"{label} writes a client's tool name prefix in its body")
+    if not _CONNECTOR_DECLARATION_RE.search(tools_line):
+        errors.append(f"{label}: its tools line lists no Plumlayer verb")
+    flat = " ".join(" ".join(body).split())
+    if FULL_TOOL_NAMES_SENTENCE not in flat:
+        errors.append(f"{label}: does not carry the full tool name sentence word for word")
+    else:
+        first_heading = next((i for i, l in enumerate(body) if l.startswith("#")), len(body))
+        if FULL_TOOL_NAMES_SENTENCE not in " ".join(" ".join(body[:first_heading]).split()):
+            errors.append(f"{label}: carries the full tool name sentence after its first heading")
+    if flat.count(FULL_TOOL_NAMES_SENTENCE) > 1:
+        errors.append(f"{label}: carries the full tool name sentence more than once")
+    if "mcp__" in "\n".join(body):
+        errors.append(f"{label}: writes the client's tool name prefix (`mcp__`) in its body")
     return errors
 
 
 def check_full_tool_names(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "full-tool-names"
     texts: dict[str, str] = {}
-    for file_name in FULL_TOOL_NAMES_AGENTS:
-        path = plugin_path / "agents" / file_name
-        if not path.exists():
+    for agent in FULL_TOOL_NAMES_AGENTS:
+        path = plugin_path / "agents" / f"{agent}.md"
+        if not path.is_file():
             return Result(name, False, detail=f"not found: {path}")
-        texts[file_name] = path.read_text(encoding="utf-8")
-    errors = [e for label, text in texts.items() for e in _full_tool_names_errors(label, text)]
+        texts[agent] = path.read_text(encoding="utf-8")
 
-    refused = 0
+    errors: list[str] = []
+    for agent, text in texts.items():
+        errors.extend(_full_tool_names_errors(text, f"agents/{agent}.md"))
+
+    fixtures = marketplace_root / "harness" / "fixtures"
+    expected = [
+        ("agent-fixture-full-names.md", None),
+        ("agent-fixture-full-names-missing.md", "does not carry the full tool name sentence"),
+        ("agent-fixture-full-names-late.md", "after its first heading"),
+        ("agent-fixture-full-names-prefix.md", "writes the client's tool name prefix"),
+    ]
+    for fixture_name, wanted in expected:
+        fixture = fixtures / fixture_name
+        if not fixture.is_file():
+            errors.append(f"fixture not found at {fixture}")
+            continue
+        got = _full_tool_names_errors(fixture.read_text(encoding="utf-8"), fixture_name)
+        if wanted is None:
+            if got:
+                errors.append(f"{fixture_name}: clean fixture refused: {'; '.join(got)}")
+        elif len(got) != 1 or wanted not in got[0]:
+            errors.append(f"{fixture_name}: expected one refusal naming '{wanted}', got {got}")
+
+    # The shipped text broken, so each refusal is shown on a real file rather than assumed.
+    mutations: list[tuple[str, str, str]] = []
     if not errors:
-        def _paragraphs(text: str, change) -> str:
-            """The text with its body's paragraphs, the sentence's second among them, changed."""
-            head, _, body = text.replace("\r\n", "\n").partition("\n---\n")
-            paragraphs = body.split("\n\n")
-            at = next(i for i, p in enumerate(paragraphs) if " ".join(p.split()) == FULL_TOOL_NAMES_SENTENCE)
-            return head + "\n---\n" + "\n\n".join(change(paragraphs, at))
-
-        def _without(paragraphs: list[str], at: int) -> list[str]:
-            return paragraphs[:at] + paragraphs[at + 1:]
-
-        def _moved_to_end(paragraphs: list[str], at: int) -> list[str]:
-            return _without(paragraphs, at) + [paragraphs[at]]
-
-        def _reworded(paragraphs: list[str], at: int) -> list[str]:
-            return paragraphs[:at] + [FULL_TOOL_NAMES_SENTENCE.replace("never by the verb alone", "or by the verb")] + paragraphs[at + 1:]
-
-        def _prefix_written(paragraphs: list[str], at: int) -> list[str]:
-            return paragraphs + ["Call `mcp__plugin_plumlayer_plumlayer__search(...)` before any other verb.\n"]
-
-        for change in (_without, _moved_to_end, _reworded, _prefix_written):
-            for label, text in texts.items():
-                broken = _paragraphs(text, change)
-                if broken != text and _full_tool_names_errors(label, broken):
-                    refused += 1
-                else:
-                    errors.append(f"the check passed {label} with {change.__name__} applied")
+        flat_sentence = FULL_TOOL_NAMES_SENTENCE
+        mutations = [
+            ("manual-reader.md with the sentence taken out", "manual-reader",
+             texts["manual-reader"].replace(flat_sentence, "")),
+            ("sheet-checker.md with the sentence naming the bare verb", "sheet-checker",
+             texts["sheet-checker"].replace("call it by that full name, never by the verb alone",
+                                            "call it by the verb")),
+            ("package-split.md with the sentence moved under its first heading", "package-split",
+             texts["package-split"].replace(flat_sentence + "\n", "", 1).replace(
+                 "## What your dispatch gives you\n", "## What your dispatch gives you\n\n" + flat_sentence + "\n", 1)),
+            ("delivery-sizer.md with a call written under the client's prefix", "delivery-sizer",
+             texts["delivery-sizer"] + f"\nCall `{CONNECTOR_TOOL_PREFIX}compare_delivery`.\n"),
+        ]
+        for label, agent, broken in mutations:
+            if broken == texts[agent] or not _full_tool_names_errors(broken, agent):
+                errors.append(f"the check passed {label}")
 
     detail = (
-        f"{len(texts)} agent files ({', '.join(texts)}) each carrying the full tool name sentence once, "
-        f"as its own paragraph after the opening one, and no client tool name prefix in the body; "
-        f"{refused} mutations refused (the sentence taken out, moved to the end, reworded, a prefix "
-        f"written in the body); bound: text only, not which name a running agent calls"
+        f"{len(texts)} agent definitions carry the full tool name sentence word for word before "
+        f"their first heading and write no `{CONNECTOR_TOOL_PREFIX}` in their bodies; "
+        f"{len(expected)} fixtures, {len(mutations)} mutations refused; bound: text only, not the "
+        f"calls a running agent makes"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: the package split runs in its own agent, as a draft and a create
+# --------------------------------------------------------------------------- #
+#
+# The orientation agent that drafted the package split once peaked at 240k on a manual of about
+# 2,600 pages: it started at 74k, carrying the whole orientation definition and 31 tool schemas,
+# grew about 90k from the manual readers' returns and result files, and about 64k from the package
+# creates and re-lists. Step 8 now runs in `agents/package-split.md`, which carries only step 8 and
+# its own copy of the spec read, with the tools those steps call, and orientation dispatches it
+# twice, a draft that ends on `draft.md` and a create that reads it, so the readers' growth and the
+# writes' growth land in two agents. Files that cite orientation's step 8, its sub-step 6 or its
+# defaults reach them through orientation's pointer, so the numbers are kept.
+#
+# What can fail, one case each below: the new agent's tools line grows past the set its steps call,
+# or the file past its size bound; orientation stops dispatching it, or dispatches it once, or
+# dispatches orientation or a manual reader itself again; the moved rules come back into
+# orientation, or leave the new file; orientation's pointer for the old citations goes; the draft
+# and the create stop naming their boundary; the manual page rule leaves the new file.
+#
+# The rules that moved out of orientation's step 8 are pinned one by one, each default and each
+# placement rule by the sentences that state it, so taking one out of the new file fails the check
+# by its name. So are the fields of `draft.md`, which the create reads and nothing else; the retry
+# handling, `before.txt` and `created.txt` among it, so a package the split made on an earlier
+# attempt, or made in sub-step 6, is still reported as the split's; the paging of every package
+# list, since one `solicitation_list_packages` call returns one page of 50; and orientation's
+# exception to its own gates for the client with no agent dispatch, where it runs the split itself.
+#
+# Bound: text only. Whether each agent's largest turn stays under 200k is read from a setup's
+# transcripts on a manual of 2,000 pages or more.
+
+_PACKAGE_SPLIT = "package-split"
+_PACKAGE_SPLIT_TOOLS = {
+    "Agent(manual-reader)", "Read", "Write", "Bash", "Grep",
+    f"{CONNECTOR_TOOL_PREFIX}directory_list_trades",
+    f"{CONNECTOR_TOOL_PREFIX}get_page_text",
+    f"{CONNECTOR_TOOL_PREFIX}get_project",
+    f"{CONNECTOR_TOOL_PREFIX}search",
+    f"{CONNECTOR_TOOL_PREFIX}solicitation_create_package",
+    f"{CONNECTOR_TOOL_PREFIX}solicitation_list_packages",
+    f"{CONNECTOR_TOOL_PREFIX}solicitation_update_package",
+}
+# About 12.5k tokens: with its seven verbs' schemas the agent starts near 30k, where orientation
+# started at 74k. A file grown past this has taken back text the draft and the create both carry.
+_PACKAGE_SPLIT_MAX_CHARS = 56_000
+_PACKAGE_SPLIT_PINS = (
+    "### Steps: draft.",
+    "### Steps: create.",
+    "You make no `get_page_text` call on a manual page",
+    "This is where the draft ends: write `draft.md`",
+    "The create picks up at sub-step 5.",
+    "6. **Place every section, then count.**",
+    "These hold on nearly every job where the work is there:",
+    "subagent_type: plumlayer:manual-reader",
+    "orientation's step 8 is this file's step 8, its sub-step 6 places a section on a package",
+)
+_ORIENTATION_SPLIT_PINS = (
+    "subagent_type: plumlayer:package-split",
+    "`Steps: draft.`",
+    "`Steps: create.`",
+    "a file that cites orientation's step 8, its sub-step 6 or its default carries means that file's step 8",
+)
+# The moved rules: each sits in the package split alone, so it is stated once.
+_PACKAGE_SPLIT_MOVED = (
+    "These hold on nearly every job where the work is there:",
+    "6. **Place every section, then count.**",
+    "subagent_type: plumlayer:manual-reader",
+    "subagent_type: plumlayer:orientation",
+)
+# Each default carried from orientation's step 8, by the sentences that state it.
+_PACKAGE_SPLIT_DEFAULTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("concrete, reinforcing and post-tensioning", (
+        "The concrete sub carries the reinforcing and the post-tensioning, a rebar supplier's price "
+        "inside the concrete package, so there is no reinforcing or post-tensioning package.",
+        "Concrete sidewalks go with concrete.")),
+    ("earthwork", (
+        "The earthwork sub carries excavation, dewatering, soil export with the impacted soils and "
+        "any tank removal, the site water, sewer and storm utilities, asphalt paving, street curbs "
+        "and pavement markings.",)),
+    ("an assembly's layers", (
+        "The layers of an assembly go on the package of the sub who builds the assembly, even where "
+        "the manual gives a layer a section of its own",)),
+    ("exterior improvements and the vegetated roof", (
+        "Landscaping, planting and irrigation are one exterior improvements package, and fencing "
+        "and gates go on it.",
+        "goes on the package of the firm the manual names to build it, never split between the "
+        "roofer and the landscaper.")),
+    ("siding", (
+        "Metal wall panels, fiber cement and the other cladding are one siding package, with the "
+        "continuous insulation, furring, flashings and trim at the cladding.",)),
+    ("roofing", (
+        "The roofer carries the roof insulation and cover board under the membrane, the flashing "
+        "that ties into the roof, copings, gutters, downspouts and roof hatches.",
+        "Flashing in a wall or at a window goes with the wall or window trade.")),
+    ("masonry", ("The mason carries the architectural precast and the cast stone.",)),
+    ("waterproofing and firestopping", (
+        "The waterproofer carries dampproofing, waterproofing and the joint sealants.",
+        "Each trade carries the firestopping at its own penetrations, with the firestopping trade "
+        "on the waterproofing package's `codes`")),
+    ("spray fireproofing", ("Spray fireproofing, intumescent paint included, is its own package.",)),
+    ("doors and hardware", (
+        "Door hardware is bought with the doors and frames.",
+        "The finish carpenter installs the doors, the hardware and the frames other than the welded "
+        "hollow metal frames, with the cabinets and the toilet accessories.")),
+    ("storefront", (
+        "Storefront, entrances and glazing are one package, with the glass film, the common-area "
+        "mirrors and the louvers.",)),
+    ("windows", (
+        "On a wood-framed job, the window supplier furnishes the windows and the framer installs them.",)),
+    ("wood trusses", ("The framer carries the wood trusses, supply included.",)),
+    ("drywall", (
+        "The drywaller carries the non-bearing metal studs and installs the welded hollow metal frames.",)),
+    ("flooring and wall coverings", (
+        "Carpet goes on the flooring package with the resilient flooring, and wall coverings on the "
+        "painting package.",)),
+    ("electrical", (
+        "The electrician carries fire alarm, access control, video surveillance, the intercom, "
+        "tel/data, the radio amplifier and the lighting fixtures.",)),
+    ("appliances and food service", (
+        "Residential appliances are their own package.",
+        "Food service equipment is its own package only where the job has a commercial kitchen.")),
+    ("countertops and millwork", (
+        "Countertops are a package of their own, apart from casework.",
+        "Finish carpentry and millwork are two packages, or one where the job has little millwork or "
+        "the owner furnishes the casework.")),
+    ("the packages of their own", (
+        "Gypsum underlayment, smoke containment curtains, overhead doors, window treatments, signage, "
+        "elevators, trash chutes and roof anchors are each a package of their own.",
+        "Fireplaces, flood barriers, operable partitions and package systems are each a package of "
+        "their own apart from specialties, and shower doors stay in specialties.")),
+    ("general conditions", (
+        "General conditions are a markup line on the estimate, never a package, and the words never "
+        "appear as a heading, a package name or a row.",)),
+    ("structural steel", (
+        "Structural steel is its own package where the structural sheets show a steel podium or a "
+        "steel frame, or steel framing whole floors or roofs.",
+        "On a wood job over a concrete podium, or a renovation, the steel goes on the metal "
+        "fabrications package.")),
+    ("excavation support", (
+        "Excavation support and underpinning are their own package where the drawings show a "
+        "basement below the water table, a support of excavation system or adjacent buildings to "
+        "underpin.",
+        "A manual section alone does not make the package; otherwise they go with earthwork.")),
+    ("abatement", (
+        "Abatement is its own package where the job demolishes or renovates an existing building and "
+        "the hazardous materials survey lists a large inventory.",
+        "Otherwise it goes with demolition.")),
+    ("air barrier", (
+        "The air barrier goes with the framer on wood-framed walls, and with the waterproofer at the "
+        "podium and on walls that are not wood.",)),
+    ("site conditions", (
+        "Each site condition on the `hazardFlag` value goes on the package whose firm prices it",
+        "dewatering and contaminated soil on earthwork, an adjacent structure on excavation support "
+        "where that package is made and on earthwork where it is not, and a limit on the work's "
+        "hours, noise or appearance on the general requirements package.")),
+    ("how a default holds", (
+        "Each is a default the estimator can change in chat, and the set or the manual overrides any "
+        "of them",
+        "A default for work the job does not have makes no package.",
+        "These depend on the job, each by what the set shows:")),
+)
+# Each placement rule carried from orientation's step 8 sub-steps 1 to 6.
+_PACKAGE_SPLIT_PLACEMENT: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("match-or-create", (
+        "This step is match-or-create: never create a package whose catalog trade id already has one "
+        "on the project.",)),
+    ("no spec sections, no split", (
+        "If step 3 found no `inDivision` entries for this project, create no packages.",
+        "Drawing disciplines are never used as an anchor for a split.")),
+    ("the manual readers' groups", (
+        "never place a section by its title because no reader was sent for it.",
+        "A division with more than 8 sections is split into consecutive groups of at most 8",)),
+    ("what a package is", (
+        "A package is what one kind of firm bids: a supplier who furnishes the item, an installer "
+        "who installs what another firm furnishes, or a sub who furnishes and installs it.",
+        "Work two kinds of firm bid goes on two packages.")),
+    ("a furnish and install pair", (
+        "its section goes on both packages' `manualSections`, the furnishing package's `notes` name "
+        "the package that installs it, and the installing package's `notes` name what it installs.",
+        "A supplier's item never sits on a package with no installer",
+        "Keep the two packages for windows, cabinets, appliances, specialties and doors.",
+        "The exception is an item the installing firm buys itself",
+        "Where the supplier and the installer resolve to the same catalog trade, keep one package")),
+    ("notes name only firms with a package", (
+        "A package's `notes` never name a firm that has no package.",
+        "automatic door operators go with doors, frames and hardware, or with the glazing package "
+        "where they open storefront entrances.")),
+    ("every section on a package", (
+        "Every section step 3 read outside Divisions 00 and 01 ends on at least one package, the "
+        "package whose bidder buys it.",
+        "the `work:` summary alone makes no package its title would not.",
+        "an item the owner furnishes for the contractor to install goes on the installing firm's "
+        "package, and its `notes` say the owner furnishes it.",
+        "A field that reads `not stated`, or `not read` where Part 1 ran past the pages read, leaves "
+        "the default below in place")),
+    ("a silent family", (
+        "a silent family becomes a `missingScopeFamily` entry AND, where a job of this kind would "
+        "normally carry the trade, a package.",)),
+    ("a specialty system", (
+        "A system one specialty firm furnishes and installs is a package of its own, named for the system",
+        "The test is who bids it: one firm furnishes and installs the whole system",
+        "the test is no reason to move the work",
+        "Tell a specialty system from an ordinary section by these signs:",
+        "one sign is enough where the section's work is the whole system and no general trade's firm "
+        "on the job bids it.",
+        "None of these is a sign: products from one manufacturer",
+        "A delegated design alone is no sign either where that firm is a general trade's",
+        "A specialty system's package keeps the system whole, even where it touches another assembly",
+        "the steel default never takes a prefabricated steel balcony to the metal fabrications package.")),
+    ("work another firm carries", (
+        "A section a firm of another package carries goes on that package's `manualSections`, and its "
+        "trade on that package's `codes`, never a package of its own.",
+        "Walk-off mats, an acoustic underlayment laid under the finish floor, and floor prep go on the "
+        "flooring package",
+        "Joint sealants go with the waterproofer",
+        "Penetration firestopping goes with each trade at its own penetrations",
+        "Firestopping is a package of its own only where the manual asks for a single firestopping "
+        "installer, or the estimator asks for one.")),
+    ("an item with no catalog trade", (
+        "Where the catalog has no trade for an item, ask the same question, which kind of firm bids "
+        "it, and put it on that firm's package, never on the package of its nearest neighbor in the "
+        "division.",)),
+    ("codes no sub bids", (
+        "A package's `tradeCode` and its `codes` never hold a heading no sub bids here",
+        "A code ending in `00` takes in every catalog trade under it")),
+    ("the owner's work and reference sections", (
+        "Work the owner contracts for directly gets no package",
+        "it goes on the package of each firm that reads it to price its own work")),
+    ("a default's trades on codes", (
+        "Every trade a default puts on a package goes on that package's `codes`",
+        "A trade a default splits between two packages goes on the `codes` of one of them only")),
+    ("the general requirements package", (
+        "Every split carries one general requirements package: `tradeCode` `01 11 13`",)),
+    ("the trade catalog", (
+        "never guess an id from memory",
+        "The one code you take without a lookup is a division code for a firm that bids its whole "
+        "division on this job",
+        "Never write the nearest catalog code in place of a manual section, and never put a manual "
+        "section number into `codes`.")),
+    ("the creates and changes", (
+        "never repeating `tradeCode`",
+        "A condition goes on one package only",
+        "Never take words off a package's `notes`.")),
+    ("the placement count", (
+        "`solicitation_update_package` replaces the whole list, and it refuses two spellings of one section.",
+        "a section no subcontractor bids and a section whose item the catalog has no trade for each go "
+        "on a package by sub-step 3's rules.",
+        "Always read `manualSectionPlacement.truncated`")),
+)
+# The lines of `draft.md`, which are all the create learns of the draft.
+_PACKAGE_SPLIT_DRAFT_FIELDS = (
+    "draft   packages to create", "manual folder:", "trade list:",
+    "facts: structuralSystem", "facts: scopeArea", "facts: phasingNote", "facts: hazardFlag",
+    "facts: setShapeObservation", "facts: missingScopeFamily", "spec reading:",
+    "pages read for placement:", "placed by title alone:", "furnish and install:", "defaults:",
+    "sections with no catalog trade:", "no catalog trade:", "refused:", "failed reads:", "steps:",
+    "create <tradeCode>", "name:", "codes:", "manualSections:", "notes:",
+    "change <packageId>", "codes add:", "manualSections add:", "notes add:",
+)
+# A draft or a create sent again, and what each reads so a package an earlier attempt made is
+# neither made twice nor credited to a person.
+_PACKAGE_SPLIT_RETRY = (
+    "A create sent again after a miss runs over the same `draft.md`, `before.txt`, `creating.txt` and `created.txt`",
+    "where it is there, an earlier attempt of this same run wrote it, so leave it as it is.",
+    "`solicitation_create_package` call, in sub-step 5 or in sub-step 6 of a split, append the "
+    "`tradeCode` it sends to `creating.txt` in the split folder",
+    "whose `tradeCode` `creating.txt` holds is one an earlier attempt sent and did not append: "
+    "append its id then.",
+    "A package on a trade no line of `creating.txt` names is never the split's, even where a `create` "
+    "block drafts that trade, since a person may have added it.",
+    "The packages the split created are the packages on sub-step 6's last re-list whose id "
+    "`created.txt` holds, whichever sub-step and attempt made it",
+    "send no create for a block whose `tradeCode` a package on the project already holds",
+    "is dispatched once more; after a second miss each section of its group is placed by its title",
+)
+_ORIENTATION_SPLIT_RETRY = (
+    "dispatch the draft once more with the same split folder",
+    "dispatch the create once more with the same split folder",
+    "Where `created.txt` is in the split folder, the packages whose id it holds are on your "
+    "`packages created:` line",
+)
+_PACKAGE_SPLIT_PAGING = (
+    "Every `solicitation_list_packages` read in this file is the whole list, paged to its end",
+    "until `truncated` comes back false, since one call returns one page.",
+)
+# Each call written as `solicitation_list_packages(` says it is paged within this many characters.
+_PACKAGE_LIST_PAGED_WITHIN = 120
+# Orientation's exception to its gates for the client with no agent dispatch, and the split's own.
+_ORIENTATION_SPLIT_FALLBACK = (
+    "Where the Agent tool cannot dispatch the package split, as where this file runs in the "
+    "conversation because the client ships the skills without the agents, read `package-split.md` "
+    "and run its draft and then its create in this context",
+    "outside step 8's last case: where the Agent tool cannot dispatch the package split, you run "
+    "`package-split.md` in this context, and read `draft.md`, the manual readers' result files and "
+    "the manual pages its own fallback names",
+    "and the pages `package-split.md`'s fallback reads where step 8's last case runs it in this context.",
+)
+_PACKAGE_SPLIT_FALLBACK = (
+    "Where the Agent tool cannot dispatch the manual reader, as in a client that ships the skills "
+    "without the agents",
+    "read at most 15 in all, sub-step 6 included.",
+)
+
+
+def _flat(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _package_list_unpaged(flat: str) -> list[int]:
+    """The offset of each `solicitation_list_packages(` call the text does not say is paged."""
+    return [m.start() for m in re.finditer(r"`solicitation_list_packages\(", flat)
+            if "paged" not in flat[m.start():m.start() + _PACKAGE_LIST_PAGED_WITHIN]]
+
+
+def _package_split_rule_errors(split_flat: str, o_flat: str, draft_block: list[str]) -> list[str]:
+    """The moved rules, the draft's fields, the retry handling, the paging and the fallback."""
+    errors: list[str] = []
+    for group, rules in (("default", _PACKAGE_SPLIT_DEFAULTS), ("placement rule", _PACKAGE_SPLIT_PLACEMENT)):
+        for rule, phrases in rules:
+            gone = [p for p in phrases if _flat(p) not in split_flat]
+            if gone:
+                errors.append(f"agents/package-split.md lost the {group} on {rule} ({gone[0]!r})")
+    for rule, phrases in _PACKAGE_SPLIT_DEFAULTS:
+        if any(_flat(p) in o_flat for p in phrases):
+            errors.append(f"agents/orientation.md carries the default on {rule}, which the package split holds")
+    lines = [l.strip() for l in draft_block]
+    for field in _PACKAGE_SPLIT_DRAFT_FIELDS:
+        if not any(l.startswith(field) for l in lines):
+            errors.append(f"agents/package-split.md's draft shape has no {field!r} line")
+    for phrase in _PACKAGE_SPLIT_RETRY + _PACKAGE_SPLIT_PAGING + _PACKAGE_SPLIT_FALLBACK:
+        if _flat(phrase) not in split_flat:
+            errors.append(f"agents/package-split.md does not read {phrase!r}")
+    for phrase in _ORIENTATION_SPLIT_RETRY + _ORIENTATION_SPLIT_FALLBACK:
+        if _flat(phrase) not in o_flat:
+            errors.append(f"agents/orientation.md does not read {phrase!r}")
+    for label, flat in (("package-split", split_flat), ("orientation", o_flat)):
+        for at in _package_list_unpaged(flat):
+            errors.append(f"agents/{label}.md reads one page of the packages: {flat[at:at + 80]!r}")
+    return errors
+
+
+def _draft_block(split: str) -> list[str]:
+    """The fenced block under `## The draft`, the shape `draft.md` is written in."""
+    lines = split.splitlines()
+    start = next((i for i, l in enumerate(lines) if l.strip() == "## The draft"), None)
+    if start is None:
+        return []
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
+    blocks, _ = _fenced_blocks(lines[start:end])
+    return blocks[0][1] if blocks else []
+
+
+def _package_split_errors(texts: dict[str, str]) -> list[str]:
+    errors: list[str] = []
+    split = texts[_PACKAGE_SPLIT]
+    block, _ = _split_frontmatter(split)
+    tools_line = next((l for l in block.splitlines() if l.startswith("tools:")), "tools:")
+    tools = {t.strip() for t in re.split(r",(?![^()]*\))", tools_line[len("tools:"):]) if t.strip()}
+    if tools != _PACKAGE_SPLIT_TOOLS:
+        extra, missing = sorted(tools - _PACKAGE_SPLIT_TOOLS), sorted(_PACKAGE_SPLIT_TOOLS - tools)
+        errors.append(f"agents/package-split.md's tools line differs from the pinned set (added {extra}, missing {missing})")
+    if len(split) > _PACKAGE_SPLIT_MAX_CHARS:
+        errors.append(f"agents/package-split.md is {len(split)} characters, over {_PACKAGE_SPLIT_MAX_CHARS}")
+    split_flat = " ".join(split.split())
+    for phrase in _PACKAGE_SPLIT_PINS:
+        if " ".join(phrase.split()) not in split_flat:
+            errors.append(f"agents/package-split.md does not read {phrase!r}")
+
+    orientation = texts["orientation"]
+    o_flat = " ".join(orientation.split())
+    for phrase in _ORIENTATION_SPLIT_PINS:
+        if " ".join(phrase.split()) not in o_flat:
+            errors.append(f"agents/orientation.md does not read {phrase!r}")
+    for phrase in _PACKAGE_SPLIT_MOVED:
+        if " ".join(phrase.split()) in o_flat:
+            errors.append(f"agents/orientation.md carries {phrase!r}, which the package split holds")
+    o_block, _ = _split_frontmatter(orientation)
+    o_tools = next((l for l in o_block.splitlines() if l.startswith("tools:")), "")
+    agent_spec = re.search(r"Agent\(([^)]*)\)", o_tools)
+    dispatched = {a.strip() for a in agent_spec.group(1).split(",")} if agent_spec else set()
+    if _PACKAGE_SPLIT not in dispatched:
+        errors.append("agents/orientation.md's tools line does not let it dispatch the package split")
+    if "orientation" in dispatched:
+        errors.append("agents/orientation.md's tools line lets it dispatch orientation again")
+    # Two dispatches of one template: the draft, then the create.
+    blocks, _ = _fenced_blocks(orientation.splitlines())
+    templates = [body for _, body in blocks if any(
+        l.strip() == "subagent_type: plumlayer:package-split" for l in body)]
+    if len(templates) != 1 or not any(l.strip() == "Steps: <draft. or create.>" for l in templates[0]):
+        errors.append("agents/orientation.md does not carry one package split dispatch whose `Steps:` line names the draft or the create")
+
+    learn = " ".join(texts["learn-project"].split())
+    if "`package-split`" not in learn or "agents/package-split.md" not in learn:
+        errors.append("learn-project's `## Running one level down` does not name the package split agent and its definition")
+    errors.extend(_package_split_rule_errors(split_flat, o_flat, _draft_block(split)))
+    return errors
+
+
+def check_package_split(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "package-split"
+    paths = {
+        _PACKAGE_SPLIT: plugin_path / "agents" / "package-split.md",
+        "orientation": plugin_path / "agents" / "orientation.md",
+        "learn-project": plugin_path / "skills" / "learn-project" / "SKILL.md",
+    }
+    texts: dict[str, str] = {}
+    for key, path in paths.items():
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[key] = path.read_text(encoding="utf-8")
+
+    errors = _package_split_errors(texts)
+
+    mutations: list[tuple[str, dict[str, str]]] = []
+    pin_mutations = 0
+    if not errors:
+        def mutated(key: str, new_text: str) -> dict[str, str]:
+            return {**texts, key: new_text}
+
+        split, orientation = texts[_PACKAGE_SPLIT], texts["orientation"]
+        mutations = [
+            ("the package split holding every orientation tool", mutated(_PACKAGE_SPLIT, split.replace(
+                "Grep, mcp__", "Grep, Glob, mcp__plugin_plumlayer_plumlayer__render_page, mcp__", 1))),
+            ("the package split grown past its size bound", mutated(_PACKAGE_SPLIT, split + "\n" + "x" * _PACKAGE_SPLIT_MAX_CHARS)),
+            ("the package split without its manual page rule", mutated(_PACKAGE_SPLIT, split.replace(
+                "You make no `get_page_text`", "You make a `get_page_text`"))),
+            ("the package split with the draft's end taken out", mutated(_PACKAGE_SPLIT, split.replace(
+                "This is where the draft ends", "Here the draft goes on"))),
+            ("the package split without its defaults", mutated(_PACKAGE_SPLIT, split.replace(
+                "These hold on nearly every job where the work is there:", "These hold:"))),
+            ("orientation with its package split dispatch taken out", mutated("orientation", orientation.replace(
+                "subagent_type: plumlayer:package-split", "subagent_type: plumlayer:orientation"))),
+            ("orientation dispatching the split once", mutated("orientation", orientation.replace(
+                "Steps: <draft. or create.>", "Steps: draft and create."))),
+            ("orientation with the defaults put back", mutated("orientation", orientation +
+                "\n   These hold on nearly every job where the work is there:\n")),
+            ("orientation with its pointer for the old citations taken out", mutated("orientation", orientation.replace(
+                "means that file's step 8", "is read there"))),
+            ("orientation able to dispatch itself again", mutated("orientation", orientation.replace(
+                "Agent(package-split, manual-reader)", "Agent(orientation, package-split, manual-reader)"))),
+            ("learn-project without the package split named", mutated("learn-project", texts["learn-project"].replace(
+                "agents/package-split.md", "the agent's file"))),
+        ]
+
+        def cut_bullet(text: str, opening: str) -> str:
+            """The text with the list item that opens with these words taken out whole."""
+            lines = text.splitlines(keepends=True)
+            at = next(i for i, l in enumerate(lines) if l.strip().startswith("- " + opening))
+            indent = len(lines[at]) - len(lines[at].lstrip())
+            end = at + 1
+            while end < len(lines) and lines[end].strip() and not lines[end].lstrip().startswith("- ") \
+                    and len(lines[end]) - len(lines[end].lstrip()) > indent:
+                end += 1
+            return "".join(lines[:at] + lines[end:])
+
+        def cut_line(text: str, opening: str) -> str:
+            return "".join(l for l in text.splitlines(keepends=True) if not l.strip().startswith(opening))
+
+        mutations += [
+            ("the package split without the concrete, reinforcing and post-tensioning default",
+             mutated(_PACKAGE_SPLIT, cut_bullet(split, "The concrete sub carries"))),
+            ("the package split without the structural steel default",
+             mutated(_PACKAGE_SPLIT, cut_bullet(split, "Structural steel is its own package"))),
+            ("the package split without the joint sealant placement",
+             mutated(_PACKAGE_SPLIT, split.replace(
+                 "Joint sealants go with the waterproofer:", "Joint sealants go where they fall:"))),
+            ("the package split without the owner's work rule",
+             mutated(_PACKAGE_SPLIT, split.replace(
+                 "Work the owner contracts for directly gets no", "Work the owner contracts for directly gets a"))),
+            ("the draft shape without its hazardFlag line",
+             mutated(_PACKAGE_SPLIT, cut_line(split, "facts: hazardFlag"))),
+            ("the draft shape without its change block's sections",
+             mutated(_PACKAGE_SPLIT, cut_line(split, "manualSections add:"))),
+            ("the package split crediting sub-step 6's creates to a person again",
+             mutated(_PACKAGE_SPLIT, split.replace(" in sub-step 5 or in sub-step 6 of a split,", " in sub-step 5,"))),
+            ("the package split without `created.txt` on a retried create",
+             mutated(_PACKAGE_SPLIT, split.replace("`creating.txt` and `created.txt`:", "and `before.txt`:"))),
+            ("the package split crediting itself a person's package on a drafted trade",
+             mutated(_PACKAGE_SPLIT, split.replace("whose `tradeCode` `creating.txt` holds", "whose `tradeCode` is a `create` block's"))),
+            ("orientation reading `before.txt` alone for the creates",
+             mutated("orientation", orientation.replace(
+                 "Where `created.txt` is in the split folder", "Where `before.txt` is in the split folder"))),
+            ("the package split's re-list read one page",
+             mutated(_PACKAGE_SPLIT, split.replace(
+                 "`solicitation_list_packages(projectId, brief: true)`, paged to its end, each package's id",
+                 "`solicitation_list_packages(projectId, brief: true)`, each package's id"))),
+            ("the package split's retry lookup read one page",
+             mutated(_PACKAGE_SPLIT, split.replace(
+                 "`solicitation_list_packages(projectId, brief: true)` once, paged to its end, and",
+                 "`solicitation_list_packages(projectId, brief: true)` once and"))),
+            ("orientation's package read one page",
+             mutated("orientation", orientation.replace("brief: true)` read,\n  paged to its end:", "brief: true)` read:"))),
+            ("the package split without its paging rule",
+             mutated(_PACKAGE_SPLIT, split.replace("since one call returns one page.", "since one call is enough."))),
+            ("orientation's gates without the fallback exception",
+             mutated("orientation", orientation.replace(
+                 ",\n  outside step 8's last case: where the Agent tool cannot dispatch the package split",
+                 ".\n  Where the Agent tool cannot dispatch the package split"))),
+            ("orientation's manual page gate without the fallback's pages",
+             mutated("orientation", orientation.replace(
+                 " and the pages `package-split.md`'s\n  fallback reads where step 8's last case runs it in this context.", "."))),
+        ]
+        for label, broken in mutations:
+            if not _package_split_errors(broken):
+                errors.append(f"the check passed {label}")
+
+        # Every pinned phrase taken out of the flattened text, one at a time.
+        split_flat, o_flat = _flat(split), _flat(orientation)
+        draft_block = _draft_block(split)
+        pinned_split = [p for _, ps in _PACKAGE_SPLIT_DEFAULTS + _PACKAGE_SPLIT_PLACEMENT for p in ps] + \
+            list(_PACKAGE_SPLIT_RETRY + _PACKAGE_SPLIT_PAGING + _PACKAGE_SPLIT_FALLBACK)
+        pinned_orientation = list(_ORIENTATION_SPLIT_RETRY + _ORIENTATION_SPLIT_FALLBACK)
+        for phrase in pinned_split:
+            if not _package_split_rule_errors(split_flat.replace(_flat(phrase), ""), o_flat, draft_block):
+                errors.append(f"the check passed the package split without {phrase!r}")
+        for phrase in pinned_orientation:
+            if not _package_split_rule_errors(split_flat, o_flat.replace(_flat(phrase), ""), draft_block):
+                errors.append(f"the check passed orientation without {phrase!r}")
+        for field in _PACKAGE_SPLIT_DRAFT_FIELDS:
+            short = [l for l in draft_block if not l.strip().startswith(field)]
+            if not _package_split_rule_errors(split_flat, o_flat, short):
+                errors.append(f"the check passed the draft shape without its {field!r} line")
+        pin_mutations = len(pinned_split) + len(pinned_orientation) + len(_PACKAGE_SPLIT_DRAFT_FIELDS)
+
+    detail = (
+        f"agents/package-split.md at {len(texts[_PACKAGE_SPLIT])} of at most {_PACKAGE_SPLIT_MAX_CHARS} "
+        f"characters (orientation now {len(texts['orientation'])}) with its {len(_PACKAGE_SPLIT_TOOLS)} "
+        f"tools pinned, {len(_PACKAGE_SPLIT_PINS)} phrases pinned in it and {len(_ORIENTATION_SPLIT_PINS)} "
+        f"in orientation, the draft and the create dispatched from one template, the moved rules "
+        f"in the package split alone, {len(_PACKAGE_SPLIT_DEFAULTS)} defaults and "
+        f"{len(_PACKAGE_SPLIT_PLACEMENT)} placement rules pinned, {len(_PACKAGE_SPLIT_DRAFT_FIELDS)} "
+        f"draft fields, the retry handling, every package list paged and the fallback exception, "
+        f"{len(mutations)} mutations and {pin_mutations} pins taken out refused; bound: text only, not an "
+        f"agent's largest turn"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
+# --------------------------------------------------------------------------- #
+# Check: setup fills the Overview's fields it can cite and names the rest
+# --------------------------------------------------------------------------- #
+#
+# After a measured setup, Units, Phase, Project Type and Total Area were all blank, each with a
+# reason. The set printed its unit count on a sheet whose title named neither a unit matrix nor a
+# code summary, so the search by title missed it; a search of the set's text finds it. The set was
+# a permit submission, which no option on the company's phase list names; a Question would go to
+# the design team, who cannot say what the contractor's number is for, so the field stays blank and
+# the report says why. Orientation could not tell new construction from work on a building that
+# stays. Total Area printed only per-area figures, and setup never adds figures up. And setup took
+# no phase from the user's own words.
+#
+# The check holds each rule by phrase in the file that carries it and runs over the shipped text
+# with each taken out. Bound: text only; whether a setup fills a field rightly is read on the
+# Overview after a real setup.
+
+_OVERVIEW_PINS: tuple[tuple[str, str], ...] = (
+    ("orientation", "Where no sheet so titled states it, make one `search_set_text(projectId, query: "
+                    "\"total units\", kind: \"drawing\", limit: 5)` and one with `\"unit mix\"`, read "
+                    "the first two pages they name with `get_page_text` in `lines` form, its `region` "
+                    "the hit's box widened to the table it sits in, and take the count only where one "
+                    "printed figure is the building's total of dwelling units."),
+    ("orientation", "A new building on a site whose existing building is demolished first is new "
+                    "construction; a renovation, an addition or a fit-out is work on a structure "
+                    "that stays."),
+    ("orientation", "leave it empty, raise no Question for it, and name it left blank with why on the "
+                    "summary's `Overview fields` line"),
+    ("orientation", "Never add figures up, never take a floor's, the site's or a net area"),
+    ("project-setup", "`update_project(projectId, stage: { optionId: \"<that option's id>\", source: "
+                      "{ asked: \"<the user's words>\" } })`"),
+    ("project-setup", "Never ask for the phase, and never take it from the name of a drawing set or a "
+                      "file."),
+    ("project-setup", "leave it empty, raise no Question for it, and name it in the closing report "
+                      "with what was given"),
+    ("project-setup", "the project type, procurement, contract, the phase, the address"),
+)
+
+
+def _overview_fields_errors(texts: dict[str, str]) -> list[str]:
+    errors: list[str] = []
+    for key, phrase in _OVERVIEW_PINS:
+        if " ".join(phrase.split()) not in " ".join(texts[key].split()):
+            errors.append(f"{key} does not read {phrase[:70]!r}...")
+    block, _ = _split_frontmatter(texts["orientation"])
+    tools_line = next((l for l in block.splitlines() if l.startswith("tools:")), "")
+    if "search_set_text" not in set(_CONNECTOR_DECLARATION_RE.findall(tools_line)):
+        errors.append("agents/orientation.md's tools line does not declare `search_set_text` for the Units search")
+    return errors
+
+
+def check_overview_fields(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "overview-fields"
+    paths = {
+        "orientation": plugin_path / "agents" / "orientation.md",
+        "project-setup": plugin_path / "skills" / "project-setup" / "SKILL.md",
+    }
+    texts: dict[str, str] = {}
+    for key, path in paths.items():
+        if not path.is_file():
+            return Result(name, False, detail=f"not found: {path}")
+        texts[key] = path.read_text(encoding="utf-8")
+
+    errors = _overview_fields_errors(texts)
+
+    mutations: list[tuple[str, dict[str, str]]] = []
+    if not errors:
+        for key, phrase in _OVERVIEW_PINS:
+            flat = " ".join(texts[key].split())
+            mutations.append((f"{key} without {phrase[:50]!r}", {
+                **texts, key: flat.replace(" ".join(phrase.split()), "")}))
+        mutations.append(("orientation without `search_set_text` on its tools line", {
+            **texts, "orientation": texts["orientation"].replace(
+                f", {CONNECTOR_TOOL_PREFIX}search_set_text", "", 1)}))
+        for label, broken in mutations:
+            if not _overview_fields_errors(broken):
+                errors.append(f"the check passed {label}")
+
+    detail = (
+        f"{len(_OVERVIEW_PINS)} phrases pinned (the Units search of the set's text, new construction "
+        f"after a demolition, Phase blank with no Question, Total Area never added up, the phase from "
+        f"the user's words with its source), `search_set_text` on orientation's tools line, "
+        f"{len(mutations)} mutations refused; bound: text only, not the fields a setup fills"
     )
     if errors:
         detail += " | " + "; ".join(errors)
@@ -25108,6 +25795,8 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_code_lists(plugin_path, marketplace_root),
         check_nothing_to_install(plugin_path, marketplace_root),
         check_full_tool_names(plugin_path, marketplace_root),
+        check_package_split(plugin_path, marketplace_root),
+        check_overview_fields(plugin_path, marketplace_root),
         check_names_alike_by_place(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)

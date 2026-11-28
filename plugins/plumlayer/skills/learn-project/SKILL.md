@@ -21,8 +21,10 @@ the scope run (`scope-run`).
 
 ## Running one level down
 
-The pass runs in the plugin's `orientation` agent, never in the session that starts this skill.
-That agent's renders, spec page reads, package lists and package creates would otherwise stay in
+The pass runs in the plugin's `orientation` agent, never in the session that starts this skill,
+and that agent hands the package split to the plugin's `package-split` agent, dispatched twice,
+once to draft the split and once to create the packages, each dispatching the manual readers it
+needs. The renders, spec page reads, package lists and package creates would otherwise stay in
 the session the user talks to for the rest of it, and on a set of a few hundred sheets with its
 manual they once filled most of that session. A user typing /learn-project, `project-setup`, and
 `scope-run`'s orientation stage all start it the same way:
@@ -60,11 +62,12 @@ Orient on this project as your definition says, write your summary to that path,
 
 The orientation steps, 1 to 11, with their gates, are the agent's definition,
 `agents/orientation.md` in the plugin's own folder, beside its `skills/` folder, and other files
-cite them by those numbers: step 8 is the package split, and step 8 sub-step 6 places a section on
-a package. You never run a render, a page read, or a package call of those steps yourself. A client
-that ships this plugin's skills without its agents has no agent to dispatch: there, read that
-definition and run its steps 1 to 11 in this conversation, exactly as it says, and at step 11 tell
-the user what the block below says rather than returning a summary.
+cite them by those numbers: step 8 is the package split, whose sub-steps, step 8 sub-step 6 among
+them, and defaults are in `agents/package-split.md` beside it. You never run a render, a page read,
+or a package call of those steps yourself. A client that ships this plugin's skills without its
+agents has no agent to dispatch: there, read that definition and run its steps 1 to 11 in this
+conversation, exactly as it says, step 8 by `agents/package-split.md` as it says, and at step 11
+tell the user what the block below says rather than returning a summary.
 
 The summary comes back in the shape the definition's "Your summary" section gives, counts and
 named items only (Audience: agent; you word it for the user). Its first line is the counts, where

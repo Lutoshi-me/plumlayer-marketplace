@@ -13,6 +13,8 @@ sent, record what you can read with a citation, write your report, return it, an
 that dispatched you talks to the user; you never do. Everything a person has to settle goes in your
 report, and that session puts it to them.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. The recognition pass already recorded what it confirmed off each page, server-side. What
 you record is your own reading, cited to the page you read it on, and it becomes the sheet's

@@ -331,6 +331,15 @@ early state.
   picked. When no label plainly names what was given, leave that field empty and name the fact and
   what was given in the closing report. Never create an option, and never pick a near match: a
   contract given as "design-build" against a list of Lump sum, GMP and Cost plus fills nothing.
+- **Phase.** Where the user names the phase the number is for, pick the option on the `stage`
+  list of `list_project_options` whose label plainly names it and send
+  `update_project(projectId, stage: { optionId: "<that option's id>", source: { asked: "<the
+  user's words>" } })`, with `replaces` left out, since the project step 3 created holds no
+  phase. The phase history keeps the user's words as where it came from. Never ask for the phase,
+  and never take it from the name of a drawing set or a file. Where only a handed-over document
+  states it, leave it to orientation, which sets it from the cover sheet or a title block with
+  the sheet cited. Where no label plainly names what the user gave, leave it empty, raise no
+  Question for it, and name it in the closing report with what was given.
 - **The address.** `update_project(projectId, location: "<the address as given>")`, in the same
   call when the options went out together.
 - **The owner's bid date.** The day the bid is due to the owner:
@@ -478,8 +487,8 @@ One closing report for the whole session, in plain terms. Read every count back 
 rather than restating it from what an earlier step said:
 - **Created:** project name + `projectId`.
 - **Filled on Overview:** each field filled and where its value came from, what the user said
-  or the document and page: the project type, procurement, contract, the address, the owner's bid
-  date, each firm put on the contacts with the type it carries, and each person put on with his
+  or the document and page: the project type, procurement, contract, the phase, the address, the
+  owner's bid date, each firm put on the contacts with the type it carries, and each person put on with his
   firm.
 - **Changed in the Network:** each firm added to the Network, each firm already there that was
   given a type (Owner, Architect, Engineer) or a phone, website or address, with what was added,

@@ -868,17 +868,33 @@ invisible.
     shape and six out of it, and pins the reader's and the runner's text, each phrase taken out
     and each retired sentence put back refused. This cannot judge whether a running reader records
     every list it sees; that is the measured run's.
-48. Each agent calls a Plumlayer verb by its full tool name. A setup's manual readers once called a
-    bare verb such as `search` and were answered that no such tool exists, 163 times. The same agent
-    files ship to Claude Code and to Codex, whose tool name prefixes differ, so an agent's body
-    never writes a prefix. Each agent file on the check's list carries, as its own paragraph after
-    its opening one, the one sentence that says each verb it writes as a call is the tool on its
-    tools list whose name ends in that verb, to be called by that full name. The check holds the
-    sentence there once in each listed file and no prefix in the body, and refuses the sentence
-    taken out, moved to the end or reworded and a prefix written into the body. A file joins the
-    list as its text takes the sentence. This cannot judge which name a running agent calls; that is
-    the measured run's.
-49. Two rows apart by their level or side alone reach the estimator as the same work twice. The
+48. Each agent calls a Plumlayer verb by its full tool name. A measured setup's manual readers
+    made 163 calls the client answered "No such tool available", each a bare `search` after the
+    instruction `search(projectId, ...)`. Each agent file on the check's list carries, word for
+    word and before its first heading, the sentence "Each Plumlayer verb this file writes as a
+    call, such as `search(...)`, is the tool on your tools list whose name ends in that verb: call
+    it by that full name, never by the verb alone.", and writes the client's tool name prefix
+    nowhere in its body, since the same files ship to Codex, whose tool names differ. The list
+    grows as each agent file takes the sentence. This cannot judge the calls a running agent
+    makes; those are counted from a run's transcript.
+49. The package split runs in its own agent, as a draft and a create. `agents/package-split.md`
+    holds orientation's step 8 under that number, with the tools its steps call and no more and a
+    bound on its size, so it starts small; orientation dispatches it twice from one template, the
+    draft ending on `draft.md` and the create reading it, so the manual readers' returns and the
+    package writes land in two agents. Orientation points every citation of its step 8, its
+    sub-step 6 and its defaults at the new file, and carries none of the moved rules. Each moved
+    default and placement rule is pinned by the sentences that state it, with the fields of
+    `draft.md`, the retry handling (`before.txt`, and `created.txt`, which holds the id of every
+    package the split creates in sub-step 5 or 6), every package list paged to its end, and
+    orientation's exception to its gates where it runs the split itself in a client with no agent
+    dispatch. This cannot judge an agent's largest turn; that is read from a setup's transcripts.
+50. Setup fills the Overview's fields it can cite and names the rest. Orientation searches the
+    set's text for the unit count where no sheet titled for it states one, reads a new building
+    after a demolition as new construction, leaves Phase blank with no Question where no option
+    on the company's list fits, and never adds area figures up; project-setup sets the phase from
+    the user's own words with those words as its source. Each rule is pinned by phrase; whether a
+    setup fills a field rightly is read on the Overview.
+51. Two rows apart by their level or side alone reach the estimator as the same work twice. The
     shipped `names_scan.py` reads two names alike once each trailing level, floor, story, wing or
     side is taken off, and the check runs it over invented names apart by place alone, which read
     alike, and over names apart by their work, an ordinary word after "floor", a place inside the
