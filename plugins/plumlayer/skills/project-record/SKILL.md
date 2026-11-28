@@ -154,8 +154,10 @@ writing it).
   same batch and nothing else in the value. Its `name` is the work, then ` - by ` and who carries
   it: the name of the package that covers the carrying trade, as `solicitation_list_packages`
   gives it; that trade's `name` off `directory_list_trades` where no package covers it; `Owner` or
-  `Tenant` where the drawings or the manual name one; and where they name no one, their own words
-  (` - by Others`, ` - Not in Contract`). Two names in that shape:
+  `Tenant` where the drawings or the manual name one; and where they put it outside the contract,
+  their own words (` - Not in Contract`, ` - by Separate Contract`). Work a page hands to "others"
+  or to no one it names is not an exclusion: it is an ordinary row on the trade that does the work,
+  with a note saying the documents name no one for it. Two names in that shape:
   `Heat trace power - by Electrical` and `Appliances - by Owner`. The whole name stays within 80 characters: shorten the work's words,
   never the ending, and where several carriers do not fit, name the first and `and others`. An
   exclusion row has no `description`. The row that carries the work keeps the work's name alone,

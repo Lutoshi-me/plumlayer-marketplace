@@ -92,7 +92,9 @@ Each row gets exactly one outcome, and you write one outcome line for it.
    - updated: the new page carries the work changed, a size, a product, a count or a note. Write
      the field onto the record naming what it replaces (`supersedesId`, the entry the full read
      gives you), cited to the new box with the words you read there as the snippet, in the same batch as the
-     citation, and no note on the row. Where the new page and another document disagree, it is a Question as mandate 1
+     citation. The changed work takes a note only where the reader's mandate 5 NOTES rule passes
+     it, on a row with none in that field, in a `record_batch` of its own after that one, and
+     otherwise none; where the record refuses the note, leave the row's note as it stands. Where the new page and another document disagree, it is a Question as mandate 1
      says, cited on the row, and the row is updated with what this sheet shows.
    - removed: the new page shows the work gone. Name the sheet that shows it and what you read
      there: a revision note or a deleted mark with the box of its lines, or, where the sheet shows

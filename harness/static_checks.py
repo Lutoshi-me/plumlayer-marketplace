@@ -14815,8 +14815,9 @@ _STANDARD_LINES_PINS: tuple[tuple[str, str], ...] = (
         "A row shared with another package keeps its category there; the seven apply to rows "
         "whose home is `01 11 13`.",
     )),
-    ("skill", "The run writes exclusions where the paper says work is by others, and every trade "
-              "except `01 11 13` has its general items in its General Requirements section."),
+    ("skill", "The run writes exclusions where the paper gives work to a party it names outside the "
+              "package, and every trade except `01 11 13` has its general items in its General "
+              "Requirements section."),
     *((label, phrase) for label in (SHEET_READER, VOCABULARY_READER) for phrase in (
         "On every trade except `01 11 13`, a note that has a trade carry its own general costs "
         "(hoisting its own material, protecting its own work, tax on what it supplies, its own "
@@ -17747,7 +17748,15 @@ _NOTE_READER_PHRASES = (
     "the row does not already say it.",
     "he would do something because of it. Where he would read it and go on, there is no note.",
     "Only three kinds pass: work a page calls for and hands to no one it names",
-    "which sits on this row's trade by your judgment, so that trade's bidders may leave it out;",
+    "which is never an exclusion row: it is an ordinary row on the trade mandate 4 gives it, and the "
+    "note says the documents name no one for it, so that trade's bidders may leave it out;",
+    'Work a page hands to "others", "other divisions" or "others as required", or to no one it names, '
+    "is not an exclusion: it is an ordinary row on the trade this mandate gives it, and its note says "
+    "the documents name no one for it, the first kind of mandate 5's NOTES rule.",
+    "Work the paper gives to a party it names outside this package is a row, never a note",
+    "A note on a row that already stands goes in a `record_batch` of its own, since the record refuses "
+    "a note onto a row that already holds one and a refused batch lands nothing.",
+    "Where it is refused, leave the note that is there as it stands.",
     "work two places in the documents each have a different trade provide, so two bids could each "
     "carry it,",
     "and work called for with no size, count or extent, where the bidder or the contractor carries "
@@ -17759,7 +17768,15 @@ _NOTE_READER_PHRASES = (
     "row with nothing on the page behind it;",
     "Word it as he would across a desk: one or two short plain sentences",
     "Call a trade by its name, never its code;",
-    "Most rows take no note.",
+    "Most rows take no note, and a find that passes all three tests always takes one",
+    "A find that passes mandate 5's NOTES rule is still that row's note;",
+    "is that row's note: write it by that rule",
+    "and fails the NOTES rule stay on that line alone",
+    "and the description never says what the documents leave open about the work",
+    "the two places may be two pages, or a page and a manual section that sits on another package, "
+    "and the note then names that package; it is never a disagreement for a Question",
+    "Write a note wherever a find about work the documents hand to no one, give to two trades, or "
+    "call for with no size, count or extent passes mandate 5's NOTES rule",
     "A note already on a row, whoever wrote it, is never written over, added to or moved to another "
     "row.",
     "about the other trade unless mandate 5's NOTES rule passes it",
@@ -17769,19 +17786,52 @@ _NOTE_PINS: tuple[tuple[str, str], ...] = (
     tuple((reader, phrase) for reader in _NOTE_READERS for phrase in _NOTE_READER_PHRASES)
     + (
         ("agents/scope-reviewer.md", "You write `notesInternal` only by the NOTES rule of reader "
-         "mandate 5: on a row you create, or on a row of this package that has none in that field"),
-        ("agents/scope-reviewer.md", "never on a standard line's row, which carries none, and never "
+         "mandate 5: on a row you create; on a row of this package that has none in that field; and "
+         "on a row of another package that has none, of the rule's second kind alone, as mandate 4 "
+         "says."),
+        ("agents/scope-reviewer.md", "Never on a standard line's row, which carries none, and never "
          "on either row of a pair you leave for the estimator. You never write `notesExternal`."),
+        ("agents/scope-reviewer.md", "So does a note."),
+        ("agents/scope-reviewer.md", "The note is the second kind of reader mandate 5's NOTES rule and "
+         "rests on two assignments of the work in this job's documents: a page of this job, or a manual "
+         "section on this package, has this package's trade provide the work, and a page the row itself "
+         "cites gives that work to the row's own trade."),
+        ("agents/scope-reviewer.md", "A page or section that only specifies, shows or mentions the item "
+         "assigns it to no trade."),
+        ("agents/scope-reviewer.md", "send it in a `record_batch` of its own"),
+        ("agents/scope-reviewer.md", "Where it is refused, leave the note as it stands."),
+        ("agents/scope-reviewer.md", "Name the row on your `door-owned suggestions:` line only where "
+         "no note of yours went on it"),
         ("agents/scope-reviewer.md", "which may be the estimator's own"),
         ("agents/scope-manual-reader.md", "you write `notesInternal` only by the NOTES rule of reader "
-         "mandate 5, and only on a row you create in this read: never on a row that already stands, "
-         "a standard line's row among them. You never write `notesExternal`."),
+         "mandate 5. You write it on a row you create in this read, and on a row of this package that "
+         "already stands and has none in that field, of any of the rule's three kinds."),
+        ("agents/scope-manual-reader.md", "On a row of another package that has none, you write it only "
+         "of the rule's second kind, as the review's mandate 4 says: a page you read has this package's "
+         "trade provide the row's work, and a page the row itself cites gives that work to the row's own "
+         "trade."),
+        ("agents/scope-manual-reader.md", "A note on a standing row goes in a `record_batch` of its own"),
+        ("agents/scope-manual-reader.md", "where the record refuses it, you leave the row's note as it "
+         "stands."),
+        ("agents/scope-manual-reader.md", "Where the review's mandate 4 names a `rows on other packages:` "
+         "line, you have none: name a write on another package's row on your `field updates:` line "
+         "alone."),
+        ("agents/scope-rechecker.md", "The changed work takes a note only where the reader's mandate 5 "
+         "NOTES rule passes it, on a row with none in that field, in a `record_batch` of its own after "
+         "that one, and otherwise none; where the record refuses the note, leave the row's note as it "
+         "stands."),
+        ("agents/scope-manual-reader.md", "Never on a standard line's row."),
+        ("agents/scope-manual-reader.md", "You never write `notesExternal`."),
         ("skills/scope-run/SKILL.md", "An agent of the run writes `notesInternal` only by the NOTES "
          "rule of the reader's mandate 5"),
         ("skills/scope-run/SKILL.md", "No agent of the run writes `notesExternal`, on any row, in any "
          "case."),
         ("skills/scope-run/SKILL.md", "that is a note on the row where the reader's mandate 5 NOTES "
          "rule passes it, and otherwise a report line;"),
+        ("skills/scope-run/SKILL.md", "A find of the rule's three kinds that passes goes on the row, "
+         "never only on a report line"),
+        ("skills/scope-run/SKILL.md", "work it hands to others or to no one it names is an ordinary row "
+         "whose note says the documents name no one for it"),
     )
 )
 _NOTE_RETIRED: tuple[tuple[str, str], ...] = (
@@ -17789,13 +17839,29 @@ _NOTE_RETIRED: tuple[tuple[str, str], ...] = (
         "You never write `notesExternal` or `notesInternal`, on any row, in any case",
         "and what you noticed that nothing asks goes on no row",
         "and nothing on the row about the other trade. The row goes on that one trade alone.",
+        "and never a note on a row. A matter of the tools",
+        "and nothing written on the row about it.",
+        "Work the paper gives to another party is a row, never a note.",
+        "and where the paper names no one, the paper's own words (` - by Others`",
+        "Work the paper gives to the owner, a tenant or no one has no such row.",
+        "which sits on this row's trade by your judgment",
     )),
     ("agents/scope-reviewer.md", "You write no note on any row"),
     ("agents/scope-reviewer.md", "which is the estimator's own, the exclusion row"),
+    ("agents/scope-reviewer.md", "you write no record on it for this doubt"),
     ("agents/scope-manual-reader.md", "you write no `notesInternal` or `notesExternal` on any row"),
+    ("agents/scope-manual-reader.md", "only on a row you create in this read: never on a row that already stands"),
+    ("agents/scope-manual-reader.md", "You write it on a row that already stands, on this package or "
+     "another, only of the rule's second kind"),
+    ("agents/scope-reviewer.md", "The landscape section also specifies the bike racks."),
+    ("agents/scope-rechecker.md", "and no note on the row"),
     ("agents/scope-rechecker.md", "no note on the row, as the reader's mandate 5 says"),
     ("skills/scope-run/SKILL.md", "No agent of the run writes either"),
     ("skills/scope-run/SKILL.md", "that is a report line, never a note on the row"),
+    ("skills/scope-run/SKILL.md", "writes nothing on the row about the other"),
+    ("skills/scope-run/SKILL.md", "Work the paper says is by others is an exclusion row"),
+    ("skills/scope-run/SKILL.md", "exclusion row of work the paper says is by others"),
+    ("skills/scope-run/SKILL.md", "Work by others and an alternate"),
 )
 # In each reader the rule states its reader and purpose, then its three tests, then the kinds that
 # pass, then how a note is worded.

@@ -203,14 +203,28 @@ them is ever trimmed.
      create.
    - The hit is the work of a row on another package that a sheet, a manual section, a package's
      `notes` or the usual practice of this trade's bidders could put on this package too. The row
-     stays on its own trade and on that package alone, and you write no record on it for this
+     stays on its own trade and on that package alone, and you write no other field on it for this
      doubt, since that package's own review can write the same row's fields while yours
      runs. A citation the Which Trade rule of the standard lines asks for on another package's row still
-     goes, because each citation is a write of its own that no other write replaces. Name the row on
-     your `door-owned suggestions:` line as `<the row's full subject>, could be by <this package's
+     goes, because each citation is a write of its own that no other write replaces. So does a note.
+     The note is the second kind of reader mandate 5's NOTES rule and rests on two assignments of
+     the work in this job's documents: a page of this job, or a manual section on this package, has
+     this package's trade provide the work, and a page the row itself cites gives that work to the
+     row's own trade. A page or section that only specifies, shows or mentions the item assigns it
+     to no trade. Where both assignments hold, write that note on the row where it has none. Word it
+     by that rule and name this package (made-up example: "The paving section has the paving
+     contractor furnish and set the trench drains, and the plumbing plans have the plumber install
+     them. Paving bids may carry them too."). Cite that page, send it in a `record_batch` of its own, and name the write
+     on your `field updates:` and `rows on other packages:` lines. The record refuses a note onto a
+     row that already holds one, so no other write replaces it either. Where it is refused, leave
+     the note as it stands. Name the row on your `door-owned suggestions:` line only where no note
+     of yours went on it, as `<the row's full subject>, could be by <this package's
      tradeCode>: <what puts the work here>, <the page's sheet number, or section <code> on a manual
      page> p<page> of <fileId>`, one line per row, so the closing report puts it to the estimator. Where
-     nothing but a guess puts this package on it, the hit is that row's work and you name nothing.
+     nothing but a guess, a package's `notes` or the usual practice of this trade's bidders puts
+     this package on it, you write no note, and you still name the row on that
+     `door-owned suggestions:` line where a package's `notes` or that usual practice is what puts it
+     here; where only a guess does, the hit is that row's work and you name nothing.
      It is not a create.
    - The hit is work no row carries. Create it by reader mandate 6's test, at the grain of your own
      mandate 5, its `name` and
@@ -360,11 +374,13 @@ them is ever trimmed.
    mandate 6 names them, is never named there for its name. Where you
    cannot tell how finely a piece of work splits, create at best judgment and name it on your
    `grain questions:` line. Recall never drops to an unanswered question about how finely to
-   split. You write `notesInternal` only by the NOTES rule of reader mandate 5: on a row you create, or
-   on a row of this package that has none in that field, with the evidence of the page that
-   shows it, the write on your `field updates:` line like any other field's; never on a
-   standard line's row, which carries none, and never on either row of a pair you leave for the
-   estimator. You never write `notesExternal`. Every field you write is in the
+   split. You write `notesInternal` only by the NOTES rule of reader mandate 5: on a row you create;
+   on a row of this package that has none in that field; and on a row of another package that has
+   none, of the rule's second kind alone, as mandate 4 says. Each carries the evidence of the page
+   that shows it, and the write goes on your `field updates:` line like any other field's, and on
+   `rows on other packages:` for a row of another package. Never on a standard line's row, which
+   carries none, and never on either row of a pair you leave for the estimator. You never write
+   `notesExternal`. Every field you write is in the
    estimator's words: never `grain`, `text layer` or another of the run's own words, and never an
    agent named as the one who judged it.
 6. EVERY PAGE YOU OPEN IS NAMED WITH ITS REASON. One line per page on your `pages opened:` line:

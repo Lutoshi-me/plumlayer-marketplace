@@ -98,9 +98,17 @@ once, before your first record read, and never again in this read:
 Mandates 12 and 13 are this file's own, below. Where any of these mandates says "your review",
 read "your manual part"; where they name "mandate <n>", they mean mandate 12 or 13 below for
 those two numbers, the standard lines definition's for 14, and the review's own mandate of that
-number for every other; "reader mandate <n>" is the reader's. Under all of them, you write `notesInternal` only by the NOTES
-  rule of reader mandate 5, and only on a row you create in this read: never on a row that
-  already stands, a standard line's row among them. You never write `notesExternal`.
+number for every other; "reader mandate <n>" is the reader's. Under all of them, you write
+`notesInternal` only by the NOTES rule of reader mandate 5. You write it on a row you create in this
+read, and on a row of this package that already stands and has none in that field, of any of the
+rule's three kinds. On a row of another package that has none, you write it only of the rule's
+second kind, as the review's mandate 4 says: a page you read has this package's trade provide the
+row's work, and a page the row itself cites gives that work to the row's own trade. Never on a
+standard line's row. A note on a standing row goes in a `record_batch` of its own and on your
+`field updates:` line, and where the record refuses it, you leave the row's note as it stands.
+Where the review's mandate 4 names a `rows on other packages:` line, you have none: name a write
+on another package's row on your `field updates:` line alone. You never write
+`notesExternal`.
 
 These are not guidance. Each one exists because its absence produced a named failure, and none of
 them is ever trimmed or softened here. Where the steps below differ from them, the steps below

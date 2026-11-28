@@ -177,11 +177,15 @@ that relaxes any one of them reproduces a measured, named failure.
    trade right then, the catalog trade that names the work (the row's trade, below), and moves on;
    a wrong trade is moved later by a person or a later read, never held
    back. Where the reader cannot tell which of two or more trades owns the work, it puts the row on
-   the one trade most likely to carry it, writes nothing on the row about the other, and keeps
-   moving. The record door refuses a new scope item with no trade, and refuses a trade the catalog does
+   the one trade most likely to carry it and keeps moving; the row names the other trade only in a
+   note the reader's mandate 5 NOTES rule passes, where a page of the job gives that trade the same
+   work. The record door refuses a new scope item with no trade, and refuses a trade the catalog
+   does
    not carry, on `belongsToTrade` and inside `packageRole:<trade>` alike. `record_batch` is atomic
    and order free, so the trade rides in the same batch as the name; `record` carries one entry, so
-   there the trade entry is written first. Work the paper says is by others is an exclusion row, and
+   there the trade entry is written first. Work the paper gives to a party it names outside the
+   package, the owner, a tenant or a named trade, is an exclusion row; work it hands to others or
+   to no one it names is an ordinary row whose note says the documents name no one for it; and
    a trade's own general costs are general requirement rows, and an alternate the set names is a
    row of its own marked as an alternate, as the reader's mandate 4 says.
 5. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
@@ -353,13 +357,15 @@ A newly created scope item is a full row, not a name. Every new item writes:
   Never a word for the trade, so `drywall` is refused, and never a
   respelling of the code either, so `09-21-16` and `092116` are refused too, with a hint naming the
   exact id. Where the work straddles trades, the one trade most
-  likely to carry it goes here, the row under the heading it takes on that trade's package, and
-  nothing on the row names the other trade, as the reader's mandate 4 says; no record puts the row
+  likely to carry it goes here, the row under the heading it takes on that trade's package, and the
+  row names the other trade only in a note the reader's NOTES rule passes, as the reader's mandate 4
+  says; no record puts the row
   on a second package for that doubt. A
   `packageRole:<trade>` record puts a row in one section of its own trade's package, on that
   row's own trade: the run writes its value as an object holding a `role` alone, and
   `{ retracted: true, reason? }` is the only other value the door takes. The run writes
-  `exclusion` on the exclusion row of work the paper says is by others, and `general-requirement`
+  `exclusion` on the exclusion row of work the paper gives to a party it names outside the
+  package, and `general-requirement`
   for a trade's own general costs, and the reviews write both for the standard lines; and
   `ve-alternate` on the row of each alternate the set names, as the reader's mandate 4 says. A
   bare word is refused and the batch is atomic,
@@ -402,14 +408,17 @@ A newly created scope item is a full row, not a name. Every new item writes:
 - **notesInternal**: the row's note, one estimator's word to the next about buying out the
   row, read in the Notes column. An agent of the run writes `notesInternal` only by the NOTES
   rule of the reader's mandate 5: the note rests on what this job's documents show or leave
-  out, tells the estimator what the row does not, and is one he would act on. Most rows take
-  none.
+  out, tells the estimator what the row does not, and is one he would act on. Most rows take none. A
+  find of the rule's three kinds that passes goes on the row, never only on a report line, and a
+  review or a manual part writes the second kind on another package's row too.
 - **notesExternal**: the estimator's own note to bidders. No agent of the run writes
   `notesExternal`, on any row, in any case. A note already on a row, in either field, is never
-  written over, added to or moved to another row. Work by others and an alternate
-  are each a row of their own, as the reader's mandate 4 says; a Question a row waits on is cited
+  written over, added to or moved to another row. Work the paper gives to a named party outside
+  the package and an alternate are each a row of their own, as the reader's mandate 4 says; a Question a row waits on is cited
   on it; a conflict between two documents is a Question where it clears the Question bar below
-  and nothing on the row where it does not; and a correction of a value on the record is the
+  and nothing on the row where it does not, except two places that give the same work to different
+  trades, which is never a Question and is a note where the NOTES rule passes it; and a correction
+  of a value on the record is the
   write onto that field naming what it replaces (`supersedesId`), cited to a box around what shows
   the right value with the words read there as the evidence snippet, and nothing more. A
   correction is never a Question.
@@ -2231,7 +2240,7 @@ choice: "I put it on Plumbing; move it if it belongs elsewhere."
   baseline package split** (owned by `learn-project`).
 - **Author value engineering enrollments**: whether an item is a value engineering option stays
   the user's call at the package surface. The run marks each alternate the set names as an
-  alternate. The run writes exclusions where the paper says work is by others, and every trade except `01 11 13` has its general items in its General
+  alternate. The run writes exclusions where the paper gives work to a party it names outside the package, and every trade except `01 11 13` has its general items in its General
   Requirements section. On `01 11 13`, there is no `General Items` row and no `general-requirement`
   role; a general cost the contractor carries there is a home row under one of the seven headings.
   Exclusion rows keep their Exclusions section on this package as on every package. A row shared

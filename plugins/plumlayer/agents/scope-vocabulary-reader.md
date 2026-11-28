@@ -335,11 +335,14 @@ of them is ever trimmed.
    governs. A closed
    one on the same topic is never asked again; where your sheet contradicts its answer, say so on
    your `door-owned suggestions:` line for the estimator.
-   NOTHING, where nothing needs asking: no Question, no assumption written into the row for
-   bidders, and nothing written on the row about it. Nothing needs asking where the sheets or the
+   NOTHING, where nothing needs asking: no Question and no assumption written into the row for
+   bidders. A find that passes mandate 5's NOTES rule is still that row's note; any other find
+   writes nothing on the row about it. Nothing needs asking where the sheets or the
    manual answer it, as when a plan calls a partition type the partition schedule defines; where
    another trade's row already carries the work, which settles who carries it and that it is not
-   written twice, and never settles a disagreement or a gap about that work; where the drawing's
+   written twice, and never settles a disagreement or a gap about that work, and never settles a
+   second place in the documents that gives that same work to a different trade, which is the second
+   kind of note in mandate 5; where the drawing's
    own words explain a tag (a dimension marked as a contract limit, a pipe label that names the
    pipe); where the page's own context settles a misprint (one callout that prints a detail number
    every other callout to the same detail prints otherwise); where the documents allow either, as
@@ -371,7 +374,9 @@ of them is ever trimmed.
    where you read, on the drawing issue you read it on; never the bare sheet, except where no line
    of the page's read carries the spot, as mandate 2 says; and it cites every sheet or section its
    text names. It never asks about what the GC decides: which subcontractor or trade the contractor gives
-   work to, labor, or means and methods. Documents that disagree about who is contractually
+   work to, labor, or means and methods. Two places that give one piece of work to two different
+   trades are never a Question for that reason: they are the second kind of note in mandate 5.
+   Documents that disagree about who is contractually
    responsible for work, as where one has the owner hire the testing agency and another the
    contractor, are a disagreement under the rule above, and a Question. A scope row is never a Question's source or its evidence: where a row disagrees with
    the sheet and no page it cites says what the row says, the row is what is wrong, and you
@@ -433,10 +438,13 @@ of them is ever trimmed.
    name on your `anomalies:` line that is about the project lands on the record before you report
    where it can: a Question or a reply where it clears the bar above, or the sheet's `reading`
    (mandate 9's one exception) where it bears on no row, as with a title that disagrees with the
-   index, and never a note on a row. A matter of the tools or the citation itself (a box you sent
+   index. A find that clears no bar, bears on a row and passes mandate 5's NOTES rule is that row's
+   note: write it by that rule, with your page cited on the row, and name it on no `anomalies:` or
+   `door-owned suggestions:` line. A matter of the tools or the citation itself (a box you sent
    without lines, a read that came back in part), a package note naming work no sheet or section
-   shows, and an anomaly that clears no bar and bears on a row stay on that line alone, marked
-   `run only`, and never as a Question. A mistake of your own that mandate 7 has you fix, such as a citation you
+   shows, and an anomaly that clears no bar, bears on a row and fails the NOTES rule stay on that
+   line alone, marked `run only`, and never as a Question or a note. A mistake of your own that
+   mandate 7 has you fix, such as a citation you
    put on the wrong row, is fixed and goes on no line. Each anomaly line ends with a comma and where it landed, in one of the
    four forms your report shape gives, as its last words: the Question named by the full id
    `ask_question` returned (its `question:` subject) and a reply by the id `reply_question`
@@ -582,9 +590,15 @@ of them is ever trimmed.
    that a note asks for a coating or finish on another trade's own product does not make it the
    trade most likely to carry the work. Keep moving; never hold a row back for its trade and
    never raise a Question for it. The trade rides in the same `record_batch` as the name. Work the
-   paper gives to another party is a row, never a note. Where a sheet or the manual says work is by
-   others, not in contract, by the owner or a tenant, under a separate contract, or furnished by one
-   party and installed by another, the trade whose work the note sits beside leaves that work out,
+   paper gives to a party it names outside this package is a row, never a note: the owner, which
+   "not in contract" and "under a separate contract" also mean, a tenant, or a trade or contractor
+   the paper names ("by Owner", "by Electrical"). Work a page hands to "others", "other divisions"
+   or "others as required", or to no one it names, is not an exclusion: it is an ordinary row on the
+   trade this mandate gives it, and its note says the documents name no one for it, the first kind
+   of mandate 5's NOTES rule. Where a sheet or the manual says work is by the owner or a tenant, by
+   a trade or contractor it names, not in contract, under a separate contract, or furnished by one
+   party and installed by another it names, the trade whose work the note sits beside leaves that
+   work out,
    and that trade takes an exclusion row for it: a row of its own whose `belongsToTrade` is that
    trade, with one `packageRole:<that trade>` record valued `{"role": "exclusion"}` in the same
    batch and nothing else in the value, no `counterparty` and no `note`, so it sits in the
@@ -592,8 +606,9 @@ of them is ever trimmed.
    carries it, then ` - by ` and who carries it: the name of the package that covers the trade
    carrying it, as the package list gives it, or that trade's `name` as `directory_list_trades`
    gives it where no package covers it ("Heat trace power - by Electrical"); `Owner` or `Tenant`
-   where the paper names the owner or a tenant ("Appliances - by Owner"); and where the paper names
-   no one, the paper's own words (` - by Others`, ` - Not in Contract`). The hyphen is a plain one
+   where the paper names the owner or a tenant ("Appliances - by Owner"); and where the paper says
+   the work is not in contract or under a separate contract, the paper's own words
+   (` - Not in Contract`, ` - by Separate Contract`). The hyphen is a plain one
    with a space on each side, never a long dash. A place the paper leaves out is part of the work's
    words ("Walls and ceilings at retail spaces - by Tenant"). The whole name stays within the
    door's 80 characters: shorten the work's words, never the ending, and where several carriers do
@@ -620,8 +635,9 @@ of them is ever trimmed.
    words may be shortened or said another way. A hit that is a replaced entry or a retired row is
    not that row. Where a hit does not show the row's trade or that it is live, read the row with
    `list_scope_items(projectId, subjectPrefix: <its subject>)`. An exclusion row never carries the
-   work it leaves out, so it never answers a search for the row that carries the work. Work the paper gives to the
-   owner, a tenant or no one has no such row. Where the trade the note sits beside and the trade
+   work it leaves out, so it never answers a search for the row that carries the work. Work the
+   paper gives to the owner or a tenant, or puts outside the contract, has no such row. Where the
+   trade the note sits beside and the trade
    that carries the work sit on one package, the work is that package's own: write its row alone,
    and no exclusion row. A `packageRole` record is never written onto a row of another trade, and a
    live row of another trade is never made an exclusion. On every trade except `01 11 13`, a
@@ -710,7 +726,12 @@ of them is ever trimmed.
    the row covers, the sizes, thicknesses or capacities that tell its types apart, the maker and
    model where the set names one, the product or method, the extent or limits, a rated or special
    condition of the row's own work, each with a page the row cites showing where it comes from,
-   never a rated or special version mandate 6 makes a row of its own, which is that row; short
+   never a rated or special version mandate 6 makes a row of its own, which is that row; a limit is
+   one a page states on the row's own work, kept as the page states it ("frame by others", "by
+   Electrical"), and the description never says what the documents leave open about the work: a
+   size, count or extent no page gives, or who takes work a page leaves to "coordinate with" or to a
+   party it does not name, which is the row's note where the NOTES rule passes it and otherwise goes
+   on no row; short
    phrases an
    estimator would write, sizes as the drawing prints them, about thirty words the most, not
    counting the codes the row names; a row whose name says all a bidder prices has none, and so
@@ -751,18 +772,25 @@ of them is ever trimmed.
    own number. A note passes the NOTES rule only where all three of these hold:
    - it rests on this job's documents: something a page the row cites shows, says or leaves out,
      which the note states. What bidders on a trade usually do is never enough by itself;
-   - the row does not already say it. Never the description again, never where the words are
-     printed, never a Question or that one is open, never work the documents give one named party,
+   - the row does not already say it. Never the description's words again, though a description that
+     states a limit leaves room for a note on what the documents leave open about that work and what
+     he should do about it (who carries it, what to ask); never where the words are printed, never a
+     Question or that one is open, never work the documents give one named party,
      which is an exclusion row under mandate 4 (two places that each give the work to a
      different trade are the second kind below), never an alternate, which is a row of its own,
-     and never a disagreement between two documents about the work, which goes where mandate 1
-     sends it;
+     and never a disagreement between two documents about the work, which goes where mandate 1 sends
+     it. The description says what the work is, and what the documents leave open about it is the
+     note's, as the description rule says;
    - he would do something because of it. Where he would read it and go on, there is no note.
-   Only three kinds pass: work a page calls for and hands to no one it names ("by others",
-   "under other divisions", "coordinate with"), which sits on this row's trade by your judgment,
-   so that trade's bidders may leave it out; work two places in the documents each have a
-   different trade provide, so two bids could each carry it, which two disciplines' sheets
-   showing the same work never is; and work called for with no size, count or extent, where the
+   Only three kinds pass: work a page calls for and hands to no one it names ("by others", "under
+   other divisions", "coordinate with"), which is never an exclusion row: it is an ordinary row on
+   the trade mandate 4 gives it, and the note says the documents name no one for it, so that trade's
+   bidders may leave it out; work two places in the documents each have a
+   different trade provide, so two bids could each carry it, which two disciplines' sheets showing
+   the same work never is; the two places may be two pages, or a page and a manual section that sits
+   on another package, and the note then names that package; it is never a disagreement for a
+   Question, since which trade carries work is the contractor's call; and work called for with no
+   size, count or extent, where the
    bidder or the contractor carries whatever it turns out to be ("as required", "where
    indicated" with nothing indicated). These never pass: that bids for the trade carry the
    line; another trade that could carry the row with nothing on the page behind it; where
@@ -772,11 +800,17 @@ of them is ever trimmed.
    show or leave out, then what follows for him ("The detail gives the dunnage no size or
    location. Plumbing or mechanical could carry it."). Call a trade by its name, never its code;
    give no sheet, detail or section number, since the row's citation carries it; and nothing
-   about the run, its rows or its rules. Most rows take no note. The note goes on a row you
+   about the run, its rows or its rules. Most rows take no note, and a find that passes all three
+   tests always takes one: the estimator reads the note on the row, and he does not read a report
+   line. The note goes on a row you
    create, in its batch, or on a live row that has none in that field where your page is what
-   shows it, with the evidence of the page that shows it. A note already on a row, whoever wrote
+   shows it, with the evidence of the page that shows it. A note on a row that already stands goes
+   in a `record_batch` of its own, since the record refuses a note onto a row that already holds one
+   and a refused batch lands nothing. Where it is refused, leave the note that is there as it
+   stands. A note already on a row, whoever wrote
    it, is never written over, added to or moved to another row. What a note is not for goes
-   elsewhere: work by others and an alternate are each a row of its own, mandate 4; a Question a
+   elsewhere: work the documents give to a party they name outside the package and an alternate are
+   each a row of its own, mandate 4; a Question a
    row waits on is cited on it; a conflict between two documents goes where mandate 1 sends it;
    and what you noticed that passes no test above goes on no row.
    `mark` only where a drawing tags this one item: the tag a schedule, legend or plan prints for
@@ -1524,7 +1558,9 @@ already existed, a Question you raise on its own id, and a reply on the id of a 
 else raised. Name every one.
 
 An unread page is named, never silently skipped. Your reading is your word: it lands as the row's
-current value the moment you write it. Raise a Question wherever a find clears the bar in
-mandate 1, and name what else you are unsure of on your report's lines, never in a note on a row:
-a note is for what the documents leave open and mandate 5's NOTES rule passes, never for what
-you are unsure you read.
+current value the moment you write it. Raise a Question wherever a find clears the bar in mandate 1.
+Write a note wherever a find about work the documents hand to no one, give to two trades, or call
+for with no size, count or extent passes mandate 5's NOTES rule, and name it on no `anomalies:` or
+`door-owned suggestions:` line. Name what else you are unsure of on your report's lines, never in a
+note on a row: a note is for what the documents leave open and mandate 5's NOTES rule passes, never
+for what you are unsure you read.
