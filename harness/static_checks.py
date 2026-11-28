@@ -2005,6 +2005,15 @@ QUESTION_BAR_PHRASES: dict[str, tuple[str, ...]] = {
         "raise nothing for want of a section and write nothing on the row",
         # The two cases write their fields and no note.
         "Two more cases raise no Question and write no note:",
+        # A permit, bid or construction documents set, one set that never stacks, and two makers.
+        "A permit set, a bid set or a construction documents set is never a set still being drawn, "
+        "whatever its stamps or clouds say, and a revision to come is never a reason to raise nothing.",
+        "The drawings and the manual of this job are one document set, so a sheet and a section that "
+        "give the same work in the same place two values, two grades or two moisture limits never "
+        "stack, even where one is stricter.",
+        "Two models, colors or makers named for one item are a disagreement unless a third document "
+        "lists both or makes one govern, as DOCUMENTS THAT DISAGREE says; a shared product family "
+        "settles nothing.",
     )
     for reader in ("reader", "vocabulary reader")
 }
@@ -2037,6 +2046,12 @@ QUESTION_BAR_PHRASES["reviewer"] = (
 QUESTION_BAR_PHRASES["manual reader"] = (
     "silent sections: <section code + the Question id, or `left open` + its reason, `the sheets "
     "select none of it` or `closed Question <id>`",
+    "a sheet and a section of this job that give the same work in the same place two values, two "
+    "grades or two moisture limits never stack, even where one is stricter, and are a disagreement",
+    "a permit set, a bid set or a construction documents set is never a set still being drawn, "
+    "whatever its stamps or clouds say",
+    "two models, colors or makers named for one item are a disagreement unless a third document "
+    "lists both or makes one govern, a shared product family settling nothing",
 )
 QUESTION_BAR_PHRASES["skill"] = (
     "and the run raises each one it finds, however many",
@@ -2046,6 +2061,13 @@ QUESTION_BAR_PHRASES["skill"] = (
     "select none of it` or `closed Question <id>`",
     "unspecified work: <row family + the Question id, or `left open, closed Question <id>`",
     "how it ended: Question <id>, `agree`, `closed Question <id>`, `not settled`, or `not reached`",
+    "A permit set, a bid set or a construction documents set is never a set still being drawn, "
+    "whatever its stamps or clouds say, and a revision to come is never a reason to raise nothing.",
+    "the drawings and the manual of this job are one document set, so a sheet and a section that "
+    "give the same work in the same place two values, two grades or two moisture limits never "
+    "stack, even where one is stricter, and are a disagreement;",
+    "two models, colors or makers named for one item are a disagreement unless a third document "
+    "lists both or makes one govern, and a shared product family settles nothing;",
 )
 QUESTION_BAR_FILES = {
     "reader": ("agents", "scope-reader.md"),
@@ -2160,6 +2182,17 @@ def check_question_rfi_bar(plugin_path: Path) -> Result:
          "it goes on neither `silent sections:` nor `unspecified work:`, and you name it on your "
          "`anomalies:` line alone",
          "it goes on your `silent sections:` line as `left open, set still being drawn`"),
+        ("a permit set read as a set still being drawn in a reader", "reader",
+         "A permit set, a bid set or a construction documents set is never a set still being drawn",
+         "A permit set, a bid set or a construction documents set may be a set still being drawn"),
+        ("a sheet and a section of one set left to stack in the vocabulary reader", "vocabulary reader",
+         "moisture limits never stack, even where one is stricter.",
+         "moisture limits stack, the stricter carried."),
+        ("a shared product family settling two makers in the skill", "skill",
+         "and a shared product family settles nothing;", "and a shared product family settles it;"),
+        ("a revision to come left as a reason to raise nothing in a manual part", "manual reader",
+         "is never a set still being drawn, whatever its stamps or clouds say",
+         "is a set still being drawn where its clouds say a revision is to come"),
     ):
         flat = " ".join(bar_texts.get(label, "").split())
         if before in flat and _question_bar_errors({**bar_texts, label: flat.replace(before, after, 1)}):
@@ -2177,7 +2210,10 @@ def check_question_rfi_bar(plugin_path: Path) -> Result:
         f"`left open` with `the sheets select none of it` or `closed Question <id>` and `agree`; in "
         f"the reviewer, a document the set lacks asked about by the reader's test, work required "
         f"only where shown asked about by nothing, and a silence on a set still being drawn named "
-        f"on `anomalies:` alone), "
+        f"on `anomalies:` alone; a permit, bid or construction documents set never a set still "
+        f"being drawn, a sheet and a section of this job never stacking, and two models, colors or "
+        f"makers for one item a disagreement unless a third document lists both or makes one govern, "
+        f"in both readers, the manual reader and the skill), "
         f"no low-cost wording, {bar_refused} breaks refused"
     )
     if errors:
@@ -24931,6 +24967,7 @@ FULL_TOOL_NAMES_AGENTS = (
     "orientation",
     "package-split",
     "question-checker",
+    "scope-manual-reader",
     "scope-package-folder",
     "scope-rechecker",
     "scope-standard-lines",
@@ -25665,6 +25702,120 @@ def check_overview_fields(plugin_path: Path, marketplace_root: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
+# Check: each alternate once, marked as an alternate
+# --------------------------------------------------------------------------- #
+#
+# A run marked 42 alternates, and 7 of them stood on the record twice: once on the general
+# requirements package, written off the manual's alternates section, and once on the trade that
+# prices them, written off the drawings, each carrying its own series' number. 11 base rows still
+# named an alternate. So before a create both readers and the manual reader search the record for
+# the alternate on any package and cite on the row they find; the one row opens its description
+# with the Division 01 number and adds the drawing's; a numbering difference is no Question; the
+# alternate goes on the trade that prices it; and the review takes an alternate's words off a base
+# row and creates the alternate's row where none carries it, its record search kept apart from its
+# fifty set searches. Each phrase taken out and the old "trade that carries it" put back are refused.
+_ALTERNATE_READER_PINS = (
+    "is one row of its own on the record, on the trade that prices it and never on `01 11 13` "
+    "unless what it changes is the contractor's own work",
+    "Before you create one, make one `search(projectId, subjectPrefix: \"scopeItem:\", text: "
+    "\"Alternate\")`, paged with `offset` to its end, once in your unit however many alternates "
+    "your page names, and judge each hit by the work it changes, never by its number or its name's "
+    "words",
+    "Where a live row on any package already carries the alternate and nothing of the base work, it "
+    "is that row: cite your page there and create none.",
+    "Where Division 01 and the drawings number it differently, its `description` opens with the "
+    "Division 01 number, since the bid form follows it, and adds the drawing's number after it",
+    "Two numbers for one alternate are never a Question; two places that describe different work "
+    "under one alternate are DOCUMENTS THAT DISAGREE in mandate 1.",
+)
+_ALTERNATE_PINS: tuple[tuple[str, str], ...] = (
+    *((reader, phrase) for reader in _NOTE_READERS for phrase in _ALTERNATE_READER_PINS),
+    ("agents/scope-manual-reader.md", "one row on the record found first by reader mandate 4's one "
+     "`search` for `Alternate`: where a live row on any package already carries it, cite your page "
+     "on it, create none"),
+    ("agents/scope-manual-reader.md", "write it over with `supersedesId` to open with that number and "
+     "keep the drawing's number after it"),
+    ("agents/scope-manual-reader.md", "An alternate goes on the trade that prices it, never on "
+     "`01 11 13` unless what it changes is the contractor's own work."),
+    ("agents/scope-reviewer.md", "Where a base row on this package names an alternate in its `name` "
+     "or `description`, write that field over with `supersedesId` without the alternate's words"),
+    ("agents/scope-reviewer.md", "Where no live row on any package carries that alternate, found "
+     "with reader mandate 4's one `search` for `Alternate`, judged by the work it changes, create it "
+     "as reader mandate 4 says, on the trade that prices it"),
+    ("agents/scope-reviewer.md", "or taking an alternate's words off a base row as mandate 4 says"),
+    ("agents/scope-reviewer.md", "are `search` calls and never among the fifty `search_set_text` "
+     "calls above"),
+    ("skills/scope-run/SKILL.md", "an alternate the set names is one row of its own on the record, "
+     "on the trade that prices it, marked as an alternate"),
+)
+_ALTERNATE_RETIRED: tuple[tuple[str, str], ...] = tuple(
+    (reader, "is a row of its own on the trade that carries it, and the batch that creates it")
+    for reader in _NOTE_READERS
+)
+
+
+def check_alternates_once(plugin_path: Path, marketplace_root: Path) -> Result:
+    return _pinned_text_check(
+        "alternates-once", plugin_path, _ALTERNATE_PINS, _ALTERNATE_RETIRED,
+        "both readers and the manual reader search the record for an alternate on any package "
+        "before a create and cite on the one they find, its description opening with the Division "
+        "01 number and adding the drawing's, a numbering difference no Question, the alternate on "
+        "the trade that prices it; the review takes an alternate's words off a base row and creates "
+        "the missing alternate, its record search outside the fifty",
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Check: an exclusion's carrying row, and its ending
+# --------------------------------------------------------------------------- #
+#
+# Of 105 exclusion rows that named a package, 67 had no row of the same name on that package and
+# 32 none sharing half its words; 4 ended with their own package after the fold; and some endings
+# named the contractor or a division in place of a package. So both readers end an exclusion that
+# names a division, section or discipline with the package that covers it and one that names the
+# general contractor with the general requirements package, and the review searches the record for
+# exclusion rows that name its package, creates each carrying row it lacks cited to the exclusion
+# row's page, and gives an exclusion ending with its own package its row before retiring it. Each
+# phrase taken out is refused.
+_EXCLUSION_READER_PINS = (
+    "where the paper names a division, a section or a discipline, that is the trade it resolves to, "
+    "and the ending is the name of the package that covers it",
+    "where the paper names the general contractor or the construction manager, or says \"the "
+    "contractor\" where the documents mean the general contractor, the ending is the name of the "
+    "package whose `tradeCode` is `01 11 13`, as the package list gives it",
+    "in a section of the trade's own, \"the contractor\" who installs the work is that trade, and the "
+    "work stays on the section's own trade",
+)
+_EXCLUSION_PINS: tuple[tuple[str, str], ...] = (
+    *((reader, phrase) for reader in _NOTE_READERS for phrase in _EXCLUSION_READER_PINS),
+    ("agents/scope-reviewer.md", "Make one `search(projectId, predicate: \"name\", text: \" - by "
+     "<this package's name>\")`, paged with `offset` to its end."),
+    ("agents/scope-reviewer.md", "For each exclusion row on another package whose ending names this "
+     "package, find among the rows you harvested the one that carries its work, judged by the work "
+     "and never by the name."),
+    ("agents/scope-reviewer.md", "Where none does, create it as the third outcome of mandate 4 "
+     "creates work no row carries, named for the work in the exclusion row's words before ` - by `"),
+    ("agents/scope-reviewer.md", "cited to a page the exclusion row cites that is not marked "
+     "`shownOnly`, opened as mandate 2 says"),
+    ("agents/scope-reviewer.md", "An exclusion row on this package whose ending names this package "
+     "itself, as after a fold, leaves out work this package carries: where no row here carries the "
+     "work, create that row the same way, then retire the exclusion row as the pair rule above "
+     "retires it."),
+)
+
+
+def check_exclusion_carried(plugin_path: Path, marketplace_root: Path) -> Result:
+    return _pinned_text_check(
+        "exclusion-carried", plugin_path, _EXCLUSION_PINS, (),
+        "both readers end an exclusion naming a division, section or discipline with the package "
+        "that covers it and one naming the general contractor with the general requirements "
+        "package; the review creates the carrying row each exclusion naming its package lacks, "
+        "cited to that row's page, and gives an exclusion ending with its own package its row "
+        "before retiring it",
+    )
+
+
+# --------------------------------------------------------------------------- #
 # Check: names alike by place
 # --------------------------------------------------------------------------- #
 #
@@ -25797,6 +25948,8 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_full_tool_names(plugin_path, marketplace_root),
         check_package_split(plugin_path, marketplace_root),
         check_overview_fields(plugin_path, marketplace_root),
+        check_alternates_once(plugin_path, marketplace_root),
+        check_exclusion_carried(plugin_path, marketplace_root),
         check_names_alike_by_place(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)

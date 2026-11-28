@@ -257,8 +257,12 @@ Each of these is a harness check.
     (`left open` with `the sheets select none of it` or `closed Question <id>`, and `agree`),
     the review asking about a document the set lacks by the readers' test, asking nothing about
     work a section requires only where shown or selected when none is, and naming a silence on a
-    set still being drawn on its anomaly line alone, with no low-cost wording anywhere and ten
-    breaks refused. This cannot judge whether a
+    set still being drawn on its anomaly line alone, with no low-cost wording anywhere. Both
+    readers, the manual reader and the skill also carry three narrow cases: a permit, bid or
+    construction documents set is never a set still being drawn; a sheet and a section of this
+    job that give the same work two values never stack; and two models, colors or makers named
+    for one item are a disagreement unless a third document lists both or makes one govern.
+    Fourteen breaks are refused. This cannot judge whether a
     Question an agent raises clears the bar, only that the bar is stated and the retired rules
     have not come back; that judgment stays in review.
 14. Question-text plain-words pointer. Every shipped skill or agent file that names `ask_question`
@@ -899,3 +903,24 @@ invisible.
     side is taken off, and the check runs it over invented names apart by place alone, which read
     alike, and over names apart by their work, an ordinary word after "floor", a place inside the
     name and a name that is only a place, which do not. This cannot judge a real run's names.
+52. Each alternate is one row on the record, on the trade that prices it. A run once held seven
+    alternates twice, once on the general requirements package off the manual's alternates
+    section and once on the trade off the drawings, each with its own series' number, and
+    eleven base rows that still named an alternate. Both readers and the manual reader search
+    the record for the alternate on any package before a create and cite on the row they find;
+    that row's description opens with the Division 01 number and adds the drawing's; two
+    numbers for one alternate are no Question; and the review takes an alternate's words off a
+    base row and creates the alternate's row where none carries it, with its record search
+    kept apart from its fifty set searches. The check holds each sentence and refuses each one
+    taken out and the old wording put back. This cannot judge how a running agent matches two
+    alternates by their work; that is the measured run's.
+53. An exclusion's work has its row on the package the exclusion names. A run once left 67 of 105
+    exclusions that named a package with no row of that name there, and four ended with their
+    own package after the fold. Both readers end an exclusion that names a division, a section
+    or a discipline with the package that covers it, and one that names the general contractor
+    with the general requirements package's name. The review searches the record once for
+    exclusion rows that name its package, creates each carrying row it lacks cited to the
+    exclusion row's page, and gives an exclusion that ends with its own package its row before
+    retiring it. The check holds each sentence and refuses each one taken out. This cannot
+    judge whether a running review finds the row that carries the work; that is the measured
+    run's.

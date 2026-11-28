@@ -195,12 +195,22 @@ them is ever trimmed.
    could not search. The fifty searches here, the four of a manual part and the two of a standard
    line each count a search once, whether it was answered or named `unsearched`, and never count
    a resend. Every record `search` you make carries a `text` or names one `subject`, with
-   `limit: 20` a page.
+   `limit: 20` a page. The two record searches mandates 4 and 5 add, one for an alternate
+   already on the record and one for exclusion rows that name this package, are `search`
+   calls and never among the fifty `search_set_text` calls above; each is made once in the
+   review, paged to its end, and only where its mandate needs it.
 4. WHAT COUNTS AS WORK NO ROW CARRIES. A hit is new work only when both hold: the page it names is
    on no citation of any row you harvested for this package, and the words around it are not the
    work of a row that already exists. Three outcomes and no fourth. Work the set names as an
    alternate is never the work of the base row it resembles: its row is the alternate's own,
-   found or created as reader mandate 4 says.
+   found or created as reader mandate 4 says. Where a base row on this package names an
+   alternate in its `name` or `description`, write that field over with `supersedesId`
+   without the alternate's words, the rest of it as it stands, its evidence a page the row
+   already cites that is not marked `shownOnly`, and name the write on your `field updates:`
+   line. Where no live row on any package carries that alternate, found with reader mandate
+   4's one `search` for `Alternate`, judged by the work it changes, create it as reader
+   mandate 4 says, on the trade that prices it, cited to the page the base row cites that
+   names the alternate, opened as mandate 2 says.
    - The hit is the work of a row on this package that does not cite that page. It is a citation on
      that row, after you open the page: say which kind, as reader mandate 1 says. It is not a
      create.
@@ -333,7 +343,23 @@ them is ever trimmed.
    this package come to one name, the pair rule above judges them. An ending of `Owner`,
    `Tenant`, `Others`, `Not in Contract`, or of several carriers, is left as it is. A later
    review runs the same check, so a trade moved after yours, a rename and a resumed run are each
-   caught by the next. Combine a pair and check these endings before you write any
+   caught by the next. Exclusion rows on other packages name this package as the one that
+   carries their work, and the row that carries it may be missing here. Make one
+   `search(projectId, predicate: "name", text: " - by <this package's name>")`, paged with
+   `offset` to its end. A hit that is a replaced entry or a retired row is no exclusion row, and
+   a hit whose ending names another package first is not one of these; a hit that does not
+   show the row's package or the pages it cites is read with `list_scope_items(subjectPrefix:
+   <its subject>, full: true, tallies: false)`. For each exclusion row on another package
+   whose ending names this package, find among the rows you harvested the one that carries its
+   work, judged by the work and never by the name. Where none does, create it as the third
+   outcome of mandate 4 creates work no row carries, named for the work in the exclusion row's
+   words before ` - by `, on the trade of this package that carries it, cited to a page the
+   exclusion row cites that is not marked `shownOnly`, opened as mandate 2 says, or where it
+   cites none, with the `sourceInstrument` and `evidence` its name carries, and write nothing
+   on the exclusion row. An exclusion row on this package whose ending names this package
+   itself, as after a fold, leaves out work this package carries: where no row here carries
+   the work, create that row the same way, then retire the exclusion row as the pair rule
+   above retires it. Combine a pair and check these endings before you write any
    heading under mandate 15, and name a row you retired on no report line but `anomalies:`,
    since the runner's check reads every other line against the list and the row has left it.
    These cases retire nothing: the other row sits on another package; the other row carries a
@@ -368,7 +394,8 @@ them is ever trimmed.
    required: it goes onto that field as reader mandate 5 says, as when a silence in mandate 9 exists
    only because a row is wrong. You never split or re-home a row, never retire one but the other
    row of a pair as above or a row named for its heading as below, and never rewrite one to
-   change what it covers beyond naming its places or its system as above; its heading is mandate 15's. Where a
+   change what it covers beyond naming its places or its system as above, or taking an
+   alternate's words off a base row as mandate 4 says; its heading is mandate 15's. Where a
    row on this package is named for its trade, its package or a whole manual section and its
    description and the pages you opened show more than one piece of work as reader mandate 6
    counts them, pieces made alike for several places being one piece, you do not split it. Where

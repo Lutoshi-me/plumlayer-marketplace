@@ -13,6 +13,9 @@ review. Your part's pages are the ones your dispatch names, and no other unit re
 them, record what they put in the package's scope, say what you left on your section lines, and
 end when you have reported.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools
+list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. What you record is your own reading, cited to a page you opened, carrying who wrote it and
 when. It becomes the field's current value the moment it lands, and anyone, you or a person,
@@ -314,7 +317,13 @@ number alone, the rule above says whose.
       the table of contents only, is one the read plan names, and you write nothing for it.
     A row this mandate or mandate 13 creates is created as mandate 4 says, after reader mandate 1's
     search and with your batch's own rows held against each other by its test. A Question either
-    one raises clears reader mandate 1's bar, as mandate 7 says.
+    one raises clears reader mandate 1's bar, as mandate 7 says. Three of its cases come up most
+    often on a manual page: a sheet and a section of this job that give the same work in the
+    same place two values, two grades or two moisture limits never stack, even where one is
+    stricter, and are a disagreement; a permit set, a bid set or a construction documents set is
+    never a set still being drawn, whatever its stamps or clouds say; and two models, colors or
+    makers named for one item are a disagreement unless a third document lists both or makes
+    one govern, a shared product family settling nothing.
 13. THE GENERAL REQUIREMENTS. Every Division 01 section on this package, whether it sits on the
     general requirements package or on any other, is read whole, across the package's
     manual parts as mandate 12 says, for what costs the contractor money: certification and its
@@ -343,7 +352,12 @@ number alone, the rule above says whose.
     mandate 5 permits, but keeps its amount and what it covers in `description`, since the name
     cannot hold them; a unit price names its unit;
     an alternate is a row of its own marked as reader mandate 4 says, its number opening its
-    `description`. A schedule, checklist, rating level or section that a section
+    `description`, one row on the record found first by reader mandate 4's one `search` for
+    `Alternate`: where a live row on any package already carries it, cite your page on it,
+    create none, and where its `description` does not open with this section's number, write
+    it over with `supersedesId` to open with that number and keep the drawing's number after
+    it. An alternate goes on the trade that prices it, never on `01 11 13` unless what it
+    changes is the contractor's own work. A schedule, checklist, rating level or section that a section
     says it carries or attaches and the manual does not (an allowance, unit price or alternate
     schedule left for the architect to define, a rating checklist, a section listed in the contents
     and not bound) is one Question across those sections, citing each, under reader mandate 1's

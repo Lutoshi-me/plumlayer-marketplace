@@ -186,8 +186,9 @@ that relaxes any one of them reproduces a measured, named failure.
    there the trade entry is written first. Work the paper gives to a party it names outside the
    package, the owner, a tenant or a named trade, is an exclusion row; work it hands to others or
    to no one it names is an ordinary row whose note says the documents name no one for it; and
-   a trade's own general costs are general requirement rows, and an alternate the set names is a
-   row of its own marked as an alternate, as the reader's mandate 4 says.
+   a trade's own general costs are general requirement rows, and an alternate the set names is
+   one row of its own on the record, on the trade that prices it, marked as an alternate, as
+   the reader's mandate 4 says.
 5. **Every write is count-verified, at two boundaries.** After every batch write, the reader reads
    the record back and confirms the count that landed equals the count sent, and checks any
    conflicting rows individually, before it ends. The pass runner separately re-verifies the same
@@ -469,7 +470,9 @@ On a schematic or design development set, a tag missing from a schedule, a blank
 keynote with no text, a detail titled and not drawn, or a sheet not yet issued is the set still
 being drawn and raises no Question, unless the item cannot be priced at all without the answer
 and the answer moves the price materially: a deliberate exception to the bar above, since the
-next issue fills in what a set still being drawn leaves open. A
+next issue fills in what a set still being drawn leaves open. A permit set, a bid set or a
+construction documents set is never a set still being drawn, whatever its stamps or clouds
+say, and a revision to come is never a reason to raise nothing. A
 follow-up reply adds sources and never argues which document governs. It does
 not clear the bar:
 
@@ -481,9 +484,14 @@ not clear the bar:
 - when the drawing's own words explain a tag, or the page's own context settles a misprint;
 - when requirements stack, from separate programs or set area by area, so that meeting the
   strictest meets them all: each is carried where it applies, in the description where a bidder
-  needs it, the strictest where two apply at once;
+  needs it, the strictest where two apply at once; the drawings and the manual of this job are
+  one document set, so a sheet and a section that give the same work in the same place two
+  values, two grades or two moisture limits never stack, even where one is stricter, and are a
+  disagreement;
 - when the documents allow either: an "or equal", a list of acceptable makers that holds both, a
-  basis of design with equals allowed;
+  basis of design with equals allowed; two models, colors or makers named for one item are a
+  disagreement unless a third document lists both or makes one govern, and a shared product
+  family settles nothing;
 - when a section offers an option only where shown or selected and no sheet shows or selects it:
   no row and no Question;
 - when the documents leave a choice to a named party and it still leaves a bidder a basis to

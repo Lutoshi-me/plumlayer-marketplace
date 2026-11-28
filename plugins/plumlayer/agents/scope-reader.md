@@ -289,8 +289,10 @@ of them is ever trimmed.
    row and raise no Question, unless the item cannot be priced at all without the answer and the
    answer moves the price materially, as a door's material or rating, a structural member's size
    and a footing do. This is a deliberate exception to the bar above, which raises every Question
-   a find clears: a set still being drawn leaves open what its next issue fills in. Past the bar there are three shapes and no
-   fourth.
+   a find clears: a set still being drawn leaves open what its next issue fills in. A permit set, a bid set or a
+   construction documents set is never a set still being drawn, whatever its stamps or clouds
+   say, and a revision to come is never a reason to raise nothing. Past the bar there are three
+   shapes and no fourth.
    A NEW Question, where nothing covers the ask. Check first, in this order. Search the set for the
    answer by the tag, code, product or assembly the ask turns on, the drawings with
    `search_set_text` and the manual with `kind: document`, and open with `get_page_text` each hit on
@@ -348,7 +350,9 @@ of them is ever trimmed.
    selects it, which makes no row either; and where the documents leave a choice to a named party
    and that choice still leaves a bidder a basis to price, as a color the architect selects from
    the maker's standard range. A choice that leaves a bidder no basis to price, as a premium
-   finish family the documents never name, is a gap and a Question. Two more cases raise no
+   finish family the documents never name, is a gap and a Question. Two models, colors or makers
+   named for one item are a disagreement unless a third document lists both or makes one govern,
+   as DOCUMENTS THAT DISAGREE says; a shared product family settles nothing. Two more cases raise no
    Question and write no note:
    - REQUIREMENTS THAT STACK. Limits stack when meeting the strictest meets them all: a tighter
      leakage limit from one program meets the looser one from another program or certification,
@@ -356,7 +360,9 @@ of them is ever trimmed.
      areas) each hold where they apply. Each is carried where it applies, in the `description` where a bidder needs
      it, and the strictest where two apply at once. Two requirements that cannot both be met, or two values one program or one
      document set gives for the same work in the same place, do not stack: they are a disagreement
-     under the rule above.
+     under the rule above. The drawings and the manual of this job are one document set, so a
+     sheet and a section that give the same work in the same place two values, two grades or two
+     moisture limits never stack, even where one is stricter.
    - A PRICING NOTE ON A SHEET. A note that tells the bidder what to assume, allow or carry ("ALLOW
      $12 PER SQUARE FOOT FOR TILE MATERIAL") is the pricing basis for the work it names:
      a detail that tells the row apart goes in its `name` where it fits, writing over an existing
@@ -602,7 +608,13 @@ of them is ever trimmed.
    Exclusions section of that trade's package. Its `name` is the work, in the words of the row that
    carries it, then ` - by ` and who carries it: the name of the package that covers the trade
    carrying it, as the package list gives it, or that trade's `name` as `directory_list_trades`
-   gives it where no package covers it ("Heat trace power - by Electrical"); `Owner` or `Tenant`
+   gives it where no package covers it ("Heat trace power - by Electrical"); where the paper names
+   a division, a section or a discipline, that is the trade it resolves to, and the ending is the
+   name of the package that covers it; where the paper names the general contractor or the construction manager, or says "the
+   contractor" where the documents mean the general contractor, the ending is the name of the package whose `tradeCode`
+   is `01 11 13`, as the package list gives it, and the row that carries the work, below, sits on
+   `01 11 13`; in a section of the trade's own, "the contractor" who installs the
+   work is that trade, and the work stays on the section's own trade; `Owner` or `Tenant`
    where the paper names the owner or a tenant ("Appliances - by Owner"); and where the paper says
    the work is not in contract or under a separate contract, the paper's own words
    (` - Not in Contract`, ` - by Separate Contract`). The hyphen is a plain one
@@ -647,15 +659,28 @@ of them is ever trimmed.
    there is a home row under one of the seven headings. Exclusion rows keep their Exclusions
    section on this package as on every package. A row shared with another package keeps its
    category there; the seven apply to rows whose home is `01 11 13`. Work the set names as an
-   alternate, by its number or by the word, on a sheet or in the manual, is a row of its own on
-   the trade that carries it, and the batch that creates it carries one `packageRole:<that
+   alternate, by its number or by the word, on a sheet or in the manual, is one row of its own on
+   the record, on the trade that prices it and never on `01 11 13` unless what it changes is the
+   contractor's own work, and the batch that creates it carries one `packageRole:<that
    trade>` record valued `{"role": "ve-alternate"}`, so the row sits in that package's
    alternates section and never among its base rows. Its `name` says what the alternate changes
    ("Wood flooring in place of carpet at the lobby", "Delete the roof pavers"), so it never
    repeats the name of the base row for the same work, and its `description` opens with the
    alternate's number as the set prints it and whether it adds or deducts where the set says
-   ("Alternate 3, add"). Where a live row already carries the alternate and nothing of the
-   base work, cite your page there, and write the record onto it only where
+   ("Alternate 3, add"). Before you create one, make one `search(projectId, subjectPrefix:
+   "scopeItem:", text: "Alternate")`, paged with `offset` to its end, once in your unit however
+   many alternates your page names, and judge each hit by the work it changes, never by its
+   number or its name's words: the manual's Division 01 and the drawings may number one
+   alternate in two series. A hit that is a replaced entry or a retired row is not that row, and
+   a hit that does not show the row's trade or that it is live is read with
+   `list_scope_items(projectId, subjectPrefix: <its subject>)`. Where a live row on any package
+   already carries the alternate and nothing of the base work, it is that row: cite your page
+   there and create none. Where Division 01 and the drawings number it differently, its
+   `description` opens with the Division 01 number, since the bid form follows it, and adds the
+   drawing's number after it ("Alternate 3, add; Alternate C on the drawings"), written over
+   with `supersedesId` where it does not yet. Two numbers for one alternate are never a
+   Question; two places that describe different work under one alternate are DOCUMENTS THAT
+   DISAGREE in mandate 1. Write the record onto that row only where
    `search(subject: "<the row's subject>")` shows its `packageRole:<that trade>` has never held
    an entry: a row a person marked as an alternate, or took the mark off, stays as that person
    left it. A base row never carries an alternate's work or a sentence about one.
