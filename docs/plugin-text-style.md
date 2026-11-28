@@ -365,10 +365,11 @@ Each of these is a harness check.
     runs its own helper over three agent fixtures, so the refusals are shown rather than
     assumed. This cannot judge whether a declared verb is one that agent should hold; that stays
     in review.
-21. Every agent pins its model. Every `agents/*.md` frontmatter carries a non-empty `model`, so a
-    dispatched agent does not run on whatever model the session happens to be on, and a fixture
-    with no `model` is shown to refuse. This cannot judge which model a definition should name;
-    that stays a decision.
+21. Every agent pins its model and effort. Every `agents/*.md` frontmatter carries a non-empty
+    `model` and an `effort` of low, medium, high, xhigh or max, so a dispatched agent does not run
+    on whatever model or effort the session happens to be on, and a fixture with no `model` and a
+    fixture with no `effort` are each shown to refuse. This cannot judge which model or effort a
+    definition should name; that stays a decision.
 22. Every dispatch says how its caller waits. A fenced block in a shipped skill or agent file that
     carries a `subagent_type:` line also carries `run_in_background: false`, so where the Agent
     tool takes that parameter, as in a headless session, which stops a background agent after ten

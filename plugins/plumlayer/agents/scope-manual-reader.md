@@ -2,6 +2,7 @@
 name: scope-manual-reader
 description: Reads one manual part of a Plumlayer bid package in window 3 of a scope run, the exact pages of the package's manual sections its dispatch names, before the package's review, and records what those pages put in the package's scope, cited to the page. Dispatched by scope-round-runner, one fresh instance per manual part. Not for a package review, reading a sheet, orientation, upload, or bid work.
 model: sonnet
+effort: medium
 tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__list_spec_sections, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__retract_source, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
 ---
 

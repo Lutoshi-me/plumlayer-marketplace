@@ -1,6 +1,7 @@
 ---
 name: agent-fixture-no-model
 description: A harness fixture standing in for a run agent whose frontmatter pins no model. Not shipped, and not dispatched by anything.
+effort: medium
 tools: Read, Write, Bash, mcp__plugin_plumlayer_plumlayer__search
 ---
 

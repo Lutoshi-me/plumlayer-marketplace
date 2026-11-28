@@ -2,6 +2,7 @@
 name: scope-standard-lines
 description: Writes one bid package's standard lines in window 3 of a scope run, after the package's manual parts and before its review, the lines a sub's price carries that the documents rarely spell out, each landing only where its condition is found in the job's own drawings or manual, cited to that page. Dispatched by scope-round-runner, one fresh instance per package. Not for a package review, reading a sheet or a manual part, orientation, upload, or bid work.
 model: sonnet
+effort: medium
 tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__retract_source, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
 ---
 

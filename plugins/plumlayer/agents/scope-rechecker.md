@@ -8,6 +8,7 @@ description: >
   the plan. Dispatched by scope-round-runner, one fresh instance per sheet or per batch of items.
   Never creates a scope item. Not for a first read of a sheet, a package review, upload, or bid work.
 model: sonnet
+effort: medium
 tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__retire_scope_item
 ---
 

@@ -2,6 +2,7 @@
 name: scope-package-folder
 description: Folds a Plumlayer project's bid packages into what one kind of firm bids once a scope run has read every sheet, and later deletes again a package for the owner's own work that a later write made again. Dispatched by the scope-run skill at the end of window 2, and again where a package for the owner's work could have come back; writes the fold report the closing report reads. Not for reading a sheet, reviewing a package, orientation, upload, or bid work.
 model: opus
+effort: high
 tools: Read, Write, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__solicitation_create_package, mcp__plugin_plumlayer_plumlayer__solicitation_update_package, mcp__plugin_plumlayer_plumlayer__solicitation_delete_package, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__cite_source, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__directory_list_trades
 ---
 

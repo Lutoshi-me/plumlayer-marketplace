@@ -2,6 +2,7 @@
 name: manual-reader
 description: Reads one group of a Plumlayer project manual's sections for the package split, one level down from orientation, so no manual page stays in the agent that drafts the packages. Reads each section's Part 1 and writes one line per section, its title, its work, who furnishes and who installs, what the owner furnishes or hires, the related sections, and any single installer or delegated design asked for, or copies the company's trade list to a file. Dispatched by orientation, one fresh instance per group. Writes nothing to the record. Not for scope reading, package review, or bid work.
 model: sonnet
+effort: medium
 tools: Read, Write, Grep, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__search
 ---
 

@@ -2,6 +2,7 @@
 name: scope-round-runner
 description: Runs one pass of a Plumlayer scope run, over sheets, over a window 3 stage's units, or a window boundary, end to end. Dispatches one reader per sheet (scope-vocabulary-reader in window 1, scope-reader in window 2), one scope-vocabulary-reader per drawing file whose repeated lines the run reads once, one scope-manual-reader per manual part and one scope-standard-lines per package, then one scope-reviewer per package, or in the recheck of a new delivery one scope-rechecker per sheet or batch of items to retire, verifies every unit against the record in one call, appends the run ledger in its fixed line shapes, and returns one fixed-shape summary. Dispatched by the scope-run skill, one fresh instance per pass.
 model: sonnet
+effort: medium
 tools: Agent(scope-vocabulary-reader, scope-reader, scope-reviewer, scope-manual-reader, scope-standard-lines, scope-rechecker), Read, Write, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__solicitation_get_package, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
 

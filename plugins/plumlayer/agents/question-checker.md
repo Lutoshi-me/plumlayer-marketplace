@@ -8,6 +8,7 @@ description: >
   page lands in the user's session. Never raises a Question. Not for sheet typing, scope reading,
   orientation, or bid work.
 model: opus
+effort: high
 tools: Read, Write, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__read_question_list, mcp__plugin_plumlayer_plumlayer__list_drawing_deliveries, mcp__plugin_plumlayer_plumlayer__set_grid, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__add_question_source, mcp__plugin_plumlayer_plumlayer__rewrite_question, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__close_question, mcp__plugin_plumlayer_plumlayer__retract_source
 ---
 

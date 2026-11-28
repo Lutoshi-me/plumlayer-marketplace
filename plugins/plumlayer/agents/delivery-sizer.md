@@ -8,6 +8,7 @@ description: >
   drawing-upload skill, so no count or row lands in the user's session. Never states the kind of
   delivery. Not for page reading, scope reading, or bid work.
 model: sonnet
+effort: medium
 tools: Read, Write, Bash, mcp__plugin_plumlayer_plumlayer__list_drawing_deliveries, mcp__plugin_plumlayer_plumlayer__compare_delivery, mcp__plugin_plumlayer_plumlayer__compare_delivery_status, mcp__plugin_plumlayer_plumlayer__carry_forward_references, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
 ---
 

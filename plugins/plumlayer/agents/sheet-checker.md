@@ -2,6 +2,7 @@
 name: sheet-checker
 description: Reads the pages of a drawing upload that the recognition pass could not name, named wrongly or left untyped, and records each sheet's number, title, discipline and type onto the Plumlayer project record with a citation; also reads the upload's drawing index for the index check. Dispatched by the drawing-upload skill, one fresh instance per unit, so no page lands in the user's session. Not for scope reading, orientation, package review, or bid work.
 model: sonnet
+effort: medium
 tools: Read, Write, Edit, Bash, Grep, Glob, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__recognize_sheets_status, mcp__plugin_plumlayer_plumlayer__reconcile_index, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__record_batch_file, mcp__plugin_plumlayer_plumlayer__register_file, mcp__plugin_plumlayer_plumlayer__remove_sheet_from_page, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__renumber_sheet, mcp__plugin_plumlayer_plumlayer__request_file_upload, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__set_grid
 ---
 

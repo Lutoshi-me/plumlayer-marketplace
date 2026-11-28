@@ -2,6 +2,7 @@
 name: scope-reader
 description: Reads one sheet of a construction drawing set for scope in window 2 of a scope run, over the set's text corpus, and records what it sees onto the Plumlayer project record with its trade. Dispatched by scope-round-runner, one fresh instance per sheet. Not for the vocabulary or a file's repeated lines (scope-vocabulary-reader), reviewing a package, orientation, upload, or bid work.
 model: sonnet
+effort: medium
 tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__remove_definition_column, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__retract_source, mcp__plugin_plumlayer_plumlayer__retire_scope_item, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
 ---
 

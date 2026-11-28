@@ -1,7 +1,8 @@
 ---
 name: agent-fixture-clean
-description: A harness fixture standing in for a run agent whose tools line names every connector verb its text names and pins its model. Not shipped, and not dispatched by anything.
+description: A harness fixture standing in for a run agent whose tools line names every connector verb its text names and pins its model and effort. Not shipped, and not dispatched by anything.
 model: sonnet
+effort: medium
 tools: Read, Write, Bash, mcp__plugin_plumlayer_plumlayer__record, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__verify_unit
 ---
 

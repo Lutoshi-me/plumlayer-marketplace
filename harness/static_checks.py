@@ -151,8 +151,9 @@ Checks:
       every connector verb an agent's body names is on its tools line; every declared connector
       verb is one of the 124 the connector registers; and the prohibition-only exception table
       stays honest, each entry still named in that agent's text and still off its tools line.
-  21. Agent model pinned: every agents/*.md frontmatter carries a non-empty `model`, so a
-      dispatched agent does not run on whatever model the session happens to be on. Checks 20 and
+  21. Agent model pinned: every agents/*.md frontmatter carries a non-empty `model` and an
+      `effort` that is one of low, medium, high, xhigh or max, so a dispatched agent does not run
+      on whatever model or effort the session happens to be on. Checks 20 and
       21 each run their own helper over the agent fixtures under harness/fixtures/, so the clean
       one is shown to pass and each broken one to refuse in one line naming what is wrong.
   22. Dispatch foreground: every fenced block in a shipped skill or agent file that carries a
@@ -7727,11 +7728,27 @@ def check_agent_tool_surface(plugin_path: Path, marketplace_root: Path) -> Resul
 # and reasons differently depending on who dispatched it. Two of the three already pinned one and
 # the runner did not, which is the drift this closes: the field is present and non-empty, and which
 # model it names stays a decision, not a check.
+#
+# The same holds for `effort`: an agent with none runs at whatever effort the estimator's own
+# Claude Code settings name, so what a run was tested at is not what another seat gets. The field
+# is present and one of the levels Claude Code takes; which level it names stays a decision.
+
+_AGENT_EFFORT_LEVELS = ("low", "medium", "high", "xhigh", "max")
+
 
 def _agent_model_errors(path: Path, label: str) -> list[str]:
-    if not _parse_frontmatter(path).get("model", "").strip():
-        return [f"{label}: frontmatter `model` is missing or empty"]
-    return []
+    fields = _parse_frontmatter(path)
+    errors: list[str] = []
+    if not fields.get("model", "").strip():
+        errors.append(f"{label}: frontmatter `model` is missing or empty")
+    effort = fields.get("effort", "").strip()
+    if not effort:
+        errors.append(f"{label}: frontmatter `effort` is missing or empty")
+    elif effort not in _AGENT_EFFORT_LEVELS:
+        errors.append(
+            f"{label}: frontmatter `effort` is '{effort}', not one of {', '.join(_AGENT_EFFORT_LEVELS)}"
+        )
+    return errors
 
 
 def check_agent_model_pinned(plugin_path: Path, marketplace_root: Path) -> Result:
@@ -7748,12 +7765,18 @@ def check_agent_model_pinned(plugin_path: Path, marketplace_root: Path) -> Resul
     models: list[str] = []
     for agent_file in agent_files:
         errors.extend(_agent_model_errors(agent_file, agent_file.name))
-        models.append(f"{agent_file.stem}={_parse_frontmatter(agent_file).get('model', '').strip() or 'none'}")
+        fields = _parse_frontmatter(agent_file)
+        models.append(
+            f"{agent_file.stem}={fields.get('model', '').strip() or 'none'}"
+            f"/{fields.get('effort', '').strip() or 'none'}"
+        )
 
     fixtures = marketplace_root / "harness" / "fixtures"
     expected = [
         ("agent-fixture-clean.md", None),
         ("agent-fixture-no-model.md", "frontmatter `model` is missing or empty"),
+        ("agent-fixture-no-effort.md", "frontmatter `effort` is missing or empty"),
+        ("agent-fixture-bad-effort.md", "frontmatter `effort` is 'medum', not one of"),
     ]
     for fixture_name, wanted in expected:
         fixture = fixtures / fixture_name
