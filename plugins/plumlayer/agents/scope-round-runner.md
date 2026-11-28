@@ -182,7 +182,7 @@ copy.
    read the unit again as the count above allows, its `dispatch` line appended again first, or
    skip it where its reads are spent. The dispatch carries the project id, the window, the pass id, the unit
    id, what the pass reads for, the unit's pages (sheet number, `fileId`, 1-based `pageInPdf`), the
-   run folder path, and the pass brief path. Paste nothing from that file into it. The unit id is
+   run folder path, the pass brief path, and in window 1 the scripts path. Paste nothing from that file into it. The unit id is
    the unit's run-prefix, so concurrent readers can never collide on a created subject.
    It also says `New items: scopeItem:<unit id>-`, that unit's own id written out whole, the
    prefix every scope item its reader creates takes, numbered 1, 2, 3 after it.
@@ -327,6 +327,26 @@ copy.
    - **Trades.** A created subject with no `belongsToTrade` in the `verify_unit` result is a
      mismatch: the door should have refused it, and a row without a trade never stays on the
      record unnamed.
+   - **Codes, in window 1.** Hold a unit's code lists to the record off the same answer, the
+     report's `code lists:` line, then a `subjects:` line, reading `subjects: truncated` where the
+     sheet's row says `truncated: true`, then each subject that row lists, one per line:
+
+     ```bash
+     sh '<scripts path>/run.sh' unit_report.py codes '<run folder>' <unit id> <<'EOF'
+     code lists: <the report's line, whole>
+     subjects:
+     <each subject the sheet's row lists, one per line>
+     EOF
+     ```
+
+     It looks the sheet's type up in the run folder and counts the codes citing the sheet, kind by
+     kind. Exit 0 prints `codes whole`, or `codes not held: <why>` on a repeated lines unit, a sheet
+     with no type or a row the scan cut, and holds nothing short. Exit 3 prints one line per kind
+     short on the record, `codes <kind> printed <n> on the record <c>`, or
+     `codes none on the record on a <schedule or legend> sheet` where no code cites a schedule or
+     legend sheet and the report names no kind whose codes are all already recorded or not
+     readable, and no list as `none printed`: each line is a mismatch under the check name `codes`, its value the rest of the
+     line, and the unit is read again as step 2 counts its reads.
    - Never a row list of the whole project, never `list_scope_items`, and never a walk of `search`
      calls where one `verify_unit` answers.
    - **A repeated lines unit has no sheet of its own.** Its `sheets` are the ones on its reader's
@@ -396,7 +416,7 @@ copy.
    check could not find back: `<sheet>` the unit's sheet, or its package's name on a review;
    `<check>` the check's name as the bullets above give it (`created`, `created subjects`,
    `updated`, `questions raised`, `questions replied`, `questions linked`, `trades`,
-   `page citations`, `manual updates`, `field updates`, `headings`, `rows ordered`), or the
+   `page citations`, `codes`, `manual updates`, `field updates`, `headings`, `rows ordered`), or the
    check the report check printed; and `<value>` the subject or id it named, for
    `field updates` the subject and the predicate, for `questions linked` the subject and the
    Question's id, for `created` the subject count and the

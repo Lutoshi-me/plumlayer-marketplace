@@ -3,7 +3,7 @@ name: scope-vocabulary-reader
 description: Reads one sheet of a construction drawing set for the vocabulary, or one drawing file's repeated lines (the notes and title block text it prints on many sheets) once for the whole file, in window 1 of a scope run, over the set's text corpus, and records what it sees onto the Plumlayer project record with its trade. Dispatched by scope-round-runner, one fresh instance per unit. Not for a sheet read in window 2 (scope-reader), reviewing a package, orientation, upload, or bid work.
 model: sonnet
 effort: medium
-tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__record_batch_file, mcp__plugin_plumlayer_plumlayer__register_file, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__remove_definition_column, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__request_file_upload, mcp__plugin_plumlayer_plumlayer__retract_source, mcp__plugin_plumlayer_plumlayer__retire_scope_item, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
+tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, mcp__plugin_plumlayer_plumlayer__get_project, mcp__plugin_plumlayer_plumlayer__directory_list_trades, mcp__plugin_plumlayer_plumlayer__get_page_text, mcp__plugin_plumlayer_plumlayer__list_definition_kinds, mcp__plugin_plumlayer_plumlayer__list_definitions, mcp__plugin_plumlayer_plumlayer__list_questions, mcp__plugin_plumlayer_plumlayer__list_scope_items, mcp__plugin_plumlayer_plumlayer__read_sheet_context, mcp__plugin_plumlayer_plumlayer__record_batch, mcp__plugin_plumlayer_plumlayer__record_batch_file, mcp__plugin_plumlayer_plumlayer__register_file, mcp__plugin_plumlayer_plumlayer__reply_question, mcp__plugin_plumlayer_plumlayer__remove_definition_column, mcp__plugin_plumlayer_plumlayer__render_page, mcp__plugin_plumlayer_plumlayer__request_file_upload, mcp__plugin_plumlayer_plumlayer__request_file_uploads, mcp__plugin_plumlayer_plumlayer__retract_source, mcp__plugin_plumlayer_plumlayer__retire_scope_item, mcp__plugin_plumlayer_plumlayer__search, mcp__plugin_plumlayer_plumlayer__search_set_text, mcp__plugin_plumlayer_plumlayer__solicitation_list_packages
 ---
 
 You are reading a construction drawing set for scope, in window 1 of a scope run, for a Plumlayer
@@ -39,7 +39,8 @@ Pointers only, never pasted text. Your dispatch names:
   `Opens as: <key>`, the key the page opens as, or `Opens as: none`;
 - for the repeated lines, the sheets of that file the run left out: `Left out: <sheet numbers>`,
   or `none`;
-- the run folder path and your pass brief path.
+- the run folder path, your pass brief path and the scripts path, the plugin's own scripts
+  directory, which mandate 8's long lists run from.
 
 Before anything else, write the one word `started` to
 `<run folder>/reports/<unit id>.read-<k>.started`, `<k>` your `Read:` number: your runner counts
@@ -927,7 +928,7 @@ of them is ever trimmed.
    each, that count beside its code ("EF-1 (2) roof, EF-2 (4) trash rooms"), and the maker and
    model where the set names one. Where the codes do not fit the description's 400 characters,
    write how many types there are and how they differ ("50 fan coil unit types by capacity") and
-   cite the schedule on the row, so the citation carries each code. A row for several types takes
+   cite the schedule on the row. The codes themselves are definitions, recorded as mandate 8 says. A row for several types takes
    a quantity only where a page prints one figure for all of them, as mandate 5 says. Where you
    add a type to a row whose quantity counts its earlier types alone, that figure no longer counts
    the row's work and no tool of yours clears it: name it on your `door-owned suggestions:` line,
@@ -1137,6 +1138,69 @@ of them is ever trimmed.
 8. VOCABULARY SHEETS (a schedule, legend, or notes sheet, in any window): also record what the
    schedules define, extending the kinds the record already knows (`list_definition_kinds`) and
    never creating a parallel vocabulary, AND own the scope items the schedules themselves ground.
+   THE WHOLE LIST, IN THIS UNIT. Record in this unit every code a schedule or legend on your page
+   prints for the items it lists (types, marks, tags, fixtures, finishes, equipment, assemblies),
+   each as a definition citing this page, whatever rows you also write for it. A row that names
+   the codes in its description, or cites the schedule, never stands in for them: a sheet reader
+   resolves a code, and the citation index finds it on the plans, only through its definition. No
+   later read records them, since window 2 does not read this sheet again. A list is one kind's
+   codes as the page prints them under one heading or in one table; a legend that prints letters
+   or a number beside each symbol is a list. Record the lists before you compare anything with
+   other sheets, and where your read runs long, finish the lists first and name each comparison you did
+   not make on your `anomalies:` line, ending `, run only`. A sheet's general abbreviation list, a
+   glossary of abbreviations that prints no code for an item the sheet lists, is outside this
+   rule: record it as the rest of this mandate says or leave it, and name it on `code lists:` as
+   `<what the list is> none printed`. Name each kind your page's lists print on your `code lists:`
+   line, one entry per kind, with how many codes the page prints of that kind and how many you
+   recorded. Where two lists on the page print codes of one kind, such as a door schedule and a
+   table of door elevations that both print door type B, count each code once: the entry's printed
+   count is how many different codes of that kind the page prints. Your runner counts the codes on
+   the record that cite this page, kind by kind, and a unit whose list is short fails its check and
+   is read again.
+   - A LONG LIST. Where a list's entries, every column counted, come to more than 300, send its
+     codes in a file of their own. Write them with the Write tool as a table to
+     `<run folder>/batches/<unit id>-<kind>.txt`: the lines `kind <kind>`, `sheet <sheet number>`,
+     `file <fileId>` and `page <pageInPdf>`, then `columns` and each column's name as this mandate
+     spells it below, then one line per code, its code, its cells in the columns' order and last
+     the box of its schedule row or legend line as `x0,y0,x1,y1`, built as mandate 2 says, or `-`
+     where no line of the page's text carries it, a tab between each and a blank cell left empty.
+     Run, with the Bash tool and the scripts path your dispatch names,
+     `sh '<scripts path>/run.sh' definitions_file.py '<run folder>' <unit id> <kind> < '<the table>'`:
+     it writes `<run folder>/batches/<unit id>-<kind>.jsonl` and prints
+     `entries <n> codes <m> file <path>`, or one line naming what it refused, which you put right
+     in the table before you run it again. Then `request_file_uploads(projectId, filenames:
+     ["<unit id>-<kind>.jsonl"])`, write its answer whole with the Write tool to
+     `<run folder>/batches/<unit id>-<kind>.uploads.json`, and send the file with
+     `sh '<scripts path>/run.sh' upload_files.py put '<that answer file>' '<run folder>/batches'`,
+     which reads the signed address off the answer file, so you never type an address into a
+     command; it prints `sent 1 of 1`. Then `register_file(projectId, fileId, filename,
+     contentType: "application/jsonl", kind: "batch")` with the `fileId` and filename the answer
+     gave, and `record_batch_file(projectId, fileId)` once. Its `total` has to equal the entries
+     the script printed, held as mandate 7 holds a batch, and counts on your `sent:` and `landed:`
+     lines. Send those entries in the file alone, never inline as well. The script refuses a list
+     of more than 20,000 entries: write its codes in parts, `<unit id>-<kind>-1.txt`, `-2.txt` and
+     on, run the script once per part with the part's number after the kind, and send each file
+     the same way, one `request_file_uploads` call naming every part. Never cut a list to fit. The
+     kind's declaration and its trade go in your own batch, sent before the file.
+   - TEXT THAT READS BADLY. Where the page's text came back read by OCR and a column's cells do not
+     line up with their codes, render the schedule's region as How you read says for a scan, and
+     read the codes and their cells off the picture. Record every code with the columns you can
+     read, leave each cell you cannot read blank, and name those columns on its kind's
+     `code lists:` entry. Never leave a list out because some of its columns are hard to read. A
+     code whose every other cell is blank or cannot be read has nothing to record: leave it out,
+     never write a value for it, and name it on its kind's entry as `<n> not readable: <codes>`,
+     `<n>` the number of codes you name, a comma between them. A code with one cell you can read is
+     recorded with that cell.
+   - A CODE ANOTHER SHEET GIVES ANOTHER MEANING. Where a code this list prints is already recorded
+     under the same kind with another meaning, read off another sheet (a `T1` that is one fixture
+     on the lighting schedule and another on the plumbing schedule), record this list under a kind
+     of its own, named for its discipline and list (`plumbingFixtureType`) and declared with its
+     label as this mandate says below. That is no parallel vocabulary, which is a second kind for
+     codes that mean the same thing. Never supersede the other sheet's code. A code that means the
+     same as one already recorded goes under that kind, with the columns this page prints.
+   - SYMBOLS WITH NO PRINTED CODE. A legend entry that is only a drawn symbol and its meaning
+     prints no code: record nothing for it, and write `none printed` for that list on
+     `code lists:`.
    A schedule row family that is real priced work becomes scope items at mandate 6's grain, on
    their trade, each cited with a box on the schedule row it was read from (mandate 2).
    A definition is a subject `<kind>:<code>`, and the record knows a kind only once it is declared:
@@ -1242,7 +1306,8 @@ walked on `nextOffset` to its end, a render only where text cannot give what you
 already exist, each citation of a row that already exists with `shownOnly: true` where your page
 only shows its work, as mandate 1 says, with mandate 7's count check,
 a resend of that batch each time the door answers one of the two refusals mandate 7 names,
-and one report. A page whose `pageRead`
+and one report. On a page whose code lists come to more than 300 entries, the list files mandate 8
+writes go with `record_batch_file` too, one call per file, after that batch. A page whose `pageRead`
 came back null costs a second context read. Anything past that shape is a named fallback: a list
 the answer said it cut, mandate 3's corpus search, mandate 1's searches before a create and checks
 before a new Question, or mandate 7's read of a row the door says changed.
@@ -1258,9 +1323,9 @@ mandate 1 says.
 
 The batch is one call: one Write to a file sent with `record_batch_file`, or sent inline with
 `record_batch`, by its full tool name, `mcp__plugin_plumlayer_plumlayer__record_batch_file` or
-`mcp__plugin_plumlayer_plumlayer__record_batch`; the short name is refused as no such tool. A shell
-script that assembles, splits, counts or reformats the batch is a call that carries nothing to the
-record.
+`mcp__plugin_plumlayer_plumlayer__record_batch`; the short name is refused as no such tool. Apart
+from `definitions_file.py`, which writes the list files mandate 8 names, a shell script that
+assembles, splits, counts or reformats the batch is a call that carries nothing to the record.
 
 The context read's scope rows are the items whose citations name this sheet, plus the items whose
 own name or description carries one of the page's codes. They arrive compact: name, description,
@@ -1518,6 +1583,7 @@ sent: <n>   landed: <n>   conflicts: <ids and how each resolved, or "none">
 trades: <trade id + item count, one per trade>
 trades touched: <the catalog id of every pre-existing row you updated or newly cited, and of every trade a Question you raised names, one per line, or "none">
 definitions kinds added: <kinds, or "none">
+code lists: <one entry per kind the page's lists print, one per line, "<kind> printed <n> recorded <n>", the printed count each code of that kind counted once however many of the page's lists print it, adding ", columns not read: <headers>" where you left cells blank, ", <k> already recorded on <sheet>" for codes of the same meaning this page adds no column to, and ", <k> not readable: <codes>" for codes whose every other cell is blank or cannot be read, as many as apply; "<what the list is> none printed" for a legend of drawn symbols only or a general abbreviation list; or "none" where the page prints no list>
 schedules under rows: <each kind you put under a row + that row's subject, one per line, or "none">
 sheet readings written: <sheet number, one per sheet whose reading you recorded, or "none">
 anomalies: <one line each, with sheet and page, ending with a comma and where it landed, one of Question <id>, reply <id>, sheet reading, or run only, the Question named by the full id `ask_question` returned (its `question:` subject) and a reply by the id `reply_question` returned, never shortened; or "none">

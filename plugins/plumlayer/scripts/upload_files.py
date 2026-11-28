@@ -6,6 +6,8 @@
         sends each file's bytes from the local folder to its own signed address. Every address is
         read off the file, so none is ever retyped. Prints one line per file, `sent <filename>` or
         `not sent <filename>: <reason>`, then `sent <n> of <m>`. Exits 1 when any file was not sent.
+        A `.jsonl` file, a batch of entries for `record_batch_file`, goes as JSON lines; every
+        other file as a PDF.
 
     sh '<scripts path>/run.sh' upload_files.py duplicates <file> [<file> ...]
 
@@ -27,6 +29,10 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+
+def content_type(path: Path) -> str:
+    return 'application/jsonl' if path.suffix.lower() == '.jsonl' else 'application/pdf'
 
 
 def put(uploads_file: str, folder: str) -> int:
@@ -59,7 +65,7 @@ def put(uploads_file: str, folder: str) -> int:
             continue
         result = subprocess.run(
             [curl, '-fsS', '--retry', '2', '-X', 'PUT', url,
-             '-H', 'Content-Type: application/pdf', '--data-binary', f'@{path}'],
+             '-H', f'Content-Type: {content_type(path)}', '--data-binary', f'@{path}'],
             capture_output=True, text=True)
         if result.returncode == 0:
             sent += 1

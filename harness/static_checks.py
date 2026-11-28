@@ -24093,6 +24093,322 @@ def check_slim_review_repair_3(plugin_path: Path, marketplace_root: Path) -> Res
 
 
 # --------------------------------------------------------------------------- #
+# Check: every code list a window 1 page prints is on the record after its first read
+# --------------------------------------------------------------------------- #
+#
+# A run once came back from window 1 with five schedule sheets read for their rows and their code
+# lists left off the record, and no check failed: the report's counts named only the codes written,
+# and the reader text let a row citing the schedule stand in for its codes. The vocabulary reader
+# now records every list in the unit, a long one through `definitions_file.py` and a file upload,
+# names each list on `code lists:`, and its runner holds those lists to the codes citing the sheet
+# with `unit_report.py codes`, a short list failing the unit's check under the name `codes`.
+
+_CODES_READER = "agents/scope-vocabulary-reader.md"
+_CODES_RUNNER = "agents/scope-round-runner.md"
+_CODES_PINS = (
+    (_CODES_READER, "THE WHOLE LIST, IN THIS UNIT. Record in this unit every code a schedule or legend on your page "
+                    "prints for the items it lists"),
+    (_CODES_READER, "A row that names the codes in its description, or cites the schedule, never stands in for them"),
+    (_CODES_READER, "No later read records them, since window 2 does not read this sheet again."),
+    (_CODES_READER, "a legend that prints letters or a number beside each symbol is a list."),
+    (_CODES_READER, "Record the lists before you compare anything with other sheets"),
+    (_CODES_READER, "A sheet's general abbreviation list, a glossary of abbreviations that prints no code for an item "
+                    "the sheet lists, is outside this rule"),
+    (_CODES_READER, "a unit whose list is short fails its check and is read again."),
+    (_CODES_READER, "- A LONG LIST. Where a list's entries, every column counted, come to more than 300"),
+    (_CODES_READER, "`sh '<scripts path>/run.sh' definitions_file.py '<run folder>' <unit id> <kind> < '<the table>'`"),
+    (_CODES_READER, "`sh '<scripts path>/run.sh' upload_files.py put '<that answer file>' '<run folder>/batches'`"),
+    (_CODES_READER, "so you never type an address into a command"),
+    (_CODES_READER, "Send those entries in the file alone, never inline as well."),
+    (_CODES_READER, "Never cut a list to fit."),
+    (_CODES_READER, "- TEXT THAT READS BADLY."),
+    (_CODES_READER, "Never leave a list out because some of its columns are hard to read."),
+    (_CODES_READER, "- A CODE ANOTHER SHEET GIVES ANOTHER MEANING."),
+    (_CODES_READER, "Never supersede the other sheet's code."),
+    (_CODES_READER, "- SYMBOLS WITH NO PRINTED CODE."),
+    (_CODES_READER, "cite the schedule on the row. The codes themselves are definitions, recorded as mandate 8 says."),
+    (_CODES_READER, "the list files mandate 8 writes go with `record_batch_file` too"),
+    (_CODES_READER, "Apart from `definitions_file.py`, which writes the list files mandate 8 names, a shell script"),
+    (_CODES_READER, "code lists: <one entry per kind the page's lists print"),
+    (_CODES_READER, "the printed count each code of that kind counted once however many of the page's lists print it"),
+    (_CODES_READER, "\", <k> not readable: <codes>\" for codes whose every other cell is blank or cannot be read"),
+    (_CODES_READER, "line, one entry per kind, with how many codes the page prints of that kind"),
+    (_CODES_READER, "count each code once: the entry's printed count is how many different codes of that kind the page prints."),
+    (_CODES_READER, "A code whose every other cell is blank or cannot be read has nothing to record: leave it out, never "
+                    "write a value for it, and name it on its kind's entry as `<n> not readable: <codes>`"),
+    (_CODES_READER, "A code with one cell you can read is recorded with that cell."),
+    (_CODES_READER, "the run folder path, your pass brief path and the scripts path"),
+    (_CODES_RUNNER, "- **Codes, in window 1.**"),
+    (_CODES_RUNNER, "sh '<scripts path>/run.sh' unit_report.py codes '<run folder>' <unit id> <<'EOF'"),
+    (_CODES_RUNNER, "each line is a mismatch under the check name `codes`"),
+    (_CODES_RUNNER, "Exit 3 prints one line per kind short on the record"),
+    (_CODES_RUNNER, "the report names no kind whose codes are all already recorded or not readable"),
+    (_CODES_RUNNER, "`page citations`, `codes`, `manual updates`"),
+    (_CODES_RUNNER, "the pass brief path, and in window 1 the scripts path"),
+)
+# The sentence that let a row carry the codes in place of their definitions, and the one that asked
+# for an entry per list, so two lists sharing a code counted it twice.
+_CODES_RETIRED = (
+    "cite the schedule on the row, so the citation carries each code",
+    "Name every list on your `code lists:` line with how many codes the page prints in it",
+)
+_CODES_TOOL = "mcp__plugin_plumlayer_plumlayer__request_file_uploads"
+
+
+def _codes_text_errors(texts: dict[str, str]) -> list[str]:
+    errors = []
+    flat = {rel: " ".join(text.split()) for rel, text in texts.items()}
+    for rel, phrase in _CODES_PINS:
+        if " ".join(phrase.split()) not in flat.get(rel, ""):
+            errors.append(f"{rel} does not carry {phrase[:70]!r}")
+    for phrase in _CODES_RETIRED:
+        if " ".join(phrase.split()) in flat.get(_CODES_READER, ""):
+            errors.append(f"{_CODES_READER} still carries {phrase!r}")
+    tools = next((line for line in texts.get(_CODES_READER, "").splitlines() if line.startswith("tools:")), "")
+    if _CODES_TOOL not in [t.strip() for t in tools[len("tools:"):].split(",")]:
+        errors.append(f"{_CODES_READER} does not hold `request_file_uploads` on its tools line")
+    return errors
+
+
+def _codes_run(script: Path, args: list[str], stdin: str) -> tuple[int, str, str]:
+    done = subprocess.run([sys.executable, "-X", "utf8", str(script), *args], input=stdin.encode("utf-8"),
+                          capture_output=True)
+    return done.returncode, done.stdout.decode("utf-8").strip(), done.stderr.decode("utf-8").strip()
+
+
+def _codes_table(rows: list[str], kind: str = "doorType", columns: str = "name\tmaterial\tfireRating") -> str:
+    head = [f"kind {kind}", "sheet A-601", "file file-00000000-0000-0000-0000-00000000a601", "page 12",
+            f"columns\t{columns}"]
+    return "".join(f"{line}\n" for line in head + rows)
+
+
+_CODES_FIVE = [
+    "A\tFlush door\tWood\t20 min\t100,200,400,212",
+    "B\tHalf glass door\tHollow metal\t\t100,214,400,226",
+    "C\tFull glass door\tAluminum\t-",
+    "D\tDutch door\tWood\t45 min\t100.5,240,400.25,252",
+    "E\tBarn door\t-",
+]
+
+
+def _codes_definitions_arm(scripts: Path, root: Path) -> list[str]:
+    errors = []
+    script = scripts / "definitions_file.py"
+    folder = root / "definitions"
+    folder.mkdir()
+    code, out, err = _codes_run(script, [str(folder), "i1-A6-1", "doorType"], _codes_table(_CODES_FIVE))
+    written = folder / "batches" / "i1-A6-1-doorType.jsonl"
+    lines = [json.loads(line) for line in written.read_text(encoding="utf-8").splitlines()] if written.is_file() else []
+    if code != 0 or out != f"entries 11 codes 5 file {written}" or len(lines) != 11:
+        errors.append(f"the five-code table did not write 11 entries of 5 codes: exit {code}, {out!r}, {err!r}, {len(lines)} lines")
+    else:
+        first, boxless = lines[0], next((e for e in lines if e["subject"] == "doorType:C"), {})
+        if first != {"subject": "doorType:A", "predicate": "name", "value": "Flush door",
+                     "sourceInstrument": "scope-vocabulary-reader",
+                     "evidence": {"sheet": "A-601", "pageInPdf": 12, "fileId": "file-00000000-0000-0000-0000-00000000a601",
+                                  "locator": {"pageInPdf": 12, "frame": "page-points", "bboxPts": [100, 200, 400, 212]}}}:
+            errors.append(f"the first entry is not in the record's definition shape: {first}")
+        if "locator" in boxless.get("evidence", {"locator": 1}):
+            errors.append("a code with no box carries a box")
+        if any(e["subject"] == "doorType:B" and e["predicate"] == "fireRating" for e in lines):
+            errors.append("a blank cell was written")
+    part_code, part_out, _ = _codes_run(script, [str(folder), "i1-A6-1", "doorType", "2"], _codes_table(_CODES_FIVE))
+    if part_code != 0 or not part_out.endswith("i1-A6-1-doorType-2.jsonl"):
+        errors.append(f"a part's file is not named for its part: {part_out!r}")
+    big = [f"T{i}\tType {i}\t-" for i in range(20_001)]
+    refusals = (
+        ("a code given twice", _codes_table(_CODES_FIVE + ["A\tAgain\t-"]), "code A is given twice"),
+        ("a row with more cells than columns", _codes_table(["F\ta\tb\tc\td\t-"]), "4 cells and the list 3 columns"),
+        ("a column not one camel case word", _codes_table(_CODES_FIVE, columns="name\tFire Rating"), "not one word in camel case"),
+        ("a column named twice", _codes_table(_CODES_FIVE, columns="name\tname"), "named twice"),
+        ("another kind than the call's", _codes_table(_CODES_FIVE, kind="frameType"), "the call names doorType"),
+        ("a code with no cell", _codes_table(["G\t\t\t-"]),
+         "no cell to write; leave it out of the table and name it on the kind's `code lists:` entry as not readable"),
+        ("a box that is not four numbers", _codes_table(["H\tDoor\t1,2,3"]), "not four numbers"),
+        ("a file over 20,000 entries", _codes_table(big, columns="name"), "more than 20000 entries"),
+        ("a list with no header", "columns\tname\nA\tDoor\t-\n", "no kind, sheet, file, page line"),
+    )
+    for label, table, said in refusals:
+        target = folder / "batches" / "i1-A6-9-doorType.jsonl"
+        code, out, err = _codes_run(script, [str(folder), "i1-A6-9", "doorType"], table)
+        if code != 1 or said not in err or out or target.exists():
+            errors.append(f"{label} was not refused with nothing written: exit {code}, {out!r}, {err!r}")
+    return errors
+
+
+def _codes_folder(root: Path) -> Path:
+    folder = root / "codes"
+    (folder / "plan").mkdir(parents=True)
+    units = [{"id": "i1-A6-1", "unitKey": "A-601@file-a#12"}, {"id": "i1-A6-2", "unitKey": "A-602@file-a#13"},
+             {"id": "i1-G0-1", "unitKey": "G-001@file-a#1"}, {"id": "i1-L1-1", "unitKey": "L-101@file-a#20"}]
+    plan = {"window": 1, "units": units,
+            "repeatedSets": [{"fileId": "file-a", "unitId": "i1-RS1-1", "page": 1, "sheetsLeftOut": []}]}
+    sheets = [{"unitKey": "A-601@file-a#12", "sheetNumber": "A-601", "sheetType": "schedule"},
+              {"unitKey": "A-602@file-a#13", "sheetNumber": "A-602", "sheetType": None},
+              {"unitKey": "G-001@file-a#1", "sheetNumber": "G-001", "sheetType": "notes"},
+              {"unitKey": "L-101@file-a#20", "sheetNumber": "L-101", "sheetType": "legend"}]
+    (folder / "plan" / "window-1.json").write_text(json.dumps(plan), encoding="utf-8")
+    (folder / "inventory.json").write_text(json.dumps({"sheets": sheets}), encoding="utf-8")
+    return folder
+
+
+def _codes_command_arm(scripts: Path, root: Path) -> list[str]:
+    errors = []
+    script = scripts / "unit_report.py"
+    folder = _codes_folder(root)
+    on_record = "doorType:A\ndoorType:B\ndoorType:C\nframeType:F1\nframeType:F2\nscopeItem:i1-A6-1-1\nsheet:A-601\n"
+    cases = (
+        ("a schedule whose lists are whole", "i1-A6-1",
+         "code lists: doorType printed 3 recorded 3, columns not read: Hardware Set\n"
+         "frameType printed 3 recorded 2, 1 already recorded on A-602\nsubjects:\n" + on_record, 0, ["codes whole"]),
+        ("a schedule whose list is short", "i1-A6-1",
+         "code lists: doorType printed 5 recorded 5\nsubjects:\ndoorType:A\ndoorType:B\nscopeItem:i1-A6-1-1\n", 3,
+         ["codes doorType printed 5 on the record 2"]),
+        ("a list another sheet holds part of, short past what that sheet holds", "i1-A6-1",
+         "code lists: frameType printed 5 recorded 4, 1 already recorded on A-602\nsubjects:\n" + on_record, 3,
+         ["codes frameType printed 5 on the record 2"]),
+        ("a schedule no code cites, its report saying it prints no list", "i1-A6-1",
+         "code lists: none\nsubjects:\nscopeItem:i1-A6-1-1\nsheet:A-601\ndefinitionKind:doorType\nquestion:q-1\n", 3,
+         ["codes none on the record on a schedule sheet"]),
+        ("a legend of drawn symbols only", "i1-L1-1", "code lists: plumbing symbols none printed\nsubjects:\n", 0,
+         ["codes whole"]),
+        ("a schedule whose only list another sheet already holds whole", "i1-A6-1",
+         "code lists: frameType printed 2 recorded 0, 2 already recorded on A-602\nsubjects:\nscopeItem:i1-A6-1-1\n"
+         "sheet:A-601\n", 0, ["codes whole"]),
+        ("a legend whose every code is not readable", "i1-L1-1",
+         "code lists: lightingFixtureType printed 2 recorded 0, 2 not readable: L1, L2\nsubjects:\n", 0,
+         ["codes whole"]),
+        ("two tables of one kind sharing a code, three different codes recorded", "i1-A6-1",
+         "code lists: doorType printed 3 recorded 3\nsubjects:\ndoorType:A\ndoorType:B\ndoorType:C\n", 0,
+         ["codes whole"]),
+        ("a code not readable taken off what the page prints", "i1-A6-1",
+         "code lists: doorType printed 4 recorded 3, columns not read: Hardware, 1 not readable: D\nsubjects:\n"
+         "doorType:A\ndoorType:B\ndoorType:C\n", 0, ["codes whole"]),
+        ("a list short past its codes not readable", "i1-A6-1",
+         "code lists: doorType printed 5 recorded 3, 1 not readable: D\nsubjects:\ndoorType:A\ndoorType:B\n"
+         "doorType:C\n", 3, ["codes doorType printed 5 on the record 3"]),
+        ("a notes sheet with no list", "i1-G0-1", "code lists: none\nsubjects:\nsheet:G-001\n", 0, ["codes whole"]),
+        ("a repeated lines unit", "i1-RS1-1", "code lists: none\nsubjects:\n", 0, ["codes not held: a repeated lines unit"]),
+        ("a sheet with no type", "i1-A6-2", "code lists: none\nsubjects:\n", 0, ["codes not held: the sheet has no type"]),
+        ("a row the scan cut", "i1-A6-1", "code lists: doorType printed 5 recorded 5\nsubjects: truncated\n", 0,
+         ["codes not held: the sheet's row of subjects was cut"]),
+    )
+    for label, unit, stdin, want_code, want_lines in cases:
+        code, out, err = _codes_run(script, ["codes", str(folder), unit], stdin)
+        if code != want_code or out.splitlines() != want_lines:
+            errors.append(f"{label}: exit {code} {out!r} {err!r}, expected exit {want_code} {want_lines}")
+    for label, unit, stdin in (
+        ("a unit the plan does not carry", "i1-Z9-1", "code lists: none\nsubjects:\n"),
+        ("stdin with no subjects line", "i1-A6-1", "code lists: none\n"),
+        ("an entry in no shape", "i1-A6-1", "code lists: door types, twelve of them\nsubjects:\n"),
+        ("a kind on two entries", "i1-A6-1",
+         "code lists: doorType printed 3 recorded 3\ndoorType printed 2 recorded 2\nsubjects:\ndoorType:A\n"
+         "doorType:B\ndoorType:C\n"),
+    ):
+        code, out, err = _codes_run(script, ["codes", str(folder), unit], stdin)
+        if code != 1 or not err.startswith("unit_report: "):
+            errors.append(f"{label} was not refused in one line: exit {code} {out!r} {err!r}")
+    return errors
+
+
+def _codes_report_arm(report_mod) -> list[str]:
+    errors = []
+    labels = report_mod.LABELS["vocabulary"]
+    if "code lists" not in labels or labels.index("code lists") != labels.index("definitions kinds added") + 1:
+        errors.append("the vocabulary report's labels do not carry `code lists` after `definitions kinds added`")
+    if "code lists" in report_mod.LABELS["sheet"]:
+        errors.append("the window 2 sheet report is asked for a `code lists:` line")
+    shaped = ("none", "doorType printed 12 recorded 12",
+              "doorType printed 12 recorded 11, columns not read: Fire Rating, Hardware\n"
+              "frameType printed 4 recorded 3, 1 already recorded on A-602\nplumbing symbols none printed",
+              "doorType printed 3 recorded 3; general abbreviations none printed",
+              "doorType printed 4 recorded 3, 1 not readable: D",
+              "doorType printed 6 recorded 2, columns not read: Fire Rating, Hardware, 2 already recorded on A-602, "
+              "2 not readable: E, F")
+    for value in shaped:
+        broken, mismatches = report_mod.problems(_filled_report("vocabulary", "i1-A6-1", labels, **{"code lists": value}), "vocabulary")
+        if broken or mismatches:
+            errors.append(f"a `code lists:` line in its shape is refused: {value!r}: {broken + mismatches}")
+    for value in ("door types, twelve", "doorType printed 12", "doorType printed 12 recorded 12, and some more", "",
+                  "doorType printed 3 recorded 1, 2 not readable: G",
+                  "doorType printed 3 recorded 1, 2 not readable: C, C",
+                  "doorType printed 3 recorded 1, 1 not readable: C, 1 not readable: C",
+                  "doorType printed 3 recorded 3\ndoorType printed 2 recorded 2"):
+        broken, mismatches = report_mod.problems(_filled_report("vocabulary", "i1-A6-1", labels, **{"code lists": value}), "vocabulary")
+        if broken or not mismatches or not all(m.startswith("code lists ") for m in mismatches):
+            errors.append(f"a `code lists:` line in no shape is not a `code lists` mismatch: {value!r}: {broken + mismatches}")
+    return errors
+
+
+def _codes_close_arm(close_mod) -> list[str]:
+    reasons = dict(close_mod.REASONS)
+    errors = []
+    if reasons.get("codes") != "it left codes of a schedule or legend off the record":
+        errors.append("the closing report has no plain words for the `codes` check")
+    if "code lists" not in reasons:
+        errors.append("the closing report has no plain words for the `code lists` check")
+    if close_mod._check_parts("A-601 codes doorType printed 5 on the record 2", "A-601") != ("codes", "doorType printed 5 on the record 2"):
+        errors.append("a `codes` failure note is not read as the `codes` check")
+    return errors
+
+
+def check_code_lists(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "code-lists"
+    errors: list[str] = []
+    scripts = plugin_path / "scripts"
+    for needed in ("definitions_file.py", "unit_report.py", "close_report.py"):
+        if not (scripts / needed).is_file():
+            return Result(name, False, detail=f"script not found at {scripts / needed}")
+    root = Path(__file__).parent / ".test-results" / "code-lists"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    texts = {rel: (plugin_path / rel).read_text(encoding="utf-8") for rel in (_CODES_READER, _CODES_RUNNER)}
+    arms = (
+        ("C1", lambda: _codes_definitions_arm(scripts, root)),
+        ("C2", lambda: _codes_command_arm(scripts, root)),
+        ("C3", lambda: _codes_report_arm(_load_script_module(scripts / "unit_report.py", "unit_report"))),
+        ("C4", lambda: _codes_close_arm(_load_script_module(scripts / "close_report.py", "close_report"))),
+        ("C5", lambda: _codes_text_errors(texts)),
+    )
+    for label, arm in arms:
+        try:
+            errors += [f"{label}: {e}" for e in arm()]
+        except Exception as e:
+            errors.append(f"{label}: the arm raised {type(e).__name__}: {e}")
+    # Each pin taken out of its file, and the retired sentence put back, is refused.
+    mutations = 0
+    for rel, phrase in _CODES_PINS:
+        broken = dict(texts)
+        broken[rel] = " ".join(texts[rel].split()).replace(" ".join(phrase.split()), "")
+        if not _codes_text_errors(broken):
+            errors.append(f"C5: {rel} with {phrase[:50]!r} taken out was not refused")
+        mutations += 1
+    for phrase in _CODES_RETIRED:
+        retired = dict(texts)
+        retired[_CODES_READER] += "\n" + phrase + "\n"
+        if not _codes_text_errors(retired):
+            errors.append(f"C5: the retired sentence {phrase[:50]!r} put back was not refused")
+        mutations += 1
+    detail = (
+        "C1 a five-code table written as 11 entries in the record's definition shape, a blank cell not written, a code "
+        "with no box written with no box, a part named for its part, and a code twice, a row past its columns, a column "
+        "off camel case or named twice, another kind, a code with no cell, a bad box, a file over 20,000 entries and a "
+        "list with no header each refused with nothing written; C2 the codes command whole on a schedule, short on "
+        "one, short past what another sheet holds, short on a schedule no code cites, whole on a legend of drawn "
+        "symbols and a notes sheet with no list, whole on a schedule whose only list another sheet holds and a "
+        "legend whose every code is not readable, whole on two tables of one kind sharing a code, whole with a code "
+        "not readable taken off and short past it, not held on a repeated lines unit, an untyped sheet and a cut row, "
+        "and four bad calls refused, a kind on two entries among them; C3 the window 1 report carrying `code lists` "
+        "after its kinds, the window 2 one not, six lines in shape whole and six out of shape `code lists` "
+        "mismatches, a kind on two entries and a not readable count off its codes among them; C4 the closing report's words "
+        "for both checks; C5 "
+        f"{len(_CODES_PINS)} phrases of the reader and the runner pinned, the reader's upload tool held, {mutations} "
+        "mutations refused; bound: invented run folders and the definitions' text, not a live run"
+    )
+    return Result(name, not errors, detail=detail + ("" if not errors else " | " + "; ".join(errors)))
+
+
+# --------------------------------------------------------------------------- #
 # Check: nothing to install on the user's computer
 # --------------------------------------------------------------------------- #
 #
@@ -24305,6 +24621,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_review_size_cuts(plugin_path, marketplace_root),
         check_slim_review_repair_2(plugin_path, marketplace_root),
         check_slim_review_repair_3(plugin_path, marketplace_root),
+        check_code_lists(plugin_path, marketplace_root),
         check_nothing_to_install(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)

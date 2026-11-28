@@ -841,3 +841,19 @@ invisible.
     invented run folders the shipped scripts build, with every report written as its agent's
     definition says, or over the definitions' text, and each break is refused. This cannot judge a
     live run's reviews; that is the live run's.
+47. Every code list a window 1 page prints is on the record after its first read. A run once came
+    back from window 1 with five schedule sheets read for their rows and their code lists left off
+    the record, and no check failed. `agents/scope-vocabulary-reader.md` has the reader record
+    every list in its unit, a row citing the schedule never standing in for its codes, a long list
+    sent as a file the shipped `definitions_file.py` writes and `upload_files.py` sends, and name
+    each kind its lists print on `code lists:`, one entry per kind with each code counted once,
+    and a code with nothing readable beside it named as not readable, never given a value; the
+    shipped `unit_report.py` holds that line to its shapes, and its `codes` command, which
+    `agents/scope-round-runner.md` runs after the trades check, holds each kind to the codes citing
+    the sheet less those already recorded on another sheet and those not readable, and a schedule
+    or legend no code cites to `none printed` or a kind those two account for whole. The check
+    runs the file script over an invented table and nine broken ones, the codes command over an
+    invented run folder in fifteen cases and four bad calls, the report check over six lines in
+    shape and six out of it, and pins the reader's and the runner's text, each phrase taken out
+    and each retired sentence put back refused. This cannot judge whether a running reader records
+    every list it sees; that is the measured run's.

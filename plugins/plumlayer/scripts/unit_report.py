@@ -1,8 +1,8 @@
 """
 unit_report.py: hold a reader's report to its shape, hand a read the work an earlier read left,
 restore a lost report of a passed package review from what the run already holds, write a unit's
-trades as one set, gather the trades every read of a unit touched, and keep the lists a check
-confirmed off a returned message.
+trades as one set, gather the trades every read of a unit touched, keep the lists a check
+confirmed off a returned message, and hold a window 1 unit's code lists to the codes on the record.
 
 A reader writes its report to `<run folder>/reports/<unit id>.md` and returns it. A runner never
 writes, completes or copies into that file. This script reads it, and writes files of its own
@@ -10,7 +10,7 @@ beside it. Every file it writes it replaces whole, through `ledger.publish`: a t
 the same folder, then one atomic replace, so a stop at any point leaves the old file or the new one:
 the owed file, the restored report, the trades file and its `.written` file, and the confirmed file.
 
-Six modes:
+Seven modes:
 
     sh run.sh unit_report.py check --kind <sheet|vocabulary|review|manual|standard> --report <path or -> [--owed <path or none>] [--spans '<Reads: line>']
 
@@ -61,6 +61,12 @@ Six modes:
           `not written:` line it is held to, is read with each control character as a space, as
           the ledger and so the owed file hold an entry. With `--owed none`, a first read, `owed:`
           reads `none`. A failure, an entry left unnamed among them, is a mismatch named `owed`.
+
+        - On a window 1 unit, each entry of `code lists:` is in one of its shapes:
+          `<kind> printed <n> recorded <n>`, ending with any of `, columns not read: <headers>`,
+          `, <k> already recorded on <sheet>` and `, <k> not readable: <codes>`, `<k>` the number
+          of codes it names; `<what the list is> none printed`; or the whole line `none`. An entry
+          in no shape, and a kind named on more than one entry, are mismatches named `code lists`.
 
         - With `--spans`, a manual part's `Reads:` line as its dispatch named it, `spans read:` is
           held to those spans in that order, each once, a span left off only where its section
@@ -158,8 +164,28 @@ Six modes:
         and no line of it says a page was read. A file of a read with no `verified` line on the
         ledger, the runner having stopped before the closing append, is ignored.
 
-Exit codes for `owed`, `restore`, `trades`, `touched` and `confirmed`: 0 done; 1 a named failure,
-one line on stderr; 2 argparse rejected the invocation.
+    sh run.sh unit_report.py codes '<run folder>' <unit id> <<'EOF'
+    code lists: <the report's `code lists:` line, its entries on the lines under it as the report gives them>
+    subjects: <nothing, or `truncated` where the sheet's row says the scan was cut>
+    <each subject the `verify_unit` row of the unit's sheet lists, one per line>
+    EOF
+
+        Holds a window 1 unit's `code lists:` line to the codes on the record citing its sheet. The
+        sheet's type comes off `plan/window-1.json` (the unit's `unitKey`) and `inventory.json`.
+        The subjects are counted by kind, the part before the first `:`, leaving out rows,
+        Questions, the sheet's own reading and kind declarations (NOT_CODE_KINDS). It prints
+        `codes <kind> printed <n> on the record <c>` for each kind whose count `c` is below the
+        codes its entry says the page prints less those already recorded on another sheet and
+        those not readable, and `codes none on the record on a <schedule or legend> sheet` where
+        the sheet is a schedule or a legend, no code cites it, no entry reads `none printed`, and
+        no kind's printed codes are all already recorded or not readable. Exit 0 prints `codes whole`,
+        or `codes not held: <why>` for a repeated lines unit, a sheet with no type, or a row of
+        subjects the scan cut; exit 3 prints the mismatches, one per line, ready for a `deviation`
+        note under the check `codes`.
+
+Exit codes for `owed`, `restore`, `trades`, `touched`, `confirmed` and `codes`: 0 done; 1 a named
+failure, one line on stderr; 2 argparse rejected the invocation; and for `codes`, 3 a kind short
+on the record.
 
 Grounding role: reads files and copies lines. It reads no record, and no line it writes says a page
 was read or a search was run.
@@ -181,7 +207,15 @@ SHEET_LABELS = (
     "schedules under rows", "sheet readings written", "anomalies", "grain questions",
     "door-owned suggestions", "owed",
 )
-VOCABULARY_LABELS = SHEET_LABELS
+# A window 1 unit (`scope-vocabulary-reader`) names, after the kinds it added, every code list its
+# page prints, each entry in one of the shapes `code_list_entry` reads.
+VOCABULARY_LABELS = (
+    "unit", "pages read", "pages unread", "cited sheets", "page citations", "set version", "created",
+    "created subjects", "updated subjects", "questions raised ids", "questions replied ids",
+    "questions linked", "sent", "trades", "trades touched", "definitions kinds added", "code lists",
+    "schedules under rows", "sheet readings written", "anomalies", "grain questions",
+    "door-owned suggestions", "owed",
+)
 REVIEW_LABELS = (
     "unit", "harvested", "notes read", "searches", "terms too general", "pages opened", "created",
     "created subjects", "updated subjects", "manual updates", "field updates", "questions raised ids",
@@ -548,6 +582,83 @@ def span_mismatches(found: dict[str, list[str]], spans: list[str]) -> list[str]:
     return out
 
 
+# A window 1 report's `code lists:` entries, one per line or `; ` between them: one entry per kind
+# the page's lists print, `<kind> printed <n> recorded <n>`, `<n>` counting each code once however
+# many of the page's lists print it, then `, columns not read: <headers>` where cells were left
+# blank, `, <k> already recorded on <sheet>` for codes of the same meaning the page adds no column
+# to, and `, <k> not readable: <codes>` for codes whose every other cell is blank or unreadable; a
+# legend of drawn symbols only, `<what the list is> none printed`; or the whole line `none` where
+# the page prints no list.
+_CODE_LIST_RE = re.compile(r"^([a-z][A-Za-z0-9]*) printed ([0-9]+) recorded ([0-9]+)((?:, .+)?)$")
+_CODE_LIST_COLUMNS_RE = re.compile(r"^columns not read: \S.*$")
+_CODE_LIST_ALREADY_RE = re.compile(r"^([0-9]+) already recorded on \S.*$")
+_CODE_LIST_UNREADABLE_RE = re.compile(r"^([1-9][0-9]*) not readable: (\S.*)$")
+_CODE_LIST_ENDING_RE = re.compile(r", (?=[0-9]+ already recorded on |[0-9]+ not readable: |columns not read: )")
+_NONE_PRINTED_RE = re.compile(r"^\S.* none printed$")
+
+
+def code_list_entry(entry: str) -> dict | None:
+    """
+    One `code lists:` entry read: `{kind, printed, recorded, already, unreadable}` for a kind's
+    codes, `{none: True}` for a legend of drawn symbols only, or None where the entry is in neither
+    shape, a `not readable` count that is not the number of codes it names among them, or a code
+    named not readable twice.
+    """
+    if _NONE_PRINTED_RE.match(entry):
+        return {"none": True}
+    shaped = _CODE_LIST_RE.match(entry)
+    if shaped is None:
+        return None
+    already = 0
+    unreadable: set[str] = set()
+    rest = shaped.group(4)
+    if rest:
+        # The endings, in any order: `columns not read:` and `not readable:` run to the next ending
+        # or the end.
+        for part in _CODE_LIST_ENDING_RE.split(rest[2:]):
+            if _CODE_LIST_COLUMNS_RE.match(part):
+                continue
+            already_part = _CODE_LIST_ALREADY_RE.match(part)
+            if already_part is not None:
+                already += int(already_part.group(1))
+                continue
+            unreadable_part = _CODE_LIST_UNREADABLE_RE.match(part)
+            if unreadable_part is None:
+                return None
+            named = [code for code in re.split(r",\s*", unreadable_part.group(2).strip()) if code]
+            if len(named) != int(unreadable_part.group(1)) or len(set(named)) != len(named) or unreadable & set(named):
+                return None
+            unreadable |= set(named)
+    return {"kind": shaped.group(1), "printed": int(shaped.group(2)), "recorded": int(shaped.group(3)),
+            "already": already, "unreadable": len(unreadable)}
+
+
+def code_list_entries(lines: list[str]) -> tuple[list[dict], list[str], list[str]]:
+    """
+    The `code lists:` line's entries read, each entry in no shape, copied whole, and each kind named
+    on more than one entry, where the page's lists of one kind take one entry between them.
+    """
+    if [line.strip().strip('"').lower() for line in lines] == ["none"]:
+        return [], [], []
+    entries: list[str] = []
+    for line in lines:
+        entries.extend(part.strip() for part in _LIST_MARKER_RE.sub("", line.strip()).split("; ") if part.strip())
+    if not entries:
+        return [], ["no entry, and not none"], []
+    read, unshaped, repeated = [], [], []
+    for entry in entries:
+        shaped = code_list_entry(entry)
+        if shaped is None:
+            unshaped.append(entry)
+            continue
+        if "kind" in shaped and any(e.get("kind") == shaped["kind"] for e in read):
+            if shaped["kind"] not in repeated:
+                repeated.append(shaped["kind"])
+            continue
+        read.append(shaped)
+    return read, unshaped, repeated
+
+
 def problems(text: str, kind: str, owed: dict | None = None, owed_given: bool = False,
              spans: list[str] | None = None) -> tuple[list[str], list[str]]:
     """
@@ -593,6 +704,11 @@ def problems(text: str, kind: str, owed: dict | None = None, owed_given: bool = 
     replied_ids = [] if _is_none(found["questions replied ids"]) else _distinct(_REPLY_RE, found["questions replied ids"])
     if (replied == 0) != (not replied_ids) or replied < len(replied_ids):
         mismatches.append(f"report questions replied {replied} and questions replied ids {len(replied_ids)}")
+
+    if kind == "vocabulary":
+        _, unshaped, repeated = code_list_entries(found["code lists"])
+        mismatches.extend(f"code lists {entry}" for entry in unshaped)
+        mismatches.extend(f"code lists {kind} named on more than one entry" for kind in repeated)
 
     if owed is not None or owed_given:
         mismatches.extend(_owed_mismatches(found, kind, owed, created_subjects))
@@ -1253,6 +1369,104 @@ def restore(run_folder: Path, window: str, unit: str) -> list[str]:
 # Entry point
 # --------------------------------------------------------------------------- #
 
+# --------------------------------------------------------------------------- #
+# codes
+# --------------------------------------------------------------------------- #
+
+# The sheet types whose page is a list of codes: one of them with no code on the record citing it
+# is short whatever its report says. (plan_inventory.VOCABULARY_SHEET_TYPES holds notes and
+# cover-index sheets too, which may print no list.)
+CODE_SHEET_TYPES = ("schedule", "legend")
+# The subjects citing a sheet that are no code: its rows, its Questions, its own reading and the
+# declaration of a kind.
+NOT_CODE_KINDS = ("scopeItem", "question", "sheet", "definitionKind")
+
+
+def _json_file(path: Path) -> dict:
+    import json
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        raise ReportError(f"{path} cannot be read ({e.__class__.__name__})") from None
+    if not isinstance(data, dict):
+        raise ReportError(f"{path} is not the file the plan script writes")
+    return data
+
+
+def sheet_type_of(run_folder: Path, unit: str) -> tuple[str | None, str | None]:
+    """
+    The sheet type of a window 1 unit's sheet off `plan/window-1.json` and `inventory.json`, and
+    why its codes are not held where they are not: a repeated lines unit, or a sheet with no type.
+    """
+    plan = _json_file(run_folder / "plan" / "window-1.json")
+    for entry in plan.get("repeatedSets") or []:
+        if isinstance(entry, dict) and entry.get("unitId") == unit:
+            return None, "a repeated lines unit"
+    key = next((u.get("unitKey") for u in plan.get("units") or [] if isinstance(u, dict) and u.get("id") == unit), None)
+    if key is None:
+        raise ReportError(f"unit {unit} is not a unit of the window 1 plan")
+    inventory = _json_file(run_folder / "inventory.json")
+    row = next((s for s in inventory.get("sheets") or [] if isinstance(s, dict) and s.get("unitKey") == key), None)
+    if row is None:
+        raise ReportError(f"the sheet of unit {unit} is not in the inventory")
+    sheet_type = row.get("sheetType")
+    if not isinstance(sheet_type, str) or not sheet_type.strip():
+        return None, "the sheet has no type"
+    return sheet_type.strip(), None
+
+
+def codes_mismatches(run_folder: Path, unit: str, text: str) -> tuple[list[str], str | None]:
+    """
+    What the record holds short of a window 1 unit's `code lists:` line: one
+    `codes <kind> printed <n> on the record <c>` per kind whose codes citing the sheet come to fewer
+    than it printed less those already recorded on another sheet and those not readable, and
+    `codes none on the record on a <type> sheet` for a schedule or legend no code cites where no
+    entry accounts for that: none reads `none printed`, and none is a kind whose printed codes are
+    all already recorded or not readable. Also why the codes are not held, where they are not.
+    """
+    lines = [raw.strip() for raw in text.splitlines()]
+    at = next((i for i, line in enumerate(lines) if line == "subjects:" or line.startswith("subjects: ")), None)
+    if at is None:
+        raise ReportError("stdin carries no `subjects:` line")
+    found = sections("\n".join(lines[:at]), ("code lists",))
+    if "code lists" not in found:
+        raise ReportError("stdin carries no `code lists:` line before its `subjects:` line")
+    entries, unshaped, repeated = code_list_entries(found["code lists"])
+    if unshaped:
+        raise ReportError(f"the `code lists:` entry {unshaped[0]!r} is in none of the report's shapes")
+    if repeated:
+        raise ReportError(f"the `code lists:` line names {repeated[0]} on more than one entry, and a kind takes one")
+    sheet_type, not_held = sheet_type_of(run_folder, unit)
+    if not_held:
+        return [], not_held
+    if lines[at][len("subjects:"):].strip().lower() == "truncated":
+        return [], "the sheet's row of subjects was cut"
+    on_record: dict[str, set[str]] = {}
+    for line in lines[at + 1:]:
+        for subject in re.split(r"[\s,]+", _LIST_MARKER_RE.sub("", line)):
+            subject = subject.strip('"')
+            kind, colon, code = subject.partition(":")
+            if not colon or not code or kind in NOT_CODE_KINDS:
+                continue
+            on_record.setdefault(kind, set()).add(subject)
+    mismatches = []
+    accounted = False
+    for entry in entries:
+        if "kind" not in entry:
+            accounted = True
+            continue
+        owed = entry["printed"] - entry["already"] - entry["unreadable"]
+        if owed <= 0:
+            accounted = True
+        count = len(on_record.get(entry["kind"], ()))
+        if count < owed:
+            mismatches.append(f"codes {entry['kind']} printed {entry['printed']} on the record {count}")
+    if sheet_type in CODE_SHEET_TYPES and not on_record and not accounted:
+        mismatches.append(f"codes none on the record on a {sheet_type} sheet")
+    return mismatches, None
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Hold a reader's report to its shape, hand on owed work, restore a lost report.")
     modes = parser.add_subparsers(dest="mode", required=True)
@@ -1284,6 +1498,9 @@ def main(argv: list[str] | None = None) -> int:
     kept.add_argument("window")
     kept.add_argument("unit")
     kept.add_argument("--read", type=int, required=True)
+    held = modes.add_parser("codes", help="hold a window 1 unit's code lists to the codes on the record citing its sheet")
+    held.add_argument("run_folder", type=Path)
+    held.add_argument("unit")
     args = parser.parse_args(argv)
 
     try:
@@ -1334,6 +1551,20 @@ def main(argv: list[str] | None = None) -> int:
                 )
             for line in note_unknown_touched(args.run_folder, args.window, args.unit, unknown):
                 print(line, file=sys.stderr)
+            return 0
+        if args.mode == "codes":
+            stdin = report_text(sys.stdin.buffer.read())
+            if stdin is None:
+                raise ReportError("the lines on stdin are not UTF-8 text")
+            mismatches, not_held = codes_mismatches(args.run_folder, args.unit, stdin)
+            if not_held:
+                print(f"codes not held: {not_held}")
+                return 0
+            if mismatches:
+                for line in mismatches:
+                    print(line)
+                return 3
+            print("codes whole")
             return 0
         if args.mode in ("trades", "confirmed"):
             stdin = report_text(sys.stdin.buffer.read())
