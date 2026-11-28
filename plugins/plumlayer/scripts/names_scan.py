@@ -42,7 +42,11 @@ and last, always:
     note <window> boundary - overlap scan read <n> new item names, every unit of <u> in <p> passes
 
 Two names are alike when they read the same in lower case with every run of characters other
-than letters and digits taken as one space.
+than letters and digits taken as one space, once each trailing place phrase is taken off: a level,
+floor or story with its number or letter ("Level 2", "second floor", "Levels 3 to 5", "basement"),
+or a wing or side by its direction ("east wing", "north side"). A reader names work for how it
+reads across the job, so two rows apart by their level or side alone are named to the estimator
+as the same work twice. A name that is only a place keeps its words.
 
 Exit codes: 0 the check passed and the lines are printed; 1 a named failure (a file missing or a
 line in no shape); 2 the names are not whole, the refusal on stderr naming the units.
@@ -76,6 +80,40 @@ def normal(name: str) -> str:
     return re.sub(r"[^0-9a-z]+", " ", name.lower()).strip()
 
 
+# A place phrase at the end of a name, read on its normal form: an optional `at`, `on`, `in` or
+# `the`, then a level, floor or story with what names it and an optional second one it runs to, an
+# ordinal floor, a level word alone, or a wing or side by its direction.
+_ORDINAL = r"(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|ground|top|[0-9]+(?:st|nd|rd|th))"
+# What names a level: a number, a letter and a number either way round, one letter, or a word a
+# set uses for one ("Level P1", "Level B", "Level ground"), never an ordinary word such as "drains".
+_LEVEL_NAME = r"(?:[0-9]+[a-z]?|[a-z][0-9]+|[a-z]|ground|basement|lobby|main|upper|lower|roof)"
+_LEVEL_WORD = r"(?:levels?|floors?|stor(?:y|ey|ies|eys))"
+_LEVEL = _LEVEL_WORD + r" " + _LEVEL_NAME + r"(?: (?:to|through|thru|and) (?:" + _LEVEL_WORD + r" )?" + _LEVEL_NAME + r")?"
+_DIRECTION = r"(?:north|south|east|west|northeast|northwest|southeast|southwest)"
+_TRAILING_PLACE_RE = re.compile(
+    r"(?:^| )(?:(?:at|on|in) )?(?:the )?(?:"
+    + _LEVEL
+    + r"|" + _ORDINAL + r" (?:floor|level|story|storey)"
+    + r"|basement|cellar"
+    + r"|" + _DIRECTION + r" (?:wing|side)"
+    + r")$"
+)
+
+
+def alike_key(name: str) -> str:
+    """
+    What two names are compared on: the normal form with each trailing place phrase taken off, so
+    "Domestic water piping, Level 2" and "Domestic water piping - east wing" read alike. A name
+    the phrases would leave empty keeps its normal form.
+    """
+    key = normal(name)
+    while True:
+        stripped = _TRAILING_PLACE_RE.sub("", key).strip()
+        if not stripped or stripped == key:
+            return key
+        key = stripped
+
+
 def read_ledger(path: Path, window: str) -> dict:
     """Each unit of the window: its pass, its latest verified line's items and result, its reads."""
     if not path.is_file():
@@ -94,7 +132,7 @@ def read_ledger(path: Path, window: str) -> dict:
         if parts[0] == "note":
             overlap = _NOTED_RE.match(" ".join(parts[4:]))
             if overlap:
-                noted.add((normal(overlap.group(1)), frozenset((overlap.group(2), overlap.group(3)))))
+                noted.add((alike_key(overlap.group(1)), frozenset((overlap.group(2), overlap.group(3)))))
             continue
         unit = units.setdefault(parts[3], {"pass": parts[2], "verified": None, "since": False})
         if parts[0] == "dispatch":
@@ -184,7 +222,7 @@ def overlaps(scope: list[str], names: dict[str, dict], noted: set[tuple[str, fro
     for unit_id in sorted(set(scope)):
         seen: set[str] = set()
         for name in names.get(unit_id, {"subjects": {}})["subjects"].values():
-            key = normal(name)
+            key = alike_key(name)
             if key and key not in seen:
                 seen.add(key)
                 holders.setdefault(key, []).append((unit_id, name))

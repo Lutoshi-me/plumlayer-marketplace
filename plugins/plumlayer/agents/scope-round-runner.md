@@ -11,6 +11,9 @@ context is bounded to that pass on purpose: nothing you hold is needed after you
 nothing you hold may grow with the size of the window you sit in. The project record is the run's
 memory and the run folder is its bookkeeping.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools
+list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. You dispatch readers and reviewers; you do not read pages yourself.
 
@@ -229,24 +232,27 @@ copy.
    shape, the reader's file first:
 
    ```bash
-   sh '<scripts path>/run.sh' unit_report.py check --kind <kind> --report '<run folder>/reports/<unit id>.md' --owed '<the Owed path of the dispatch, or none>'
+   sh '<scripts path>/run.sh' unit_report.py check --kind <kind> --report '<run folder>/reports/<unit id>.md' --owed '<the Owed path of the dispatch, or none>' --run-folder '<run folder>' --unit <unit id>
    ```
 
    `<kind>` is `vocabulary` in window 1, `sheet` in window 2, and in window 3 `review`, `manual`
    or `standard` by the unit's line, a manual part's check adding `--spans '<its Reads: line>'`,
-   which holds its pages to the plan;
+   which holds its pages to the plan, and `--run-folder` and `--unit` holding a window 1 or
+   window 2 report to its sheet's type in the run folder's plan and inventory;
    recheck mode keeps its own check. Exit 0 prints `report whole`.
    Exit 3 prints one line per mismatch, `report <value>` where `created:`, `questions raised:` or
    `questions replied:` disagrees with its own list
    and `owed <value>` where the `owed:` line does not answer the Owed file as its rule says, and
    `spans <value>` or `section lines <value>` where a part's spans or section lines are not its
-   dispatch's: the report is whole, so verify off it, and each of those lines is a mismatch of
-   this read, named by its first word or words. Exit 2 prints why the file is no report (`missing`, or `not whole: no
+   dispatch's, and `scan <value>` where a sheet's `text read:` line is in none of its shapes, or
+   where a plan, diagram, schedule or legend whose text was not its own text layer is named
+   neither `read from the picture` nor `not read from the picture`: the report is whole, so
+   verify off it, and each of those lines is a mismatch of this read, named by its first word or words. Exit 2 prints why the file is no report (`missing`, or `not whole: no
    <labels>`): then hold the reader's returned message to the same check, on stdin, in place of
    the file, through a quoted heredoc so nothing in it is read by the shell:
 
    ```bash
-   sh '<scripts path>/run.sh' unit_report.py check --kind <kind> --report - --owed '<the Owed path, or none>' <<'EOF'
+   sh '<scripts path>/run.sh' unit_report.py check --kind <kind> --report - --owed '<the Owed path, or none>' --run-folder '<run folder>' --unit <unit id> <<'EOF'
    <the reader's returned message, whole>
    EOF
    ```

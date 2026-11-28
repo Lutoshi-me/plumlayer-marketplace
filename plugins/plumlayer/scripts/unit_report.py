@@ -12,7 +12,7 @@ the owed file, the restored report, the trades file and its `.written` file, and
 
 Seven modes:
 
-    sh run.sh unit_report.py check --kind <sheet|vocabulary|review|manual|standard> --report <path or -> [--owed <path or none>] [--spans '<Reads: line>']
+    sh run.sh unit_report.py check --kind <sheet|vocabulary|review|manual|standard> --report <path or -> [--owed <path or none>] [--spans '<Reads: line>'] [--run-folder '<run folder>' --unit <unit id>]
 
         Holds one report to its kind's shape: a file, or with `-` the reader's returned message on
         stdin through a quoted heredoc. The kinds are the five readers of windows 1, 2 and 3: a
@@ -67,6 +67,18 @@ Seven modes:
           `, <k> already recorded on <sheet>` and `, <k> not readable: <codes>`, `<k>` the number
           of codes it names; `<what the list is> none printed`; or the whole line `none`. An entry
           in no shape, and a kind named on more than one entry, are mismatches named `code lists`.
+
+        - On a window 2 sheet and a window 1 unit, `text read:` names the page's `textSource`:
+          `textLayer`, `ocr`, `textLayerAndOcr` or `none`, or on a window 1 unit reading a file's
+          repeated lines `repeated lines`. Any other value is a mismatch named `scan`. With
+          `--run-folder` and `--unit`, the unit's sheet type comes off `plan/window-<n>.json`
+          (the unit's `unitKey`) and `inventory.json`, as `codes` takes it. Where that type is one
+          of PICTURE_SHEET_TYPES (a plan, a diagram, a schedule or a legend) and `text read:` is not
+          `textLayer`, the report names the page `read from the picture` on `pages read:` or
+          `not read from the picture` on `pages unread:`, and a report naming neither is a mismatch
+          named `scan`, so the unit is read again. A repeated lines unit, a unit the plan does not
+          carry, a sheet the inventory does not carry or carries with no type, and a run folder with
+          no plan or inventory to read, are not held to it.
 
         - With `--spans`, a manual part's `Reads:` line as its dispatch named it, `spans read:` is
           held to those spans in that order, each once, a span left off only where its section
@@ -201,8 +213,8 @@ from pathlib import Path
 # Each reader's report shape, in its order, the label each line opens with, as the agent's own
 # report shape gives it. The harness holds each list to its agent's shape.
 SHEET_LABELS = (
-    "unit", "pages read", "pages unread", "cited sheets", "page citations", "set version", "created",
-    "created subjects", "updated subjects", "questions raised ids", "questions replied ids",
+    "unit", "pages read", "pages unread", "text read", "cited sheets", "page citations", "set version",
+    "created", "created subjects", "updated subjects", "questions raised ids", "questions replied ids",
     "questions linked", "sent", "trades", "trades touched", "definitions kinds added",
     "schedules under rows", "sheet readings written", "anomalies", "grain questions",
     "door-owned suggestions", "owed",
@@ -210,8 +222,8 @@ SHEET_LABELS = (
 # A window 1 unit (`scope-vocabulary-reader`) names, after the kinds it added, every code list its
 # page prints, each entry in one of the shapes `code_list_entry` reads.
 VOCABULARY_LABELS = (
-    "unit", "pages read", "pages unread", "cited sheets", "page citations", "set version", "created",
-    "created subjects", "updated subjects", "questions raised ids", "questions replied ids",
+    "unit", "pages read", "pages unread", "text read", "cited sheets", "page citations", "set version",
+    "created", "created subjects", "updated subjects", "questions raised ids", "questions replied ids",
     "questions linked", "sent", "trades", "trades touched", "definitions kinds added", "code lists",
     "schedules under rows", "sheet readings written", "anomalies", "grain questions",
     "door-owned suggestions", "owed",
@@ -252,6 +264,23 @@ LABELS = {
     "manual": MANUAL_LABELS, "standard": STANDARD_LABELS,
 }
 WINDOW_3_KINDS = ("review", "manual", "standard")
+# The window each sheet reader's kind reads in, whose plan file names its unit's sheet.
+SHEET_KIND_WINDOWS = {"vocabulary": "1", "sheet": "2"}
+# How a page's text was read, as `get_page_text` and `read_sheet_context`'s `pageRead` give its
+# `textSource`, compared folded to lower case, and the value a repeated lines unit gives instead.
+TEXT_SOURCES = ("textlayer", "ocr", "textlayerandocr", "none")
+REPEATED_TEXT_READ = "repeated lines"
+# The sheet types a reader reads from its picture where the page's text was not its own text
+# layer: every plan, every diagram (a riser, a one-line), a schedule and a legend, the retired
+# `plan` and `schematic` among them, as the window 2 reading order names them. Both readers'
+# text names the same list.
+PICTURE_SHEET_TYPES = (
+    "floor-plan", "enlarged-plan", "site-plan", "plan", "overall-plan", "RCP", "edge-of-slab",
+    "diagram", "schematic", "schedule", "legend",
+)
+_PICTURE_READ_RE = re.compile(r"(?<!not )read from the picture")
+_PICTURE_UNREAD = "not read from the picture"
+REPEATED_NOT_HELD = "a repeated lines unit"
 
 _CREATED_LINE_RE = re.compile(
     r"^created: (\S+)\s+updated: (\S+)\s+questions raised: (\S+)\s+questions replied: (\S+)\s*$"
@@ -660,11 +689,14 @@ def code_list_entries(lines: list[str]) -> tuple[list[dict], list[str], list[str
 
 
 def problems(text: str, kind: str, owed: dict | None = None, owed_given: bool = False,
-             spans: list[str] | None = None) -> tuple[list[str], list[str]]:
+             spans: list[str] | None = None,
+             sheet_type: tuple[str | None, str | None] | None = None) -> tuple[list[str], list[str]]:
     """
     What keeps a report from being whole, and the mismatches of a whole one, `<check> <value>`
     each. `owed` is the owed file read, or None with `owed_given` for `--owed none`. `spans` are
     a manual part's dispatched spans, which its `spans read:` and `section lines:` are held to.
+    `sheet_type` is what `scan_sheet_type` found for a sheet reader's unit, its type and why it is
+    not held, which its picture read is held to; None where no run folder was given.
     """
     labels = LABELS[kind]
     found = sections(text, labels)
@@ -710,11 +742,60 @@ def problems(text: str, kind: str, owed: dict | None = None, owed_given: bool = 
         mismatches.extend(f"code lists {entry}" for entry in unshaped)
         mismatches.extend(f"code lists {kind} named on more than one entry" for kind in repeated)
 
+    if kind in SHEET_KIND_WINDOWS:
+        mismatches.extend(scan_mismatches(found, sheet_type))
+
     if owed is not None or owed_given:
         mismatches.extend(_owed_mismatches(found, kind, owed, created_subjects))
     if spans is not None and kind == "manual":
         mismatches.extend(span_mismatches(found, spans))
     return [], mismatches
+
+
+def text_read_of(found: dict[str, list[str]]) -> str:
+    """The `text read:` value as the reader wrote it, its first clause, without quotes or backticks."""
+    value = " ".join(found.get("text read") or []).split(",")[0]
+    return value.strip().strip("`\"'").strip()
+
+
+def scan_mismatches(found: dict[str, list[str]], sheet_type: tuple[str | None, str | None] | None) -> list[str]:
+    """
+    A sheet reader's `text read:` line held to its shape, and where the unit's sheet is of a type
+    PICTURE_SHEET_TYPES names and its text was not its own text layer, its report held to naming
+    the page read from the picture or not read from the picture. `sheet_type` is None where no
+    run folder was given, and otherwise the type and why it is not held.
+    """
+    said = text_read_of(found)
+    source = said.lower()
+    repeated_unit = sheet_type is not None and sheet_type[1] == REPEATED_NOT_HELD
+    if source == REPEATED_TEXT_READ:
+        # Only a repeated lines unit reads no one page of its own; it is refused only where the
+        # run folder shows the unit to be a sheet with a type, never where the lookup failed.
+        if sheet_type is not None and sheet_type[0] is not None and not repeated_unit:
+            return ["scan text read repeated lines on a sheet, which is no file's repeated lines"]
+        return []
+    if source not in TEXT_SOURCES:
+        return [f"scan text read {said or 'empty'}, which is none of textLayer, ocr, textLayerAndOcr, none or repeated lines"]
+    if sheet_type is None or sheet_type[0] not in PICTURE_SHEET_TYPES or source == "textlayer":
+        return []
+    read = " ".join(found.get("pages read") or [])
+    unread = " ".join(found.get("pages unread") or [])
+    if _PICTURE_READ_RE.search(read) or _PICTURE_UNREAD in unread:
+        return []
+    return [f"scan text read {said} on a {sheet_type[0]} sheet, and the report names the page neither "
+            f"read from the picture nor not read from the picture"]
+
+
+def scan_sheet_type(run_folder: Path, kind: str, unit: str) -> tuple[str | None, str | None]:
+    """
+    The sheet type a sheet reader's unit is held to, and why it is not held where it is not: a
+    repeated lines unit, a unit or sheet the run folder does not carry, a sheet with no type, or a
+    plan or inventory that cannot be read. A unit with nothing to hold it to is never refused for it.
+    """
+    try:
+        return sheet_type_of(run_folder, unit, SHEET_KIND_WINDOWS[kind])
+    except ReportError as e:
+        return None, str(e)
 
 
 def _owed_mismatches(found: dict[str, list[str]], kind: str, owed: dict | None, created_subjects: list[str]) -> list[str]:
@@ -1394,18 +1475,19 @@ def _json_file(path: Path) -> dict:
     return data
 
 
-def sheet_type_of(run_folder: Path, unit: str) -> tuple[str | None, str | None]:
+def sheet_type_of(run_folder: Path, unit: str, window: str = "1") -> tuple[str | None, str | None]:
     """
-    The sheet type of a window 1 unit's sheet off `plan/window-1.json` and `inventory.json`, and
-    why its codes are not held where they are not: a repeated lines unit, or a sheet with no type.
+    The sheet type of a window 1 or window 2 unit's sheet off `plan/window-<n>.json` and
+    `inventory.json`, and why it is not held where it is not: a repeated lines unit, or a sheet
+    with no type.
     """
-    plan = _json_file(run_folder / "plan" / "window-1.json")
+    plan = _json_file(run_folder / "plan" / f"window-{window}.json")
     for entry in plan.get("repeatedSets") or []:
         if isinstance(entry, dict) and entry.get("unitId") == unit:
-            return None, "a repeated lines unit"
+            return None, REPEATED_NOT_HELD
     key = next((u.get("unitKey") for u in plan.get("units") or [] if isinstance(u, dict) and u.get("id") == unit), None)
     if key is None:
-        raise ReportError(f"unit {unit} is not a unit of the window 1 plan")
+        raise ReportError(f"unit {unit} is not a unit of the window {window} plan")
     inventory = _json_file(run_folder / "inventory.json")
     row = next((s for s in inventory.get("sheets") or [] if isinstance(s, dict) and s.get("unitKey") == key), None)
     if row is None:
@@ -1475,6 +1557,8 @@ def main(argv: list[str] | None = None) -> int:
     one.add_argument("--report", required=True, help="the report file, or - for the returned message on stdin")
     one.add_argument("--owed", help="the owed file this read was handed, or none on a first read")
     one.add_argument("--spans", help="a manual part's `Reads:` line as its dispatch named it")
+    one.add_argument("--run-folder", type=Path, help="the run folder, whose plan and inventory give a sheet reader's sheet type")
+    one.add_argument("--unit", help="the unit id, with --run-folder")
     owe = modes.add_parser("owed", help="write the owed file for a unit's next read")
     owe.add_argument("run_folder", type=Path)
     owe.add_argument("window")
@@ -1525,7 +1609,12 @@ def main(argv: list[str] | None = None) -> int:
                 print(NOT_UTF8)
                 return 2
             spans = dispatched_spans(args.spans) if args.spans is not None else None
-            broken, mismatches = problems(text, args.kind, owed, owed_given=args.owed is not None, spans=spans)
+            if (args.run_folder is None) != (args.unit is None):
+                raise ReportError("--run-folder and --unit go together")
+            sheet_type = (scan_sheet_type(args.run_folder, args.kind, args.unit)
+                          if args.run_folder is not None and args.kind in SHEET_KIND_WINDOWS else None)
+            broken, mismatches = problems(text, args.kind, owed, owed_given=args.owed is not None, spans=spans,
+                                          sheet_type=sheet_type)
             if broken:
                 print(broken[0])
                 return 2

@@ -17036,16 +17036,44 @@ def check_kept_sheet_conflict(plugin_path: Path, marketplace_root: Path) -> Resu
 # and name each page or part they could not read in one shape, on `pages unread:` and on the
 # anomaly line the check-in prints; the skill carries the report shape and has the lead name those
 # sheets at the check-in and the close out. Each phrase taken out, and the retired sentence that
-# stopped a reader at three renders with nothing read, put back, is refused. Honest bound: text
-# only; whether a running reader reads a scan well is the measured run's.
+# stopped a reader at three renders with nothing read, put back, is refused.
+#
+# A later run on the same set still had most scanned plans read as text only, since the rule let a
+# reader judge the text thin or clean. So a reader now takes one tiled render and up to two crops
+# on every such page whatever its text looks like, knows the page is one by what it draws or by its
+# sheet type on `inventory.md`, and reports the page's `textSource` on a `text read:` line; the
+# runner's report check, given the run folder and the unit, holds a plan, diagram, schedule or
+# legend whose text was not its own text layer to naming the page `read from the picture` or `not
+# read from the picture`, and a report naming neither fails under the check name `scan`. The check
+# runs the script over fixture reports: a scanned plan read as text only fails, one read from the
+# picture passes, and one the reader could not read from its picture passes, so a correct report
+# can always pass. The script's type list and the readers' list are one list. Honest bound: text
+# and fixtures only; whether a running reader reads a scan well is the measured run's.
 
 _SCANNED_READERS = ("agents/scope-reader.md", "agents/scope-vocabulary-reader.md")
 _SCANNED_UNREAD_SHAPE = (
     "pages unread: <sheet number + pageInPdf + reason, each page or part of one not read from the "
     "picture as `<sheet> p<page> not read from the picture: <what is left>, <why>`, or \"none\">"
 )
+_SCANNED_TEXT_READ_SHAPE = (
+    "text read: <the page's `textSource` as `get_page_text` and the context read's `pageRead` give "
+    "it: textLayer, ocr, textLayerAndOcr or none"
+)
+_SCANNED_TYPES_SENTENCE = (
+    "reading `floor-plan`, `enlarged-plan`, `site-plan`, `plan`, `overall-plan`, `RCP`, "
+    "`edge-of-slab`, `diagram`, `schematic`, `schedule` or `legend`, since your runner holds your "
+    "report to that type."
+)
 _SCANNED_READER_PHRASES = (
     "A scanned plan is read from its picture.",
+    "read it from one tiled render and up to two crops, whatever its text looks like, since a scan's "
+    "text can carry its notes and leave out every device the drawing holds.",
+    "The sheet is one of those by what it draws, and also wherever its sheet type says so: the "
+    "`sheet type` column of the line in your run folder's `inventory.md` ending `| <your fileId> | "
+    "<your pageInPdf>`, found with one local search,",
+    _SCANNED_TYPES_SENTENCE,
+    "Your `text read:` line gives the page's `textSource` as the answer gave it.",
+    _SCANNED_TEXT_READ_SHAPE,
     "Read the text first all the same, walked to its end: its boxes are the only boxes you cite.",
     "within the cap of three renders a page",
     "never a row per symbol drawn, and never a count you make of them",
@@ -17064,6 +17092,8 @@ _SCANNED_SKILL = "skills/scope-run/SKILL.md"
 # template line, and the closing report script's own table of sources.
 _SCANNED_SKILL_PHRASES = (
     _SCANNED_UNREAD_SHAPE,
+    "text read: <the page's `textSource` as the reader's text and context reads give it: textLayer, "
+    "ocr, textLayerAndOcr or none; for the repeated lines, \"repeated lines\">",
     "and the scanned sheets off the `anomaly` notes that carry `not read from the picture:`, each "
     "sheet and part once",
     "- <sheet>, <part>: it is a scan, and I could not read that part from its picture.",
@@ -17072,34 +17102,167 @@ _SCANNED_CLOSE = "scripts/close_report.py"
 _SCANNED_CLOSE_PHRASES = (
     "| scanned parts not read | `anomaly` notes carrying `not read from the picture:` |",
 )
+_SCANNED_RUNNER = "agents/scope-round-runner.md"
+# The runner hands the report check the run folder and the unit, so a sheet is held to its type,
+# and reads a `scan` line as a mismatch of the read.
+_SCANNED_RUNNER_PHRASES = (
+    "unit_report.py check --kind <kind> --report '<run folder>/reports/<unit id>.md' --owed '<the "
+    "Owed path of the dispatch, or none>' --run-folder '<run folder>' --unit <unit id>",
+    "unit_report.py check --kind <kind> --report - --owed '<the Owed path, or none>' --run-folder "
+    "'<run folder>' --unit <unit id> <<'EOF'",
+    "and `scan <value>` where a sheet's `text read:` line is in none of its shapes, or where a plan, "
+    "diagram, schedule or legend whose text was not its own text layer is named neither `read from "
+    "the picture` nor `not read from the picture`",
+)
 _SCANNED_RETIRED = (
     "A page that would take more than three renders is reported on that line as needing more, "
     "rather than rendered on.",
+    # The judgment that let a reader stay with a scan's text.
+    "read it from a render wherever that text is thin for what the sheet draws",
+    "and reads clean all the same gets the one tiled call below to check",
+    "`read from the picture` with why the text was thin",
 )
 _SCANNED_PINS: tuple[tuple[str, str], ...] = (
     tuple((reader, phrase) for reader in _SCANNED_READERS for phrase in _SCANNED_READER_PHRASES)
     + tuple((_SCANNED_SKILL, phrase) for phrase in _SCANNED_SKILL_PHRASES)
     + tuple((_SCANNED_CLOSE, phrase) for phrase in _SCANNED_CLOSE_PHRASES)
+    + tuple((_SCANNED_RUNNER, phrase) for phrase in _SCANNED_RUNNER_PHRASES)
 )
+_SCANNED_RETIRED_IN = (*_SCANNED_READERS, _SCANNED_SKILL)
 
 
 def _scanned_errors(texts: dict[str, str]) -> list[str]:
     errors = [f"{label} does not read {phrase!r}" for label, phrase in _SCANNED_PINS
               if phrase not in _collapsed(texts[label])]
-    errors += [f"{label} still reads the retired {phrase!r}" for label in _SCANNED_READERS
+    errors += [f"{label} still reads the retired {phrase!r}" for label in _SCANNED_RETIRED_IN
                for phrase in _SCANNED_RETIRED if phrase in _collapsed(texts[label])]
     return errors
+
+
+_SCAN_FIXTURES = "scan-run"
+# Each fixture report with the unit it is checked as and what the check must give: a scanned plan
+# read as text only fails under `scan`, one read from the picture passes, and one the reader could
+# not read from its picture passes, so a correct report can always pass.
+_SCAN_FIXTURE_CASES = (
+    ("a scanned plan read as text only", "scan-report-fixture-text-only.md", "sheet", "i2-E2-1", 3),
+    ("a scanned plan read from the picture", "scan-report-fixture-picture.md", "sheet", "i2-E2-1", 0),
+    ("a scanned plan the reader could not read from the picture", "scan-report-fixture-not-read.md",
+     "sheet", "i2-E2-1", 0),
+    ("a scanned detail read as text only", "scan-report-fixture-text-only.md", "sheet", "i2-E2-2", 0),
+    ("a sheet with no type read as text only", "scan-report-fixture-text-only.md", "sheet", "i2-E2-3", 0),
+    ("a unit the plan does not carry", "scan-report-fixture-text-only.md", "sheet", "i2-E2-9", 0),
+)
+
+
+def _scan_script_errors(plugin_path: Path, marketplace_root: Path) -> tuple[list[str], int]:
+    """
+    The report check run as the runner runs it, over the fixture reports and the fixture run folder,
+    and in-process over reports the check fills in: each case's exit and its `scan` line. Also the
+    script's type list held to the readers' list and to the sheet types the plan script orders.
+    """
+    errors: list[str] = []
+    cases = 0
+    scripts = plugin_path / "scripts"
+    fixtures = marketplace_root / "harness" / "fixtures"
+    try:
+        report_mod = _load_script_module(scripts / "unit_report.py", "unit_report")
+        plan_mod = _load_script_module(scripts / "plan_inventory.py", "plan_inventory")
+    except Exception as e:
+        return [f"cannot import the scripts: {e}"], 0
+    folder = fixtures / _SCAN_FIXTURES
+    for label, report, kind, unit, want in _SCAN_FIXTURE_CASES:
+        cases += 1
+        done = subprocess.run(
+            [sys.executable, str(scripts / "unit_report.py"), "check", "--kind", kind, "--report",
+             str(fixtures / report), "--owed", "none", "--run-folder", str(folder), "--unit", unit],
+            capture_output=True, text=True, encoding="utf-8",
+        )
+        lines = done.stdout.splitlines()
+        if done.returncode != want:
+            errors.append(f"{label}: exit {done.returncode}, not {want} ({done.stdout.strip()!r} {done.stderr.strip()!r})")
+        elif want == 3 and not (lines and all(line.startswith("scan ") for line in lines)):
+            errors.append(f"{label}: exit 3 with no `scan` line ({done.stdout.strip()!r})")
+        elif want == 0 and lines != ["report whole"]:
+            errors.append(f"{label}: exit 0 printing {done.stdout.strip()!r}")
+    # The same report on stdin, as the runner checks a returned message.
+    cases += 1
+    done = subprocess.run(
+        [sys.executable, str(scripts / "unit_report.py"), "check", "--kind", "sheet", "--report", "-",
+         "--owed", "none", "--run-folder", str(folder), "--unit", "i2-E2-1"],
+        input=(fixtures / "scan-report-fixture-text-only.md").read_text(encoding="utf-8"),
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    if done.returncode != 3:
+        errors.append(f"the text only report on stdin: exit {done.returncode}, not 3")
+    # One flag without the other is refused, never read as no run folder.
+    cases += 1
+    done = subprocess.run(
+        [sys.executable, str(scripts / "unit_report.py"), "check", "--kind", "sheet", "--report",
+         str(fixtures / "scan-report-fixture-text-only.md"), "--run-folder", str(folder)],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    if done.returncode != 1 or done.stdout:
+        errors.append(f"--run-folder with no --unit: exit {done.returncode}, not 1")
+
+    # In-process: a window 1 schedule, a repeated lines unit, the text read shapes.
+    labels_1 = report_mod.LABELS["vocabulary"]
+    labels_2 = report_mod.LABELS["sheet"]
+    in_process = (
+        ("a scanned schedule read as text only in window 1", "vocabulary", "i1-E1-1", labels_1,
+         {"text read": "textLayerAndOcr", "pages read": "E-6.01 p12, text only"}, True),
+        ("a scanned schedule read from the picture in window 1", "vocabulary", "i1-E1-1", labels_1,
+         {"text read": "`textLayerAndOcr`", "pages read": "E-6.01 p12, tiled@120, read from the picture"}, False),
+        ("a schedule on its own text layer", "vocabulary", "i1-E1-1", labels_1,
+         {"text read": "textLayer", "pages read": "E-6.01 p12"}, False),
+        ("a repeated lines unit", "vocabulary", "i1-RS1-1", labels_1,
+         {"text read": "repeated lines", "pages read": "file-0001, 3 blocks"}, False),
+        ("a sheet that says it read repeated lines", "sheet", "i2-E2-1", labels_2,
+         {"text read": "repeated lines", "pages read": "E-1.01 p5"}, True),
+        ("a text read in no shape", "sheet", "i2-E2-2", labels_2,
+         {"text read": "scanned, mostly", "pages read": "E-5.01 p9"}, True),
+        ("a plan whose only picture words are on pages read as not read", "sheet", "i2-E2-1", labels_2,
+         {"text read": "ocr", "pages read": "E-1.01 p5, not read from the picture"}, True),
+    )
+    in_process += (
+        ("a repeated lines unit the plan does not carry", "vocabulary", "i1-ZZ9-1", labels_1,
+         {"text read": "repeated lines", "pages read": "file-0009, 2 blocks"}, False),
+        ("a repeated lines unit whose run folder has no plan", "vocabulary", "missing-folder", labels_1,
+         {"text read": "repeated lines", "pages read": "file-0001, 3 blocks"}, False),
+    )
+    for label, kind, unit, labels, values, fails in in_process:
+        cases += 1
+        found = report_mod.scan_sheet_type(folder if unit != "missing-folder" else folder / "absent", kind,
+                                           "i1-RS1-1" if unit == "missing-folder" else unit)
+        broken, mismatches = report_mod.problems(_filled_report(kind, unit, labels, **values), kind,
+                                                 sheet_type=found)
+        scan = [line for line in mismatches if line.startswith("scan ")]
+        if broken or bool(scan) != fails:
+            errors.append(f"{label}: {broken or mismatches or 'passed'}, where it should "
+                          f"{'fail under scan' if fails else 'pass'}")
+
+    # One list of types: the script's, the readers', and each a type the plan script knows.
+    listed = tuple(re.findall(r"`([^`]+)`", _SCANNED_TYPES_SENTENCE.split(", since")[0]))
+    if tuple(report_mod.PICTURE_SHEET_TYPES) != listed:
+        errors.append(f"the script's picture sheet types {report_mod.PICTURE_SHEET_TYPES} are not the "
+                      f"readers' {listed}")
+    known = set(plan_mod.WINDOW_2_SHEET_TYPE_ORDER) | set(plan_mod.VOCABULARY_SHEET_TYPES)
+    unknown = [t for t in report_mod.PICTURE_SHEET_TYPES if t not in known]
+    if unknown:
+        errors.append(f"picture sheet types the plan script does not know: {unknown}")
+    return errors, cases
 
 
 def check_scanned_plans(plugin_path: Path, marketplace_root: Path) -> Result:
     name = "scanned-plans"
     texts: dict[str, str] = {}
-    for label in (*_SCANNED_READERS, _SCANNED_SKILL, _SCANNED_CLOSE):
+    for label in (*_SCANNED_READERS, _SCANNED_SKILL, _SCANNED_CLOSE, _SCANNED_RUNNER):
         path = plugin_path / label
         if not path.is_file():
             return Result(name, False, detail=f"not found: {path}")
         texts[label] = path.read_text(encoding="utf-8")
     errors = _scanned_errors(texts)
+    script_errors, script_cases = _scan_script_errors(plugin_path, marketplace_root)
+    errors += script_errors
 
     # Each pin taken out, and each retired sentence put back, so every refusal is shown.
     refused = 0
@@ -17112,7 +17275,7 @@ def check_scanned_plans(plugin_path: Path, marketplace_root: Path) -> Result:
                 refused += 1
             else:
                 errors.append(f"the check passed {label} with {phrase!r} taken out")
-        for label in _SCANNED_READERS:
+        for label in _SCANNED_RETIRED_IN:
             for phrase in _SCANNED_RETIRED:
                 mutations += 1
                 broken = {**texts, label: texts[label] + "\n" + phrase + "\n"}
@@ -17126,9 +17289,14 @@ def check_scanned_plans(plugin_path: Path, marketplace_root: Path) -> Result:
         f"scanned plan read from its picture within three renders, boxes only off the text read, no "
         f"quantity off a render alone, a printed riser count held against another sheet's and never "
         f"a count the reader makes, each page or part left named in one shape on `pages unread:` "
-        f"and the anomaly line, and named in the closing report by its sheet and part), the retired "
-        f"three-render stop absent, {refused} of {mutations} mutations refused; bound: text only, "
-        f"not how a running reader reads a scan"
+        f"and the anomaly line, and named in the closing report by its sheet and part, every such "
+        f"page read from one tiled render whatever its text, its sheet type off `inventory.md` and its "
+        f"`textSource` on `text read:`), the retired three-render stop and thin-text judgment absent, "
+        f"{refused} of {mutations} mutations refused; the report check run over {script_cases} cases "
+        f"(a scanned plan read as text only failing under `scan`, one read from the picture and one "
+        f"not read from the picture passing, a detail, an untyped sheet, a unit off the plan and a "
+        f"repeated lines unit never held, one list of picture sheet types); bound: text and fixtures "
+        f"only, not how a running reader reads a scan"
     )
     if errors:
         detail += " | " + "; ".join(errors)
@@ -17629,8 +17797,16 @@ def _pinned_text_check(name: str, plugin_path: Path, pins: tuple[tuple[str, str]
 # schedule lists for one kind of door or room are one group row, a difference in material or build
 # makes a different kind, and the old row for each kind of a set is gone from every restatement.
 # Each phrase taken out and each retired phrase put back is refused, and so is each two neighboring
-# paragraphs of mandate 6's test swapped, by the order arm alone. Honest bound: text only; whether
-# a running reader splits a page rightly is the measured run's.
+# paragraphs of mandate 6's test swapped, by the order arm alone. A later run left three things:
+# eight balcony door types on one row because they sat on the door schedule, piping and cabling
+# split by level because a reader of one level's plan met the place rule, and rows named for their
+# heading that nothing removed. So the readers make a balcony, terrace or patio door a row per type
+# on any list, treat a plan of one level, wing or side as no place limit while work made to order
+# keeps its place, make embeds the furnish and install pair and a connection no row; and the review
+# retires a row named for its heading once the rows for its pieces carry every page it cites,
+# within its page cap and the pair rule's cases, and names it for the estimator otherwise, never
+# splitting it. Honest bound: text only; whether a running reader splits a page rightly is the
+# measured run's.
 
 _GRAIN_READERS = ("agents/scope-reader.md", "agents/scope-vocabulary-reader.md")
 _GRAIN_READER_PHRASES = (
@@ -17705,6 +17881,25 @@ _GRAIN_READER_PHRASES = (
     "neither is the name of the one row the tests give a package that holds one product, kind or "
     "system",
     "is a row for that, as the tests say.",
+    # Balcony, terrace and patio doors are a row per type on whatever list carries them, and the
+    # list settles that split without a grain question.
+    "Windows, and balcony, terrace or patio doors wherever the set lists their types, on a window "
+    "type list, a door schedule or a door type sheet: one row per type, named by its code",
+    "A balcony, terrace or patio door is never a family row, whatever list carries it.",
+    "A split this list settles is never a grain question",
+    # A plan of one level, wing or side never limits work to its place, and work made to order
+    # keeps its place: the two cases in one sentence.
+    "A plan of one level, wing or side shows its part of work that runs on other levels too, and is "
+    "never such a limit: name the product, system or kind of work as it reads across the job",
+    "the record refuses your create for its name and you cite your page on that row, as mandate 7 "
+    "says; work made to order for its place is the other case, and keeps the place it stands in, as "
+    "mandate 6 says.",
+    # Embeds the steel trade furnishes for the concrete trade are the supply and install pair, and a
+    # connection is never a row.
+    "Embed plates the steel trade furnishes for the concrete trade to cast in are never pieces made "
+    "to order: they are one product, written as the two rows mandate 1 gives its supply and its "
+    "install",
+    "and a connection is never a row of its own, whatever detail draws it.",
 )
 _GRAIN_PINS: tuple[tuple[str, str], ...] = (
     tuple((reader, phrase) for reader in _GRAIN_READERS for phrase in _GRAIN_READER_PHRASES)
@@ -17757,6 +17952,35 @@ _GRAIN_PINS: tuple[tuple[str, str], ...] = (
          "mandate 6 counts them, pieces made alike for several places being one piece, you do not "
          "split it"),
         ("agents/scope-reviewer.md", "is never named there for its name."),
+        ("skills/scope-run/SKILL.md", "a row per window type and per balcony door type wherever the "
+         "set lists them"),
+        ("skills/scope-run/SKILL.md", "A plan of one level, wing or side never limits work to that "
+         "place: the row is named for the work as it reads across the job, and a reader of another "
+         "level's plan cites its page on that row, while work made to order keeps the name of the "
+         "place it stands in."),
+        # A row named for its heading is retired once the rows for its pieces carry all of it, by
+        # the pair rule's citation path, page cap and cases that retire nothing, and otherwise
+        # stays on the grain questions line for the closing report; the review still splits nothing.
+        ("agents/scope-reviewer.md", "this package and for a row named for its heading whose work the "
+         "rows for its pieces carry, as below, and for no other row."),
+        ("agents/scope-reviewer.md", "never retire one but the other row of a pair as above or a row "
+         "named for its heading as below"),
+        ("agents/scope-reviewer.md", "Where each of those pieces already has a live row of its own on "
+         "this package, one this review did not create, retiring the row named for its heading "
+         "splits nothing, since those rows already carry its work"),
+        ("agents/scope-reviewer.md", "by the pair rule's citation path, the pages counted toward the "
+         "pair rule's twelve, then retire it as the pair rule retires the other row"),
+        ("agents/scope-reviewer.md", "same work: <each piece row's name> and <its name>, which held "
+         "those pieces, combined, run only`."),
+        ("agents/scope-reviewer.md", "The cases above that retire nothing keep it too, and so do a "
+         "piece with no row of its own on this package and a page it cites that shows the work of "
+         "none of its pieces."),
+        ("agents/scope-reviewer.md", "Where one of those keeps it, write nothing on it and name it on "
+         "your `grain questions:` line with the pieces it holds and what kept it"),
+        ("skills/scope-run/SKILL.md", "It retires the same way a row named for its trade, its package "
+         "or a whole manual section once each piece of work that row holds has a row of its own on "
+         "the package and those rows cite every page it did, and otherwise leaves it and names it "
+         "for the closing report."),
     )
 )
 _GRAIN_RETIRED: tuple[tuple[str, str], ...] = (
@@ -17773,7 +17997,10 @@ _GRAIN_RETIRED: tuple[tuple[str, str], ...] = (
         "(a finish trade's areas aside, mandate 1), since a bidder answers for the kind",
         "never a row of its own. What you read of such a part",
         "A row is never a whole sheet and never a package header. Any other attribute",
+        "doors on a window type list:",
     )),
+    ("agents/scope-reviewer.md", "the other row of a pair on this package, and for no other row."),
+    ("agents/scope-reviewer.md", "you do not split it: name it on your `grain questions:` line"),
     ("skills/scope-run/SKILL.md", "of its own only where another trade could carry it"),
     ("skills/scope-run/SKILL.md", "its mandate 1 test of one row per product settles"),
     ("skills/scope-run/SKILL.md", "thing a sub buys and installs as its own line"),
@@ -17802,7 +18029,11 @@ def check_grain_test(plugin_path: Path, marketplace_root: Path) -> Result:
         "carrying their clause; the skill restating the test in order; the old five tests and the "
         "row for each kind of a set gone; work made to order for its place a row for each piece, a "
         "name as wide as the trade, the package or a manual section sending the reader back to the "
-        "tests, and a general note of standards making no row",
+        "tests, and a general note of standards making no row; a balcony, terrace or patio door a "
+        "row per type on whatever list carries it; a plan of one level, wing or side never a place "
+        "limit, kept apart from work made to order; embeds the furnish and install pair and a "
+        "connection never a row; and a row named for its heading retired by the review once the rows "
+        "for its pieces carry all of it, otherwise named for the estimator",
         orders=_GRAIN_ORDER,
     )
 
@@ -24669,6 +24900,10 @@ FULL_TOOL_NAMES_AGENTS: tuple[str, ...] = (
     "scope-standard-lines.md",
     "scope-package-folder.md",
     "scope-rechecker.md",
+    "scope-reader.md",
+    "scope-vocabulary-reader.md",
+    "scope-reviewer.md",
+    "scope-round-runner.md",
 )
 FULL_TOOL_NAMES_PREFIX = "mcp__"
 
@@ -24742,6 +24977,78 @@ def check_full_tool_names(plugin_path: Path, marketplace_root: Path) -> Result:
     return Result(name, passed=not errors, detail=detail)
 
 
+# --------------------------------------------------------------------------- #
+# Check: names alike by place
+# --------------------------------------------------------------------------- #
+#
+# A run once held fifteen piping rows and eleven cabling rows written one per level or side of the
+# building, each by the reader of that level's plan, and the overlap scan named none of them, since
+# their names differ by the place alone. The readers now name such work for how it reads across
+# the job; the scan backs that up by reading two names alike once each trailing level, floor,
+# story, wing or side is taken off, so a place row the rule missed reaches the closing report as
+# the same work twice. The check runs the shipped `names_scan.py` over invented names: names apart
+# by their place alone are alike, names apart by their work, a place inside a name, an ordinary
+# word after "floor", and a name that is only a place are not, and the scan writes one overlap
+# note for two units holding place rows of one kind of work. Honest bound: invented names only, not
+# a real run's.
+
+_NAMES_ALIKE = (
+    ("Domestic water piping, Level 2", "Domestic water piping - east wing"),
+    ("Sanitary waste and vent piping at Levels 3 to 5", "Sanitary waste and vent piping"),
+    ("Communications cabling, second floor", "Communications cabling 3rd floor"),
+    ("Shaft walls, Level P1", "Shaft walls on the north side"),
+    ("Storm piping, basement", "Storm piping"),
+)
+_NAMES_NOT_ALIKE = (
+    ("Trench and floor drains", "Trench and"),
+    ("Floor tile", "Floor"),
+    ("Support steel at overhead doors", "Support steel"),
+    ("Level 2", "Level 3"),
+    ("North side retaining wall", "Retaining wall"),
+    ("Domestic water piping", "Domestic water heaters, Level 2"),
+)
+
+
+def check_names_alike_by_place(plugin_path: Path, marketplace_root: Path) -> Result:
+    name = "names-alike-by-place"
+    path = plugin_path / "scripts" / "names_scan.py"
+    if not path.is_file():
+        return Result(name, False, detail=f"not found: {path}")
+    try:
+        scan = _load_script_module(path, "names_scan")
+    except Exception as e:
+        return Result(name, False, detail=f"cannot import names_scan.py: {e}")
+    errors: list[str] = []
+    for first, second in _NAMES_ALIKE:
+        if scan.alike_key(first) != scan.alike_key(second):
+            errors.append(f"{first!r} and {second!r} are not read alike")
+    for first, second in _NAMES_NOT_ALIKE:
+        if scan.alike_key(first) == scan.alike_key(second):
+            errors.append(f"{first!r} and {second!r} are read alike")
+    names = {
+        "i2-P2-1": {"subjects": {"scopeItem:i2-P2-1-1": "Domestic water piping, Level 2"}},
+        "i2-P2-2": {"subjects": {"scopeItem:i2-P2-2-1": "Domestic water piping, Level 3"}},
+        "i2-P2-3": {"subjects": {"scopeItem:i2-P2-3-1": "Floor drains"}},
+    }
+    notes = scan.overlaps(list(names), names, set(), "2", "boundary")
+    want = ["note 2 boundary - overlap Domestic water piping, Level 2 in i2-P2-1 and i2-P2-2"]
+    if notes != want:
+        errors.append(f"the scan wrote {notes}, not {want}")
+    # A note the ledger already holds joins the two units, so the scan writes it once.
+    noted = {(scan.alike_key("Domestic water piping, Level 2"), frozenset(("i2-P2-1", "i2-P2-2")))}
+    again = scan.overlaps(list(names), names, noted, "2", "boundary")
+    if again:
+        errors.append(f"the scan wrote {again} again over a note the ledger holds")
+    detail = (
+        f"{len(_NAMES_ALIKE)} pairs apart by place alone read alike, {len(_NAMES_NOT_ALIKE)} pairs "
+        f"apart by their work, a word after floor or a place inside the name read apart, and one "
+        f"overlap note for two place rows, written once; bound: invented names, not a real run's"
+    )
+    if errors:
+        detail += " | " + "; ".join(errors)
+    return Result(name, passed=not errors, detail=detail)
+
+
 def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[Result], bool]:
     """Run all Layer 1 checks. Returns (results, all_passed)."""
     results = [
@@ -24801,6 +25108,7 @@ def run_static_checks(plugin_path: Path, marketplace_root: Path) -> tuple[list[R
         check_code_lists(plugin_path, marketplace_root),
         check_nothing_to_install(plugin_path, marketplace_root),
         check_full_tool_names(plugin_path, marketplace_root),
+        check_names_alike_by_place(plugin_path, marketplace_root),
     ]
     all_passed = all(r.passed for r in results)
     return results, all_passed

@@ -1,0 +1,17 @@
+{
+  "window": 1,
+  "units": [
+    {
+      "id": "i1-E1-1",
+      "unitKey": "E-6.01@file-0001#12"
+    }
+  ],
+  "repeatedSets": [
+    {
+      "fileId": "file-0001",
+      "unitId": "i1-RS1-1",
+      "page": 1,
+      "sheetsLeftOut": []
+    }
+  ]
+}

@@ -305,6 +305,7 @@ REASONS = (
     ("owed", "it did not answer what the read before it left unwritten"),
     ("code lists", "its report did not name each list of codes on the page in the shape it is asked for"),
     ("codes", "it left codes of a schedule or legend off the record"),
+    ("scan", "it did not read a scanned plan, diagram, schedule or legend from its picture, or say it could not"),
 )
 REASON_FALLBACK = "the check of what it wrote did not pass, and its notes do not say which part"
 _READ_END_RE = re.compile(r", read ([1-9][0-9]*)$")

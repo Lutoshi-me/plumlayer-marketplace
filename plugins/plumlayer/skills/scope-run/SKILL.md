@@ -215,7 +215,10 @@ that relaxes any one of them reproduces a measured, named failure.
    made to order for its place, which the documents detail for the one place it goes (a steel
    frame, a canopy, a stair, a piece of millwork), is a row for each piece, named for what it is
    and where it stands, one row however many plans and levels show it and one row for pieces
-   made alike at several places; a product put in many places is never split this way. No row
+   made alike at several places; a product put in many places is never split this way. A plan of
+   one level, wing or side never limits work to that place: the row is named for the work as it
+   reads across the job, and a reader of another level's plan cites its page on that row, while
+   work made to order keeps the name of the place it stands in. No row
    for the parts every bid that carries a row carries with it, and a typical detail or a general
    note is a citation on the row it details or governs. A row of its own where bids on the trade
    carry the rest and leave this out or price it apart, for one of five reasons: a different kind
@@ -238,7 +241,7 @@ that relaxes any one of them reproduces a measured, named failure.
    written out in its description. Windows and doors are never such an assembly: the reader's
    mandate 6 lists how
    each common schedule of types lands on every run, a row per window type and per balcony door
-   type beside the rows for the window work every type shares, and one row per family, every code
+   type wherever the set lists them, beside the rows for the window work every type shares, and one row per family, every code
    written out in its description, for interior doors, partitions and panelboards. Never copy a schedule's columns into a row: the row names its product and cites
    the schedule row that defines it, with a box on that schedule row built from the page's text
    read, never from a render, or the sheet with no box where no line of the read carries that
@@ -291,7 +294,10 @@ Starting the scope run is that ask for one more act, as the first message tells 
 package review retires the other row of two rows on its package that carry the same work, once
 the kept row cites every page the other did that is not marked `shownOnly`, and every manual page,
 with `The scope run you started has each package review combine rows that carry the same work.`
-in `basis`, and names the pair for the closing report. Where the user asks for a combined row back, `restore_scope_item` puts it back:
+in `basis`, and names the pair for the closing report. It retires the same way a row named for
+its trade, its package or a whole manual section once each piece of work that row holds has a
+row of its own on the package and those rows cite every page it did, and otherwise leaves it and
+names it for the closing report. Where the user asks for a combined row back, `restore_scope_item` puts it back:
 name the row you restored.
 
 ## The scope item row
@@ -2068,8 +2074,9 @@ Write your package's standard lines as your definition says, write your report t
 
 ```text
 unit: <unit id>   pass: <pass id>   window: <n>
-pages read: <sheet number + pageInPdf, renders taken and the reason for each, and `read from the picture` with why the text was thin where you read it from a render, one per page>
+pages read: <sheet number + pageInPdf, renders taken and the reason for each, and `read from the picture` where you read it from a render, one per page>
 pages unread: <sheet number + pageInPdf + reason, each page or part of one not read from the picture as `<sheet> p<page> not read from the picture: <what is left>, <why>`, or "none">
+text read: <the page's `textSource` as the reader's text and context reads give it: textLayer, ocr, textLayerAndOcr or none; for the repeated lines, "repeated lines">
 cited sheets: <for the repeated lines, every sheet the unit's rows and citations name, comma separated; otherwise "none">
 page citations: <for the repeated lines, subject + fileId + pageInPdf of every update cited to a page with no sheet number, one per line; otherwise "none">
 set version: <for the repeated lines, the setVersion the unit's walk ended on; otherwise "none">

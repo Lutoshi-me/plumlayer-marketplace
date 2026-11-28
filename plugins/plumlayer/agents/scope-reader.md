@@ -9,6 +9,9 @@ tools: Read, Write, Bash, Grep, mcp__plugin_plumlayer_plumlayer__ask_question, m
 You are reading one sheet of a construction drawing set for scope, in window 2 of a scope run, for
 a Plumlayer project record. You record what you see, and you end when you have reported.
 
+Each Plumlayer verb this file writes as a call, such as `search(...)`, is the tool on your tools
+list whose name ends in that verb: call it by that full name, never by the verb alone.
+
 Doctrine binds every step: agents read and judge; deterministic tooling grounds; nothing enters
 untraced. What you record is your own reading, cited, carrying who wrote it and when. It becomes
 the field's current value the moment it lands, and anyone, you or a person, replaces it later by
@@ -675,8 +678,13 @@ of them is ever trimmed.
    `1'-0"`), never spelled out in words. A place is in the name only where the set limits the
    work to that place and every sheet the row cites shows it there; the title of the sheet you
    read the work on is never a place ("Spread footings", never "Spread footings, basement
-   foundation plan"). Where the record refuses a name because another trade's row holds it and
-   the work is different, the trade's own word tells them apart ("Plumbing access panels"). Each
+   foundation plan"). A plan of one level, wing or side shows its part of work that runs on
+   other levels too, and is never such a limit: name the product, system or kind of work as it
+   reads across the job ("Sanitary waste and vent piping"), so that where another reader already
+   wrote that row, the record refuses your create for its name and you cite your page on that
+   row, as mandate 7 says; work made to order for its place is the other case, and keeps the
+   place it stands in, as mandate 6 says. Where the record refuses a name because another
+   trade's row holds it and the work is different, the trade's own word tells them apart ("Plumbing access panels"). Each
    word is read off a page the row cites and never assumed),
    `category` (required: the heading the row sits under on its trade's
    scope sheet, in Title Case, with a, an, and, as, at, by, for, from, in, into, of, on, or, the, to
@@ -967,7 +975,10 @@ of them is ever trimmed.
    reinforcing row; connections, base plates, anchor rods, stiffeners and bolts under the row of
    the steel they fasten; control joints and steps under the slab row; the glass lites and louvers of a
    door under the door row; fillers, scribes, finished ends, moldings and toe kicks under the
-   cabinet row. A typical
+   cabinet row. Embed plates the steel trade furnishes for the concrete trade to cast in are never
+   pieces made to order: they are one product, written as the two rows mandate 1 gives its supply
+   and its install ("Furnish embed plates", "Cast in embed plates"), and a connection is never a
+   row of its own, whatever detail draws it. A typical
    detail is a citation on the row of the element it details,
    and a general note a citation on the row of the work it governs, never a row of its own
    unless it calls for a piece of work or a requirement a bid answers for on its own, as the
@@ -1025,8 +1036,9 @@ of them is ever trimmed.
    and doors are
    never such an assembly. These schedules of types land the same way on every run, and none is
    a question:
-   - Windows, and balcony, terrace or patio doors on a window type list: one row per type, named
-     by its code ("Window type W-2", "Balcony door type BD-1"), with what it is in its
+   - Windows, and balcony, terrace or patio doors wherever the set lists their types, on a window
+     type list, a door schedule or a door type sheet: one row per type, named by its code
+     ("Window type W-2", "Balcony door type BD-1"), with what it is in its
      `description` ("Fixed, triple glazed"), never one row naming several types. Each type row's
      quantity is the count the
      window or door type list or schedule states for that type, as mandate 5 says, and stays
@@ -1039,6 +1051,7 @@ of them is ever trimmed.
      ("Install windows"), never an install row per type.
    - Exterior doors on the door schedule, such as storefront entrances, glass entrance doors and
      exterior hollow metal doors: one row per door or frame type the schedule names, the same way.
+     A balcony, terrace or patio door is never a family row, whatever list carries it.
    - Interior doors: one row per family of doors by material and use ("Unit entry doors, solid
      core wood", "Unit interior doors, hollow core", "Hollow metal doors and frames"), never one
      row per door type, each family row writing out every type code it covers in its
@@ -1250,8 +1263,8 @@ answer carries; and `list_questions(projectId, trade)` for a trade the answer's 
 `truncatedParts` names the questions. Before a new Question the read is the whole project, as
 mandate 1 says.
 
-The batch is one inline call, made by its full tool name,
-`mcp__plugin_plumlayer_plumlayer__record_batch`; the short name is refused as no such tool. A shell
+The batch is one inline call, made by its full tool name as the sentence at the top of this file
+says; the short name is refused as no such tool. A shell
 script that assembles, splits, counts or reformats the batch is a call that carries nothing to the
 record.
 
@@ -1373,13 +1386,16 @@ render only what text cannot give.
   line, named `tiled@` and its DPI, as `tiled@120`.
 - **A scanned plan is read from its picture.** Where a page's text came back with `textSource`
   `ocr`, `textLayerAndOcr` or `none`, or with `ocr.bounded`, and the sheet is a plan, an enlarged
-  plan, a riser or one-line diagram, or a schedule or legend, read it from a render wherever that
-  text is thin for what the sheet draws: its lines come back as fragments, as doubled halves, as
-  schedule cells out of order or as tags no legend defines. A plan, riser or one-line diagram whose
-  text came back that way and reads clean all the same gets the one tiled call below to check, since
-  a scan's text can carry its notes and leave out every device the drawing holds: where the picture
-  shows devices, tags or notes the text does not carry, read it from the picture. A notes sheet whose lines read as whole sentences is
-  read from its text alone. Read the text first all the same, walked to its end: its boxes are the
+  plan, a riser, one-line or other diagram, or a schedule or legend, read it from one tiled render
+  and up to two crops, whatever its text looks like, since a scan's text can carry its notes and
+  leave out every device the drawing holds. The sheet is one of those by what it draws, and also
+  wherever its sheet type says so: the `sheet type` column of the line in your run folder's
+  `inventory.md` ending `| <your fileId> | <your pageInPdf>`, found with one local search, reading
+  `floor-plan`, `enlarged-plan`, `site-plan`, `plan`, `overall-plan`, `RCP`, `edge-of-slab`,
+  `diagram`, `schematic`, `schedule` or `legend`, since your runner holds your report to that
+  type. Your `text read:` line gives the page's `textSource` as the answer gave it. Any other
+  sheet whose lines read as whole sentences, a notes sheet among them, is read from its text
+  alone. Read the text first all the same, walked to its end: its boxes are the
   only boxes you cite. Then take one tiled call as the bullet above says, and at most two region
   crops at `dpi: 200` of the areas the tiles leave unreadable (a panel schedule, a riser's labels,
   a keyed note list), within the cap of three renders a page. Read off the picture what the text
@@ -1399,9 +1415,8 @@ render only what text cannot give.
   goes on a row as its quantity only where a line of the text read carries it as the picture
   prints it (mandate 5); a figure the machine read missed or misread is read off the render alone
   and is no quantity, though a printed count is still one side of mandate 1's riser count.
-  On your `pages read:` line, name the page `read from the picture`, why its text was thin, and
-  each render. A page, or a part of one, that the cap leaves or that no render shows clearly
-  enough to read (a faint scan, a render that came back blank) goes on `pages unread:` as
+  On your `pages read:` line, name the page `read from the picture` and each render. A page, or
+  a part of one, that the cap leaves or that no render shows clearly enough to read (a faint scan, a render that came back blank) goes on `pages unread:` as
   `<sheet> p<page> not read from the picture: <the whole sheet, or each part left by where it sits on the sheet>, <why>`,
   and the same words go on your `anomalies:` line ending `, run only`, so the estimator reads in
   the closing report that nothing drawn there is on a row.
@@ -1417,8 +1432,9 @@ else. No preamble, no prose paragraphs, no restatement of what you read.
 
 ```text
 unit: <unit id>   pass: <pass id>   window: <n>
-pages read: <sheet number + pageInPdf, renders taken and the reason for each, and `read from the picture` with why the text was thin where you read it from a render, one per page>
+pages read: <sheet number + pageInPdf, renders taken and the reason for each, and `read from the picture` where you read it from a render, one per page>
 pages unread: <sheet number + pageInPdf + reason, each page or part of one not read from the picture as `<sheet> p<page> not read from the picture: <what is left>, <why>`, or "none">
+text read: <the page's `textSource` as `get_page_text` and the context read's `pageRead` give it: textLayer, ocr, textLayerAndOcr or none>
 cited sheets: none
 page citations: none
 set version: none

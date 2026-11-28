@@ -1,0 +1,32 @@
+{
+  "sheets": [
+    {
+      "unitKey": "E-1.01@file-0001#5",
+      "sheetNumber": "E-1.01",
+      "sheetType": "floor-plan",
+      "fileId": "file-0001",
+      "pageInPdf": 5
+    },
+    {
+      "unitKey": "E-5.01@file-0001#9",
+      "sheetNumber": "E-5.01",
+      "sheetType": "detail",
+      "fileId": "file-0001",
+      "pageInPdf": 9
+    },
+    {
+      "unitKey": "E-0.02@file-0001#2",
+      "sheetNumber": "E-0.02",
+      "sheetType": null,
+      "fileId": "file-0001",
+      "pageInPdf": 2
+    },
+    {
+      "unitKey": "E-6.01@file-0001#12",
+      "sheetNumber": "E-6.01",
+      "sheetType": "schedule",
+      "fileId": "file-0001",
+      "pageInPdf": 12
+    }
+  ]
+}

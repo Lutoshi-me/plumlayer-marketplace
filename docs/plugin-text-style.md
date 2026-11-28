@@ -680,15 +680,22 @@ Each of these is a harness check.
     and never reads it again in windows 1, 2 and 3. Each phrase taken out, and each retired phrase of
     the old rules put back, is refused. This cannot judge whether a running runner counts and checks
     as written; that is the measured pass's.
-37. A scanned plan is read from its picture. Both readers read a plan, a riser or one-line
-    diagram, or a schedule or legend whose text came back machine read and thin from a render,
-    within three renders a page, citing only boxes the text read gives and writing no quantity off
-    a render alone; a count printed on a riser or one-line diagram is held against the count
+37. A scanned plan is read from its picture. Both readers read a plan, a riser, one-line or other
+    diagram, or a schedule or legend whose text came back machine read from one tiled render and
+    up to two crops whatever its text looks like, the sheet known by what it draws or by its sheet
+    type on `inventory.md`, within three renders a page, citing only boxes the text read gives and
+    writing no quantity off a render alone, and name the page's `textSource` on a `text read:`
+    line; a count printed on a riser or one-line diagram is held against the count
     another sheet states, and a count the reader makes never is one; each page or part left is
     named in one shape on `pages unread:` and on the anomaly line, and the closing report names
-    each sheet and part, as stage 9 and `close_report.py` give its source. Each phrase taken out
-    is refused. This cannot judge whether a running reader reads a scan well; that is the measured
-    run's.
+    each sheet and part, as stage 9 and `close_report.py` give its source. The runner's report
+    check, handed the run folder and the unit, holds a plan, diagram, schedule or legend whose text
+    was not its own text layer to naming the page `read from the picture` or `not read from the
+    picture`, and refuses one naming neither under the check name `scan`; the check runs the
+    shipped `unit_report.py` over fixture reports, a scanned plan read as text only refused, one
+    read from the picture and one not read from the picture passing, and holds the script's list of
+    such sheet types to the readers' list. Each phrase taken out is refused. This cannot judge
+    whether a running reader reads a scan well; that is the measured run's.
 38. A unit that fails its check or ends without a usable report is read again or restored, and
     nobody writes a reader's report or changes a ledger line. Every ledger line goes on through the
     shipped `ledger.py`, under a lock, checked as a batch, with a shadow copy, replaced whole each
@@ -871,3 +878,8 @@ invisible.
     taken out, moved to the end or reworded and a prefix written into the body. A file joins the
     list as its text takes the sentence. This cannot judge which name a running agent calls; that is
     the measured run's.
+49. Two rows apart by their level or side alone reach the estimator as the same work twice. The
+    shipped `names_scan.py` reads two names alike once each trailing level, floor, story, wing or
+    side is taken off, and the check runs it over invented names apart by place alone, which read
+    alike, and over names apart by their work, an ordinary word after "floor", a place inside the
+    name and a name that is only a place, which do not. This cannot judge a real run's names.
